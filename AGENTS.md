@@ -4,6 +4,23 @@ This is a web application written using the Phoenix web framework.
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
+- Use the HexDoc mcp server to read the documentation about project dependencies
+- Use the TideWave mcp server to learn about and understand the running application
+- When you add a new dependency or update an existing dependency run `mix usage_rules.sync AGENTS.md --all --link-to-folder deps --inline usage_rules:all` to update the AGENTS.md file
+
+### Quality guidelines  
+
+- When you complete a task that has new functions write unit tests for the new function
+- When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
+- Each time you write or update a unit tests run them with `mix test` and ensure they pass
+- When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
+- When you complete a task run `mix credo --strict` to check for code quality issues and fix them
+
+### Security guidelines
+
+- When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
+- When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
+- when you complete a task run `mix sobelow --config` to check for security issues and fix any issue
 
 ### Phoenix v1.8 guidelines
 
