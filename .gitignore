@@ -37,3 +37,4 @@ npm-debug.log
 
 .expert/
 .claude/
+.mcp.json
