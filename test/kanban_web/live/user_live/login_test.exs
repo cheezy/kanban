@@ -8,8 +8,8 @@ defmodule KanbanWeb.UserLive.LoginTest do
     test "renders login page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      assert html =~ "Log in"
-      assert html =~ "Register"
+      assert html =~ "Welcome Back"
+      assert html =~ "Sign up"
       assert html =~ "Log in with email"
     end
   end
@@ -85,7 +85,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
         |> render_click()
         |> follow_redirect(conn, ~p"/users/register")
 
-      assert login_html =~ "Register"
+      assert login_html =~ "Create Your Account"
     end
   end
 

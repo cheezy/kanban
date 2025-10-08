@@ -87,11 +87,11 @@ tasks
 
 #### Phase 2: UI Polish & Internationalization
 
-- [ ] **Clean up default Phoenix UI**
-  - [ ] Remove Phoenix framework links from layout
-  - [ ] Customize header/navigation
-  - [ ] Apply consistent styling with TailwindCSS
-  - [ ] Create a custom home page design
+- [X] **Clean up default Phoenix UI**
+  - [X] Remove Phoenix framework links from layout
+  - [X] Customize header/navigation
+  - [X] Apply consistent styling with TailwindCSS
+  - [X] Create a custom home page design
 - [ ] **Add internationalization (i18n) support**
   - [ ] Install and configure Gettext for multi-language support
   - [ ] Extract all user-facing strings to translation files
@@ -99,12 +99,12 @@ tasks
   - [ ] Add French translations
   - [ ] Add language switcher component
   - [ ] Test language switching functionality
-- [ ] **Quality Checks (Phase 2)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Verify both English and French translations work correctly
+- [X] **Quality Checks (Phase 2 - UI Polish)**:
+  - [X] Run `mix test` and ensure all tests pass
+  - [X] Run `mix credo --strict` and fix any issues
+  - [X] Run `mix sobelow --config` and fix any security issues
 
-#### Phase 4: Database Schema & Context Setup
+#### Phase 3: Database Schema & Context Setup
 - [ ] **Generate Board schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_boards`
   - [ ] Define `boards` table with fields: name (string), description (text), user_id (references :users)
@@ -186,7 +186,7 @@ tasks
   - [ ] Run `mix credo --strict` and fix any issues
   - [ ] Run `mix sobelow --config` and fix any security issues
 
-#### Phase 5: Board Management UI
+#### Phase 4: Board Management UI
 - [ ] **Create board list LiveView**
   - [ ] Create `lib/kanban_web/live/board_live/index.ex`
   - [ ] Implement `mount/3` to load user's boards
@@ -224,7 +224,7 @@ tasks
   - [ ] Run `mix credo --strict` and fix any issues
   - [ ] Run `mix sobelow --config` and fix any security issues
 
-#### Phase 6: Column Management UI
+#### Phase 5: Column Management UI
 - [ ] **Add column creation to board show view**
   - [ ] Add inline form or modal for new columns
   - [ ] Display columns in order by position
@@ -247,7 +247,7 @@ tasks
   - [ ] Run `mix test --cover` and verify coverage meets threshold
   - [ ] Run `mix credo --strict` and fix any issues
 
-#### Phase 7: Task Management UI
+#### Phase 6: Task Management UI
 - [ ] **Add task display to columns**
   - [ ] Use streams to display tasks within each column
   - [ ] Show task title and description
@@ -270,7 +270,7 @@ tasks
   - [ ] Run `mix test --cover` and verify coverage meets threshold
   - [ ] Run `mix credo --strict` and fix any issues
 
-#### Phase 8: Drag & Drop Functionality
+#### Phase 7: Drag & Drop Functionality
 - [ ] **Install drag-and-drop library**
   - [ ] Add Sortable.js or use native HTML5 drag-and-drop
   - [ ] Configure in `assets/js/app.js`
@@ -295,7 +295,7 @@ tasks
   - [ ] Run `mix test --cover` and verify coverage meets threshold
   - [ ] Run `mix credo --strict` and fix any issues
 
-#### Phase 9: Polish & Enhancement
+#### Phase 8: Polish & Enhancement
 - [ ] **UI/UX improvements**
   - [ ] Design beautiful board cards with Tailwind CSS
   - [ ] Add hover effects and transitions

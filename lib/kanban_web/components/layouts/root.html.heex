@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Kanban" suffix=" · Phoenix Framework">
+    <.live_title default="Kanban" suffix=" · Task Management">
       {assigns[:page_title]}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
@@ -25,32 +25,67 @@
           setTheme(localStorage.getItem("phx:theme") || "system");
         }
         window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
+
         window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
       })();
     </script>
   </head>
-  <body>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_scope do %>
-        <li>
-          {@current_scope.user.email}
-        </li>
-        <li>
-          <.link href={~p"/users/settings"}>Settings</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/log-out"} method="delete">Log out</.link>
-        </li>
-      <% else %>
-        <li>
-          <.link href={~p"/users/register"}>Register</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/log-in"}>Log in</.link>
-        </li>
-      <% end %>
-    </ul>
+  <body class="h-full bg-gradient-to-br from-blue-50 via-gray-50 to-orange-50">
+    <!-- Navigation Header -->
+    <nav class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 justify-between items-center">
+          <!-- Logo/Brand -->
+          <div class="flex items-center">
+            <.link href={~p"/"} class="flex items-center gap-3 group">
+              <div class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <span class="text-xl font-bold text-gray-900 hidden sm:block">Kanban Board</span>
+            </.link>
+          </div>
+
+          <!-- Navigation Links -->
+          <div class="flex items-center gap-4">
+            <%= if @current_scope do %>
+              <span class="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 bg-gray-100 rounded-lg">
+                {@current_scope.user.email}
+              </span>
+              <.link
+                href={~p"/users/settings"}
+                class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Settings
+              </.link>
+              <.link
+                href={~p"/users/log-out"}
+                method="delete"
+                class="text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
+              >
+                Log out
+              </.link>
+            <% else %>
+              <.link
+                href={~p"/users/log-in"}
+                class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Log in
+              </.link>
+              <.link
+                href={~p"/users/register"}
+                class="text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
+              >
+                Get Started
+              </.link>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
     {@inner_content}
   </body>
 </html>
