@@ -114,7 +114,7 @@ defmodule Kanban.MixProject do
         KanbanWeb.Layouts,
         KanbanWeb.PageHTML,
         KanbanWeb.Router,
-        KanbanWeb.Telemetry,
+        KanbanWeb.Telemetry
       ]
     ]
   end
