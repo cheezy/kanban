@@ -1,11 +1,13 @@
 # Kanban Board Application - Implementation Plan
 
 ## Project Overview
+
 A web-based Kanban board application built with Phoenix/Elixir that allows users to create boards, manage columns, and organize tasks with authentication.
 
 ## Core Features
 
 ### 1. User Authentication
+
 - [ ] User registration
 - [ ] User login/logout
 - [ ] Password hashing and security
@@ -13,6 +15,7 @@ A web-based Kanban board application built with Phoenix/Elixir that allows users
 - [ ] Protected routes
 
 ### 2. Board Management
+
 - [ ] Create new boards
 - [ ] View list of user's boards
 - [ ] View individual board
@@ -20,12 +23,14 @@ A web-based Kanban board application built with Phoenix/Elixir that allows users
 - [ ] Delete boards
 
 ### 3. Column Management
+
 - [ ] Add columns to a board
 - [ ] Name/rename columns
 - [ ] Reorder columns
 - [ ] Delete columns
 
 ### 4. Task Management
+
 - [ ] Create tasks within columns
 - [ ] Edit task details (title, description)
 - [ ] Delete tasks
@@ -35,6 +40,7 @@ A web-based Kanban board application built with Phoenix/Elixir that allows users
 ## Technical Architecture
 
 ### Database Schema
+
 ```
 users
   - id
@@ -72,6 +78,7 @@ tasks
 ### Implementation Phases
 
 #### Phase 1: Project Setup & Authentication
+
 - [X] Set up Phoenix project structure
 - [X] Configure database
 - [X] Implement user authentication
@@ -105,6 +112,7 @@ tasks
   - [X] Run `mix sobelow --config` and fix any security issues
 
 #### Phase 3: Database Schema & Context Setup
+
 - [ ] **Generate Board schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_boards`
   - [ ] Define `boards` table with fields: name (string), description (text), user_id (references :users)
@@ -187,6 +195,7 @@ tasks
   - [ ] Run `mix sobelow --config` and fix any security issues
 
 #### Phase 4: Board Management UI
+
 - [ ] **Create board list LiveView**
   - [ ] Create `lib/kanban_web/live/board_live/index.ex`
   - [ ] Implement `mount/3` to load user's boards
@@ -225,6 +234,7 @@ tasks
   - [ ] Run `mix sobelow --config` and fix any security issues
 
 #### Phase 5: Column Management UI
+
 - [ ] **Add column creation to board show view**
   - [ ] Add inline form or modal for new columns
   - [ ] Display columns in order by position
@@ -248,6 +258,7 @@ tasks
   - [ ] Run `mix credo --strict` and fix any issues
 
 #### Phase 6: Task Management UI
+
 - [ ] **Add task display to columns**
   - [ ] Use streams to display tasks within each column
   - [ ] Show task title and description
@@ -271,6 +282,7 @@ tasks
   - [ ] Run `mix credo --strict` and fix any issues
 
 #### Phase 7: Drag & Drop Functionality
+
 - [ ] **Install drag-and-drop library**
   - [ ] Add Sortable.js or use native HTML5 drag-and-drop
   - [ ] Configure in `assets/js/app.js`
@@ -296,6 +308,7 @@ tasks
   - [ ] Run `mix credo --strict` and fix any issues
 
 #### Phase 8: Polish & Enhancement
+
 - [ ] **UI/UX improvements**
   - [ ] Design beautiful board cards with Tailwind CSS
   - [ ] Add hover effects and transitions
@@ -321,6 +334,7 @@ tasks
   - [ ] Run `mix precommit` to run all checks together
 
 ## Technology Stack
+
 - **Backend**: Phoenix Framework (Elixir)
 - **Database**: PostgreSQL
 - **Frontend**: Phoenix LiveView
@@ -328,10 +342,12 @@ tasks
 - **Styling**: TailwindCSS (default with Phoenix)
 
 ## Current Status
+
 - [x] Project initialized
 - [ ] Ready to begin Phase 1
 
 ## Notes
+
 - Focus on core functionality first
 - Use LiveView for real-time updates
 - Keep UI simple and intuitive
