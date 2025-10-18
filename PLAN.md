@@ -111,7 +111,7 @@ tasks
   - [X] Run `mix credo --strict` and fix any issues
   - [X] Run `mix sobelow --config` and fix any security issues
 
-#### Phase 3: Database Schema & Context Setup
+#### Phase 3: Board Management (Schema, Context & UI)
 
 - [ ] **Generate Board schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_boards`
@@ -123,8 +123,57 @@ tasks
   - [ ] Create `lib/kanban/boards/board.ex` with Ecto schema
   - [ ] Define fields: `:name`, `:description`
   - [ ] Add `belongs_to :user, Kanban.Accounts.User`
-  - [ ] Add `has_many :columns, Kanban.Columns.Column`
   - [ ] Create changeset function with validations
+- [ ] **Create Boards context**
+  - [ ] Create `lib/kanban/boards.ex` context with:
+    - [ ] `list_boards(user)` - list all boards for a user
+    - [ ] `get_board!(id, user)` - get board with authorization check
+    - [ ] `create_board(user, attrs)` - create board for user
+    - [ ] `update_board(board, attrs)` - update board
+    - [ ] `delete_board(board)` - delete board
+- [ ] **Write Board context tests**
+  - [ ] Create `test/kanban/boards_test.exs`:
+    - [ ] Test all CRUD operations
+    - [ ] Test user scoping (users can't access other users' boards)
+    - [ ] Test validations
+- [ ] **Create board list LiveView**
+  - [ ] Create `lib/kanban_web/live/board_live/index.ex`
+  - [ ] Implement `mount/3` to load user's boards
+  - [ ] Use streams for board collection
+  - [ ] Create template with board cards
+  - [ ] Add "New Board" button
+  - [ ] Add edit/delete actions for each board
+- [ ] **Create board show LiveView**
+  - [ ] Create `lib/kanban_web/live/board_live/show.ex`
+  - [ ] Load board with authorization check
+  - [ ] Display board name and description
+  - [ ] Prepare structure for columns (empty state for now)
+- [ ] **Create board form component**
+  - [ ] Create `lib/kanban_web/live/board_live/form_component.ex`
+  - [ ] Build form for creating/editing boards
+  - [ ] Add validation and error display
+  - [ ] Handle form submission
+- [ ] **Add routes**
+  - [ ] Add routes in `lib/kanban_web/router.ex` under authenticated scope
+  - [ ] `live "/boards", BoardLive.Index, :index`
+  - [ ] `live "/boards/new", BoardLive.Index, :new`
+  - [ ] `live "/boards/:id/edit", BoardLive.Index, :edit`
+  - [ ] `live "/boards/:id", BoardLive.Show, :show`
+- [ ] **Write Board LiveView tests**
+  - [ ] Create `test/kanban_web/live/board_live_test.exs`
+  - [ ] Test board list rendering
+  - [ ] Test creating new board
+  - [ ] Test editing board
+  - [ ] Test deleting board
+  - [ ] Test authorization (can't access other users' boards)
+- [ ] **Quality Checks (Phase 3)**:
+  - [ ] Run `mix test` and ensure all tests pass
+  - [ ] Run `mix test --cover` and verify coverage meets threshold
+  - [ ] Run `mix credo --strict` and fix any issues
+  - [ ] Run `mix sobelow --config` and fix any security issues
+
+#### Phase 4: Column Management (Schema, Context & UI)
+
 - [ ] **Generate Column schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_columns`
   - [ ] Define `columns` table with fields: name (string), position (integer), board_id (references :boards)
@@ -136,8 +185,48 @@ tasks
   - [ ] Create `lib/kanban/columns/column.ex` with Ecto schema
   - [ ] Define fields: `:name`, `:position`
   - [ ] Add `belongs_to :board, Kanban.Boards.Board`
-  - [ ] Add `has_many :tasks, Kanban.Tasks.Task`
   - [ ] Create changeset function with validations
+- [ ] **Update Board schema**
+  - [ ] Add `has_many :columns, Kanban.Columns.Column` to Board schema
+- [ ] **Create Columns context**
+  - [ ] Create `lib/kanban/columns.ex` context with:
+    - [ ] `list_columns(board)` - list columns for a board
+    - [ ] `get_column!(id)` - get column by id
+    - [ ] `create_column(board, attrs)` - create column with auto position
+    - [ ] `update_column(column, attrs)` - update column
+    - [ ] `delete_column(column)` - delete column and reorder remaining
+    - [ ] `reorder_columns(board, column_ids)` - reorder columns
+- [ ] **Write Column context tests**
+  - [ ] Create `test/kanban/columns_test.exs`:
+    - [ ] Test all CRUD operations
+    - [ ] Test automatic position assignment
+    - [ ] Test position reordering
+- [ ] **Update board show LiveView for columns**
+  - [ ] Update `lib/kanban_web/live/board_live/show.ex`
+  - [ ] Load board with preloaded columns
+  - [ ] Display columns in order by position
+  - [ ] Show column name and task count placeholder
+  - [ ] Add "New Column" button
+- [ ] **Create column form component**
+  - [ ] Create `lib/kanban_web/live/column_live/form_component.ex`
+  - [ ] Build form for creating/editing columns
+  - [ ] Handle form submission
+- [ ] **Add column actions**
+  - [ ] Add edit column name inline or via modal
+  - [ ] Add delete column with confirmation
+- [ ] **Write Column LiveView tests**
+  - [ ] Test column creation
+  - [ ] Test column editing
+  - [ ] Test column deletion
+  - [ ] Test column ordering
+- [ ] **Quality Checks (Phase 4)**:
+  - [ ] Run `mix test` and ensure all tests pass
+  - [ ] Run `mix test --cover` and verify coverage meets threshold
+  - [ ] Run `mix credo --strict` and fix any issues
+  - [ ] Run `mix sobelow --config` and fix any security issues
+
+#### Phase 5: Task Management (Schema, Context & UI)
+
 - [ ] **Generate Task schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_tasks`
   - [ ] Define `tasks` table with fields: title (string), description (text), position (integer), column_id (references :columns)
@@ -150,20 +239,9 @@ tasks
   - [ ] Define fields: `:title`, `:description`, `:position`
   - [ ] Add `belongs_to :column, Kanban.Columns.Column`
   - [ ] Create changeset function with validations
-- [ ] **Create context modules with functions**
-  - [ ] Create `lib/kanban/boards.ex` context with:
-    - [ ] `list_boards(user)` - list all boards for a user
-    - [ ] `get_board!(id, user)` - get board with authorization check
-    - [ ] `create_board(user, attrs)` - create board for user
-    - [ ] `update_board(board, attrs)` - update board
-    - [ ] `delete_board(board)` - delete board
-  - [ ] Create `lib/kanban/columns.ex` context with:
-    - [ ] `list_columns(board)` - list columns for a board
-    - [ ] `get_column!(id)` - get column by id
-    - [ ] `create_column(board, attrs)` - create column with auto position
-    - [ ] `update_column(column, attrs)` - update column
-    - [ ] `delete_column(column)` - delete column and reorder remaining
-    - [ ] `reorder_columns(board, column_ids)` - reorder columns
+- [ ] **Update Column schema**
+  - [ ] Add `has_many :tasks, Kanban.Tasks.Task` to Column schema
+- [ ] **Create Tasks context**
   - [ ] Create `lib/kanban/tasks.ex` context with:
     - [ ] `list_tasks(column)` - list tasks for a column
     - [ ] `get_task!(id)` - get task by id
@@ -172,94 +250,16 @@ tasks
     - [ ] `delete_task(task)` - delete task and reorder remaining
     - [ ] `move_task(task, new_column, new_position)` - move task to different column
     - [ ] `reorder_tasks(column, task_ids)` - reorder tasks within column
-- [ ] **Write comprehensive unit tests**
-  - [ ] Create `test/kanban/boards_test.exs`:
-    - [ ] Test all CRUD operations
-    - [ ] Test user scoping (users can't access other users' boards)
-    - [ ] Test cascade deletion (deleting board deletes columns and tasks)
-  - [ ] Create `test/kanban/columns_test.exs`:
-    - [ ] Test all CRUD operations
-    - [ ] Test automatic position assignment
-    - [ ] Test position reordering
-    - [ ] Test cascade deletion (deleting column deletes tasks)
+- [ ] **Write Task context tests**
   - [ ] Create `test/kanban/tasks_test.exs`:
     - [ ] Test all CRUD operations
     - [ ] Test automatic position assignment
     - [ ] Test moving tasks between columns
     - [ ] Test position reordering within column
     - [ ] Test position updates when task deleted
-- [ ] **Quality Checks (Phase 4)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Run `mix sobelow --config` and fix any security issues
-
-#### Phase 4: Board Management UI
-
-- [ ] **Create board list LiveView**
-  - [ ] Create `lib/kanban_web/live/board_live/index.ex`
-  - [ ] Implement `mount/3` to load user's boards
-  - [ ] Use streams for board collection
-  - [ ] Create template with board cards
-  - [ ] Add "New Board" button
-  - [ ] Add edit/delete actions for each board
-- [ ] **Create board show LiveView**
-  - [ ] Create `lib/kanban_web/live/board_live/show.ex`
+- [ ] **Update board show LiveView for tasks**
+  - [ ] Update `lib/kanban_web/live/board_live/show.ex`
   - [ ] Load board with preloaded columns and tasks
-  - [ ] Display board name and description
-  - [ ] Show all columns with their tasks
-  - [ ] Add "New Column" button
-- [ ] **Create board form component**
-  - [ ] Create `lib/kanban_web/live/board_live/form_component.ex`
-  - [ ] Build form for creating/editing boards
-  - [ ] Add validation and error display
-  - [ ] Handle form submission
-- [ ] **Add routes**
-  - [ ] Add routes in `lib/kanban_web/router.ex` under authenticated scope
-  - [ ] `live "/boards", BoardLive.Index, :index`
-  - [ ] `live "/boards/new", BoardLive.Index, :new`
-  - [ ] `live "/boards/:id/edit", BoardLive.Index, :edit`
-  - [ ] `live "/boards/:id", BoardLive.Show, :show`
-- [ ] **Write LiveView tests**
-  - [ ] Create `test/kanban_web/live/board_live_test.exs`
-  - [ ] Test board list rendering
-  - [ ] Test creating new board
-  - [ ] Test editing board
-  - [ ] Test deleting board
-  - [ ] Test authorization (can't access other users' boards)
-- [ ] **Quality Checks (Phase 5)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Run `mix sobelow --config` and fix any security issues
-
-#### Phase 5: Column Management UI
-
-- [ ] **Add column creation to board show view**
-  - [ ] Add inline form or modal for new columns
-  - [ ] Display columns in order by position
-  - [ ] Show column name and task count
-- [ ] **Create column form component**
-  - [ ] Create `lib/kanban_web/live/column_live/form_component.ex`
-  - [ ] Build form for creating/editing columns
-  - [ ] Handle form submission
-- [ ] **Add column actions**
-  - [ ] Add edit column name inline or via modal
-  - [ ] Add delete column with confirmation
-  - [ ] Ensure tasks are deleted when column deleted
-- [ ] **Write LiveView tests**
-  - [ ] Test column creation
-  - [ ] Test column editing
-  - [ ] Test column deletion
-  - [ ] Test column ordering
-- [ ] **Quality Checks (Phase 6)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-
-#### Phase 6: Task Management UI
-
-- [ ] **Add task display to columns**
   - [ ] Use streams to display tasks within each column
   - [ ] Show task title and description
   - [ ] Display in order by position
@@ -271,17 +271,18 @@ tasks
   - [ ] Add "New Task" button in each column
   - [ ] Add edit task button
   - [ ] Add delete task with confirmation
-- [ ] **Write LiveView tests**
+- [ ] **Write Task LiveView tests**
   - [ ] Test task creation
   - [ ] Test task editing
   - [ ] Test task deletion
   - [ ] Test task display in correct column
-- [ ] **Quality Checks (Phase 7)**:
+- [ ] **Quality Checks (Phase 5)**:
   - [ ] Run `mix test` and ensure all tests pass
   - [ ] Run `mix test --cover` and verify coverage meets threshold
   - [ ] Run `mix credo --strict` and fix any issues
+  - [ ] Run `mix sobelow --config` and fix any security issues
 
-#### Phase 7: Drag & Drop Functionality
+#### Phase 6: Drag & Drop Functionality
 
 - [ ] **Install drag-and-drop library**
   - [ ] Add Sortable.js or use native HTML5 drag-and-drop
@@ -302,12 +303,12 @@ tasks
   - [ ] Test moving task within same column
   - [ ] Test moving task to different column
   - [ ] Test position updates after move
-- [ ] **Quality Checks (Phase 8)**:
+- [ ] **Quality Checks (Phase 6)**:
   - [ ] Run `mix test` and ensure all tests pass
   - [ ] Run `mix test --cover` and verify coverage meets threshold
   - [ ] Run `mix credo --strict` and fix any issues
 
-#### Phase 8: Polish & Enhancement
+#### Phase 7: Polish & Enhancement
 
 - [ ] **UI/UX improvements**
   - [ ] Design beautiful board cards with Tailwind CSS
