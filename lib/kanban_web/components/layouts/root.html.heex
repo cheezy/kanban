@@ -31,66 +31,45 @@
     </script>
   </head>
   <body class="h-full bg-gradient-to-br from-blue-50 via-gray-50 to-orange-50">
-    <!-- Navigation Header -->
-    <nav class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 justify-between items-center">
-          <!-- Logo/Brand -->
-          <div class="flex items-center">
-            <.link href={~p"/"} class="flex items-center gap-3 group">
-              <div class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
+    <nav class="app-nav">
+      <div class="nav-container">
+        <div class="nav-content">
+          <div class="nav-logo-wrapper">
+            <.link href={~p"/"} class="nav-logo-link">
+              <div class="nav-logo-icon">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <span class="text-xl font-bold text-gray-900 hidden sm:block">{gettext("Kanban Board")}</span>
+              <span class="nav-logo-text">{gettext("Kanban Board")}</span>
             </.link>
           </div>
 
-          <!-- Navigation Links -->
-          <div class="flex items-center gap-4">
+          <div class="nav-links">
             <%= if @current_scope do %>
-              <span class="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 bg-gray-100 rounded-lg">
+              <span class="nav-user-badge">
                 {@current_scope.user.email}
               </span>
-              <.link
-                href={~p"/users/settings"}
-                class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-              >
+              <.link href={~p"/users/settings"} class="nav-link">
                 {gettext("Settings")}
               </.link>
-              <.link
-                href={~p"/users/log-out"}
-                method="delete"
-                class="text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
-              >
+              <.link href={~p"/users/log-out"} method="delete" class="nav-btn-primary">
                 {gettext("Log out")}
               </.link>
             <% else %>
-              <.link
-                href={~p"/users/log-in"}
-                class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-              >
+              <.link href={~p"/users/log-in"} class="nav-link">
                 {gettext("Log in")}
               </.link>
-              <.link
-                href={~p"/users/register"}
-                class="text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
-              >
+              <.link href={~p"/users/register"} class="nav-btn-secondary">
                 {gettext("Get Started")}
               </.link>
             <% end %>
 
-            <!-- Language Switcher -->
-            <div class="relative flex items-center gap-2 border-l border-gray-300 pl-4">
+            <div class="lang-switcher">
               <%= if Gettext.get_locale(KanbanWeb.Gettext) == "en" do %>
                 <form action={~p"/locale/fr"} method="post">
                   <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                  <button
-                    type="submit"
-                    class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
-                    title="Français"
-                  >
+                  <button type="submit" class="lang-btn" title="Français">
                     <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
                       <path fill="#002654" d="M0 0h213.3v480H0z"/>
                       <path fill="#FFF" d="M213.3 0h213.4v480H213.3z"/>
@@ -102,11 +81,7 @@
               <% else %>
                 <form action={~p"/locale/en"} method="post">
                   <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-                  <button
-                    type="submit"
-                    class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
-                    title="English"
-                  >
+                  <button type="submit" class="lang-btn" title="English">
                     <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
                       <path fill="#012169" d="M0 0h640v480H0z"/>
                       <path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0z"/>
@@ -124,7 +99,6 @@
       </div>
     </nav>
 
-    <!-- Main Content -->
     {@inner_content}
   </body>
 </html>
