@@ -10,18 +10,18 @@
           <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
           </svg>
-          Professional Task Management
+          {gettext("Professional Task Management")}
         </div>
 
         <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-          Organize Your Work
+          {gettext("Organize Your Work")}
           <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800">
-            With Kanban Boards
+            {gettext("With Kanban Boards")}
           </span>
         </h1>
 
         <p class="text-lg sm:text-xl text-gray-600 leading-relaxed">
-          Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive.
+          {gettext("Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive.")}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4">
@@ -29,7 +29,7 @@
             href={~p"/users/register"}
             class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
           >
-            Get Started Free
+            {gettext("Get Started Free")}
             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -39,7 +39,7 @@
             href={~p"/users/log-in"}
             class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all"
           >
-            Sign In
+            {gettext("Sign In")}
           </.link>
         </div>
       </div>
@@ -51,7 +51,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl p-6 space-y-4">
           <!-- Mock Kanban Board -->
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">Project Board</h3>
+            <h3 class="text-lg font-bold text-gray-900">{gettext("Project Board")}</h3>
             <div class="flex gap-1">
               <div class="w-3 h-3 bg-red-400 rounded-full"></div>
               <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
@@ -62,7 +62,7 @@
           <div class="grid grid-cols-3 gap-3">
             <!-- To Do Column -->
             <div class="bg-gray-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">To Do</div>
+              <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">{gettext("To Do")}</div>
               <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                 <div class="h-2 bg-blue-500 rounded w-3/4 mb-2"></div>
                 <div class="h-2 bg-gray-200 rounded w-full"></div>
@@ -75,7 +75,7 @@
 
             <!-- In Progress Column -->
             <div class="bg-blue-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-blue-600 uppercase tracking-wide">In Progress</div>
+              <div class="text-xs font-semibold text-blue-600 uppercase tracking-wide">{gettext("In Progress")}</div>
               <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm">
                 <div class="h-2 bg-orange-500 rounded w-2/3 mb-2"></div>
                 <div class="h-2 bg-gray-200 rounded w-full"></div>
@@ -84,7 +84,7 @@
 
             <!-- Done Column -->
             <div class="bg-green-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-green-600 uppercase tracking-wide">Done</div>
+              <div class="text-xs font-semibold text-green-600 uppercase tracking-wide">{gettext("Done")}</div>
               <div class="bg-white p-3 rounded-lg border border-green-200 shadow-sm opacity-75">
                 <div class="h-2 bg-green-500 rounded w-full mb-2"></div>
                 <div class="h-2 bg-gray-200 rounded w-3/4"></div>
@@ -106,10 +106,10 @@
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-12">
       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-        Everything You Need to Stay Organized
+        {gettext("Everything You Need to Stay Organized")}
       </h2>
       <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-        Simple, powerful features designed for modern teams
+        {gettext("Simple, powerful features designed for modern teams")}
       </p>
     </div>
 
@@ -121,8 +121,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Multiple Boards</h3>
-        <p class="text-gray-600">Create unlimited boards for different projects and teams.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Multiple Boards")}</h3>
+        <p class="text-gray-600">{gettext("Create unlimited boards for different projects and teams.")}</p>
       </div>
 
       <!-- Feature 2 -->
@@ -132,8 +132,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Custom Columns</h3>
-        <p class="text-gray-600">Organize tasks with customizable columns that fit your workflow.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Custom Columns")}</h3>
+        <p class="text-gray-600">{gettext("Organize tasks with customizable columns that fit your workflow.")}</p>
       </div>
 
       <!-- Feature 3 -->
@@ -143,8 +143,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Drag & Drop</h3>
-        <p class="text-gray-600">Effortlessly move tasks between columns with drag and drop.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Drag & Drop")}</h3>
+        <p class="text-gray-600">{gettext("Effortlessly move tasks between columns with drag and drop.")}</p>
       </div>
     </div>
   </div>

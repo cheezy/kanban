@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang={Gettext.get_locale(KanbanWeb.Gettext)} class="h-full">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Kanban" suffix=" · Task Management">
+    <.live_title default={gettext("Kanban")} suffix={gettext(" · Task Management")}>
       {assigns[:page_title]}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
@@ -43,7 +43,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <span class="text-xl font-bold text-gray-900 hidden sm:block">Kanban Board</span>
+              <span class="text-xl font-bold text-gray-900 hidden sm:block">{gettext("Kanban Board")}</span>
             </.link>
           </div>
 
@@ -57,29 +57,68 @@
                 href={~p"/users/settings"}
                 class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
               >
-                Settings
+                {gettext("Settings")}
               </.link>
               <.link
                 href={~p"/users/log-out"}
                 method="delete"
                 class="text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
               >
-                Log out
+                {gettext("Log out")}
               </.link>
             <% else %>
               <.link
                 href={~p"/users/log-in"}
                 class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
               >
-                Log in
+                {gettext("Log in")}
               </.link>
               <.link
                 href={~p"/users/register"}
                 class="text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
               >
-                Get Started
+                {gettext("Get Started")}
               </.link>
             <% end %>
+
+            <!-- Language Switcher -->
+            <div class="relative flex items-center gap-2 border-l border-gray-300 pl-4">
+              <%= if Gettext.get_locale(KanbanWeb.Gettext) == "en" do %>
+                <form action={~p"/locale/fr"} method="post">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button
+                    type="submit"
+                    class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
+                    title="Français"
+                  >
+                    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+                      <path fill="#002654" d="M0 0h213.3v480H0z"/>
+                      <path fill="#FFF" d="M213.3 0h213.4v480H213.3z"/>
+                      <path fill="#CE1126" d="M426.7 0H640v480H426.7z"/>
+                    </svg>
+                    <span class="hidden sm:inline">FR</span>
+                  </button>
+                </form>
+              <% else %>
+                <form action={~p"/locale/en"} method="post">
+                  <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                  <button
+                    type="submit"
+                    class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
+                    title="English"
+                  >
+                    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+                      <path fill="#012169" d="M0 0h640v480H0z"/>
+                      <path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0z"/>
+                      <path fill="#C8102E" d="m424 281 216 159v40L369 281zm-184 20 6 35L54 480H0zM640 0v3L391 191l2-44L590 0zM0 0l239 176h-60L0 42z"/>
+                      <path fill="#FFF" d="M241 0v480h160V0zM0 160v160h640V160z"/>
+                      <path fill="#C8102E" d="M0 193v96h640v-96zM273 0v480h96V0z"/>
+                    </svg>
+                    <span class="hidden sm:inline">EN</span>
+                  </button>
+                </form>
+              <% end %>
+            </div>
           </div>
         </div>
       </div>

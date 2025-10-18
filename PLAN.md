@@ -99,13 +99,13 @@ tasks
   - [X] Customize header/navigation
   - [X] Apply consistent styling with TailwindCSS
   - [X] Create a custom home page design
-- [ ] **Add internationalization (i18n) support**
-  - [ ] Install and configure Gettext for multi-language support
-  - [ ] Extract all user-facing strings to translation files
-  - [ ] Add English translations (default)
-  - [ ] Add French translations
-  - [ ] Add language switcher component
-  - [ ] Test language switching functionality
+- [X] **Add internationalization (i18n) support**
+  - [X] Install and configure Gettext for multi-language support
+  - [X] Extract all user-facing strings to translation files
+  - [X] Add English translations (default)
+  - [X] Add French translations
+  - [X] Add language switcher component
+  - [X] Test language switching functionality
 - [X] **Quality Checks (Phase 2 - UI Polish)**:
   - [X] Run `mix test` and ensure all tests pass
   - [X] Run `mix credo --strict` and fix any issues

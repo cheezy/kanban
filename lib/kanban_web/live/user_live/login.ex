@@ -16,19 +16,19 @@ defmodule KanbanWeb.UserLive.Login do
               </svg>
             </div>
             <.header>
-              <p class="text-2xl font-bold text-gray-900">Welcome Back</p>
+              <p class="text-2xl font-bold text-gray-900">{gettext("Welcome Back")}</p>
               <:subtitle>
                 <%= if @current_scope do %>
-                  <p class="text-gray-600 mt-2">You need to reauthenticate to perform sensitive actions on your account.</p>
+                  <p class="text-gray-600 mt-2">{gettext("You need to reauthenticate to perform sensitive actions on your account.")}</p>
                 <% else %>
                   <p class="text-gray-600 mt-2">
-                    Don't have an account?
+                    {gettext("Don't have an account?")}
                     <.link
                       navigate={~p"/users/register"}
                       class="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
                       phx-no-format
-                    >Sign up</.link>
-                    for free.
+                    >{gettext("Sign up")}</.link>
+                    {gettext("for free.")}
                   </p>
                 <% end %>
               </:subtitle>
@@ -38,9 +38,9 @@ defmodule KanbanWeb.UserLive.Login do
         <div :if={local_mail_adapter?()} class="alert alert-info">
           <.icon name="hero-information-circle" class="size-6 shrink-0" />
           <div>
-            <p>You are running the local mail adapter.</p>
+            <p>{gettext("You are running the local mail adapter.")}</p>
             <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
+              {gettext("To see sent emails, visit")} <.link href="/dev/mailbox" class="underline">{gettext("the mailbox page")}</.link>.
             </p>
           </div>
         </div>
@@ -56,13 +56,13 @@ defmodule KanbanWeb.UserLive.Login do
             readonly={!!@current_scope}
             field={f[:email]}
             type="email"
-            label="Email"
+            label={gettext("Email")}
             autocomplete="username"
             required
             phx-mounted={JS.focus()}
           />
           <.button class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
-            Log in with email <span aria-hidden="true">→</span>
+            {gettext("Log in with email")} <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
@@ -71,7 +71,7 @@ defmodule KanbanWeb.UserLive.Login do
             <div class="w-full border-t border-gray-300"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-4 bg-white text-gray-500">or</span>
+            <span class="px-4 bg-white text-gray-500">{gettext("or")}</span>
           </div>
         </div>
 
@@ -87,21 +87,21 @@ defmodule KanbanWeb.UserLive.Login do
             readonly={!!@current_scope}
             field={f[:email]}
             type="email"
-            label="Email"
+            label={gettext("Email")}
             autocomplete="username"
             required
           />
           <.input
             field={@form[:password]}
             type="password"
-            label="Password"
+            label={gettext("Password")}
             autocomplete="current-password"
           />
           <.button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all" name={@form[:remember_me].name} value="true">
-            Log in and stay logged in <span aria-hidden="true">→</span>
+            {gettext("Log in and stay logged in")} <span aria-hidden="true">→</span>
           </.button>
           <.button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg border border-gray-300 mt-2 transition-colors">
-            Log in only this time
+            {gettext("Log in only this time")}
           </.button>
         </.form>
         </div>
@@ -135,7 +135,7 @@ defmodule KanbanWeb.UserLive.Login do
     end
 
     info =
-      "If your email is in our system, you will receive instructions for logging in shortly."
+      gettext("If your email is in our system, you will receive instructions for logging in shortly.")
 
     {:noreply,
      socket
