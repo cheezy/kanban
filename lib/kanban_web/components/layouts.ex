@@ -5,6 +5,8 @@ defmodule KanbanWeb.Layouts do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.NavComponents
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers

@@ -1,107 +1,55 @@
 <Layouts.flash_group flash={@flash} />
 
-<!-- Hero Section -->
 <div class="min-h-screen flex items-center">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
     <div class="grid lg:grid-cols-2 gap-12 items-center">
-      <!-- Left Column: Content -->
       <div class="space-y-8">
-        <div class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+        <.hero_badge>
           <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
           </svg>
           {gettext("Professional Task Management")}
-        </div>
+        </.hero_badge>
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+        <.hero_title>
           {gettext("Organize Your Work")}
-          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800">
+          <.hero_title_gradient>
             {gettext("With Kanban Boards")}
-          </span>
-        </h1>
+          </.hero_title_gradient>
+        </.hero_title>
 
         <p class="text-lg sm:text-xl text-gray-600 leading-relaxed">
           {gettext("Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive.")}
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4">
-          <.link
-            href={~p"/users/register"}
-            class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
-          >
+          <.btn_primary href={~p"/users/register"}>
             {gettext("Get Started Free")}
             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
-          </.link>
+          </.btn_primary>
 
-          <.link
-            href={~p"/users/log-in"}
-            class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all"
-          >
+          <.btn_outline href={~p"/users/log-in"}>
             {gettext("Sign In")}
-          </.link>
+          </.btn_outline>
         </div>
       </div>
 
-      <!-- Right Column: Visual -->
       <div class="relative hidden lg:block">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-orange-400 rounded-3xl blur-3xl opacity-20 animate-pulse">
         </div>
-        <div class="relative bg-white rounded-2xl shadow-2xl p-6 space-y-4">
-          <!-- Mock Kanban Board -->
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">{gettext("Project Board")}</h3>
-            <div class="flex gap-1">
-              <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-              <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
-              <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-3">
-            <!-- To Do Column -->
-            <div class="bg-gray-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">{gettext("To Do")}</div>
-              <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="h-2 bg-blue-500 rounded w-3/4 mb-2"></div>
-                <div class="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-              <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                <div class="h-2 bg-blue-500 rounded w-1/2 mb-2"></div>
-                <div class="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-
-            <!-- In Progress Column -->
-            <div class="bg-blue-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-blue-600 uppercase tracking-wide">{gettext("In Progress")}</div>
-              <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm">
-                <div class="h-2 bg-orange-500 rounded w-2/3 mb-2"></div>
-                <div class="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-
-            <!-- Done Column -->
-            <div class="bg-green-50 rounded-lg p-3 space-y-2">
-              <div class="text-xs font-semibold text-green-600 uppercase tracking-wide">{gettext("Done")}</div>
-              <div class="bg-white p-3 rounded-lg border border-green-200 shadow-sm opacity-75">
-                <div class="h-2 bg-green-500 rounded w-full mb-2"></div>
-                <div class="h-2 bg-gray-200 rounded w-3/4"></div>
-              </div>
-              <div class="bg-white p-3 rounded-lg border border-green-200 shadow-sm opacity-75">
-                <div class="h-2 bg-green-500 rounded w-5/6 mb-2"></div>
-                <div class="h-2 bg-gray-200 rounded w-2/3"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <.mock_board
+          title={gettext("Project Board")}
+          todo_label={gettext("To Do")}
+          progress_label={gettext("In Progress")}
+          done_label={gettext("Done")}
+        />
       </div>
     </div>
   </div>
 </div>
 
-<!-- Features Section -->
 <div class="bg-white py-16 sm:py-24 border-t border-gray-200">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-12">
@@ -114,38 +62,41 @@
     </div>
 
     <div class="grid md:grid-cols-3 gap-8 mt-12">
-      <!-- Feature 1 -->
-      <div class="text-center p-6 rounded-xl hover:bg-blue-50 transition-colors">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl mb-4 shadow-lg">
+      <.feature_card
+        icon_color="blue"
+        title={gettext("Multiple Boards")}
+        description={gettext("Create unlimited boards for different projects and teams.")}
+      >
+        <:icon>
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Multiple Boards")}</h3>
-        <p class="text-gray-600">{gettext("Create unlimited boards for different projects and teams.")}</p>
-      </div>
+        </:icon>
+      </.feature_card>
 
-      <!-- Feature 2 -->
-      <div class="text-center p-6 rounded-xl hover:bg-orange-50 transition-colors">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl mb-4 shadow-lg">
+      <.feature_card
+        icon_color="orange"
+        title={gettext("Custom Columns")}
+        description={gettext("Organize tasks with customizable columns that fit your workflow.")}
+      >
+        <:icon>
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Custom Columns")}</h3>
-        <p class="text-gray-600">{gettext("Organize tasks with customizable columns that fit your workflow.")}</p>
-      </div>
+        </:icon>
+      </.feature_card>
 
-      <!-- Feature 3 -->
-      <div class="text-center p-6 rounded-xl hover:bg-blue-50 transition-colors">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl mb-4 shadow-lg">
+      <.feature_card
+        icon_color="blue-alt"
+        title={gettext("Drag & Drop")}
+        description={gettext("Effortlessly move tasks between columns with drag and drop.")}
+      >
+        <:icon>
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
           </svg>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">{gettext("Drag & Drop")}</h3>
-        <p class="text-gray-600">{gettext("Effortlessly move tasks between columns with drag and drop.")}</p>
-      </div>
+        </:icon>
+      </.feature_card>
     </div>
   </div>
 </div>
