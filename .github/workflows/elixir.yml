@@ -117,7 +117,7 @@ jobs:
 
     # Step: Execute the tests with coverage
     - name: Run Tests
-      run: mix test --trace --cover
+      run: mix test --cover
 
     # Step: Security Analysis
     - name: Run Sobelow Security Analysis
