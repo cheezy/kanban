@@ -40,7 +40,7 @@ defmodule KanbanWeb.HomeComponents do
         @class
       ]}
     >
-      <%= render_slot(@inner_block) %>
+      { render_slot(@inner_block) }
     </.link>
     """
   end
@@ -105,7 +105,7 @@ attr :class, :string, default: ""
 def my_component(assigns) do
   ~H"""
   <div class={["base-classes", @class]}>
-    <%= render_slot(@inner_block) %>
+    { render_slot(@inner_block) }
   </div>
   """
 end
@@ -125,7 +125,7 @@ def card(assigns) do
     @color == "blue" && "bg-blue-50 text-blue-900",
     @color == "red" && "bg-red-50 text-red-900"
   ]}>
-    <%= render_slot(@inner_block) %>
+    { render_slot(@inner_block) }
   </div>
   """
 end
