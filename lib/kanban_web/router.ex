@@ -9,7 +9,12 @@ defmodule KanbanWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {KanbanWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers, %{"content-security-policy" => "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"}
+
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" =>
+        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+    }
+
     plug :fetch_current_scope_for_user
     plug KanbanWeb.Plugs.Locale, "en"
   end

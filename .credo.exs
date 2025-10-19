@@ -6,9 +6,9 @@
       checks: [
         # Additional and reconfigured checks
         {Credo.Check.Design.AliasUsage,
-          if_nested_deeper_than: 3,
-          if_called_more_often_than: 1,
-          files: %{excluded: ["test/support/data_case.ex"]}},
+         if_nested_deeper_than: 3,
+         if_called_more_often_than: 1,
+         files: %{excluded: ["test/support/data_case.ex"]}},
         {Credo.Check.Readability.AliasAs, []},
         {Credo.Check.Readability.MultiAlias, []},
         {Credo.Check.Readability.NestedFunctionCalls, []},

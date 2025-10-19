@@ -13,7 +13,12 @@ defmodule KanbanWeb.UserLive.Registration do
           <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg mb-4">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                />
               </svg>
             </div>
             <.header>
@@ -21,7 +26,10 @@ defmodule KanbanWeb.UserLive.Registration do
               <:subtitle>
                 <p class="text-gray-600 mt-2">
                   {gettext("Already registered?")}
-                  <.link navigate={~p"/users/log-in"} class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                  <.link
+                    navigate={~p"/users/log-in"}
+                    class="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                  >
                     {gettext("Log in")}
                   </.link>
                   {gettext("to your account.")}
@@ -40,7 +48,10 @@ defmodule KanbanWeb.UserLive.Registration do
               phx-mounted={JS.focus()}
             />
 
-            <.button phx-disable-with={gettext("Creating account...")} class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-6">
+            <.button
+              phx-disable-with={gettext("Creating account...")}
+              class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-6"
+            >
               {gettext("Create an account")}
             </.button>
           </.form>
@@ -76,7 +87,9 @@ defmodule KanbanWeb.UserLive.Registration do
          socket
          |> put_flash(
            :info,
-           gettext("An email was sent to %{email}, please access it to confirm your account.", email: user.email)
+           gettext("An email was sent to %{email}, please access it to confirm your account.",
+             email: user.email
+           )
          )
          |> push_navigate(to: ~p"/users/log-in")}
 

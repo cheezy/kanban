@@ -24,7 +24,9 @@ defmodule KanbanWeb.UserLive.Settings do
           autocomplete="username"
           required
         />
-        <.button variant="primary" phx-disable-with={gettext("Changing...")}>{gettext("Change Email")}</.button>
+        <.button variant="primary" phx-disable-with={gettext("Changing...")}>
+          {gettext("Change Email")}
+        </.button>
       </.form>
 
       <div class="divider" />

@@ -30,7 +30,10 @@ defmodule KanbanWeb.UserLive.Confirmation do
           >
             {gettext("Confirm and stay logged in")}
           </.button>
-          <.button phx-disable-with={gettext("Confirming...")} class="btn btn-primary btn-soft w-full mt-2">
+          <.button
+            phx-disable-with={gettext("Confirming...")}
+            class="btn btn-primary btn-soft w-full mt-2"
+          >
             {gettext("Confirm and log in only this time")}
           </.button>
         </.form>
@@ -58,7 +61,10 @@ defmodule KanbanWeb.UserLive.Confirmation do
             >
               {gettext("Keep me logged in on this device")}
             </.button>
-            <.button phx-disable-with={gettext("Logging in...")} class="btn btn-primary btn-soft w-full mt-2">
+            <.button
+              phx-disable-with={gettext("Logging in...")}
+              class="btn btn-primary btn-soft w-full mt-2"
+            >
               {gettext("Log me in only this time")}
             </.button>
           <% end %>

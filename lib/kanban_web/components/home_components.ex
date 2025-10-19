@@ -11,7 +11,7 @@ defmodule KanbanWeb.HomeComponents do
       "rounded-full text-sm font-medium",
       @class
     ]}>
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </div>
     """
   end
@@ -25,7 +25,7 @@ defmodule KanbanWeb.HomeComponents do
       "text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight",
       @class
     ]}>
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </h1>
     """
   end
@@ -39,7 +39,7 @@ defmodule KanbanWeb.HomeComponents do
       "block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800",
       @class
     ]}>
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </span>
     """
   end
@@ -60,7 +60,7 @@ defmodule KanbanWeb.HomeComponents do
         @class
       ]}
     >
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </.link>
     """
   end
@@ -80,7 +80,7 @@ defmodule KanbanWeb.HomeComponents do
         @class
       ]}
     >
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </.link>
     """
   end
@@ -155,7 +155,7 @@ defmodule KanbanWeb.HomeComponents do
       ]}>
         {@header}
       </div>
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </div>
     """
   end
@@ -171,7 +171,7 @@ defmodule KanbanWeb.HomeComponents do
       @color == "blue" && "border border-blue-200",
       @color == "green" && "border border-green-200 opacity-75"
     ]}>
-      <%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </div>
     """
   end
@@ -195,7 +195,7 @@ defmodule KanbanWeb.HomeComponents do
         @icon_color == "orange" && "bg-gradient-to-br from-orange-500 to-orange-600",
         @icon_color == "blue-alt" && "bg-gradient-to-br from-blue-600 to-blue-700"
       ]}>
-        <%= render_slot(@icon) %>
+        {render_slot(@icon)}
       </div>
       <h3 class="text-xl font-bold text-gray-900 mb-2">{@title}</h3>
       <p class="text-gray-600">{@description}</p>
