@@ -113,29 +113,29 @@ tasks
 
 #### Phase 3: Board Management (Schema, Context & UI)
 
-- [ ] **Generate Board schema and migration**
-  - [ ] Create migration: `mix ecto.gen.migration create_boards`
-  - [ ] Define `boards` table with fields: name (string), description (text), user_id (references :users)
-  - [ ] Add foreign key constraint with `on_delete: :delete_all`
-  - [ ] Add index on user_id
-  - [ ] Run migration: `mix ecto.migrate`
-- [ ] **Create Board schema**
-  - [ ] Create `lib/kanban/boards/board.ex` with Ecto schema
-  - [ ] Define fields: `:name`, `:description`
-  - [ ] Add `belongs_to :user, Kanban.Accounts.User`
-  - [ ] Create changeset function with validations
-- [ ] **Create Boards context**
-  - [ ] Create `lib/kanban/boards.ex` context with:
-    - [ ] `list_boards(user)` - list all boards for a user
-    - [ ] `get_board!(id, user)` - get board with authorization check
-    - [ ] `create_board(user, attrs)` - create board for user
-    - [ ] `update_board(board, attrs)` - update board
-    - [ ] `delete_board(board)` - delete board
-- [ ] **Write Board context tests**
-  - [ ] Create `test/kanban/boards_test.exs`:
-    - [ ] Test all CRUD operations
-    - [ ] Test user scoping (users can't access other users' boards)
-    - [ ] Test validations
+- [X] **Generate Board schema and migration**
+  - [X] Create migration: `mix ecto.gen.migration create_boards`
+  - [X] Define `boards` table with fields: name (string), description (text), user_id (references :users)
+  - [X] Add foreign key constraint with `on_delete: :delete_all`
+  - [X] Add index on user_id
+  - [X] Run migration: `mix ecto.migrate`
+- [X] **Create Board schema**
+  - [X] Create `lib/kanban/boards/board.ex` with Ecto schema
+  - [X] Define fields: `:name`, `:description`
+  - [X] Add `belongs_to :user, Kanban.Accounts.User`
+  - [X] Create changeset function with validations
+- [X] **Create Boards context**
+  - [X] Create `lib/kanban/boards.ex` context with:
+    - [X] `list_boards(user)` - list all boards for a user
+    - [X] `get_board!(id, user)` - get board with authorization check
+    - [X] `create_board(user, attrs)` - create board for user
+    - [X] `update_board(board, attrs)` - update board
+    - [X] `delete_board(board)` - delete board
+- [X] **Write Board context tests**
+  - [X] Create `test/kanban/boards_test.exs`:
+    - [X] Test all CRUD operations
+    - [X] Test user scoping (users can't access other users' boards)
+    - [X] Test validations
 - [ ] **Create board list LiveView**
   - [ ] Create `lib/kanban_web/live/board_live/index.ex`
   - [ ] Implement `mount/3` to load user's boards

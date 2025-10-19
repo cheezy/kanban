@@ -105,14 +105,18 @@ defmodule Kanban.MixProject do
       ignore_modules: [
         Kanban.AccountsFixtures,
         Kanban.Application,
+        Kanban.BoardsFixtures,
         Kanban.DataCase,
+        Kanban.Release,
         Kanban.Repo,
         KanbanWeb.ConnCase,
         KanbanWeb.CoreComponents,
         KanbanWeb.ErrorHTML,
         KanbanWeb.ErrorJSON,
         KanbanWeb.Layouts,
+        KanbanWeb.PageController,
         KanbanWeb.PageHTML,
+        KanbanWeb.Plugs.Locale,
         KanbanWeb.Router,
         KanbanWeb.Telemetry
       ]
