@@ -64,6 +64,12 @@ defmodule KanbanWeb.Router do
       ] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+
+      live "/boards", BoardLive.Index, :index
+      live "/boards/new", BoardLive.Form, :new
+      live "/boards/:id/edit", BoardLive.Form, :edit
+
+      live "/boards/:id", BoardLive.Show, :show
     end
 
     post "/users/update-password", UserSessionController, :update_password

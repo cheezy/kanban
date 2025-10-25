@@ -1,0 +1,17 @@
+<.header>
+  <%= @page_title %>
+  <:subtitle>{gettext("Use this form to manage board records in your database.")}</:subtitle>
+</.header>
+
+<div class="mt-8 max-w-2xl">
+  <.form :let={f} for={@form} id="board-form" phx-change="validate" phx-submit="save">
+    <.input field={f[:name]} type="text" label={gettext("Name")} />
+    <.input field={f[:description]} type="textarea" label={gettext("Description")} />
+    <div class="mt-6 flex items-center gap-4">
+      <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Board")}</.button>
+      <.link navigate={~p"/boards"} class="text-sm text-gray-600 hover:text-gray-900">
+        {gettext("Cancel")}
+      </.link>
+    </div>
+  </.form>
+</div>

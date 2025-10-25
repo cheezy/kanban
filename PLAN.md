@@ -136,41 +136,41 @@ tasks
     - [X] Test all CRUD operations
     - [X] Test user scoping (users can't access other users' boards)
     - [X] Test validations
-- [ ] **Create board list LiveView**
-  - [ ] Create `lib/kanban_web/live/board_live/index.ex`
-  - [ ] Implement `mount/3` to load user's boards
-  - [ ] Use streams for board collection
-  - [ ] Create template with board cards
-  - [ ] Add "New Board" button
-  - [ ] Add edit/delete actions for each board
-- [ ] **Create board show LiveView**
-  - [ ] Create `lib/kanban_web/live/board_live/show.ex`
-  - [ ] Load board with authorization check
-  - [ ] Display board name and description
-  - [ ] Prepare structure for columns (empty state for now)
-- [ ] **Create board form component**
-  - [ ] Create `lib/kanban_web/live/board_live/form_component.ex`
-  - [ ] Build form for creating/editing boards
-  - [ ] Add validation and error display
-  - [ ] Handle form submission
-- [ ] **Add routes**
-  - [ ] Add routes in `lib/kanban_web/router.ex` under authenticated scope
-  - [ ] `live "/boards", BoardLive.Index, :index`
-  - [ ] `live "/boards/new", BoardLive.Index, :new`
-  - [ ] `live "/boards/:id/edit", BoardLive.Index, :edit`
-  - [ ] `live "/boards/:id", BoardLive.Show, :show`
-- [ ] **Write Board LiveView tests**
-  - [ ] Create `test/kanban_web/live/board_live_test.exs`
-  - [ ] Test board list rendering
-  - [ ] Test creating new board
-  - [ ] Test editing board
-  - [ ] Test deleting board
-  - [ ] Test authorization (can't access other users' boards)
-- [ ] **Quality Checks (Phase 3)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Run `mix sobelow --config` and fix any security issues
+- [X] **Create board list LiveView**
+  - [X] Create `lib/kanban_web/live/board_live/index.ex`
+  - [X] Implement `mount/3` to load user's boards
+  - [X] Use streams for board collection
+  - [X] Create template with board cards
+  - [X] Add "New Board" button
+  - [X] Add edit/delete actions for each board
+- [X] **Create board show LiveView**
+  - [X] Create `lib/kanban_web/live/board_live/show.ex`
+  - [X] Load board with authorization check
+  - [X] Display board name and description
+  - [X] Prepare structure for columns (empty state for now)
+- [X] **Create board form LiveView**
+  - [X] Create `lib/kanban_web/live/board_live/form.ex`
+  - [X] Build form for creating/editing boards
+  - [X] Add validation and error display
+  - [X] Handle form submission
+- [X] **Add routes**
+  - [X] Add routes in `lib/kanban_web/router.ex` under authenticated scope
+  - [X] `live "/boards", BoardLive.Index, :index`
+  - [X] `live "/boards/new", BoardLive.Form, :new`
+  - [X] `live "/boards/:id/edit", BoardLive.Form, :edit`
+  - [X] `live "/boards/:id", BoardLive.Show, :show`
+- [X] **Write Board LiveView tests**
+  - [X] Create `test/kanban_web/live/board_live_test.exs`
+  - [X] Test board list rendering
+  - [X] Test creating new board
+  - [X] Test editing board
+  - [X] Test deleting board
+  - [X] Test authorization (can't access other users' boards)
+- [X] **Quality Checks (Phase 3)**:
+  - [X] Run `mix test` and ensure all tests pass
+  - [X] Run `mix test --cover` and verify coverage meets threshold
+  - [X] Run `mix credo --strict` and fix any issues
+  - [X] Run `mix sobelow --config` and fix any security issues
 
 #### Phase 4: Column Management (Schema, Context & UI)
 
