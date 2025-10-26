@@ -1,45 +1,49 @@
-<.header>
-  {gettext("Listing Boards")}
-  <:actions>
-    <.link navigate={~p"/boards/new"}>
-      <.button>{gettext("New Board")}</.button>
-    </.link>
-  </:actions>
-</.header>
-
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-  <div
-    :for={{id, board} <- @streams.boards}
-    id={id}
-    class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200"
-  >
-    <div class="flex justify-between items-start mb-4">
-      <h3 class="text-xl font-semibold text-gray-900">
-        <%= board.name %>
-      </h3>
-      <div class="flex gap-2">
-        <.link navigate={~p"/boards/#{board}/edit"} class="text-blue-600 hover:text-blue-800">
-          <.icon name="hero-pencil-square" class="h-5 w-5" />
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      {gettext("Listing Boards")}
+      <:actions>
+        <.link navigate={~p"/boards/new"}>
+          <.button>{gettext("New Board")}</.button>
         </.link>
+      </:actions>
+    </.header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      <div
+        :for={{id, board} <- @streams.boards}
+        id={id}
+        class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200"
+      >
+        <div class="flex justify-between items-start mb-4">
+          <h3 class="text-xl font-semibold text-gray-900">
+            <%= board.name %>
+          </h3>
+          <div class="flex gap-2">
+            <.link navigate={~p"/boards/#{board}/edit"} class="text-blue-600 hover:text-blue-800">
+              <.icon name="hero-pencil-square" class="h-5 w-5" />
+            </.link>
+            <.link
+              phx-click={JS.push("delete", value: %{id: board.id}) |> hide("##{id}")}
+              data-confirm={gettext("Are you sure you want to delete this board?")}
+              class="text-red-600 hover:text-red-800"
+            >
+              <.icon name="hero-trash" class="h-5 w-5" />
+            </.link>
+          </div>
+        </div>
+
+        <p :if={board.description} class="text-gray-600 mb-4">
+          <%= board.description %>
+        </p>
+
         <.link
-          phx-click={JS.push("delete", value: %{id: board.id}) |> hide("##{id}")}
-          data-confirm={gettext("Are you sure you want to delete this board?")}
-          class="text-red-600 hover:text-red-800"
+          navigate={~p"/boards/#{board}"}
+          class="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
         >
-          <.icon name="hero-trash" class="h-5 w-5" />
+          {gettext("View Board")} →
         </.link>
       </div>
     </div>
-
-    <p :if={board.description} class="text-gray-600 mb-4">
-      <%= board.description %>
-    </p>
-
-    <.link
-      navigate={~p"/boards/#{board}"}
-      class="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
-    >
-      {gettext("View Board")} →
-    </.link>
   </div>
-</div>
+</Layouts.app>

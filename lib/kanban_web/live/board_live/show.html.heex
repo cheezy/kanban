@@ -1,25 +1,29 @@
-<.header>
-  <%= @board.name %>
-  <:subtitle><%= @board.description %></:subtitle>
-  <:actions>
-    <.link navigate={~p"/boards/#{@board}/edit"}>
-      <.button>{gettext("Edit board")}</.button>
-    </.link>
-    <.link navigate={~p"/boards"}>
-      <.button>{gettext("Back to boards")}</.button>
-    </.link>
-  </:actions>
-</.header>
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      <%= @board.name %>
+      <:subtitle><%= @board.description %></:subtitle>
+      <:actions>
+        <.link navigate={~p"/boards/#{@board}/edit"}>
+          <.button>{gettext("Edit board")}</.button>
+        </.link>
+        <.link navigate={~p"/boards"}>
+          <.button>{gettext("Back to boards")}</.button>
+        </.link>
+      </:actions>
+    </.header>
 
-<div class="mt-8 p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-  <div class="text-center">
-    <.icon name="hero-queue-list" class="mx-auto h-12 w-12 text-gray-400" />
-    <h3 class="mt-2 text-sm font-semibold text-gray-900">{gettext("No columns yet")}</h3>
-    <p class="mt-1 text-sm text-gray-500">
-      {gettext("Get started by creating columns for your board.")}
-    </p>
-    <div class="mt-6">
-      <p class="text-sm text-gray-500">{gettext("Columns will be added in Phase 4")}</p>
+    <div class="mt-8 p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+      <div class="text-center">
+        <.icon name="hero-queue-list" class="mx-auto h-12 w-12 text-gray-400" />
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">{gettext("No columns yet")}</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {gettext("Get started by creating columns for your board.")}
+        </p>
+        <div class="mt-6">
+          <p class="text-sm text-gray-500">{gettext("Columns will be added in Phase 4")}</p>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</Layouts.app>
