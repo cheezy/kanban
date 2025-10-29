@@ -4,6 +4,9 @@
       <%= @board.name %>
       <:subtitle><%= @board.description %></:subtitle>
       <:actions>
+        <.link patch={~p"/boards/#{@board}/columns/new"}>
+          <.button>{gettext("New Column")}</.button>
+        </.link>
         <.link navigate={~p"/boards/#{@board}/edit"}>
           <.button>{gettext("Edit board")}</.button>
         </.link>
@@ -13,17 +16,81 @@
       </:actions>
     </.header>
 
-    <div class="mt-8 p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-      <div class="text-center">
-        <.icon name="hero-queue-list" class="mx-auto h-12 w-12 text-gray-400" />
-        <h3 class="mt-2 text-sm font-semibold text-gray-900">{gettext("No columns yet")}</h3>
-        <p class="mt-1 text-sm text-gray-500">
-          {gettext("Get started by creating columns for your board.")}
-        </p>
-        <div class="mt-6">
-          <p class="text-sm text-gray-500">{gettext("Columns will be added in Phase 4")}</p>
+    <div class="mt-8">
+      <%= if !@has_columns do %>
+        <div class="p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <div class="text-center">
+            <.icon name="hero-queue-list" class="mx-auto h-12 w-12 text-gray-400" />
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">{gettext("No columns yet")}</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              {gettext("Get started by creating columns for your board.")}
+            </p>
+            <div class="mt-6">
+              <.link patch={~p"/boards/#{@board}/columns/new"}>
+                <.button>{gettext("Create your first column")}</.button>
+              </.link>
+            </div>
+          </div>
         </div>
-      </div>
+      <% else %>
+        <div class="flex gap-4 overflow-x-auto pb-4" id="columns" phx-update="stream">
+          <div
+            :for={{id, column} <- @streams.columns}
+            id={id}
+            class="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
+                <div class="mt-1 flex items-center gap-2">
+                  <span class="text-sm text-gray-500">
+                    {gettext("Tasks")}: <span class="font-medium">0</span>
+                  </span>
+                  <%= if column.wip_limit > 0 do %>
+                    <span class={[
+                      "text-sm px-2 py-0.5 rounded",
+                      "bg-blue-100 text-blue-800"
+                    ]}>
+                      {gettext("WIP limit")}: <%= column.wip_limit %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <.link patch={~p"/boards/#{@board}/columns/#{column}/edit"}>
+                  <.icon name="hero-pencil-solid" class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </.link>
+                <.link
+                  phx-click={JS.push("delete_column", value: %{id: column.id})}
+                  data-confirm={gettext("Are you sure you want to delete this column?")}
+                >
+                  <.icon name="hero-trash-solid" class="h-5 w-5 text-gray-400 hover:text-red-600" />
+                </.link>
+              </div>
+            </div>
+
+            <div class="mt-4 p-4 bg-white rounded border-2 border-dashed border-gray-300 min-h-[100px]">
+              <p class="text-sm text-gray-500 text-center">
+                {gettext("Tasks will be displayed here")}
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
+
+  <%= if @live_action in [:new_column, :edit_column] do %>
+    <div class="mt-8 max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+      <.live_component
+        module={KanbanWeb.ColumnLive.FormComponent}
+        id={@live_action == :new_column && :new || "edit-#{@column.id}"}
+        title={@page_title}
+        action={@live_action}
+        board={@board}
+        column={@live_action == :edit_column && @column || %Kanban.Columns.Column{}}
+        patch={~p"/boards/#{@board}"}
+      />
+    </div>
+  <% end %>
 </Layouts.app>

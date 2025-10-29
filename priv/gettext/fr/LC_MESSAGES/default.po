@@ -315,7 +315,8 @@ msgstr "Mot de passe"
 msgid "Save Password"
 msgstr "Enregistrer le Mot de Passe"
 
-#: lib/kanban_web/live/board_live/form.html.heex:11
+#: lib/kanban_web/live/board_live/form.html.heex:13
+#: lib/kanban_web/live/column_live/form_component.ex:42
 #: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Saving..."
@@ -376,12 +377,12 @@ msgstr "la page de la boîte mail"
 msgid "to your account."
 msgstr "à votre compte."
 
-#: lib/kanban_web/live/board_live/index.html.heex:26
+#: lib/kanban_web/live/board_live/index.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce tableau ?"
 
-#: lib/kanban_web/live/board_live/show.html.heex:9
+#: lib/kanban_web/live/board_live/show.html.heex:14
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "Retour aux tableaux"
@@ -401,17 +402,12 @@ msgstr "Tableau mis à jour avec succès"
 msgid "Boards"
 msgstr "Tableaux"
 
-#: lib/kanban_web/live/board_live/form.html.heex:13
+#: lib/kanban_web/live/board_live/form.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Annuler"
 
-#: lib/kanban_web/live/board_live/show.html.heex:22
-#, elixir-autogen, elixir-format
-msgid "Columns will be added in Phase 4"
-msgstr "Les colonnes seront ajoutées dans la Phase 4"
-
-#: lib/kanban_web/live/board_live/form.html.heex:9
+#: lib/kanban_web/live/board_live/form.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "Description"
@@ -421,48 +417,129 @@ msgstr "Description"
 msgid "Edit Board"
 msgstr "Modifier le Tableau"
 
-#: lib/kanban_web/live/board_live/show.html.heex:6
+#: lib/kanban_web/live/board_live/show.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Modifier le tableau"
 
-#: lib/kanban_web/live/board_live/show.html.heex:19
+#: lib/kanban_web/live/board_live/show.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Get started by creating columns for your board."
 msgstr "Commencez par créer des colonnes pour votre tableau."
 
-#: lib/kanban_web/live/board_live/index.html.heex:2
+#: lib/kanban_web/live/board_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Listing Boards"
 msgstr "Liste des Tableaux"
 
-#: lib/kanban_web/live/board_live/form.html.heex:8
+#: lib/kanban_web/live/board_live/form.html.heex:10
+#: lib/kanban_web/live/column_live/form_component.ex:29
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr "Nom"
 
 #: lib/kanban_web/live/board_live/form.ex:29
-#: lib/kanban_web/live/board_live/index.html.heex:5
+#: lib/kanban_web/live/board_live/index.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "New Board"
 msgstr "Nouveau Tableau"
 
-#: lib/kanban_web/live/board_live/show.html.heex:17
+#: lib/kanban_web/live/board_live/show.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "No columns yet"
 msgstr "Aucune colonne pour le moment"
 
-#: lib/kanban_web/live/board_live/form.html.heex:11
+#: lib/kanban_web/live/board_live/form.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Save Board"
 msgstr "Enregistrer le Tableau"
 
-#: lib/kanban_web/live/board_live/form.html.heex:3
+#: lib/kanban_web/live/board_live/form.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Use this form to manage board records in your database."
 msgstr "Utilisez ce formulaire pour gérer les tableaux dans votre base de données."
 
-#: lib/kanban_web/live/board_live/index.html.heex:42
+#: lib/kanban_web/live/board_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "View Board"
 msgstr "Voir le Tableau"
+
+#: lib/kanban_web/live/board_live/show.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this column?"
+msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ?"
+
+#: lib/kanban_web/live/column_live/form_component.ex:95
+#, elixir-autogen, elixir-format
+msgid "Column created successfully"
+msgstr "Colonne créée avec succès"
+
+#: lib/kanban_web/live/board_live/show.ex:47
+#, elixir-autogen, elixir-format
+msgid "Column deleted successfully"
+msgstr "Colonne supprimée avec succès"
+
+#: lib/kanban_web/live/board_live/show.ex:61
+#, elixir-autogen, elixir-format
+msgid "Column saved successfully"
+msgstr "Colonne enregistrée avec succès"
+
+#: lib/kanban_web/live/column_live/form_component.ex:80
+#, elixir-autogen, elixir-format
+msgid "Column updated successfully"
+msgstr "Colonne mise à jour avec succès"
+
+#: lib/kanban_web/live/column_live/form_component.ex:14
+#, elixir-autogen, elixir-format
+msgid "Create a new column for your board"
+msgstr "Créer une nouvelle colonne pour votre tableau"
+
+#: lib/kanban_web/live/board_live/show.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Create your first column"
+msgstr "Créez votre première colonne"
+
+#: lib/kanban_web/live/board_live/show.ex:51
+#, elixir-autogen, elixir-format
+msgid "Failed to delete column"
+msgstr "Échec de la suppression de la colonne"
+
+#: lib/kanban_web/live/board_live/show.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "New Column"
+msgstr "Nouvelle Colonne"
+
+#: lib/kanban_web/live/column_live/form_component.ex:42
+#, elixir-autogen, elixir-format
+msgid "Save Column"
+msgstr "Enregistrer la Colonne"
+
+#: lib/kanban_web/live/board_live/show.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Tasks"
+msgstr "Tâches"
+
+#: lib/kanban_web/live/board_live/show.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Tasks will be displayed here"
+msgstr "Les tâches seront affichées ici"
+
+#: lib/kanban_web/live/column_live/form_component.ex:16
+#, elixir-autogen, elixir-format
+msgid "Update column details"
+msgstr "Mettre à jour les détails de la colonne"
+
+#: lib/kanban_web/live/column_live/form_component.ex:34
+#, elixir-autogen, elixir-format
+msgid "WIP Limit"
+msgstr "Limite WIP"
+
+#: lib/kanban_web/live/board_live/show.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "WIP limit"
+msgstr "Limite WIP"
+
+#: lib/kanban_web/live/column_live/form_component.ex:38
+#, elixir-autogen, elixir-format
+msgid "Work In Progress limit. Set to 0 for no limit."
+msgstr "Limite de travail en cours. Définir à 0 pour aucune limite."

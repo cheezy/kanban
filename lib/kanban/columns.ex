@@ -56,7 +56,21 @@ defmodule Kanban.Columns do
     # Get the next position
     next_position = get_next_position(board)
 
-    attrs = Map.put(attrs, :position, next_position)
+    # Handle both string and atom keys
+    attrs =
+      case attrs do
+        %{} = map when is_map_key(map, "name") or is_map_key(map, :name) ->
+          # Convert to atom keys if needed, then add position
+          attrs
+          |> Enum.into(%{}, fn
+            {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
+            {k, v} -> {k, v}
+          end)
+          |> Map.put(:position, next_position)
+
+        _ ->
+          Map.put(attrs, :position, next_position)
+      end
 
     %Column{board_id: board.id}
     |> Column.changeset(attrs)

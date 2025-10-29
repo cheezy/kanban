@@ -315,7 +315,8 @@ msgstr ""
 msgid "Save Password"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:11
+#: lib/kanban_web/live/board_live/form.html.heex:13
+#: lib/kanban_web/live/column_live/form_component.ex:42
 #: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Saving..."
@@ -376,12 +377,12 @@ msgstr ""
 msgid "to your account."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:26
+#: lib/kanban_web/live/board_live/index.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:9
+#: lib/kanban_web/live/board_live/show.html.heex:14
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr ""
@@ -401,17 +402,12 @@ msgstr ""
 msgid "Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:13
+#: lib/kanban_web/live/board_live/form.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:22
-#, elixir-autogen, elixir-format
-msgid "Columns will be added in Phase 4"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/form.html.heex:9
+#: lib/kanban_web/live/board_live/form.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr ""
@@ -421,48 +417,129 @@ msgstr ""
 msgid "Edit Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:6
+#: lib/kanban_web/live/board_live/show.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:19
+#: lib/kanban_web/live/board_live/show.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Get started by creating columns for your board."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:2
+#: lib/kanban_web/live/board_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Listing Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:8
+#: lib/kanban_web/live/board_live/form.html.heex:10
+#: lib/kanban_web/live/column_live/form_component.ex:29
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:29
-#: lib/kanban_web/live/board_live/index.html.heex:5
+#: lib/kanban_web/live/board_live/index.html.heex:7
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:17
+#: lib/kanban_web/live/board_live/show.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "No columns yet"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:11
+#: lib/kanban_web/live/board_live/form.html.heex:13
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:3
+#: lib/kanban_web/live/board_live/form.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Use this form to manage board records in your database."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:42
+#: lib/kanban_web/live/board_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "View Board"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:65
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure you want to delete this column?"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:95
+#, elixir-autogen, elixir-format
+msgid "Column created successfully"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:47
+#, elixir-autogen, elixir-format
+msgid "Column deleted successfully"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:61
+#, elixir-autogen, elixir-format
+msgid "Column saved successfully"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:80
+#, elixir-autogen, elixir-format
+msgid "Column updated successfully"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:14
+#, elixir-autogen, elixir-format
+msgid "Create a new column for your board"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Create your first column"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:51
+#, elixir-autogen, elixir-format
+msgid "Failed to delete column"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "New Column"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:42
+#, elixir-autogen, elixir-format
+msgid "Save Column"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Tasks"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Tasks will be displayed here"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:16
+#, elixir-autogen, elixir-format
+msgid "Update column details"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:34
+#, elixir-autogen, elixir-format
+msgid "WIP Limit"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "WIP limit"
+msgstr ""
+
+#: lib/kanban_web/live/column_live/form_component.ex:38
+#, elixir-autogen, elixir-format
+msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr ""

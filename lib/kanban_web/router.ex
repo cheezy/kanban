@@ -70,6 +70,8 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show
+      live "/boards/:id/columns/new", BoardLive.Show, :new_column
+      live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
     end
 
     post "/users/update-password", UserSessionController, :update_password

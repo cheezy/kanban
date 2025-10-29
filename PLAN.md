@@ -209,35 +209,35 @@ tasks
     - [X] Test position reordering
     - [X] Test WIP limit validation (must be >= 0)
     - [X] Test WIP limit default value (0 = no limit)
-- [ ] **Update board show LiveView for columns**
-  - [ ] Update `lib/kanban_web/live/board_live/show.ex`
-  - [ ] Load board with preloaded columns
-  - [ ] Display columns in order by position
-  - [ ] Show column name and task count placeholder
-  - [ ] Display WIP limit indicator (e.g., "3/5" when limit is 5 and 3 tasks exist, or "3" when no limit)
-  - [ ] Add visual warning when column is at or over WIP limit
-  - [ ] Add "New Column" button
-- [ ] **Create column form component**
-  - [ ] Create `lib/kanban_web/live/column_live/form_component.ex`
-  - [ ] Build form for creating/editing columns
-  - [ ] Add WIP limit input field with validation (must be >= 0)
-  - [ ] Add helpful text explaining WIP limit (0 = no limit)
-  - [ ] Handle form submission
-- [ ] **Add column actions**
-  - [ ] Add edit column name inline or via modal
-  - [ ] Add delete column with confirmation
-- [ ] **Write Column LiveView tests**
-  - [ ] Test column creation with WIP limit
-  - [ ] Test column editing (including WIP limit changes)
-  - [ ] Test column deletion
-  - [ ] Test column ordering
-  - [ ] Test WIP limit display and warnings
-  - [ ] Test that negative WIP limits are rejected
-- [ ] **Quality Checks (Phase 4)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Run `mix sobelow --config` and fix any security issues
+- [X] **Update board show LiveView for columns**
+  - [X] Update `lib/kanban_web/live/board_live/show.ex`
+  - [X] Load board with preloaded columns
+  - [X] Display columns in order by position
+  - [X] Show column name and task count placeholder
+  - [X] Display WIP limit indicator (e.g., "3/5" when limit is 5 and 3 tasks exist, or "3" when no limit)
+  - [X] Add visual warning when column is at or over WIP limit
+  - [X] Add "New Column" button
+- [X] **Create column form component**
+  - [X] Create `lib/kanban_web/live/column_live/form_component.ex`
+  - [X] Build form for creating/editing columns
+  - [X] Add WIP limit input field with validation (must be >= 0)
+  - [X] Add helpful text explaining WIP limit (0 = no limit)
+  - [X] Handle form submission
+- [X] **Add column actions**
+  - [X] Add edit column name inline or via modal
+  - [X] Add delete column with confirmation
+- [X] **Write Column LiveView tests**
+  - [X] Test column creation with WIP limit
+  - [X] Test column editing (including WIP limit changes)
+  - [X] Test column deletion
+  - [X] Test column ordering
+  - [X] Test WIP limit display and warnings
+  - [X] Test that negative WIP limits are rejected
+- [X] **Quality Checks (Phase 4)**:
+  - [X] Run `mix test` and ensure all tests pass (172 tests, 0 failures)
+  - [X] Run `mix test --cover` and verify coverage meets threshold
+  - [X] Run `mix credo --strict` and fix any issues (no issues found)
+  - [X] Run `mix sobelow --config` and fix any security issues (no issues found)
 
 #### Phase 5: Task Management (Schema, Context & UI)
 
