@@ -62,8 +62,11 @@ columns
   - board_id (foreign key)
   - name
   - position (order)
+  - wip_limit (integer, default: 0, not null)
   - inserted_at
   - updated_at
+
+  Note: wip_limit of 0 means no limit, values > 0 enforce max tasks in column
 
 tasks
   - id
@@ -176,16 +179,19 @@ tasks
 
 - [ ] **Generate Column schema and migration**
   - [ ] Create migration: `mix ecto.gen.migration create_columns`
-  - [ ] Define `columns` table with fields: name (string), position (integer), board_id (references :boards)
+  - [ ] Define `columns` table with fields: name (string), position (integer), wip_limit (integer, default: 0, not null), board_id (references :boards)
   - [ ] Add foreign key constraint with `on_delete: :delete_all`
   - [ ] Add index on board_id
   - [ ] Add unique constraint on (board_id, position)
+  - [ ] Add check constraint to ensure wip_limit >= 0 (no negative values)
   - [ ] Run migration: `mix ecto.migrate`
 - [ ] **Create Column schema**
   - [ ] Create `lib/kanban/columns/column.ex` with Ecto schema
-  - [ ] Define fields: `:name`, `:position`
+  - [ ] Define fields: `:name`, `:position`, `:wip_limit`
   - [ ] Add `belongs_to :board, Kanban.Boards.Board`
-  - [ ] Create changeset function with validations
+  - [ ] Create changeset function with validations:
+    - [ ] Validate wip_limit is >= 0 (no negative values)
+    - [ ] Validate wip_limit is an integer
 - [ ] **Update Board schema**
   - [ ] Add `has_many :columns, Kanban.Columns.Column` to Board schema
 - [ ] **Create Columns context**
@@ -201,24 +207,32 @@ tasks
     - [ ] Test all CRUD operations
     - [ ] Test automatic position assignment
     - [ ] Test position reordering
+    - [ ] Test WIP limit validation (must be >= 0)
+    - [ ] Test WIP limit default value (0 = no limit)
 - [ ] **Update board show LiveView for columns**
   - [ ] Update `lib/kanban_web/live/board_live/show.ex`
   - [ ] Load board with preloaded columns
   - [ ] Display columns in order by position
   - [ ] Show column name and task count placeholder
+  - [ ] Display WIP limit indicator (e.g., "3/5" when limit is 5 and 3 tasks exist, or "3" when no limit)
+  - [ ] Add visual warning when column is at or over WIP limit
   - [ ] Add "New Column" button
 - [ ] **Create column form component**
   - [ ] Create `lib/kanban_web/live/column_live/form_component.ex`
   - [ ] Build form for creating/editing columns
+  - [ ] Add WIP limit input field with validation (must be >= 0)
+  - [ ] Add helpful text explaining WIP limit (0 = no limit)
   - [ ] Handle form submission
 - [ ] **Add column actions**
   - [ ] Add edit column name inline or via modal
   - [ ] Add delete column with confirmation
 - [ ] **Write Column LiveView tests**
-  - [ ] Test column creation
-  - [ ] Test column editing
+  - [ ] Test column creation with WIP limit
+  - [ ] Test column editing (including WIP limit changes)
   - [ ] Test column deletion
   - [ ] Test column ordering
+  - [ ] Test WIP limit display and warnings
+  - [ ] Test that negative WIP limits are rejected
 - [ ] **Quality Checks (Phase 4)**:
   - [ ] Run `mix test` and ensure all tests pass
   - [ ] Run `mix test --cover` and verify coverage meets threshold
@@ -245,11 +259,12 @@ tasks
   - [ ] Create `lib/kanban/tasks.ex` context with:
     - [ ] `list_tasks(column)` - list tasks for a column
     - [ ] `get_task!(id)` - get task by id
-    - [ ] `create_task(column, attrs)` - create task with auto position
+    - [ ] `create_task(column, attrs)` - create task with auto position (check WIP limit)
     - [ ] `update_task(task, attrs)` - update task
     - [ ] `delete_task(task)` - delete task and reorder remaining
-    - [ ] `move_task(task, new_column, new_position)` - move task to different column
+    - [ ] `move_task(task, new_column, new_position)` - move task to different column (check target column WIP limit)
     - [ ] `reorder_tasks(column, task_ids)` - reorder tasks within column
+    - [ ] `can_add_task?(column)` - helper to check if column has room (respects WIP limit)
 - [ ] **Write Task context tests**
   - [ ] Create `test/kanban/tasks_test.exs`:
     - [ ] Test all CRUD operations
@@ -257,6 +272,10 @@ tasks
     - [ ] Test moving tasks between columns
     - [ ] Test position reordering within column
     - [ ] Test position updates when task deleted
+    - [ ] Test WIP limit enforcement when creating tasks
+    - [ ] Test WIP limit enforcement when moving tasks to a column
+    - [ ] Test that WIP limit of 0 allows unlimited tasks
+    - [ ] Test error handling when WIP limit is reached
 - [ ] **Update board show LiveView for tasks**
   - [ ] Update `lib/kanban_web/live/board_live/show.ex`
   - [ ] Load board with preloaded columns and tasks
@@ -268,14 +287,17 @@ tasks
   - [ ] Build form for creating/editing tasks
   - [ ] Handle form submission
 - [ ] **Add task actions**
-  - [ ] Add "New Task" button in each column
+  - [ ] Add "New Task" button in each column (disable when WIP limit reached)
+  - [ ] Show informative message when WIP limit prevents task creation
   - [ ] Add edit task button
   - [ ] Add delete task with confirmation
 - [ ] **Write Task LiveView tests**
   - [ ] Test task creation
+  - [ ] Test task creation blocked when WIP limit reached
   - [ ] Test task editing
   - [ ] Test task deletion
   - [ ] Test task display in correct column
+  - [ ] Test "New Task" button disabled state when at WIP limit
 - [ ] **Quality Checks (Phase 5)**:
   - [ ] Run `mix test` and ensure all tests pass
   - [ ] Run `mix test --cover` and verify coverage meets threshold
@@ -293,16 +315,21 @@ tasks
   - [ ] Send events to LiveView
 - [ ] **Implement server-side move handlers**
   - [ ] Add `handle_event("move_task", ...)` to board show LiveView
-  - [ ] Call `Tasks.move_task/3` context function
+  - [ ] Call `Tasks.move_task/3` context function (respects WIP limit)
+  - [ ] Handle WIP limit errors and display appropriate message to user
   - [ ] Update UI with new task positions
 - [ ] **Add visual feedback**
   - [ ] Add drag handle to tasks
   - [ ] Show placeholder when dragging
   - [ ] Highlight drop zones
+  - [ ] Visually indicate when a column cannot accept more tasks due to WIP limit
+  - [ ] Show warning indicator when attempting to drag to a full column
 - [ ] **Write LiveView tests**
   - [ ] Test moving task within same column
   - [ ] Test moving task to different column
   - [ ] Test position updates after move
+  - [ ] Test that drag-and-drop respects WIP limits
+  - [ ] Test error handling when attempting to move task to full column
 - [ ] **Quality Checks (Phase 6)**:
   - [ ] Run `mix test` and ensure all tests pass
   - [ ] Run `mix test --cover` and verify coverage meets threshold
@@ -353,3 +380,9 @@ tasks
 - Use LiveView for real-time updates
 - Keep UI simple and intuitive
 - Ensure proper authorization (users can only access their own boards)
+- **WIP Limits**: Columns have a configurable Work In Progress (WIP) limit
+  - WIP limit of 0 means unlimited tasks
+  - WIP limit > 0 enforces a maximum number of tasks in the column
+  - WIP limit must be >= 0 (cannot be negative)
+  - UI should clearly indicate when a column is at or over its limit
+  - Task creation and movement operations must respect WIP limits
