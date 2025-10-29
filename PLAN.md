@@ -177,38 +177,38 @@ tasks
 
 #### Phase 4: Column Management (Schema, Context & UI)
 
-- [ ] **Generate Column schema and migration**
-  - [ ] Create migration: `mix ecto.gen.migration create_columns`
-  - [ ] Define `columns` table with fields: name (string), position (integer), wip_limit (integer, default: 0, not null), board_id (references :boards)
-  - [ ] Add foreign key constraint with `on_delete: :delete_all`
-  - [ ] Add index on board_id
-  - [ ] Add unique constraint on (board_id, position)
-  - [ ] Add check constraint to ensure wip_limit >= 0 (no negative values)
-  - [ ] Run migration: `mix ecto.migrate`
-- [ ] **Create Column schema**
-  - [ ] Create `lib/kanban/columns/column.ex` with Ecto schema
-  - [ ] Define fields: `:name`, `:position`, `:wip_limit`
-  - [ ] Add `belongs_to :board, Kanban.Boards.Board`
-  - [ ] Create changeset function with validations:
-    - [ ] Validate wip_limit is >= 0 (no negative values)
-    - [ ] Validate wip_limit is an integer
-- [ ] **Update Board schema**
-  - [ ] Add `has_many :columns, Kanban.Columns.Column` to Board schema
-- [ ] **Create Columns context**
-  - [ ] Create `lib/kanban/columns.ex` context with:
-    - [ ] `list_columns(board)` - list columns for a board
-    - [ ] `get_column!(id)` - get column by id
-    - [ ] `create_column(board, attrs)` - create column with auto position
-    - [ ] `update_column(column, attrs)` - update column
-    - [ ] `delete_column(column)` - delete column and reorder remaining
-    - [ ] `reorder_columns(board, column_ids)` - reorder columns
-- [ ] **Write Column context tests**
-  - [ ] Create `test/kanban/columns_test.exs`:
-    - [ ] Test all CRUD operations
-    - [ ] Test automatic position assignment
-    - [ ] Test position reordering
-    - [ ] Test WIP limit validation (must be >= 0)
-    - [ ] Test WIP limit default value (0 = no limit)
+- [X] **Generate Column schema and migration**
+  - [X] Create migration: `mix ecto.gen.migration create_columns`
+  - [X] Define `columns` table with fields: name (string), position (integer), wip_limit (integer, default: 0, not null), board_id (references :boards)
+  - [X] Add foreign key constraint with `on_delete: :delete_all`
+  - [X] Add index on board_id
+  - [X] Add unique constraint on (board_id, position)
+  - [X] Add check constraint to ensure wip_limit >= 0 (no negative values)
+  - [X] Run migration: `mix ecto.migrate`
+- [X] **Create Column schema**
+  - [X] Create `lib/kanban/columns/column.ex` with Ecto schema
+  - [X] Define fields: `:name`, `:position`, `:wip_limit`
+  - [X] Add `belongs_to :board, Kanban.Boards.Board`
+  - [X] Create changeset function with validations:
+    - [X] Validate wip_limit is >= 0 (no negative values)
+    - [X] Validate wip_limit is an integer
+- [X] **Update Board schema**
+  - [X] Add `has_many :columns, Kanban.Columns.Column` to Board schema
+- [X] **Create Columns context**
+  - [X] Create `lib/kanban/columns.ex` context with:
+    - [X] `list_columns(board)` - list columns for a board
+    - [X] `get_column!(id)` - get column by id
+    - [X] `create_column(board, attrs)` - create column with auto position
+    - [X] `update_column(column, attrs)` - update column
+    - [X] `delete_column(column)` - delete column and reorder remaining
+    - [X] `reorder_columns(board, column_ids)` - reorder columns
+- [X] **Write Column context tests**
+  - [X] Create `test/kanban/columns_test.exs`:
+    - [X] Test all CRUD operations
+    - [X] Test automatic position assignment
+    - [X] Test position reordering
+    - [X] Test WIP limit validation (must be >= 0)
+    - [X] Test WIP limit default value (0 = no limit)
 - [ ] **Update board show LiveView for columns**
   - [ ] Update `lib/kanban_web/live/board_live/show.ex`
   - [ ] Load board with preloaded columns

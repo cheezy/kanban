@@ -7,6 +7,7 @@ defmodule Kanban.Boards.Board do
     field :description, :string
 
     belongs_to :user, Kanban.Accounts.User
+    has_many :columns, Kanban.Columns.Column
 
     timestamps()
   end
