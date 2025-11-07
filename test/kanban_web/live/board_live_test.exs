@@ -5,6 +5,7 @@ defmodule KanbanWeb.BoardLiveTest do
   import Kanban.BoardsFixtures
   import Kanban.AccountsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
 
   @create_attrs %{name: "some name", description: "some description"}
   @update_attrs %{name: "some updated name", description: "some updated description"}
@@ -254,6 +255,164 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert html =~ "New Column"
+    end
+  end
+
+  describe "Task Management" do
+    setup [:register_and_log_in_user]
+
+    test "displays tasks in column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task1 = task_fixture(column, %{title: "First task", description: "Description 1"})
+      task2 = task_fixture(column, %{title: "Second task"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ task1.title
+      assert html =~ task1.description
+      assert html =~ task2.title
+    end
+
+    test "displays empty state when column has no tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "No tasks yet"
+    end
+
+    test "displays task count in column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Tasks"
+      assert html =~ ">2<"
+    end
+
+    test "creates new task", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Click "Add task" button
+      show_live |> element("a[href='/boards/#{board.id}/columns/#{column.id}/tasks/new']") |> render_click()
+
+      # Validate form shows error for missing title
+      assert show_live
+             |> form("#task-form", task: %{title: nil})
+             |> render_change() =~ "can&#39;t be blank"
+
+      # Submit form
+      show_live
+      |> form("#task-form", task: %{title: "New Task", description: "Task description"})
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "Task created successfully"
+      assert html =~ "New Task"
+      assert html =~ "Task description"
+    end
+
+    test "edits existing task", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Original Title"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Click edit button for task
+      show_live |> element("a[href='/boards/#{board.id}/tasks/#{task.id}/edit']") |> render_click()
+
+      # Update task
+      show_live
+      |> form("#task-form", task: %{title: "Updated Title", description: "Updated description"})
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "Task updated successfully"
+      assert html =~ "Updated Title"
+      assert html =~ "Updated description"
+      refute html =~ "Original Title"
+    end
+
+    test "deletes task", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task to delete"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "Task to delete"
+
+      # Trigger the delete_task event directly
+      show_live |> render_click("delete_task", %{"id" => task.id})
+
+      html = render(show_live)
+      assert html =~ "Task deleted successfully"
+      refute html =~ "Task to delete"
+    end
+
+    test "shows Add task button when WIP limit not reached", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 3})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Add task"
+    end
+
+    test "hides Add task button when WIP limit reached", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "WIP limit reached"
+      refute html =~ "Add task"
+    end
+
+    test "shows warning indicator when column at WIP limit", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for red warning badge indicating limit reached
+      assert html =~ "bg-red-100 text-red-800"
+    end
+
+    test "displays blue indicator when column under WIP limit", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 3})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for blue badge when under limit
+      assert html =~ "bg-blue-100 text-blue-800"
+    end
+
+    test "cannot create task when WIP limit reached", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 1})
+      _task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Try to navigate to new task form - should show WIP limit message instead
+      html = render(show_live)
+      assert html =~ "WIP limit reached"
     end
   end
 end

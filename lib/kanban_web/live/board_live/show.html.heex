@@ -42,14 +42,17 @@
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
                 <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
+                <% tasks = Map.get(@tasks_by_column, column.id, []) %>
+                <% task_count = length(tasks) %>
+                <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
                 <div class="mt-1 flex items-center gap-2">
                   <span class="text-sm text-gray-500">
-                    {gettext("Tasks")}: <span class="font-medium">0</span>
+                    {gettext("Tasks")}: <span class="font-medium"><%= task_count %></span>
                   </span>
                   <%= if column.wip_limit > 0 do %>
                     <span class={[
                       "text-sm px-2 py-0.5 rounded",
-                      "bg-blue-100 text-blue-800"
+                      at_limit && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
                     ]}>
                       {gettext("WIP limit")}: <%= column.wip_limit %>
                     </span>
@@ -69,10 +72,56 @@
               </div>
             </div>
 
-            <div class="mt-4 p-4 bg-white rounded border-2 border-dashed border-gray-300 min-h-[100px]">
-              <p class="text-sm text-gray-500 text-center">
-                {gettext("Tasks will be displayed here")}
-              </p>
+            <div class="space-y-2 min-h-[100px]">
+              <%= if Enum.empty?(tasks) do %>
+                <div class="p-4 bg-white rounded border-2 border-dashed border-gray-300">
+                  <p class="text-sm text-gray-500 text-center">
+                    {gettext("No tasks yet")}
+                  </p>
+                </div>
+              <% else %>
+                <%= for task <- tasks do %>
+                  <div class="p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="font-medium text-gray-900 text-sm"><%= task.title %></h4>
+                        <%= if task.description && task.description != "" do %>
+                          <p class="mt-1 text-xs text-gray-600 line-clamp-2"><%= task.description %></p>
+                        <% end %>
+                      </div>
+                      <div class="flex gap-1 ml-2">
+                        <.link patch={~p"/boards/#{@board}/tasks/#{task}/edit"}>
+                          <.icon name="hero-pencil-solid" class="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                        </.link>
+                        <.link
+                          phx-click={JS.push("delete_task", value: %{id: task.id})}
+                          data-confirm={gettext("Are you sure you want to delete this task?")}
+                        >
+                          <.icon name="hero-trash-solid" class="h-4 w-4 text-gray-400 hover:text-red-600" />
+                        </.link>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+
+              <%= if !at_limit do %>
+                <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"}>
+                  <div class="p-3 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
+                    <div class="flex items-center justify-center gap-2 text-gray-600">
+                      <.icon name="hero-plus-circle" class="h-5 w-5" />
+                      <span class="text-sm font-medium">{gettext("Add task")}</span>
+                    </div>
+                  </div>
+                </.link>
+              <% else %>
+                <div class="p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 opacity-50">
+                  <div class="flex items-center justify-center gap-2 text-gray-400">
+                    <.icon name="hero-exclamation-triangle" class="h-5 w-5" />
+                    <span class="text-sm">{gettext("WIP limit reached")}</span>
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -89,6 +138,21 @@
         action={@live_action}
         board={@board}
         column={@live_action == :edit_column && @column || %Kanban.Columns.Column{}}
+        patch={~p"/boards/#{@board}"}
+      />
+    </div>
+  <% end %>
+
+  <%= if @live_action in [:new_task, :edit_task] do %>
+    <div class="mt-8 max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+      <.live_component
+        module={KanbanWeb.TaskLive.FormComponent}
+        id={@live_action == :new_task && :new || "edit-#{@task.id}"}
+        title={@page_title}
+        action={@live_action}
+        board={@board}
+        task={@live_action == :edit_task && @task || %Kanban.Tasks.Task{}}
+        column_id={@live_action == :new_task && Map.get(assigns, :column_id) || nil}
         patch={~p"/boards/#{@board}"}
       />
     </div>

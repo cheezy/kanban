@@ -317,6 +317,7 @@ msgstr "Enregistrer le Mot de Passe"
 
 #: lib/kanban_web/live/board_live/form.html.heex:13
 #: lib/kanban_web/live/column_live/form_component.ex:42
+#: lib/kanban_web/live/task_live/form_component.ex:50
 #: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Saving..."
@@ -408,6 +409,7 @@ msgid "Cancel"
 msgstr "Annuler"
 
 #: lib/kanban_web/live/board_live/form.html.heex:11
+#: lib/kanban_web/live/task_live/form_component.ex:35
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "Description"
@@ -464,7 +466,7 @@ msgstr "Utilisez ce formulaire pour gérer les tableaux dans votre base de donn�
 msgid "View Board"
 msgstr "Voir le Tableau"
 
-#: lib/kanban_web/live/board_live/show.html.heex:65
+#: lib/kanban_web/live/board_live/show.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this column?"
 msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ?"
@@ -474,15 +476,10 @@ msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ?"
 msgid "Column created successfully"
 msgstr "Colonne créée avec succès"
 
-#: lib/kanban_web/live/board_live/show.ex:47
+#: lib/kanban_web/live/board_live/show.ex:89
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "Colonne supprimée avec succès"
-
-#: lib/kanban_web/live/board_live/show.ex:61
-#, elixir-autogen, elixir-format
-msgid "Column saved successfully"
-msgstr "Colonne enregistrée avec succès"
 
 #: lib/kanban_web/live/column_live/form_component.ex:80
 #, elixir-autogen, elixir-format
@@ -499,7 +496,7 @@ msgstr "Créer une nouvelle colonne pour votre tableau"
 msgid "Create your first column"
 msgstr "Créez votre première colonne"
 
-#: lib/kanban_web/live/board_live/show.ex:51
+#: lib/kanban_web/live/board_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "Échec de la suppression de la colonne"
@@ -514,15 +511,10 @@ msgstr "Nouvelle Colonne"
 msgid "Save Column"
 msgstr "Enregistrer la Colonne"
 
-#: lib/kanban_web/live/board_live/show.html.heex:47
+#: lib/kanban_web/live/board_live/show.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Tasks"
 msgstr "Tâches"
-
-#: lib/kanban_web/live/board_live/show.html.heex:74
-#, elixir-autogen, elixir-format
-msgid "Tasks will be displayed here"
-msgstr "Les tâches seront affichées ici"
 
 #: lib/kanban_web/live/column_live/form_component.ex:16
 #, elixir-autogen, elixir-format
@@ -534,7 +526,7 @@ msgstr "Mettre à jour les détails de la colonne"
 msgid "WIP Limit"
 msgstr "Limite WIP"
 
-#: lib/kanban_web/live/board_live/show.html.heex:54
+#: lib/kanban_web/live/board_live/show.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "WIP limit"
 msgstr "Limite WIP"
@@ -543,3 +535,73 @@ msgstr "Limite WIP"
 #, elixir-autogen, elixir-format
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "Limite de travail en cours. Définir à 0 pour aucune limite."
+
+#: lib/kanban_web/live/board_live/show.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Add task"
+msgstr "Ajouter une tâche"
+
+#: lib/kanban_web/live/board_live/show.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this task?"
+msgstr "Êtes-vous sûr de vouloir supprimer cette tâche ?"
+
+#: lib/kanban_web/live/task_live/form_component.ex:43
+#, elixir-autogen, elixir-format
+msgid "Column"
+msgstr "Colonne"
+
+#: lib/kanban_web/live/task_live/form_component.ex:15
+#, elixir-autogen, elixir-format
+msgid "Create a new task"
+msgstr "Créer une nouvelle tâche"
+
+#: lib/kanban_web/live/board_live/show.ex:113
+#, elixir-autogen, elixir-format
+msgid "Failed to delete task"
+msgstr "Échec de la suppression de la tâche"
+
+#: lib/kanban_web/live/board_live/show.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "No tasks yet"
+msgstr "Aucune tâche pour le moment"
+
+#: lib/kanban_web/live/task_live/form_component.ex:50
+#, elixir-autogen, elixir-format
+msgid "Save Task"
+msgstr "Enregistrer la tâche"
+
+#: lib/kanban_web/live/task_live/form_component.ex:142
+#, elixir-autogen, elixir-format
+msgid "Task created successfully"
+msgstr "Tâche créée avec succès"
+
+#: lib/kanban_web/live/board_live/show.ex:108
+#, elixir-autogen, elixir-format
+msgid "Task deleted successfully"
+msgstr "Tâche supprimée avec succès"
+
+#: lib/kanban_web/live/task_live/form_component.ex:123
+#, elixir-autogen, elixir-format
+msgid "Task updated successfully"
+msgstr "Tâche mise à jour avec succès"
+
+#: lib/kanban_web/live/task_live/form_component.ex:30
+#, elixir-autogen, elixir-format
+msgid "Title"
+msgstr "Titre"
+
+#: lib/kanban_web/live/task_live/form_component.ex:17
+#, elixir-autogen, elixir-format
+msgid "Update task details"
+msgstr "Mettre à jour les détails de la tâche"
+
+#: lib/kanban_web/live/board_live/show.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "WIP limit reached"
+msgstr "Limite WIP atteinte"
+
+#: lib/kanban_web/live/task_live/form_component.ex:149
+#, elixir-autogen, elixir-format
+msgid "WIP limit reached for this column"
+msgstr "Limite WIP atteinte pour cette colonne"

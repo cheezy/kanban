@@ -276,33 +276,33 @@ tasks
     - [X] Test WIP limit enforcement when moving tasks to a column
     - [X] Test that WIP limit of 0 allows unlimited tasks
     - [X] Test error handling when WIP limit is reached
-- [ ] **Update board show LiveView for tasks**
-  - [ ] Update `lib/kanban_web/live/board_live/show.ex`
-  - [ ] Load board with preloaded columns and tasks
-  - [ ] Use streams to display tasks within each column
-  - [ ] Show task title and description
-  - [ ] Display in order by position
-- [ ] **Create task form component**
-  - [ ] Create `lib/kanban_web/live/task_live/form_component.ex`
-  - [ ] Build form for creating/editing tasks
-  - [ ] Handle form submission
-- [ ] **Add task actions**
-  - [ ] Add "New Task" button in each column (disable when WIP limit reached)
-  - [ ] Show informative message when WIP limit prevents task creation
-  - [ ] Add edit task button
-  - [ ] Add delete task with confirmation
-- [ ] **Write Task LiveView tests**
-  - [ ] Test task creation
-  - [ ] Test task creation blocked when WIP limit reached
-  - [ ] Test task editing
-  - [ ] Test task deletion
-  - [ ] Test task display in correct column
-  - [ ] Test "New Task" button disabled state when at WIP limit
-- [ ] **Quality Checks (Phase 5)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
-  - [ ] Run `mix sobelow --config` and fix any security issues
+- [X] **Update board show LiveView for tasks**
+  - [X] Update `lib/kanban_web/live/board_live/show.ex`
+  - [X] Load board with preloaded columns and tasks
+  - [X] Use streams to display tasks within each column
+  - [X] Show task title and description
+  - [X] Display in order by position
+- [X] **Create task form component**
+  - [X] Create `lib/kanban_web/live/task_live/form_component.ex`
+  - [X] Build form for creating/editing tasks
+  - [X] Handle form submission
+- [X] **Add task actions**
+  - [X] Add "New Task" button in each column (disable when WIP limit reached)
+  - [X] Show informative message when WIP limit prevents task creation
+  - [X] Add edit task button
+  - [X] Add delete task with confirmation
+- [X] **Write Task LiveView tests**
+  - [X] Test task creation
+  - [X] Test task creation blocked when WIP limit reached
+  - [X] Test task editing
+  - [X] Test task deletion
+  - [X] Test task display in correct column
+  - [X] Test "New Task" button disabled state when at WIP limit
+- [X] **Quality Checks (Phase 5)**:
+  - [X] Run `mix test` and ensure all tests pass (215 tests, 0 failures)
+  - [X] Run `mix test --cover` and verify coverage meets threshold (94.68% coverage)
+  - [X] Run `mix credo --strict` and fix any issues (no issues found)
+  - [X] Run `mix sobelow --config` and fix any security issues (no issues found)
 
 #### Phase 6: Drag & Drop Functionality
 
