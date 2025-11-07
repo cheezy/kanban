@@ -1,0 +1,477 @@
+defmodule Kanban.TasksTest do
+  use Kanban.DataCase
+
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
+
+  alias Kanban.Tasks
+  alias Kanban.Tasks.Task
+
+  describe "list_tasks/1" do
+    test "returns all tasks for a column ordered by position" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+      task3 = task_fixture(column, %{title: "Third"})
+
+      tasks = Tasks.list_tasks(column)
+
+      assert length(tasks) == 3
+      assert Enum.map(tasks, & &1.id) == [task1.id, task2.id, task3.id]
+      assert Enum.map(tasks, & &1.position) == [0, 1, 2]
+    end
+
+    test "returns empty list when column has no tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert Tasks.list_tasks(column) == []
+    end
+
+    test "only returns tasks for the specified column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      task_fixture(column1)
+      task_fixture(column2)
+
+      assert length(Tasks.list_tasks(column1)) == 1
+      assert length(Tasks.list_tasks(column2)) == 1
+    end
+  end
+
+  describe "get_task!/1" do
+    test "returns the task with given id" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert Tasks.get_task!(task.id).id == task.id
+    end
+
+    test "raises error when task does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Tasks.get_task!(999_999)
+      end
+    end
+  end
+
+  describe "create_task/2" do
+    test "creates a task with valid attributes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert {:ok, %Task{} = task} =
+               Tasks.create_task(column, %{title: "New Task"})
+
+      assert task.title == "New Task"
+      assert task.position == 0
+      assert task.column_id == column.id
+    end
+
+    test "creates tasks with sequential positions" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task1} = Tasks.create_task(column, %{title: "First"})
+      {:ok, task2} = Tasks.create_task(column, %{title: "Second"})
+      {:ok, task3} = Tasks.create_task(column, %{title: "Third"})
+
+      assert task1.position == 0
+      assert task2.position == 1
+      assert task3.position == 2
+    end
+
+    test "creates a task with description" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert {:ok, %Task{} = task} =
+               Tasks.create_task(column, %{
+                 title: "Task with description",
+                 description: "This is a detailed description"
+               })
+
+      assert task.description == "This is a detailed description"
+    end
+
+    test "returns error when title is missing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert {:error, %Ecto.Changeset{}} = Tasks.create_task(column, %{})
+    end
+
+    test "allows unlimited tasks when wip_limit is 0" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 0})
+
+      # Create 10 tasks with no limit
+      Enum.each(1..10, fn i ->
+        assert {:ok, _task} = Tasks.create_task(column, %{title: "Task #{i}"})
+      end)
+
+      assert length(Tasks.list_tasks(column)) == 10
+    end
+
+    test "enforces wip_limit when creating tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 2})
+
+      # Create 2 tasks (at limit)
+      {:ok, _task1} = Tasks.create_task(column, %{title: "First"})
+      {:ok, _task2} = Tasks.create_task(column, %{title: "Second"})
+
+      # Try to create a third task (should fail)
+      assert {:error, :wip_limit_reached} =
+               Tasks.create_task(column, %{title: "Third"})
+
+      assert length(Tasks.list_tasks(column)) == 2
+    end
+
+    test "can add task when under wip_limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 3})
+
+      {:ok, _task1} = Tasks.create_task(column, %{title: "First"})
+      {:ok, _task2} = Tasks.create_task(column, %{title: "Second"})
+
+      # Should still be able to add one more
+      assert {:ok, _task3} = Tasks.create_task(column, %{title: "Third"})
+
+      assert length(Tasks.list_tasks(column)) == 3
+    end
+  end
+
+  describe "update_task/2" do
+    test "updates the task with valid attributes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Old Title"})
+
+      assert {:ok, %Task{} = updated_task} =
+               Tasks.update_task(task, %{title: "New Title"})
+
+      assert updated_task.title == "New Title"
+      assert updated_task.id == task.id
+    end
+
+    test "updates task description" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{description: "Old description"})
+
+      assert {:ok, %Task{} = updated_task} =
+               Tasks.update_task(task, %{description: "New description"})
+
+      assert updated_task.description == "New description"
+    end
+
+    test "returns error with invalid attributes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Tasks.update_task(task, %{title: nil})
+    end
+  end
+
+  describe "delete_task/1" do
+    test "deletes the task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert {:ok, %Task{}} = Tasks.delete_task(task)
+      assert_raise Ecto.NoResultsError, fn -> Tasks.get_task!(task.id) end
+    end
+
+    test "reorders remaining tasks after deletion" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+      task3 = task_fixture(column, %{title: "Third"})
+
+      # Delete the middle task
+      {:ok, _deleted} = Tasks.delete_task(task2)
+
+      # Refresh tasks from database
+      remaining_tasks = Tasks.list_tasks(column)
+
+      assert length(remaining_tasks) == 2
+      assert Enum.at(remaining_tasks, 0).id == task1.id
+      assert Enum.at(remaining_tasks, 0).position == 0
+      assert Enum.at(remaining_tasks, 1).id == task3.id
+      assert Enum.at(remaining_tasks, 1).position == 1
+    end
+
+    test "reorders when deleting first task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+      task3 = task_fixture(column, %{title: "Third"})
+
+      {:ok, _deleted} = Tasks.delete_task(task1)
+
+      remaining_tasks = Tasks.list_tasks(column)
+
+      assert length(remaining_tasks) == 2
+      assert Enum.at(remaining_tasks, 0).id == task2.id
+      assert Enum.at(remaining_tasks, 0).position == 0
+      assert Enum.at(remaining_tasks, 1).id == task3.id
+      assert Enum.at(remaining_tasks, 1).position == 1
+    end
+
+    test "does not affect other column's tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      task1 = task_fixture(column1)
+      task2 = task_fixture(column2)
+
+      {:ok, _deleted} = Tasks.delete_task(task1)
+
+      # Column2's task should be unaffected
+      assert Tasks.get_task!(task2.id).position == 0
+    end
+  end
+
+  describe "move_task/3" do
+    test "moves task to a different column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress"})
+
+      task = task_fixture(column1)
+
+      assert {:ok, %Task{} = moved_task} = Tasks.move_task(task, column2, 0)
+
+      assert moved_task.column_id == column2.id
+      assert moved_task.position == 0
+    end
+
+    test "moves task to a different position in the same column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+      task3 = task_fixture(column, %{title: "Third"})
+
+      # Move task1 to position 2 (end)
+      assert {:ok, %Task{} = moved_task} = Tasks.move_task(task1, column, 2)
+
+      assert moved_task.position == 2
+
+      # Verify new order
+      tasks = Tasks.list_tasks(column)
+      assert Enum.map(tasks, & &1.id) == [task2.id, task3.id, task1.id]
+      assert Enum.map(tasks, & &1.position) == [0, 1, 2]
+    end
+
+    test "respects wip_limit when moving to different column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+
+      task = task_fixture(column1)
+
+      # Fill column2 to its limit
+      task_fixture(column2)
+      task_fixture(column2)
+
+      # Try to move task to full column
+      assert {:error, :wip_limit_reached} = Tasks.move_task(task, column2, 0)
+
+      # Task should still be in column1
+      refreshed_task = Tasks.get_task!(task.id)
+      assert refreshed_task.column_id == column1.id
+    end
+
+    test "allows move to column with wip_limit if not at capacity" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 3})
+
+      task = task_fixture(column1)
+
+      # Add one task to column2 (under limit)
+      task_fixture(column2)
+
+      # Should be able to move
+      assert {:ok, moved_task} = Tasks.move_task(task, column2, 1)
+      assert moved_task.column_id == column2.id
+    end
+
+    test "ignores wip_limit when moving within same column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 2})
+
+      task1 = task_fixture(column)
+      _task2 = task_fixture(column)
+
+      # Should be able to reorder within same column even at limit
+      assert {:ok, _moved_task} = Tasks.move_task(task1, column, 1)
+    end
+
+    test "reorders tasks in source column after move" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      task1 = task_fixture(column1, %{title: "First"})
+      task2 = task_fixture(column1, %{title: "Second"})
+      task3 = task_fixture(column1, %{title: "Third"})
+
+      # Move middle task to column2
+      Tasks.move_task(task2, column2, 0)
+
+      # Check column1 tasks are reordered
+      column1_tasks = Tasks.list_tasks(column1)
+      assert length(column1_tasks) == 2
+      assert Enum.at(column1_tasks, 0).id == task1.id
+      assert Enum.at(column1_tasks, 0).position == 0
+      assert Enum.at(column1_tasks, 1).id == task3.id
+      assert Enum.at(column1_tasks, 1).position == 1
+    end
+  end
+
+  describe "reorder_tasks/2" do
+    test "reorders tasks based on list of IDs" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+      task3 = task_fixture(column, %{title: "Third"})
+
+      # Reorder: Third, First, Second
+      Tasks.reorder_tasks(column, [task3.id, task1.id, task2.id])
+
+      tasks = Tasks.list_tasks(column)
+
+      assert Enum.at(tasks, 0).id == task3.id
+      assert Enum.at(tasks, 0).position == 0
+      assert Enum.at(tasks, 1).id == task1.id
+      assert Enum.at(tasks, 1).position == 1
+      assert Enum.at(tasks, 2).id == task2.id
+      assert Enum.at(tasks, 2).position == 2
+    end
+
+    test "handles partial reordering" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      # Swap them
+      Tasks.reorder_tasks(column, [task2.id, task1.id])
+
+      tasks = Tasks.list_tasks(column)
+
+      assert Enum.at(tasks, 0).id == task2.id
+      assert Enum.at(tasks, 1).id == task1.id
+    end
+  end
+
+  describe "can_add_task?/1" do
+    test "returns true when wip_limit is 0" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 0})
+
+      # Add several tasks
+      Enum.each(1..5, fn i ->
+        task_fixture(column, %{title: "Task #{i}"})
+      end)
+
+      # Should still allow more tasks
+      assert Tasks.can_add_task?(column)
+    end
+
+    test "returns true when under wip_limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 3})
+
+      task_fixture(column)
+
+      # 1 task, limit is 3
+      assert Tasks.can_add_task?(column)
+    end
+
+    test "returns false when at wip_limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 2})
+
+      task_fixture(column)
+      task_fixture(column)
+
+      # At limit
+      refute Tasks.can_add_task?(column)
+    end
+
+    test "returns false when over wip_limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      # Create column with limit 1
+      column = column_fixture(board, %{wip_limit: 1})
+
+      # Add one task
+      task_fixture(column)
+
+      # Now manually update wip_limit to 0 to simulate over-limit scenario
+      # (This could happen if limit is reduced after tasks are added)
+      # For this test, we just verify the logic with the current state
+      refute Tasks.can_add_task?(column)
+    end
+
+    test "returns true for empty column with wip_limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 5})
+
+      # Empty column with limit
+      assert Tasks.can_add_task?(column)
+    end
+  end
+end

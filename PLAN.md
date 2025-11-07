@@ -241,41 +241,41 @@ tasks
 
 #### Phase 5: Task Management (Schema, Context & UI)
 
-- [ ] **Generate Task schema and migration**
-  - [ ] Create migration: `mix ecto.gen.migration create_tasks`
-  - [ ] Define `tasks` table with fields: title (string), description (text), position (integer), column_id (references :columns)
-  - [ ] Add foreign key constraint with `on_delete: :delete_all`
-  - [ ] Add index on column_id
-  - [ ] Add unique constraint on (column_id, position)
-  - [ ] Run migration: `mix ecto.migrate`
-- [ ] **Create Task schema**
-  - [ ] Create `lib/kanban/tasks/task.ex` with Ecto schema
-  - [ ] Define fields: `:title`, `:description`, `:position`
-  - [ ] Add `belongs_to :column, Kanban.Columns.Column`
-  - [ ] Create changeset function with validations
-- [ ] **Update Column schema**
-  - [ ] Add `has_many :tasks, Kanban.Tasks.Task` to Column schema
-- [ ] **Create Tasks context**
-  - [ ] Create `lib/kanban/tasks.ex` context with:
-    - [ ] `list_tasks(column)` - list tasks for a column
-    - [ ] `get_task!(id)` - get task by id
-    - [ ] `create_task(column, attrs)` - create task with auto position (check WIP limit)
-    - [ ] `update_task(task, attrs)` - update task
-    - [ ] `delete_task(task)` - delete task and reorder remaining
-    - [ ] `move_task(task, new_column, new_position)` - move task to different column (check target column WIP limit)
-    - [ ] `reorder_tasks(column, task_ids)` - reorder tasks within column
-    - [ ] `can_add_task?(column)` - helper to check if column has room (respects WIP limit)
-- [ ] **Write Task context tests**
-  - [ ] Create `test/kanban/tasks_test.exs`:
-    - [ ] Test all CRUD operations
-    - [ ] Test automatic position assignment
-    - [ ] Test moving tasks between columns
-    - [ ] Test position reordering within column
-    - [ ] Test position updates when task deleted
-    - [ ] Test WIP limit enforcement when creating tasks
-    - [ ] Test WIP limit enforcement when moving tasks to a column
-    - [ ] Test that WIP limit of 0 allows unlimited tasks
-    - [ ] Test error handling when WIP limit is reached
+- [X] **Generate Task schema and migration**
+  - [X] Create migration: `mix ecto.gen.migration create_tasks`
+  - [X] Define `tasks` table with fields: title (string), description (text), position (integer), column_id (references :columns)
+  - [X] Add foreign key constraint with `on_delete: :delete_all`
+  - [X] Add index on column_id
+  - [X] Add unique constraint on (column_id, position)
+  - [X] Run migration: `mix ecto.migrate`
+- [X] **Create Task schema**
+  - [X] Create `lib/kanban/tasks/task.ex` with Ecto schema
+  - [X] Define fields: `:title`, `:description`, `:position`
+  - [X] Add `belongs_to :column, Kanban.Columns.Column`
+  - [X] Create changeset function with validations
+- [X] **Update Column schema**
+  - [X] Add `has_many :tasks, Kanban.Tasks.Task` to Column schema
+- [X] **Create Tasks context**
+  - [X] Create `lib/kanban/tasks.ex` context with:
+    - [X] `list_tasks(column)` - list tasks for a column
+    - [X] `get_task!(id)` - get task by id
+    - [X] `create_task(column, attrs)` - create task with auto position (check WIP limit)
+    - [X] `update_task(task, attrs)` - update task
+    - [X] `delete_task(task)` - delete task and reorder remaining
+    - [X] `move_task(task, new_column, new_position)` - move task to different column (check target column WIP limit)
+    - [X] `reorder_tasks(column, task_ids)` - reorder tasks within column
+    - [X] `can_add_task?(column)` - helper to check if column has room (respects WIP limit)
+- [X] **Write Task context tests**
+  - [X] Create `test/kanban/tasks_test.exs`:
+    - [X] Test all CRUD operations
+    - [X] Test automatic position assignment
+    - [X] Test moving tasks between columns
+    - [X] Test position reordering within column
+    - [X] Test position updates when task deleted
+    - [X] Test WIP limit enforcement when creating tasks
+    - [X] Test WIP limit enforcement when moving tasks to a column
+    - [X] Test that WIP limit of 0 allows unlimited tasks
+    - [X] Test error handling when WIP limit is reached
 - [ ] **Update board show LiveView for tasks**
   - [ ] Update `lib/kanban_web/live/board_live/show.ex`
   - [ ] Load board with preloaded columns and tasks

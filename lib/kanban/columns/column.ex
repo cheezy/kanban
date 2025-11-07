@@ -8,6 +8,7 @@ defmodule Kanban.Columns.Column do
     field :wip_limit, :integer, default: 0
 
     belongs_to :board, Kanban.Boards.Board
+    has_many :tasks, Kanban.Tasks.Task
 
     timestamps()
   end
