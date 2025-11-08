@@ -39,12 +39,23 @@
             id={id}
             class="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4"
           >
+            <% tasks = Map.get(@tasks_by_column, column.id, []) %>
+            <% task_count = length(tasks) %>
+            <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
-                <% tasks = Map.get(@tasks_by_column, column.id, []) %>
-                <% task_count = length(tasks) %>
-                <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
+                  <%= if !at_limit do %>
+                    <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"} title={gettext("Add task")}>
+                      <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-green-500 hover:text-green-600" />
+                    </.link>
+                  <% else %>
+                    <span title={gettext("WIP limit reached")}>
+                      <.icon name="hero-exclamation-triangle-solid" class="h-5 w-5 text-red-400" />
+                    </span>
+                  <% end %>
+                </div>
                 <div class="mt-1 flex items-center gap-2">
                   <span class="text-sm text-gray-500">
                     {gettext("Tasks")}: <span class="font-medium"><%= task_count %></span>
@@ -103,24 +114,6 @@
                     </div>
                   </div>
                 <% end %>
-              <% end %>
-
-              <%= if !at_limit do %>
-                <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"}>
-                  <div class="p-3 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div class="flex items-center justify-center gap-2 text-gray-600">
-                      <.icon name="hero-plus-circle" class="h-5 w-5" />
-                      <span class="text-sm font-medium">{gettext("Add task")}</span>
-                    </div>
-                  </div>
-                </.link>
-              <% else %>
-                <div class="p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 opacity-50">
-                  <div class="flex items-center justify-center gap-2 text-gray-400">
-                    <.icon name="hero-exclamation-triangle" class="h-5 w-5" />
-                    <span class="text-sm">{gettext("WIP limit reached")}</span>
-                  </div>
-                </div>
               <% end %>
             </div>
           </div>
