@@ -6,6 +6,7 @@ defmodule KanbanWeb.BoardLiveTest do
   import Kanban.AccountsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import ExUnit.CaptureLog
 
   @create_attrs %{name: "some name", description: "some description"}
   @update_attrs %{name: "some updated name", description: "some updated description"}
@@ -380,15 +381,20 @@ defmodule KanbanWeb.BoardLiveTest do
       refute html =~ "Add task"
     end
 
-    test "shows warning indicator when column at WIP limit", %{conn: conn, user: user} do
+    test "shows warning indicator when column exceeds WIP limit", %{conn: conn, user: user} do
       board = board_fixture(user)
-      column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      # Create column with higher limit initially
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 5})
       _task1 = task_fixture(column, %{title: "Task 1"})
       _task2 = task_fixture(column, %{title: "Task 2"})
+      _task3 = task_fixture(column, %{title: "Task 3"})
+
+      # Lower the WIP limit below current task count to simulate exceeding
+      {:ok, _column} = Kanban.Columns.update_column(column, %{wip_limit: 2})
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Check for red warning badge indicating limit reached
+      # Check for red warning badge indicating limit exceeded
       assert html =~ "bg-red-100 text-red-800"
     end
 
@@ -401,6 +407,19 @@ defmodule KanbanWeb.BoardLiveTest do
 
       # Check for blue badge when under limit
       assert html =~ "bg-blue-100 text-blue-800"
+    end
+
+    test "displays blue indicator when column at WIP limit", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for blue badge when at limit (not exceeding)
+      assert html =~ "bg-blue-100 text-blue-800"
+      refute html =~ "bg-red-100 text-red-800"
     end
 
     test "cannot create task when WIP limit reached", %{conn: conn, user: user} do
@@ -483,25 +502,28 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
       # Try to move task from column1 to column2 (already at limit)
-      html =
-        show_live
-        |> render_click("move_task", %{
-          "task_id" => "#{task.id}",
-          "old_column_id" => "#{column1.id}",
-          "new_column_id" => "#{column2.id}",
-          "new_position" => 0
-        })
+      # Suppress warning log by using @tag :capture_log
+      capture_log(fn ->
+        html =
+          show_live
+          |> render_click("move_task", %{
+            "task_id" => "#{task.id}",
+            "old_column_id" => "#{column1.id}",
+            "new_column_id" => "#{column2.id}",
+            "new_position" => 0
+          })
 
-      # Should show error message
-      assert html =~ "Cannot move task: column has reached its WIP limit"
+        # Should show error message
+        assert html =~ "Cannot move task: column has reached its WIP limit"
 
-      # Verify task was NOT moved
-      tasks1 = Kanban.Tasks.list_tasks(column1)
-      assert length(tasks1) == 1
-      assert hd(tasks1).id == task.id
+        # Verify task was NOT moved
+        tasks1 = Kanban.Tasks.list_tasks(column1)
+        assert length(tasks1) == 1
+        assert hd(tasks1).id == task.id
 
-      tasks2 = Kanban.Tasks.list_tasks(column2)
-      assert length(tasks2) == 2
+        tasks2 = Kanban.Tasks.list_tasks(column2)
+        assert length(tasks2) == 2
+      end)
     end
 
     test "moves task to different column with room", %{conn: conn, user: user} do
@@ -591,9 +613,9 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Check for red border/background indicating WIP limit reached
-      assert html =~ "bg-red-50"
-      assert html =~ "border-red-200"
+      # Check that WIP limit data attributes are present for JS to use
+      assert html =~ ~s(data-wip-limit="2")
+      assert html =~ ~s(data-task-count="2")
     end
   end
 end

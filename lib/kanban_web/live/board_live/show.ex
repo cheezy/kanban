@@ -183,8 +183,15 @@ defmodule KanbanWeb.BoardLive.Show do
     # Persist the change to database
     Tasks.reorder_tasks(column, new_order)
 
-    # Send success event to client without triggering re-render
-    {:noreply, push_event(socket, "move_success", %{})}
+    # Send success event FIRST to clear pendingMove flag, then reload tasks
+    # Reset the stream so LiveView re-renders columns with updated task counts
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> push_event("move_success", %{})
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
   end
 
   defp handle_task_move(socket, task, new_column_id, new_position) do
@@ -196,14 +203,23 @@ defmodule KanbanWeb.BoardLive.Show do
     case Tasks.move_task(task, new_column, new_position) do
       {:ok, _task} ->
         Logger.info("Task move succeeded")
-        # Success - send success event without triggering re-render
-        {:noreply, push_event(socket, "move_success", %{})}
+        # Send success event FIRST to clear pendingMove flag, then reload tasks
+        # Reset the stream so LiveView re-renders columns with updated task counts
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> push_event("move_success", %{})
+         |> stream(:columns, columns, reset: true)
+         |> load_tasks_for_columns(columns)}
 
       {:error, :wip_limit_reached} ->
         Logger.warning("Task move failed: WIP limit reached")
         # On error, we need to reload to revert the client-side change
+        # Send wip_limit_violation event to trigger visual feedback on target column
         socket
         |> put_flash(:error, gettext("Cannot move task: column has reached its WIP limit"))
+        |> push_event("wip_limit_violation", %{column_id: new_column_id})
         |> push_event("move_failed", %{})
         |> reload_board_columns()
 

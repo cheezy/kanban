@@ -474,4 +474,161 @@ defmodule Kanban.TasksTest do
       assert Tasks.can_add_task?(column)
     end
   end
+
+  describe "create_task with string keys" do
+    test "creates task with string keys in attributes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Pass attrs with string keys (as from form params)
+      assert {:ok, %Task{} = task} =
+               Tasks.create_task(column, %{"title" => "Task with string key"})
+
+      assert task.title == "Task with string key"
+      assert task.position == 0
+    end
+
+    test "creates task with string keys for description" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert {:ok, %Task{} = task} =
+               Tasks.create_task(column, %{
+                 "title" => "Task",
+                 "description" => "Description with string key"
+               })
+
+      assert task.description == "Description with string key"
+    end
+  end
+
+  describe "move_task edge cases" do
+    test "moves task between columns at middle position" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      task_to_move = task_fixture(column1, %{title: "Moving task"})
+      task1 = task_fixture(column2, %{title: "Task 1"})
+      task2 = task_fixture(column2, %{title: "Task 2"})
+      task3 = task_fixture(column2, %{title: "Task 3"})
+
+      # Move task to position 2 (between task2 and task3)
+      assert {:ok, moved_task} = Tasks.move_task(task_to_move, column2, 2)
+
+      assert moved_task.position == 2
+
+      # Verify task order in column2
+      tasks = Tasks.list_tasks(column2)
+      assert length(tasks) == 4
+      assert Enum.at(tasks, 0).id == task1.id
+      assert Enum.at(tasks, 1).id == task2.id
+      assert Enum.at(tasks, 2).id == moved_task.id
+      assert Enum.at(tasks, 3).id == task3.id
+    end
+
+    test "moves task to same position in same column (no-op)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      # Move task2 to position 1 (its current position)
+      assert {:ok, moved_task} = Tasks.move_task(task2, column, 1)
+
+      assert moved_task.position == 1
+
+      # Verify order hasn't changed
+      tasks = Tasks.list_tasks(column)
+      assert Enum.map(tasks, & &1.id) == [task1.id, task2.id, task3.id]
+    end
+
+    test "moves task from end to beginning within same column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      # Move task3 from position 2 to position 0
+      assert {:ok, moved_task} = Tasks.move_task(task3, column, 0)
+
+      assert moved_task.position == 0
+
+      # Verify new order
+      tasks = Tasks.list_tasks(column)
+      assert Enum.map(tasks, & &1.id) == [task3.id, task1.id, task2.id]
+    end
+
+    test "moves task from middle position upward within same column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+      task4 = task_fixture(column, %{title: "Task 4"})
+
+      # Move task3 from position 2 to position 1
+      assert {:ok, moved_task} = Tasks.move_task(task3, column, 1)
+
+      assert moved_task.position == 1
+
+      # Verify new order
+      tasks = Tasks.list_tasks(column)
+      assert Enum.map(tasks, & &1.id) == [task1.id, task3.id, task2.id, task4.id]
+    end
+
+    test "moves task from middle position downward within same column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+      task4 = task_fixture(column, %{title: "Task 4"})
+
+      # Move task2 from position 1 to position 3
+      assert {:ok, moved_task} = Tasks.move_task(task2, column, 3)
+
+      assert moved_task.position == 3
+
+      # Verify new order
+      tasks = Tasks.list_tasks(column)
+      assert Enum.map(tasks, & &1.id) == [task1.id, task3.id, task4.id, task2.id]
+    end
+
+    test "moves task between columns at end position" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      task_to_move = task_fixture(column1, %{title: "Moving task"})
+      task1 = task_fixture(column2, %{title: "Task 1"})
+      task2 = task_fixture(column2, %{title: "Task 2"})
+
+      # Move task to end of column2
+      assert {:ok, moved_task} = Tasks.move_task(task_to_move, column2, 2)
+
+      assert moved_task.position == 2
+
+      # Verify task order in column2
+      tasks = Tasks.list_tasks(column2)
+      assert length(tasks) == 3
+      assert Enum.at(tasks, 0).id == task1.id
+      assert Enum.at(tasks, 1).id == task2.id
+      assert Enum.at(tasks, 2).id == moved_task.id
+    end
+  end
 end

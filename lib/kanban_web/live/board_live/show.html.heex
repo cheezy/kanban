@@ -42,18 +42,25 @@
             <% tasks = Map.get(@tasks_by_column, column.id, []) %>
             <% task_count = length(tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
+            <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
-                  <%= if !at_limit do %>
-                    <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"} title={gettext("Add task")}>
-                      <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-green-500 hover:text-green-600" />
-                    </.link>
-                  <% else %>
-                    <span title={gettext("WIP limit reached")}>
+                  <%= if over_limit do %>
+                    <span title={gettext("WIP limit exceeded")}>
                       <.icon name="hero-exclamation-triangle-solid" class="h-5 w-5 text-red-400" />
                     </span>
+                  <% else %>
+                    <%= if at_limit do %>
+                      <span title={gettext("WIP limit reached")}>
+                        <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-gray-400 cursor-not-allowed" />
+                      </span>
+                    <% else %>
+                      <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"} title={gettext("Add task")}>
+                        <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-green-500 hover:text-green-600" />
+                      </.link>
+                    <% end %>
                   <% end %>
                 </div>
                 <div class="mt-1 flex items-center gap-2">
@@ -63,7 +70,7 @@
                   <%= if column.wip_limit > 0 do %>
                     <span class={[
                       "text-sm px-2 py-0.5 rounded",
-                      at_limit && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
+                      over_limit && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
                     ]}>
                       {gettext("WIP limit")}: <%= column.wip_limit %>
                     </span>
@@ -84,15 +91,14 @@
             </div>
 
             <div
-              class={[
-                "space-y-2 min-h-[100px] p-2 rounded transition-colors",
-                at_limit && "bg-red-50 border-2 border-red-200" || ""
-              ]}
+              class="space-y-2 min-h-[100px] p-2 rounded transition-colors"
               id={"tasks-#{column.id}"}
               phx-hook="Sortable"
               data-column-id={column.id}
               data-group="tasks"
               data-handle=".drag-handle"
+              data-wip-limit={column.wip_limit}
+              data-task-count={task_count}
               data-initial-tasks={Jason.encode!(Enum.map(tasks, &%{id: &1.id, title: &1.title, description: &1.description}))}
             >
               <%= if Enum.empty?(tasks) do %>
