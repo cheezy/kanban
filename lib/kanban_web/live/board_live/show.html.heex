@@ -129,32 +129,38 @@
     </div>
   </div>
 
-  <%= if @live_action in [:new_column, :edit_column] do %>
-    <div class="mt-8 max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-      <.live_component
-        module={KanbanWeb.ColumnLive.FormComponent}
-        id={@live_action == :new_column && :new || "edit-#{@column.id}"}
-        title={@page_title}
-        action={@live_action}
-        board={@board}
-        column={@live_action == :edit_column && @column || %Kanban.Columns.Column{}}
-        patch={~p"/boards/#{@board}"}
-      />
-    </div>
-  <% end %>
+  <.modal
+    :if={@live_action in [:new_column, :edit_column]}
+    id="column-modal"
+    show
+    on_cancel={JS.patch(~p"/boards/#{@board}")}
+  >
+    <.live_component
+      module={KanbanWeb.ColumnLive.FormComponent}
+      id={@live_action == :new_column && :new || "edit-#{@column.id}"}
+      title={@page_title}
+      action={@live_action}
+      board={@board}
+      column={@live_action == :edit_column && @column || %Kanban.Columns.Column{}}
+      patch={~p"/boards/#{@board}"}
+    />
+  </.modal>
 
-  <%= if @live_action in [:new_task, :edit_task] do %>
-    <div class="mt-8 max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-      <.live_component
-        module={KanbanWeb.TaskLive.FormComponent}
-        id={@live_action == :new_task && :new || "edit-#{@task.id}"}
-        title={@page_title}
-        action={@live_action}
-        board={@board}
-        task={@live_action == :edit_task && @task || %Kanban.Tasks.Task{}}
-        column_id={@live_action == :new_task && Map.get(assigns, :column_id) || nil}
-        patch={~p"/boards/#{@board}"}
-      />
-    </div>
-  <% end %>
+  <.modal
+    :if={@live_action in [:new_task, :edit_task]}
+    id="task-modal"
+    show
+    on_cancel={JS.patch(~p"/boards/#{@board}")}
+  >
+    <.live_component
+      module={KanbanWeb.TaskLive.FormComponent}
+      id={@live_action == :new_task && :new || "edit-#{@task.id}"}
+      title={@page_title}
+      action={@live_action}
+      board={@board}
+      task={@live_action == :edit_task && @task || %Kanban.Tasks.Task{}}
+      column_id={@live_action == :new_task && Map.get(assigns, :column_id) || nil}
+      patch={~p"/boards/#{@board}"}
+    />
+  </.modal>
 </Layouts.app>
