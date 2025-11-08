@@ -83,22 +83,41 @@
               </div>
             </div>
 
-            <div class="space-y-2 min-h-[100px]">
+            <div
+              class={[
+                "space-y-2 min-h-[100px] p-2 rounded transition-colors",
+                at_limit && "bg-red-50 border-2 border-red-200" || ""
+              ]}
+              id={"tasks-#{column.id}"}
+              phx-hook="Sortable"
+              data-column-id={column.id}
+              data-group="tasks"
+              data-handle=".drag-handle"
+              data-initial-tasks={Jason.encode!(Enum.map(tasks, &%{id: &1.id, title: &1.title, description: &1.description}))}
+            >
               <%= if Enum.empty?(tasks) do %>
-                <div class="p-4 bg-white rounded border-2 border-dashed border-gray-300">
+                <div class="p-4 bg-white rounded border-2 border-dashed border-gray-300 empty-state">
                   <p class="text-sm text-gray-500 text-center">
                     {gettext("No tasks yet")}
                   </p>
                 </div>
               <% else %>
                 <%= for task <- tasks do %>
-                  <div class="p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <div
+                    class="task-card p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-move"
+                    data-id={task.id}
+                  >
                     <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <h4 class="font-medium text-gray-900 text-sm"><%= task.title %></h4>
-                        <%= if task.description && task.description != "" do %>
-                          <p class="mt-1 text-xs text-gray-600 line-clamp-2"><%= task.description %></p>
-                        <% end %>
+                      <div class="flex items-start gap-2 flex-1">
+                        <div class="drag-handle cursor-grab active:cursor-grabbing pt-1">
+                          <.icon name="hero-bars-3" class="h-4 w-4 text-gray-400" />
+                        </div>
+                        <div class="flex-1">
+                          <h4 class="font-medium text-gray-900 text-sm"><%= task.title %></h4>
+                          <%= if task.description && task.description != "" do %>
+                            <p class="mt-1 text-xs text-gray-600 line-clamp-2"><%= task.description %></p>
+                          <% end %>
+                        </div>
                       </div>
                       <div class="flex gap-1 ml-2">
                         <.link patch={~p"/boards/#{@board}/tasks/#{task}/edit"}>

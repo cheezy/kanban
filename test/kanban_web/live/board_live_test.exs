@@ -415,4 +415,185 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "WIP limit reached"
     end
   end
+
+  describe "Drag and Drop" do
+    setup [:register_and_log_in_user]
+
+    test "moves task within same column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task3 (position 2) to position 0
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task3.id}",
+        "old_column_id" => "#{column.id}",
+        "new_column_id" => "#{column.id}",
+        "new_position" => 0
+      })
+
+      # Verify task was moved by checking the order
+      tasks = Kanban.Tasks.list_tasks(column)
+      task_ids = Enum.map(tasks, & &1.id)
+
+      assert task_ids == [task3.id, task1.id, task2.id]
+    end
+
+    test "moves task to different column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress"})
+      task = task_fixture(column1, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task from column1 to column2
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task.id}",
+        "old_column_id" => "#{column1.id}",
+        "new_column_id" => "#{column2.id}",
+        "new_position" => 0
+      })
+
+      # Verify task was moved
+      column1
+      |> Kanban.Tasks.list_tasks()
+      |> Enum.empty?()
+      |> assert()
+
+      tasks = Kanban.Tasks.list_tasks(column2)
+      assert length(tasks) == 1
+      assert hd(tasks).id == task.id
+    end
+
+    test "respects WIP limit when moving task to different column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      task = task_fixture(column1, %{title: "Task to move"})
+      _task1 = task_fixture(column2, %{title: "Task 1"})
+      _task2 = task_fixture(column2, %{title: "Task 2"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Try to move task from column1 to column2 (already at limit)
+      html =
+        show_live
+        |> render_click("move_task", %{
+          "task_id" => "#{task.id}",
+          "old_column_id" => "#{column1.id}",
+          "new_column_id" => "#{column2.id}",
+          "new_position" => 0
+        })
+
+      # Should show error message
+      assert html =~ "Cannot move task: column has reached its WIP limit"
+
+      # Verify task was NOT moved
+      tasks1 = Kanban.Tasks.list_tasks(column1)
+      assert length(tasks1) == 1
+      assert hd(tasks1).id == task.id
+
+      tasks2 = Kanban.Tasks.list_tasks(column2)
+      assert length(tasks2) == 2
+    end
+
+    test "moves task to different column with room", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 3})
+      task = task_fixture(column1, %{title: "Task to move"})
+      _task1 = task_fixture(column2, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task from column1 to column2 (has room)
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task.id}",
+        "old_column_id" => "#{column1.id}",
+        "new_column_id" => "#{column2.id}",
+        "new_position" => 1
+      })
+
+      # Verify task was moved
+      column1
+      |> Kanban.Tasks.list_tasks()
+      |> Enum.empty?()
+      |> assert()
+
+      tasks2 = Kanban.Tasks.list_tasks(column2)
+      assert length(tasks2) == 2
+      task_ids = Enum.map(tasks2, & &1.id)
+      assert task.id in task_ids
+    end
+
+    test "updates position correctly when moving task", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task1 (position 0) to position 2 (end)
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task1.id}",
+        "old_column_id" => "#{column.id}",
+        "new_column_id" => "#{column.id}",
+        "new_position" => 2
+      })
+
+      # Verify new order
+      tasks = Kanban.Tasks.list_tasks(column)
+      task_ids = Enum.map(tasks, & &1.id)
+
+      assert task_ids == [task2.id, task3.id, task1.id]
+    end
+
+    test "displays drag handle on tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for drag handle class
+      assert html =~ "drag-handle"
+    end
+
+    test "shows sortable hook on task list", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for sortable hook
+      assert html =~ ~s(phx-hook="Sortable")
+      assert html =~ ~s(data-column-id="#{column.id}")
+      assert html =~ ~s(data-group="tasks")
+    end
+
+    test "highlights column when at WIP limit", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Check for red border/background indicating WIP limit reached
+      assert html =~ "bg-red-50"
+      assert html =~ "border-red-200"
+    end
+  end
 end

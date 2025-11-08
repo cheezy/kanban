@@ -115,6 +115,37 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event(
+        "move_task",
+        %{
+          "task_id" => task_id,
+          "old_column_id" => old_column_id,
+          "new_column_id" => new_column_id,
+          "new_position" => new_position
+        },
+        socket
+      ) do
+    require Logger
+
+    task_id = String.to_integer(task_id)
+    old_column_id = String.to_integer(old_column_id)
+    new_column_id = String.to_integer(new_column_id)
+
+    Logger.info(
+      "Move task event: task_id=#{task_id}, old_column=#{old_column_id}, new_column=#{new_column_id}, new_position=#{new_position}"
+    )
+
+    task = Tasks.get_task!(task_id)
+
+    # If moving within the same column, just reorder
+    if old_column_id == new_column_id do
+      handle_task_reorder(socket, old_column_id, task_id, new_position)
+    else
+      handle_task_move(socket, task, new_column_id, new_position)
+    end
+  end
+
+  @impl true
   def handle_info({KanbanWeb.ColumnLive.FormComponent, {:saved, _column}}, socket) do
     columns = Columns.list_columns(socket.assigns.board)
 
@@ -126,6 +157,66 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_info({KanbanWeb.TaskLive.FormComponent, {:saved, _task}}, socket) do
+    # Reload columns with full reset since we need to update task lists
+    # This is necessary when tasks are added/edited via the modal
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
+  end
+
+  defp handle_task_reorder(socket, column_id, task_id, new_position) do
+    column = Columns.get_column!(column_id)
+    tasks = Tasks.list_tasks(column)
+
+    # Get the current order of task IDs
+    current_order = Enum.map(tasks, & &1.id)
+
+    # Remove the task from its current position and insert it at the new position
+    new_order =
+      current_order
+      |> List.delete(task_id)
+      |> List.insert_at(new_position, task_id)
+
+    # Persist the change to database
+    Tasks.reorder_tasks(column, new_order)
+
+    # Send success event to client without triggering re-render
+    {:noreply, push_event(socket, "move_success", %{})}
+  end
+
+  defp handle_task_move(socket, task, new_column_id, new_position) do
+    require Logger
+    new_column = Columns.get_column!(new_column_id)
+
+    Logger.info("Attempting to move task #{task.id} to column #{new_column_id} at position #{new_position}")
+
+    case Tasks.move_task(task, new_column, new_position) do
+      {:ok, _task} ->
+        Logger.info("Task move succeeded")
+        # Success - send success event without triggering re-render
+        {:noreply, push_event(socket, "move_success", %{})}
+
+      {:error, :wip_limit_reached} ->
+        Logger.warning("Task move failed: WIP limit reached")
+        # On error, we need to reload to revert the client-side change
+        socket
+        |> put_flash(:error, gettext("Cannot move task: column has reached its WIP limit"))
+        |> push_event("move_failed", %{})
+        |> reload_board_columns()
+
+      {:error, reason} ->
+        Logger.error("Task move failed: #{inspect(reason)}")
+        socket
+        |> put_flash(:error, gettext("Failed to move task"))
+        |> push_event("move_failed", %{})
+        |> reload_board_columns()
+    end
+  end
+
+  defp reload_board_columns(socket) do
     columns = Columns.list_columns(socket.assigns.board)
 
     {:noreply,

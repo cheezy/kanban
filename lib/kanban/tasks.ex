@@ -259,46 +259,82 @@ defmodule Kanban.Tasks do
   end
 
   defp perform_move(task, new_column, new_position, old_column_id) do
+    require Logger
+
     Repo.transaction(fn ->
-      # Step 1: Move task to a temporary position to avoid constraint violations
-      temp_position = -1 * task.id
+      Logger.info("perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}")
 
-      Task
-      |> where([t], t.id == ^task.id)
-      |> Repo.update_all(set: [position: temp_position])
+      move_task_to_temp_position(task)
 
-      # Step 2: Handle the source column (if moving between columns)
       if new_column.id != old_column_id do
-        old_column = Columns.get_column!(old_column_id)
-        reorder_after_removal(old_column, task.position)
-
-        # Make space in the target column
-        shift_tasks_down_for_insert(new_column, new_position)
+        handle_cross_column_move(task, new_column, new_position, old_column_id)
       else
-        # Moving within the same column
-        cond do
-          new_position < task.position ->
-            # Moving up: shift tasks down from new_position to old_position-1
-            shift_tasks_down_for_insert_range(new_column, new_position, task.position - 1)
-
-          new_position > task.position ->
-            # Moving down: shift tasks up from old_position+1 to new_position
-            shift_tasks_up_for_insert_range(new_column, task.position + 1, new_position)
-
-          true ->
-            # No movement needed if positions are the same
-            :ok
-        end
+        handle_same_column_move(task, new_column, new_position)
       end
 
-      # Step 3: Update the task to its final position
-      Task
-      |> where([t], t.id == ^task.id)
-      |> Repo.update_all(set: [column_id: new_column.id, position: new_position])
-
-      # Return the updated task
-      get_task!(task.id)
+      finalize_task_move(task, new_column, new_position)
     end)
+  end
+
+  defp move_task_to_temp_position(task) do
+    require Logger
+    temp_position = -1 * task.id
+
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [position: temp_position])
+
+    Logger.info("Task moved to temporary position #{temp_position}")
+  end
+
+  defp handle_cross_column_move(task, new_column, new_position, old_column_id) do
+    require Logger
+    Logger.info("Moving between columns")
+
+    old_column = Columns.get_column!(old_column_id)
+    reorder_after_removal(old_column, task.position)
+
+    # Log target column state before shift
+    target_tasks = list_tasks(new_column)
+    Logger.info("Target column has #{length(target_tasks)} tasks before shift: #{inspect(Enum.map(target_tasks, &{&1.id, &1.position}))}")
+
+    # Make space in target column
+    shift_tasks_down_for_insert(new_column, new_position)
+
+    # Log target column state after shift
+    target_tasks_after = list_tasks(new_column)
+    Logger.info("Target column has #{length(target_tasks_after)} tasks after shift: #{inspect(Enum.map(target_tasks_after, &{&1.id, &1.position}))}")
+  end
+
+  defp handle_same_column_move(task, column, new_position) do
+    cond do
+      new_position < task.position ->
+        # Moving up: shift tasks down from new_position to old_position-1
+        shift_tasks_down_for_insert_range(column, new_position, task.position - 1)
+
+      new_position > task.position ->
+        # Moving down: shift tasks up from old_position+1 to new_position
+        shift_tasks_up_for_insert_range(column, task.position + 1, new_position)
+
+      true ->
+        # No movement needed if positions are the same
+        :ok
+    end
+  end
+
+  defp finalize_task_move(task, new_column, new_position) do
+    require Logger
+    Logger.info("Updating task #{task.id} to final position: column_id=#{new_column.id}, position=#{new_position}")
+
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [column_id: new_column.id, position: new_position])
+
+    Logger.info("Task updated successfully")
+
+    updated_task = get_task!(task.id)
+    Logger.info("Returning updated task: #{inspect(updated_task)}")
+    updated_task
   end
 
   defp reorder_after_removal(column, removed_position) do
@@ -320,28 +356,93 @@ defmodule Kanban.Tasks do
   end
 
   defp shift_tasks_down_for_insert(column, start_position) do
-    # Shift all tasks at or after start_position down by 1
-    Task
-    |> where([t], t.column_id == ^column.id)
-    |> where([t], t.position >= ^start_position)
-    |> Repo.update_all(inc: [position: 1])
+    require Logger
+
+    # Get all tasks at or after start_position
+    tasks_to_shift =
+      Task
+      |> where([t], t.column_id == ^column.id)
+      |> where([t], t.position >= ^start_position)
+      |> order_by([t], desc: t.position)
+      |> Repo.all()
+
+    Logger.info("Shifting #{length(tasks_to_shift)} tasks down from position #{start_position}")
+
+    # First, move all tasks to temporary negative positions to avoid constraint violations
+    # We use descending order to avoid conflicts
+    Enum.each(tasks_to_shift, fn task ->
+      temp_position = -1000 - task.id
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: temp_position])
+    end)
+
+    # Then, update each task to its final position (original + 1)
+    Enum.each(tasks_to_shift, fn task ->
+      new_position = task.position + 1
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: new_position])
+    end)
   end
 
   defp shift_tasks_down_for_insert_range(column, start_position, end_position) do
-    # Shift tasks in range down by 1
-    Task
-    |> where([t], t.column_id == ^column.id)
-    |> where([t], t.position >= ^start_position)
-    |> where([t], t.position <= ^end_position)
-    |> Repo.update_all(inc: [position: 1])
+    # Get all tasks in range
+    tasks_to_shift =
+      Task
+      |> where([t], t.column_id == ^column.id)
+      |> where([t], t.position >= ^start_position)
+      |> where([t], t.position <= ^end_position)
+      |> order_by([t], desc: t.position)
+      |> Repo.all()
+
+    # First, move all tasks to temporary negative positions
+    Enum.each(tasks_to_shift, fn task ->
+      temp_position = -1000 - task.id
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: temp_position])
+    end)
+
+    # Then, update each task to its final position (original + 1)
+    Enum.each(tasks_to_shift, fn task ->
+      new_position = task.position + 1
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: new_position])
+    end)
   end
 
   defp shift_tasks_up_for_insert_range(column, start_position, end_position) do
-    # Shift tasks in range up by 1
-    Task
-    |> where([t], t.column_id == ^column.id)
-    |> where([t], t.position >= ^start_position)
-    |> where([t], t.position <= ^end_position)
-    |> Repo.update_all(inc: [position: -1])
+    # Get all tasks in range (ascending order for upward shift)
+    tasks_to_shift =
+      Task
+      |> where([t], t.column_id == ^column.id)
+      |> where([t], t.position >= ^start_position)
+      |> where([t], t.position <= ^end_position)
+      |> order_by([t], asc: t.position)
+      |> Repo.all()
+
+    # First, move all tasks to temporary negative positions
+    Enum.each(tasks_to_shift, fn task ->
+      temp_position = -1000 - task.id
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: temp_position])
+    end)
+
+    # Then, update each task to its final position (original - 1)
+    Enum.each(tasks_to_shift, fn task ->
+      new_position = task.position - 1
+
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: new_position])
+    end)
   end
 end

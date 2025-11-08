@@ -103,3 +103,18 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Drag and drop styles */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #e5e7eb;
+}
+
+.sortable-drag {
+  opacity: 1;
+  cursor: grabbing !important;
+}
+
+.sortable-chosen {
+  cursor: grabbing;
+}

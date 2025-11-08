@@ -306,34 +306,34 @@ tasks
 
 #### Phase 6: Drag & Drop Functionality
 
-- [ ] **Install drag-and-drop library**
-  - [ ] Add Sortable.js or use native HTML5 drag-and-drop
-  - [ ] Configure in `assets/js/app.js`
-- [ ] **Create LiveView hooks for drag-and-drop**
-  - [ ] Create hook in `assets/js/hooks.js`
-  - [ ] Handle drag start, drag over, and drop events
-  - [ ] Send events to LiveView
-- [ ] **Implement server-side move handlers**
-  - [ ] Add `handle_event("move_task", ...)` to board show LiveView
-  - [ ] Call `Tasks.move_task/3` context function (respects WIP limit)
-  - [ ] Handle WIP limit errors and display appropriate message to user
-  - [ ] Update UI with new task positions
-- [ ] **Add visual feedback**
-  - [ ] Add drag handle to tasks
-  - [ ] Show placeholder when dragging
-  - [ ] Highlight drop zones
-  - [ ] Visually indicate when a column cannot accept more tasks due to WIP limit
-  - [ ] Show warning indicator when attempting to drag to a full column
-- [ ] **Write LiveView tests**
-  - [ ] Test moving task within same column
-  - [ ] Test moving task to different column
-  - [ ] Test position updates after move
-  - [ ] Test that drag-and-drop respects WIP limits
-  - [ ] Test error handling when attempting to move task to full column
-- [ ] **Quality Checks (Phase 6)**:
-  - [ ] Run `mix test` and ensure all tests pass
-  - [ ] Run `mix test --cover` and verify coverage meets threshold
-  - [ ] Run `mix credo --strict` and fix any issues
+- [X] **Install drag-and-drop library**
+  - [X] Add Sortable.js or use native HTML5 drag-and-drop
+  - [X] Configure in `assets/js/app.js`
+- [X] **Create LiveView hooks for drag-and-drop**
+  - [X] Create hook in `assets/js/hooks/sortable.js`
+  - [X] Handle drag start, drag over, and drop events
+  - [X] Send events to LiveView
+- [X] **Implement server-side move handlers**
+  - [X] Add `handle_event("move_task", ...)` to board show LiveView
+  - [X] Call `Tasks.move_task/3` context function (respects WIP limit)
+  - [X] Handle WIP limit errors and display appropriate message to user
+  - [X] Update UI with new task positions
+- [X] **Add visual feedback**
+  - [X] Add drag handle to tasks
+  - [X] Show placeholder when dragging
+  - [X] Highlight drop zones
+  - [X] Visually indicate when a column cannot accept more tasks due to WIP limit
+  - [X] Show warning indicator when attempting to drag to a full column
+- [X] **Write LiveView tests**
+  - [X] Test moving task within same column
+  - [X] Test moving task to different column
+  - [X] Test position updates after move
+  - [X] Test that drag-and-drop respects WIP limits
+  - [X] Test error handling when attempting to move task to full column
+- [X] **Quality Checks (Phase 6)**:
+  - [X] Run `mix test` and ensure all tests pass (223 tests, 0 failures)
+  - [X] Run `mix test --cover` and verify coverage meets threshold (94.67% coverage)
+  - [X] Run `mix credo --strict` and fix any issues (no issues found)
 
 #### Phase 7: Polish & Enhancement
 
