@@ -41,7 +41,7 @@ A web-based Kanban board application built with Phoenix/Elixir that allows users
 
 ### Database Schema
 
-```
+```text
 users
   - id
   - email
