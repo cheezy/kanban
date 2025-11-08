@@ -1,20 +1,17 @@
 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <!-- Abstract S with Motion - Favicon optimized -->
+  <!-- Abstract S with Motion - 32x32 optimized -->
   <defs>
-    <linearGradient id="sGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="sGrad32" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#475569;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
     </linearGradient>
   </defs>
 
-  <!-- Background -->
   <rect width="32" height="32" fill="white" rx="6"/>
 
-  <!-- Bold S shape -->
   <path d="M 20 9 Q 24 9, 24 12 Q 24 14, 21 15 L 13 17 Q 10 18, 10 21 Q 10 24, 14 24 L 20 24"
-        stroke="url(#sGrad)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        stroke="url(#sGrad32)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
 
-  <!-- Motion lines (cyan) -->
   <rect x="6" y="10" width="6" height="1.5" fill="#06b6d4" rx="0.5" opacity="0.8"/>
   <rect x="4" y="13" width="8" height="1.5" fill="#06b6d4" rx="0.5" opacity="0.6"/>
   <rect x="5" y="16" width="5" height="1.5" fill="#06b6d4" rx="0.5" opacity="0.4"/>

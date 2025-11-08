@@ -1,0 +1,22 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Abstract S with Motion Lines -->
+  <defs>
+    <linearGradient id="sGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#475569;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Bold S shape -->
+  <path d="M 120 60 Q 140 60, 140 75 Q 140 85, 125 90 L 85 100 Q 70 105, 70 120 Q 70 135, 90 135 L 120 135"
+        stroke="url(#sGradient)" stroke-width="20" fill="none" stroke-linecap="round"/>
+
+  <!-- Motion lines/blocks (cyan) -->
+  <rect x="50" y="65" width="30" height="8" fill="#06b6d4" rx="2" opacity="0.8"/>
+  <rect x="40" y="80" width="40" height="8" fill="#06b6d4" rx="2" opacity="0.6"/>
+  <rect x="45" y="95" width="25" height="8" fill="#06b6d4" rx="2" opacity="0.4"/>
+
+  <rect x="110" y="110" width="30" height="8" fill="#06b6d4" rx="2" opacity="0.8"/>
+  <rect x="120" y="125" width="35" height="8" fill="#06b6d4" rx="2" opacity="0.6"/>
+  <rect x="125" y="140" width="25" height="8" fill="#06b6d4" rx="2" opacity="0.4"/>
+</svg>

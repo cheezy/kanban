@@ -4,14 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default={gettext("Kanban")} suffix={gettext(" · Task Management")}>
+    <.live_title default={gettext("Stride")} suffix={gettext(" · Task Management")}>
       {assigns[:page_title]}
     </.live_title>
-    <link rel="icon" type="image/x-icon" href={~p"/images/favicon.ico"} />
-    <link rel="icon" type="image/png" sizes="16x16" href={~p"/images/favicon-16x16.png"} />
-    <link rel="icon" type="image/png" sizes="32x32" href={~p"/images/favicon-32x32.png"} />
-    <link rel="icon" type="image/png" sizes="48x48" href={~p"/images/favicon-48x48.png"} />
     <link rel="icon" type="image/svg+xml" href={~p"/images/favicon.svg"} />
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href={~p"/images/favicon-16x16.svg"} />
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href={~p"/images/favicon-32x32.svg"} />
+    <link rel="apple-touch-icon" sizes="180x180" href={~p"/images/apple-touch-icon.svg"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
@@ -39,7 +38,7 @@
     <nav class="bg-white border-b border-gray-200 shadow-sm">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 justify-between items-center">
-          <.logo brand_text={gettext("Kanban Board")} />
+          <.logo brand_text={gettext("Stride")} />
 
           <div class="flex items-center gap-4">
             <%= if @current_scope do %>

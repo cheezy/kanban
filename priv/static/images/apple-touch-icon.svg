@@ -1,0 +1,25 @@
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Apple Touch Icon - 180x180 -->
+  <defs>
+    <linearGradient id="sGradApple" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#475569;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="180" height="180" fill="white"/>
+
+  <!-- Bold S shape - scaled up -->
+  <path d="M 110 50 Q 140 50, 140 70 Q 140 82, 120 88 L 70 98 Q 55 103, 55 120 Q 55 137, 75 137 L 110 137"
+        stroke="url(#sGradApple)" stroke-width="18" fill="none" stroke-linecap="round"/>
+
+  <!-- Motion lines (cyan) - scaled up -->
+  <rect x="30" y="55" width="35" height="8" fill="#06b6d4" rx="3" opacity="0.8"/>
+  <rect x="20" y="72" width="45" height="8" fill="#06b6d4" rx="3" opacity="0.6"/>
+  <rect x="25" y="89" width="28" height="8" fill="#06b6d4" rx="3" opacity="0.4"/>
+
+  <rect x="102" y="107" width="35" height="8" fill="#06b6d4" rx="3" opacity="0.8"/>
+  <rect x="112" y="124" width="40" height="8" fill="#06b6d4" rx="3" opacity="0.6"/>
+  <rect x="117" y="141" width="28" height="8" fill="#06b6d4" rx="3" opacity="0.4"/>
+</svg>
