@@ -12,7 +12,9 @@ defmodule Kanban.TasksFixtures do
   def task_fixture(column, attrs \\ %{}) do
     attrs =
       Enum.into(attrs, %{
-        title: "Test Task #{System.unique_integer([:positive])}"
+        title: "Test Task #{System.unique_integer([:positive])}",
+        type: :work,
+        priority: :medium
       })
 
     {:ok, task} = Tasks.create_task(column, attrs)

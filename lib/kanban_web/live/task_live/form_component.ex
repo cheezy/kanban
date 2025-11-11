@@ -36,6 +36,27 @@ defmodule KanbanWeb.TaskLive.FormComponent do
           rows="4"
         />
 
+        <.input
+          field={f[:type]}
+          type="select"
+          label={gettext("Type")}
+          options={[{gettext("Work"), :work}, {gettext("Defect"), :defect}]}
+          required
+        />
+
+        <.input
+          field={f[:priority]}
+          type="select"
+          label={gettext("Priority")}
+          options={[
+            {gettext("Low"), :low},
+            {gettext("Medium"), :medium},
+            {gettext("High"), :high},
+            {gettext("Critical"), :critical}
+          ]}
+          required
+        />
+
         <%= if @action == :new_task do %>
           <.input
             field={f[:column_id]}

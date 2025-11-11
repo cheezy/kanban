@@ -123,6 +123,37 @@
                           <%= if task.description && task.description != "" do %>
                             <p class="mt-1 text-xs text-gray-600 line-clamp-2"><%= task.description %></p>
                           <% end %>
+                          <div class="mt-2 flex gap-2">
+                            <span
+                              class={[
+                                "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                                task.type == :defect && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
+                              ]}
+                              title={if task.type == :defect, do: gettext("Defect"), else: gettext("Work")}
+                            >
+                              <%= if task.type == :defect do %>
+                                <.icon name="hero-bug-ant" class="h-3.5 w-3.5" />
+                              <% else %>
+                                <.icon name="hero-wrench-screwdriver" class="h-3.5 w-3.5" />
+                              <% end %>
+                            </span>
+                            <span class={[
+                              "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                              case task.priority do
+                                :critical -> "bg-red-100 text-red-800"
+                                :high -> "bg-orange-100 text-orange-800"
+                                :medium -> "bg-yellow-100 text-yellow-800"
+                                :low -> "bg-green-100 text-green-800"
+                              end
+                            ]}>
+                              <%= case task.priority do
+                                :critical -> gettext("Critical")
+                                :high -> gettext("High")
+                                :medium -> gettext("Medium")
+                                :low -> gettext("Low")
+                              end %>
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div class="flex gap-1 ml-2">
