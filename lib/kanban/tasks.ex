@@ -62,7 +62,13 @@ defmodule Kanban.Tasks do
     # Check WIP limit before creating
     if can_add_task?(column) do
       next_position = get_next_position(column)
-      attrs = prepare_task_attrs(attrs, next_position)
+      task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
+      identifier = generate_identifier(column, task_type)
+
+      attrs =
+        attrs
+        |> prepare_task_attrs(next_position)
+        |> Map.put(:identifier, identifier)
 
       %Task{column_id: column.id}
       |> Task.changeset(attrs)
@@ -444,5 +450,30 @@ defmodule Kanban.Tasks do
       |> where([t], t.id == ^task.id)
       |> Repo.update_all(set: [position: new_position])
     end)
+  end
+
+  defp generate_identifier(column, task_type) do
+    # Preload the column's board to get board_id
+    column = Repo.preload(column, :board)
+
+    # Normalize task_type to atom
+    task_type =
+      case task_type do
+        "work" -> :work
+        "defect" -> :defect
+        atom when is_atom(atom) -> atom
+      end
+
+    # Count tasks of the same type across all columns in the board
+    count =
+      Task
+      |> join(:inner, [t], c in Column, on: t.column_id == c.id)
+      |> where([t, c], c.board_id == ^column.board_id)
+      |> where([t, c], t.type == ^task_type)
+      |> Repo.aggregate(:count)
+
+    # Generate identifier: W1, W2, D1, D2, etc.
+    prefix = if task_type == :work, do: "W", else: "D"
+    "#{prefix}#{count + 1}"
   end
 end
