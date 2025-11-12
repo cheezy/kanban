@@ -8,6 +8,7 @@ This is a web application written using the Phoenix web framework.
 - Use the TideWave mcp server to learn about and understand the running application
 - When you add a new dependency or update an existing dependency run `mix usage_rules.sync AGENTS.md --all --link-to-folder deps --inline usage_rules:all` to update the AGENTS.md file
 - Always provide a French translation of all text that is visible in the UI
+- Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 
 ### Quality guidelines  
 

@@ -65,6 +65,47 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "get_task_with_history!/1" do
+    test "returns the task with preloaded task histories" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      result = Tasks.get_task_with_history!(task.id)
+
+      assert result.id == task.id
+      assert Ecto.assoc_loaded?(result.task_histories)
+      assert length(result.task_histories) >= 1
+      # Should have creation history
+      assert Enum.any?(result.task_histories, fn h -> h.type == :creation end)
+    end
+
+    test "returns task histories in descending order by inserted_at" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress"})
+      task = task_fixture(column1)
+
+      # Move task to create another history entry
+      {:ok, _moved_task} = Tasks.move_task(task, column2, 0)
+
+      result = Tasks.get_task_with_history!(task.id)
+
+      assert length(result.task_histories) >= 2
+      # Most recent history should be first
+      timestamps = Enum.map(result.task_histories, & &1.inserted_at)
+      assert timestamps == Enum.sort(timestamps, {:desc, NaiveDateTime})
+    end
+
+    test "raises error when task does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Tasks.get_task_with_history!(999_999)
+      end
+    end
+  end
+
   describe "create_task/2" do
     test "creates a task with valid attributes" do
       user = user_fixture()
