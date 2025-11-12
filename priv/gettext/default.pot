@@ -73,7 +73,7 @@ msgstr ""
 msgid "Everything You Need to Stay Organized"
 msgstr ""
 
-#: lib/kanban_web/components/layouts/root.html.heex:58
+#: lib/kanban_web/components/layouts/root.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr ""
@@ -88,14 +88,14 @@ msgstr ""
 msgid "In Progress"
 msgstr ""
 
-#: lib/kanban_web/components/layouts/root.html.heex:55
+#: lib/kanban_web/components/layouts/root.html.heex:57
 #: lib/kanban_web/live/user_live/confirmation.ex:53
 #: lib/kanban_web/live/user_live/registration.ex:33
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr ""
 
-#: lib/kanban_web/components/layouts/root.html.heex:51
+#: lib/kanban_web/components/layouts/root.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr ""
@@ -120,7 +120,7 @@ msgstr ""
 msgid "Project Board"
 msgstr ""
 
-#: lib/kanban_web/components/layouts/root.html.heex:48
+#: lib/kanban_web/components/layouts/root.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
@@ -297,8 +297,8 @@ msgid "Save Password"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:13
-#: lib/kanban_web/live/column_live/form_component.ex:42
-#: lib/kanban_web/live/task_live/form_component.ex:50
+#: lib/kanban_web/live/column_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/form_component.html.heex:62
 #: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Saving..."
@@ -390,7 +390,7 @@ msgid "Cancel"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:11
-#: lib/kanban_web/live/task_live/form_component.ex:35
+#: lib/kanban_web/live/task_live/form_component.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr ""
@@ -416,7 +416,7 @@ msgid "Listing Boards"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:10
-#: lib/kanban_web/live/column_live/form_component.ex:29
+#: lib/kanban_web/live/column_live/form_component.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
@@ -447,12 +447,12 @@ msgstr ""
 msgid "View Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:79
+#: lib/kanban_web/live/board_live/show.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this column?"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:95
+#: lib/kanban_web/live/column_live/form_component.ex:52
 #, elixir-autogen, elixir-format
 msgid "Column created successfully"
 msgstr ""
@@ -462,12 +462,12 @@ msgstr ""
 msgid "Column deleted successfully"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:80
+#: lib/kanban_web/live/column_live/form_component.ex:37
 #, elixir-autogen, elixir-format
 msgid "Column updated successfully"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:14
+#: lib/kanban_web/live/column_live/form_component.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "Create a new column for your board"
 msgstr ""
@@ -487,52 +487,52 @@ msgstr ""
 msgid "New Column"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:42
+#: lib/kanban_web/live/column_live/form_component.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Save Column"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:61
+#: lib/kanban_web/live/board_live/show.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Tasks"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:16
+#: lib/kanban_web/live/column_live/form_component.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Update column details"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:34
+#: lib/kanban_web/live/column_live/form_component.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "WIP Limit"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:68
+#: lib/kanban_web/live/board_live/show.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "WIP limit"
 msgstr ""
 
-#: lib/kanban_web/live/column_live/form_component.ex:38
+#: lib/kanban_web/live/column_live/form_component.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:50
+#: lib/kanban_web/live/board_live/show.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Add task"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:109
+#: lib/kanban_web/live/board_live/show.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:43
+#: lib/kanban_web/live/task_live/form_component.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Column"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:15
+#: lib/kanban_web/live/task_live/form_component.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "Create a new task"
 msgstr ""
@@ -542,17 +542,17 @@ msgstr ""
 msgid "Failed to delete task"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:90
+#: lib/kanban_web/live/board_live/show.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "No tasks yet"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:50
+#: lib/kanban_web/live/task_live/form_component.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:111
+#: lib/kanban_web/live/task_live/form_component.ex:70
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr ""
@@ -562,33 +562,33 @@ msgstr ""
 msgid "Task deleted successfully"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:92
+#: lib/kanban_web/live/task_live/form_component.ex:51
 #, elixir-autogen, elixir-format
 msgid "Task updated successfully"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:30
+#: lib/kanban_web/live/task_live/form_component.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Title"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:17
+#: lib/kanban_web/live/task_live/form_component.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Update task details"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:54
+#: lib/kanban_web/live/board_live/show.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:118
+#: lib/kanban_web/live/task_live/form_component.ex:77
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr ""
 
 #: lib/kanban_web/components/layouts/root.html.heex:7
-#: lib/kanban_web/components/layouts/root.html.heex:42
+#: lib/kanban_web/components/layouts/root.html.heex:41
 #: lib/kanban_web/controllers/page_html/home.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Stride"
@@ -597,4 +597,95 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/home.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Organize Your Work"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:221
+#, elixir-autogen, elixir-format
+msgid "Cannot move task: column has reached its WIP limit"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "Created"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:151
+#: lib/kanban_web/live/task_live/form_component.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Critical"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:133
+#: lib/kanban_web/live/task_live/form_component.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Defect"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:229
+#, elixir-autogen, elixir-format
+msgid "Failed to move task"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:152
+#: lib/kanban_web/live/task_live/form_component.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "High"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:154
+#: lib/kanban_web/live/task_live/form_component.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Low"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:153
+#: lib/kanban_web/live/task_live/form_component.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Medium"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Moved"
+msgstr ""
+
+#: lib/kanban_web/components/layouts/root.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "My Boards"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "Priority"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "Task History"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Type"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "WIP limit exceeded"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:133
+#: lib/kanban_web/live/task_live/form_component.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Work"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "from"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "to"
 msgstr ""

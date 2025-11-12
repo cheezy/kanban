@@ -43,6 +43,9 @@
           <div class="flex items-center gap-4">
             <%= if @current_scope do %>
               <.user_badge email={@current_scope.user.email} />
+              <.nav_link href={~p"/boards"}>
+                {gettext("My Boards")}
+              </.nav_link>
               <.nav_link href={~p"/users/settings"}>
                 {gettext("Settings")}
               </.nav_link>
