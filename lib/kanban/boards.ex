@@ -7,6 +7,7 @@ defmodule Kanban.Boards do
   alias Kanban.Repo
 
   alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardUser
 
   @doc """
   Returns the list of boards for a given user.
@@ -19,7 +20,8 @@ defmodule Kanban.Boards do
   """
   def list_boards(user) do
     Board
-    |> where([b], b.user_id == ^user.id)
+    |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
+    |> where([b, bu], bu.user_id == ^user.id)
     |> order_by([b], desc: b.inserted_at)
     |> Repo.all()
   end
@@ -27,7 +29,7 @@ defmodule Kanban.Boards do
   @doc """
   Gets a single board with authorization check.
 
-  Raises `Ecto.NoResultsError` if the Board does not exist or doesn't belong to the user.
+  Raises `Ecto.NoResultsError` if the Board does not exist or user doesn't have access.
 
   ## Examples
 
@@ -40,12 +42,57 @@ defmodule Kanban.Boards do
   """
   def get_board!(id, user) do
     Board
-    |> where([b], b.id == ^id and b.user_id == ^user.id)
+    |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
+    |> where([b, bu], b.id == ^id and bu.user_id == ^user.id)
     |> Repo.one!()
   end
 
   @doc """
-  Creates a board for the given user.
+  Gets the access level for a user on a board.
+
+  Returns the access level atom (:owner, :read_only, :modify) or nil if user has no access.
+
+  ## Examples
+
+      iex> get_user_access(board_id, user_id)
+      :owner
+
+  """
+  def get_user_access(board_id, user_id) do
+    case Repo.get_by(BoardUser, board_id: board_id, user_id: user_id) do
+      nil -> nil
+      board_user -> board_user.access
+    end
+  end
+
+  @doc """
+  Checks if a user has owner access to a board.
+
+  ## Examples
+
+      iex> owner?(board, user)
+      true
+
+  """
+  def owner?(%Board{id: board_id}, user) do
+    get_user_access(board_id, user.id) == :owner
+  end
+
+  @doc """
+  Checks if a user can modify a board (owner or modify access).
+
+  ## Examples
+
+      iex> can_modify?(board, user)
+      true
+
+  """
+  def can_modify?(%Board{id: board_id}, user) do
+    get_user_access(board_id, user.id) in [:owner, :modify]
+  end
+
+  @doc """
+  Creates a board for the given user with owner access.
 
   ## Examples
 
@@ -57,10 +104,21 @@ defmodule Kanban.Boards do
 
   """
   def create_board(user, attrs \\ %{}) do
-    %Board{}
-    |> Board.changeset(attrs)
-    |> Ecto.Changeset.put_assoc(:user, user)
-    |> Repo.insert()
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
+    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
+      BoardUser.changeset(%BoardUser{}, %{
+        board_id: board.id,
+        user_id: user.id,
+        access: :owner
+      })
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{board: board}} -> {:ok, board}
+      {:error, :board, changeset, _} -> {:error, changeset}
+      {:error, :board_user, changeset, _} -> {:error, changeset}
+    end
   end
 
   @doc """
@@ -108,5 +166,59 @@ defmodule Kanban.Boards do
   """
   def change_board(%Board{} = board, attrs \\ %{}) do
     Board.changeset(board, attrs)
+  end
+
+  @doc """
+  Adds a user to a board with the specified access level.
+
+  ## Examples
+
+      iex> add_user_to_board(board, user, :read_only)
+      {:ok, %BoardUser{}}
+
+  """
+  def add_user_to_board(%Board{} = board, user, access) when access in [:owner, :read_only, :modify] do
+    %BoardUser{}
+    |> BoardUser.changeset(%{
+      board_id: board.id,
+      user_id: user.id,
+      access: access
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a user from a board.
+
+  ## Examples
+
+      iex> remove_user_from_board(board, user)
+      {:ok, %BoardUser{}}
+
+  """
+  def remove_user_from_board(%Board{} = board, user) do
+    case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
+      nil -> {:error, :not_found}
+      board_user -> Repo.delete(board_user)
+    end
+  end
+
+  @doc """
+  Updates a user's access level for a board.
+
+  ## Examples
+
+      iex> update_user_access(board, user, :modify)
+      {:ok, %BoardUser{}}
+
+  """
+  def update_user_access(%Board{} = board, user, new_access) when new_access in [:owner, :read_only, :modify] do
+    case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
+      nil -> {:error, :not_found}
+      board_user ->
+        board_user
+        |> BoardUser.changeset(%{access: new_access})
+        |> Repo.update()
+    end
   end
 end

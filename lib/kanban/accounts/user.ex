@@ -10,6 +10,9 @@ defmodule Kanban.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
+    has_many :board_users, Kanban.Boards.BoardUser
+    many_to_many :boards, Kanban.Boards.Board, join_through: Kanban.Boards.BoardUser
+
     timestamps(type: :utc_datetime)
   end
 

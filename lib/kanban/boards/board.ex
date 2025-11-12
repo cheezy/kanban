@@ -6,8 +6,9 @@ defmodule Kanban.Boards.Board do
     field :name, :string
     field :description, :string
 
-    belongs_to :user, Kanban.Accounts.User
+    has_many :board_users, Kanban.Boards.BoardUser
     has_many :columns, Kanban.Columns.Column
+    many_to_many :users, Kanban.Accounts.User, join_through: Kanban.Boards.BoardUser
 
     timestamps()
   end
