@@ -33,17 +33,26 @@
           </div>
         </div>
       <% else %>
-        <div class="flex gap-4 overflow-x-auto pb-4" id="columns" phx-update="stream">
+        <div
+          class="flex gap-4 overflow-x-auto pb-4"
+          id="columns"
+          phx-update="stream"
+          phx-hook="ColumnSortable"
+        >
           <div
             :for={{id, column} <- @streams.columns}
             id={id}
             class="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-4"
+            data-column-id={column.id}
           >
             <% tasks = Map.get(@tasks_by_column, column.id, []) %>
             <% task_count = length(tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2">
+                <.icon name="hero-bars-3" class="h-5 w-5 text-gray-400" />
+              </div>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <h3 class="font-semibold text-gray-900"><%= column.name %></h3>

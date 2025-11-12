@@ -25,11 +25,13 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/kanban"
 import AutoDismissFlash from "./hooks/auto-dismiss-flash"
 import SortableHook from "./hooks/sortable"
+import ColumnSortableHook from "./hooks/column_sortable"
 import topbar from "../vendor/topbar"
 
 const MyHooks = {
   AutoDismissFlash,
   Sortable: SortableHook,
+  ColumnSortable: ColumnSortableHook,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

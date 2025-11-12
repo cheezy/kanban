@@ -146,6 +146,27 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("move_column", %{"column_id" => column_id, "column_ids" => column_ids}, socket) do
+    require Logger
+
+    column_ids = Enum.map(column_ids, &String.to_integer/1)
+
+    Logger.info("Move column event: column_id=#{column_id}, new_order=#{inspect(column_ids)}")
+
+    # Reorder the columns
+    Columns.reorder_columns(socket.assigns.board, column_ids)
+
+    # Reload columns
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> push_event("move_column_success", %{})
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
+  end
+
+  @impl true
   def handle_info({KanbanWeb.ColumnLive.FormComponent, {:saved, _column}}, socket) do
     columns = Columns.list_columns(socket.assigns.board)
 
