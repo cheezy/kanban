@@ -40,12 +40,19 @@ defmodule KanbanWeb.UserLive.Registration do
 
           <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
             <.input
+              field={@form[:name]}
+              type="text"
+              label={gettext("Name")}
+              autocomplete="name"
+              phx-mounted={JS.focus()}
+            />
+
+            <.input
               field={@form[:email]}
               type="email"
               label={gettext("Email")}
               autocomplete="username"
               required
-              phx-mounted={JS.focus()}
             />
 
             <.button

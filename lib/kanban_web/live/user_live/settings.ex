@@ -18,14 +18,20 @@ defmodule KanbanWeb.UserLive.Settings do
 
       <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
         <.input
+          field={@email_form[:name]}
+          type="text"
+          label={gettext("Name")}
+          autocomplete="name"
+        />
+        <.input
           field={@email_form[:email]}
           type="email"
           label={gettext("Email")}
           autocomplete="username"
           required
         />
-        <.button variant="primary" phx-disable-with={gettext("Changing...")}>
-          {gettext("Change Email")}
+        <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+          {gettext("Update Profile")}
         </.button>
       </.form>
 

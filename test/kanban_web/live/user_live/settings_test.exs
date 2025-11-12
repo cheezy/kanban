@@ -13,7 +13,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      assert html =~ "Change Email"
+      assert html =~ "Update Profile"
       assert html =~ "Save Password"
     end
 
@@ -71,7 +71,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
           "user" => %{"email" => "with spaces"}
         })
 
-      assert result =~ "Change Email"
+      assert result =~ "Update Profile"
       assert result =~ "must have the @ sign and no spaces"
     end
 
@@ -85,7 +85,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         })
         |> render_submit()
 
-      assert result =~ "Change Email"
+      assert result =~ "Update Profile"
       assert result =~ "did not change"
     end
   end

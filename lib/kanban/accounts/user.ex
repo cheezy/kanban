@@ -4,6 +4,7 @@ defmodule Kanban.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :name, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
@@ -13,7 +14,7 @@ defmodule Kanban.Accounts.User do
   end
 
   @doc """
-  A user changeset for registering or changing the email.
+  A user changeset for registering or changing the email and name.
 
   It requires the email to change otherwise an error is added.
 
@@ -25,8 +26,14 @@ defmodule Kanban.Accounts.User do
   """
   def email_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email])
+    |> cast(attrs, [:email, :name])
+    |> validate_name()
     |> validate_email(opts)
+  end
+
+  defp validate_name(changeset) do
+    changeset
+    |> validate_length(:name, max: 160)
   end
 
   defp validate_email(changeset, opts) do
