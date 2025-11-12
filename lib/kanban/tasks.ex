@@ -505,17 +505,31 @@ defmodule Kanban.Tasks do
         atom when is_atom(atom) -> atom
       end
 
-    # Count tasks of the same type across all columns in the board
-    count =
+    # Get the prefix for this task type
+    prefix = if task_type == :work, do: "W", else: "D"
+
+    # Find the maximum identifier number for this type in the board
+    # We need to extract the numeric part from identifiers and find the max
+    max_number =
       Task
       |> join(:inner, [t], c in Column, on: t.column_id == c.id)
       |> where([t, c], c.board_id == ^column.board_id)
       |> where([t, c], t.type == ^task_type)
-      |> Repo.aggregate(:count)
+      |> select([t], t.identifier)
+      |> Repo.all()
+      |> Enum.map(fn identifier ->
+        # Extract numeric part (e.g., "W11" -> 11)
+        identifier
+        |> String.replace(prefix, "")
+        |> String.to_integer()
+      end)
+      |> case do
+        [] -> 0
+        numbers -> Enum.max(numbers)
+      end
 
     # Generate identifier: W1, W2, D1, D2, etc.
-    prefix = if task_type == :work, do: "W", else: "D"
-    "#{prefix}#{count + 1}"
+    "#{prefix}#{max_number + 1}"
   end
 
   defp create_move_history(task, from_column_name, to_column_name) do
