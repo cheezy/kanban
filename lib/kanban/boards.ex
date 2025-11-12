@@ -10,12 +10,14 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.BoardUser
 
   @doc """
-  Returns the list of boards for a given user.
+  Returns the list of boards for a given user with their access level.
+
+  Each board will have a virtual `:user_access` field containing the user's access level.
 
   ## Examples
 
       iex> list_boards(user)
-      [%Board{}, ...]
+      [%Board{user_access: :owner}, ...]
 
   """
   def list_boards(user) do
@@ -23,6 +25,7 @@ defmodule Kanban.Boards do
     |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
     |> where([b, bu], bu.user_id == ^user.id)
     |> order_by([b], desc: b.inserted_at)
+    |> select([b, bu], %{b | user_access: bu.access})
     |> Repo.all()
   end
 

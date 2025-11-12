@@ -5,6 +5,7 @@ defmodule Kanban.Boards.Board do
   schema "boards" do
     field :name, :string
     field :description, :string
+    field :user_access, Ecto.Enum, values: [:owner, :read_only, :modify], virtual: true
 
     has_many :board_users, Kanban.Boards.BoardUser
     has_many :columns, Kanban.Columns.Column

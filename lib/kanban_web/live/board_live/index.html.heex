@@ -13,7 +13,7 @@
       <div
         :for={{id, board} <- @streams.boards}
         id={id}
-        class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200"
+        class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200 relative"
       >
         <div class="flex justify-between items-start mb-4">
           <h3 class="text-xl font-semibold text-gray-900">
@@ -37,12 +37,29 @@
           <%= board.description %>
         </p>
 
-        <.link
-          navigate={~p"/boards/#{board}"}
-          class="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
-        >
-          {gettext("View Board")} →
-        </.link>
+        <div class="flex justify-between items-end">
+          <.link
+            navigate={~p"/boards/#{board}"}
+            class="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {gettext("View Board")} →
+          </.link>
+
+          <div class="flex items-center gap-1 text-xs text-gray-500">
+            <span :if={board.user_access == :owner} class="flex items-center gap-1" title={gettext("Owner")}>
+              <.icon name="hero-star-solid" class="h-4 w-4 text-yellow-500" />
+              <span>{gettext("Owner")}</span>
+            </span>
+            <span :if={board.user_access == :modify} class="flex items-center gap-1" title={gettext("Can Modify")}>
+              <.icon name="hero-pencil-solid" class="h-4 w-4 text-blue-500" />
+              <span>{gettext("Can Edit")}</span>
+            </span>
+            <span :if={board.user_access == :read_only} class="flex items-center gap-1" title={gettext("Read Only")}>
+              <.icon name="hero-eye-solid" class="h-4 w-4 text-gray-500" />
+              <span>{gettext("Read Only")}</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
