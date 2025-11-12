@@ -71,20 +71,66 @@ defmodule KanbanWeb.TaskLive.FormComponent do
           <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
         </div>
       </.form>
+
+      <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Task History")}</h3>
+          <div class="space-y-3">
+            <%= for history <- @task.task_histories do %>
+              <div class="flex items-start gap-3 text-sm">
+                <div class="flex-shrink-0 mt-0.5">
+                  <%= if history.type == :creation do %>
+                    <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
+                  <% else %>
+                    <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
+                  <% end %>
+                </div>
+                <div class="flex-1">
+                  <%= if history.type == :creation do %>
+                    <p class="text-gray-900">
+                      <span class="font-medium">{gettext("Created")}</span>
+                    </p>
+                  <% else %>
+                    <p class="text-gray-900">
+                      <span class="font-medium">{gettext("Moved")}</span>
+                      {gettext("from")}
+                      <span class="font-medium text-blue-600"><%= history.from_column %></span>
+                      {gettext("to")}
+                      <span class="font-medium text-blue-600"><%= history.to_column %></span>
+                    </p>
+                  <% end %>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    <%= Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p") %>
+                  </p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
 
   @impl true
-  def update(%{task: task, board: board} = assigns, socket) do
+  def update(%{task: task, board: board, action: action} = assigns, socket) do
     columns = Columns.list_columns(board)
     column_id = get_column_id(assigns, task)
     changeset = build_changeset(task, column_id)
     column_options = build_column_options(columns, task)
 
+    # Preload task histories when editing
+    task_with_history =
+      if action == :edit_task && task.id do
+        Tasks.get_task_with_history!(task.id)
+      else
+        task
+      end
+
     {:ok,
      socket
      |> assign(assigns)
+     |> assign(:task, task_with_history)
      |> assign(:column_options, column_options)
      |> assign_form(changeset)}
   end

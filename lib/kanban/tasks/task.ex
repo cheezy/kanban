@@ -11,6 +11,7 @@ defmodule Kanban.Tasks.Task do
     field :identifier, :string
 
     belongs_to :column, Kanban.Columns.Column
+    has_many :task_histories, Kanban.Tasks.TaskHistory
 
     timestamps()
   end

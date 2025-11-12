@@ -9,6 +9,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskHistory
 
   @doc """
   Returns the list of tasks for a column, ordered by position.
@@ -43,6 +44,23 @@ defmodule Kanban.Tasks do
   def get_task!(id), do: Repo.get!(Task, id)
 
   @doc """
+  Gets a single task with preloaded task histories ordered by most recent first.
+
+  Raises `Ecto.NoResultsError` if the Task does not exist.
+
+  ## Examples
+
+      iex> get_task_with_history!(123)
+      %Task{task_histories: [%TaskHistory{}, ...]}
+
+  """
+  def get_task_with_history!(id) do
+    Task
+    |> Repo.get!(id)
+    |> Repo.preload(task_histories: from(h in TaskHistory, order_by: [desc: h.inserted_at]))
+  end
+
+  @doc """
   Creates a task for a column with automatic position assignment.
   Respects WIP limit - returns error if column is at capacity.
 
@@ -70,9 +88,21 @@ defmodule Kanban.Tasks do
         |> prepare_task_attrs(next_position)
         |> Map.put(:identifier, identifier)
 
-      %Task{column_id: column.id}
-      |> Task.changeset(attrs)
-      |> Repo.insert()
+      # Use Multi to insert task and history in a transaction
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:task, Task.changeset(%Task{column_id: column.id}, attrs))
+      |> Ecto.Multi.insert(:history, fn %{task: task} ->
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :creation
+        })
+      end)
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{task: task}} -> {:ok, task}
+        {:error, :task, changeset, _} -> {:error, changeset}
+        {:error, :history, changeset, _} -> {:error, changeset}
+      end
     else
       {:error, :wip_limit_reached}
     end
@@ -272,13 +302,24 @@ defmodule Kanban.Tasks do
 
       move_task_to_temp_position(task)
 
-      if new_column.id != old_column_id do
+      # Track if this is a cross-column move for history
+      is_cross_column_move = new_column.id != old_column_id
+
+      if is_cross_column_move do
         handle_cross_column_move(task, new_column, new_position, old_column_id)
       else
         handle_same_column_move(task, new_column, new_position)
       end
 
-      finalize_task_move(task, new_column, new_position)
+      updated_task = finalize_task_move(task, new_column, new_position)
+
+      # Create history record if moving between columns
+      if is_cross_column_move do
+        old_column = Columns.get_column!(old_column_id)
+        create_move_history(updated_task, old_column.name, new_column.name)
+      end
+
+      updated_task
     end)
   end
 
@@ -475,5 +516,16 @@ defmodule Kanban.Tasks do
     # Generate identifier: W1, W2, D1, D2, etc.
     prefix = if task_type == :work, do: "W", else: "D"
     "#{prefix}#{count + 1}"
+  end
+
+  defp create_move_history(task, from_column_name, to_column_name) do
+    %TaskHistory{}
+    |> TaskHistory.changeset(%{
+      task_id: task.id,
+      type: :move,
+      from_column: from_column_name,
+      to_column: to_column_name
+    })
+    |> Repo.insert!()
   end
 end
