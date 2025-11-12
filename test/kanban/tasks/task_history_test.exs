@@ -6,8 +6,8 @@ defmodule Kanban.Tasks.TaskHistoryTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
-  alias Kanban.Tasks.TaskHistory
   alias Kanban.Repo
+  alias Kanban.Tasks.TaskHistory
 
   describe "changeset/2" do
     test "valid changeset for creation type" do

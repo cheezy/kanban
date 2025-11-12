@@ -6,8 +6,8 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
-  alias KanbanWeb.TaskLive.FormComponent
   alias Kanban.Tasks
+  alias KanbanWeb.TaskLive.FormComponent
 
   describe "update/2 for new task" do
     test "initializes form with default values" do

@@ -5,8 +5,8 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
 
-  alias KanbanWeb.ColumnLive.FormComponent
   alias Kanban.Columns
+  alias KanbanWeb.ColumnLive.FormComponent
 
   # Note: Full integration tests for column creation/editing are in board_live_test.exs
   # These tests focus on the component's internal logic
