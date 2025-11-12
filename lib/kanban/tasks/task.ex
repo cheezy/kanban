@@ -12,6 +12,7 @@ defmodule Kanban.Tasks.Task do
 
     belongs_to :column, Kanban.Columns.Column
     has_many :task_histories, Kanban.Tasks.TaskHistory
+    has_many :comments, Kanban.Tasks.TaskComment
 
     timestamps()
   end
