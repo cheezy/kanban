@@ -1,0 +1,17 @@
+{
+  "name": "Kanban Phoenix App",
+  "description": "A Phoenix/LiveView Kanban board application with task management",
+  "guidelines": [
+    {
+      "path": "AGENTS.md",
+      "description": "Project guidelines, usage rules, and best practices for Phoenix/Elixir development"
+    }
+  ],
+  "contextFiles": [
+    "AGENTS.md",
+    "mix.exs",
+    "README.md"
+  ],
+  "language": "elixir",
+  "framework": "phoenix"
+}

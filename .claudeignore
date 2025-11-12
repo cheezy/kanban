@@ -1,0 +1,62 @@
+# Elixir build artifacts
+_build/
+deps/
+*.beam
+*.ez
+
+# Mix lock file (binary)
+# We keep mix.lock in version control but don't need it in Claude context
+# mix.lock
+
+# Compiled assets
+priv/static/assets/
+priv/static/cache_manifest.json
+
+# Node modules and npm artifacts
+node_modules/
+assets/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Coverage reports
+cover/
+coverage/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files (keep .vscode for settings but ignore some files)
+.idea/
+*.iml
+
+# Git directory
+.git/
+
+# Documentation build artifacts
+doc/
+
+# Dialyzer
+*.plt
+*.plt.hash
+priv/plts/
+
+# Environment variables
+.env
+.env.local
+
+# Test artifacts
+test_results/
+
+# Sobelow config
+.sobelow
+
+# Database dumps
+*.dump
+*.sql
