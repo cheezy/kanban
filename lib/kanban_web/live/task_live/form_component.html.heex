@@ -99,4 +99,48 @@
         </div>
     </div>
     <% end %>
+
+    <%= if @action == :edit_task && @task.id do %>
+    <div class="mt-8 pt-8 border-t border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Comments")}</h3>
+
+        <.form
+        :let={c}
+        for={@comment_form}
+        id="comment-form"
+        phx-target={@myself}
+        phx-submit="add_comment"
+        class="mb-6"
+        >
+        <.input
+            field={c[:content]}
+            type="textarea"
+            label={gettext("Add a comment")}
+            rows="3"
+            placeholder={gettext("Write your comment here...")}
+            required
+        />
+        <div class="mt-3">
+            <.button type="submit" phx-disable-with={gettext("Adding...")}>
+            {gettext("Add Comment")}
+            </.button>
+        </div>
+        </.form>
+
+        <%= if length(@task.comments || []) > 0 do %>
+        <div class="space-y-4 mt-6">
+            <%= for comment <- @task.comments do %>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-900 whitespace-pre-wrap"><%= comment.content %></p>
+                <p class="text-xs text-gray-500 mt-2">
+                <%= Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p") %>
+                </p>
+            </div>
+            <% end %>
+        </div>
+        <% else %>
+        <p class="text-sm text-gray-500 italic mt-6">{gettext("No comments yet. Be the first to comment!")}</p>
+        <% end %>
+    </div>
+    <% end %>
 </div>

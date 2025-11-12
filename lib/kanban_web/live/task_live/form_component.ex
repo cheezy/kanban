@@ -1,8 +1,12 @@
 defmodule KanbanWeb.TaskLive.FormComponent do
   use KanbanWeb, :live_component
 
+  import Ecto.Query
+
   alias Kanban.Columns
+  alias Kanban.Repo
   alias Kanban.Tasks
+  alias Kanban.Tasks.TaskComment
 
   @impl true
   def update(%{task: task, board: board, action: action} = assigns, socket) do
@@ -11,19 +15,23 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     changeset = build_changeset(task, column_id)
     column_options = build_column_options(columns, task)
 
-    # Preload task histories when editing
-    task_with_history =
+    # Preload task histories and comments when editing
+    task_with_associations =
       if action == :edit_task && task.id do
         Tasks.get_task_with_history!(task.id)
+        |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
       else
         task
       end
 
+    comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
+
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:task, task_with_history)
+     |> assign(:task, task_with_associations)
      |> assign(:column_options, column_options)
+     |> assign(:comment_form, to_form(comment_changeset))
      |> assign_form(changeset)}
   end
 
@@ -39,6 +47,31 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   def handle_event("save", %{"task" => task_params}, socket) do
     save_task(socket, socket.assigns.action, task_params)
+  end
+
+  def handle_event("add_comment", %{"task_comment" => comment_params}, socket) do
+    comment_params = Map.put(comment_params, "task_id", socket.assigns.task.id)
+
+    case %TaskComment{}
+         |> TaskComment.changeset(comment_params)
+         |> Repo.insert() do
+      {:ok, _comment} ->
+        # Reload task with updated comments
+        task =
+          Tasks.get_task_with_history!(socket.assigns.task.id)
+          |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+
+        comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
+
+        {:noreply,
+         socket
+         |> assign(:task, task)
+         |> assign(:comment_form, to_form(comment_changeset))
+         |> put_flash(:info, gettext("Comment added successfully"))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :comment_form, to_form(changeset))}
+    end
   end
 
   defp save_task(socket, :edit_task, task_params) do

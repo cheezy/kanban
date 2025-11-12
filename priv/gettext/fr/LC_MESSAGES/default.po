@@ -552,7 +552,7 @@ msgstr "Aucune tâche pour le moment"
 msgid "Save Task"
 msgstr "Enregistrer la tâche"
 
-#: lib/kanban_web/live/task_live/form_component.ex:70
+#: lib/kanban_web/live/task_live/form_component.ex:103
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Tâche créée avec succès"
@@ -562,7 +562,7 @@ msgstr "Tâche créée avec succès"
 msgid "Task deleted successfully"
 msgstr "Tâche supprimée avec succès"
 
-#: lib/kanban_web/live/task_live/form_component.ex:51
+#: lib/kanban_web/live/task_live/form_component.ex:84
 #, elixir-autogen, elixir-format
 msgid "Task updated successfully"
 msgstr "Tâche mise à jour avec succès"
@@ -582,7 +582,7 @@ msgstr "Mettre à jour les détails de la tâche"
 msgid "WIP limit reached"
 msgstr "Limite WIP atteinte"
 
-#: lib/kanban_web/live/task_live/form_component.ex:77
+#: lib/kanban_web/live/task_live/form_component.ex:110
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atteinte pour cette colonne"
@@ -689,3 +689,38 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Add Comment"
+msgstr "Ajouter un commentaire"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:118
+#, elixir-autogen, elixir-format
+msgid "Add a comment"
+msgstr "Ajouter un commentaire"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "Adding..."
+msgstr "Ajout en cours..."
+
+#: lib/kanban_web/live/task_live/form_component.ex:70
+#, elixir-autogen, elixir-format
+msgid "Comment added successfully"
+msgstr "Commentaire ajouté avec succès"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Comments"
+msgstr "Commentaires"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "No comments yet. Be the first to comment!"
+msgstr "Aucun commentaire pour le moment. Soyez le premier à commenter !"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "Write your comment here..."
+msgstr "Écrivez votre commentaire ici..."
