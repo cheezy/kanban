@@ -5,8 +5,12 @@ defmodule KanbanWeb.BoardLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    user = socket.assigns.current_scope.user
-    {:ok, stream(socket, :boards, Boards.list_boards(user))}
+    if connected?(socket) do
+      user = socket.assigns.current_scope.user
+      {:ok, stream(socket, :boards, Boards.list_boards(user))}
+    else
+      {:ok, stream(socket, :boards, [])}
+    end
   end
 
   @impl true
