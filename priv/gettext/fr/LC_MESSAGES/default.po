@@ -819,3 +819,23 @@ msgstr "Échec de la suppression de l'utilisateur du tableau"
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "Utilisateur introuvable"
+
+#: lib/kanban_web/live/board_live/form.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Users must be already registered in the system in order to be added to Boards"
+msgstr "Les utilisateurs doivent déjà être enregistrés dans le système pour pouvoir être ajoutés aux tableaux"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "Assigned To"
+msgstr "Assigné à"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Select a user"
+msgstr "Sélectionner un utilisateur"
+
+#: lib/kanban_web/live/task_live/form_component.ex:165
+#, elixir-autogen, elixir-format
+msgid "Unassigned"
+msgstr "Non assigné"

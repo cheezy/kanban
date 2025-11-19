@@ -19,9 +19,12 @@
 
       <%= if @live_action == :edit do %>
         <div class="mt-12 border-t pt-8">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 mb-2">
             {gettext("Manage Users")}
           </h2>
+          <p class="text-sm text-gray-600 mb-4">
+            {gettext("Users must be already registered in the system in order to be added to Boards")}
+          </p>
 
           <div class="fieldset mb-6">
             <label>

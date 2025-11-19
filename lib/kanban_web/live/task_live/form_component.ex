@@ -15,6 +15,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     changeset = build_changeset(task, column_id)
     column_options = build_column_options(columns, task)
 
+    board_users = Kanban.Boards.list_board_users(board)
+    assignable_users = build_assignable_users_options(board_users)
+
     # Preload task histories and comments when editing
     task_with_associations =
       if action == :edit_task && task.id do
@@ -31,6 +34,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(assigns)
      |> assign(:task, task_with_associations)
      |> assign(:column_options, column_options)
+     |> assign(:assignable_users, assignable_users)
      |> assign(:comment_form, to_form(comment_changeset))
      |> assign_form(changeset)}
   end
@@ -154,5 +158,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp reject_full_column?({label, id}, task) do
     String.contains?(label, "WIP limit reached") && id != task.column_id
+  end
+
+  defp build_assignable_users_options(board_users) do
+    users_list =
+      board_users
+      |> Enum.map(fn %{user: user} ->
+        display_name = if user.name && user.name != "", do: user.name, else: user.email
+        {display_name, user.id}
+      end)
+
+    [{gettext("Unassigned"), nil} | users_list]
   end
 end

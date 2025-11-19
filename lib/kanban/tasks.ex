@@ -24,6 +24,7 @@ defmodule Kanban.Tasks do
     Task
     |> where([t], t.column_id == ^column.id)
     |> order_by([t], t.position)
+    |> preload(:assigned_to)
     |> Repo.all()
   end
 
@@ -41,7 +42,11 @@ defmodule Kanban.Tasks do
       ** (Ecto.NoResultsError)
 
   """
-  def get_task!(id), do: Repo.get!(Task, id)
+  def get_task!(id) do
+    Task
+    |> Repo.get!(id)
+    |> Repo.preload(:assigned_to)
+  end
 
   @doc """
   Gets a single task with preloaded task histories ordered by most recent first.

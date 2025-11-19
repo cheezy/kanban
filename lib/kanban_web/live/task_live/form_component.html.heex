@@ -48,6 +48,14 @@
       required
     />
 
+    <.input
+      field={f[:assigned_to_id]}
+      type="select"
+      label={gettext("Assigned To")}
+      options={@assignable_users}
+      prompt={gettext("Select a user")}
+    />
+
     <%= if @action == :new_task do %>
       <.input
         field={f[:column_id]}
