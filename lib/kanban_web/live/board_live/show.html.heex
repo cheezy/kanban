@@ -188,9 +188,6 @@
                               </span>
                             </div>
                             <div class="flex items-center gap-2">
-                              <span class="text-xs font-semibold text-gray-500">
-                                {task.identifier}
-                              </span>
                               <%= if task.assigned_to do %>
                                 <span
                                   class="inline-flex items-center"
@@ -202,6 +199,9 @@
                                   />
                                 </span>
                               <% end %>
+                              <span class="text-xs font-semibold text-gray-500">
+                                {task.identifier}
+                              </span>
                             </div>
                           </div>
                         </div>
