@@ -136,7 +136,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["creation events should not have from_column or to_column"]} = errors_on(changeset)
+
+      assert %{type: ["creation events should not have from_column or to_column"]} =
+               errors_on(changeset)
     end
 
     test "invalid when creation type has to_column" do
@@ -153,7 +155,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["creation events should not have from_column or to_column"]} = errors_on(changeset)
+
+      assert %{type: ["creation events should not have from_column or to_column"]} =
+               errors_on(changeset)
     end
 
     test "invalid when creation type has both from_column and to_column" do
@@ -171,7 +175,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["creation events should not have from_column or to_column"]} = errors_on(changeset)
+
+      assert %{type: ["creation events should not have from_column or to_column"]} =
+               errors_on(changeset)
     end
   end
 

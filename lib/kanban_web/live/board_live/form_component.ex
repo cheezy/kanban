@@ -8,7 +8,7 @@ defmodule KanbanWeb.BoardLive.FormComponent do
     ~H"""
     <div>
       <.header>
-        <%= @title %>
+        {@title}
         <:subtitle>Use this form to manage board records in your database.</:subtitle>
       </.header>
 

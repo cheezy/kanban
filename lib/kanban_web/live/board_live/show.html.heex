@@ -1,8 +1,8 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="px-4 py-8 sm:px-6 lg:px-8">
     <.header>
-      <%= @board.name %>
-      <:subtitle><%= @board.description %></:subtitle>
+      {@board.name}
+      <:subtitle>{@board.description}</:subtitle>
       <:actions>
         <.link patch={~p"/boards/#{@board}/columns/new"}>
           <.button>{gettext("New Column")}</.button>
@@ -55,7 +55,7 @@
               </div>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-semibold text-gray-900"><%= column.name %></h3>
+                  <h3 class="font-semibold text-gray-900">{column.name}</h3>
                   <%= if over_limit do %>
                     <span title={gettext("WIP limit exceeded")}>
                       <.icon name="hero-exclamation-triangle-solid" class="h-5 w-5 text-red-400" />
@@ -63,32 +63,44 @@
                   <% else %>
                     <%= if at_limit do %>
                       <span title={gettext("WIP limit reached")}>
-                        <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-gray-400 cursor-not-allowed" />
+                        <.icon
+                          name="hero-plus-circle-solid"
+                          class="h-5 w-5 text-gray-400 cursor-not-allowed"
+                        />
                       </span>
                     <% else %>
-                      <.link patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"} title={gettext("Add task")}>
-                        <.icon name="hero-plus-circle-solid" class="h-5 w-5 text-green-500 hover:text-green-600" />
+                      <.link
+                        patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"}
+                        title={gettext("Add task")}
+                      >
+                        <.icon
+                          name="hero-plus-circle-solid"
+                          class="h-5 w-5 text-green-500 hover:text-green-600"
+                        />
                       </.link>
                     <% end %>
                   <% end %>
                 </div>
                 <div class="mt-1 flex items-center gap-2">
                   <span class="text-sm text-gray-500">
-                    {gettext("Tasks")}: <span class="font-medium"><%= task_count %></span>
+                    {gettext("Tasks")}: <span class="font-medium">{task_count}</span>
                   </span>
                   <%= if column.wip_limit > 0 do %>
                     <span class={[
                       "text-sm px-2 py-0.5 rounded",
-                      over_limit && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
+                      (over_limit && "bg-red-100 text-red-800") || "bg-blue-100 text-blue-800"
                     ]}>
-                      {gettext("WIP limit")}: <%= column.wip_limit %>
+                      {gettext("WIP limit")}: {column.wip_limit}
                     </span>
                   <% end %>
                 </div>
               </div>
               <div class="flex gap-2">
                 <.link patch={~p"/boards/#{@board}/columns/#{column}/edit"}>
-                  <.icon name="hero-pencil-solid" class="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <.icon
+                    name="hero-pencil-solid"
+                    class="h-5 w-5 text-gray-400 hover:text-gray-600"
+                  />
                 </.link>
                 <.link
                   phx-click={JS.push("delete_column", value: %{id: column.id})}
@@ -108,7 +120,11 @@
               data-handle=".drag-handle"
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
-              data-initial-tasks={Jason.encode!(Enum.map(tasks, &%{id: &1.id, title: &1.title, description: &1.description}))}
+              data-initial-tasks={
+                Jason.encode!(
+                  Enum.map(tasks, &%{id: &1.id, title: &1.title, description: &1.description})
+                )
+              }
             >
               <%= if Enum.empty?(tasks) do %>
                 <div class="p-4 bg-white rounded border-2 border-dashed border-gray-300 empty-state">
@@ -128,18 +144,25 @@
                           <.icon name="hero-bars-3" class="h-4 w-4 text-gray-400" />
                         </div>
                         <div class="flex-1">
-                          <h4 class="font-medium text-gray-900 text-sm"><%= task.title %></h4>
+                          <h4 class="font-medium text-gray-900 text-sm">{task.title}</h4>
                           <%= if task.description && task.description != "" do %>
-                            <p class="mt-1 text-xs text-gray-600 line-clamp-2"><%= task.description %></p>
+                            <p class="mt-1 text-xs text-gray-600 line-clamp-2">
+                              {task.description}
+                            </p>
                           <% end %>
                           <div class="mt-2 flex items-center justify-between">
                             <div class="flex gap-2">
                               <span
                                 class={[
                                   "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                                  task.type == :defect && "bg-red-100 text-red-800" || "bg-blue-100 text-blue-800"
+                                  (task.type == :defect && "bg-red-100 text-red-800") ||
+                                    "bg-blue-100 text-blue-800"
                                 ]}
-                                title={if task.type == :defect, do: gettext("Defect"), else: gettext("Work")}
+                                title={
+                                  if task.type == :defect,
+                                    do: gettext("Defect"),
+                                    else: gettext("Work")
+                                }
                               >
                                 <%= if task.type == :defect do %>
                                   <.icon name="hero-bug-ant" class="h-3.5 w-3.5" />
@@ -156,27 +179,35 @@
                                   :low -> "bg-green-100 text-green-800"
                                 end
                               ]}>
-                                <%= case task.priority do
+                                {case task.priority do
                                   :critical -> gettext("Critical")
                                   :high -> gettext("High")
                                   :medium -> gettext("Medium")
                                   :low -> gettext("Low")
-                                end %>
+                                end}
                               </span>
                             </div>
-                            <span class="text-xs font-semibold text-gray-500"><%= task.identifier %></span>
+                            <span class="text-xs font-semibold text-gray-500">
+                              {task.identifier}
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div class="flex gap-1 ml-2">
                         <.link patch={~p"/boards/#{@board}/tasks/#{task}/edit"}>
-                          <.icon name="hero-pencil-solid" class="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                          <.icon
+                            name="hero-pencil-solid"
+                            class="h-4 w-4 text-gray-400 hover:text-gray-600"
+                          />
                         </.link>
                         <.link
                           phx-click={JS.push("delete_task", value: %{id: task.id})}
                           data-confirm={gettext("Are you sure you want to delete this task?")}
                         >
-                          <.icon name="hero-trash-solid" class="h-4 w-4 text-gray-400 hover:text-red-600" />
+                          <.icon
+                            name="hero-trash-solid"
+                            class="h-4 w-4 text-gray-400 hover:text-red-600"
+                          />
                         </.link>
                       </div>
                     </div>
@@ -198,11 +229,11 @@
   >
     <.live_component
       module={KanbanWeb.ColumnLive.FormComponent}
-      id={@live_action == :new_column && :new || "edit-#{@column.id}"}
+      id={(@live_action == :new_column && :new) || "edit-#{@column.id}"}
       title={@page_title}
       action={@live_action}
       board={@board}
-      column={@live_action == :edit_column && @column || %Kanban.Columns.Column{}}
+      column={(@live_action == :edit_column && @column) || %Kanban.Columns.Column{}}
       patch={~p"/boards/#{@board}"}
     />
   </.modal>
@@ -215,12 +246,12 @@
   >
     <.live_component
       module={KanbanWeb.TaskLive.FormComponent}
-      id={@live_action == :new_task && :new || "edit-#{@task.id}"}
+      id={(@live_action == :new_task && :new) || "edit-#{@task.id}"}
       title={@page_title}
       action={@live_action}
       board={@board}
-      task={@live_action == :edit_task && @task || %Kanban.Tasks.Task{}}
-      column_id={@live_action == :new_task && Map.get(assigns, :column_id) || nil}
+      task={(@live_action == :edit_task && @task) || %Kanban.Tasks.Task{}}
+      column_id={(@live_action == :new_task && Map.get(assigns, :column_id)) || nil}
       patch={~p"/boards/#{@board}"}
     />
   </.modal>

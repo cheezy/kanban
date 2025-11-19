@@ -390,7 +390,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert column.id in option_ids
 
       # Label should not show WIP limit warning
-      column_option = Enum.find(socket.assigns.column_options, fn {_label, id} -> id == column.id end)
+      column_option =
+        Enum.find(socket.assigns.column_options, fn {_label, id} -> id == column.id end)
+
       {label, _id} = column_option
       refute String.contains?(label, "WIP limit reached")
     end

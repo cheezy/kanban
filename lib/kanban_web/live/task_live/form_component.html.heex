@@ -1,146 +1,148 @@
 <div>
-    <.header>
-    <%= @title %>
+  <.header>
+    {@title}
     <:subtitle>
-        <%= if @action == :new_task do %>
+      <%= if @action == :new_task do %>
         {gettext("Create a new task")}
-        <% else %>
+      <% else %>
         {gettext("Update task details")}
-        <% end %>
+      <% end %>
     </:subtitle>
-    </.header>
+  </.header>
 
-    <.form
+  <.form
     :let={f}
     for={@form}
     id="task-form"
     phx-target={@myself}
     phx-change="validate"
     phx-submit="save"
-    >
+  >
     <.input field={f[:title]} type="text" label={gettext("Title")} required />
 
     <.input
-        field={f[:description]}
-        type="textarea"
-        label={gettext("Description")}
-        rows="4"
+      field={f[:description]}
+      type="textarea"
+      label={gettext("Description")}
+      rows="4"
     />
 
     <.input
-        field={f[:type]}
-        type="select"
-        label={gettext("Type")}
-        options={[{gettext("Work"), :work}, {gettext("Defect"), :defect}]}
-        required
+      field={f[:type]}
+      type="select"
+      label={gettext("Type")}
+      options={[{gettext("Work"), :work}, {gettext("Defect"), :defect}]}
+      required
     />
 
     <.input
-        field={f[:priority]}
-        type="select"
-        label={gettext("Priority")}
-        options={[
+      field={f[:priority]}
+      type="select"
+      label={gettext("Priority")}
+      options={[
         {gettext("Low"), :low},
         {gettext("Medium"), :medium},
         {gettext("High"), :high},
         {gettext("Critical"), :critical}
-        ]}
-        required
+      ]}
+      required
     />
 
     <%= if @action == :new_task do %>
-        <.input
+      <.input
         field={f[:column_id]}
         type="select"
         label={gettext("Column")}
         options={@column_options}
         required
-        />
+      />
     <% end %>
 
     <div class="mt-6 flex items-center gap-4">
-        <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
+      <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
     </div>
-    </.form>
+  </.form>
 
-    <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
+  <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
     <div class="mt-8 pt-8 border-t border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Task History")}</h3>
-        <div class="space-y-3">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Task History")}</h3>
+      <div class="space-y-3">
         <%= for history <- @task.task_histories do %>
-            <div class="flex items-start gap-3 text-sm">
+          <div class="flex items-start gap-3 text-sm">
             <div class="flex-shrink-0 mt-0.5">
-                <%= if history.type == :creation do %>
+              <%= if history.type == :creation do %>
                 <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
-                <% else %>
+              <% else %>
                 <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
-                <% end %>
+              <% end %>
             </div>
             <div class="flex-1">
-                <%= if history.type == :creation do %>
+              <%= if history.type == :creation do %>
                 <p class="text-gray-900">
-                    <span class="font-medium">{gettext("Created")}</span>
+                  <span class="font-medium">{gettext("Created")}</span>
                 </p>
-                <% else %>
+              <% else %>
                 <p class="text-gray-900">
-                    <span class="font-medium">{gettext("Moved")}</span>
-                    {gettext("from")}
-                    <span class="font-medium text-blue-600"><%= history.from_column %></span>
-                    {gettext("to")}
-                    <span class="font-medium text-blue-600"><%= history.to_column %></span>
+                  <span class="font-medium">{gettext("Moved")}</span>
+                  {gettext("from")}
+                  <span class="font-medium text-blue-600">{history.from_column}</span>
+                  {gettext("to")}
+                  <span class="font-medium text-blue-600">{history.to_column}</span>
                 </p>
-                <% end %>
-                <p class="text-xs text-gray-500 mt-0.5">
-                <%= Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p") %>
-                </p>
+              <% end %>
+              <p class="text-xs text-gray-500 mt-0.5">
+                {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
+              </p>
             </div>
-            </div>
+          </div>
         <% end %>
-        </div>
+      </div>
     </div>
-    <% end %>
+  <% end %>
 
-    <%= if @action == :edit_task && @task.id do %>
+  <%= if @action == :edit_task && @task.id do %>
     <div class="mt-8 pt-8 border-t border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Comments")}</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Comments")}</h3>
 
-        <.form
+      <.form
         :let={c}
         for={@comment_form}
         id="comment-form"
         phx-target={@myself}
         phx-submit="add_comment"
         class="mb-6"
-        >
+      >
         <.input
-            field={c[:content]}
-            type="textarea"
-            label={gettext("Add a comment")}
-            rows="3"
-            placeholder={gettext("Write your comment here...")}
-            required
+          field={c[:content]}
+          type="textarea"
+          label={gettext("Add a comment")}
+          rows="3"
+          placeholder={gettext("Write your comment here...")}
+          required
         />
         <div class="mt-3">
-            <.button type="submit" phx-disable-with={gettext("Adding...")}>
+          <.button type="submit" phx-disable-with={gettext("Adding...")}>
             {gettext("Add Comment")}
-            </.button>
+          </.button>
         </div>
-        </.form>
+      </.form>
 
-        <%= if length(@task.comments || []) > 0 do %>
+      <%= if length(@task.comments || []) > 0 do %>
         <div class="space-y-4 mt-6">
-            <%= for comment <- @task.comments do %>
+          <%= for comment <- @task.comments do %>
             <div class="bg-gray-50 rounded-lg p-4">
-                <p class="text-sm text-gray-900 whitespace-pre-wrap"><%= comment.content %></p>
-                <p class="text-xs text-gray-500 mt-2">
-                <%= Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p") %>
-                </p>
+              <p class="text-sm text-gray-900 whitespace-pre-wrap">{comment.content}</p>
+              <p class="text-xs text-gray-500 mt-2">
+                {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
+              </p>
             </div>
-            <% end %>
+          <% end %>
         </div>
-        <% else %>
-        <p class="text-sm text-gray-500 italic mt-6">{gettext("No comments yet. Be the first to comment!")}</p>
-        <% end %>
+      <% else %>
+        <p class="text-sm text-gray-500 italic mt-6">
+          {gettext("No comments yet. Be the first to comment!")}
+        </p>
+      <% end %>
     </div>
-    <% end %>
+  <% end %>
 </div>

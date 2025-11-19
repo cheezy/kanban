@@ -219,7 +219,9 @@ defmodule KanbanWeb.BoardLive.Show do
     require Logger
     new_column = Columns.get_column!(new_column_id)
 
-    Logger.info("Attempting to move task #{task.id} to column #{new_column_id} at position #{new_position}")
+    Logger.info(
+      "Attempting to move task #{task.id} to column #{new_column_id} at position #{new_position}"
+    )
 
     case Tasks.move_task(task, new_column, new_position) do
       {:ok, _task} ->
@@ -246,6 +248,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
       {:error, reason} ->
         Logger.error("Task move failed: #{inspect(reason)}")
+
         socket
         |> put_flash(:error, gettext("Failed to move task"))
         |> push_event("move_failed", %{})

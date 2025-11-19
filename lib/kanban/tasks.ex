@@ -298,7 +298,9 @@ defmodule Kanban.Tasks do
     require Logger
 
     Repo.transaction(fn ->
-      Logger.info("perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}")
+      Logger.info(
+        "perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}"
+      )
 
       move_task_to_temp_position(task)
 
@@ -343,14 +345,20 @@ defmodule Kanban.Tasks do
 
     # Log target column state before shift
     target_tasks = list_tasks(new_column)
-    Logger.info("Target column has #{length(target_tasks)} tasks before shift: #{inspect(Enum.map(target_tasks, &{&1.id, &1.position}))}")
+
+    Logger.info(
+      "Target column has #{length(target_tasks)} tasks before shift: #{inspect(Enum.map(target_tasks, &{&1.id, &1.position}))}"
+    )
 
     # Make space in target column
     shift_tasks_down_for_insert(new_column, new_position)
 
     # Log target column state after shift
     target_tasks_after = list_tasks(new_column)
-    Logger.info("Target column has #{length(target_tasks_after)} tasks after shift: #{inspect(Enum.map(target_tasks_after, &{&1.id, &1.position}))}")
+
+    Logger.info(
+      "Target column has #{length(target_tasks_after)} tasks after shift: #{inspect(Enum.map(target_tasks_after, &{&1.id, &1.position}))}"
+    )
   end
 
   defp handle_same_column_move(task, column, new_position) do
@@ -371,7 +379,10 @@ defmodule Kanban.Tasks do
 
   defp finalize_task_move(task, new_column, new_position) do
     require Logger
-    Logger.info("Updating task #{task.id} to final position: column_id=#{new_column.id}, position=#{new_position}")
+
+    Logger.info(
+      "Updating task #{task.id} to final position: column_id=#{new_column.id}, position=#{new_position}"
+    )
 
     Task
     |> where([t], t.id == ^task.id)

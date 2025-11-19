@@ -15,6 +15,9 @@ defmodule Kanban.Repo.Migrations.CreateBoardUsers do
     create unique_index(:board_users, [:board_id, :user_id])
 
     # Create a unique partial index to ensure only one owner per board
-    create unique_index(:board_users, [:board_id], where: "access = 'owner'", name: :board_users_one_owner_per_board)
+    create unique_index(:board_users, [:board_id],
+             where: "access = 'owner'",
+             name: :board_users_one_owner_per_board
+           )
   end
 end

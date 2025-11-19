@@ -724,3 +724,93 @@ msgstr "Aucun commentaire pour le moment. Soyez le premier à commenter !"
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "Écrivez votre commentaire ici..."
+
+#: lib/kanban_web/live/board_live/form.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Manage Users"
+msgstr "Gérer les Utilisateurs"
+
+#: lib/kanban_web/live/board_live/form.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Add User by Email"
+msgstr "Ajouter un Utilisateur par Email"
+
+#: lib/kanban_web/live/board_live/form.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Enter user email"
+msgstr "Entrez l'email de l'utilisateur"
+
+#: lib/kanban_web/live/board_live/form.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Search"
+msgstr "Rechercher"
+
+#: lib/kanban_web/live/board_live/form.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "Add as Read Only"
+msgstr "Ajouter en Lecture Seule"
+
+#: lib/kanban_web/live/board_live/form.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Add with Modify Access"
+msgstr "Ajouter avec Accès en Modification"
+
+#: lib/kanban_web/live/board_live/form.html.heex:62
+#, elixir-autogen, elixir-format
+msgid "Current Users"
+msgstr "Utilisateurs Actuels"
+
+#: lib/kanban_web/live/board_live/form.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Owner"
+msgstr "Propriétaire"
+
+#: lib/kanban_web/live/board_live/form.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Can Modify"
+msgstr "Peut Modifier"
+
+#: lib/kanban_web/live/board_live/form.html.heex:81
+#, elixir-autogen, elixir-format
+msgid "Read Only"
+msgstr "Lecture Seule"
+
+#: lib/kanban_web/live/board_live/form.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "Remove"
+msgstr "Supprimer"
+
+#: lib/kanban_web/live/board_live/form.ex:53
+#, elixir-autogen, elixir-format
+msgid "User not found with email: %{email}"
+msgstr "Utilisateur introuvable avec l'email : %{email}"
+
+#: lib/kanban_web/live/board_live/form.ex:60
+#, elixir-autogen, elixir-format
+msgid "You cannot add yourself to the board"
+msgstr "Vous ne pouvez pas vous ajouter au tableau"
+
+#: lib/kanban_web/live/board_live/form.ex:71
+#, elixir-autogen, elixir-format
+msgid "User is already added to the board"
+msgstr "L'utilisateur est déjà ajouté au tableau"
+
+#: lib/kanban_web/live/board_live/form.ex:91
+#, elixir-autogen, elixir-format
+msgid "User added successfully"
+msgstr "Utilisateur ajouté avec succès"
+
+#: lib/kanban_web/live/board_live/form.ex:97
+#, elixir-autogen, elixir-format
+msgid "Failed to add user to board"
+msgstr "Échec de l'ajout de l'utilisateur au tableau"
+
+#: lib/kanban_web/live/board_live/form.ex:114
+#, elixir-autogen, elixir-format
+msgid "User removed successfully"
+msgstr "Utilisateur supprimé avec succès"
+
+#: lib/kanban_web/live/board_live/form.ex:120
+#, elixir-autogen, elixir-format
+msgid "Failed to remove user from board"
+msgstr "Échec de la suppression de l'utilisateur du tableau"

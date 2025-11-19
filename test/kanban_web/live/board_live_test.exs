@@ -303,7 +303,9 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
       # Click "Add task" button
-      show_live |> element("a[href='/boards/#{board.id}/columns/#{column.id}/tasks/new']") |> render_click()
+      show_live
+      |> element("a[href='/boards/#{board.id}/columns/#{column.id}/tasks/new']")
+      |> render_click()
 
       # Validate form shows error for missing title
       assert show_live
@@ -329,7 +331,9 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
       # Click edit button for task
-      show_live |> element("a[href='/boards/#{board.id}/tasks/#{task.id}/edit']") |> render_click()
+      show_live
+      |> element("a[href='/boards/#{board.id}/tasks/#{task.id}/edit']")
+      |> render_click()
 
       # Update task
       show_live

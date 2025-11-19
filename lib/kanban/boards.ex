@@ -180,7 +180,8 @@ defmodule Kanban.Boards do
       {:ok, %BoardUser{}}
 
   """
-  def add_user_to_board(%Board{} = board, user, access) when access in [:owner, :read_only, :modify] do
+  def add_user_to_board(%Board{} = board, user, access)
+      when access in [:owner, :read_only, :modify] do
     %BoardUser{}
     |> BoardUser.changeset(%{
       board_id: board.id,
@@ -215,13 +216,34 @@ defmodule Kanban.Boards do
       {:ok, %BoardUser{}}
 
   """
-  def update_user_access(%Board{} = board, user, new_access) when new_access in [:owner, :read_only, :modify] do
+  def update_user_access(%Board{} = board, user, new_access)
+      when new_access in [:owner, :read_only, :modify] do
     case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       board_user ->
         board_user
         |> BoardUser.changeset(%{access: new_access})
         |> Repo.update()
     end
+  end
+
+  @doc """
+  Lists all users associated with a board along with their access level.
+
+  ## Examples
+
+      iex> list_board_users(board)
+      [%{user: %User{}, access: :owner}, ...]
+
+  """
+  def list_board_users(%Board{id: board_id}) do
+    BoardUser
+    |> where([bu], bu.board_id == ^board_id)
+    |> join(:inner, [bu], u in assoc(bu, :user))
+    |> select([bu, u], %{user: u, access: bu.access})
+    |> order_by([bu, u], desc: bu.access, asc: u.email)
+    |> Repo.all()
   end
 end
