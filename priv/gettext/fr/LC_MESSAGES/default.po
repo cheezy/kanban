@@ -814,3 +814,8 @@ msgstr "Utilisateur supprimé avec succès"
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Échec de la suppression de l'utilisateur du tableau"
+
+#: lib/kanban_web/live/board_live/form.ex:117
+#, elixir-autogen, elixir-format
+msgid "User not found"
+msgstr "Utilisateur introuvable"

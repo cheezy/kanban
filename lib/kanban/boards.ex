@@ -232,6 +232,9 @@ defmodule Kanban.Boards do
   @doc """
   Lists all users associated with a board along with their access level.
 
+  Users are sorted by access level (owner first, then modify, then read_only),
+  and then alphabetically by email within each access level.
+
   ## Examples
 
       iex> list_board_users(board)
@@ -243,7 +246,18 @@ defmodule Kanban.Boards do
     |> where([bu], bu.board_id == ^board_id)
     |> join(:inner, [bu], u in assoc(bu, :user))
     |> select([bu, u], %{user: u, access: bu.access})
-    |> order_by([bu, u], desc: bu.access, asc: u.email)
     |> Repo.all()
+    |> Enum.sort_by(
+      fn %{user: user, access: access} ->
+        access_priority =
+          case access do
+            :owner -> 0
+            :modify -> 1
+            :read_only -> 2
+          end
+
+        {access_priority, user.email}
+      end
+    )
   end
 end

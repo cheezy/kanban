@@ -113,21 +113,28 @@ defmodule KanbanWeb.BoardLive.Form do
   def handle_event("remove_user", %{"user_id" => user_id}, socket) do
     board = socket.assigns.board
     user_id = String.to_integer(user_id)
-    user = Repo.get!(Accounts.User, user_id)
 
-    case Boards.remove_user_from_board(board, user) do
-      {:ok, _board_user} ->
-        board_users = Boards.list_board_users(board)
-
+    case Repo.get(Accounts.User, user_id) do
+      nil ->
         {:noreply,
          socket
-         |> assign(:board_users, board_users)
-         |> put_flash(:info, gettext("User removed successfully"))}
+         |> put_flash(:error, gettext("User not found"))}
 
-      {:error, _} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Failed to remove user from board"))}
+      user ->
+        case Boards.remove_user_from_board(board, user) do
+          {:ok, _board_user} ->
+            board_users = Boards.list_board_users(board)
+
+            {:noreply,
+             socket
+             |> assign(:board_users, board_users)
+             |> put_flash(:info, gettext("User removed successfully"))}
+
+          {:error, _} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, gettext("Failed to remove user from board"))}
+        end
     end
   end
 
