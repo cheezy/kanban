@@ -13,6 +13,8 @@ defmodule Kanban.Boards do
   Returns the list of boards for a given user with their access level.
 
   Each board will have a virtual `:user_access` field containing the user's access level.
+  Boards are sorted by access level (owner first, modify second, read_only last),
+  then by creation date (most recent first) within each access level.
 
   ## Examples
 
@@ -24,9 +26,27 @@ defmodule Kanban.Boards do
     Board
     |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
     |> where([b, bu], bu.user_id == ^user.id)
-    |> order_by([b], desc: b.inserted_at)
     |> select([b, bu], %{b | user_access: bu.access})
     |> Repo.all()
+    |> Enum.sort_by(
+      fn board ->
+        access_priority =
+          case board.user_access do
+            :owner -> 0
+            :modify -> 1
+            :read_only -> 2
+          end
+
+        {access_priority, NaiveDateTime.to_erl(board.inserted_at)}
+      end,
+      fn {priority_a, time_a}, {priority_b, time_b} ->
+        if priority_a == priority_b do
+          time_a >= time_b
+        else
+          priority_a < priority_b
+        end
+      end
+    )
   end
 
   @doc """
