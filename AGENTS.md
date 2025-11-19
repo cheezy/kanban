@@ -10,6 +10,14 @@ This is a web application written using the Phoenix web framework.
 - Always provide a French translation of all text that is visible in the UI
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 
+### UI/UX guidelines
+
+- **Always follow existing application styles and patterns** when adding new UI elements
+- Before creating custom styles, check `core_components.ex` for existing components like `<.input>`, `<.button>`, `<.form>`, etc.
+- When adding form fields, use the standard component structure with `fieldset`, `label`, and `span.label` classes to match existing forms
+- New buttons should use the `<.button>` component without custom classes unless specifically requested
+- Maintain consistency with existing color schemes, spacing, and typography throughout the application
+
 ### Quality guidelines  
 
 - When you complete a task that has new functions write unit tests for the new function
