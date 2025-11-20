@@ -14,6 +14,7 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_params(%{"id" => id, "column_id" => column_id, "task_id" => task_id}, _, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
+    user_access = Boards.get_user_access(board.id, user.id)
     columns = Columns.list_columns(board)
     column = Columns.get_column!(column_id)
     task = Tasks.get_task!(task_id)
@@ -22,6 +23,8 @@ defmodule KanbanWeb.BoardLive.Show do
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:column, column)
      |> assign(:task, task)
      |> assign(:has_columns, length(columns) > 0)
@@ -32,6 +35,7 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_params(%{"id" => id, "column_id" => column_id}, _, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
+    user_access = Boards.get_user_access(board.id, user.id)
     columns = Columns.list_columns(board)
     column = Columns.get_column!(column_id)
 
@@ -39,6 +43,8 @@ defmodule KanbanWeb.BoardLive.Show do
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:column, column)
      |> assign(:column_id, column.id)
      |> assign(:has_columns, length(columns) > 0)
@@ -49,6 +55,7 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_params(%{"id" => id, "task_id" => task_id}, _, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
+    user_access = Boards.get_user_access(board.id, user.id)
     columns = Columns.list_columns(board)
     task = Tasks.get_task!(task_id)
 
@@ -56,6 +63,8 @@ defmodule KanbanWeb.BoardLive.Show do
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:task, task)
      |> assign(:has_columns, length(columns) > 0)
      |> stream(:columns, columns)
@@ -65,12 +74,15 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_params(%{"id" => id}, _, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
+    user_access = Boards.get_user_access(board.id, user.id)
     columns = Columns.list_columns(board)
 
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:has_columns, length(columns) > 0)
      |> stream(:columns, columns)
      |> load_tasks_for_columns(columns)}

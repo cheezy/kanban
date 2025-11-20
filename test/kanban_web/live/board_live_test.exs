@@ -622,4 +622,458 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ ~s(data-task-count="2")
     end
   end
+
+  describe "Permissions - Owner" do
+    setup [:register_and_log_in_user]
+
+    test "owner can see add task buttons", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Add task"
+      assert html =~ ~s(phx-hook="Sortable")
+    end
+
+    test "owner can see edit and delete buttons for columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
+      # Check that delete link with confirmation exists
+      assert html =~ ~s(phx-click)
+      assert html =~ ~s(delete_column)
+      assert html =~ ~s(Are you sure you want to delete this column?)
+    end
+
+    test "owner can see edit and delete buttons for tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/tasks/#{task.id}/edit"]))
+      # Check that delete link with confirmation exists
+      assert html =~ ~s(delete_task)
+      assert html =~ ~s(Are you sure you want to delete this task?)
+    end
+  end
+
+  describe "Permissions - Modify Access" do
+    setup [:register_and_log_in_user]
+
+    test "user with modify access can see add task buttons", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Add task"
+    end
+
+    test "user with modify access can see edit and delete buttons", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/tasks/#{task.id}/edit"]))
+    end
+
+    test "user with modify access can delete tasks", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task to delete"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "Task to delete"
+
+      show_live |> render_click("delete_task", %{"id" => task.id})
+
+      html = render(show_live)
+      assert html =~ "Task deleted successfully"
+      refute html =~ "Task to delete"
+    end
+
+    test "user with modify access can delete columns", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      column = column_fixture(board, %{name: "To Delete"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "To Delete"
+
+      show_live |> render_click("delete_column", %{"id" => column.id})
+
+      html = render(show_live)
+      assert html =~ "Column deleted successfully"
+      refute html =~ "To Delete"
+    end
+  end
+
+  describe "Permissions - Read Only Access" do
+    setup [:register_and_log_in_user]
+
+    test "user with read only access cannot see add task buttons", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "Add task"
+      refute html =~ "hero-plus-circle-solid"
+    end
+
+    test "user with read only access cannot see edit buttons", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
+      refute has_element?(show_live, ~s([href="/boards/#{board.id}/tasks/#{task.id}/edit"]))
+    end
+
+    test "user with read only access cannot see delete buttons", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, ~s([phx-click="delete_column"]))
+      refute has_element?(show_live, ~s([phx-click="delete_task"]))
+    end
+
+    test "user with read only access can view board and tasks", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user, %{name: "Shared Board"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Visible Task"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Shared Board"
+      assert html =~ "To Do"
+      assert html =~ "Visible Task"
+    end
+  end
+
+  describe "Task Assignment Display" do
+    setup [:register_and_log_in_user]
+
+    test "displays person icon for assigned tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      other_user = user_fixture(%{email: "assigned@example.com", name: "Assigned User"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, other_user, :modify)
+
+      _task = task_fixture(column, %{title: "Assigned Task", assigned_to_id: other_user.id})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Assigned Task"
+      assert html =~ "hero-user-solid"
+      assert html =~ "Assigned User"
+    end
+
+    test "does not display person icon for unassigned tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Unassigned Task"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Unassigned Task"
+      # Count hero-user-solid occurrences - should be 0 for unassigned tasks
+      user_icon_count = html |> String.split("hero-user-solid") |> length() |> Kernel.-(1)
+      assert user_icon_count == 0
+    end
+  end
+
+  describe "Column Reordering" do
+    setup [:register_and_log_in_user]
+
+    test "handles move_column event successfully", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "First"})
+      column2 = column_fixture(board, %{name: "Second"})
+      column3 = column_fixture(board, %{name: "Third"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Reorder columns: swap first and third
+      new_order = [column3.id, column2.id, column1.id]
+
+      show_live
+      |> render_click("move_column", %{
+        "column_id" => "#{column3.id}",
+        "column_ids" => Enum.map(new_order, &to_string/1)
+      })
+
+      # Verify columns are in new order
+      columns = Kanban.Columns.list_columns(board)
+      column_ids = Enum.map(columns, & &1.id)
+
+      assert column_ids == new_order
+    end
+  end
+
+  describe "Board Display" do
+    setup [:register_and_log_in_user]
+
+    test "displays board name and description", %{conn: conn, user: user} do
+      board = board_fixture(user, %{name: "My Project Board", description: "Project description"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "My Project Board"
+      assert html =~ "Project description"
+    end
+
+    test "displays New Column button", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "New Column"
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/new"]))
+    end
+
+    test "displays Edit board button", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Edit board"
+      assert has_element?(show_live, ~s([href="/boards/#{board.id}/edit"]))
+    end
+
+    test "displays Back to boards button", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Back to boards"
+      assert has_element?(show_live, ~s([href="/boards"]))
+    end
+  end
+
+  describe "Navigation with Modals" do
+    setup [:register_and_log_in_user]
+
+    test "can navigate to new column modal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}/columns/new")
+
+      assert true
+    end
+
+    test "can navigate to edit column modal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Edit"})
+
+      {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/edit")
+
+      assert true
+    end
+
+    test "can navigate to new task modal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      assert true
+    end
+
+    test "can navigate to edit task modal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task to Edit"})
+
+      {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      assert true
+    end
+  end
+
+  describe "Task Reordering Within Column" do
+    setup [:register_and_log_in_user]
+
+    test "reorders tasks within the same column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task3.id}",
+        "old_column_id" => "#{column.id}",
+        "new_column_id" => "#{column.id}",
+        "new_position" => 0
+      })
+
+      tasks = Kanban.Tasks.list_tasks(column)
+      task_ids = Enum.map(tasks, & &1.id)
+
+      assert task_ids == [task3.id, task1.id, task2.id]
+    end
+
+    test "handles moving task to end of column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+      task3 = task_fixture(column, %{title: "Task 3"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task1.id}",
+        "old_column_id" => "#{column.id}",
+        "new_column_id" => "#{column.id}",
+        "new_position" => 2
+      })
+
+      tasks = Kanban.Tasks.list_tasks(column)
+      task_ids = Enum.map(tasks, & &1.id)
+
+      assert task_ids == [task2.id, task3.id, task1.id]
+    end
+  end
+
+  describe "WIP Limit Enforcement" do
+    setup [:register_and_log_in_user]
+
+    test "prevents moving task to column at WIP limit", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 2})
+      task = task_fixture(column1, %{title: "Task to move"})
+      _task1 = task_fixture(column2, %{title: "Existing 1"})
+      _task2 = task_fixture(column2, %{title: "Existing 2"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn ->
+        html =
+          show_live
+          |> render_click("move_task", %{
+            "task_id" => "#{task.id}",
+            "old_column_id" => "#{column1.id}",
+            "new_column_id" => "#{column2.id}",
+            "new_position" => 0
+          })
+
+        assert html =~ "Cannot move task: column has reached its WIP limit"
+
+        tasks1 = Kanban.Tasks.list_tasks(column1)
+        assert length(tasks1) == 1
+        assert hd(tasks1).id == task.id
+      end)
+    end
+
+    test "allows moving task to column with available space", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column2 = column_fixture(board, %{name: "In Progress", wip_limit: 3})
+      task = task_fixture(column1, %{title: "Task to move"})
+      _task1 = task_fixture(column2, %{title: "Existing 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{task.id}",
+        "old_column_id" => "#{column1.id}",
+        "new_column_id" => "#{column2.id}",
+        "new_position" => 0
+      })
+
+      tasks1 = Kanban.Tasks.list_tasks(column1)
+      assert tasks1 == []
+
+      tasks2 = Kanban.Tasks.list_tasks(column2)
+      assert length(tasks2) == 2
+      task_ids = Enum.map(tasks2, & &1.id)
+      assert task.id in task_ids
+    end
+  end
+
+  describe "Page Titles" do
+    setup [:register_and_log_in_user]
+
+    test "sets page title for show action", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert page_title(show_live) =~ "Show Board"
+    end
+
+    test "sets page title for new column action", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/new")
+
+      assert page_title(show_live) =~ "New Column"
+    end
+
+    test "sets page title for edit column action", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/edit")
+
+      assert page_title(show_live) =~ "Edit Column"
+    end
+
+    test "sets page title for new task action", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      assert page_title(show_live) =~ "New Task"
+    end
+
+    test "sets page title for edit task action", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task 1"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      assert page_title(show_live) =~ "Edit Task"
+    end
+  end
 end

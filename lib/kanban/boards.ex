@@ -267,17 +267,15 @@ defmodule Kanban.Boards do
     |> join(:inner, [bu], u in assoc(bu, :user))
     |> select([bu, u], %{user: u, access: bu.access})
     |> Repo.all()
-    |> Enum.sort_by(
-      fn %{user: user, access: access} ->
-        access_priority =
-          case access do
-            :owner -> 0
-            :modify -> 1
-            :read_only -> 2
-          end
+    |> Enum.sort_by(fn %{user: user, access: access} ->
+      access_priority =
+        case access do
+          :owner -> 0
+          :modify -> 1
+          :read_only -> 2
+        end
 
-        {access_priority, user.email}
-      end
-    )
+      {access_priority, user.email}
+    end)
   end
 end

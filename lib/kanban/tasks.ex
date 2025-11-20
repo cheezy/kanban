@@ -509,10 +509,7 @@ defmodule Kanban.Tasks do
     end)
   end
 
-  defp generate_identifier(column, task_type) do
-    # Preload the column's board to get board_id
-    column = Repo.preload(column, :board)
-
+  defp generate_identifier(_column, task_type) do
     # Normalize task_type to atom
     task_type =
       case task_type do
@@ -524,13 +521,11 @@ defmodule Kanban.Tasks do
     # Get the prefix for this task type
     prefix = if task_type == :work, do: "W", else: "D"
 
-    # Find the maximum identifier number for this type in the board
-    # We need to extract the numeric part from identifiers and find the max
+    # Find the maximum identifier number for this type across ALL tasks
+    # Since identifier has a global unique constraint, we need global uniqueness
     max_number =
       Task
-      |> join(:inner, [t], c in Column, on: t.column_id == c.id)
-      |> where([t, c], c.board_id == ^column.board_id)
-      |> where([t, c], t.type == ^task_type)
+      |> where([t], t.type == ^task_type)
       |> select([t], t.identifier)
       |> Repo.all()
       |> Enum.map(fn identifier ->
