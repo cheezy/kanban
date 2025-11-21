@@ -20,13 +20,20 @@ defmodule KanbanWeb.BoardLive.Form do
   defp apply_action(socket, :edit, %{"id" => id}) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
-    board_users = Boards.list_board_users(board)
 
-    socket
-    |> assign(:page_title, gettext("Edit Board"))
-    |> assign(:board, board)
-    |> assign(:board_users, board_users)
-    |> assign(:form, to_form(Boards.change_board(board)))
+    if Boards.owner?(board, user) do
+      board_users = Boards.list_board_users(board)
+
+      socket
+      |> assign(:page_title, gettext("Edit Board"))
+      |> assign(:board, board)
+      |> assign(:board_users, board_users)
+      |> assign(:form, to_form(Boards.change_board(board)))
+    else
+      socket
+      |> put_flash(:error, gettext("Only the board owner can edit this board"))
+      |> push_navigate(to: ~p"/boards")
+    end
   end
 
   defp apply_action(socket, :new, _params) do

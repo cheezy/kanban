@@ -677,7 +677,10 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Add task"
     end
 
-    test "user with modify access can see edit and delete buttons", %{conn: conn, user: user} do
+    test "user with modify access can see task edit/delete buttons but not column buttons", %{
+      conn: conn,
+      user: user
+    } do
       other_user = user_fixture()
       board = board_fixture(other_user)
       {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
@@ -686,7 +689,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
+      refute has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
       assert has_element?(show_live, ~s([href="/boards/#{board.id}/tasks/#{task.id}/edit"]))
     end
 
@@ -707,7 +710,7 @@ defmodule KanbanWeb.BoardLiveTest do
       refute html =~ "Task to delete"
     end
 
-    test "user with modify access can delete columns", %{conn: conn, user: user} do
+    test "user with modify access cannot delete columns", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
       {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
@@ -719,8 +722,8 @@ defmodule KanbanWeb.BoardLiveTest do
       show_live |> render_click("delete_column", %{"id" => column.id})
 
       html = render(show_live)
-      assert html =~ "Column deleted successfully"
-      refute html =~ "To Delete"
+      assert html =~ "Only the board owner can delete columns"
+      assert html =~ "To Delete"
     end
   end
 

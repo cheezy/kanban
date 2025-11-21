@@ -22,8 +22,15 @@ defmodule KanbanWeb.BoardLive.Index do
   def handle_event("delete", %{"id" => id}, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
-    {:ok, _} = Boards.delete_board(board)
 
-    {:noreply, stream_delete(socket, :boards, board)}
+    if Boards.owner?(board, user) do
+      {:ok, _} = Boards.delete_board(board)
+      {:noreply, stream_delete(socket, :boards, board)}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Only the board owner can delete this board"))
+       |> push_navigate(to: ~p"/boards")}
+    end
   end
 end

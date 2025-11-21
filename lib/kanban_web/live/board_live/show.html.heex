@@ -4,10 +4,10 @@
       {@board.name}
       <:subtitle>{@board.description}</:subtitle>
       <:actions>
-        <.link patch={~p"/boards/#{@board}/columns/new"}>
+        <.link :if={@user_access == :owner} patch={~p"/boards/#{@board}/columns/new"}>
           <.button>{gettext("New Column")}</.button>
         </.link>
-        <.link navigate={~p"/boards/#{@board}/edit"}>
+        <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
           <.button>{gettext("Edit board")}</.button>
         </.link>
         <.link navigate={~p"/boards"}>
@@ -25,7 +25,7 @@
             <p class="mt-1 text-sm text-gray-500">
               {gettext("Get started by creating columns for your board.")}
             </p>
-            <div class="mt-6">
+            <div :if={@user_access == :owner} class="mt-6">
               <.link patch={~p"/boards/#{@board}/columns/new"}>
                 <.button>{gettext("Create your first column")}</.button>
               </.link>
@@ -50,9 +50,11 @@
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2">
-                <.icon name="hero-bars-3" class="h-5 w-5 text-gray-400" />
-              </div>
+              <%= if @user_access == :owner do %>
+                <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2">
+                  <.icon name="hero-bars-3" class="h-5 w-5 text-gray-400" />
+                </div>
+              <% end %>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <h3 class="font-semibold text-gray-900">{column.name}</h3>
@@ -97,7 +99,7 @@
                   <% end %>
                 </div>
               </div>
-              <%= if @can_modify do %>
+              <%= if @user_access == :owner do %>
                 <div class="flex gap-2">
                   <.link patch={~p"/boards/#{@board}/columns/#{column}/edit"}>
                     <.icon
