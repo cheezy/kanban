@@ -28,7 +28,7 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:column, column)
      |> assign(:task, task)
      |> assign(:has_columns, length(columns) > 0)
-     |> stream(:columns, columns)
+     |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)}
   end
 
@@ -55,7 +55,7 @@ defmodule KanbanWeb.BoardLive.Show do
        |> assign(:column, column)
        |> assign(:column_id, column.id)
        |> assign(:has_columns, length(columns) > 0)
-       |> stream(:columns, columns)
+       |> stream(:columns, columns, reset: true)
        |> load_tasks_for_columns(columns)}
     end
   end
@@ -75,7 +75,7 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:task, task)
      |> assign(:has_columns, length(columns) > 0)
-     |> stream(:columns, columns)
+     |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)}
   end
 
@@ -99,7 +99,7 @@ defmodule KanbanWeb.BoardLive.Show do
        |> assign(:user_access, user_access)
        |> assign(:can_modify, user_access in [:owner, :modify])
        |> assign(:has_columns, length(columns) > 0)
-       |> stream(:columns, columns)
+       |> stream(:columns, columns, reset: true)
        |> load_tasks_for_columns(columns)}
     end
   end
