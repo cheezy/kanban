@@ -7,7 +7,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, viewing_task_id: nil, show_task_modal: false)}
   end
 
   @impl true
@@ -67,16 +67,24 @@ defmodule KanbanWeb.BoardLive.Show do
     columns = Columns.list_columns(board)
     task = Tasks.get_task!(task_id)
 
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:task, task)
-     |> assign(:has_columns, length(columns) > 0)
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+    socket =
+      socket
+      |> assign(:page_title, page_title(socket.assigns.live_action))
+      |> assign(:board, board)
+      |> assign(:user_access, user_access)
+      |> assign(:can_modify, user_access in [:owner, :modify])
+      |> assign(:task, task)
+      |> assign(:has_columns, length(columns) > 0)
+      |> stream(:columns, columns, reset: true)
+
+    socket =
+      if Map.has_key?(socket.assigns, :tasks_by_column) do
+        socket
+      else
+        load_tasks_for_columns(socket, columns)
+      end
+
+    {:noreply, socket}
   end
 
   def handle_params(%{"id" => id}, _, socket) do
@@ -126,6 +134,33 @@ defmodule KanbanWeb.BoardLive.Show do
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}
       end
+    end
+  end
+
+  @impl true
+  def handle_event("view_task", %{"id" => id}, socket) do
+    require Logger
+    task_id = String.to_integer(id)
+    Logger.debug("view_task event: task_id=#{task_id}, scheduling modal show")
+    Process.send_after(self(), {:show_task_modal, task_id}, 100)
+    {:noreply, assign(socket, viewing_task_id: task_id, show_task_modal: false)}
+  end
+
+  @impl true
+  def handle_event("close_task_view", _, socket) do
+    require Logger
+    Logger.debug("close_task_view event")
+    {:noreply, assign(socket, viewing_task_id: nil, show_task_modal: false)}
+  end
+
+  @impl true
+  def handle_info({:show_task_modal, task_id}, socket) do
+    require Logger
+    Logger.debug("show_task_modal message: task_id=#{task_id}, current viewing_task_id=#{inspect(socket.assigns.viewing_task_id)}")
+    if socket.assigns.viewing_task_id == task_id do
+      {:noreply, assign(socket, :show_task_modal, true)}
+    else
+      {:noreply, socket}
     end
   end
 

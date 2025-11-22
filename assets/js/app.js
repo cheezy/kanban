@@ -26,12 +26,14 @@ import {hooks as colocatedHooks} from "phoenix-colocated/kanban"
 import AutoDismissFlash from "./hooks/auto-dismiss-flash"
 import SortableHook from "./hooks/sortable"
 import ColumnSortableHook from "./hooks/column_sortable"
+import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import topbar from "../vendor/topbar"
 
 const MyHooks = {
   AutoDismissFlash,
   Sortable: SortableHook,
   ColumnSortable: ColumnSortableHook,
+  DelayedModalClickAway,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
