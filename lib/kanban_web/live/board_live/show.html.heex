@@ -301,6 +301,8 @@
         module={KanbanWeb.TaskLive.ViewComponent}
         id={"view-task-#{@viewing_task_id}"}
         task_id={@viewing_task_id}
+        board_id={@board.id}
+        can_modify={@can_modify}
       />
     </KanbanWeb.DelayedModal.delayed_modal>
   </div>

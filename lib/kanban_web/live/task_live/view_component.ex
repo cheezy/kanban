@@ -10,7 +10,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:task, task)}
+     |> assign(:task, task)
+     |> assign(:board_id, Map.get(assigns, :board_id))
+     |> assign(:can_modify, Map.get(assigns, :can_modify, false))}
   end
 
   @impl true
@@ -34,6 +36,15 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               end}
             </span>
           </div>
+          <%= if @can_modify && @board_id do %>
+            <.link
+              patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
+              class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              <.icon name="hero-pencil" class="w-4 h-4" />
+              <span class="text-sm font-medium">{gettext("Edit")}</span>
+            </.link>
+          <% end %>
         </div>
         <h3 class="text-xl text-gray-800">{@task.title}</h3>
       </div>

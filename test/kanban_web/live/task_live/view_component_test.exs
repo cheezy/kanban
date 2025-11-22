@@ -369,5 +369,41 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ ~r/\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
     end
+
+    test "displays Edit link when can_modify is true", %{task: task, board: board} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          board_id: board.id,
+          can_modify: true
+        )
+
+      assert result =~ "Edit"
+      assert result =~ ~p"/boards/#{board}/tasks/#{task}/edit"
+    end
+
+    test "does not display Edit link when can_modify is false", %{task: task, board: board} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          board_id: board.id,
+          can_modify: false
+        )
+
+      refute result =~ "Edit"
+    end
+
+    test "does not display Edit link when board_id is not provided", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          can_modify: true
+        )
+
+      refute result =~ "Edit"
+    end
   end
 end

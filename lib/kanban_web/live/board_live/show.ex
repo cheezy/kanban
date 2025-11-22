@@ -75,6 +75,8 @@ defmodule KanbanWeb.BoardLive.Show do
       |> assign(:can_modify, user_access in [:owner, :modify])
       |> assign(:task, task)
       |> assign(:has_columns, length(columns) > 0)
+      |> assign(:viewing_task_id, nil)
+      |> assign(:show_task_modal, false)
       |> stream(:columns, columns, reset: true)
 
     socket =
