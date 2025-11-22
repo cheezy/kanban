@@ -1,5 +1,25 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-6">
+      <%= if @live_action == :edit do %>
+        <.link
+          navigate={~p"/boards/#{@board}"}
+          class="text-blue-600 hover:text-blue-800 flex items-center gap-2"
+        >
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+          {gettext("Back to board")}
+        </.link>
+      <% else %>
+        <.link
+          navigate={~p"/boards"}
+          class="text-blue-600 hover:text-blue-800 flex items-center gap-2"
+        >
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+          {gettext("Back to boards")}
+        </.link>
+      <% end %>
+    </div>
+
     <.header>
       {@page_title}
       <:subtitle>{gettext("Use this form to manage board records in your database.")}</:subtitle>
