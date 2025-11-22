@@ -66,6 +66,30 @@ defmodule Kanban.Tasks do
   end
 
   @doc """
+  Gets a single task with all related data preloaded for read-only view.
+
+  Raises `Ecto.NoResultsError` if the Task does not exist.
+
+  ## Examples
+
+      iex> get_task_for_view!(123)
+      %Task{task_histories: [...], comments: [...], assigned_to: %User{}, column: %Column{}}
+
+  """
+  def get_task_for_view!(id) do
+    alias Kanban.Tasks.TaskComment
+
+    Task
+    |> Repo.get!(id)
+    |> Repo.preload([
+      :assigned_to,
+      :column,
+      task_histories: from(h in TaskHistory, order_by: [desc: h.inserted_at]),
+      comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+    ])
+  end
+
+  @doc """
   Creates a task for a column with automatic position assignment.
   Respects WIP limit - returns error if column is at capacity.
 

@@ -153,7 +153,19 @@
                           <.icon name="hero-bars-3" class="h-4 w-4 text-gray-400" />
                         </div>
                         <div class="flex-1">
-                          <h4 class="font-medium text-gray-900 text-sm">{task.title}</h4>
+                          <div class="flex items-center justify-between">
+                            <h4 class="font-medium text-gray-900 text-sm">{task.title}</h4>
+                            <.link
+                              navigate={~p"/tasks/#{task}"}
+                              class="ml-2 flex-shrink-0"
+                              title={gettext("View details")}
+                            >
+                              <.icon
+                                name="hero-eye"
+                                class="h-4 w-4 text-gray-400 hover:text-blue-600"
+                              />
+                            </.link>
+                          </div>
                           <%= if task.description && task.description != "" do %>
                             <p class="mt-1 text-xs text-gray-600 line-clamp-2">
                               {task.description}

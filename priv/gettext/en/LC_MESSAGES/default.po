@@ -382,6 +382,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:11
 #: lib/kanban_web/live/task_live/form_component.html.heex:26
+#: lib/kanban_web/live/task_live/show.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr ""
@@ -515,7 +516,7 @@ msgstr ""
 msgid "Add task"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:228
+#: lib/kanban_web/live/board_live/show.html.heex:240
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to delete this task?"
 msgstr ""
@@ -598,18 +599,22 @@ msgid "Cannot move task: column has reached its WIP limit"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:90
+#: lib/kanban_web/live/task_live/show.ex:65
+#: lib/kanban_web/live/task_live/show.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:192
+#: lib/kanban_web/live/board_live/show.html.heex:204
 #: lib/kanban_web/live/task_live/form_component.html.heex:46
+#: lib/kanban_web/live/task_live/show.ex:32
 #, elixir-autogen, elixir-format
 msgid "Critical"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:172
+#: lib/kanban_web/live/board_live/show.html.heex:184
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/show.ex:40
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr ""
@@ -619,25 +624,29 @@ msgstr ""
 msgid "Failed to move task"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:193
+#: lib/kanban_web/live/board_live/show.html.heex:205
 #: lib/kanban_web/live/task_live/form_component.html.heex:45
+#: lib/kanban_web/live/task_live/show.ex:31
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:195
+#: lib/kanban_web/live/board_live/show.html.heex:207
 #: lib/kanban_web/live/task_live/form_component.html.heex:43
+#: lib/kanban_web/live/task_live/show.ex:29
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:194
+#: lib/kanban_web/live/board_live/show.html.heex:206
 #: lib/kanban_web/live/task_live/form_component.html.heex:44
+#: lib/kanban_web/live/task_live/show.ex:30
 #, elixir-autogen, elixir-format
 msgid "Medium"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/show.ex:66
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr ""
@@ -648,6 +657,7 @@ msgid "My Boards"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:41
+#: lib/kanban_web/live/task_live/show.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Priority"
 msgstr ""
@@ -667,18 +677,21 @@ msgstr ""
 msgid "WIP limit exceeded"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:173
+#: lib/kanban_web/live/board_live/show.html.heex:185
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/show.ex:39
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Work"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:95
+#: lib/kanban_web/live/task_live/show.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:97
+#: lib/kanban_web/live/task_live/show.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr ""
@@ -704,6 +717,7 @@ msgid "Comment added successfully"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:113
+#: lib/kanban_web/live/task_live/show.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr ""
@@ -734,6 +748,7 @@ msgid "Add with Modify Access"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:54
+#: lib/kanban_web/live/task_live/show.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Assigned To"
 msgstr ""
@@ -814,6 +829,7 @@ msgid "Select a user"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.ex:171
+#: lib/kanban_web/live/task_live/show.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr ""
@@ -876,4 +892,34 @@ msgstr ""
 #: lib/kanban_web/live/board_live/show.ex:187
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Only the board owner can reorder columns"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/show.html.heex:6
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Back to board"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/show.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "History"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/show.html.heex:108
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No comments yet"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/show.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "No history available"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/show.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Status"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:161
+#, elixir-autogen, elixir-format
+msgid "View details"
 msgstr ""
