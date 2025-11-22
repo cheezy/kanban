@@ -1,7 +1,6 @@
 defmodule KanbanWeb.DelayedModal do
   use Phoenix.Component
-  import KanbanWeb.Gettext
-  
+
   alias Phoenix.LiveView.JS
 
   attr :id, :string, required: true
@@ -62,7 +61,7 @@ defmodule KanbanWeb.DelayedModal do
     """
   end
 
-  defp show(js \\ %JS{}, selector) do
+  defp show(js, selector) do
     JS.show(js,
       to: selector,
       time: 300,
@@ -73,7 +72,7 @@ defmodule KanbanWeb.DelayedModal do
     )
   end
 
-  defp hide(js \\ %JS{}, selector) do
+  defp hide(js, selector) do
     JS.hide(js,
       to: selector,
       time: 200,
