@@ -182,6 +182,35 @@ defmodule Kanban.Accounts do
     |> update_user_and_delete_all_tokens()
   end
 
+  @doc """
+  Updates a user's type.
+
+  This should only be called programmatically by admins.
+
+  ## Examples
+
+      iex> update_user_type(user, :admin)
+      {:ok, %User{}}
+
+  """
+  def update_user_type(user, type) when type in [:user, :admin] do
+    user
+    |> User.type_changeset(type)
+    |> Repo.update()
+  end
+
+  @doc """
+  Checks if a user is an admin.
+
+  ## Examples
+
+      iex> admin?(user)
+      true
+
+  """
+  def admin?(%User{type: :admin}), do: true
+  def admin?(_), do: false
+
   ## Session
 
   @doc """

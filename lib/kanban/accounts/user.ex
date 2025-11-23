@@ -5,6 +5,7 @@ defmodule Kanban.Accounts.User do
   schema "users" do
     field :email, :string
     field :name, :string
+    field :type, Ecto.Enum, values: [:user, :admin], default: :user
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
@@ -147,6 +148,15 @@ defmodule Kanban.Accounts.User do
   def confirm_changeset(user) do
     now = DateTime.utc_now(:second)
     change(user, confirmed_at: now)
+  end
+
+  @doc """
+  A changeset for updating a user's type.
+
+  This should only be used programmatically by admins, never exposed in user-facing forms.
+  """
+  def type_changeset(user, type) when type in [:user, :admin] do
+    change(user, type: type)
   end
 
   @doc """
