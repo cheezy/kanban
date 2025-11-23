@@ -46,8 +46,7 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
         render_submit(form)
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert html =~
-               ~r/An email was sent to .*, please access it to confirm your account/
+      assert html =~ "Please check your email to confirm your account"
     end
 
     test "renders errors for duplicated email", %{conn: conn} do
@@ -58,11 +57,24 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
       result =
         lv
         |> form("#registration_form",
-          user: %{"email" => user.email}
+          user: %{"email" => user.email, "password" => valid_user_password()}
         )
         |> render_submit()
 
       assert result =~ "has already been taken"
+    end
+
+    test "renders errors for missing password", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/register")
+
+      result =
+        lv
+        |> form("#registration_form",
+          user: %{"email" => unique_user_email()}
+        )
+        |> render_submit()
+
+      assert result =~ "can&#39;t be blank"
     end
   end
 

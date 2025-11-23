@@ -123,9 +123,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                       end}
                     </span>
                     <%= if history.type == :move do %>
-                      {gettext("from")} <span class="font-semibold">{history.from_column}</span> {gettext(
-                        "to"
-                      )} <span class="font-semibold">{history.to_column}</span>
+                      {gettext("from")}
+                      <span class="font-semibold">{history.from_column}</span> {gettext("to")}
+                      <span class="font-semibold">{history.to_column}</span>
                     <% end %>
                   </p>
                   <p class="text-xs text-gray-500">

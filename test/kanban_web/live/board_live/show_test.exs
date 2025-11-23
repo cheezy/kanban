@@ -139,13 +139,18 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Column 2"
     end
 
-    test "navigating to edit task displays task form with current values", %{conn: conn, user: user} do
+    test "navigating to edit task displays task form with current values", %{
+      conn: conn,
+      user: user
+    } do
       board = board_fixture(user)
       column = column_fixture(board)
-      task = task_fixture(column, %{
-        title: "Test Task Title",
-        description: "Test Description"
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test Task Title",
+          description: "Test Description"
+        })
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
 
@@ -173,11 +178,15 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
 
       # View modal should not be present
-      refute html =~ "No history available"  # This text only appears in view modal
+      # This text only appears in view modal
+      refute html =~ "No history available"
       refute has_element?(show_live, "#task-view-modal")
     end
 
-    test "editing task from board with multiple columns shows all columns", %{conn: conn, user: user} do
+    test "editing task from board with multiple columns shows all columns", %{
+      conn: conn,
+      user: user
+    } do
       board = board_fixture(user)
       column1 = column_fixture(board, %{name: "To Do"})
       column_fixture(board, %{name: "In Progress"})

@@ -14,92 +14,66 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
     test "renders confirmation page for unconfirmed user", %{conn: conn, unconfirmed_user: user} do
       token =
         extract_user_token(fn url ->
-          Accounts.deliver_login_instructions(user, url)
+          Accounts.deliver_user_confirmation_instructions(user, url)
         end)
 
-      {:ok, _lv, html} = live(conn, ~p"/users/log-in/#{token}")
-      assert html =~ "Confirm and stay logged in"
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+
+      html = render(lv)
+      assert html =~ "Account Confirmed!"
+      assert html =~ "Your account has been confirmed successfully"
     end
 
-    test "renders login page for confirmed user", %{conn: conn, confirmed_user: user} do
-      token =
+    test "renders already confirmed message when trying to confirm again", %{
+      conn: conn,
+      unconfirmed_user: user
+    } do
+      first_token =
         extract_user_token(fn url ->
-          Accounts.deliver_login_instructions(user, url)
+          Accounts.deliver_user_confirmation_instructions(user, url)
         end)
 
-      {:ok, _lv, html} = live(conn, ~p"/users/log-in/#{token}")
-      refute html =~ "Confirm my account"
-      assert html =~ "Log in"
+      {:ok, user} = Accounts.confirm_user(first_token)
+
+      {encoded_token, user_token} = Accounts.UserToken.build_email_token(user, "confirm")
+      Kanban.Repo.insert!(user_token)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{encoded_token}")
+
+      assert_redirect(lv, ~p"/users/log-in")
     end
 
-    test "confirms the given token once", %{conn: conn, unconfirmed_user: user} do
+    test "confirms the user account", %{conn: conn, unconfirmed_user: user} do
       token =
         extract_user_token(fn url ->
-          Accounts.deliver_login_instructions(user, url)
+          Accounts.deliver_user_confirmation_instructions(user, url)
         end)
 
-      {:ok, lv, _html} = live(conn, ~p"/users/log-in/#{token}")
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
 
-      form = form(lv, "#confirmation_form", %{"user" => %{"token" => token}})
-      render_submit(form)
-
-      conn = follow_trigger_action(form, conn)
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "User confirmed successfully"
+      render(lv)
 
       assert Accounts.get_user!(user.id).confirmed_at
-      # we are logged in now
-      assert get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/boards"
-
-      # log out, new conn
-      conn = build_conn()
-
-      {:ok, _lv, html} =
-        live(conn, ~p"/users/log-in/#{token}")
-        |> follow_redirect(conn, ~p"/users/log-in")
-
-      assert html =~ "Magic link is invalid or it has expired"
     end
 
-    test "logs confirmed user in without changing confirmed_at", %{
-      conn: conn,
-      confirmed_user: user
-    } do
+    test "does not confirm twice with the same token", %{conn: conn, unconfirmed_user: user} do
       token =
         extract_user_token(fn url ->
-          Accounts.deliver_login_instructions(user, url)
+          Accounts.deliver_user_confirmation_instructions(user, url)
         end)
 
-      {:ok, lv, _html} = live(conn, ~p"/users/log-in/#{token}")
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      render(lv)
 
-      form = form(lv, "#login_form", %{"user" => %{"token" => token}})
-      render_submit(form)
+      {:ok, lv2, _html} = live(conn, ~p"/users/confirm/#{token}")
 
-      conn = follow_trigger_action(form, conn)
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Welcome back!"
-
-      assert Accounts.get_user!(user.id).confirmed_at == user.confirmed_at
-
-      # log out, new conn
-      conn = build_conn()
-
-      {:ok, _lv, html} =
-        live(conn, ~p"/users/log-in/#{token}")
-        |> follow_redirect(conn, ~p"/users/log-in")
-
-      assert html =~ "Magic link is invalid or it has expired"
+      assert_redirect(lv2, ~p"/users/log-in")
     end
 
-    test "raises error for invalid token", %{conn: conn} do
-      {:ok, _lv, html} =
-        live(conn, ~p"/users/log-in/invalid-token")
-        |> follow_redirect(conn, ~p"/users/log-in")
+    test "redirects to login for invalid token", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/invalid-token")
 
-      assert html =~ "Magic link is invalid or it has expired"
+      assert_redirect(lv, ~p"/users/log-in")
     end
   end
 end

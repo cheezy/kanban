@@ -132,7 +132,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "finds user by email successfully", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -176,7 +176,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "shows error when user already added to board", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com"})
+      other_user = user_fixture()
       {:ok, _} = Kanban.Boards.add_user_to_board(board, other_user, :read_only)
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
@@ -192,7 +192,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "trims whitespace from email search", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -207,7 +207,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "clears search results after successful add", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -228,7 +228,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "adds user with read_only access", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -245,7 +245,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "adds user with modify access", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -262,7 +262,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "displays remove button for non-owner users", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -281,7 +281,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "removes user successfully", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
       {:ok, _} = Kanban.Boards.add_user_to_board(board, other_user, :read_only)
 
       {:ok, form_live, html} = live(conn, ~p"/boards/#{board}/edit")
@@ -441,7 +441,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "search form clears after adding user", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -464,7 +464,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "shows both add buttons when user is found", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -479,7 +479,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
     test "user info card has proper styling", %{conn: conn, user: user} do
       board = board_fixture(user)
-      other_user = user_fixture(%{email: "test@example.com", name: "Test User"})
+      other_user = user_fixture(%{name: "Test User"})
 
       {:ok, form_live, _html} = live(conn, ~p"/boards/#{board}/edit")
 

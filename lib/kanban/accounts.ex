@@ -65,7 +65,7 @@ defmodule Kanban.Accounts do
   ## User registration
 
   @doc """
-  Registers a user.
+  Registers a user with password.
 
   ## Examples
 
@@ -78,8 +78,21 @@ defmodule Kanban.Accounts do
   """
   def register_user(attrs) do
     %User{}
-    |> User.email_changeset(attrs)
+    |> User.registration_changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking user registration changes.
+
+  ## Examples
+
+      iex> change_user_registration(user)
+      %Ecto.Changeset{data: %User{}}
+
+  """
+  def change_user_registration(user, attrs \\ %{}, opts \\ []) do
+    User.registration_changeset(user, attrs, opts)
   end
 
   ## Settings
@@ -203,6 +216,56 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
+  Gets the user with the given confirmation token.
+  """
+  def get_user_by_confirmation_token(token) do
+    with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
+         %UserToken{user_id: user_id} <- Repo.one(query) do
+      get_user!(user_id)
+    else
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Confirms a user account.
+  """
+  def confirm_user(token) do
+    with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
+         %UserToken{user_id: user_id} <- Repo.one(query),
+         %User{} = user <- Repo.get(User, user_id),
+         {:ok, user} <- maybe_confirm_user(user),
+         {_count, nil} <- delete_confirm_tokens(user_id) do
+      {:ok, user}
+    else
+      error -> handle_confirm_error(error)
+    end
+  end
+
+  defp handle_confirm_error(nil), do: {:error, :invalid_token}
+  defp handle_confirm_error({:already_confirmed, _user}), do: {:error, :already_confirmed}
+
+  defp handle_confirm_error(%User{confirmed_at: confirmed_at}) when not is_nil(confirmed_at),
+    do: {:error, :already_confirmed}
+
+  defp handle_confirm_error(_), do: {:error, :invalid_token}
+
+  defp delete_confirm_tokens(user_id) do
+    from(t in UserToken, where: t.user_id == ^user_id and t.context == "confirm")
+    |> Repo.delete_all()
+  end
+
+  defp maybe_confirm_user(%User{confirmed_at: nil} = user) do
+    user
+    |> User.confirm_changeset()
+    |> Repo.update()
+  end
+
+  defp maybe_confirm_user(%User{} = user) do
+    {:already_confirmed, user}
+  end
+
+  @doc """
   Logs the user in by magic link.
 
   There are three cases to consider:
@@ -273,6 +336,20 @@ defmodule Kanban.Accounts do
     {encoded_token, user_token} = UserToken.build_email_token(user, "login")
     Repo.insert!(user_token)
     UserNotifier.deliver_login_instructions(user, magic_link_url_fun.(encoded_token))
+  end
+
+  @doc """
+  Delivers the email confirmation instructions to the given user.
+  """
+  def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
+      when is_function(confirmation_url_fun, 1) do
+    if user.confirmed_at do
+      {:error, :already_confirmed}
+    else
+      {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
+      Repo.insert!(user_token)
+      UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
+    end
   end
 
   @doc """

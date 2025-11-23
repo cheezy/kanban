@@ -7,72 +7,42 @@ defmodule KanbanWeb.UserLive.Confirmation do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>{gettext("Welcome")} {@user.email}</.header>
-        </div>
+      <div class="mx-auto max-w-md space-y-6 py-8">
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
 
-        <.form
-          :if={!@user.confirmed_at}
-          for={@form}
-          id="confirmation_form"
-          phx-mounted={JS.focus_first()}
-          phx-submit="submit"
-          action={~p"/users/log-in?_action=confirmed"}
-          phx-trigger-action={@trigger_submit}
-        >
-          <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
-          <.button
-            name={@form[:remember_me].name}
-            value="true"
-            phx-disable-with={gettext("Confirming...")}
-            class="btn btn-primary w-full"
-          >
-            {gettext("Confirm and stay logged in")}
-          </.button>
-          <.button
-            phx-disable-with={gettext("Confirming...")}
-            class="btn btn-primary btn-soft w-full mt-2"
-          >
-            {gettext("Confirm and log in only this time")}
-          </.button>
-        </.form>
+          <%= if @confirmed do %>
+            <.header>
+              <p class="text-2xl font-bold text-gray-900 mb-6">{gettext("Account Confirmed!")}</p>
+              <:subtitle>
+                <p class="text-gray-600 mt-2">
+                  {gettext("Your account has been confirmed successfully. You can now log in.")}
+                </p>
+              </:subtitle>
+            </.header>
 
-        <.form
-          :if={@user.confirmed_at}
-          for={@form}
-          id="login_form"
-          phx-submit="submit"
-          phx-mounted={JS.focus_first()}
-          action={~p"/users/log-in"}
-          phx-trigger-action={@trigger_submit}
-        >
-          <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
-          <%= if @current_scope do %>
-            <.button phx-disable-with={gettext("Logging in...")} class="btn btn-primary w-full">
-              {gettext("Log in")}
-            </.button>
+            <.link
+              navigate={~p"/users/log-in"}
+              class="inline-block w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+            >
+              {gettext("Go to login")} <span aria-hidden="true">→</span>
+            </.link>
           <% else %>
-            <.button
-              name={@form[:remember_me].name}
-              value="true"
-              phx-disable-with={gettext("Logging in...")}
-              class="btn btn-primary w-full"
-            >
-              {gettext("Keep me logged in on this device")}
-            </.button>
-            <.button
-              phx-disable-with={gettext("Logging in...")}
-              class="btn btn-primary btn-soft w-full mt-2"
-            >
-              {gettext("Log me in only this time")}
-            </.button>
+            <div class="flex items-center justify-center">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <p class="text-gray-600 mt-4">{gettext("Confirming your account...")}</p>
           <% end %>
-        </.form>
-
-        <p :if={!@user.confirmed_at} class="alert alert-outline mt-8">
-          {gettext("Tip: If you prefer passwords, you can enable them in the user settings.")}
-        </p>
+        </div>
       </div>
     </Layouts.app>
     """
@@ -80,21 +50,30 @@ defmodule KanbanWeb.UserLive.Confirmation do
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
-    if user = Accounts.get_user_by_magic_link_token(token) do
-      form = to_form(%{"token" => token}, as: "user")
-
-      {:ok, assign(socket, user: user, form: form, trigger_submit: false),
-       temporary_assigns: [form: nil]}
-    else
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("Magic link is invalid or it has expired."))
-       |> push_navigate(to: ~p"/users/log-in")}
+    if connected?(socket) do
+      send(self(), :confirm)
     end
+
+    {:ok, assign(socket, token: token, confirmed: false)}
   end
 
   @impl true
-  def handle_event("submit", %{"user" => params}, socket) do
-    {:noreply, assign(socket, form: to_form(params, as: "user"), trigger_submit: true)}
+  def handle_info(:confirm, socket) do
+    case Accounts.confirm_user(socket.assigns.token) do
+      {:ok, _user} ->
+        {:noreply, assign(socket, confirmed: true)}
+
+      {:error, :already_confirmed} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("This account has already been confirmed. You can log in."))
+         |> push_navigate(to: ~p"/users/log-in")}
+
+      {:error, :invalid_token} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Confirmation link is invalid or has expired."))
+         |> push_navigate(to: ~p"/users/log-in")}
+    end
   end
 end

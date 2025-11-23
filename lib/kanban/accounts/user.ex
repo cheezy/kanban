@@ -34,6 +34,31 @@ defmodule Kanban.Accounts.User do
     |> validate_email(opts)
   end
 
+  @doc """
+  A user changeset for registration with password.
+
+  ## Options
+
+    * `:hash_password` - Hashes the password so it can be stored securely
+      in the database and ensures the password field is cleared to prevent
+      leaks in the logs. If password hashing is not needed and clearing the
+      password field is not desired (like when using this changeset for
+      validations on a LiveView form), this option can be set to `false`.
+      Defaults to `true`.
+
+    * `:validate_unique` - Set to false if you don't want to validate the
+      uniqueness of the email, useful when displaying live validations.
+      Defaults to `true`.
+  """
+  def registration_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email, :name, :password])
+    |> validate_name()
+    |> validate_email(opts)
+    |> validate_required([:password])
+    |> validate_password(opts)
+  end
+
   defp validate_name(changeset) do
     changeset
     |> validate_length(:name, max: 160)

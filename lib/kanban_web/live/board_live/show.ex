@@ -233,7 +233,11 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_info({:show_task_modal, task_id}, socket) do
     require Logger
-    Logger.debug("show_task_modal message: task_id=#{task_id}, current viewing_task_id=#{inspect(socket.assigns.viewing_task_id)}")
+
+    Logger.debug(
+      "show_task_modal message: task_id=#{task_id}, current viewing_task_id=#{inspect(socket.assigns.viewing_task_id)}"
+    )
+
     if socket.assigns.viewing_task_id == task_id do
       {:noreply, assign(socket, :show_task_modal, true)}
     else

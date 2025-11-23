@@ -55,6 +55,14 @@ defmodule KanbanWeb.UserLive.Registration do
               required
             />
 
+            <.input
+              field={@form[:password]}
+              type="password"
+              label={gettext("Password")}
+              autocomplete="new-password"
+              required
+            />
+
             <.button
               phx-disable-with={gettext("Creating account...")}
               class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-6"
@@ -75,7 +83,7 @@ defmodule KanbanWeb.UserLive.Registration do
   end
 
   def mount(_params, _session, socket) do
-    changeset = Accounts.change_user_email(%User{}, %{}, validate_unique: false)
+    changeset = Accounts.change_user_registration(%User{}, %{}, validate_unique: false)
 
     {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
   end
@@ -85,16 +93,17 @@ defmodule KanbanWeb.UserLive.Registration do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
         {:ok, _} =
-          Accounts.deliver_login_instructions(
+          Accounts.deliver_user_confirmation_instructions(
             user,
-            &url(~p"/users/log-in/#{&1}")
+            &url(~p"/users/confirm/#{&1}")
           )
 
         {:noreply,
          socket
          |> put_flash(
            :info,
-           gettext("An email was sent to %{email}, please access it to confirm your account.",
+           gettext(
+             "An email was sent to %{email}. Please check your email to confirm your account.",
              email: user.email
            )
          )
@@ -106,7 +115,7 @@ defmodule KanbanWeb.UserLive.Registration do
   end
 
   def handle_event("validate", %{"user" => user_params}, socket) do
-    changeset = Accounts.change_user_email(%User{}, user_params, validate_unique: false)
+    changeset = Accounts.change_user_registration(%User{}, user_params, validate_unique: false)
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
