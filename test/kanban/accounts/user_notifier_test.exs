@@ -14,7 +14,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
       assert {:ok, email} = UserNotifier.deliver_update_email_instructions(user, url)
 
       assert email.to == [{"", "user@example.com"}]
-      assert email.from == {"Kanban", "contact@example.com"}
+      assert email.from == {"Stride", "contact@example.com"}
       assert email.subject == "Update email instructions"
       assert email.text_body =~ "Hi user@example.com"
       assert email.text_body =~ url
@@ -34,40 +34,6 @@ defmodule Kanban.Accounts.UserNotifierTest do
     end
   end
 
-  describe "deliver_login_instructions/2" do
-    test "sends confirmation instructions for unconfirmed user" do
-      user = %User{email: "newuser@example.com", confirmed_at: nil}
-      url = "http://example.com/users/confirm/token123"
-
-      assert {:ok, email} = UserNotifier.deliver_login_instructions(user, url)
-
-      assert email.to == [{"", "newuser@example.com"}]
-      assert email.subject == "Confirmation instructions"
-      assert email.text_body =~ "Hi newuser@example.com"
-      assert email.text_body =~ url
-      assert email.text_body =~ "You can confirm your account by visiting the URL below"
-      assert email.text_body =~ "If you didn't create an account with us, please ignore this"
-
-      assert_email_sent(email)
-    end
-
-    test "sends magic link instructions for confirmed user" do
-      user = %User{email: "user@example.com", confirmed_at: ~U[2024-01-01 00:00:00Z]}
-      url = "http://example.com/users/log-in/token123"
-
-      assert {:ok, email} = UserNotifier.deliver_login_instructions(user, url)
-
-      assert email.to == [{"", "user@example.com"}]
-      assert email.subject == "Log in instructions"
-      assert email.text_body =~ "Hi user@example.com"
-      assert email.text_body =~ url
-      assert email.text_body =~ "You can log into your account by visiting the URL below"
-      assert email.text_body =~ "If you didn't request this email, please ignore this"
-
-      assert_email_sent(email)
-    end
-  end
-
   describe "deliver_confirmation_instructions/2" do
     test "sends confirmation email with correct content" do
       user = %User{email: "newuser@example.com"}
@@ -76,7 +42,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
       assert {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, url)
 
       assert email.to == [{"", "newuser@example.com"}]
-      assert email.from == {"Kanban", "contact@example.com"}
+      assert email.from == {"Stride", "contact@example.com"}
       assert email.subject == "Confirmation instructions"
       assert email.text_body =~ "Hi newuser@example.com"
       assert email.text_body =~ url
@@ -103,12 +69,8 @@ defmodule Kanban.Accounts.UserNotifierTest do
       {:ok, email1} = UserNotifier.deliver_confirmation_instructions(user, url)
       {:ok, email2} = UserNotifier.deliver_update_email_instructions(user, url)
 
-      user_confirmed = %User{email: "test@example.com", confirmed_at: ~U[2024-01-01 00:00:00Z]}
-      {:ok, email3} = UserNotifier.deliver_login_instructions(user_confirmed, url)
-
-      assert email1.from == {"Kanban", "contact@example.com"}
-      assert email2.from == {"Kanban", "contact@example.com"}
-      assert email3.from == {"Kanban", "contact@example.com"}
+      assert email1.from == {"Stride", "contact@example.com"}
+      assert email2.from == {"Stride", "contact@example.com"}
     end
 
     test "all emails include separator lines for readability" do
@@ -135,7 +97,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
       user = %User{email: "test@example.com", confirmed_at: nil}
       url = "http://example.com/test"
 
-      {:ok, email} = UserNotifier.deliver_login_instructions(user, url)
+      {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, url)
 
       assert is_binary(email.text_body)
       assert email.html_body == nil

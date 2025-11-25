@@ -261,11 +261,6 @@ msgstr ""
 msgid "Logging in..."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:91
-#, elixir-autogen, elixir-format
-msgid "Magic link is invalid or it has expired."
-msgstr ""
-
 #: lib/kanban_web/live/user_live/settings.ex:15
 #, elixir-autogen, elixir-format
 msgid "Manage your account email address and password settings"
