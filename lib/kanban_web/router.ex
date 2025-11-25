@@ -2,6 +2,7 @@ defmodule KanbanWeb.Router do
   use KanbanWeb, :router
 
   import KanbanWeb.UserAuth
+  import Phoenix.LiveDashboard.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -42,14 +43,18 @@ defmodule KanbanWeb.Router do
     # If your application does not have an admins-only section yet,
     # you can use Plug.BasicAuth to set up some basic authentication
     # as long as you are also using SSL (which you should anyway).
-    import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+      pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: KanbanWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  scope "/dev" do
+    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+
+    live_dashboard "/dashboard", metrics: KanbanWeb.Telemetry
   end
 
   ## Authentication routes
