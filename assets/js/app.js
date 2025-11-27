@@ -27,6 +27,7 @@ import AutoDismissFlash from "./hooks/auto-dismiss-flash"
 import SortableHook from "./hooks/sortable"
 import ColumnSortableHook from "./hooks/column_sortable"
 import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
+import Dropdown from "./hooks/dropdown"
 import topbar from "../vendor/topbar"
 
 const MyHooks = {
@@ -34,6 +35,7 @@ const MyHooks = {
   Sortable: SortableHook,
   ColumnSortable: ColumnSortableHook,
   DelayedModalClickAway,
+  Dropdown,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

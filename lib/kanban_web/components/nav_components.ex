@@ -77,37 +77,57 @@ defmodule KanbanWeb.NavComponents do
 
   attr :current_locale, :string, required: true
 
+  @supported_locales [
+    %{code: "en", name: "English", flag: :uk_flag},
+    %{code: "fr", name: "Français", flag: :french_flag}
+  ]
+
   def language_switcher(assigns) do
+    assigns = assign(assigns, :locales, @supported_locales)
+
     ~H"""
-    <div class="relative flex items-center gap-2 border-l border-gray-300 pl-4">
-      <%= if @current_locale == "en" do %>
-        <form action={~p"/locale/fr"} method="post">
-          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-          <button
-            type="submit"
-            class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
-            title="Français"
-          >
-            <.french_flag />
-            <span class="hidden sm:inline">FR</span>
-          </button>
-        </form>
-      <% else %>
-        <form action={~p"/locale/en"} method="post">
-          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-          <button
-            type="submit"
-            class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
-            title="English"
-          >
-            <.uk_flag />
-            <span class="hidden sm:inline">EN</span>
-          </button>
-        </form>
-      <% end %>
+    <div class="relative flex items-center border-l border-gray-300 pl-4" id="language-switcher" phx-hook="Dropdown">
+      <button
+        type="button"
+        data-dropdown-toggle
+        class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
+      >
+        <.locale_flag locale={@current_locale} />
+        <span class="hidden sm:inline">{String.upcase(@current_locale)}</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div data-dropdown-menu class="hidden absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
+        <%= for locale <- @locales do %>
+          <form action={~p"/locale/#{locale.code}"} method="post">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <button
+              type="submit"
+              class={"flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-gray-100 transition-colors #{if @current_locale == locale.code, do: "bg-blue-50 text-blue-600", else: "text-gray-700"}"}
+            >
+              <.locale_flag locale={locale.code} />
+              <span>{locale.name}</span>
+              <%= if @current_locale == locale.code do %>
+                <svg class="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              <% end %>
+            </button>
+          </form>
+        <% end %>
+      </div>
     </div>
     """
   end
+
+  defp locale_flag(%{locale: "en"} = assigns), do: uk_flag(assigns)
+  defp locale_flag(%{locale: "fr"} = assigns), do: french_flag(assigns)
+  defp locale_flag(assigns), do: ~H""
 
   defp french_flag(assigns) do
     ~H"""
