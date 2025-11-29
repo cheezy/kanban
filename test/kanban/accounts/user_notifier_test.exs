@@ -43,7 +43,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
 
       assert email.to == [{"", "newuser@example.com"}]
       assert email.from == {"Stride Support", "do-not-reply@StrideLikeABoss.com"}
-      assert email.subject == "Stride confirmation instructions"
+      assert email.subject == "Confirm your Stride account"
       assert email.html_body =~ "Hi New User"
       assert email.html_body =~ url
       assert email.html_body =~ "We received your request to create an account with Stride"
@@ -57,7 +57,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
 
       assert {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, url)
 
-      assert email.html_body =~ "If you didn't create an account with us, please ignore this"
+      assert email.html_body =~ "You can safely ignore this email If you didn't create an account with us."
     end
   end
 
