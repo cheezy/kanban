@@ -86,7 +86,11 @@ defmodule KanbanWeb.NavComponents do
     assigns = assign(assigns, :locales, @supported_locales)
 
     ~H"""
-    <div class="relative flex items-center border-l border-gray-300 pl-4" id="language-switcher" phx-hook="Dropdown">
+    <div
+      class="relative flex items-center border-l border-gray-300 pl-4"
+      id="language-switcher"
+      phx-hook="Dropdown"
+    >
       <button
         type="button"
         data-dropdown-toggle
@@ -98,7 +102,10 @@ defmodule KanbanWeb.NavComponents do
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      <div data-dropdown-menu class="hidden absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
+      <div
+        data-dropdown-menu
+        class="hidden absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+      >
         <%= for locale <- @locales do %>
           <form action={~p"/locale/#{locale.code}"} method="post">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />

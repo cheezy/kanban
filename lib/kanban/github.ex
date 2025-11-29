@@ -46,7 +46,9 @@ defmodule Kanban.GitHub do
       labels: labels
     }
 
-    case Req.post(url, json: payload, headers: headers) do
+    http_client = Application.get_env(:kanban, :http_client, &Req.post/2)
+
+    case http_client.(url, json: payload, headers: headers) do
       {:ok, %Req.Response{status: 201, body: %{"html_url" => html_url}}} ->
         {:ok, html_url}
 

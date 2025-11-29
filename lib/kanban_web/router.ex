@@ -98,6 +98,11 @@ defmodule KanbanWeb.Router do
       live "/users/confirm/:token", UserLive.Confirmation, :new
     end
 
+    live_session :public,
+      on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}] do
+      live "/issue", IssueLive.Form, :new
+    end
+
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

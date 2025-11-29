@@ -19,7 +19,9 @@ defmodule Kanban.Accounts.UserNotifierTest do
       assert email.html_body =~ "Hi Test User"
       assert email.html_body =~ url
       assert email.html_body =~ "You are receiving this email because you requested to change the"
-      assert email.html_body =~ "If this change was not requested by you, please ignore this email"
+
+      assert email.html_body =~
+               "If this change was not requested by you, please ignore this email"
 
       assert_email_sent(email)
     end
@@ -57,7 +59,8 @@ defmodule Kanban.Accounts.UserNotifierTest do
 
       assert {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, url)
 
-      assert email.html_body =~ "You can safely ignore this email If you didn't create an account with us."
+      assert email.html_body =~
+               "You can safely ignore this email If you didn't create an account with us."
     end
   end
 

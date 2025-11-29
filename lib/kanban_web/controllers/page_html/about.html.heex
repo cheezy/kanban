@@ -11,15 +11,19 @@
             {gettext("Built with AI")}
           </h2>
           <p class="text-gray-600 leading-relaxed mb-4">
-            {gettext("Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development.")}
+            {gettext(
+              "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
+            )}
           </p>
           <p class="text-gray-600 leading-relaxed mb-4">
-            {gettext("The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the Phoenix LiveView architecture, real-time updates, drag-and-drop functionality, and internationalization support.")}
+            {gettext(
+              "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the Phoenix LiveView architecture, real-time updates, drag-and-drop functionality, and internationalization support."
+            )}
           </p>
           <p class="text-gray-600 leading-relaxed">
-            {gettext("See the entire process for yourself in the ")} <strong>{gettext("The Blog")}</strong> {gettext("section below.")}"
+            {gettext("See the entire process for yourself in the ")}
+            <strong>{gettext("The Blog")}</strong> {gettext("section below.")}"
           </p>
-
         </section>
 
         <section class="mb-10">
@@ -27,7 +31,9 @@
             {gettext("Report Issues or Request Features")}
           </h2>
           <p class="text-gray-600 leading-relaxed mb-4">
-            {gettext("AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve.")}
+            {gettext(
+              "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
+            )}
           </p>
           <div class="mt-6">
             {live_render(@conn, KanbanWeb.IssueLive.Form, id: "issue-form")}
@@ -39,75 +45,119 @@
             {gettext("The Blog")}
           </h2>
           <p class="text-gray-600 leading-relaxed mb-4">
-            {gettext("I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:")}
+            {gettext(
+              "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
+            )}
           </p>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part1/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part1/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Setup, configuration, and tools")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part2/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part2/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Creating the plan")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part3/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part3/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Building the authentication system")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part4/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part4/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Updating the Visual Design and adding French Translations")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part5/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part5/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Moving the design to function components and starting on Boards")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part6/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part6/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Finishing the UI for Boards")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part7/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part7/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Adding Columns to the Boards")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part8/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part8/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Adding Tasks to Columns")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part9/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part9/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Cleanup of the Tasks UI and auto dismissing Flash messages")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part10/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part10/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Adding drag-and-drop for Tasks")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part11/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part11/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Adding Type, Priority, Identifier, Comments, and History to Tasks")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part12/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part12/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Adding Users to Boards and Tasks and drag-and-drop for Columns")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part13/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part13/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Authorization and user permissions")}
             </a>
           </div>
           <div class="mt-4">
-            <a href="https://cheezyworld.ca/post/ai-kanban-part14/" class="text-blue-600 hover:text-blue-800 underline">
+            <a
+              href="https://cheezyworld.ca/post/ai-kanban-part14/"
+              class="text-blue-600 hover:text-blue-800 underline"
+            >
               {gettext("Cleanup and simplification of Authentication")}
             </a>
           </div>
@@ -120,7 +170,12 @@
           class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
           </svg>
           {gettext("Back to Home")}
         </.link>
