@@ -45,14 +45,15 @@ defmodule Kanban.Accounts.UserNotifier do
   Deliver instructions to confirm account.
   """
   def deliver_confirmation_instructions(user, url) do
-    deliver(user.email, "Stride confirmation instructions", """
+    deliver(user.email, "Confirm your Stride account", """
     <div>
     Hi #{user.name},
 
     <p>
-    We received your request to create an account with Stride. You
-    are receiving this email because this address was associated with
-    the new account. Please click <a href="#{url}">here</a> to verify your email address.
+    Welcome to Stride! We received your request to create an account with Stride.
+    You are receiving this email because this address was associated with
+    the new account. Please click <a href="#{url}">here</a> to verify your email
+    address.
     </p>
 
     <p>
@@ -60,7 +61,7 @@ defmodule Kanban.Accounts.UserNotifier do
     </p>
 
     <p>
-    If you didn't create an account with us, please ignore this.
+    You can safely ignore this email If you didn't create an account with us.
     </p>
 
     Thank you,<br/>
