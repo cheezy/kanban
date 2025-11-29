@@ -29,6 +29,9 @@
           <p class="text-gray-600 leading-relaxed mb-4">
             {gettext("AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve.")}
           </p>
+          <div class="mt-6">
+            {live_render(@conn, KanbanWeb.IssueLive.Form, id: "issue-form")}
+          </div>
         </section>
 
         <section>

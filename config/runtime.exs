@@ -20,6 +20,15 @@ if System.get_env("PHX_SERVER") do
   config :kanban, KanbanWeb.Endpoint, server: true
 end
 
+# GitHub integration for issue submission
+# Set GITHUB_TOKEN to a personal access token with repo/issues write permission
+# Set GITHUB_REPO to the owner/repo format (e.g., "username/kanban")
+if github_token = System.get_env("GITHUB_TOKEN") do
+  config :kanban, :github,
+    token: github_token,
+    repo: System.get_env("GITHUB_REPO")
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
