@@ -5,6 +5,10 @@ defmodule KanbanWeb.PageController do
     render(conn, :home)
   end
 
+  def about(conn, _params) do
+    render(conn, :about)
+  end
+
   def set_locale(conn, %{"locale" => locale}) do
     conn
     |> KanbanWeb.Plugs.Locale.set_locale(locale)

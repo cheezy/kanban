@@ -28,6 +28,7 @@ defmodule KanbanWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/about", PageController, :about
     post "/locale/:locale", PageController, :set_locale
   end
 
