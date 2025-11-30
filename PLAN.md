@@ -338,8 +338,8 @@ tasks
 #### Phase 7: Polish & Enhancement
 
 - [ ] **UI/UX improvements**
-  - [ ] Design beautiful board cards with Tailwind CSS
-  - [ ] Add hover effects and transitions
+  - [X] Design beautiful board cards with Tailwind CSS
+  - [X] Add hover effects and transitions
   - [ ] Improve spacing and typography
   - [ ] Add loading states for async actions
   - [ ] Add empty states for boards without columns/tasks

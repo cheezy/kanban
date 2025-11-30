@@ -17,61 +17,74 @@
       <div
         :for={{id, board} <- @streams.boards}
         id={id}
-        class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200 relative flex flex-col"
+        class="group bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200/50 hover:border-blue-300/50 relative flex flex-col overflow-hidden transform hover:-translate-y-1"
       >
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/30 to-purple-100/30 rounded-full blur-2xl -z-10 group-hover:from-blue-200/40 group-hover:to-purple-200/40 transition-all duration-300">
+        </div>
+
         <div class="flex justify-between items-start mb-4">
-          <h3 class="text-xl font-semibold text-gray-900">
-            {board.name}
-          </h3>
+          <div class="flex-1">
+            <h3 class="text-2xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors duration-200">
+              {board.name}
+            </h3>
+            <div class="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full group-hover:w-20 transition-all duration-300">
+            </div>
+          </div>
           <div :if={board.user_access == :owner} class="flex gap-2">
-            <.link navigate={~p"/boards/#{board}/edit"} class="text-blue-600 hover:text-blue-800">
+            <.link
+              navigate={~p"/boards/#{board}/edit"}
+              class="text-gray-400 hover:text-blue-600 transition-colors duration-200 p-1 hover:bg-blue-50 rounded-lg"
+            >
               <.icon name="hero-pencil-square" class="h-5 w-5" />
             </.link>
             <.link
               phx-click={JS.push("delete", value: %{id: board.id}) |> hide("##{id}")}
               data-confirm={gettext("Are you sure you want to delete this board?")}
-              class="text-red-600 hover:text-red-800"
+              class="text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 hover:bg-red-50 rounded-lg"
             >
               <.icon name="hero-trash" class="h-5 w-5" />
             </.link>
           </div>
         </div>
 
-        <p :if={board.description} class="text-gray-600 mb-4 flex-grow">
+        <p :if={board.description} class="text-gray-600 mb-4 flex-grow leading-relaxed">
           {board.description}
         </p>
 
-        <div class="flex justify-between items-end mt-4">
+        <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200/60">
           <.link
             navigate={~p"/boards/#{board}"}
-            class="inline-block text-blue-600 hover:text-blue-800 font-medium"
+            class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold group/link"
           >
-            {gettext("View Board")} →
+            <span>{gettext("View Board")}</span>
+            <span class="inline-block group-hover/link:translate-x-1 transition-transform duration-200">
+              →
+            </span>
           </.link>
 
-          <div class="flex items-center gap-1 text-xs text-gray-500">
+          <div class="flex items-center gap-1">
             <span
               :if={board.user_access == :owner}
-              class="flex items-center gap-1"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 rounded-full text-xs font-medium border border-yellow-200/50"
               title={gettext("Owner")}
             >
-              <.icon name="hero-star-solid" class="h-4 w-4 text-yellow-500" />
+              <.icon name="hero-star-solid" class="h-3.5 w-3.5" />
               <span>{gettext("Owner")}</span>
             </span>
             <span
               :if={board.user_access == :modify}
-              class="flex items-center gap-1"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200/50"
               title={gettext("Can Modify")}
             >
-              <.icon name="hero-pencil-solid" class="h-4 w-4 text-blue-500" />
+              <.icon name="hero-pencil-solid" class="h-3.5 w-3.5" />
               <span>{gettext("Can Edit")}</span>
             </span>
             <span
               :if={board.user_access == :read_only}
-              class="flex items-center gap-1"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 rounded-full text-xs font-medium border border-gray-200/50"
               title={gettext("Read Only")}
             >
-              <.icon name="hero-eye-solid" class="h-4 w-4 text-gray-500" />
+              <.icon name="hero-eye-solid" class="h-3.5 w-3.5" />
               <span>{gettext("Read Only")}</span>
             </span>
           </div>
