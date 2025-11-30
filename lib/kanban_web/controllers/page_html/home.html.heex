@@ -1,7 +1,7 @@
 <Layouts.flash_group flash={@flash} />
 
-<div class="min-h-screen flex items-center">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+<div>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
     <div class="grid lg:grid-cols-2 gap-12 items-center">
       <div class="space-y-8">
         <.hero_badge>
@@ -29,21 +29,35 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4">
-          <.btn_primary href={~p"/users/register"}>
-            {gettext("Get Started Free")}
-            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
-          </.btn_primary>
+          <%= if @current_scope do %>
+            <.btn_primary href={~p"/boards"}>
+              {gettext("Go to My Boards")}
+              <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </.btn_primary>
+          <% else %>
+            <.btn_primary href={~p"/users/register"}>
+              {gettext("Get Started Free")}
+              <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </.btn_primary>
 
-          <.btn_outline href={~p"/users/log-in"}>
-            {gettext("Sign In")}
-          </.btn_outline>
+            <.btn_outline href={~p"/users/log-in"}>
+              {gettext("Sign In")}
+            </.btn_outline>
+          <% end %>
         </div>
       </div>
 
@@ -61,7 +75,7 @@
   </div>
 </div>
 
-<div class="bg-white py-16 sm:py-24 border-t border-gray-200">
+<div class="bg-white py-16 sm:py-20 border-t border-gray-200">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-12">
       <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -72,7 +86,7 @@
       </p>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-8 mt-12">
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
       <.feature_card
         icon_color="blue"
         title={gettext("Multiple Boards")}
@@ -119,6 +133,23 @@
               stroke-linejoin="round"
               stroke-width="2"
               d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+            />
+          </svg>
+        </:icon>
+      </.feature_card>
+
+      <.feature_card
+        icon_color="orange"
+        title={gettext("Manage Users")}
+        description={gettext("Assign proper access to team members.")}
+      >
+        <:icon>
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
             />
           </svg>
         </:icon>

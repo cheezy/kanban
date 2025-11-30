@@ -43,32 +43,32 @@ msgstr "fermer"
 msgid " · Task Management"
 msgstr " · Gestion des Tâches"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:79
+#: lib/kanban_web/controllers/page_html/home.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Create unlimited boards for different projects and teams."
 msgstr "Créez des tableaux illimités pour différents projets et équipes."
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:95
+#: lib/kanban_web/controllers/page_html/home.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Custom Columns"
 msgstr "Colonnes Personnalisées"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:57
+#: lib/kanban_web/controllers/page_html/home.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "Terminé"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:112
+#: lib/kanban_web/controllers/page_html/home.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Drag & Drop"
 msgstr "Glisser-Déposer"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:113
+#: lib/kanban_web/controllers/page_html/home.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Effortlessly move tasks between columns with drag and drop."
 msgstr "Déplacez facilement les tâches entre les colonnes par glisser-déposer."
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:68
+#: lib/kanban_web/controllers/page_html/home.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Everything You Need to Stay Organized"
 msgstr "Tout Ce Dont Vous Avez Besoin Pour Rester Organisé"
@@ -78,12 +78,12 @@ msgstr "Tout Ce Dont Vous Avez Besoin Pour Rester Organisé"
 msgid "Get Started"
 msgstr "Commencer"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:33
+#: lib/kanban_web/controllers/page_html/home.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Get Started Free"
 msgstr "Commencer Gratuitement"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:56
+#: lib/kanban_web/controllers/page_html/home.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "In Progress"
 msgstr "En Cours"
@@ -100,12 +100,12 @@ msgstr "Se Connecter"
 msgid "Log out"
 msgstr "Se Déconnecter"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:78
+#: lib/kanban_web/controllers/page_html/home.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Multiple Boards"
 msgstr "Tableaux Multiples"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:96
+#: lib/kanban_web/controllers/page_html/home.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Organize tasks with customizable columns that fit your workflow."
 msgstr "Organisez les tâches avec des colonnes personnalisables qui s'adaptent à votre flux de travail."
@@ -115,7 +115,7 @@ msgstr "Organisez les tâches avec des colonnes personnalisables qui s'adaptent 
 msgid "Professional Task Management"
 msgstr "Gestion Professionnelle des Tâches"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:54
+#: lib/kanban_web/controllers/page_html/home.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Project Board"
 msgstr "Tableau de Projet"
@@ -125,12 +125,12 @@ msgstr "Tableau de Projet"
 msgid "Settings"
 msgstr "Paramètres"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:45
+#: lib/kanban_web/controllers/page_html/home.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Sign In"
 msgstr "Se Connecter"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:71
+#: lib/kanban_web/controllers/page_html/home.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Simple, powerful features designed for modern teams"
 msgstr "Fonctionnalités simples et puissantes conçues pour les équipes modernes"
@@ -140,7 +140,7 @@ msgstr "Fonctionnalités simples et puissantes conçues pour les équipes modern
 msgid "Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive."
 msgstr "Simplifiez votre flux de travail avec des tableaux, colonnes et tâches intuitifs. Parfait pour les équipes et les individus qui veulent rester organisés et productifs."
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:55
+#: lib/kanban_web/controllers/page_html/home.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "To Do"
 msgstr "À Faire"
@@ -257,7 +257,7 @@ msgstr "gratuitement."
 msgid "to your account."
 msgstr "à votre compte."
 
-#: lib/kanban_web/live/board_live/index.html.heex:56
+#: lib/kanban_web/live/board_live/index.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce tableau ?"
@@ -345,7 +345,7 @@ msgstr "Enregistrer le Tableau"
 msgid "Use this form to manage board records in your database."
 msgstr "Utilisez ce formulaire pour gérer les tableaux dans votre base de données."
 
-#: lib/kanban_web/live/board_live/index.html.heex:73
+#: lib/kanban_web/live/board_live/index.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "View Board"
 msgstr "Voir le Tableau"
@@ -415,7 +415,7 @@ msgstr "Limite de travail en cours. Définir à 0 pour aucune limite."
 msgid "Add task"
 msgstr "Ajouter une tâche"
 
-#: lib/kanban_web/live/board_live/show.html.heex:275
+#: lib/kanban_web/live/board_live/show.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr "Êtes-vous sûr de vouloir supprimer cette tâche ?"
@@ -435,7 +435,7 @@ msgstr "Créer une nouvelle tâche"
 msgid "Failed to delete task"
 msgstr "Échec de la suppression de la tâche"
 
-#: lib/kanban_web/live/board_live/show.html.heex:159
+#: lib/kanban_web/live/board_live/show.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "No tasks yet"
 msgstr "Aucune tâche pour le moment"
@@ -505,14 +505,14 @@ msgstr "Impossible de déplacer la tâche : la colonne a atteint sa limite WIP"
 msgid "Created"
 msgstr "Créé"
 
-#: lib/kanban_web/live/board_live/show.html.heex:235
+#: lib/kanban_web/live/board_live/show.html.heex:261
 #: lib/kanban_web/live/task_live/form_component.html.heex:46
 #: lib/kanban_web/live/task_live/view_component.ex:73
 #, elixir-autogen, elixir-format
 msgid "Critical"
 msgstr "Critique"
 
-#: lib/kanban_web/live/board_live/show.html.heex:208
+#: lib/kanban_web/live/board_live/show.html.heex:234
 #: lib/kanban_web/live/issue_live/form_component.ex:219
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
@@ -525,21 +525,21 @@ msgstr "Défaut"
 msgid "Failed to move task"
 msgstr "Échec du déplacement de la tâche"
 
-#: lib/kanban_web/live/board_live/show.html.heex:236
+#: lib/kanban_web/live/board_live/show.html.heex:262
 #: lib/kanban_web/live/task_live/form_component.html.heex:45
 #: lib/kanban_web/live/task_live/view_component.ex:72
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "Élevé"
 
-#: lib/kanban_web/live/board_live/show.html.heex:238
+#: lib/kanban_web/live/board_live/show.html.heex:264
 #: lib/kanban_web/live/task_live/form_component.html.heex:43
 #: lib/kanban_web/live/task_live/view_component.ex:70
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "Bas"
 
-#: lib/kanban_web/live/board_live/show.html.heex:237
+#: lib/kanban_web/live/board_live/show.html.heex:263
 #: lib/kanban_web/live/task_live/form_component.html.heex:44
 #: lib/kanban_web/live/task_live/view_component.ex:71
 #, elixir-autogen, elixir-format
@@ -579,7 +579,7 @@ msgstr "Type"
 msgid "WIP limit exceeded"
 msgstr "Limite WIP dépassée"
 
-#: lib/kanban_web/live/board_live/show.html.heex:209
+#: lib/kanban_web/live/board_live/show.html.heex:235
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:34
 #, elixir-autogen, elixir-format
@@ -644,26 +644,17 @@ msgstr "Ajouter un Utilisateur par Email"
 msgid "Add as Read Only"
 msgstr "Ajouter en Lecture Seule"
 
-#: lib/kanban_web/live/board_live/form.html.heex:89
-#, elixir-autogen, elixir-format
-msgid "Add with Modify Access"
-msgstr "Ajouter avec Accès en Modification"
-
 #: lib/kanban_web/live/task_live/form_component.html.heex:54
 #: lib/kanban_web/live/task_live/view_component.ex:79
 #, elixir-autogen, elixir-format
 msgid "Assigned To"
 msgstr "Assigné à"
 
-#: lib/kanban_web/live/board_live/index.html.heex:94
+#: lib/kanban_web/live/board_live/form.html.heex:118
+#: lib/kanban_web/live/board_live/index.html.heex:93
+#: lib/kanban_web/live/board_live/index.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
-msgstr "Peut Modifier"
-
-#: lib/kanban_web/live/board_live/form.html.heex:118
-#: lib/kanban_web/live/board_live/index.html.heex:91
-#, elixir-autogen, elixir-format
-msgid "Can Modify"
 msgstr "Peut Modifier"
 
 #: lib/kanban_web/live/board_live/form.html.heex:98
@@ -686,6 +677,7 @@ msgstr "Échec de l'ajout de l'utilisateur au tableau"
 msgid "Failed to remove user from board"
 msgstr "Échec de la suppression de l'utilisateur du tableau"
 
+#: lib/kanban_web/controllers/page_html/home.html.heex:143
 #: lib/kanban_web/live/board_live/form.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
@@ -702,15 +694,15 @@ msgid "Only the board owner can edit this board"
 msgstr "Seul le propriétaire du tableau peut modifier ce tableau"
 
 #: lib/kanban_web/live/board_live/form.html.heex:116
-#: lib/kanban_web/live/board_live/index.html.heex:83
-#: lib/kanban_web/live/board_live/index.html.heex:86
+#: lib/kanban_web/live/board_live/index.html.heex:85
+#: lib/kanban_web/live/board_live/index.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "Propriétaire"
 
 #: lib/kanban_web/live/board_live/form.html.heex:120
-#: lib/kanban_web/live/board_live/index.html.heex:99
-#: lib/kanban_web/live/board_live/index.html.heex:102
+#: lib/kanban_web/live/board_live/index.html.heex:101
+#: lib/kanban_web/live/board_live/index.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "Lecture Seule"
@@ -882,7 +874,7 @@ msgstr "À propos"
 msgid "About Stride"
 msgstr "À propos de Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:180
+#: lib/kanban_web/controllers/page_html/about.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "Retour à l'accueil"
@@ -902,57 +894,57 @@ msgstr "Stride est une application moderne de gestion des tâches entièrement c
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr "L'IA n'est pas parfaite et je suis sûr qu'il y a des problèmes cachés dans cette application. Veuillez signaler les problèmes ou demander de nouvelles fonctionnalités afin que cette application puisse s'améliorer."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:105
+#: lib/kanban_web/controllers/page_html/about.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Adding Columns to the Boards"
 msgstr "Ajout de colonnes aux tableaux"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:113
+#: lib/kanban_web/controllers/page_html/about.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Adding Tasks to Columns"
 msgstr "Ajout de tâches aux colonnes"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:137
+#: lib/kanban_web/controllers/page_html/about.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
 msgstr "Ajout du type, de la priorité, de l'identifiant, des commentaires et de l'historique aux tâches"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:145
+#: lib/kanban_web/controllers/page_html/about.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
 msgstr "Ajout d'utilisateurs aux tableaux et tâches et glisser-déposer pour les colonnes"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:129
+#: lib/kanban_web/controllers/page_html/about.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Adding drag-and-drop for Tasks"
 msgstr "Ajout du glisser-déposer pour les tâches"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:153
+#: lib/kanban_web/controllers/page_html/about.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Authorization and user permissions"
 msgstr "Autorisation et permissions des utilisateurs"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:73
+#: lib/kanban_web/controllers/page_html/about.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "Building the authentication system"
 msgstr "Construction du système d'authentification"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:161
+#: lib/kanban_web/controllers/page_html/about.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Cleanup and simplification of Authentication"
 msgstr "Nettoyage et simplification de l'authentification"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:121
+#: lib/kanban_web/controllers/page_html/about.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
 msgstr "Nettoyage de l'interface des tâches et messages Flash à fermeture automatique"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:65
+#: lib/kanban_web/controllers/page_html/about.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Creating the plan"
 msgstr "Création du plan"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:97
+#: lib/kanban_web/controllers/page_html/about.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Finishing the UI for Boards"
 msgstr "Finalisation de l'interface pour les tableaux"
@@ -962,7 +954,7 @@ msgstr "Finalisation de l'interface pour les tableaux"
 msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
 msgstr "J'ai blogué sur le développement de cette application piloté par l'IA. Dans les articles, j'ai inclus de nombreuses vidéos et images dans lesquelles vous pouvez voir comment cela se fait. Les articles sont ici :"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:89
+#: lib/kanban_web/controllers/page_html/about.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Moving the design to function components and starting on Boards"
 msgstr "Déplacement du design vers les composants fonctionnels et début des tableaux"
@@ -977,7 +969,7 @@ msgstr "Signaler des problèmes ou demander des fonctionnalités"
 msgid "See the entire process for yourself in the "
 msgstr "Voyez tout le processus par vous-même dans la "
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:57
+#: lib/kanban_web/controllers/page_html/about.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Setup, configuration, and tools"
 msgstr "Configuration, paramétrage et outils"
@@ -988,7 +980,7 @@ msgstr "Configuration, paramétrage et outils"
 msgid "The Blog"
 msgstr "Le Blog"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:81
+#: lib/kanban_web/controllers/page_html/about.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Updating the Visual Design and adding French Translations"
 msgstr "Mise à jour du design visuel et ajout des traductions françaises"
@@ -1069,32 +1061,47 @@ msgstr "ne peut pas être vide"
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "L'application entière, de la conception de la base de données à l'interface utilisateur, a été développée par des conversations avec Claude Code et TideWave. Cela inclut l'architecture, les mises à jour en temps réel, la fonctionnalité de glisser-déposer et le support de l'internationalisation."
 
-#: lib/kanban_web/live/board_live/show.html.heex:126
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/board_live/show.html.heex:127
+#, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
-msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ?"
+msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ? Toutes les tâches de cette colonne seront également supprimées."
 
-#: lib/kanban_web/live/board_live/index.html.heex:22
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/board_live/index.html.heex:24
+#, elixir-autogen, elixir-format
 msgid "Create your first board"
-msgstr "Créez votre première colonne"
+msgstr "Créez votre premier tableau"
 
-#: lib/kanban_web/live/board_live/show.html.heex:162
+#: lib/kanban_web/live/board_live/show.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Drag tasks here or click + to add"
-msgstr ""
+msgstr "Faites glisser les tâches ici ou cliquez sur + pour ajouter"
 
 #: lib/kanban_web/live/board_live/index.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Get started by creating your first board to organize your tasks and projects."
-msgstr ""
+msgstr "Commencez par créer votre premier tableau pour organiser vos tâches et projets."
 
 #: lib/kanban_web/live/board_live/index.html.heex:17
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No boards yet"
-msgstr "Aucune tâche pour le moment"
+msgstr "Aucun tableau pour le moment"
 
 #: lib/kanban_web/live/board_live/show.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "WIP"
-msgstr ""
+msgstr "WIP"
+
+#: lib/kanban_web/live/board_live/form.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "Add with Edit Access"
+msgstr "Ajouter avec Accès en Modification"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:144
+#, elixir-autogen, elixir-format
+msgid "Assign proper access to team members."
+msgstr "Attribuez les accès appropriés aux membres de l'équipe."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Go to My Boards"
+msgstr "Aller à Mes Tableaux"

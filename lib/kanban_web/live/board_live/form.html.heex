@@ -86,7 +86,7 @@
                   {gettext("Add as Read Only")}
                 </.button>
                 <.button type="button" phx-click="add_user" phx-value-access="modify">
-                  {gettext("Add with Modify Access")}
+                  {gettext("Add with Edit Access")}
                 </.button>
               </div>
             </div>
@@ -115,7 +115,7 @@
                           <% :owner -> %>
                             {gettext("Owner")}
                           <% :modify -> %>
-                            {gettext("Can Modify")}
+                            {gettext("Can Edit")}
                           <% :read_only -> %>
                             {gettext("Read Only")}
                         <% end %>
