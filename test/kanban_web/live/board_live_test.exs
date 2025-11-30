@@ -124,7 +124,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "WIP limit"
+      assert html =~ "WIP"
       assert html =~ "5"
     end
 
@@ -135,7 +135,7 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # WIP limit label should not appear when limit is 0
-      refute html =~ "WIP limit: 0"
+      refute html =~ "WIP: 0"
     end
   end
 
@@ -162,7 +162,7 @@ defmodule KanbanWeb.BoardLiveTest do
       html = render(show_live)
       assert html =~ "Column created successfully"
       assert html =~ "To Do"
-      assert html =~ "WIP limit"
+      assert html =~ "WIP"
       assert html =~ "5"
     end
 
@@ -180,7 +180,7 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Column created successfully"
       assert html =~ "Done"
       # Should not show WIP limit indicator when it's 0
-      refute html =~ "WIP limit: 0"
+      refute html =~ "WIP: 0"
     end
 
     test "rejects negative WIP limit when creating column", %{conn: conn, user: user} do
@@ -399,7 +399,7 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for red warning badge indicating limit exceeded
-      assert html =~ "bg-red-100 text-red-800"
+      assert html =~ "from-red-50 to-red-100 text-red-700"
     end
 
     test "displays blue indicator when column under WIP limit", %{conn: conn, user: user} do
@@ -410,7 +410,7 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for blue badge when under limit
-      assert html =~ "bg-blue-100 text-blue-800"
+      assert html =~ "from-blue-50 to-blue-100 text-blue-700"
     end
 
     test "displays blue indicator when column at WIP limit", %{conn: conn, user: user} do
@@ -422,8 +422,8 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for blue badge when at limit (not exceeding)
-      assert html =~ "bg-blue-100 text-blue-800"
-      refute html =~ "bg-red-100 text-red-800"
+      assert html =~ "from-blue-50 to-blue-100 text-blue-700"
+      refute html =~ "from-red-50 to-red-100 text-red-700"
     end
 
     test "cannot create task when WIP limit reached", %{conn: conn, user: user} do

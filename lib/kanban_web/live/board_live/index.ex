@@ -6,7 +6,12 @@ defmodule KanbanWeb.BoardLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
-    {:ok, stream(socket, :boards, Boards.list_boards(user))}
+    boards = Boards.list_boards(user)
+
+    {:ok,
+     socket
+     |> assign(:has_boards, length(boards) > 0)
+     |> stream(:boards, boards)}
   end
 
   @impl true
@@ -21,7 +26,12 @@ defmodule KanbanWeb.BoardLive.Index do
 
     if Boards.owner?(board, user) do
       {:ok, _} = Boards.delete_board(board)
-      {:noreply, stream_delete(socket, :boards, board)}
+      boards = Boards.list_boards(user)
+
+      {:noreply,
+       socket
+       |> assign(:has_boards, length(boards) > 0)
+       |> stream_delete(:boards, board)}
     else
       {:noreply,
        socket

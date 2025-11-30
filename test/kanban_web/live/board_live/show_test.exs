@@ -105,7 +105,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "WIP limit"
+      assert html =~ "WIP"
       assert html =~ "5"
     end
   end

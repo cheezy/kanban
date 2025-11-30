@@ -104,6 +104,27 @@
 
 /* This file is for your main application CSS */
 
+/* Loading bar styles */
+.phx-loading-bar {
+  transition: width 200ms ease-out, opacity 200ms ease-out;
+}
+
+.phx-connected .phx-loading-bar {
+  opacity: 0 !important;
+  width: 0% !important;
+}
+
+.phx-loading .phx-loading-bar {
+  opacity: 1 !important;
+  width: 80% !important;
+}
+
+.phx-error .phx-loading-bar {
+  opacity: 1 !important;
+  width: 100% !important;
+  background: linear-gradient(90deg, #ef4444, #dc2626, #b91c1c) !important;
+}
+
 /* Drag and drop styles */
 .sortable-ghost {
   opacity: 0.4;
