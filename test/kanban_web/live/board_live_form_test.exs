@@ -144,7 +144,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert html =~ other_user.name
       assert html =~ other_user.email
       assert html =~ "Add as Read Only"
-      assert html =~ "Add with Modify Access"
+      assert html =~ "Add with Edit Access"
     end
 
     test "shows error when user not found", %{conn: conn, user: user} do
@@ -158,7 +158,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
       assert html =~ "User not found with email"
       refute html =~ "Add as Read Only"
-      refute html =~ "Add with Modify Access"
+      refute html =~ "Add with Edit Access"
     end
 
     test "shows error when trying to add yourself", %{conn: conn, user: user} do
@@ -218,7 +218,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       html = form_live |> element("button", "Add as Read Only") |> render_click()
 
       refute html =~ "Add as Read Only"
-      refute html =~ "Add with Modify Access"
+      refute html =~ "Add with Edit Access"
       assert html =~ "User added successfully"
     end
   end
@@ -257,7 +257,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
       assert html =~ "User added successfully"
       assert html =~ other_user.name
-      assert html =~ "Can Modify"
+      assert html =~ "Can Edit"
     end
 
     test "displays remove button for non-owner users", %{conn: conn, user: user} do
@@ -321,7 +321,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       {:ok, _form_live, html} = live(conn, ~p"/boards/#{board}/edit")
 
       # Verify owner is first, followed by modify users, then read only
-      assert html =~ ~r/Owner.*Can Modify.*Read Only/s
+      assert html =~ ~r/Owner.*Can Edit.*Read Only/s
 
       # Verify the specific order by finding positions
       owner_pos = :binary.match(html, user.email) |> elem(0)
@@ -411,7 +411,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       {:ok, _form_live, html} = live(conn, ~p"/boards/#{board}/edit")
 
       assert html =~ "bg-blue-100 text-blue-800"
-      assert html =~ "Can Modify"
+      assert html =~ "Can Edit"
     end
 
     test "read_only badge has gray styling", %{conn: conn, user: user} do
@@ -456,9 +456,9 @@ defmodule KanbanWeb.BoardLive.FormTest do
       # User should now appear in Current Users section
       assert html =~ other_user.email
       assert html =~ "Current Users"
-      # But the "Add as Read Only" and "Add with Modify Access" buttons should be gone
+      # But the "Add as Read Only" and "Add with Edit Access" buttons should be gone
       refute html =~ "Add as Read Only"
-      refute html =~ "Add with Modify Access"
+      refute html =~ "Add with Edit Access"
       assert html =~ "User added successfully"
     end
 
@@ -474,7 +474,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
         |> render_submit()
 
       assert html =~ "Add as Read Only"
-      assert html =~ "Add with Modify Access"
+      assert html =~ "Add with Edit Access"
     end
 
     test "user info card has proper styling", %{conn: conn, user: user} do
