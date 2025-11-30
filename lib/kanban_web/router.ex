@@ -1,5 +1,6 @@
 defmodule KanbanWeb.Router do
   use KanbanWeb, :router
+  use ErrorTracker.Web, :router
 
   import KanbanWeb.UserAuth
   import Phoenix.LiveDashboard.Router
@@ -52,10 +53,11 @@ defmodule KanbanWeb.Router do
     end
   end
 
-  scope "/dev" do
+  scope "/admin" do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
 
     live_dashboard "/dashboard", metrics: KanbanWeb.Telemetry
+    error_tracker_dashboard "/errors"
   end
 
   ## Authentication routes

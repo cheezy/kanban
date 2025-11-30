@@ -73,7 +73,8 @@ defmodule Kanban.MixProject do
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:usage_rules, "~> 0.1"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:tidewave, "~> 0.2", only: :dev}
+      {:tidewave, "~> 0.2", only: :dev},
+      {:error_tracker, "~> 0.7"}
     ]
   end
 
