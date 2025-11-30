@@ -1,0 +1,1107 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: pt\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/kanban_web/components/core_components.ex:343
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr "Ações"
+
+#: lib/kanban_web/components/layouts.ex:74
+#: lib/kanban_web/components/layouts.ex:86
+#, elixir-autogen, elixir-format
+msgid "Attempting to reconnect"
+msgstr "Tentando reconectar"
+
+#: lib/kanban_web/components/layouts.ex:81
+#, elixir-autogen, elixir-format
+msgid "Something went wrong!"
+msgstr "Algo deu errado!"
+
+#: lib/kanban_web/components/layouts.ex:69
+#, elixir-autogen, elixir-format
+msgid "We can't find the internet"
+msgstr "Não conseguimos encontrar a internet"
+
+#: lib/kanban_web/components/core_components.ex:75
+#: lib/kanban_web/components/core_components.ex:504
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr "fechar"
+
+#: lib/kanban_web/components/layouts/root.html.heex:7
+#, elixir-autogen, elixir-format
+msgid " · Task Management"
+msgstr " · Gerenciamento de Tarefas"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Create unlimited boards for different projects and teams."
+msgstr "Crie quadros ilimitados para diferentes projetos e equipes."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:109
+#, elixir-autogen, elixir-format
+msgid "Custom Columns"
+msgstr "Colunas Personalizadas"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:71
+#, elixir-autogen, elixir-format
+msgid "Done"
+msgstr "Concluído"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Drag & Drop"
+msgstr "Arrastar e Soltar"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Effortlessly move tasks between columns with drag and drop."
+msgstr "Mova tarefas entre colunas facilmente com arrastar e soltar."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "Everything You Need to Stay Organized"
+msgstr "Tudo que Você Precisa para se Manter Organizado"
+
+#: lib/kanban_web/components/layouts/root.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Get Started"
+msgstr "Começar"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Get Started Free"
+msgstr "Comece Gratuitamente"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "In Progress"
+msgstr "Em Progresso"
+
+#: lib/kanban_web/components/layouts/root.html.heex:73
+#: lib/kanban_web/live/user_live/login.ex:75
+#: lib/kanban_web/live/user_live/registration.ex:33
+#, elixir-autogen, elixir-format
+msgid "Log in"
+msgstr "Entrar"
+
+#: lib/kanban_web/components/layouts/root.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Log out"
+msgstr "Sair"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "Multiple Boards"
+msgstr "Múltiplos Quadros"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:110
+#, elixir-autogen, elixir-format
+msgid "Organize tasks with customizable columns that fit your workflow."
+msgstr "Organize tarefas com colunas personalizáveis que se ajustam ao seu fluxo de trabalho."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Professional Task Management"
+msgstr "Gerenciamento Profissional de Tarefas"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "Project Board"
+msgstr "Quadro de Projeto"
+
+#: lib/kanban_web/components/layouts/root.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Settings"
+msgstr "Configurações"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Sign In"
+msgstr "Entrar"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Simple, powerful features designed for modern teams"
+msgstr "Recursos simples e poderosos projetados para equipes modernas"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive."
+msgstr "Simplifique seu fluxo de trabalho com quadros, colunas e tarefas intuitivos. Perfeito para equipes e indivíduos que desejam se manter organizados e produtivos."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "To Do"
+msgstr "A Fazer"
+
+#: lib/kanban_web/live/user_live/settings.ex:141
+#, elixir-autogen, elixir-format
+msgid "A link to confirm your email change has been sent to the new address."
+msgstr "Um link para confirmar a alteração de e-mail foi enviado para o novo endereço."
+
+#: lib/kanban_web/live/user_live/settings.ex:14
+#, elixir-autogen, elixir-format
+msgid "Account Settings"
+msgstr "Configurações da Conta"
+
+#: lib/kanban_web/live/user_live/registration.ex:28
+#, elixir-autogen, elixir-format
+msgid "Already registered?"
+msgstr "Já está registrado?"
+
+#: lib/kanban_web/live/user_live/settings.ex:71
+#, elixir-autogen, elixir-format
+msgid "Confirm new password"
+msgstr "Confirmar nova senha"
+
+#: lib/kanban_web/live/user_live/registration.ex:25
+#, elixir-autogen, elixir-format
+msgid "Create Your Account"
+msgstr "Crie Sua Conta"
+
+#: lib/kanban_web/live/user_live/registration.ex:70
+#, elixir-autogen, elixir-format
+msgid "Create an account"
+msgstr "Criar uma conta"
+
+#: lib/kanban_web/live/user_live/registration.ex:67
+#, elixir-autogen, elixir-format
+msgid "Creating account..."
+msgstr "Criando conta..."
+
+#: lib/kanban_web/live/user_live/login.ex:32
+#, elixir-autogen, elixir-format
+msgid "Don't have an account?"
+msgstr "Não tem uma conta?"
+
+#: lib/kanban_web/live/user_live/login.ex:57
+#: lib/kanban_web/live/user_live/registration.ex:53
+#: lib/kanban_web/live/user_live/settings.ex:34
+#, elixir-autogen, elixir-format
+msgid "Email"
+msgstr "E-mail"
+
+#: lib/kanban_web/live/user_live/settings.ex:92
+#, elixir-autogen, elixir-format
+msgid "Email change link is invalid or it has expired."
+msgstr "O link de alteração de e-mail é inválido ou expirou."
+
+#: lib/kanban_web/live/user_live/settings.ex:89
+#, elixir-autogen, elixir-format
+msgid "Email changed successfully."
+msgstr "E-mail alterado com sucesso."
+
+#: lib/kanban_web/live/user_live/settings.ex:15
+#, elixir-autogen, elixir-format
+msgid "Manage your account email address and password settings"
+msgstr "Gerencie o endereço de e-mail e as configurações de senha da sua conta"
+
+#: lib/kanban_web/live/user_live/settings.ex:64
+#, elixir-autogen, elixir-format
+msgid "New password"
+msgstr "Nova senha"
+
+#: lib/kanban_web/live/user_live/login.ex:65
+#: lib/kanban_web/live/user_live/registration.ex:61
+#, elixir-autogen, elixir-format
+msgid "Password"
+msgstr "Senha"
+
+#: lib/kanban_web/live/user_live/settings.ex:75
+#, elixir-autogen, elixir-format
+msgid "Save Password"
+msgstr "Salvar Senha"
+
+#: lib/kanban_web/live/board_live/form.html.heex:33
+#: lib/kanban_web/live/column_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/form_component.html.heex:70
+#: lib/kanban_web/live/user_live/settings.ex:38
+#: lib/kanban_web/live/user_live/settings.ex:74
+#, elixir-autogen, elixir-format
+msgid "Saving..."
+msgstr "Salvando..."
+
+#: lib/kanban_web/live/user_live/login.ex:37
+#, elixir-autogen, elixir-format
+msgid "Sign up"
+msgstr "Cadastre-se"
+
+#: lib/kanban_web/live/user_live/login.ex:22
+#, elixir-autogen, elixir-format
+msgid "Welcome Back"
+msgstr "Bem-vindo de Volta"
+
+#: lib/kanban_web/live/user_live/login.ex:26
+#, elixir-autogen, elixir-format
+msgid "You need to reauthenticate to perform sensitive actions on your account."
+msgstr "Você precisa reautenticar para executar ações sensíveis em sua conta."
+
+#: lib/kanban_web/live/user_live/login.ex:38
+#, elixir-autogen, elixir-format
+msgid "for free."
+msgstr "gratuitamente."
+
+#: lib/kanban_web/live/user_live/registration.ex:35
+#, elixir-autogen, elixir-format
+msgid "to your account."
+msgstr "na sua conta."
+
+#: lib/kanban_web/live/board_live/index.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this board?"
+msgstr "Tem certeza de que deseja excluir este quadro?"
+
+#: lib/kanban_web/live/board_live/form.html.heex:18
+#: lib/kanban_web/live/board_live/show.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Back to boards"
+msgstr "Voltar aos quadros"
+
+#: lib/kanban_web/live/board_live/form.ex:168
+#, elixir-autogen, elixir-format
+msgid "Board created successfully"
+msgstr "Quadro criado com sucesso"
+
+#: lib/kanban_web/live/board_live/form.ex:153
+#, elixir-autogen, elixir-format
+msgid "Board updated successfully"
+msgstr "Quadro atualizado com sucesso"
+
+#: lib/kanban_web/live/board_live/index.ex:19
+#, elixir-autogen, elixir-format
+msgid "Boards"
+msgstr "Quadros"
+
+#: lib/kanban_web/live/board_live/form.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: lib/kanban_web/live/board_live/form.html.heex:31
+#: lib/kanban_web/live/issue_live/form_component.ex:91
+#: lib/kanban_web/live/task_live/form_component.html.heex:26
+#: lib/kanban_web/live/task_live/view_component.ex:97
+#, elixir-autogen, elixir-format
+msgid "Description"
+msgstr "Descrição"
+
+#: lib/kanban_web/live/board_live/form.ex:28
+#, elixir-autogen, elixir-format
+msgid "Edit Board"
+msgstr "Editar Quadro"
+
+#: lib/kanban_web/live/board_live/show.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Edit board"
+msgstr "Editar quadro"
+
+#: lib/kanban_web/live/board_live/show.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Get started by creating columns for your board."
+msgstr "Comece criando colunas para o seu quadro."
+
+#: lib/kanban_web/live/board_live/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Listing Boards"
+msgstr "Listando Quadros"
+
+#: lib/kanban_web/live/board_live/form.html.heex:30
+#: lib/kanban_web/live/column_live/form_component.html.heex:21
+#: lib/kanban_web/live/user_live/registration.ex:45
+#: lib/kanban_web/live/user_live/settings.ex:28
+#, elixir-autogen, elixir-format
+msgid "Name"
+msgstr "Nome"
+
+#: lib/kanban_web/live/board_live/form.ex:41
+#: lib/kanban_web/live/board_live/index.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "New Board"
+msgstr "Novo Quadro"
+
+#: lib/kanban_web/live/board_live/show.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "No columns yet"
+msgstr "Ainda não há colunas"
+
+#: lib/kanban_web/live/board_live/form.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Save Board"
+msgstr "Salvar Quadro"
+
+#: lib/kanban_web/live/board_live/form.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Use this form to manage board records in your database."
+msgstr "Use este formulário para gerenciar registros de quadros em seu banco de dados."
+
+#: lib/kanban_web/live/board_live/index.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "View Board"
+msgstr "Ver Quadro"
+
+#: lib/kanban_web/live/column_live/form_component.ex:52
+#, elixir-autogen, elixir-format
+msgid "Column created successfully"
+msgstr "Coluna criada com sucesso"
+
+#: lib/kanban_web/live/board_live/show.ex:132
+#, elixir-autogen, elixir-format
+msgid "Column deleted successfully"
+msgstr "Coluna excluída com sucesso"
+
+#: lib/kanban_web/live/column_live/form_component.ex:37
+#, elixir-autogen, elixir-format
+msgid "Column updated successfully"
+msgstr "Coluna atualizada com sucesso"
+
+#: lib/kanban_web/live/column_live/form_component.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Create a new column for your board"
+msgstr "Crie uma nova coluna para o seu quadro"
+
+#: lib/kanban_web/live/board_live/show.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Create your first column"
+msgstr "Crie sua primeira coluna"
+
+#: lib/kanban_web/live/board_live/show.ex:137
+#, elixir-autogen, elixir-format
+msgid "Failed to delete column"
+msgstr "Falha ao excluir coluna"
+
+#: lib/kanban_web/live/board_live/show.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "New Column"
+msgstr "Nova Coluna"
+
+#: lib/kanban_web/live/column_live/form_component.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Save Column"
+msgstr "Salvar Coluna"
+
+#: lib/kanban_web/live/board_live/show.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Tasks"
+msgstr "Tarefas"
+
+#: lib/kanban_web/live/column_live/form_component.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Update column details"
+msgstr "Atualizar detalhes da coluna"
+
+#: lib/kanban_web/live/column_live/form_component.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "WIP Limit"
+msgstr "Limite WIP"
+
+#: lib/kanban_web/live/column_live/form_component.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Work In Progress limit. Set to 0 for no limit."
+msgstr "Limite de Trabalho em Progresso. Defina como 0 para sem limite."
+
+#: lib/kanban_web/live/board_live/show.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Add task"
+msgstr "Adicionar tarefa"
+
+#: lib/kanban_web/live/board_live/show.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this task?"
+msgstr "Tem certeza de que deseja excluir esta tarefa?"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Column"
+msgstr "Coluna"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Create a new task"
+msgstr "Criar uma nova tarefa"
+
+#: lib/kanban_web/live/board_live/show.ex:173
+#, elixir-autogen, elixir-format
+msgid "Failed to delete task"
+msgstr "Falha ao excluir tarefa"
+
+#: lib/kanban_web/live/board_live/show.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "No tasks yet"
+msgstr "Ainda não há tarefas"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "Save Task"
+msgstr "Salvar Tarefa"
+
+#: lib/kanban_web/live/task_live/form_component.ex:107
+#, elixir-autogen, elixir-format
+msgid "Task created successfully"
+msgstr "Tarefa criada com sucesso"
+
+#: lib/kanban_web/live/board_live/show.ex:168
+#, elixir-autogen, elixir-format
+msgid "Task deleted successfully"
+msgstr "Tarefa excluída com sucesso"
+
+#: lib/kanban_web/live/task_live/form_component.ex:88
+#, elixir-autogen, elixir-format
+msgid "Task updated successfully"
+msgstr "Tarefa atualizada com sucesso"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:56
+#: lib/kanban_web/live/task_live/form_component.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Title"
+msgstr "Título"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Update task details"
+msgstr "Atualizar detalhes da tarefa"
+
+#: lib/kanban_web/live/board_live/show.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "WIP limit reached"
+msgstr "Limite WIP atingido"
+
+#: lib/kanban_web/live/task_live/form_component.ex:114
+#, elixir-autogen, elixir-format
+msgid "WIP limit reached for this column"
+msgstr "Limite WIP atingido para esta coluna"
+
+#: lib/kanban_web/components/layouts/root.html.heex:7
+#: lib/kanban_web/components/layouts/root.html.heex:46
+#: lib/kanban_web/controllers/page_html/home.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Stride"
+msgstr "Stride"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Organize Your Work"
+msgstr "Organize Seu Trabalho"
+
+#: lib/kanban_web/live/board_live/show.ex:323
+#, elixir-autogen, elixir-format
+msgid "Cannot move task: column has reached its WIP limit"
+msgstr "Não é possível mover tarefa: a coluna atingiu seu limite WIP"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:90
+#: lib/kanban_web/live/task_live/view_component.ex:90
+#: lib/kanban_web/live/task_live/view_component.ex:121
+#, elixir-autogen, elixir-format
+msgid "Created"
+msgstr "Criado"
+
+#: lib/kanban_web/live/board_live/show.html.heex:261
+#: lib/kanban_web/live/task_live/form_component.html.heex:46
+#: lib/kanban_web/live/task_live/view_component.ex:73
+#, elixir-autogen, elixir-format
+msgid "Critical"
+msgstr "Crítico"
+
+#: lib/kanban_web/live/board_live/show.html.heex:234
+#: lib/kanban_web/live/issue_live/form_component.ex:219
+#: lib/kanban_web/live/task_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/view_component.ex:35
+#, elixir-autogen, elixir-format
+msgid "Defect"
+msgstr "Defeito"
+
+#: lib/kanban_web/live/board_live/show.ex:332
+#, elixir-autogen, elixir-format
+msgid "Failed to move task"
+msgstr "Falha ao mover tarefa"
+
+#: lib/kanban_web/live/board_live/show.html.heex:262
+#: lib/kanban_web/live/task_live/form_component.html.heex:45
+#: lib/kanban_web/live/task_live/view_component.ex:72
+#, elixir-autogen, elixir-format
+msgid "High"
+msgstr "Alto"
+
+#: lib/kanban_web/live/board_live/show.html.heex:264
+#: lib/kanban_web/live/task_live/form_component.html.heex:43
+#: lib/kanban_web/live/task_live/view_component.ex:70
+#, elixir-autogen, elixir-format
+msgid "Low"
+msgstr "Baixo"
+
+#: lib/kanban_web/live/board_live/show.html.heex:263
+#: lib/kanban_web/live/task_live/form_component.html.heex:44
+#: lib/kanban_web/live/task_live/view_component.ex:71
+#, elixir-autogen, elixir-format
+msgid "Medium"
+msgstr "Médio"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/view_component.ex:122
+#, elixir-autogen, elixir-format
+msgid "Moved"
+msgstr "Movido"
+
+#: lib/kanban_web/components/layouts/root.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "My Boards"
+msgstr "Meus Quadros"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:41
+#: lib/kanban_web/live/task_live/view_component.ex:59
+#, elixir-autogen, elixir-format
+msgid "Priority"
+msgstr "Prioridade"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Task History"
+msgstr "Histórico da Tarefa"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:74
+#: lib/kanban_web/live/task_live/form_component.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Type"
+msgstr "Tipo"
+
+#: lib/kanban_web/live/board_live/show.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "WIP limit exceeded"
+msgstr "Limite WIP excedido"
+
+#: lib/kanban_web/live/board_live/show.html.heex:235
+#: lib/kanban_web/live/task_live/form_component.html.heex:34
+#: lib/kanban_web/live/task_live/view_component.ex:34
+#, elixir-autogen, elixir-format
+msgid "Work"
+msgstr "Trabalho"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:95
+#: lib/kanban_web/live/task_live/view_component.ex:126
+#, elixir-autogen, elixir-format
+msgid "from"
+msgstr "de"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:97
+#: lib/kanban_web/live/task_live/view_component.ex:127
+#, elixir-autogen, elixir-format
+msgid "to"
+msgstr "para"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Add Comment"
+msgstr "Adicionar Comentário"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Add a comment"
+msgstr "Adicionar um comentário"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:132
+#, elixir-autogen, elixir-format
+msgid "Adding..."
+msgstr "Adicionando..."
+
+#: lib/kanban_web/live/task_live/form_component.ex:74
+#, elixir-autogen, elixir-format
+msgid "Comment added successfully"
+msgstr "Comentário adicionado com sucesso"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:113
+#: lib/kanban_web/live/task_live/view_component.ex:142
+#, elixir-autogen, elixir-format
+msgid "Comments"
+msgstr "Comentários"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:151
+#, elixir-autogen, elixir-format
+msgid "No comments yet. Be the first to comment!"
+msgstr "Ainda não há comentários. Seja o primeiro a comentar!"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:128
+#, elixir-autogen, elixir-format
+msgid "Write your comment here..."
+msgstr "Escreva seu comentário aqui..."
+
+#: lib/kanban_web/live/board_live/form.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Add User by Email"
+msgstr "Adicionar Usuário por E-mail"
+
+#: lib/kanban_web/live/board_live/form.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Add as Read Only"
+msgstr "Adicionar como Somente Leitura"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:54
+#: lib/kanban_web/live/task_live/view_component.ex:79
+#, elixir-autogen, elixir-format
+msgid "Assigned To"
+msgstr "Atribuído a"
+
+#: lib/kanban_web/live/board_live/form.html.heex:118
+#: lib/kanban_web/live/board_live/index.html.heex:93
+#: lib/kanban_web/live/board_live/index.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Can Edit"
+msgstr "Pode Editar"
+
+#: lib/kanban_web/live/board_live/form.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "Current Users"
+msgstr "Usuários Atuais"
+
+#: lib/kanban_web/live/board_live/form.html.heex:62
+#, elixir-autogen, elixir-format
+msgid "Enter user email"
+msgstr "Digite o e-mail do usuário"
+
+#: lib/kanban_web/live/board_live/form.ex:116
+#, elixir-autogen, elixir-format
+msgid "Failed to add user to board"
+msgstr "Falha ao adicionar usuário ao quadro"
+
+#: lib/kanban_web/live/board_live/form.ex:143
+#, elixir-autogen, elixir-format
+msgid "Failed to remove user from board"
+msgstr "Falha ao remover usuário do quadro"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:143
+#: lib/kanban_web/live/board_live/form.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Manage Users"
+msgstr "Gerenciar Usuários"
+
+#: lib/kanban_web/live/board_live/index.ex:38
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can delete this board"
+msgstr "Apenas o proprietário do quadro pode excluir este quadro"
+
+#: lib/kanban_web/live/board_live/form.ex:34
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can edit this board"
+msgstr "Apenas o proprietário do quadro pode editar este quadro"
+
+#: lib/kanban_web/live/board_live/form.html.heex:116
+#: lib/kanban_web/live/board_live/index.html.heex:85
+#: lib/kanban_web/live/board_live/index.html.heex:88
+#, elixir-autogen, elixir-format
+msgid "Owner"
+msgstr "Proprietário"
+
+#: lib/kanban_web/live/board_live/form.html.heex:120
+#: lib/kanban_web/live/board_live/index.html.heex:101
+#: lib/kanban_web/live/board_live/index.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "Read Only"
+msgstr "Somente Leitura"
+
+#: lib/kanban_web/live/board_live/form.html.heex:130
+#, elixir-autogen, elixir-format
+msgid "Remove"
+msgstr "Remover"
+
+#: lib/kanban_web/live/board_live/form.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Search"
+msgstr "Pesquisar"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Select a user"
+msgstr "Selecionar um usuário"
+
+#: lib/kanban_web/live/task_live/form_component.ex:171
+#: lib/kanban_web/live/task_live/view_component.ex:84
+#, elixir-autogen, elixir-format
+msgid "Unassigned"
+msgstr "Não atribuído"
+
+#: lib/kanban_web/live/user_live/settings.ex:39
+#, elixir-autogen, elixir-format
+msgid "Update Profile"
+msgstr "Atualizar Perfil"
+
+#: lib/kanban_web/live/board_live/form.ex:111
+#, elixir-autogen, elixir-format
+msgid "User added successfully"
+msgstr "Usuário adicionado com sucesso"
+
+#: lib/kanban_web/live/board_live/form.ex:85
+#, elixir-autogen, elixir-format
+msgid "User is already added to the board"
+msgstr "O usuário já foi adicionado ao quadro"
+
+#: lib/kanban_web/live/board_live/form.ex:128
+#, elixir-autogen, elixir-format
+msgid "User not found"
+msgstr "Usuário não encontrado"
+
+#: lib/kanban_web/live/board_live/form.ex:65
+#, elixir-autogen, elixir-format
+msgid "User not found with email: %{email}"
+msgstr "Usuário não encontrado com e-mail: %{email}"
+
+#: lib/kanban_web/live/board_live/form.ex:138
+#, elixir-autogen, elixir-format
+msgid "User removed successfully"
+msgstr "Usuário removido com sucesso"
+
+#: lib/kanban_web/live/board_live/form.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Users must be already registered in the system in order to be added to Boards"
+msgstr "Os usuários devem estar registrados no sistema para serem adicionados aos Quadros"
+
+#: lib/kanban_web/live/board_live/form.ex:75
+#, elixir-autogen, elixir-format
+msgid "You cannot add yourself to the board"
+msgstr "Você não pode se adicionar ao quadro"
+
+#: lib/kanban_web/live/board_live/show.ex:122
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can delete columns"
+msgstr "Apenas o proprietário do quadro pode excluir colunas"
+
+#: lib/kanban_web/live/board_live/show.ex:43
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can manage columns"
+msgstr "Apenas o proprietário do quadro pode gerenciar colunas"
+
+#: lib/kanban_web/live/board_live/show.ex:100
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can create columns"
+msgstr "Apenas o proprietário do quadro pode criar colunas"
+
+#: lib/kanban_web/live/board_live/show.ex:213
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can reorder columns"
+msgstr "Apenas o proprietário do quadro pode reordenar colunas"
+
+#: lib/kanban_web/live/board_live/form.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Back to board"
+msgstr "Voltar ao quadro"
+
+#: lib/kanban_web/live/task_live/view_component.ex:103
+#, elixir-autogen, elixir-format
+msgid "History"
+msgstr "Histórico"
+
+#: lib/kanban_web/live/task_live/view_component.ex:144
+#, elixir-autogen, elixir-format
+msgid "No comments yet"
+msgstr "Ainda não há comentários"
+
+#: lib/kanban_web/live/task_live/view_component.ex:105
+#, elixir-autogen, elixir-format
+msgid "No history available"
+msgstr "Não há histórico disponível"
+
+#: lib/kanban_web/live/task_live/view_component.ex:54
+#, elixir-autogen, elixir-format
+msgid "Status"
+msgstr "Status"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:25
+#, elixir-autogen, elixir-format
+msgid "Account Confirmed!"
+msgstr "Conta Confirmada!"
+
+#: lib/kanban_web/live/user_live/registration.ex:105
+#, elixir-autogen, elixir-format
+msgid "An email was sent to %{email}. Please check your email to confirm your account."
+msgstr "Um e-mail foi enviado para %{email}. Verifique seu e-mail para confirmar sua conta."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:75
+#, elixir-autogen, elixir-format
+msgid "Confirmation link is invalid or has expired."
+msgstr "O link de confirmação é inválido ou expirou."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:43
+#, elixir-autogen, elixir-format
+msgid "Confirming your account..."
+msgstr "Confirmando sua conta..."
+
+#: lib/kanban_web/components/layouts/root.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Dashboard"
+msgstr "Painel"
+
+#: lib/kanban_web/live/task_live/view_component.ex:45
+#, elixir-autogen, elixir-format
+msgid "Edit"
+msgstr "Editar"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:37
+#, elixir-autogen, elixir-format
+msgid "Go to login"
+msgstr "Ir para login"
+
+#: lib/kanban_web/live/user_live/login.ex:72
+#, elixir-autogen, elixir-format
+msgid "Stay logged in"
+msgstr "Permanecer conectado"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:69
+#, elixir-autogen, elixir-format
+msgid "This account has already been confirmed. You can log in."
+msgstr "Esta conta já foi confirmada. Você pode fazer login."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:28
+#, elixir-autogen, elixir-format
+msgid "Your account has been confirmed successfully. You can now log in."
+msgstr "Sua conta foi confirmada com sucesso. Agora você pode fazer login."
+
+#: lib/kanban_web/components/layouts/root.html.heex:63
+#: lib/kanban_web/components/layouts/root.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "About"
+msgstr "Sobre"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "About Stride"
+msgstr "Sobre o Stride"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:194
+#, elixir-autogen, elixir-format
+msgid "Back to Home"
+msgstr "Voltar ao Início"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Built with AI"
+msgstr "Construído com IA"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
+msgstr "Stride é um aplicativo moderno de gerenciamento de tarefas que foi construído inteiramente usando desenvolvimento assistido por IA. Este projeto demonstra o poder da colaboração humano-IA no desenvolvimento de software."
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
+msgstr "A IA não é perfeita e tenho certeza de que há problemas escondidos neste aplicativo. Por favor, relate problemas ou faça solicitações de novos recursos para que este aplicativo possa melhorar."
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Adding Columns to the Boards"
+msgstr "Adicionando Colunas aos Quadros"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "Adding Tasks to Columns"
+msgstr "Adicionando Tarefas às Colunas"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
+msgstr "Adicionando Tipo, Prioridade, Identificador, Comentários e Histórico às Tarefas"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
+msgstr "Adicionando Usuários aos Quadros e Tarefas e arrastar e soltar para Colunas"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "Adding drag-and-drop for Tasks"
+msgstr "Adicionando arrastar e soltar para Tarefas"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Authorization and user permissions"
+msgstr "Autorização e permissões de usuário"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Building the authentication system"
+msgstr "Construindo o sistema de autenticação"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:175
+#, elixir-autogen, elixir-format
+msgid "Cleanup and simplification of Authentication"
+msgstr "Limpeza e simplificação da Autenticação"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:130
+#, elixir-autogen, elixir-format
+msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
+msgstr "Limpeza da interface de Tarefas e descarte automático de mensagens Flash"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:67
+#, elixir-autogen, elixir-format
+msgid "Creating the plan"
+msgstr "Criando o plano"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:103
+#, elixir-autogen, elixir-format
+msgid "Finishing the UI for Boards"
+msgstr "Finalizando a interface para Quadros"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
+msgstr "Escrevi um blog sobre o desenvolvimento orientado por IA deste aplicativo. Nas postagens, incluí muitos vídeos e imagens nos quais você pode ver como é feito. As postagens estão aqui:"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:94
+#, elixir-autogen, elixir-format
+msgid "Moving the design to function components and starting on Boards"
+msgstr "Movendo o design para componentes de função e começando nos Quadros"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Report Issues or Request Features"
+msgstr "Relatar Problemas ou Solicitar Recursos"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "See the entire process for yourself in the "
+msgstr "Veja todo o processo você mesmo na "
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Setup, configuration, and tools"
+msgstr "Configuração, configuração e ferramentas"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
+#: lib/kanban_web/controllers/page_html/about.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "The Blog"
+msgstr "O Blog"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Updating the Visual Design and adding French Translations"
+msgstr "Atualizando o Design Visual e adicionando Traduções em Francês"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "section below."
+msgstr "seção abaixo."
+
+#: lib/kanban_web/live/issue_live/form_component.ex:65
+#, elixir-autogen, elixir-format
+msgid "Brief description of the issue"
+msgstr "Breve descrição do problema"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:127
+#, elixir-autogen, elixir-format
+msgid "Failed to submit issue"
+msgstr "Falha ao enviar problema"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:220
+#, elixir-autogen, elixir-format
+msgid "Feature Request"
+msgstr "Solicitação de Recurso"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:168
+#, elixir-autogen, elixir-format
+msgid "GitHub integration is not configured"
+msgstr "A integração com GitHub não está configurada"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:28
+#, elixir-autogen, elixir-format
+msgid "Issue submitted successfully!"
+msgstr "Problema enviado com sucesso!"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:99
+#, elixir-autogen, elixir-format
+msgid "Please provide details about the issue or feature request"
+msgstr "Forneça detalhes sobre o problema ou solicitação de recurso"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:112
+#, elixir-autogen, elixir-format
+msgid "Submit Issue"
+msgstr "Enviar Problema"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:14
+#, elixir-autogen, elixir-format
+msgid "Submit an Issue"
+msgstr "Enviar um Problema"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:42
+#, elixir-autogen, elixir-format
+msgid "Submit another issue"
+msgstr "Enviar outro problema"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:109
+#, elixir-autogen, elixir-format
+msgid "Submitting..."
+msgstr "Enviando..."
+
+#: lib/kanban_web/live/issue_live/form_component.ex:221
+#, elixir-autogen, elixir-format
+msgid "Translation"
+msgstr "Tradução"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:31
+#, elixir-autogen, elixir-format
+msgid "View your issue on"
+msgstr "Veja seu problema em"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:198
+#: lib/kanban_web/live/issue_live/form_component.ex:205
+#, elixir-autogen, elixir-format
+msgid "can't be blank"
+msgstr "não pode ficar em branco"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
+msgstr "O aplicativo inteiro, desde o design do banco de dados até a interface do usuário, foi desenvolvido através de conversas com Claude Code e TideWave. Isso inclui a arquitetura, atualizações em tempo real, funcionalidade de arrastar e soltar e suporte à internacionalização."
+
+#: lib/kanban_web/live/board_live/show.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
+msgstr "Tem certeza de que deseja excluir esta coluna? Todas as tarefas desta coluna também serão excluídas."
+
+#: lib/kanban_web/live/board_live/index.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Create your first board"
+msgstr "Crie seu primeiro quadro"
+
+#: lib/kanban_web/live/board_live/show.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Drag tasks here or click + to add"
+msgstr "Arraste tarefas aqui ou clique + para adicionar"
+
+#: lib/kanban_web/live/board_live/index.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Get started by creating your first board to organize your tasks and projects."
+msgstr "Comece criando seu primeiro quadro para organizar suas tarefas e projetos."
+
+#: lib/kanban_web/live/board_live/index.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "No boards yet"
+msgstr "Ainda não há quadros"
+
+#: lib/kanban_web/live/board_live/show.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "WIP"
+msgstr "WIP"
+
+#: lib/kanban_web/live/board_live/form.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "Add with Edit Access"
+msgstr "Adicionar com Acesso de Edição"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:144
+#, elixir-autogen, elixir-format
+msgid "Assign proper access to team members."
+msgstr "Atribua acesso adequado aos membros da equipe."
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Go to My Boards"
+msgstr "Ir para Meus Quadros"

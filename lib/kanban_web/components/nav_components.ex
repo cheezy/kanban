@@ -79,7 +79,12 @@ defmodule KanbanWeb.NavComponents do
 
   @supported_locales [
     %{code: "en", name: "English", flag: :uk_flag},
-    %{code: "fr", name: "Français", flag: :french_flag}
+    %{code: "fr", name: "Français", flag: :french_flag},
+    %{code: "es", name: "Español", flag: :spanish_flag},
+    %{code: "pt", name: "Português", flag: :portuguese_flag},
+    %{code: "de", name: "Deutsch", flag: :german_flag},
+    %{code: "ja", name: "日本語", flag: :japanese_flag},
+    %{code: "zh", name: "中文", flag: :chinese_flag}
   ]
 
   def language_switcher(assigns) do
@@ -134,6 +139,11 @@ defmodule KanbanWeb.NavComponents do
 
   defp locale_flag(%{locale: "en"} = assigns), do: uk_flag(assigns)
   defp locale_flag(%{locale: "fr"} = assigns), do: french_flag(assigns)
+  defp locale_flag(%{locale: "es"} = assigns), do: spanish_flag(assigns)
+  defp locale_flag(%{locale: "pt"} = assigns), do: portuguese_flag(assigns)
+  defp locale_flag(%{locale: "de"} = assigns), do: german_flag(assigns)
+  defp locale_flag(%{locale: "ja"} = assigns), do: japanese_flag(assigns)
+  defp locale_flag(%{locale: "zh"} = assigns), do: chinese_flag(assigns)
   defp locale_flag(assigns), do: ~H""
 
   defp french_flag(assigns) do
@@ -160,6 +170,58 @@ defmodule KanbanWeb.NavComponents do
       />
       <path fill="#FFF" d="M241 0v480h160V0zM0 160v160h640V160z" />
       <path fill="#C8102E" d="M0 193v96h640v-96zM273 0v480h96V0z" />
+    </svg>
+    """
+  end
+
+  defp spanish_flag(assigns) do
+    ~H"""
+    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+      <path fill="#AA151B" d="M0 0h640v480H0z" />
+      <path fill="#F1BF00" d="M0 120h640v240H0z" />
+    </svg>
+    """
+  end
+
+  defp portuguese_flag(assigns) do
+    ~H"""
+    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+      <path fill="#060" d="M0 0h640v480H0z" />
+      <path fill="#D80027" d="M256 0h384v480H256z" />
+    </svg>
+    """
+  end
+
+  defp german_flag(assigns) do
+    ~H"""
+    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+      <path fill="#000" d="M0 0h640v160H0z" />
+      <path fill="#D00" d="M0 160h640v160H0z" />
+      <path fill="#FFCE00" d="M0 320h640v160H0z" />
+    </svg>
+    """
+  end
+
+  defp japanese_flag(assigns) do
+    ~H"""
+    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+      <path fill="#FFF" d="M0 0h640v480H0z" />
+      <circle fill="#BC002D" cx="320" cy="240" r="144" />
+    </svg>
+    """
+  end
+
+  defp chinese_flag(assigns) do
+    ~H"""
+    <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
+      <path fill="#DE2910" d="M0 0h640v480H0z" />
+      <g fill="#FFDE00">
+        <path d="M-119.5 18.5l5.4 16.6L-97.4 26l-10.7 13.6 17.6-3.5-17.6-3.4L-97.4 46l-16.7-9.1 5.4 16.6z" transform="scale(3.9385) translate(194.4 78.8)" />
+        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(261.6 51.2)" />
+        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(272 67.2)" />
+        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(267.2 86.4)" />
+        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(253.6 99.2)" />
+      </g>
     </svg>
     """
   end
