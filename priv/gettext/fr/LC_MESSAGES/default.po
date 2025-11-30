@@ -257,7 +257,7 @@ msgstr "gratuitement."
 msgid "to your account."
 msgstr "à votre compte."
 
-#: lib/kanban_web/live/board_live/index.html.heex:28
+#: lib/kanban_web/live/board_live/index.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce tableau ?"
@@ -289,7 +289,7 @@ msgid "Cancel"
 msgstr "Annuler"
 
 #: lib/kanban_web/live/board_live/form.html.heex:31
-#: lib/kanban_web/live/issue_live/form_component.ex:86
+#: lib/kanban_web/live/issue_live/form_component.ex:91
 #: lib/kanban_web/live/task_live/form_component.html.heex:26
 #: lib/kanban_web/live/task_live/view_component.ex:97
 #, elixir-autogen, elixir-format
@@ -345,7 +345,7 @@ msgstr "Enregistrer le Tableau"
 msgid "Use this form to manage board records in your database."
 msgstr "Utilisez ce formulaire pour gérer les tableaux dans votre base de données."
 
-#: lib/kanban_web/live/board_live/index.html.heex:45
+#: lib/kanban_web/live/board_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "View Board"
 msgstr "Voir le Tableau"
@@ -470,7 +470,7 @@ msgstr "Tâche supprimée avec succès"
 msgid "Task updated successfully"
 msgstr "Tâche mise à jour avec succès"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:51
+#: lib/kanban_web/live/issue_live/form_component.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Title"
@@ -523,7 +523,7 @@ msgid "Critical"
 msgstr "Critique"
 
 #: lib/kanban_web/live/board_live/show.html.heex:182
-#: lib/kanban_web/live/issue_live/form_component.ex:210
+#: lib/kanban_web/live/issue_live/form_component.ex:219
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
 #, elixir-autogen, elixir-format
@@ -578,7 +578,7 @@ msgstr "Priorité"
 msgid "Task History"
 msgstr "Historique de la tâche"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:69
+#: lib/kanban_web/live/issue_live/form_component.ex:74
 #: lib/kanban_web/live/task_live/form_component.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Type"
@@ -665,13 +665,13 @@ msgstr "Ajouter avec Accès en Modification"
 msgid "Assigned To"
 msgstr "Assigné à"
 
-#: lib/kanban_web/live/board_live/index.html.heex:63
+#: lib/kanban_web/live/board_live/index.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "Peut Modifier"
 
 #: lib/kanban_web/live/board_live/form.html.heex:118
-#: lib/kanban_web/live/board_live/index.html.heex:60
+#: lib/kanban_web/live/board_live/index.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Can Modify"
 msgstr "Peut Modifier"
@@ -712,15 +712,15 @@ msgid "Only the board owner can edit this board"
 msgstr "Seul le propriétaire du tableau peut modifier ce tableau"
 
 #: lib/kanban_web/live/board_live/form.html.heex:116
-#: lib/kanban_web/live/board_live/index.html.heex:52
-#: lib/kanban_web/live/board_live/index.html.heex:55
+#: lib/kanban_web/live/board_live/index.html.heex:56
+#: lib/kanban_web/live/board_live/index.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "Propriétaire"
 
 #: lib/kanban_web/live/board_live/form.html.heex:120
-#: lib/kanban_web/live/board_live/index.html.heex:68
-#: lib/kanban_web/live/board_live/index.html.heex:71
+#: lib/kanban_web/live/board_live/index.html.heex:72
+#: lib/kanban_web/live/board_live/index.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "Lecture Seule"
@@ -892,7 +892,7 @@ msgstr "À propos"
 msgid "About Stride"
 msgstr "À propos de Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:125
+#: lib/kanban_web/controllers/page_html/about.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "Retour à l'accueil"
@@ -907,143 +907,138 @@ msgstr "Construit avec l'IA"
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr "Stride est une application moderne de gestion des tâches entièrement construite grâce au développement assisté par l'IA. Ce projet démontre la puissance de la collaboration humain-IA dans le développement logiciel."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:30
+#: lib/kanban_web/controllers/page_html/about.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr "L'IA n'est pas parfaite et je suis sûr qu'il y a des problèmes cachés dans cette application. Veuillez signaler les problèmes ou demander de nouvelles fonctionnalités afin que cette application puisse s'améliorer."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#: lib/kanban_web/controllers/page_html/about.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Adding Columns to the Boards"
 msgstr "Ajout de colonnes aux tableaux"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:81
+#: lib/kanban_web/controllers/page_html/about.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "Adding Tasks to Columns"
 msgstr "Ajout de tâches aux colonnes"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:96
+#: lib/kanban_web/controllers/page_html/about.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
 msgstr "Ajout du type, de la priorité, de l'identifiant, des commentaires et de l'historique aux tâches"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:101
+#: lib/kanban_web/controllers/page_html/about.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
 msgstr "Ajout d'utilisateurs aux tableaux et tâches et glisser-déposer pour les colonnes"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:91
+#: lib/kanban_web/controllers/page_html/about.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Adding drag-and-drop for Tasks"
 msgstr "Ajout du glisser-déposer pour les tâches"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:106
+#: lib/kanban_web/controllers/page_html/about.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Authorization and user permissions"
 msgstr "Autorisation et permissions des utilisateurs"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:56
+#: lib/kanban_web/controllers/page_html/about.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Building the authentication system"
 msgstr "Construction du système d'authentification"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:111
+#: lib/kanban_web/controllers/page_html/about.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Cleanup and simplification of Authentication"
 msgstr "Nettoyage et simplification de l'authentification"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:86
+#: lib/kanban_web/controllers/page_html/about.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
 msgstr "Nettoyage de l'interface des tâches et messages Flash à fermeture automatique"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:51
+#: lib/kanban_web/controllers/page_html/about.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Creating the plan"
 msgstr "Création du plan"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:71
+#: lib/kanban_web/controllers/page_html/about.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Finishing the UI for Boards"
 msgstr "Finalisation de l'interface pour les tableaux"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:42
+#: lib/kanban_web/controllers/page_html/about.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
 msgstr "J'ai blogué sur le développement de cette application piloté par l'IA. Dans les articles, j'ai inclus de nombreuses vidéos et images dans lesquelles vous pouvez voir comment cela se fait. Les articles sont ici :"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:66
+#: lib/kanban_web/controllers/page_html/about.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Moving the design to function components and starting on Boards"
 msgstr "Déplacement du design vers les composants fonctionnels et début des tableaux"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:27
+#: lib/kanban_web/controllers/page_html/about.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr "Signaler des problèmes ou demander des fonctionnalités"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
+#: lib/kanban_web/controllers/page_html/about.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "See the entire process for yourself in the "
 msgstr "Voyez tout le processus par vous-même dans la "
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:46
+#: lib/kanban_web/controllers/page_html/about.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Setup, configuration, and tools"
 msgstr "Configuration, paramétrage et outils"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
-#: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
+#: lib/kanban_web/controllers/page_html/about.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "The Blog"
 msgstr "Le Blog"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:17
-#, elixir-autogen, elixir-format
-msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the Phoenix LiveView architecture, real-time updates, drag-and-drop functionality, and internationalization support."
-msgstr "L'application entière, de la conception de la base de données à l'interface utilisateur, a été développée par des conversations avec Claude Code et TideWave. Cela inclut l'architecture Phoenix LiveView, les mises à jour en temps réel, la fonctionnalité de glisser-déposer et le support de l'internationalisation."
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:61
+#: lib/kanban_web/controllers/page_html/about.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Updating the Visual Design and adding French Translations"
 msgstr "Mise à jour du design visuel et ajout des traductions françaises"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "section below."
 msgstr "section ci-dessous."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:60
+#: lib/kanban_web/live/issue_live/form_component.ex:65
 #, elixir-autogen, elixir-format
 msgid "Brief description of the issue"
 msgstr "Brève description du problème"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:117
+#: lib/kanban_web/live/issue_live/form_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "Failed to submit issue"
 msgstr "Échec de la soumission du problème"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:211
+#: lib/kanban_web/live/issue_live/form_component.ex:220
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "Demande de fonctionnalité"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:159
+#: lib/kanban_web/live/issue_live/form_component.ex:168
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr "L'intégration GitHub n'est pas configurée"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:23
+#: lib/kanban_web/live/issue_live/form_component.ex:28
 #, elixir-autogen, elixir-format
 msgid "Issue submitted successfully!"
 msgstr "Problème soumis avec succès !"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:94
+#: lib/kanban_web/live/issue_live/form_component.ex:99
 #, elixir-autogen, elixir-format
 msgid "Please provide details about the issue or feature request"
 msgstr "Veuillez fournir des détails sur le problème ou la demande de fonctionnalité"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:107
+#: lib/kanban_web/live/issue_live/form_component.ex:112
 #, elixir-autogen, elixir-format
 msgid "Submit Issue"
 msgstr "Soumettre le problème"
@@ -1053,28 +1048,33 @@ msgstr "Soumettre le problème"
 msgid "Submit an Issue"
 msgstr "Soumettre un problème"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:37
+#: lib/kanban_web/live/issue_live/form_component.ex:42
 #, elixir-autogen, elixir-format
 msgid "Submit another issue"
 msgstr "Soumettre un autre problème"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:104
+#: lib/kanban_web/live/issue_live/form_component.ex:109
 #, elixir-autogen, elixir-format
 msgid "Submitting..."
 msgstr "Envoi en cours..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:212
+#: lib/kanban_web/live/issue_live/form_component.ex:221
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "Traduction"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:26
+#: lib/kanban_web/live/issue_live/form_component.ex:31
 #, elixir-autogen, elixir-format
 msgid "View your issue on"
 msgstr "Voir votre problème sur"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:189
-#: lib/kanban_web/live/issue_live/form_component.ex:196
+#: lib/kanban_web/live/issue_live/form_component.ex:198
+#: lib/kanban_web/live/issue_live/form_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
 msgstr "ne peut pas être vide"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
+msgstr "L'application entière, de la conception de la base de données à l'interface utilisateur, a été développée par des conversations avec Claude Code et TideWave. Cela inclut l'architecture, les mises à jour en temps réel, la fonctionnalité de glisser-déposer et le support de l'internationalisation."

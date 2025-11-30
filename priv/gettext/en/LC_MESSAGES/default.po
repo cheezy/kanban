@@ -257,7 +257,7 @@ msgstr ""
 msgid "to your account."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:28
+#: lib/kanban_web/live/board_live/index.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr ""
@@ -289,7 +289,7 @@ msgid "Cancel"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:31
-#: lib/kanban_web/live/issue_live/form_component.ex:86
+#: lib/kanban_web/live/issue_live/form_component.ex:91
 #: lib/kanban_web/live/task_live/form_component.html.heex:26
 #: lib/kanban_web/live/task_live/view_component.ex:97
 #, elixir-autogen, elixir-format
@@ -345,7 +345,7 @@ msgstr ""
 msgid "Use this form to manage board records in your database."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:45
+#: lib/kanban_web/live/board_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "View Board"
 msgstr ""
@@ -470,7 +470,7 @@ msgstr ""
 msgid "Task updated successfully"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:51
+#: lib/kanban_web/live/issue_live/form_component.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Title"
@@ -523,7 +523,7 @@ msgid "Critical"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/show.html.heex:182
-#: lib/kanban_web/live/issue_live/form_component.ex:210
+#: lib/kanban_web/live/issue_live/form_component.ex:219
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
 #, elixir-autogen, elixir-format
@@ -578,7 +578,7 @@ msgstr ""
 msgid "Task History"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:69
+#: lib/kanban_web/live/issue_live/form_component.ex:74
 #: lib/kanban_web/live/task_live/form_component.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Type"
@@ -665,13 +665,13 @@ msgstr ""
 msgid "Assigned To"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:63
+#: lib/kanban_web/live/board_live/index.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:118
-#: lib/kanban_web/live/board_live/index.html.heex:60
+#: lib/kanban_web/live/board_live/index.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Can Modify"
 msgstr ""
@@ -712,15 +712,15 @@ msgid "Only the board owner can edit this board"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:116
-#: lib/kanban_web/live/board_live/index.html.heex:52
-#: lib/kanban_web/live/board_live/index.html.heex:55
+#: lib/kanban_web/live/board_live/index.html.heex:56
+#: lib/kanban_web/live/board_live/index.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:120
-#: lib/kanban_web/live/board_live/index.html.heex:68
-#: lib/kanban_web/live/board_live/index.html.heex:71
+#: lib/kanban_web/live/board_live/index.html.heex:72
+#: lib/kanban_web/live/board_live/index.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr ""
@@ -892,7 +892,7 @@ msgstr ""
 msgid "About Stride"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:125
+#: lib/kanban_web/controllers/page_html/about.html.heex:180
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Home"
 msgstr ""
@@ -907,143 +907,138 @@ msgstr ""
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:30
+#: lib/kanban_web/controllers/page_html/about.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#: lib/kanban_web/controllers/page_html/about.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Adding Columns to the Boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:81
+#: lib/kanban_web/controllers/page_html/about.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "Adding Tasks to Columns"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:96
+#: lib/kanban_web/controllers/page_html/about.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:101
+#: lib/kanban_web/controllers/page_html/about.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:91
+#: lib/kanban_web/controllers/page_html/about.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Adding drag-and-drop for Tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:106
+#: lib/kanban_web/controllers/page_html/about.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Authorization and user permissions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:56
+#: lib/kanban_web/controllers/page_html/about.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Building the authentication system"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:111
+#: lib/kanban_web/controllers/page_html/about.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Cleanup and simplification of Authentication"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:86
+#: lib/kanban_web/controllers/page_html/about.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:51
+#: lib/kanban_web/controllers/page_html/about.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Creating the plan"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:71
+#: lib/kanban_web/controllers/page_html/about.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Finishing the UI for Boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:42
+#: lib/kanban_web/controllers/page_html/about.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:66
+#: lib/kanban_web/controllers/page_html/about.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Moving the design to function components and starting on Boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:27
+#: lib/kanban_web/controllers/page_html/about.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
+#: lib/kanban_web/controllers/page_html/about.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "See the entire process for yourself in the "
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:46
+#: lib/kanban_web/controllers/page_html/about.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Setup, configuration, and tools"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
-#: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
+#: lib/kanban_web/controllers/page_html/about.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "The Blog"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:17
-#, elixir-autogen, elixir-format, fuzzy
-msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the Phoenix LiveView architecture, real-time updates, drag-and-drop functionality, and internationalization support."
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:61
+#: lib/kanban_web/controllers/page_html/about.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Updating the Visual Design and adding French Translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:20
+#: lib/kanban_web/controllers/page_html/about.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "section below."
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:60
+#: lib/kanban_web/live/issue_live/form_component.ex:65
 #, elixir-autogen, elixir-format
 msgid "Brief description of the issue"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:117
+#: lib/kanban_web/live/issue_live/form_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "Failed to submit issue"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:211
+#: lib/kanban_web/live/issue_live/form_component.ex:220
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:159
+#: lib/kanban_web/live/issue_live/form_component.ex:168
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:23
+#: lib/kanban_web/live/issue_live/form_component.ex:28
 #, elixir-autogen, elixir-format
 msgid "Issue submitted successfully!"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:94
+#: lib/kanban_web/live/issue_live/form_component.ex:99
 #, elixir-autogen, elixir-format
 msgid "Please provide details about the issue or feature request"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:107
+#: lib/kanban_web/live/issue_live/form_component.ex:112
 #, elixir-autogen, elixir-format
 msgid "Submit Issue"
 msgstr ""
@@ -1053,28 +1048,33 @@ msgstr ""
 msgid "Submit an Issue"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:37
+#: lib/kanban_web/live/issue_live/form_component.ex:42
 #, elixir-autogen, elixir-format
 msgid "Submit another issue"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:104
+#: lib/kanban_web/live/issue_live/form_component.ex:109
 #, elixir-autogen, elixir-format
 msgid "Submitting..."
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:212
+#: lib/kanban_web/live/issue_live/form_component.ex:221
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:26
+#: lib/kanban_web/live/issue_live/form_component.ex:31
 #, elixir-autogen, elixir-format
 msgid "View your issue on"
 msgstr ""
 
-#: lib/kanban_web/live/issue_live/form_component.ex:189
-#: lib/kanban_web/live/issue_live/form_component.ex:196
+#: lib/kanban_web/live/issue_live/form_component.ex:198
+#: lib/kanban_web/live/issue_live/form_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:19
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr ""
