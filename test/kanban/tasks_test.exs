@@ -76,7 +76,7 @@ defmodule Kanban.TasksTest do
 
       assert result.id == task.id
       assert Ecto.assoc_loaded?(result.task_histories)
-      assert length(result.task_histories) >= 1
+      refute Enum.empty?(result.task_histories)
       # Should have creation history
       assert Enum.any?(result.task_histories, fn h -> h.type == :creation end)
     end

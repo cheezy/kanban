@@ -152,7 +152,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert socket.assigns.task.id == task.id
       assert Ecto.assoc_loaded?(socket.assigns.task.task_histories)
       # Should have one creation history
-      assert length(socket.assigns.task.task_histories) >= 1
+      refute Enum.empty?(socket.assigns.task.task_histories)
     end
 
     test "does not show column selector when editing task" do

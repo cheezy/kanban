@@ -10,7 +10,7 @@ defmodule KanbanWeb.BoardLive.Index do
 
     {:ok,
      socket
-     |> assign(:has_boards, length(boards) > 0)
+     |> assign(:has_boards, not Enum.empty?(boards))
      |> stream(:boards, boards)}
   end
 
@@ -30,7 +30,7 @@ defmodule KanbanWeb.BoardLive.Index do
 
       {:noreply,
        socket
-       |> assign(:has_boards, length(boards) > 0)
+       |> assign(:has_boards, not Enum.empty?(boards))
        |> stream_delete(:boards, board)}
     else
       {:noreply,

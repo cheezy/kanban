@@ -27,7 +27,7 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:can_modify, user_access in [:owner, :modify])
      |> assign(:column, column)
      |> assign(:task, task)
-     |> assign(:has_columns, length(columns) > 0)
+     |> assign(:has_columns, not Enum.empty?(columns))
      |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)}
   end
@@ -54,7 +54,7 @@ defmodule KanbanWeb.BoardLive.Show do
        |> assign(:can_modify, user_access in [:owner, :modify])
        |> assign(:column, column)
        |> assign(:column_id, column.id)
-       |> assign(:has_columns, length(columns) > 0)
+       |> assign(:has_columns, not Enum.empty?(columns))
        |> stream(:columns, columns, reset: true)
        |> load_tasks_for_columns(columns)}
     end
@@ -74,7 +74,7 @@ defmodule KanbanWeb.BoardLive.Show do
       |> assign(:user_access, user_access)
       |> assign(:can_modify, user_access in [:owner, :modify])
       |> assign(:task, task)
-      |> assign(:has_columns, length(columns) > 0)
+      |> assign(:has_columns, not Enum.empty?(columns))
       |> assign(:viewing_task_id, nil)
       |> assign(:show_task_modal, false)
       |> stream(:columns, columns, reset: true)
@@ -108,7 +108,7 @@ defmodule KanbanWeb.BoardLive.Show do
        |> assign(:board, board)
        |> assign(:user_access, user_access)
        |> assign(:can_modify, user_access in [:owner, :modify])
-       |> assign(:has_columns, length(columns) > 0)
+       |> assign(:has_columns, not Enum.empty?(columns))
        |> stream(:columns, columns, reset: true)
        |> load_tasks_for_columns(columns)}
     end
@@ -130,7 +130,7 @@ defmodule KanbanWeb.BoardLive.Show do
           {:noreply,
            socket
            |> put_flash(:info, gettext("Column deleted successfully"))
-           |> assign(:has_columns, length(columns) > 0)
+           |> assign(:has_columns, not Enum.empty?(columns))
            |> stream_delete(:columns, column)}
 
         {:error, _changeset} ->
@@ -251,7 +251,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
     {:noreply,
      socket
-     |> assign(:has_columns, length(columns) > 0)
+     |> assign(:has_columns, not Enum.empty?(columns))
      |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)}
   end
