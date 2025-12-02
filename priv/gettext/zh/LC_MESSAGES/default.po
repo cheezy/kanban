@@ -73,7 +73,7 @@ msgstr "通过拖放轻松在列之间移动任务。"
 msgid "Everything You Need to Stay Organized"
 msgstr "保持井然有序所需的一切"
 
-#: lib/kanban_web/components/layouts/root.html.heex:76
+#: lib/kanban_web/components/layouts/root.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "开始使用"
@@ -88,14 +88,14 @@ msgstr "免费开始"
 msgid "In Progress"
 msgstr "进行中"
 
-#: lib/kanban_web/components/layouts/root.html.heex:73
+#: lib/kanban_web/components/layouts/root.html.heex:76
 #: lib/kanban_web/live/user_live/login.ex:75
 #: lib/kanban_web/live/user_live/registration.ex:33
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "登录"
 
-#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "退出"
@@ -120,7 +120,7 @@ msgstr "专业任务管理"
 msgid "Project Board"
 msgstr "项目看板"
 
-#: lib/kanban_web/components/layouts/root.html.heex:60
+#: lib/kanban_web/components/layouts/root.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "设置"
@@ -552,7 +552,7 @@ msgstr "中"
 msgid "Moved"
 msgstr "已移动"
 
-#: lib/kanban_web/components/layouts/root.html.heex:57
+#: lib/kanban_web/components/layouts/root.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "My Boards"
 msgstr "我的看板"
@@ -863,8 +863,8 @@ msgstr "此账户已确认。您可以登录。"
 msgid "Your account has been confirmed successfully. You can now log in."
 msgstr "您的账户已成功确认。您现在可以登录。"
 
-#: lib/kanban_web/components/layouts/root.html.heex:63
-#: lib/kanban_web/components/layouts/root.html.heex:70
+#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "About"
 msgstr "关于"
@@ -874,7 +874,7 @@ msgstr "关于"
 msgid "About Stride"
 msgstr "关于 Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:194
+#: lib/kanban_web/controllers/page_html/about.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "返回首页"
@@ -1105,3 +1105,13 @@ msgstr "为团队成员分配适当的访问权限。"
 #, elixir-autogen, elixir-format
 msgid "Go to My Boards"
 msgstr "前往我的看板"
+
+#: lib/kanban_web/components/layouts/root.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Error Tracker"
+msgstr "错误跟踪器"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "Polish and enhancements - make it beautiful and professional"
+msgstr "完善和增强 - 使其美观和专业"

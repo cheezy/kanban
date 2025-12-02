@@ -73,7 +73,7 @@ msgstr "ドラッグ&ドロップで列間のタスク移動が簡単にでき�
 msgid "Everything You Need to Stay Organized"
 msgstr "整理整頓に必要なすべて"
 
-#: lib/kanban_web/components/layouts/root.html.heex:76
+#: lib/kanban_web/components/layouts/root.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "始める"
@@ -88,14 +88,14 @@ msgstr "無料で始める"
 msgid "In Progress"
 msgstr "進行中"
 
-#: lib/kanban_web/components/layouts/root.html.heex:73
+#: lib/kanban_web/components/layouts/root.html.heex:76
 #: lib/kanban_web/live/user_live/login.ex:75
 #: lib/kanban_web/live/user_live/registration.ex:33
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "ログイン"
 
-#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "ログアウト"
@@ -120,7 +120,7 @@ msgstr "プロフェッショナルなタスク管理"
 msgid "Project Board"
 msgstr "プロジェクトボード"
 
-#: lib/kanban_web/components/layouts/root.html.heex:60
+#: lib/kanban_web/components/layouts/root.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "設定"
@@ -552,7 +552,7 @@ msgstr "中"
 msgid "Moved"
 msgstr "移動済み"
 
-#: lib/kanban_web/components/layouts/root.html.heex:57
+#: lib/kanban_web/components/layouts/root.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "My Boards"
 msgstr "マイボード"
@@ -863,8 +863,8 @@ msgstr "このアカウントは既に確認されています。ログインで
 msgid "Your account has been confirmed successfully. You can now log in."
 msgstr "アカウントが正常に確認されました。ログインできます。"
 
-#: lib/kanban_web/components/layouts/root.html.heex:63
-#: lib/kanban_web/components/layouts/root.html.heex:70
+#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "About"
 msgstr "について"
@@ -874,7 +874,7 @@ msgstr "について"
 msgid "About Stride"
 msgstr "Strideについて"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:194
+#: lib/kanban_web/controllers/page_html/about.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "ホームに戻る"
@@ -1105,3 +1105,13 @@ msgstr "チームメンバーに適切なアクセス権を割り当てます。
 #, elixir-autogen, elixir-format
 msgid "Go to My Boards"
 msgstr "マイボードへ"
+
+#: lib/kanban_web/components/layouts/root.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Error Tracker"
+msgstr "エラートラッカー"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "Polish and enhancements - make it beautiful and professional"
+msgstr "洗練と改善 - 美しくプロフェッショナルに"

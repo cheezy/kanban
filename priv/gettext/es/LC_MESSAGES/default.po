@@ -73,7 +73,7 @@ msgstr "Mueve tareas entre columnas fácilmente con arrastrar y soltar."
 msgid "Everything You Need to Stay Organized"
 msgstr "Todo Lo Que Necesitas Para Mantenerte Organizado"
 
-#: lib/kanban_web/components/layouts/root.html.heex:76
+#: lib/kanban_web/components/layouts/root.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "Comenzar"
@@ -88,14 +88,14 @@ msgstr "Comienza Gratis"
 msgid "In Progress"
 msgstr "En Progreso"
 
-#: lib/kanban_web/components/layouts/root.html.heex:73
+#: lib/kanban_web/components/layouts/root.html.heex:76
 #: lib/kanban_web/live/user_live/login.ex:75
 #: lib/kanban_web/live/user_live/registration.ex:33
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "Iniciar Sesión"
 
-#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Cerrar Sesión"
@@ -120,7 +120,7 @@ msgstr "Gestión Profesional de Tareas"
 msgid "Project Board"
 msgstr "Tablero de Proyecto"
 
-#: lib/kanban_web/components/layouts/root.html.heex:60
+#: lib/kanban_web/components/layouts/root.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Configuración"
@@ -552,7 +552,7 @@ msgstr "Medio"
 msgid "Moved"
 msgstr "Movido"
 
-#: lib/kanban_web/components/layouts/root.html.heex:57
+#: lib/kanban_web/components/layouts/root.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "My Boards"
 msgstr "Mis Tableros"
@@ -863,8 +863,8 @@ msgstr "Esta cuenta ya ha sido confirmada. Puedes iniciar sesión."
 msgid "Your account has been confirmed successfully. You can now log in."
 msgstr "Tu cuenta ha sido confirmada exitosamente. Ahora puedes iniciar sesión."
 
-#: lib/kanban_web/components/layouts/root.html.heex:63
-#: lib/kanban_web/components/layouts/root.html.heex:70
+#: lib/kanban_web/components/layouts/root.html.heex:66
+#: lib/kanban_web/components/layouts/root.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "About"
 msgstr "Acerca de"
@@ -874,7 +874,7 @@ msgstr "Acerca de"
 msgid "About Stride"
 msgstr "Acerca de Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:194
+#: lib/kanban_web/controllers/page_html/about.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "Volver al Inicio"
@@ -1105,3 +1105,13 @@ msgstr "Asigna acceso apropiado a los miembros del equipo."
 #, elixir-autogen, elixir-format
 msgid "Go to My Boards"
 msgstr "Ir a Mis Tableros"
+
+#: lib/kanban_web/components/layouts/root.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Error Tracker"
+msgstr "Rastreador de errores"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "Polish and enhancements - make it beautiful and professional"
+msgstr "Pulido y mejoras - hacerla hermosa y profesional"
