@@ -51,9 +51,9 @@
             <% task_count = length(tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
-            <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60">
+            <div class="group flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60">
               <%= if @user_access == :owner do %>
-                <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
                   <.icon name="hero-bars-3" class="h-5 w-5 text-gray-500" />
                 </div>
               <% end %>
@@ -111,14 +111,14 @@
                 </div>
               </div>
               <%= if @user_access == :owner do %>
-                <div class="flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
+                <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <.link
                     patch={~p"/boards/#{@board}/columns/#{column}/edit"}
-                    class="p-1 hover:bg-blue-50 rounded-md transition-colors"
+                    class="p-1.5 bg-white/90 hover:bg-blue-50 rounded-md transition-colors shadow-sm"
                   >
                     <.icon
                       name="hero-pencil-solid"
-                      class="h-4 w-4 text-gray-400 hover:text-blue-600 transition-colors"
+                      class="h-4 w-4 text-gray-500 hover:text-blue-600 transition-colors"
                     />
                   </.link>
                   <.link
@@ -128,11 +128,11 @@
                         "Are you sure you want to delete this column? All tasks in this column will also be deleted."
                       )
                     }
-                    class="p-1 hover:bg-red-50 rounded-md transition-colors phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait"
+                    class="p-1.5 bg-white/90 hover:bg-red-50 rounded-md transition-colors shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait"
                   >
                     <.icon
                       name="hero-trash-solid"
-                      class="h-4 w-4 text-gray-400 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
+                      class="h-4 w-4 text-gray-500 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
                     />
                   </.link>
                 </div>
