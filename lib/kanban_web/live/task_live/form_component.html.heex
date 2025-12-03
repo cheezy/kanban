@@ -83,6 +83,8 @@
                   <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
                 <% history.type == :priority_change -> %>
                   <.icon name="hero-arrow-trending-up" class="h-5 w-5 text-orange-500" />
+                <% history.type == :assignment -> %>
+                  <.icon name="hero-user-circle" class="h-5 w-5 text-purple-500" />
                 <% true -> %>
                   <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
               <% end %>
@@ -100,6 +102,23 @@
                     <span class="font-medium text-orange-600 capitalize">{history.from_priority}</span>
                     {gettext("to")}
                     <span class="font-medium text-orange-600 capitalize">{history.to_priority}</span>
+                  </p>
+                <% history.type == :assignment -> %>
+                  <p class="text-gray-900">
+                    <%= cond do %>
+                      <% history.from_user_id == nil && history.to_user_id != nil -> %>
+                        <span class="font-medium">{gettext("Assigned to")}</span>
+                        <span class="font-medium text-purple-600">{history.to_user.email}</span>
+                      <% history.from_user_id != nil && history.to_user_id == nil -> %>
+                        <span class="font-medium">{gettext("Unassigned from")}</span>
+                        <span class="font-medium text-purple-600">{history.from_user.email}</span>
+                      <% true -> %>
+                        <span class="font-medium">{gettext("Reassigned")}</span>
+                        {gettext("from")}
+                        <span class="font-medium text-purple-600">{history.from_user.email}</span>
+                        {gettext("to")}
+                        <span class="font-medium text-purple-600">{history.to_user.email}</span>
+                    <% end %>
                   </p>
                 <% true -> %>
                   <p class="text-gray-900">

@@ -306,6 +306,112 @@ defmodule Kanban.TasksTest do
       assert {"medium", "high"} in priorities
       assert {"high", "critical"} in priorities
     end
+
+    test "creates history record when user is assigned" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      assert task.assigned_to_id == nil
+
+      assert {:ok, updated_task} = Tasks.update_task(task, %{assigned_to_id: assigned_user.id})
+      assert updated_task.assigned_to_id == assigned_user.id
+
+      task_with_history = Tasks.get_task_with_history!(updated_task.id)
+      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assert length(assignment_histories) == 1
+      history = List.first(assignment_histories)
+      assert history.from_user_id == nil
+      assert history.to_user_id == assigned_user.id
+    end
+
+    test "creates history record when user is unassigned" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      assigned_user = user_fixture()
+      task = task_fixture(column, %{assigned_to_id: assigned_user.id})
+
+      assert task.assigned_to_id == assigned_user.id
+
+      assert {:ok, updated_task} = Tasks.update_task(task, %{assigned_to_id: nil})
+      assert updated_task.assigned_to_id == nil
+
+      task_with_history = Tasks.get_task_with_history!(updated_task.id)
+      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assert length(assignment_histories) == 1
+      history = List.first(assignment_histories)
+      assert history.from_user_id == assigned_user.id
+      assert history.to_user_id == nil
+    end
+
+    test "creates history record when user is reassigned" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      user1 = user_fixture()
+      user2 = user_fixture()
+      task = task_fixture(column, %{assigned_to_id: user1.id})
+
+      assert task.assigned_to_id == user1.id
+
+      assert {:ok, updated_task} = Tasks.update_task(task, %{assigned_to_id: user2.id})
+      assert updated_task.assigned_to_id == user2.id
+
+      task_with_history = Tasks.get_task_with_history!(updated_task.id)
+      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assert length(assignment_histories) == 1
+      history = List.first(assignment_histories)
+      assert history.from_user_id == user1.id
+      assert history.to_user_id == user2.id
+    end
+
+    test "does not create history record when assignment does not change" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      assigned_user = user_fixture()
+      task = task_fixture(column, %{assigned_to_id: assigned_user.id})
+
+      assert {:ok, _updated_task} = Tasks.update_task(task, %{title: "New Title"})
+
+      task_with_history = Tasks.get_task_with_history!(task.id)
+      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assert Enum.empty?(assignment_histories)
+    end
+
+    test "creates multiple history records for multiple assignment changes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      user1 = user_fixture()
+      user2 = user_fixture()
+      user3 = user_fixture()
+      task = task_fixture(column)
+
+      assert {:ok, task} = Tasks.update_task(task, %{assigned_to_id: user1.id})
+      assert {:ok, task} = Tasks.update_task(task, %{assigned_to_id: user2.id})
+      assert {:ok, task} = Tasks.update_task(task, %{assigned_to_id: user3.id})
+
+      task_with_history = Tasks.get_task_with_history!(task.id)
+      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assert length(assignment_histories) == 3
+
+      assignments = Enum.map(assignment_histories, fn change ->
+        {change.from_user_id, change.to_user_id}
+      end)
+
+      assert {nil, user1.id} in assignments
+      assert {user1.id, user2.id} in assignments
+      assert {user2.id, user3.id} in assignments
+    end
   end
 
   describe "delete_task/1" do

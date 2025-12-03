@@ -268,6 +268,137 @@ defmodule Kanban.Tasks.TaskHistoryTest do
       refute changeset.valid?
       assert %{type: ["move events should not have priority fields"]} = errors_on(changeset)
     end
+
+    test "valid assignment type when assigning user (from nil to user)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :assignment,
+          to_user_id: assigned_user.id
+        })
+
+      assert changeset.valid?
+    end
+
+    test "valid assignment type when unassigning user (from user to nil)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :assignment,
+          from_user_id: assigned_user.id
+        })
+
+      assert changeset.valid?
+    end
+
+    test "valid assignment type when reassigning user (from user to another user)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      user1 = user_fixture()
+      user2 = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :assignment,
+          from_user_id: user1.id,
+          to_user_id: user2.id
+        })
+
+      assert changeset.valid?
+    end
+
+    test "invalid when assignment type has column fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :assignment,
+          to_user_id: assigned_user.id,
+          from_column: "To Do"
+        })
+
+      refute changeset.valid?
+      assert %{type: ["priority_change events should not have column fields"]} = errors_on(changeset)
+    end
+
+    test "invalid when assignment type has priority fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :assignment,
+          to_user_id: assigned_user.id,
+          from_priority: "medium"
+        })
+
+      refute changeset.valid?
+      assert %{type: ["move events should not have priority fields"]} = errors_on(changeset)
+    end
+
+    test "invalid when move type has user fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :move,
+          from_column: "To Do",
+          to_column: "In Progress",
+          to_user_id: assigned_user.id
+        })
+
+      refute changeset.valid?
+      assert %{type: ["move and priority_change events should not have user fields"]} = errors_on(changeset)
+    end
+
+    test "invalid when priority_change type has user fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      assigned_user = user_fixture()
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :priority_change,
+          from_priority: "medium",
+          to_priority: "high",
+          from_user_id: assigned_user.id
+        })
+
+      refute changeset.valid?
+      assert %{type: ["move and priority_change events should not have user fields"]} = errors_on(changeset)
+    end
   end
 
   describe "database constraints" do

@@ -498,7 +498,7 @@ msgstr "Organisieren Sie Ihre Arbeit"
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/form_component.html.heex:96
 #: lib/kanban_web/live/task_live/view_component.ex:90
 #: lib/kanban_web/live/task_live/view_component.ex:121
 #, elixir-autogen, elixir-format
@@ -546,7 +546,7 @@ msgstr "Niedrig"
 msgid "Medium"
 msgstr "Mittel"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:106
+#: lib/kanban_web/live/task_live/form_component.html.heex:125
 #: lib/kanban_web/live/task_live/view_component.ex:122
 #, elixir-autogen, elixir-format
 msgid "Moved"
@@ -586,31 +586,33 @@ msgstr "WIP-Limit überschritten"
 msgid "Work"
 msgstr "Arbeit"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:99
-#: lib/kanban_web/live/task_live/form_component.html.heex:107
+#: lib/kanban_web/live/task_live/form_component.html.heex:101
+#: lib/kanban_web/live/task_live/form_component.html.heex:117
+#: lib/kanban_web/live/task_live/form_component.html.heex:126
 #: lib/kanban_web/live/task_live/view_component.ex:126
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "von"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:101
-#: lib/kanban_web/live/task_live/form_component.html.heex:109
+#: lib/kanban_web/live/task_live/form_component.html.heex:103
+#: lib/kanban_web/live/task_live/form_component.html.heex:119
+#: lib/kanban_web/live/task_live/form_component.html.heex:128
 #: lib/kanban_web/live/task_live/view_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "zu"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:145
+#: lib/kanban_web/live/task_live/form_component.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "Kommentar hinzufügen"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:138
+#: lib/kanban_web/live/task_live/form_component.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "Kommentar hinzufügen"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:144
+#: lib/kanban_web/live/task_live/form_component.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "Wird hinzugefügt..."
@@ -620,18 +622,18 @@ msgstr "Wird hinzugefügt..."
 msgid "Comment added successfully"
 msgstr "Kommentar erfolgreich hinzugefügt"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:125
+#: lib/kanban_web/live/task_live/form_component.html.heex:144
 #: lib/kanban_web/live/task_live/view_component.ex:142
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "Kommentare"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:163
+#: lib/kanban_web/live/task_live/form_component.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "No comments yet. Be the first to comment!"
 msgstr "Noch keine Kommentare. Seien Sie der Erste, der kommentiert!"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:140
+#: lib/kanban_web/live/task_live/form_component.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "Schreiben Sie hier Ihren Kommentar..."
@@ -1118,7 +1120,22 @@ msgstr "Fehler-Tracker"
 msgid "Polish and enhancements - make it beautiful and professional"
 msgstr "Verfeinerung und Verbesserungen - sie schön und professionell machen"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:98
+#: lib/kanban_web/live/task_live/form_component.html.heex:100
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority changed"
 msgstr "Priorität geändert"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:110
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Assigned to"
+msgstr "Zugewiesen an"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:116
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Reassigned"
+msgstr "Nicht zugewiesen"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:113
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Unassigned from"
+msgstr "Nicht zugewiesen"

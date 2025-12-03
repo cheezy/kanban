@@ -62,7 +62,13 @@ defmodule Kanban.Tasks do
   def get_task_with_history!(id) do
     Task
     |> Repo.get!(id)
-    |> Repo.preload(task_histories: from(h in TaskHistory, order_by: [desc: h.inserted_at]))
+    |> Repo.preload(
+      task_histories:
+        from(h in TaskHistory,
+          order_by: [desc: h.inserted_at],
+          preload: [:from_user, :to_user]
+        )
+    )
   end
 
   @doc """
@@ -84,7 +90,11 @@ defmodule Kanban.Tasks do
     |> Repo.preload([
       :assigned_to,
       :column,
-      task_histories: from(h in TaskHistory, order_by: [desc: h.inserted_at]),
+      task_histories:
+        from(h in TaskHistory,
+          order_by: [desc: h.inserted_at],
+          preload: [:from_user, :to_user]
+        ),
       comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
     ])
   end
@@ -150,15 +160,18 @@ defmodule Kanban.Tasks do
 
   """
   def update_task(%Task{} = task, attrs) do
-    # Check if priority is changing
     changeset = Task.changeset(task, attrs)
     priority_changed? = Map.has_key?(changeset.changes, :priority)
+    assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
 
     case Repo.update(changeset) do
       {:ok, updated_task} ->
-        # Create history record if priority changed
         if priority_changed? do
           create_priority_change_history(task.priority, updated_task.priority, updated_task.id)
+        end
+
+        if assignment_changed? do
+          create_assignment_history(task.assigned_to_id, updated_task.assigned_to_id, updated_task.id)
         end
 
         {:ok, updated_task}
@@ -598,6 +611,17 @@ defmodule Kanban.Tasks do
       type: :priority_change,
       from_priority: Atom.to_string(from_priority),
       to_priority: Atom.to_string(to_priority)
+    })
+    |> Repo.insert!()
+  end
+
+  defp create_assignment_history(from_user_id, to_user_id, task_id) do
+    %TaskHistory{}
+    |> TaskHistory.changeset(%{
+      task_id: task_id,
+      type: :assignment,
+      from_user_id: from_user_id,
+      to_user_id: to_user_id
     })
     |> Repo.insert!()
   end
