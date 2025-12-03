@@ -132,11 +132,24 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    concurrency: review-deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only --config ./fly.review.toml --dockerfile ./Dockerfile.review
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      
+  deploy-prod:
+    name: Deploy to Production Environment
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production'
+    concurrency: prod-deploy-group    # optional: ensure only one action runs at a time
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config ./fly.production.toml --dockerfile ./Dockerfile.production
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       
