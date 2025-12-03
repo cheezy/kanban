@@ -513,7 +513,7 @@ msgid "Critical"
 msgstr "Critique"
 
 #: lib/kanban_web/live/board_live/show.html.heex:234
-#: lib/kanban_web/live/issue_live/form_component.ex:219
+#: lib/kanban_web/live/issue_live/form_component.ex:243
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
 #, elixir-autogen, elixir-format
@@ -1004,12 +1004,12 @@ msgstr "Brève description du problème"
 msgid "Failed to submit issue"
 msgstr "Échec de la soumission du problème"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:220
+#: lib/kanban_web/live/issue_live/form_component.ex:244
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "Demande de fonctionnalité"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:168
+#: lib/kanban_web/live/issue_live/form_component.ex:192
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr "L'intégration GitHub n'est pas configurée"
@@ -1044,7 +1044,7 @@ msgstr "Soumettre un autre problème"
 msgid "Submitting..."
 msgstr "Envoi en cours..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:221
+#: lib/kanban_web/live/issue_live/form_component.ex:245
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "Traduction"
@@ -1054,8 +1054,8 @@ msgstr "Traduction"
 msgid "View your issue on"
 msgstr "Voir votre problème sur"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:198
-#: lib/kanban_web/live/issue_live/form_component.ex:205
+#: lib/kanban_web/live/issue_live/form_component.ex:222
+#: lib/kanban_web/live/issue_live/form_component.ex:229
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
 msgstr "ne peut pas être vide"
@@ -1139,3 +1139,8 @@ msgstr "Non assigné"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "Non assigné"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:155
+#, elixir-autogen, elixir-format
+msgid "See existing issues"
+msgstr "Voir les problèmes existants"

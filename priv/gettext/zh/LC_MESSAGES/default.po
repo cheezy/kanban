@@ -513,7 +513,7 @@ msgid "Critical"
 msgstr "紧急"
 
 #: lib/kanban_web/live/board_live/show.html.heex:234
-#: lib/kanban_web/live/issue_live/form_component.ex:219
+#: lib/kanban_web/live/issue_live/form_component.ex:243
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
 #, elixir-autogen, elixir-format
@@ -1004,12 +1004,12 @@ msgstr "问题的简要描述"
 msgid "Failed to submit issue"
 msgstr "提交问题失败"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:220
+#: lib/kanban_web/live/issue_live/form_component.ex:244
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "功能请求"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:168
+#: lib/kanban_web/live/issue_live/form_component.ex:192
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr "GitHub 集成未配置"
@@ -1044,7 +1044,7 @@ msgstr "提交另一个问题"
 msgid "Submitting..."
 msgstr "正在提交..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:221
+#: lib/kanban_web/live/issue_live/form_component.ex:245
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "翻译"
@@ -1054,8 +1054,8 @@ msgstr "翻译"
 msgid "View your issue on"
 msgstr "在以下位置查看您的问题"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:198
-#: lib/kanban_web/live/issue_live/form_component.ex:205
+#: lib/kanban_web/live/issue_live/form_component.ex:222
+#: lib/kanban_web/live/issue_live/form_component.ex:229
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
 msgstr "不能为空"
@@ -1139,3 +1139,8 @@ msgstr "未分配"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "未分配"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:155
+#, elixir-autogen, elixir-format
+msgid "See existing issues"
+msgstr "查看现有问题"

@@ -513,7 +513,7 @@ msgid "Critical"
 msgstr "重大"
 
 #: lib/kanban_web/live/board_live/show.html.heex:234
-#: lib/kanban_web/live/issue_live/form_component.ex:219
+#: lib/kanban_web/live/issue_live/form_component.ex:243
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
 #, elixir-autogen, elixir-format
@@ -1004,12 +1004,12 @@ msgstr "問題の簡単な説明"
 msgid "Failed to submit issue"
 msgstr "問題の送信に失敗しました"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:220
+#: lib/kanban_web/live/issue_live/form_component.ex:244
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "機能リクエスト"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:168
+#: lib/kanban_web/live/issue_live/form_component.ex:192
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr "GitHub統合が設定されていません"
@@ -1044,7 +1044,7 @@ msgstr "別の問題を送信"
 msgid "Submitting..."
 msgstr "送信中..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:221
+#: lib/kanban_web/live/issue_live/form_component.ex:245
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "翻訳"
@@ -1054,8 +1054,8 @@ msgstr "翻訳"
 msgid "View your issue on"
 msgstr "問題を確認する："
 
-#: lib/kanban_web/live/issue_live/form_component.ex:198
-#: lib/kanban_web/live/issue_live/form_component.ex:205
+#: lib/kanban_web/live/issue_live/form_component.ex:222
+#: lib/kanban_web/live/issue_live/form_component.ex:229
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
 msgstr "空白にはできません"
@@ -1139,3 +1139,8 @@ msgstr "未割り当て"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "未割り当て"
+
+#: lib/kanban_web/live/issue_live/form_component.ex:155
+#, elixir-autogen, elixir-format
+msgid "See existing issues"
+msgstr "既存の問題を見る"
