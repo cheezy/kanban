@@ -498,7 +498,7 @@ msgstr "Organiza Tu Trabajo"
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "No se puede mover tarea: la columna ha alcanzado su límite WIP"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:90
+#: lib/kanban_web/live/task_live/form_component.html.heex:94
 #: lib/kanban_web/live/task_live/view_component.ex:90
 #: lib/kanban_web/live/task_live/view_component.ex:121
 #, elixir-autogen, elixir-format
@@ -546,7 +546,7 @@ msgstr "Bajo"
 msgid "Medium"
 msgstr "Medio"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/form_component.html.heex:106
 #: lib/kanban_web/live/task_live/view_component.ex:122
 #, elixir-autogen, elixir-format
 msgid "Moved"
@@ -586,29 +586,31 @@ msgstr "Límite WIP excedido"
 msgid "Work"
 msgstr "Trabajo"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:95
+#: lib/kanban_web/live/task_live/form_component.html.heex:99
+#: lib/kanban_web/live/task_live/form_component.html.heex:107
 #: lib/kanban_web/live/task_live/view_component.ex:126
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "de"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:97
+#: lib/kanban_web/live/task_live/form_component.html.heex:101
+#: lib/kanban_web/live/task_live/form_component.html.heex:109
 #: lib/kanban_web/live/task_live/view_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "a"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:133
+#: lib/kanban_web/live/task_live/form_component.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "Agregar Comentario"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:126
+#: lib/kanban_web/live/task_live/form_component.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "Agregar un comentario"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:132
+#: lib/kanban_web/live/task_live/form_component.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "Agregando..."
@@ -618,18 +620,18 @@ msgstr "Agregando..."
 msgid "Comment added successfully"
 msgstr "Comentario agregado exitosamente"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:113
+#: lib/kanban_web/live/task_live/form_component.html.heex:125
 #: lib/kanban_web/live/task_live/view_component.ex:142
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "Comentarios"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:151
+#: lib/kanban_web/live/task_live/form_component.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "No comments yet. Be the first to comment!"
 msgstr "Aún no hay comentarios. ¡Sé el primero en comentar!"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:128
+#: lib/kanban_web/live/task_live/form_component.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "Escribe tu comentario aquí..."
@@ -1115,3 +1117,8 @@ msgstr "Rastreador de errores"
 #, elixir-autogen, elixir-format
 msgid "Polish and enhancements - make it beautiful and professional"
 msgstr "Pulido y mejoras - hacerla hermosa y profesional"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:98
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Priority changed"
+msgstr "Prioridad cambiada"

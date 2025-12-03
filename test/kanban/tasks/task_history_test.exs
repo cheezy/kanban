@@ -137,7 +137,7 @@ defmodule Kanban.Tasks.TaskHistoryTest do
 
       refute changeset.valid?
 
-      assert %{type: ["creation events should not have from_column or to_column"]} =
+      assert %{type: ["creation events should not have any history fields"]} =
                errors_on(changeset)
     end
 
@@ -156,7 +156,7 @@ defmodule Kanban.Tasks.TaskHistoryTest do
 
       refute changeset.valid?
 
-      assert %{type: ["creation events should not have from_column or to_column"]} =
+      assert %{type: ["creation events should not have any history fields"]} =
                errors_on(changeset)
     end
 
@@ -176,8 +176,97 @@ defmodule Kanban.Tasks.TaskHistoryTest do
 
       refute changeset.valid?
 
-      assert %{type: ["creation events should not have from_column or to_column"]} =
+      assert %{type: ["creation events should not have any history fields"]} =
                errors_on(changeset)
+    end
+
+    test "valid priority_change type with required fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :priority_change,
+          from_priority: "medium",
+          to_priority: "high"
+        })
+
+      assert changeset.valid?
+    end
+
+    test "invalid when priority_change type missing from_priority" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :priority_change,
+          to_priority: "high"
+        })
+
+      refute changeset.valid?
+      assert %{from_priority: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "invalid when priority_change type missing to_priority" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :priority_change,
+          from_priority: "medium"
+        })
+
+      refute changeset.valid?
+      assert %{to_priority: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "invalid when priority_change type has column fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :priority_change,
+          from_priority: "medium",
+          to_priority: "high",
+          from_column: "To Do"
+        })
+
+      refute changeset.valid?
+      assert %{type: ["priority_change events should not have column fields"]} = errors_on(changeset)
+    end
+
+    test "invalid when move type has priority fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      changeset =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: task.id,
+          type: :move,
+          from_column: "To Do",
+          to_column: "In Progress",
+          from_priority: "medium"
+        })
+
+      refute changeset.valid?
+      assert %{type: ["move events should not have priority fields"]} = errors_on(changeset)
     end
   end
 

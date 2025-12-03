@@ -498,7 +498,7 @@ msgstr "组织您的工作"
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "无法移动任务：列已达到在制品限制"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:90
+#: lib/kanban_web/live/task_live/form_component.html.heex:94
 #: lib/kanban_web/live/task_live/view_component.ex:90
 #: lib/kanban_web/live/task_live/view_component.ex:121
 #, elixir-autogen, elixir-format
@@ -546,7 +546,7 @@ msgstr "低"
 msgid "Medium"
 msgstr "中"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/form_component.html.heex:106
 #: lib/kanban_web/live/task_live/view_component.ex:122
 #, elixir-autogen, elixir-format
 msgid "Moved"
@@ -586,29 +586,31 @@ msgstr "超出在制品限制"
 msgid "Work"
 msgstr "工作"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:95
+#: lib/kanban_web/live/task_live/form_component.html.heex:99
+#: lib/kanban_web/live/task_live/form_component.html.heex:107
 #: lib/kanban_web/live/task_live/view_component.ex:126
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "从"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:97
+#: lib/kanban_web/live/task_live/form_component.html.heex:101
+#: lib/kanban_web/live/task_live/form_component.html.heex:109
 #: lib/kanban_web/live/task_live/view_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "到"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:133
+#: lib/kanban_web/live/task_live/form_component.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:126
+#: lib/kanban_web/live/task_live/form_component.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:132
+#: lib/kanban_web/live/task_live/form_component.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "正在添加..."
@@ -618,18 +620,18 @@ msgstr "正在添加..."
 msgid "Comment added successfully"
 msgstr "评论添加成功"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:113
+#: lib/kanban_web/live/task_live/form_component.html.heex:125
 #: lib/kanban_web/live/task_live/view_component.ex:142
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:151
+#: lib/kanban_web/live/task_live/form_component.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "No comments yet. Be the first to comment!"
 msgstr "尚无评论。成为第一个评论的人！"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:128
+#: lib/kanban_web/live/task_live/form_component.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "在此处写下您的评论..."
@@ -1115,3 +1117,8 @@ msgstr "错误跟踪器"
 #, elixir-autogen, elixir-format
 msgid "Polish and enhancements - make it beautiful and professional"
 msgstr "完善和增强 - 使其美观和专业"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:98
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Priority changed"
+msgstr "优先级已更改"

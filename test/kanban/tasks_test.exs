@@ -235,6 +235,77 @@ defmodule Kanban.TasksTest do
       assert {:error, %Ecto.Changeset{}} =
                Tasks.update_task(task, %{title: nil})
     end
+
+    test "creates history record when priority changes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{priority: :medium})
+
+      # Update task priority
+      assert {:ok, %Task{} = updated_task} =
+               Tasks.update_task(task, %{priority: :high})
+
+      assert updated_task.priority == :high
+
+      # Check that a history record was created
+      task_with_history = Tasks.get_task_with_history!(updated_task.id)
+      priority_changes = Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
+
+      assert length(priority_changes) == 1
+      priority_change = hd(priority_changes)
+      assert priority_change.from_priority == "medium"
+      assert priority_change.to_priority == "high"
+      assert priority_change.from_column == nil
+      assert priority_change.to_column == nil
+    end
+
+    test "does not create history record when priority does not change" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{priority: :medium})
+
+      initial_history_count = length(Tasks.get_task_with_history!(task.id).task_histories)
+
+      # Update task without changing priority
+      assert {:ok, %Task{}} = Tasks.update_task(task, %{title: "New Title"})
+
+      # Check that no new history record was created
+      task_with_history = Tasks.get_task_with_history!(task.id)
+      assert length(task_with_history.task_histories) == initial_history_count
+    end
+
+    test "creates multiple history records for multiple priority changes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{priority: :low})
+
+      # First change: low -> medium
+      assert {:ok, task} = Tasks.update_task(task, %{priority: :medium})
+
+      # Second change: medium -> high
+      assert {:ok, task} = Tasks.update_task(task, %{priority: :high})
+
+      # Third change: high -> critical
+      assert {:ok, task} = Tasks.update_task(task, %{priority: :critical})
+
+      # Check that three priority change history records were created
+      task_with_history = Tasks.get_task_with_history!(task.id)
+      priority_changes = Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
+
+      assert length(priority_changes) == 3
+
+      # Verify we have all the expected changes (order may vary in tests due to timing)
+      priorities = Enum.map(priority_changes, fn change ->
+        {change.from_priority, change.to_priority}
+      end)
+
+      assert {"low", "medium"} in priorities
+      assert {"medium", "high"} in priorities
+      assert {"high", "critical"} in priorities
+    end
   end
 
   describe "delete_task/1" do

@@ -78,25 +78,37 @@
         <%= for history <- @task.task_histories do %>
           <div class="flex items-start gap-3 text-sm">
             <div class="flex-shrink-0 mt-0.5">
-              <%= if history.type == :creation do %>
-                <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
-              <% else %>
-                <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
+              <%= cond do %>
+                <% history.type == :creation -> %>
+                  <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
+                <% history.type == :priority_change -> %>
+                  <.icon name="hero-arrow-trending-up" class="h-5 w-5 text-orange-500" />
+                <% true -> %>
+                  <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
               <% end %>
             </div>
             <div class="flex-1">
-              <%= if history.type == :creation do %>
-                <p class="text-gray-900">
-                  <span class="font-medium">{gettext("Created")}</span>
-                </p>
-              <% else %>
-                <p class="text-gray-900">
-                  <span class="font-medium">{gettext("Moved")}</span>
-                  {gettext("from")}
-                  <span class="font-medium text-blue-600">{history.from_column}</span>
-                  {gettext("to")}
-                  <span class="font-medium text-blue-600">{history.to_column}</span>
-                </p>
+              <%= cond do %>
+                <% history.type == :creation -> %>
+                  <p class="text-gray-900">
+                    <span class="font-medium">{gettext("Created")}</span>
+                  </p>
+                <% history.type == :priority_change -> %>
+                  <p class="text-gray-900">
+                    <span class="font-medium">{gettext("Priority changed")}</span>
+                    {gettext("from")}
+                    <span class="font-medium text-orange-600 capitalize">{history.from_priority}</span>
+                    {gettext("to")}
+                    <span class="font-medium text-orange-600 capitalize">{history.to_priority}</span>
+                  </p>
+                <% true -> %>
+                  <p class="text-gray-900">
+                    <span class="font-medium">{gettext("Moved")}</span>
+                    {gettext("from")}
+                    <span class="font-medium text-blue-600">{history.from_column}</span>
+                    {gettext("to")}
+                    <span class="font-medium text-blue-600">{history.to_column}</span>
+                  </p>
               <% end %>
               <p class="text-xs text-gray-500 mt-0.5">
                 {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}

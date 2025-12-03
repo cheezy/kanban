@@ -150,9 +150,22 @@ defmodule Kanban.Tasks do
 
   """
   def update_task(%Task{} = task, attrs) do
-    task
-    |> Task.changeset(attrs)
-    |> Repo.update()
+    # Check if priority is changing
+    changeset = Task.changeset(task, attrs)
+    priority_changed? = Map.has_key?(changeset.changes, :priority)
+
+    case Repo.update(changeset) do
+      {:ok, updated_task} ->
+        # Create history record if priority changed
+        if priority_changed? do
+          create_priority_change_history(task.priority, updated_task.priority, updated_task.id)
+        end
+
+        {:ok, updated_task}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -574,6 +587,17 @@ defmodule Kanban.Tasks do
       type: :move,
       from_column: from_column_name,
       to_column: to_column_name
+    })
+    |> Repo.insert!()
+  end
+
+  defp create_priority_change_history(from_priority, to_priority, task_id) do
+    %TaskHistory{}
+    |> TaskHistory.changeset(%{
+      task_id: task_id,
+      type: :priority_change,
+      from_priority: Atom.to_string(from_priority),
+      to_priority: Atom.to_string(to_priority)
     })
     |> Repo.insert!()
   end
