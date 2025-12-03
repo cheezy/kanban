@@ -108,16 +108,16 @@
                     <%= cond do %>
                       <% history.from_user_id == nil && history.to_user_id != nil -> %>
                         <span class="font-medium">{gettext("Assigned to")}</span>
-                        <span class="font-medium text-purple-600">{history.to_user.email}</span>
+                        <span class="font-medium text-purple-600">{history.to_user.name}</span>
                       <% history.from_user_id != nil && history.to_user_id == nil -> %>
                         <span class="font-medium">{gettext("Unassigned from")}</span>
-                        <span class="font-medium text-purple-600">{history.from_user.email}</span>
+                        <span class="font-medium text-purple-600">{history.from_user.name}</span>
                       <% true -> %>
                         <span class="font-medium">{gettext("Reassigned")}</span>
                         {gettext("from")}
-                        <span class="font-medium text-purple-600">{history.from_user.email}</span>
+                        <span class="font-medium text-purple-600">{history.from_user.name}</span>
                         {gettext("to")}
-                        <span class="font-medium text-purple-600">{history.to_user.email}</span>
+                        <span class="font-medium text-purple-600">{history.to_user.name}</span>
                     <% end %>
                   </p>
                 <% true -> %>
