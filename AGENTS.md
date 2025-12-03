@@ -8,7 +8,7 @@ This is a web application written using the Phoenix web framework.
 - Use the TideWave mcp server to learn about and understand the running application
 - **NEVER use Playwright MCP tools** (`mcp__playwright__*`) for browser interaction. The user has Safari running with the application and TideWave connected. **ALWAYS use `mcp__Tidewave-Web__browser_eval`** for browser testing and verification
 - When you add a new dependency or update an existing dependency run `mix usage_rules.sync AGENTS.md --all --link-to-folder deps --inline usage_rules:all` to update the AGENTS.md file
-- Always provide a French translation of all text that is visible in the UI
+- Always provide translations of all text that is visible in the UI
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 
 ### UI/UX guidelines
