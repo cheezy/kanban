@@ -49,10 +49,10 @@
             <%= if @current_scope do %>
               <.user_badge email={@current_scope.user.email} />
               <%= if @current_scope.user.type == :admin do %>
-                <.nav_link href="/admin/dashboard">
+                <.nav_link href={~p"/admin/dashboard"}>
                   {gettext("Dashboard")}
                 </.nav_link>
-                <.nav_link href="/admin/errors">
+                <.nav_link href={~p"/admin/errors"}>
                   {gettext("Error Tracker")}
                 </.nav_link>
               <% end %>
