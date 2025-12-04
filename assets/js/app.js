@@ -28,6 +28,7 @@ import SortableHook from "./hooks/sortable"
 import ColumnSortableHook from "./hooks/column_sortable"
 import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import Dropdown from "./hooks/dropdown"
+import PasswordToggle from "./hooks/password_toggle"
 import topbar from "../vendor/topbar"
 
 const MyHooks = {
@@ -36,6 +37,7 @@ const MyHooks = {
   ColumnSortable: ColumnSortableHook,
   DelayedModalClickAway,
   Dropdown,
+  PasswordToggle,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
