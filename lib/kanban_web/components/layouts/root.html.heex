@@ -48,7 +48,6 @@
           <div class="flex items-center gap-4">
             <%= if @current_scope do %>
               <.user_badge email={@current_scope.user.email} />
-              {@current_scope.user.type}
               <%= if @current_scope.user.type == :admin do %>
                 <.nav_link href={~p"/admin/dashboard"}>
                   {gettext("Dashboard")}
