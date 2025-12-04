@@ -144,7 +144,7 @@ jobs:
     name: Deploy to Production Environment
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/production'
+    if: github.ref == 'refs/heads/release'
     concurrency: prod-deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
