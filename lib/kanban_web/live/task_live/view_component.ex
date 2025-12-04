@@ -108,24 +108,47 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <%= for history <- @task.task_histories do %>
               <div class="flex items-start gap-2 text-sm">
                 <div class="mt-0.5">
-                  <%= if history.type == :creation do %>
-                    <.icon name="hero-plus-circle" class="w-4 h-4 text-green-600" />
-                  <% else %>
-                    <.icon name="hero-arrow-right-circle" class="w-4 h-4 text-blue-600" />
+                  <%= case history.type do %>
+                    <% :creation -> %>
+                      <.icon name="hero-plus-circle" class="w-4 h-4 text-green-600" />
+                    <% :move -> %>
+                      <.icon name="hero-arrow-right-circle" class="w-4 h-4 text-blue-600" />
+                    <% :priority_change -> %>
+                      <.icon name="hero-exclamation-circle" class="w-4 h-4 text-orange-600" />
+                    <% :assignment -> %>
+                      <.icon name="hero-user-circle" class="w-4 h-4 text-purple-600" />
                   <% end %>
                 </div>
                 <div class="flex-1">
                   <p class="text-gray-900">
-                    <span class="font-semibold">
-                      {case history.type do
-                        :creation -> gettext("Created")
-                        :move -> gettext("Moved")
-                      end}
-                    </span>
-                    <%= if history.type == :move do %>
-                      {gettext("from")}
-                      <span class="font-semibold">{history.from_column}</span> {gettext("to")}
-                      <span class="font-semibold">{history.to_column}</span>
+                    <%= case history.type do %>
+                      <% :creation -> %>
+                        <span class="font-semibold">{gettext("Created")}</span>
+                      <% :move -> %>
+                        <span class="font-semibold">{gettext("Moved")}</span>
+                        {gettext("from")}
+                        <span class="font-semibold">{history.from_column}</span> {gettext("to")}
+                        <span class="font-semibold">{history.to_column}</span>
+                      <% :priority_change -> %>
+                        <span class="font-semibold">{gettext("Priority changed")}</span>
+                        {gettext("from")}
+                        <span class="font-semibold">{history.from_priority}</span> {gettext("to")}
+                        <span class="font-semibold">{history.to_priority}</span>
+                      <% :assignment -> %>
+                        <%= cond do %>
+                          <% history.from_user_id == nil && history.to_user_id != nil -> %>
+                            <span class="font-semibold">{gettext("Assigned to")}</span>
+                            <span class="font-semibold text-purple-600">{history.to_user.name}</span>
+                          <% history.from_user_id != nil && history.to_user_id == nil -> %>
+                            <span class="font-semibold">{gettext("Unassigned from")}</span>
+                            <span class="font-semibold text-purple-600">{history.from_user.name}</span>
+                          <% true -> %>
+                            <span class="font-semibold">{gettext("Reassigned")}</span>
+                            {gettext("from")}
+                            <span class="font-semibold text-purple-600">{history.from_user.name}</span>
+                            {gettext("to")}
+                            <span class="font-semibold text-purple-600">{history.to_user.name}</span>
+                        <% end %>
                     <% end %>
                   </p>
                   <p class="text-xs text-gray-500">

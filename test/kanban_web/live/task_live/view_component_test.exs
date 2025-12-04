@@ -405,5 +405,168 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       refute result =~ "Edit"
     end
+
+    test "displays priority change history with from and to priorities", %{task: task} do
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :priority_change,
+        from_priority: "low",
+        to_priority: "high",
+        inserted_at: ~U[2024-01-15 10:30:00Z]
+      })
+      |> Repo.insert!()
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Priority changed"
+      assert result =~ "from"
+      assert result =~ "low"
+      assert result =~ "to"
+      assert result =~ "high"
+      assert result =~ "hero-exclamation-circle"
+      assert result =~ "text-orange-600"
+    end
+
+    test "displays assignment history when user is assigned (nil to user)", %{task: task} do
+      user = user_fixture(%{name: "Jane Smith"})
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :assignment,
+        from_user_id: nil,
+        to_user_id: user.id,
+        inserted_at: ~U[2024-01-15 10:30:00Z]
+      })
+      |> Repo.insert!()
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Assigned to"
+      assert result =~ "Jane Smith"
+      assert result =~ "hero-user-circle"
+      assert result =~ "text-purple-600"
+    end
+
+    test "displays assignment history when user is unassigned (user to nil)", %{task: task} do
+      user = user_fixture(%{name: "Bob Jones"})
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :assignment,
+        from_user_id: user.id,
+        to_user_id: nil,
+        inserted_at: ~U[2024-01-15 10:30:00Z]
+      })
+      |> Repo.insert!()
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Unassigned from"
+      assert result =~ "Bob Jones"
+      assert result =~ "hero-user-circle"
+      assert result =~ "text-purple-600"
+    end
+
+    test "displays assignment history when user is reassigned (user to user)", %{task: task} do
+      user1 = user_fixture(%{name: "Alice Brown"})
+      user2 = user_fixture(%{name: "Charlie Green"})
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :assignment,
+        from_user_id: user1.id,
+        to_user_id: user2.id,
+        inserted_at: ~U[2024-01-15 10:30:00Z]
+      })
+      |> Repo.insert!()
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Reassigned"
+      assert result =~ "from"
+      assert result =~ "Alice Brown"
+      assert result =~ "to"
+      assert result =~ "Charlie Green"
+      assert result =~ "hero-user-circle"
+      assert result =~ "text-purple-600"
+    end
+
+    test "displays all history types in order", %{task: task} do
+      user1 = user_fixture(%{name: "John Doe"})
+      user2 = user_fixture(%{name: "Jane Doe"})
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :creation,
+        inserted_at: ~U[2024-01-15 10:00:00Z]
+      })
+      |> Repo.insert!()
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :move,
+        from_column: "To Do",
+        to_column: "In Progress",
+        inserted_at: ~U[2024-01-15 11:00:00Z]
+      })
+      |> Repo.insert!()
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :priority_change,
+        from_priority: "low",
+        to_priority: "critical",
+        inserted_at: ~U[2024-01-15 12:00:00Z]
+      })
+      |> Repo.insert!()
+
+      %TaskHistory{}
+      |> TaskHistory.changeset(%{
+        task_id: task.id,
+        type: :assignment,
+        from_user_id: user1.id,
+        to_user_id: user2.id,
+        inserted_at: ~U[2024-01-15 13:00:00Z]
+      })
+      |> Repo.insert!()
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Created"
+      assert result =~ "Moved"
+      assert result =~ "Priority changed"
+      assert result =~ "Reassigned"
+      assert result =~ "hero-plus-circle"
+      assert result =~ "hero-arrow-right-circle"
+      assert result =~ "hero-exclamation-circle"
+      assert result =~ "hero-user-circle"
+    end
   end
 end
