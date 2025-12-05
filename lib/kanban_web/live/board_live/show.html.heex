@@ -172,7 +172,8 @@
                     class={[
                       "group task-card p-3 bg-gradient-to-br from-white to-gray-50/50 rounded-lg shadow-md hover:shadow-xl border border-gray-200/60 hover:border-blue-300/50 transition-all duration-200 transform hover:-translate-y-0.5 relative overflow-hidden",
                       @can_modify && "cursor-move",
-                      task.assigned_to_id == @current_scope.user.id && "border-l-4 border-l-green-500"
+                      task.assigned_to_id == @current_scope.user.id && "border-l-4 border-l-green-500",
+                      is_nil(task.assigned_to_id) && "border-l-4 border-l-yellow-500"
                     ]}
                     data-id={task.id}
                   >
