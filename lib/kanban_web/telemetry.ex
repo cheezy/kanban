@@ -52,6 +52,12 @@ defmodule KanbanWeb.Telemetry do
         unit: {:native, :millisecond}
       ),
 
+      # User Metrics
+      counter("kanban.user.login.count",
+        description: "Total number of user logins"
+      ),
+
+
       # Database Metrics
       summary("kanban.repo.query.total_time",
         unit: {:native, :millisecond},
@@ -80,6 +86,7 @@ defmodule KanbanWeb.Telemetry do
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),
       summary("vm.total_run_queue_lengths.io")
+
     ]
   end
 
