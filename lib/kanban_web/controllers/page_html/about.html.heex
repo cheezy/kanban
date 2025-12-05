@@ -20,9 +20,17 @@
               "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
             )}
           </p>
-          <p class="text-gray-600 leading-relaxed">
+          <p class="text-gray-600 leading-relaxed mb-4">
             {gettext("See the entire process for yourself in the ")}
             <strong>{gettext("The Blog")}</strong> {gettext("section below.")}
+          </p>
+          <p class="text-gray-600 leading-relaxed">
+            <.link
+              href={~p"/tango"}
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              {gettext("Read about the people behind this app")}
+            </.link>
           </p>
         </section>
 

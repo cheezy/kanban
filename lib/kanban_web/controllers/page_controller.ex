@@ -9,6 +9,10 @@ defmodule KanbanWeb.PageController do
     render(conn, :about)
   end
 
+  def tango(conn, _params) do
+    render(conn, :tango)
+  end
+
   def set_locale(conn, %{"locale" => locale}) do
     conn
     |> KanbanWeb.Plugs.Locale.set_locale(locale)

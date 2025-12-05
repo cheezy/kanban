@@ -1,0 +1,55 @@
+<main class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-8">
+        {gettext("About Tango")}
+      </h1>
+
+      <div class="prose prose-lg max-w-none">
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+            {gettext("The People Behind This App")}
+          </h2>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            {gettext("This application was created by the team at Tango, a company dedicated to building modern software solutions using cutting-edge technology and AI-assisted development.")}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+            {gettext("Our Mission")}
+          </h2>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            {gettext("We believe in leveraging the power of AI to create better software faster, while maintaining high quality standards and best practices.")}
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+            {gettext("Contact Us")}
+          </h2>
+          <p class="text-gray-600 leading-relaxed">
+            {gettext("For more information about Tango and our projects, please visit our website or reach out to our team.")}
+          </p>
+        </section>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-gray-200">
+        <.link
+          href={~p"/about"}
+          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          {gettext("Back to About")}
+        </.link>
+      </div>
+    </div>
+  </div>
+</main>
