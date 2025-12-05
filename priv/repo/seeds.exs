@@ -10,11 +10,8 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-alias Kanban.Accounts.User
 alias Kanban.Accounts
 alias Kanban.Repo
-
-Repo.delete_all(User)
 
 {:ok, user1} =
   Accounts.register_user(%{
