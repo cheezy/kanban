@@ -53,10 +53,22 @@ defmodule KanbanWeb.Telemetry do
       ),
 
       # User Metrics
+      sum("kanban.user.registration.count",
+        description: "Total number of user registrations"
+      ),
       counter("kanban.user.login.count",
         description: "Total number of user logins"
       ),
 
+      # Board Metrics
+      sum("kanban.board.creation.count",
+        description: "Total number of boards created"
+      ),
+
+      # Task Metrics
+      sum("kanban.task.creation.count",
+        description: "Total number of tasks created"
+      ),
 
       # Database Metrics
       summary("kanban.repo.query.total_time",

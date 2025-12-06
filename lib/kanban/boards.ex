@@ -127,20 +127,34 @@ defmodule Kanban.Boards do
 
   """
   def create_board(user, attrs \\ %{}) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
-    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
-      BoardUser.changeset(%BoardUser{}, %{
-        board_id: board.id,
-        user_id: user.id,
-        access: :owner
-      })
-    end)
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{board: board}} -> {:ok, board}
-      {:error, :board, changeset, _} -> {:error, changeset}
-      {:error, :board_user, changeset, _} -> {:error, changeset}
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
+      |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
+        BoardUser.changeset(%BoardUser{}, %{
+          board_id: board.id,
+          user_id: user.id,
+          access: :owner
+        })
+      end)
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{board: board}} -> {:ok, board}
+        {:error, :board, changeset, _} -> {:error, changeset}
+        {:error, :board_user, changeset, _} -> {:error, changeset}
+      end
+
+    case result do
+      {:ok, board} ->
+        :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{
+          board_id: board.id,
+          user_id: user.id
+        })
+
+        {:ok, board}
+
+      error ->
+        error
     end
   end
 
