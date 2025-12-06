@@ -77,9 +77,19 @@ defmodule Kanban.Accounts do
 
   """
   def register_user(attrs) do
-    %User{}
-    |> User.registration_changeset(attrs)
-    |> Repo.insert()
+    result =
+      %User{}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, user} ->
+        :telemetry.execute([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
+        {:ok, user}
+
+      error ->
+        error
+    end
   end
 
   @doc """

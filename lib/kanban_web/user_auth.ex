@@ -118,6 +118,8 @@ defmodule KanbanWeb.UserAuth do
     token = Accounts.generate_user_session_token(user)
     remember_me = get_session(conn, :user_remember_me)
 
+    :telemetry.execute([:kanban, :user, :login], %{count: 1}, %{user_id: user.id})
+
     conn
     |> renew_session(user)
     |> put_token_in_session(token)

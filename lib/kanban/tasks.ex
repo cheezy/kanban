@@ -118,34 +118,53 @@ defmodule Kanban.Tasks do
   def create_task(column, attrs \\ %{}) do
     # Check WIP limit before creating
     if can_add_task?(column) do
-      next_position = get_next_position(column)
-      task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
-      identifier = generate_identifier(column, task_type)
+      attrs = prepare_task_creation_attrs(column, attrs)
 
-      attrs =
-        attrs
-        |> prepare_task_attrs(next_position)
-        |> Map.put(:identifier, identifier)
-
-      # Use Multi to insert task and history in a transaction
-      Ecto.Multi.new()
-      |> Ecto.Multi.insert(:task, Task.changeset(%Task{column_id: column.id}, attrs))
-      |> Ecto.Multi.insert(:history, fn %{task: task} ->
-        TaskHistory.changeset(%TaskHistory{}, %{
-          task_id: task.id,
-          type: :creation
-        })
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{task: task}} -> {:ok, task}
-        {:error, :task, changeset, _} -> {:error, changeset}
-        {:error, :history, changeset, _} -> {:error, changeset}
-      end
+      column
+      |> insert_task_with_history(attrs)
+      |> emit_task_creation_telemetry(column)
     else
       {:error, :wip_limit_reached}
     end
   end
+
+  defp prepare_task_creation_attrs(column, attrs) do
+    next_position = get_next_position(column)
+    task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
+    identifier = generate_identifier(column, task_type)
+
+    attrs
+    |> prepare_task_attrs(next_position)
+    |> Map.put(:identifier, identifier)
+  end
+
+  defp insert_task_with_history(column, attrs) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:task, Task.changeset(%Task{column_id: column.id}, attrs))
+    |> Ecto.Multi.insert(:history, fn %{task: task} ->
+      TaskHistory.changeset(%TaskHistory{}, %{
+        task_id: task.id,
+        type: :creation
+      })
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{task: task}} -> {:ok, task}
+      {:error, :task, changeset, _} -> {:error, changeset}
+      {:error, :history, changeset, _} -> {:error, changeset}
+    end
+  end
+
+  defp emit_task_creation_telemetry({:ok, task} = result, column) do
+    :telemetry.execute([:kanban, :task, :creation], %{count: 1}, %{
+      task_id: task.id,
+      column_id: column.id
+    })
+
+    result
+  end
+
+  defp emit_task_creation_telemetry(error, _column), do: error
 
   @doc """
   Updates a task.

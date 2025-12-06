@@ -14,7 +14,7 @@ defmodule KanbanWeb.Router do
 
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
     }
 
     plug :fetch_current_scope_for_user
@@ -57,7 +57,11 @@ defmodule KanbanWeb.Router do
   scope "/admin" do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
 
-    live_dashboard "/dashboard", metrics: KanbanWeb.Telemetry
+    live_dashboard "/dashboard",
+      metrics: KanbanWeb.Telemetry,
+      ecto_repos: [Kanban.Repo],
+      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
+
     error_tracker_dashboard "/errors"
   end
 
