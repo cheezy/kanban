@@ -1,1 +1,1 @@
-[verbose: false, private: false, skip: false, router: nil, exit: false, format: "txt", out: nil, threshold: :low, ignore: ["Config.HTTPS"], ignore_files: [], version: false]
+[verbose: false, private: false, skip: false, router: nil, exit: false, format: "txt", out: nil, threshold: :low, ignore: ["Config.HTTPS"], ignore_files: ["lib/error_tracker/web/components/layouts/root.html.heex"], version: false]

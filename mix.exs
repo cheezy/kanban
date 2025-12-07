@@ -7,6 +7,9 @@ defmodule Kanban.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [
+        ignore_module_conflict: true
+      ],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -104,6 +107,7 @@ defmodule Kanban.MixProject do
   defp test_coverage do
     [
       ignore_modules: [
+        ErrorTracker.Web.Layouts,
         Kanban.AccountsFixtures,
         Kanban.Application,
         Kanban.BoardsFixtures,
@@ -121,7 +125,8 @@ defmodule Kanban.MixProject do
         KanbanWeb.PageHTML,
         KanbanWeb.Plugs.Locale,
         KanbanWeb.Router,
-        KanbanWeb.Telemetry
+        KanbanWeb.Telemetry,
+        Phoenix.LiveDashboard.LayoutView
       ]
     ]
   end

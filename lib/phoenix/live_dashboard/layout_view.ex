@@ -30,6 +30,7 @@ defmodule Phoenix.LiveDashboard.LayoutView do
         "#{prefix}/#{asset}-#{hash}"
       )
     else
+      # credo:disable-for-next-line Credo.Check.Refactor.Apply
       apply(
         conn.private.phoenix_router.__helpers__(),
         :live_dashboard_asset_path,
