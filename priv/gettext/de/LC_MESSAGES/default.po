@@ -11,7 +11,7 @@ msgstr ""
 "Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban_web/components/core_components.ex:343
+#: lib/kanban_web/components/core_components.ex:406
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Aktionen"
@@ -33,7 +33,7 @@ msgid "We can't find the internet"
 msgstr "Wir können das Internet nicht finden"
 
 #: lib/kanban_web/components/core_components.ex:75
-#: lib/kanban_web/components/core_components.ex:504
+#: lib/kanban_web/components/core_components.ex:567
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "schließen"
@@ -415,7 +415,7 @@ msgstr "Work-In-Progress-Limit. Auf 0 setzen für kein Limit."
 msgid "Add task"
 msgstr "Aufgabe hinzufügen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:193
+#: lib/kanban_web/live/board_live/show.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten?"
@@ -500,19 +500,19 @@ msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:96
 #: lib/kanban_web/live/task_live/view_component.ex:90
-#: lib/kanban_web/live/task_live/view_component.ex:121
+#: lib/kanban_web/live/task_live/view_component.ex:126
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "Erstellt"
 
-#: lib/kanban_web/live/board_live/show.html.heex:261
+#: lib/kanban_web/live/board_live/show.html.heex:263
 #: lib/kanban_web/live/task_live/form_component.html.heex:46
 #: lib/kanban_web/live/task_live/view_component.ex:73
 #, elixir-autogen, elixir-format
 msgid "Critical"
 msgstr "Kritisch"
 
-#: lib/kanban_web/live/board_live/show.html.heex:234
+#: lib/kanban_web/live/board_live/show.html.heex:236
 #: lib/kanban_web/live/issue_live/form_component.ex:243
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:35
@@ -525,21 +525,21 @@ msgstr "Fehler"
 msgid "Failed to move task"
 msgstr "Aufgabe konnte nicht verschoben werden"
 
-#: lib/kanban_web/live/board_live/show.html.heex:262
+#: lib/kanban_web/live/board_live/show.html.heex:264
 #: lib/kanban_web/live/task_live/form_component.html.heex:45
 #: lib/kanban_web/live/task_live/view_component.ex:72
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "Hoch"
 
-#: lib/kanban_web/live/board_live/show.html.heex:264
+#: lib/kanban_web/live/board_live/show.html.heex:266
 #: lib/kanban_web/live/task_live/form_component.html.heex:43
 #: lib/kanban_web/live/task_live/view_component.ex:70
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "Niedrig"
 
-#: lib/kanban_web/live/board_live/show.html.heex:263
+#: lib/kanban_web/live/board_live/show.html.heex:265
 #: lib/kanban_web/live/task_live/form_component.html.heex:44
 #: lib/kanban_web/live/task_live/view_component.ex:71
 #, elixir-autogen, elixir-format
@@ -547,7 +547,7 @@ msgid "Medium"
 msgstr "Mittel"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:125
-#: lib/kanban_web/live/task_live/view_component.ex:122
+#: lib/kanban_web/live/task_live/view_component.ex:128
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "Verschoben"
@@ -579,7 +579,7 @@ msgstr "Typ"
 msgid "WIP limit exceeded"
 msgstr "WIP-Limit überschritten"
 
-#: lib/kanban_web/live/board_live/show.html.heex:235
+#: lib/kanban_web/live/board_live/show.html.heex:237
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/view_component.ex:34
 #, elixir-autogen, elixir-format
@@ -589,7 +589,9 @@ msgstr "Arbeit"
 #: lib/kanban_web/live/task_live/form_component.html.heex:101
 #: lib/kanban_web/live/task_live/form_component.html.heex:117
 #: lib/kanban_web/live/task_live/form_component.html.heex:126
-#: lib/kanban_web/live/task_live/view_component.ex:126
+#: lib/kanban_web/live/task_live/view_component.ex:129
+#: lib/kanban_web/live/task_live/view_component.ex:134
+#: lib/kanban_web/live/task_live/view_component.ex:147
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "von"
@@ -597,7 +599,9 @@ msgstr "von"
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/live/task_live/form_component.html.heex:128
-#: lib/kanban_web/live/task_live/view_component.ex:127
+#: lib/kanban_web/live/task_live/view_component.ex:130
+#: lib/kanban_web/live/task_live/view_component.ex:135
+#: lib/kanban_web/live/task_live/view_component.ex:149
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "zu"
@@ -623,7 +627,7 @@ msgid "Comment added successfully"
 msgstr "Kommentar erfolgreich hinzugefügt"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:144
-#: lib/kanban_web/live/task_live/view_component.ex:142
+#: lib/kanban_web/live/task_live/view_component.ex:165
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "Kommentare"
@@ -802,7 +806,7 @@ msgstr "Zurück zum Board"
 msgid "History"
 msgstr "Verlauf"
 
-#: lib/kanban_web/live/task_live/view_component.ex:144
+#: lib/kanban_web/live/task_live/view_component.ex:167
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr "Noch keine Kommentare"
@@ -878,7 +882,7 @@ msgstr "Über"
 msgid "About Stride"
 msgstr "Über Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:203
+#: lib/kanban_web/controllers/page_html/about.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "Zurück zur Startseite"
@@ -893,77 +897,77 @@ msgstr "Mit KI erstellt"
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr "Stride ist eine moderne Aufgabenverwaltungsanwendung, die vollständig mit KI-unterstützter Entwicklung erstellt wurde. Dieses Projekt demonstriert die Kraft der Zusammenarbeit zwischen Mensch und KI in der Softwareentwicklung."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:34
+#: lib/kanban_web/controllers/page_html/about.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr "KI ist nicht perfekt und ich bin sicher, dass es Probleme in dieser Anwendung gibt. Bitte melden Sie Probleme oder fordern Sie neue Funktionen an, damit diese Anwendung verbessert werden kann."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:112
+#: lib/kanban_web/controllers/page_html/about.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "Adding Columns to the Boards"
 msgstr "Spalten zu den Boards hinzufügen"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:121
+#: lib/kanban_web/controllers/page_html/about.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Adding Tasks to Columns"
 msgstr "Aufgaben zu Spalten hinzufügen"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:148
+#: lib/kanban_web/controllers/page_html/about.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
 msgstr "Typ, Priorität, Kennung, Kommentare und Verlauf zu Aufgaben hinzufügen"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:157
+#: lib/kanban_web/controllers/page_html/about.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
 msgstr "Benutzer zu Boards und Aufgaben hinzufügen und Drag & Drop für Spalten"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:139
+#: lib/kanban_web/controllers/page_html/about.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Adding drag-and-drop for Tasks"
 msgstr "Drag & Drop für Aufgaben hinzufügen"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:166
+#: lib/kanban_web/controllers/page_html/about.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Authorization and user permissions"
 msgstr "Autorisierung und Benutzerberechtigungen"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#: lib/kanban_web/controllers/page_html/about.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Building the authentication system"
 msgstr "Aufbau des Authentifizierungssystems"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:175
+#: lib/kanban_web/controllers/page_html/about.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "Cleanup and simplification of Authentication"
 msgstr "Bereinigung und Vereinfachung der Authentifizierung"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:130
+#: lib/kanban_web/controllers/page_html/about.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
 msgstr "Bereinigung der Aufgaben-Benutzeroberfläche und automatisches Ausblenden von Flash-Nachrichten"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:67
+#: lib/kanban_web/controllers/page_html/about.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Creating the plan"
 msgstr "Erstellen des Plans"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:103
+#: lib/kanban_web/controllers/page_html/about.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Finishing the UI for Boards"
 msgstr "Fertigstellung der Benutzeroberfläche für Boards"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:48
+#: lib/kanban_web/controllers/page_html/about.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
 msgstr "Ich habe über die KI-gesteuerte Entwicklung dieser Anwendung gebloggt. In den Beiträgen habe ich viele Videos und Bilder eingefügt, in denen Sie sehen können, wie es gemacht wird. Die Beiträge sind hier:"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:94
+#: lib/kanban_web/controllers/page_html/about.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "Moving the design to function components and starting on Boards"
 msgstr "Verschieben des Designs zu Funktionskomponenten und Beginn mit Boards"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:31
+#: lib/kanban_web/controllers/page_html/about.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr "Probleme melden oder Funktionen anfordern"
@@ -973,18 +977,18 @@ msgstr "Probleme melden oder Funktionen anfordern"
 msgid "See the entire process for yourself in the "
 msgstr "Sehen Sie sich den gesamten Prozess selbst an im "
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:58
+#: lib/kanban_web/controllers/page_html/about.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Setup, configuration, and tools"
 msgstr "Einrichtung, Konfiguration und Tools"
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:25
-#: lib/kanban_web/controllers/page_html/about.html.heex:45
+#: lib/kanban_web/controllers/page_html/about.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "The Blog"
 msgstr "Der Blog"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:85
+#: lib/kanban_web/controllers/page_html/about.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Updating the Visual Design and adding French Translations"
 msgstr "Aktualisierung des visuellen Designs und Hinzufügen französischer Übersetzungen"
@@ -1115,27 +1119,31 @@ msgstr "Zu meinen Boards"
 msgid "Error Tracker"
 msgstr "Fehler-Tracker"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:184
+#: lib/kanban_web/controllers/page_html/about.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Polish and enhancements - make it beautiful and professional"
 msgstr "Verfeinerung und Verbesserungen - sie schön und professionell machen"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:100
+#: lib/kanban_web/live/task_live/view_component.ex:133
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority changed"
 msgstr "Priorität geändert"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:110
+#: lib/kanban_web/live/task_live/view_component.ex:140
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assigned to"
 msgstr "Zugewiesen an"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:116
+#: lib/kanban_web/live/task_live/view_component.ex:146
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassigned"
 msgstr "Nicht zugewiesen"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:113
+#: lib/kanban_web/live/task_live/view_component.ex:143
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "Nicht zugewiesen"
@@ -1144,3 +1152,53 @@ msgstr "Nicht zugewiesen"
 #, elixir-autogen, elixir-format
 msgid "See existing issues"
 msgstr "Bestehende Probleme anzeigen"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:5
+#, elixir-autogen, elixir-format, fuzzy
+msgid "About Tango"
+msgstr "Über"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:50
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Back to About"
+msgstr "Zurück zum Board"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Contact Us"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "For more information about Tango and our projects, please visit our website or reach out to our team."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Our Mission"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Read about the people behind this app"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "The People Behind This App"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "This application was created by the team at Tango, a company dedicated to building modern software solutions using cutting-edge technology and AI-assisted development."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "We believe in leveraging the power of AI to create better software faster, while maintaining high quality standards and best practices."
+msgstr ""
+
+#: lib/phoenix/live_dashboard/layout_view.ex:57
+#, elixir-format, fuzzy
+msgid "Back to App"
+msgstr "Zurück zum Board"

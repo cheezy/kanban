@@ -86,7 +86,7 @@ defmodule ErrorTracker.Web.Layouts do
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              Back to App
+              <%= back_to_app_text() %>
             </.navbar_item>
             <.navbar_item to="https://github.com/elixir-error-tracker/error-tracker" target="_blank">
               <svg
@@ -129,5 +129,9 @@ defmodule ErrorTracker.Web.Layouts do
       </a>
     </li>
     """
+  end
+
+  defp back_to_app_text do
+    Gettext.dgettext(KanbanWeb.Gettext, "default", "Back to App")
   end
 end

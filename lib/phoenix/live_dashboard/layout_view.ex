@@ -53,4 +53,8 @@ defmodule Phoenix.LiveDashboard.LayoutView do
         nil
     end
   end
+
+  defp back_to_app_text do
+    Gettext.dgettext(KanbanWeb.Gettext, "default", "Back to App")
+  end
 end
