@@ -52,7 +52,7 @@
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60 group">
-              <%= if @can_modify do %>
+              <%= if @user_access == :owner do %>
                 <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
                   <.icon name="hero-bars-3" class="h-5 w-5 text-gray-500" />
                 </div>
@@ -110,7 +110,7 @@
                   <% end %>
                 </div>
               </div>
-              <%= if @can_modify do %>
+              <%= if @user_access == :owner do %>
                 <div class="flex gap-1.5">
                   <.link
                     patch={~p"/boards/#{@board}/columns/#{column}/edit"}
@@ -185,7 +185,6 @@
                           <.icon
                             name="hero-pencil-solid"
                             class="h-4 w-4 text-gray-500 hover:text-blue-600 transition-colors"
-                            aria-hidden="true"
                           />
                         </.link>
                         <.link
@@ -197,7 +196,6 @@
                           <.icon
                             name="hero-trash-solid"
                             class="h-4 w-4 text-gray-500 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
-                            aria-hidden="true"
                           />
                         </.link>
                       </div>
