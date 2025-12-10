@@ -250,7 +250,7 @@ defmodule KanbanWeb.CoreComponents do
   def input(%{type: "password"} = assigns) do
     ~H"""
     <div class="fieldset mb-2">
-      <span :if={@label} class="label mb-1 block">{@label}</span>
+      <label :if={@label} for={@id} class="label mb-1 block">{@label}</label>
       <div class="relative" phx-hook="PasswordToggle" id={"#{@id}-container"}>
         <input
           type="password"
@@ -267,6 +267,7 @@ defmodule KanbanWeb.CoreComponents do
           type="button"
           tabindex="-1"
           data-toggle-password
+          aria-label="Toggle password visibility"
           class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none z-10 cursor-pointer"
         >
           <svg
@@ -275,6 +276,7 @@ defmodule KanbanWeb.CoreComponents do
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -295,6 +297,7 @@ defmodule KanbanWeb.CoreComponents do
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
