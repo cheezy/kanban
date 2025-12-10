@@ -23,7 +23,7 @@
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 mb-6">
               <.icon name="hero-queue-list" class="h-10 w-10 text-blue-600" />
             </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-2">{gettext("No columns yet")}</h3>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">{gettext("No columns yet")}</h2>
             <p class="text-base text-gray-600 mb-8 leading-relaxed">
               {gettext("Get started by creating columns for your board.")}
             </p>
@@ -51,7 +51,7 @@
             <% task_count = length(tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
-            <div class="group flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60">
+            <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60 group">
               <%= if @user_access == :owner do %>
                 <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
                   <.icon name="hero-bars-3" class="h-5 w-5 text-gray-500" />
@@ -59,7 +59,7 @@
               <% end %>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-bold text-gray-900 text-base">{column.name}</h3>
+                  <h2 class="font-bold text-gray-900 text-base">{column.name}</h2>
                   <%= if over_limit do %>
                     <span
                       title={gettext("WIP limit exceeded")}
@@ -111,15 +111,13 @@
                 </div>
               </div>
               <%= if @user_access == :owner do %>
-                <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex gap-1.5">
                   <.link
                     patch={~p"/boards/#{@board}/columns/#{column}/edit"}
-                    class="p-1.5 bg-white/90 hover:bg-blue-50 rounded-md transition-colors shadow-sm"
+                    aria-label={gettext("Edit column")}
+                    class="p-1.5 bg-white/90 hover:bg-blue-50 rounded-md transition-all shadow-sm opacity-0 group-hover:opacity-100"
                   >
-                    <.icon
-                      name="hero-pencil-solid"
-                      class="h-4 w-4 text-gray-500 hover:text-blue-600 transition-colors"
-                    />
+                    <.icon name="hero-pencil-solid" class="h-4 w-4 text-gray-500 hover:text-blue-600 transition-colors" />
                   </.link>
                   <.link
                     phx-click={JS.push("delete_column", value: %{id: column.id})}
@@ -128,12 +126,10 @@
                         "Are you sure you want to delete this column? All tasks in this column will also be deleted."
                       )
                     }
-                    class="p-1.5 bg-white/90 hover:bg-red-50 rounded-md transition-colors shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait"
+                    aria-label={gettext("Delete column")}
+                    class="p-1.5 bg-white/90 hover:bg-red-50 rounded-md transition-all shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait opacity-0 group-hover:opacity-100"
                   >
-                    <.icon
-                      name="hero-trash-solid"
-                      class="h-4 w-4 text-gray-500 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
-                    />
+                    <.icon name="hero-trash-solid" class="h-4 w-4 text-gray-500 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse" />
                   </.link>
                 </div>
               <% end %>
@@ -183,6 +179,7 @@
                       <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <.link
                           patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
+                          aria-label={gettext("Edit task")}
                           class="p-1.5 bg-white/90 hover:bg-blue-50 rounded-md transition-colors shadow-sm"
                         >
                           <.icon
@@ -193,6 +190,7 @@
                         <.link
                           phx-click={JS.push("delete_task", value: %{id: task.id})}
                           data-confirm={gettext("Are you sure you want to delete this task?")}
+                          aria-label={gettext("Delete task")}
                           class="p-1.5 bg-white/90 hover:bg-red-50 rounded-md transition-colors shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait"
                         >
                           <.icon
@@ -214,9 +212,9 @@
                         class="flex-1 cursor-pointer hover:bg-blue-50/30 rounded-md -m-1 p-1.5 transition-colors duration-150 min-w-0"
                       >
                         <div>
-                          <h4 class="font-semibold text-gray-900 text-sm leading-snug group-hover:text-blue-600 transition-colors pr-16">
+                          <h3 class="font-semibold text-gray-900 text-sm leading-snug group-hover:text-blue-600 transition-colors pr-16">
                             {task.title}
-                          </h4>
+                          </h3>
                           <%= if task.description && task.description != "" do %>
                             <p class="mt-1.5 text-xs text-gray-600 line-clamp-2 leading-relaxed">
                               {task.description}
