@@ -39,8 +39,8 @@ jobs:
       # Specify the OTP and Elixir versions to use when building
       # and running the workflow steps.
       matrix:
-        otp: ['28.1.1']       # Define the OTP version [required]
-        elixir: ['1.19.2']    # Define the elixir version [required]
+        otp: ['28.2']       # Define the OTP version [required]
+        elixir: ['1.19.4']    # Define the elixir version [required]
 
     steps:
 
