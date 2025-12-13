@@ -1,4 +1,6 @@
-This is a web application written using the Phoenix web framework.
+# This is a web application written using the Phoenix web framework.
+
+BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instructions
 
 ## Project guidelines
 
