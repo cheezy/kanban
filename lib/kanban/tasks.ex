@@ -161,6 +161,9 @@ defmodule Kanban.Tasks do
       column_id: column.id
     })
 
+    # Broadcast task creation
+    broadcast_task_change(task, :task_created)
+
     result
   end
 
@@ -193,6 +196,9 @@ defmodule Kanban.Tasks do
           create_assignment_history(task.assigned_to_id, updated_task.assigned_to_id, updated_task.id)
         end
 
+        # Broadcast task update
+        broadcast_task_change(updated_task, :task_updated)
+
         {:ok, updated_task}
 
       error ->
@@ -219,6 +225,8 @@ defmodule Kanban.Tasks do
     case result do
       {:ok, deleted_task} ->
         reorder_after_deletion(deleted_task)
+        # Broadcast task deletion
+        broadcast_task_change(deleted_task, :task_deleted)
         {:ok, deleted_task}
 
       error ->
@@ -466,6 +474,10 @@ defmodule Kanban.Tasks do
 
     updated_task = get_task!(task.id)
     Logger.info("Returning updated task: #{inspect(updated_task)}")
+
+    # Broadcast task move
+    broadcast_task_change(updated_task, :task_moved)
+
     updated_task
   end
 
@@ -643,5 +655,23 @@ defmodule Kanban.Tasks do
       to_user_id: to_user_id
     })
     |> Repo.insert!()
+  end
+
+  defp broadcast_task_change(%Task{} = task, event) do
+    # Get the task's column to know which board to broadcast to
+    task_with_column = Repo.preload(task, :column)
+    column = task_with_column.column
+
+    if column do
+      # Get the board_id from the column
+      column_with_board = Repo.preload(column, :board)
+      board_id = column_with_board.board.id
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{board_id}",
+        {__MODULE__, event, task}
+      )
+    end
   end
 end

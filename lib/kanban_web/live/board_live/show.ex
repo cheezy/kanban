@@ -19,6 +19,11 @@ defmodule KanbanWeb.BoardLive.Show do
     column = Columns.get_column!(column_id)
     task = Tasks.get_task!(task_id)
 
+    # Subscribe to board updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+    end
+
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
@@ -36,6 +41,11 @@ defmodule KanbanWeb.BoardLive.Show do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
     user_access = Boards.get_user_access(board.id, user.id)
+
+    # Subscribe to board updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+    end
 
     if socket.assigns.live_action in [:new_column, :edit_column] and user_access != :owner do
       {:noreply,
@@ -67,6 +77,11 @@ defmodule KanbanWeb.BoardLive.Show do
     columns = Columns.list_columns(board)
     task = Tasks.get_task!(task_id)
 
+    # Subscribe to board updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+    end
+
     socket =
       socket
       |> assign(:page_title, page_title(socket.assigns.live_action))
@@ -93,6 +108,11 @@ defmodule KanbanWeb.BoardLive.Show do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
     user_access = Boards.get_user_access(board.id, user.id)
+
+    # Subscribe to board updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+    end
 
     if socket.assigns.live_action == :new_column and user_access != :owner do
       {:noreply,
@@ -267,6 +287,30 @@ defmodule KanbanWeb.BoardLive.Show do
      |> load_tasks_for_columns(columns)}
   end
 
+  @impl true
+  def handle_info({Kanban.Tasks, :task_created, _task}, socket) do
+    # Reload board when a task is created
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_updated, _task}, socket) do
+    # Reload board when a task is updated
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_moved, _task}, socket) do
+    # Reload board when a task is moved
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
+    # Reload board when a task is deleted
+    reload_board_data(socket)
+  end
+
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
     column = Columns.get_column!(column_id)
     tasks = Tasks.list_tasks(column)
@@ -358,5 +402,14 @@ defmodule KanbanWeb.BoardLive.Show do
       end)
 
     assign(socket, :tasks_by_column, tasks_by_column)
+  end
+
+  defp reload_board_data(socket) do
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
   end
 end
