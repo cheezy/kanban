@@ -1,4 +1,4 @@
-# This is a web application written using the Phoenix web framework.
+# This is a web application written using the Phoenix web framework
 
 ## Project guidelines
 
