@@ -125,4 +125,13 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  config :kanban, Kanban.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    username: System.get_env("SMTP_USERNAME"),
+    password: System.get_env("SMTP_PASSWORD"),
+    relay: System.get_env("SMTP_RELAY") || "smtp.gmail.com",
+    ssl: true,
+    tls: :always,
+    auth: :always,
+    port: 587
 end
