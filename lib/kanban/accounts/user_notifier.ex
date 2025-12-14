@@ -8,7 +8,7 @@ defmodule Kanban.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Stride Support", "noeply@StrideLikeABoss.com"})
+      |> from({"Stride Support", "noreply@StrideLikeABoss.com"})
       |> subject(subject)
       |> html_body(body)
 

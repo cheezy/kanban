@@ -14,7 +14,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
       assert {:ok, email} = UserNotifier.deliver_update_email_instructions(user, url)
 
       assert email.to == [{"", "user@example.com"}]
-      assert email.from == {"Stride Support", "do-not-reply@StrideLikeABoss.com"}
+      assert email.from == {"Stride Support", "noreply@StrideLikeABoss.com"}
       assert email.subject == "Update email instructions"
       assert email.html_body =~ "Hi Test User"
       assert email.html_body =~ url
@@ -44,7 +44,7 @@ defmodule Kanban.Accounts.UserNotifierTest do
       assert {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, url)
 
       assert email.to == [{"", "newuser@example.com"}]
-      assert email.from == {"Stride Support", "do-not-reply@StrideLikeABoss.com"}
+      assert email.from == {"Stride Support", "noreply@StrideLikeABoss.com"}
       assert email.subject == "Confirm your Stride account"
       assert email.html_body =~ "Hi New User"
       assert email.html_body =~ url
@@ -72,8 +72,8 @@ defmodule Kanban.Accounts.UserNotifierTest do
       {:ok, email1} = UserNotifier.deliver_confirmation_instructions(user, url)
       {:ok, email2} = UserNotifier.deliver_update_email_instructions(user, url)
 
-      assert email1.from == {"Stride Support", "do-not-reply@StrideLikeABoss.com"}
-      assert email2.from == {"Stride Support", "do-not-reply@StrideLikeABoss.com"}
+      assert email1.from == {"Stride Support", "noreply@StrideLikeABoss.com"}
+      assert email2.from == {"Stride Support", "noreply@StrideLikeABoss.com"}
     end
 
     test "all emails use HTML format" do
