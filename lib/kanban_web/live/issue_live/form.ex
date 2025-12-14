@@ -15,7 +15,9 @@ defmodule KanbanWeb.IssueLive.Form do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    Gettext.put_locale(KanbanWeb.Gettext, locale)
     {:ok, assign(socket, :configured, GitHub.configured?())}
   end
 end

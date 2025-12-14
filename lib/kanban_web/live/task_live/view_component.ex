@@ -99,6 +99,13 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
+      <%= if @task.acceptance_criteria do %>
+        <div>
+          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Acceptance Criteria")}</h4>
+          <p class="text-gray-900 whitespace-pre-wrap">{@task.acceptance_criteria}</p>
+        </div>
+      <% end %>
+
       <div>
         <h4 class="text-sm font-semibold text-gray-700 mb-2">{gettext("History")}</h4>
         <%= if Enum.empty?(@task.task_histories) do %>

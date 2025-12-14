@@ -5,6 +5,7 @@ defmodule Kanban.Tasks.Task do
   schema "tasks" do
     field :title, :string
     field :description, :string
+    field :acceptance_criteria, :string
     field :position, :integer
     field :type, Ecto.Enum, values: [:work, :defect], default: :work
     field :priority, Ecto.Enum, values: [:low, :medium, :high, :critical], default: :medium
@@ -24,6 +25,7 @@ defmodule Kanban.Tasks.Task do
     |> cast(attrs, [
       :title,
       :description,
+      :acceptance_criteria,
       :position,
       :column_id,
       :type,

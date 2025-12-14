@@ -19,6 +19,8 @@ defmodule KanbanWeb.BoardLive.Show do
     column = Columns.get_column!(column_id)
     task = Tasks.get_task!(task_id)
 
+    subscribe_to_board_updates(socket, board.id)
+
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
@@ -37,26 +39,15 @@ defmodule KanbanWeb.BoardLive.Show do
     board = Boards.get_board!(id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
+    subscribe_to_board_updates(socket, board.id)
+
     if socket.assigns.live_action in [:new_column, :edit_column] and user_access != :owner do
       {:noreply,
        socket
        |> put_flash(:error, gettext("Only the board owner can manage columns"))
        |> push_patch(to: ~p"/boards/#{board}")}
     else
-      columns = Columns.list_columns(board)
-      column = Columns.get_column!(column_id)
-
-      {:noreply,
-       socket
-       |> assign(:page_title, page_title(socket.assigns.live_action))
-       |> assign(:board, board)
-       |> assign(:user_access, user_access)
-       |> assign(:can_modify, user_access in [:owner, :modify])
-       |> assign(:column, column)
-       |> assign(:column_id, column.id)
-       |> assign(:has_columns, not Enum.empty?(columns))
-       |> stream(:columns, columns, reset: true)
-       |> load_tasks_for_columns(columns)}
+      assign_board_with_column(socket, board, user_access, column_id)
     end
   end
 
@@ -66,6 +57,8 @@ defmodule KanbanWeb.BoardLive.Show do
     user_access = Boards.get_user_access(board.id, user.id)
     columns = Columns.list_columns(board)
     task = Tasks.get_task!(task_id)
+
+    subscribe_to_board_updates(socket, board.id)
 
     socket =
       socket
@@ -93,6 +86,8 @@ defmodule KanbanWeb.BoardLive.Show do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(id, user)
     user_access = Boards.get_user_access(board.id, user.id)
+
+    subscribe_to_board_updates(socket, board.id)
 
     if socket.assigns.live_action == :new_column and user_access != :owner do
       {:noreply,
@@ -267,6 +262,30 @@ defmodule KanbanWeb.BoardLive.Show do
      |> load_tasks_for_columns(columns)}
   end
 
+  @impl true
+  def handle_info({Kanban.Tasks, :task_created, _task}, socket) do
+    # Reload board when a task is created
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_updated, _task}, socket) do
+    # Reload board when a task is updated
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_moved, _task}, socket) do
+    # Reload board when a task is moved
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
+    # Reload board when a task is deleted
+    reload_board_data(socket)
+  end
+
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
     column = Columns.get_column!(column_id)
     tasks = Tasks.list_tasks(column)
@@ -358,5 +377,37 @@ defmodule KanbanWeb.BoardLive.Show do
       end)
 
     assign(socket, :tasks_by_column, tasks_by_column)
+  end
+
+  defp reload_board_data(socket) do
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
+  end
+
+  defp subscribe_to_board_updates(socket, board_id) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board_id}")
+    end
+  end
+
+  defp assign_board_with_column(socket, board, user_access, column_id) do
+    columns = Columns.list_columns(board)
+    column = Columns.get_column!(column_id)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:column, column)
+     |> assign(:column_id, column.id)
+     |> assign(:has_columns, not Enum.empty?(columns))
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
   end
 end
