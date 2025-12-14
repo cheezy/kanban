@@ -36,6 +36,25 @@
 
         <section class="mb-10">
           <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+            {gettext("Version History")}
+          </h2>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            {gettext(
+              "View the complete version history and feature list for this application."
+            )}
+          </p>
+          <p class="text-gray-600 leading-relaxed">
+            <.link
+              href={~p"/changelog"}
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              {gettext("View Changelog")}
+            </.link>
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
             {gettext("Report Issues or Request Features")}
           </h2>
           <p class="text-gray-600 leading-relaxed mb-4">
@@ -44,7 +63,7 @@
             )}
           </p>
           <div class="mt-6">
-            {live_render(@conn, KanbanWeb.IssueLive.Form, id: "issue-form")}
+            {live_render(@conn, KanbanWeb.IssueLive.Form, id: "issue-form", session: %{"locale" => Gettext.get_locale(KanbanWeb.Gettext)})}
           </div>
         </section>
 

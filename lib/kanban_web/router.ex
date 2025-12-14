@@ -31,6 +31,7 @@ defmodule KanbanWeb.Router do
     get "/", PageController, :home
     get "/about", PageController, :about
     get "/tango", PageController, :tango
+    get "/changelog", PageController, :changelog
     post "/locale/:locale", PageController, :set_locale
   end
 
