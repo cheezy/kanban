@@ -147,4 +147,15 @@ defmodule Kanban.Accounts.UserToken do
   defp by_token_and_context_query(token, context) do
     from UserToken, where: [token: ^token, context: ^context]
   end
+
+  @doc """
+  Returns the query to find all tokens for the given user and contexts.
+  """
+  def by_user_and_contexts_query(user, :all) do
+    from t in UserToken, where: t.user_id == ^user.id
+  end
+
+  def by_user_and_contexts_query(user, contexts) do
+    from t in UserToken, where: t.user_id == ^user.id and t.context in ^contexts
+  end
 end

@@ -69,4 +69,32 @@ defmodule Kanban.Accounts.UserNotifier do
     </div>
     """)
   end
+
+  @doc """
+  Deliver instructions to reset a user password.
+  """
+  def deliver_reset_password_instructions(user, url) do
+    deliver(user.email, "Reset your Stride password", """
+    <div>
+    Hi #{user.name},
+
+    <p>
+    You are receiving this email because you (or someone else) requested to reset your
+    password for your Stride account. Click <a href="#{url}">here</a> to reset your password.
+    </p>
+
+    <p>
+    If you didn't request this change, please ignore this email. Your password will remain
+    unchanged.
+    </p>
+
+    <p>
+    This link will expire in 7 days.
+    </p>
+
+    Regards,<br/>
+    Team at Stride
+    </div>
+    """)
+  end
 end

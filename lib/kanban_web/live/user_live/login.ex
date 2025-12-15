@@ -75,6 +75,15 @@ defmodule KanbanWeb.UserLive.Login do
               {gettext("Log in")} <span aria-hidden="true">→</span>
             </.button>
           </.form>
+
+          <div class="mt-6 text-center text-sm">
+            <.link
+              href={~p"/users/forgot-password"}
+              class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {gettext("Forgot your password?")}
+            </.link>
+          </div>
         </div>
       </div>
     </Layouts.app>

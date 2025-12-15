@@ -12,6 +12,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
       assert html =~ "Sign up"
       assert html =~ "Log in"
       assert html =~ "Stay logged in"
+      assert html =~ "Forgot your password?"
     end
   end
 

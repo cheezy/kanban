@@ -160,6 +160,7 @@ msgstr "Kontoeinstellungen"
 msgid "Already registered?"
 msgstr "Bereits registriert?"
 
+#: lib/kanban_web/live/user_live/reset_password.ex:45
 #: lib/kanban_web/live/user_live/settings.ex:71
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
@@ -185,6 +186,8 @@ msgstr "Konto wird erstellt..."
 msgid "Don't have an account?"
 msgstr "Haben Sie kein Konto?"
 
+#: lib/kanban_web/live/user_live/forgot_password.ex:39
+#: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/login.ex:57
 #: lib/kanban_web/live/user_live/registration.ex:53
 #: lib/kanban_web/live/user_live/settings.ex:34
@@ -207,6 +210,7 @@ msgstr "E-Mail erfolgreich geändert."
 msgid "Manage your account email address and password settings"
 msgstr "Verwalten Sie Ihre Konto-E-Mail-Adresse und Passworteinstellungen"
 
+#: lib/kanban_web/live/user_live/reset_password.ex:38
 #: lib/kanban_web/live/user_live/settings.ex:64
 #, elixir-autogen, elixir-format
 msgid "New password"
@@ -1153,19 +1157,20 @@ msgstr "Nicht zugewiesen"
 msgid "See existing issues"
 msgstr "Bestehende Probleme anzeigen"
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:5
+#: lib/kanban_web/controllers/page_html/tango.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "About Tango"
 msgstr "Über Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:17
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:297
-#: lib/kanban_web/controllers/page_html/tango.html.heex:87
+#: lib/kanban_web/controllers/page_html/tango.html.heex:17
+#: lib/kanban_web/controllers/page_html/tango.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Back to About"
 msgstr "Zurück zu Über"
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:34
+#: lib/kanban_web/controllers/page_html/tango.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Our Mission"
 msgstr "Unsere Mission"
@@ -1175,7 +1180,7 @@ msgstr "Unsere Mission"
 msgid "Read about the people behind this app"
 msgstr "Erfahren Sie mehr über die Menschen hinter dieser App"
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:11
+#: lib/kanban_web/controllers/page_html/tango.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "The People Behind This App"
 msgstr "Die Menschen hinter dieser App"
@@ -1746,12 +1751,60 @@ msgstr ""
 msgid "Work or Defect"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:52
+#: lib/kanban_web/controllers/page_html/tango.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Work With Us"
+msgstr "Arbeiten Sie mit uns"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "<b>Build what's next. Together.</b>\n</br></br>\nAI-powered development, seasoned engineers, and technical coaching for modern software teams.\n"
+msgstr "<b>Bauen Sie die Zukunft. Gemeinsam.</b>\n</br></br>\nKI-gestützte Entwicklung, erfahrene Ingenieure und technisches Coaching für moderne Softwareteams.\n"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "At Tango, we don't just build products — we help teams rethink how software gets delivered in an AI-first world.\n</br></br>\nWhether you're exploring AI-assisted development, modernizing existing systems, or building something entirely new, we partner closely with your team to turn ideas into high-quality, production-ready solutions. Our approach blends experienced engineers with AI-powered workflows to deliver results faster, with greater accuracy and long-term maintainability.\n</br></br>\nWe work with:\n</br></br>\n⬩ Startups looking to move fast without sacrificing quality</br>\n⬩ Established companies modernizing their development practices</br>\n⬩ Public and private sector teams tackling complex technical challenges</br>\n\n</br>\nIf you're curious about how AI can elevate your development process — or you need a trusted partner to help build, scale, or innovate — we'd love to collaborate.\n</br></br>\n<b>Let's build what's next, together.</b>\n"
 msgstr "Bei Tango bauen wir nicht nur Produkte — wir helfen Teams, neu zu denken, wie Software in einer KI-ersten Welt geliefert wird.\n</br></br>\nOb Sie KI-gestützte Entwicklung erkunden, bestehende Systeme modernisieren oder etwas völlig Neues aufbauen, wir arbeiten eng mit Ihrem Team zusammen, um Ideen in hochwertige, produktionsreife Lösungen zu verwandeln. Unser Ansatz verbindet erfahrene Ingenieure mit KI-gestützten Arbeitsabläufen, um Ergebnisse schneller zu liefern, mit größerer Genauigkeit und langfristiger Wartbarkeit.\n</br></br>\nWir arbeiten mit:\n</br></br>\n⬩ Startups, die schnell vorankommen möchten, ohne die Qualität zu opfern</br>\n⬩ Etablierten Unternehmen, die ihre Entwicklungspraktiken modernisieren</br>\n⬩ Teams des öffentlichen und privaten Sektors, die komplexe technische Herausforderungen bewältigen</br>\n\n</br>\nWenn Sie neugierig sind, wie KI Ihren Entwicklungsprozess verbessern kann — oder Sie einen vertrauenswürdigen Partner benötigen, um zu bauen, zu skalieren oder zu innovieren — würden wir gerne zusammenarbeiten.\n</br></br>\n<b>Lassen Sie uns gemeinsam die Zukunft bauen.</b>\n"
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:14
+#: lib/kanban_web/live/user_live/forgot_password.ex:56
+#: lib/kanban_web/live/user_live/reset_password.ex:60
+#, elixir-autogen, elixir-format
+msgid "Back to log in"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/forgot_password.ex:24
+#: lib/kanban_web/live/user_live/login.ex:84
+#, elixir-autogen, elixir-format
+msgid "Forgot your password?"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/forgot_password.ex:80
+#, elixir-autogen, elixir-format
+msgid "If your email is in our system, you will receive instructions to reset your password shortly."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/reset_password.ex:96
+#, elixir-autogen, elixir-format
+msgid "Password reset successfully."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/reset_password.ex:24
+#: lib/kanban_web/live/user_live/reset_password.ex:50
+#, elixir-autogen, elixir-format
+msgid "Reset password"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/reset_password.ex:109
+#, elixir-autogen, elixir-format
+msgid "Reset password link is invalid or it has expired."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/forgot_password.ex:46
+#, elixir-autogen, elixir-format
+msgid "Send password reset instructions"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "This application was created by <b>Tango</b>, together with our AI-powered virtual team member, <b>Claudete</b>.\n</br></br>\nTango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity.\n</br></br>\n<b>Claudete</b> was born from our hands-on work with two AI tools — <b>Claude Code</b> and <b>Tidewave</b>. Their combined strengths evolved into a collaborative virtual team member that works alongside our developers, accelerating delivery while maintaining precision and quality.\n</br></br>\nWhat began as an internal learning journey—exploring the real-world potential of AI-assisted development—quickly became something more. As we experienced the impact firsthand, we realized how powerful it is to put AI directly into the hands of experienced engineers. The results reshaped how we think about software delivery.\n</br></br>\nWe saw possibilities not just for startups, but for development teams of any size—across private and public sectors, and in virtually any industry.\n</br></br>\nWhile many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from <i>speed</i>, <i>accuracy</i>, and <i>quality</i>. With AI as a true collaborator, those metrics are no longer incremental—they're transformed.\n"
 msgstr ""
@@ -1767,12 +1820,7 @@ msgstr ""
 "</br></br>\n"
 "Während viele große Organisationen versuchen, Ergebnisse durch Produktivitätsmessung zu verbessern, zeigt unsere Erfahrung, dass die wahren Gewinne aus <i>Geschwindigkeit</i>, <i>Genauigkeit</i> und <i>Qualität</i> stammen. Mit KI als echtem Mitarbeiter sind diese Kennzahlen nicht mehr inkrementell — sie sind transformiert.\n"
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:49
+#: lib/kanban_web/live/user_live/forgot_password.ex:27
 #, elixir-autogen, elixir-format
-msgid "Work With Us"
-msgstr "Arbeiten Sie mit uns"
-
-#: lib/kanban_web/controllers/page_html/tango.html.heex:37
-#, elixir-autogen, elixir-format
-msgid "<b>Build what's next. Together.</b>\n</br></br>\nAI-powered development, seasoned engineers, and technical coaching for modern software teams.\n"
-msgstr "<b>Bauen Sie die Zukunft. Gemeinsam.</b>\n</br></br>\nKI-gestützte Entwicklung, erfahrene Ingenieure und technisches Coaching für moderne Softwareteams.\n"
+msgid "We'll send you an email with instructions to reset your password."
+msgstr ""
