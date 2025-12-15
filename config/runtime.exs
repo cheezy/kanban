@@ -131,15 +131,10 @@ if config_env() == :prod do
     password: System.get_env("SMTP_PASSWORD"),
     relay: System.get_env("SMTP_RELAY") || "smtp.gmail.com",
     ssl: true,
-    tls: :always,
     auth: :always,
-    port: 587,
-    tls_options: [
-      verify: :verify_peer,
-      cacerts: :public_key.cacerts_get(),
-      depth: 99,
-      customize_hostname_check: [
-        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-      ]
+    port: 465,
+    retries: 1,
+    sockopts: [
+      {:verify, :verify_none}
     ]
 end
