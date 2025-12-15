@@ -1154,21 +1154,21 @@ msgid "See existing issues"
 msgstr "Ver problemas existentes"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:5
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "About Tango"
-msgstr "Sobre"
+msgstr "Sobre o Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:17
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:297
 #: lib/kanban_web/controllers/page_html/tango.html.heex:87
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Back to About"
-msgstr "Voltar ao quadro"
+msgstr "Voltar para Sobre"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Our Mission"
-msgstr ""
+msgstr "Nossa Missão"
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:32
 #, elixir-autogen, elixir-format
@@ -1178,7 +1178,7 @@ msgstr "Leia sobre as pessoas por trás deste aplicativo"
 #: lib/kanban_web/controllers/page_html/tango.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "The People Behind This App"
-msgstr ""
+msgstr "As Pessoas Por Trás Deste Aplicativo"
 
 #: lib/phoenix/live_dashboard/layout_view.ex:57
 #, elixir-format, fuzzy
@@ -1746,22 +1746,33 @@ msgstr ""
 msgid "Work or Defect"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/tango.html.heex:37
-#, elixir-autogen, elixir-format
-msgid "<h3><b>Build what’s next. Together.</b></h3>\n</br>\nAI-powered development, seasoned engineers, and technical coaching for modern software teams.\n"
-msgstr ""
-
 #: lib/kanban_web/controllers/page_html/tango.html.heex:52
 #, elixir-autogen, elixir-format
-msgid "At Tango, we don’t just build products — we help teams rethink how software gets delivered in an AI-first world.\n</br></br>\nWhether you’re exploring AI-assisted development, modernizing existing systems, or building something entirely new, we partner closely with your team to turn ideas into high-quality, production-ready solutions. Our approach blends experienced engineers with AI-powered workflows to deliver results faster, with greater accuracy and long-term maintainability.\n</br></br>\nWe work with:\n</br></br>\n⬩ Startups looking to move fast without sacrificing quality</br>\n⬩ Established companies modernizing their development practices</br>\n⬩ Public and private sector teams tackling complex technical challenges</br>\n\n</br>\nIf you’re curious about how AI can elevate your development process — or you need a trusted partner to help build, scale, or innovate — we’d love to collaborate.\n</br></br>\n<b>Let’s build what’s next, together.</b>              \n"
-msgstr ""
+msgid "At Tango, we don't just build products — we help teams rethink how software gets delivered in an AI-first world.\n</br></br>\nWhether you're exploring AI-assisted development, modernizing existing systems, or building something entirely new, we partner closely with your team to turn ideas into high-quality, production-ready solutions. Our approach blends experienced engineers with AI-powered workflows to deliver results faster, with greater accuracy and long-term maintainability.\n</br></br>\nWe work with:\n</br></br>\n⬩ Startups looking to move fast without sacrificing quality</br>\n⬩ Established companies modernizing their development practices</br>\n⬩ Public and private sector teams tackling complex technical challenges</br>\n\n</br>\nIf you're curious about how AI can elevate your development process — or you need a trusted partner to help build, scale, or innovate — we'd love to collaborate.\n</br></br>\n<b>Let's build what's next, together.</b>\n"
+msgstr "No Tango, não apenas construímos produtos — ajudamos equipes a repensar como o software é entregue em um mundo centrado em IA.\n</br></br>\nSeja você explorando desenvolvimento assistido por IA, modernizando sistemas existentes ou construindo algo completamente novo, trabalhamos em estreita colaboração com sua equipe para transformar ideias em soluções de alta qualidade prontas para produção. Nossa abordagem combina engenheiros experientes com fluxos de trabalho impulsionados por IA para entregar resultados mais rapidamente, com maior precisão e manutenibilidade de longo prazo.\n</br></br>\nTrabalhamos com:\n</br></br>\n⬩ Startups que buscam avançar rapidamente sem sacrificar a qualidade</br>\n⬩ Empresas estabelecidas modernizando suas práticas de desenvolvimento</br>\n⬩ Equipes do setor público e privado enfrentando desafios técnicos complexos</br>\n\n</br>\nSe você está curioso sobre como a IA pode elevar seu processo de desenvolvimento — ou precisa de um parceiro confiável para ajudar a construir, escalar ou inovar — adoraríamos colaborar.\n</br></br>\n<b>Vamos construir o que vem a seguir, juntos.</b>\n"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:14
 #, elixir-autogen, elixir-format
-msgid "This application was created by <b>Tango</b>, together with our AI-powered virtual team member, <b>Claudete</b>.\n</br></br>\nTango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity.\n</br></br>\n<b>Claudete</b> was born from our hands-on work with two AI tools — <b>Claude Code</b> and <b>Tidewave</b>. Their combined strengths evolved into a collaborative virtual team member that works alongside our developers, accelerating delivery while maintaining precision and quality.\n</br></br>\nWhat began as an internal learning journey—exploring the real-world potential of AI-assisted development—quickly became something more. As we experienced the impact firsthand, we realized how powerful it is to put AI directly into the hands of experienced engineers. The results reshaped how we think about software delivery.\n</br></br>\nWe saw possibilities not just for startups, but for development teams of any size—across private and public sectors, and in virtually any industry.\n</br></br>\nWhile many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from <i>speed</i>, <i>accuracy</i>, and <i>quality</i>. With AI as a true collaborator, those metrics are no longer incremental—they’re transformed.\n"
+msgid "This application was created by <b>Tango</b>, together with our AI-powered virtual team member, <b>Claudete</b>.\n</br></br>\nTango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity.\n</br></br>\n<b>Claudete</b> was born from our hands-on work with two AI tools — <b>Claude Code</b> and <b>Tidewave</b>. Their combined strengths evolved into a collaborative virtual team member that works alongside our developers, accelerating delivery while maintaining precision and quality.\n</br></br>\nWhat began as an internal learning journey—exploring the real-world potential of AI-assisted development—quickly became something more. As we experienced the impact firsthand, we realized how powerful it is to put AI directly into the hands of experienced engineers. The results reshaped how we think about software delivery.\n</br></br>\nWe saw possibilities not just for startups, but for development teams of any size—across private and public sectors, and in virtually any industry.\n</br></br>\nWhile many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from <i>speed</i>, <i>accuracy</i>, and <i>quality</i>. With AI as a true collaborator, those metrics are no longer incremental—they're transformed.\n"
 msgstr ""
+"Esta aplicação foi criada pela <b>Tango</b>, juntamente com nosso membro virtual da equipe impulsionado por IA, <b>Claudete</b>.\n"
+"</br></br>\n"
+"Tango é uma empresa de software sediada no Canadá focada na construção de produtos digitais modernos e escaláveis combinando tecnologia de ponta com desenvolvimento assistido por IA. Ajudamos organizações a avançar mais rapidamente, construir de forma mais inteligente e entregar software de maior qualidade sem complexidade desnecessária.\n"
+"</br></br>\n"
+"<b>Claudete</b> nasceu de nosso trabalho prático com duas ferramentas de IA — <b>Claude Code</b> e <b>Tidewave</b>. Suas forças combinadas evoluíram para um membro virtual colaborativo da equipe que trabalha ao lado de nossos desenvolvedores, acelerando a entrega enquanto mantém precisão e qualidade.\n"
+"</br></br>\n"
+"O que começou como uma jornada de aprendizado interna — explorando o potencial real do desenvolvimento assistido por IA — rapidamente se tornou algo mais. Ao experimentar o impacto em primeira mão, percebemos quão poderoso é colocar a IA diretamente nas mãos de engenheiros experientes. Os resultados remodelaram nossa forma de pensar sobre entrega de software.\n"
+"</br></br>\n"
+"Vimos possibilidades não apenas para startups, mas para equipes de desenvolvimento de qualquer tamanho — nos setores público e privado e em praticamente qualquer indústria.\n"
+"</br></br>\n"
+"Enquanto muitas grandes organizações tentam melhorar os resultados medindo produtividade, nossa experiência mostra que os verdadeiros ganhos vêm da <i>velocidade</i>, <i>precisão</i> e <i>qualidade</i>. Com a IA como um verdadeiro colaborador, essas métricas não são mais incrementais — elas são transformadas.\n"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Work With Us"
-msgstr ""
+msgstr "Trabalhe Conosco"
+
+#: lib/kanban_web/controllers/page_html/tango.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "<b>Build what's next. Together.</b>\n</br></br>\nAI-powered development, seasoned engineers, and technical coaching for modern software teams.\n"
+msgstr "<b>Construa o que vem a seguir. Juntos.</b>\n</br></br>\nDesenvolvimento impulsionado por IA, engenheiros experientes e coaching técnico para equipes de software modernas.\n"
