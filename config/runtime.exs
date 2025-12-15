@@ -133,5 +133,13 @@ if config_env() == :prod do
     ssl: true,
     tls: :always,
     auth: :always,
-    port: 587
+    port: 587,
+    tls_options: [
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      depth: 99,
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
+    ]
 end
