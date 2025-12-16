@@ -1766,8 +1766,8 @@ msgstr "<b>Construire ce qui suit. Ensemble.</b>\n</br></br>\nDéveloppement ass
 msgid "At Tango, we don't just build products — we help teams rethink how software gets delivered in an AI-first world.\n</br></br>\nWhether you're exploring AI-assisted development, modernizing existing systems, or building something entirely new, we partner closely with your team to turn ideas into high-quality, production-ready solutions. Our approach blends experienced engineers with AI-powered workflows to deliver results faster, with greater accuracy and long-term maintainability.\n</br></br>\nWe work with:\n</br></br>\n⬩ Startups looking to move fast without sacrificing quality</br>\n⬩ Established companies modernizing their development practices</br>\n⬩ Public and private sector teams tackling complex technical challenges</br>\n\n</br>\nIf you're curious about how AI can elevate your development process — or you need a trusted partner to help build, scale, or innovate — we'd love to collaborate.\n</br></br>\n<b>Let's build what's next, together.</b>\n"
 msgstr "Chez Tango, nous ne construisons pas seulement des produits — nous aidons les équipes à repenser la façon dont les logiciels sont livrés dans un monde axé sur l'IA.\n</br></br>\nQue vous exploriez le développement assisté par l'IA, que vous modernisiez des systèmes existants ou que vous construisiez quelque chose d'entièrement nouveau, nous collaborons étroitement avec votre équipe pour transformer les idées en solutions de haute qualité, prêtes pour la production. Notre approche combine des ingénieurs expérimentés avec des flux de travail alimentés par l'IA pour livrer des résultats plus rapidement, avec une plus grande précision et une maintenabilité à long terme.\n</br></br>\nNous travaillons avec :\n</br></br>\n⬩ Les startups cherchant à avancer rapidement sans sacrifier la qualité</br>\n⬩ Les entreprises établies modernisant leurs pratiques de développement</br>\n⬩ Les équipes des secteurs public et privé relevant des défis techniques complexes</br>\n\n</br>\nSi vous êtes curieux de savoir comment l'IA peut élever votre processus de développement — ou si vous avez besoin d'un partenaire de confiance pour aider à construire, à évoluer ou à innover — nous aimerions collaborer.\n</br></br>\n<b>Construisons ce qui suit, ensemble.</b>\n"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:56
-#: lib/kanban_web/live/user_live/reset_password.ex:60
+#: lib/kanban_web/live/user_live/forgot_password.ex:54
+#: lib/kanban_web/live/user_live/reset_password.ex:58
 #, elixir-autogen, elixir-format
 msgid "Back to log in"
 msgstr "Retour à la connexion"
@@ -1778,28 +1778,28 @@ msgstr "Retour à la connexion"
 msgid "Forgot your password?"
 msgstr "Mot de passe oublié ?"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:80
+#: lib/kanban_web/live/user_live/forgot_password.ex:78
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "Si votre adresse e-mail est dans notre système, vous recevrez sous peu des instructions pour réinitialiser votre mot de passe."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:96
+#: lib/kanban_web/live/user_live/reset_password.ex:94
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr "Mot de passe réinitialisé avec succès."
 
 #: lib/kanban_web/live/user_live/reset_password.ex:24
-#: lib/kanban_web/live/user_live/reset_password.ex:50
+#: lib/kanban_web/live/user_live/reset_password.ex:49
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr "Réinitialiser le mot de passe"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:109
+#: lib/kanban_web/live/user_live/reset_password.ex:107
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "Le lien de réinitialisation du mot de passe est invalide ou a expiré."
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:46
+#: lib/kanban_web/live/user_live/forgot_password.ex:45
 #, elixir-autogen, elixir-format
 msgid "Send password reset instructions"
 msgstr "Envoyer les instructions de réinitialisation"

@@ -1766,8 +1766,8 @@ msgstr "<b>Construye lo que sigue. Juntos.</b>\n</br></br>\nDesarrollo impulsado
 msgid "At Tango, we don't just build products — we help teams rethink how software gets delivered in an AI-first world.\n</br></br>\nWhether you're exploring AI-assisted development, modernizing existing systems, or building something entirely new, we partner closely with your team to turn ideas into high-quality, production-ready solutions. Our approach blends experienced engineers with AI-powered workflows to deliver results faster, with greater accuracy and long-term maintainability.\n</br></br>\nWe work with:\n</br></br>\n⬩ Startups looking to move fast without sacrificing quality</br>\n⬩ Established companies modernizing their development practices</br>\n⬩ Public and private sector teams tackling complex technical challenges</br>\n\n</br>\nIf you're curious about how AI can elevate your development process — or you need a trusted partner to help build, scale, or innovate — we'd love to collaborate.\n</br></br>\n<b>Let's build what's next, together.</b>\n"
 msgstr "En Tango, no solo construimos productos — ayudamos a los equipos a repensar cómo se entrega el software en un mundo centrado en la IA.\n</br></br>\nYa sea que estés explorando el desarrollo asistido por IA, modernizando sistemas existentes o construyendo algo completamente nuevo, colaboramos estrechamente con tu equipo para convertir ideas en soluciones de alta calidad listas para producción. Nuestro enfoque combina ingenieros experimentados con flujos de trabajo impulsados por IA para entregar resultados más rápido, con mayor precisión y mantenibilidad a largo plazo.\n</br></br>\nTrabajamos con:\n</br></br>\n⬩ Startups que buscan avanzar rápido sin sacrificar la calidad</br>\n⬩ Empresas establecidas que modernizan sus prácticas de desarrollo</br>\n⬩ Equipos del sector público y privado que enfrentan desafíos técnicos complejos</br>\n\n</br>\nSi tienes curiosidad sobre cómo la IA puede elevar tu proceso de desarrollo — o necesitas un socio de confianza para ayudar a construir, escalar o innovar — nos encantaría colaborar.\n</br></br>\n<b>Construyamos lo que sigue, juntos.</b>\n"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:56
-#: lib/kanban_web/live/user_live/reset_password.ex:60
+#: lib/kanban_web/live/user_live/forgot_password.ex:54
+#: lib/kanban_web/live/user_live/reset_password.ex:58
 #, elixir-autogen, elixir-format
 msgid "Back to log in"
 msgstr ""
@@ -1778,28 +1778,28 @@ msgstr ""
 msgid "Forgot your password?"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:80
+#: lib/kanban_web/live/user_live/forgot_password.ex:78
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/reset_password.ex:96
+#: lib/kanban_web/live/user_live/reset_password.ex:94
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:24
-#: lib/kanban_web/live/user_live/reset_password.ex:50
+#: lib/kanban_web/live/user_live/reset_password.ex:49
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/reset_password.ex:109
+#: lib/kanban_web/live/user_live/reset_password.ex:107
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:46
+#: lib/kanban_web/live/user_live/forgot_password.ex:45
 #, elixir-autogen, elixir-format
 msgid "Send password reset instructions"
 msgstr ""
