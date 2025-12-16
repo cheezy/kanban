@@ -8,9 +8,10 @@ defmodule Kanban.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Stride Support", "noreply@StrideLikeABoss.com"})
+      |> from({"Stride Support", "noreply@stridelikeaboss.com"})
       |> subject(subject)
       |> html_body(body)
+      |> header("Message-ID", "<#{System.unique_integer([:positive])}@stridelikeaboss.com>")
 
     with {:ok, _metadata} <- Mailer.deliver(email) do
       {:ok, email}
