@@ -155,7 +155,8 @@ defmodule KanbanWeb.BoardLive.Show do
     task = Tasks.get_task!(id)
 
     case Tasks.delete_task(task) do
-      {:ok, _task} ->
+      {:ok, _deleted_task} ->
+        # Reload columns and tasks from database
         columns = Columns.list_columns(socket.assigns.board)
 
         {:noreply,
@@ -281,9 +282,19 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
-  def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
-    # Reload board when a task is deleted
-    reload_board_data(socket)
+  def handle_info({Kanban.Tasks, :task_deleted, task}, socket) do
+    # Update task count by removing the deleted task
+    column_id = task.column_id
+
+    updated_tasks_by_column =
+      Map.update(socket.assigns.tasks_by_column, column_id, [], fn tasks ->
+        Enum.reject(tasks, &(&1.id == task.id))
+      end)
+
+    {:noreply,
+     socket
+     |> stream_delete("tasks_#{column_id}", task)
+     |> assign(:tasks_by_column, updated_tasks_by_column)}
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
@@ -370,7 +381,15 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:edit_task), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
-    # Load tasks for each column and store them in assigns
+    # Load tasks for each column and store them in stream
+    # Using streams ensures proper DOM updates when tasks move between columns
+    socket =
+      Enum.reduce(columns, socket, fn column, acc_socket ->
+        tasks = Tasks.list_tasks(column)
+        stream(acc_socket, "tasks_#{column.id}", tasks, reset: true)
+      end)
+
+    # Also keep tasks_by_column for count calculations
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
         {column.id, Tasks.list_tasks(column)}

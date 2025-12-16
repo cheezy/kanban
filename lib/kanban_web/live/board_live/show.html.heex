@@ -47,8 +47,7 @@
             class="flex-shrink-0 w-72 bg-gradient-to-br from-gray-50 to-gray-100/80 rounded-xl p-4 shadow-sm border border-gray-200/50"
             data-column-id={column.id}
           >
-            <% tasks = Map.get(@tasks_by_column, column.id, []) %>
-            <% task_count = length(tasks) %>
+            <% task_count = Map.get(@tasks_by_column, column.id, []) |> length() %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-200/60 group">
@@ -138,33 +137,29 @@
             <div
               class="space-y-2 min-h-[100px] p-1 rounded transition-colors"
               id={"tasks-#{column.id}"}
+              phx-update="stream"
               phx-hook="Sortable"
               data-column-id={column.id}
               data-group="tasks"
               data-handle=".drag-handle"
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
-              data-initial-tasks={
-                Jason.encode!(
-                  Enum.map(tasks, &%{id: &1.id, title: &1.title, description: &1.description})
-                )
-              }
             >
-              <%= if Enum.empty?(tasks) do %>
-                <div class="p-6 bg-gradient-to-br from-white to-gray-50 rounded-lg border-2 border-dashed border-gray-300 empty-state text-center">
-                  <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
-                    <.icon name="hero-inbox" class="h-6 w-6 text-gray-400" />
-                  </div>
-                  <p class="text-sm font-medium text-gray-600 mb-1">
-                    {gettext("No tasks yet")}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    {gettext("Drag tasks here or click + to add")}
-                  </p>
+              <div id={"empty-state-#{column.id}"} class={"p-6 bg-gradient-to-br from-white to-gray-50 rounded-lg border-2 border-dashed border-gray-300 empty-state text-center #{if task_count > 0, do: "hidden"}"}>
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                  <.icon name="hero-inbox" class="h-6 w-6 text-gray-400" />
                 </div>
-              <% else %>
-                <%= for task <- tasks do %>
-                  <div
+                <p class="text-sm font-medium text-gray-600 mb-1">
+                  {gettext("No tasks yet")}
+                </p>
+                <p class="text-xs text-gray-500">
+                  {gettext("Drag tasks here or click + to add")}
+                </p>
+              </div>
+
+              <%= for {task_dom_id, task} <- Map.get(@streams, "tasks_#{column.id}", []) do %>
+                <div
+                  id={task_dom_id}
                     class={[
                       "group task-card p-3 bg-gradient-to-br from-white to-gray-50/50 rounded-lg shadow-md hover:shadow-xl border border-gray-200/60 hover:border-blue-300/50 transition-all duration-200 transform hover:-translate-y-0.5 relative overflow-hidden",
                       @can_modify && "cursor-move",
@@ -287,7 +282,6 @@
                     </div>
                   </div>
                 <% end %>
-              <% end %>
             </div>
           </div>
         </div>
