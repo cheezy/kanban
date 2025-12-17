@@ -63,8 +63,9 @@ defmodule KanbanWeb.Router do
       ecto_repos: [Kanban.Repo],
       ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
 
-    error_tracker_dashboard "/errors",
+    error_tracker_dashboard("/errors",
       on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}]
+    )
   end
 
   ## Authentication routes

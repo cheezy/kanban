@@ -216,11 +216,26 @@ defmodule KanbanWeb.NavComponents do
     <svg class="w-5 h-5" viewBox="0 0 640 480" fill="currentColor">
       <path fill="#DE2910" d="M0 0h640v480H0z" />
       <g fill="#FFDE00">
-        <path d="M-119.5 18.5l5.4 16.6L-97.4 26l-10.7 13.6 17.6-3.5-17.6-3.4L-97.4 46l-16.7-9.1 5.4 16.6z" transform="scale(3.9385) translate(194.4 78.8)" />
-        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(261.6 51.2)" />
-        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(272 67.2)" />
-        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(267.2 86.4)" />
-        <path d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z" transform="scale(3.9385) translate(253.6 99.2)" />
+        <path
+          d="M-119.5 18.5l5.4 16.6L-97.4 26l-10.7 13.6 17.6-3.5-17.6-3.4L-97.4 46l-16.7-9.1 5.4 16.6z"
+          transform="scale(3.9385) translate(194.4 78.8)"
+        />
+        <path
+          d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z"
+          transform="scale(3.9385) translate(261.6 51.2)"
+        />
+        <path
+          d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z"
+          transform="scale(3.9385) translate(272 67.2)"
+        />
+        <path
+          d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z"
+          transform="scale(3.9385) translate(267.2 86.4)"
+        />
+        <path
+          d="M0-20l1.5 4.6L6 -20l-3.8 3-1.5-4.6-1.5 4.6L-5-20l4.5 4.6z"
+          transform="scale(3.9385) translate(253.6 99.2)"
+        />
       </g>
     </svg>
     """

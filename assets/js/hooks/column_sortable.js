@@ -2,42 +2,33 @@ import Sortable from "sortablejs"
 
 const ColumnSortableHook = {
   mounted() {
-    this.pendingMove = false
     this.isDragging = false
-    this.allowNextUpdate = false
     this.initSortable()
 
     // Listen for move success/failure events from server
     this.handleEvent("move_column_success", () => {
       console.log("Column move succeeded on server")
-      this.pendingMove = false
-      this.allowNextUpdate = true
     })
 
     this.handleEvent("move_column_failed", () => {
       console.log("Column move failed on server - will reload")
-      this.pendingMove = false
-      this.allowNextUpdate = true
     })
   },
 
   beforeUpdate() {
-    // Allow update if explicitly flagged
-    if (this.allowNextUpdate) {
-      console.log("Allowing LiveView update after column move completion")
-      this.allowNextUpdate = false
-      return true
-    }
-
-    // Prevent updates while dragging or during pending move
-    if (this.isDragging || this.pendingMove) {
-      console.log("Prevented LiveView update - isDragging:", this.isDragging, "pendingMove:", this.pendingMove)
+    // Only prevent updates while actively dragging columns
+    // Allow updates from other clients and task movements
+    if (this.isDragging) {
+      console.log("Prevented LiveView update - actively dragging column")
       return false
     }
+
+    // Allow all other updates
+    return true
   },
 
   updated() {
-    console.log("updated() called - pendingMove:", this.pendingMove, "isDragging:", this.isDragging)
+    console.log("updated() called - isDragging:", this.isDragging)
 
     // Don't reinitialize if we're dragging
     if (this.isDragging) {
@@ -71,7 +62,6 @@ const ColumnSortableHook = {
       onStart: function(evt) {
         // Mark that we're starting a drag
         hook.isDragging = true
-        hook.pendingMove = true
         console.log("Column drag started")
       },
 
@@ -100,15 +90,11 @@ const ColumnSortableHook = {
             .filter(id => id) // Filter out any undefined values
 
           // Send the move event to the LiveView
-          // pendingMove will be cleared by move_column_success or move_column_failed event from server
           hook.pushEvent("move_column", {
             column_id: columnId,
             new_position: newPosition,
             column_ids: columnIds
           })
-        } else {
-          // No actual move, clear immediately
-          hook.pendingMove = false
         }
       }
     })
