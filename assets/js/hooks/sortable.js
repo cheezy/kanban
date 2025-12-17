@@ -2,24 +2,18 @@ import Sortable from "sortablejs"
 
 const SortableHook = {
   mounted() {
-    this.pendingMove = false
     this.isDragging = false
     this.highlightTimeout = null
-    this.allowNextUpdate = false
     this.initSortable()
     this.updateWipHighlight()
 
     // Listen for move success/failure events from server
     this.handleEvent("move_success", () => {
       console.log("Move succeeded on server")
-      this.pendingMove = false
-      this.allowNextUpdate = true
     })
 
     this.handleEvent("move_failed", () => {
       console.log("Move failed on server - will reload")
-      this.pendingMove = false
-      this.allowNextUpdate = true
     })
 
     this.handleEvent("wip_limit_violation", ({column_id}) => {
@@ -39,22 +33,19 @@ const SortableHook = {
   },
 
   beforeUpdate() {
-    // Allow update if explicitly flagged
-    if (this.allowNextUpdate) {
-      console.log("Allowing LiveView update after move completion")
-      this.allowNextUpdate = false
-      return true
-    }
-
-    // Prevent updates while dragging or during pending move
-    if (this.isDragging || this.pendingMove) {
-      console.log("Prevented LiveView update - isDragging:", this.isDragging, "pendingMove:", this.pendingMove)
+    // Only prevent updates while actively dragging
+    // Allow updates from other clients even if we have a pending move
+    if (this.isDragging) {
+      console.log("Prevented LiveView update - actively dragging")
       return false
     }
+
+    // Allow all other updates (including broadcasts from other clients)
+    return true
   },
 
   updated() {
-    console.log("updated() called - pendingMove:", this.pendingMove, "isDragging:", this.isDragging)
+    console.log("updated() called - isDragging:", this.isDragging)
 
     // Don't reinitialize if we're dragging
     if (this.isDragging) {
@@ -119,7 +110,6 @@ const SortableHook = {
       onStart: function(evt) {
         // Mark that we're starting a drag
         hook.isDragging = true
-        hook.pendingMove = true
         console.log("Drag started")
       },
 
@@ -151,16 +141,12 @@ const SortableHook = {
           console.log("Sending move_task event to server")
 
           // Send the move event to the LiveView
-          // pendingMove will be cleared by move_success or move_failed event from server
           hook.pushEvent("move_task", {
             task_id: taskId,
             old_column_id: oldColumnId,
             new_column_id: newColumnId,
             new_position: newPosition
           })
-        } else {
-          // No actual move, clear immediately
-          hook.pendingMove = false
         }
       }
     })
