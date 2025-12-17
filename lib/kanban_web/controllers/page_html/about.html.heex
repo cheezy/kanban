@@ -39,9 +39,7 @@
             {gettext("Version History")}
           </h2>
           <p class="text-gray-600 leading-relaxed mb-4">
-            {gettext(
-              "View the complete version history and feature list for this application."
-            )}
+            {gettext("View the complete version history and feature list for this application.")}
           </p>
           <p class="text-gray-600 leading-relaxed">
             <.link
@@ -63,7 +61,10 @@
             )}
           </p>
           <div class="mt-6">
-            {live_render(@conn, KanbanWeb.IssueLive.Form, id: "issue-form", session: %{"locale" => Gettext.get_locale(KanbanWeb.Gettext)})}
+            {live_render(@conn, KanbanWeb.IssueLive.Form,
+              id: "issue-form",
+              session: %{"locale" => Gettext.get_locale(KanbanWeb.Gettext)}
+            )}
           </div>
         </section>
 

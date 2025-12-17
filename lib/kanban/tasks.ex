@@ -193,7 +193,11 @@ defmodule Kanban.Tasks do
         end
 
         if assignment_changed? do
-          create_assignment_history(task.assigned_to_id, updated_task.assigned_to_id, updated_task.id)
+          create_assignment_history(
+            task.assigned_to_id,
+            updated_task.assigned_to_id,
+            updated_task.id
+          )
         end
 
         # Broadcast task update
@@ -251,22 +255,33 @@ defmodule Kanban.Tasks do
     old_column_id = task.column_id
 
     # If moving to a different column, check WIP limit
-    if new_column.id != old_column_id do
-      # Count current tasks in target column (excluding this task if it's already there)
-      current_count =
-        Task
-        |> where([t], t.column_id == ^new_column.id)
-        |> Repo.aggregate(:count)
+    result =
+      if new_column.id != old_column_id do
+        # Count current tasks in target column (excluding this task if it's already there)
+        current_count =
+          Task
+          |> where([t], t.column_id == ^new_column.id)
+          |> Repo.aggregate(:count)
 
-      # Check if we can add to the target column
-      if new_column.wip_limit > 0 and current_count >= new_column.wip_limit do
-        {:error, :wip_limit_reached}
+        # Check if we can add to the target column
+        if new_column.wip_limit > 0 and current_count >= new_column.wip_limit do
+          {:error, :wip_limit_reached}
+        else
+          perform_move(task, new_column, new_position, old_column_id)
+        end
       else
+        # Moving within same column, no WIP limit check needed
         perform_move(task, new_column, new_position, old_column_id)
       end
-    else
-      # Moving within same column, no WIP limit check needed
-      perform_move(task, new_column, new_position, old_column_id)
+
+    # Broadcast AFTER transaction commits
+    case result do
+      {:ok, updated_task} ->
+        broadcast_task_change(updated_task, :task_moved)
+        {:ok, updated_task}
+
+      error ->
+        error
     end
   end
 
@@ -475,9 +490,7 @@ defmodule Kanban.Tasks do
     updated_task = get_task!(task.id)
     Logger.info("Returning updated task: #{inspect(updated_task)}")
 
-    # Broadcast task move
-    broadcast_task_change(updated_task, :task_moved)
-
+    # Broadcast will happen AFTER transaction commits (in move_task/3)
     updated_task
   end
 
@@ -658,6 +671,7 @@ defmodule Kanban.Tasks do
   end
 
   defp broadcast_task_change(%Task{} = task, event) do
+    require Logger
     # Get the task's column to know which board to broadcast to
     task_with_column = Repo.preload(task, :column)
     column = task_with_column.column
@@ -667,11 +681,15 @@ defmodule Kanban.Tasks do
       column_with_board = Repo.preload(column, :board)
       board_id = column_with_board.board.id
 
+      Logger.info("Broadcasting #{event} for task #{task.id} to board:#{board_id}")
+
       Phoenix.PubSub.broadcast(
         Kanban.PubSub,
         "board:#{board_id}",
         {__MODULE__, event, task}
       )
+    else
+      Logger.warning("Cannot broadcast #{event} for task #{task.id} - no column found")
     end
   end
 end

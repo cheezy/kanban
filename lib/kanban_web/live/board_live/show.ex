@@ -7,7 +7,12 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, viewing_task_id: nil, show_task_modal: false)}
+    {:ok,
+     assign(socket,
+       viewing_task_id: nil,
+       show_task_modal: false,
+       tasks_version: :os.system_time(:millisecond)
+     )}
   end
 
   @impl true
@@ -276,25 +281,22 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
-  def handle_info({Kanban.Tasks, :task_moved, _task}, socket) do
-    # Reload board when a task is moved
-    reload_board_data(socket)
+  def handle_info({Kanban.Tasks, :task_moved, task}, socket) do
+    # Send event to JavaScript to manually update the DOM
+    # This is more reliable than trying to force LiveView to update
+    {:noreply,
+     push_event(socket, "task_moved_remotely", %{
+       task_id: task.id,
+       new_column_id: task.column_id,
+       new_position: task.position
+     })}
   end
 
   @impl true
-  def handle_info({Kanban.Tasks, :task_deleted, task}, socket) do
-    # Update task count by removing the deleted task
-    column_id = task.column_id
-
-    updated_tasks_by_column =
-      Map.update(socket.assigns.tasks_by_column, column_id, [], fn tasks ->
-        Enum.reject(tasks, &(&1.id == task.id))
-      end)
-
-    {:noreply,
-     socket
-     |> stream_delete("tasks_#{column_id}", task)
-     |> assign(:tasks_by_column, updated_tasks_by_column)}
+  def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
+    # Reload all tasks when a task is deleted
+    # This is simpler and ensures consistency
+    reload_board_data(socket)
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
@@ -381,15 +383,8 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:edit_task), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
-    # Load tasks for each column and store them in stream
-    # Using streams ensures proper DOM updates when tasks move between columns
-    socket =
-      Enum.reduce(columns, socket, fn column, acc_socket ->
-        tasks = Tasks.list_tasks(column)
-        stream(acc_socket, "tasks_#{column.id}", tasks, reset: true)
-      end)
-
-    # Also keep tasks_by_column for count calculations
+    # Load tasks for each column and store in tasks_by_column assign
+    # The timestamp-based IDs in the template will force full re-renders
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
         {column.id, Tasks.list_tasks(column)}

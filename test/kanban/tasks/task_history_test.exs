@@ -247,7 +247,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["priority_change events should not have column fields"]} = errors_on(changeset)
+
+      assert %{type: ["priority_change events should not have column fields"]} =
+               errors_on(changeset)
     end
 
     test "invalid when move type has priority fields" do
@@ -338,7 +340,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["priority_change events should not have column fields"]} = errors_on(changeset)
+
+      assert %{type: ["priority_change events should not have column fields"]} =
+               errors_on(changeset)
     end
 
     test "invalid when assignment type has priority fields" do
@@ -377,7 +381,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["move and priority_change events should not have user fields"]} = errors_on(changeset)
+
+      assert %{type: ["move and priority_change events should not have user fields"]} =
+               errors_on(changeset)
     end
 
     test "invalid when priority_change type has user fields" do
@@ -397,7 +403,9 @@ defmodule Kanban.Tasks.TaskHistoryTest do
         })
 
       refute changeset.valid?
-      assert %{type: ["move and priority_change events should not have user fields"]} = errors_on(changeset)
+
+      assert %{type: ["move and priority_change events should not have user fields"]} =
+               errors_on(changeset)
     end
   end
 

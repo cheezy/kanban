@@ -52,6 +52,41 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Handle remote task moves (from other clients)
+window.addEventListener("phx:task_moved_remotely", (e) => {
+  const {task_id, new_column_id, new_position} = e.detail
+  console.log(`Task ${task_id} moved remotely to column ${new_column_id} at position ${new_position}`)
+
+  // Find the task element
+  const taskElement = document.querySelector(`[data-id="${task_id}"]`)
+  if (!taskElement) {
+    console.log(`Task element ${task_id} not found, will reload`)
+    window.location.reload()
+    return
+  }
+
+  // Find the target column's sortable container
+  const targetColumn = document.querySelector(`[data-column-id="${new_column_id}"][phx-hook="Sortable"]`)
+  if (!targetColumn) {
+    console.log(`Target column ${new_column_id} not found, will reload`)
+    window.location.reload()
+    return
+  }
+
+  // Remove from current location
+  taskElement.remove()
+
+  // Insert at new position
+  const children = Array.from(targetColumn.children).filter(child => !child.classList.contains('empty-state'))
+  if (new_position >= children.length) {
+    targetColumn.appendChild(taskElement)
+  } else {
+    targetColumn.insertBefore(taskElement, children[new_position])
+  }
+
+  console.log(`Task ${task_id} moved successfully to column ${new_column_id}`)
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

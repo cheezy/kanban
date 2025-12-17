@@ -45,7 +45,9 @@ const SortableHook = {
   },
 
   updated() {
-    console.log("updated() called - isDragging:", this.isDragging)
+    const columnId = this.el.dataset.columnId
+    const taskCount = this.el.children.length
+    console.log(`[Sortable] updated() for column ${columnId} - isDragging: ${this.isDragging}, task count: ${taskCount}`)
 
     // Don't reinitialize if we're dragging
     if (this.isDragging) {
@@ -53,7 +55,7 @@ const SortableHook = {
       return
     }
 
-    console.log("Reinitializing sortable after LiveView update")
+    console.log(`[Sortable] Reinitializing sortable for column ${columnId}`)
     // Reinitialize sortable after LiveView updates
     this.initSortable()
     this.updateWipHighlight()
@@ -141,6 +143,7 @@ const SortableHook = {
           console.log("Sending move_task event to server")
 
           // Send the move event to the LiveView
+          // phx-update="replace" will handle updating the DOM with the correct state
           hook.pushEvent("move_task", {
             task_id: taskId,
             old_column_id: oldColumnId,

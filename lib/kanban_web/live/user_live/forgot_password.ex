@@ -24,9 +24,7 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
               <p class="text-2xl font-bold text-gray-900">{gettext("Forgot your password?")}</p>
               <:subtitle>
                 <p class="text-gray-600 mt-2">
-                  {gettext(
-                    "We'll send you an email with instructions to reset your password."
-                  )}
+                  {gettext("We'll send you an email with instructions to reset your password.")}
                 </p>
               </:subtitle>
             </.header>

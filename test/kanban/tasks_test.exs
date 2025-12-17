@@ -250,7 +250,9 @@ defmodule Kanban.TasksTest do
 
       # Check that a history record was created
       task_with_history = Tasks.get_task_with_history!(updated_task.id)
-      priority_changes = Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
+
+      priority_changes =
+        Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
 
       assert length(priority_changes) == 1
       priority_change = hd(priority_changes)
@@ -293,14 +295,17 @@ defmodule Kanban.TasksTest do
 
       # Check that three priority change history records were created
       task_with_history = Tasks.get_task_with_history!(task.id)
-      priority_changes = Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
+
+      priority_changes =
+        Enum.filter(task_with_history.task_histories, &(&1.type == :priority_change))
 
       assert length(priority_changes) == 3
 
       # Verify we have all the expected changes (order may vary in tests due to timing)
-      priorities = Enum.map(priority_changes, fn change ->
-        {change.from_priority, change.to_priority}
-      end)
+      priorities =
+        Enum.map(priority_changes, fn change ->
+          {change.from_priority, change.to_priority}
+        end)
 
       assert {"low", "medium"} in priorities
       assert {"medium", "high"} in priorities
@@ -320,7 +325,9 @@ defmodule Kanban.TasksTest do
       assert updated_task.assigned_to_id == assigned_user.id
 
       task_with_history = Tasks.get_task_with_history!(updated_task.id)
-      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assignment_histories =
+        Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
 
       assert length(assignment_histories) == 1
       history = List.first(assignment_histories)
@@ -341,7 +348,9 @@ defmodule Kanban.TasksTest do
       assert updated_task.assigned_to_id == nil
 
       task_with_history = Tasks.get_task_with_history!(updated_task.id)
-      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assignment_histories =
+        Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
 
       assert length(assignment_histories) == 1
       history = List.first(assignment_histories)
@@ -363,7 +372,9 @@ defmodule Kanban.TasksTest do
       assert updated_task.assigned_to_id == user2.id
 
       task_with_history = Tasks.get_task_with_history!(updated_task.id)
-      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assignment_histories =
+        Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
 
       assert length(assignment_histories) == 1
       history = List.first(assignment_histories)
@@ -381,7 +392,9 @@ defmodule Kanban.TasksTest do
       assert {:ok, _updated_task} = Tasks.update_task(task, %{title: "New Title"})
 
       task_with_history = Tasks.get_task_with_history!(task.id)
-      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assignment_histories =
+        Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
 
       assert Enum.empty?(assignment_histories)
     end
@@ -400,13 +413,16 @@ defmodule Kanban.TasksTest do
       assert {:ok, task} = Tasks.update_task(task, %{assigned_to_id: user3.id})
 
       task_with_history = Tasks.get_task_with_history!(task.id)
-      assignment_histories = Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
+
+      assignment_histories =
+        Enum.filter(task_with_history.task_histories, fn h -> h.type == :assignment end)
 
       assert length(assignment_histories) == 3
 
-      assignments = Enum.map(assignment_histories, fn change ->
-        {change.from_user_id, change.to_user_id}
-      end)
+      assignments =
+        Enum.map(assignment_histories, fn change ->
+          {change.from_user_id, change.to_user_id}
+        end)
 
       assert {nil, user1.id} in assignments
       assert {user1.id, user2.id} in assignments

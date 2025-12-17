@@ -148,11 +148,15 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                             <span class="font-semibold text-purple-600">{history.to_user.name}</span>
                           <% history.from_user_id != nil && history.to_user_id == nil -> %>
                             <span class="font-semibold">{gettext("Unassigned from")}</span>
-                            <span class="font-semibold text-purple-600">{history.from_user.name}</span>
+                            <span class="font-semibold text-purple-600">
+                              {history.from_user.name}
+                            </span>
                           <% true -> %>
                             <span class="font-semibold">{gettext("Reassigned")}</span>
                             {gettext("from")}
-                            <span class="font-semibold text-purple-600">{history.from_user.name}</span>
+                            <span class="font-semibold text-purple-600">
+                              {history.from_user.name}
+                            </span>
                             {gettext("to")}
                             <span class="font-semibold text-purple-600">{history.to_user.name}</span>
                         <% end %>
