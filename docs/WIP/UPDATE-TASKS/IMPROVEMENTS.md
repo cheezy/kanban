@@ -180,10 +180,13 @@ Solution Implemented:
 
 **Status:** Added to task 02 and task 09 with review tracking fields
 
-Problem: After I complete a task and move it to "Review" column, I don't know if a human approved it, rejected it, or needs changes.
+**Note:** Column names are configurable per board. References to "Review" column in this document use the default name, but boards may use different names like "Code Review", "QA", or "Pending Review".
+
+Problem: After I complete a task and move it to review column, I don't know if a human approved it, rejected it, or needs changes.
 
 Solution Implemented:
 
+- Added `needs_review` field (boolean, default: false) to control whether task requires human review
 - Added `review_status` field to tasks table (pending, approved, changes_requested, rejected)
 - Added `review_notes` field (text) for human feedback
 - Added `reviewed_by_id` field (references users) to track who reviewed
@@ -195,11 +198,27 @@ Solution Implemented:
 - See task 02 and task 09 for full implementation details
 
 Review workflow:
+
+**For tasks with needs_review = true:**
 1. Agent completes task (status: "completed")
-2. Human reviews task in Review column
-3. Human sets review_status via API
-4. Agent receives notification or polls for review status
-5. If changes_requested, agent can read review_notes and address feedback
+2. Task moves to review column (configurable, default: "Review")
+3. Human reviews task in review column
+4. Human sets review_status via API
+5. Agent receives notification or polls for review status
+6. If changes_requested, agent can read review_notes and address feedback
+
+**For tasks with needs_review = false:**
+1. Agent completes task (status: "completed")
+2. Task skips review column and moves directly to done
+3. Review hooks (before_column_enter[Review], after_column_exit[Review]) still execute if configured
+4. No human review required, task is considered done
+
+This allows humans to specify which tasks need review (e.g., security changes, database migrations) and which can be automatically completed (e.g., documentation updates, minor bug fixes).
+
+Column configuration applies to:
+- Claimable column (where agents get tasks from) - default: "Ready"
+- Review column (where completed tasks go if needs_review = true) - configurable per board
+- Column names, positions, and workflow are fully customizable via UI
 
 ## Questions About the Current Design
 
@@ -242,5 +261,28 @@ The system now has all the core features needed for effective AI agent collabora
 - ✅ **Context limits**: Pagination and depth limits for large epics
 - ✅ **Human review**: Review status, notes, and feedback loop
 - ✅ **Coordination**: Server-side dependency resolution (no agent polling needed)
+- ✅ **Workflow hooks**: Agent-specific commands at workflow transition points (tasks 13, 14)
+
+### New Features (Beyond Original Improvements)
+
+**Agent Workflow Hooks** - Added after original 10 improvements
+
+Agents can execute custom commands at specific workflow transition points defined in AGENTS.md file:
+
+- Hook points: before/after claim, before/after column enter/exit, before/after complete, before/after unclaim
+- Board-level configuration: Enable/disable hooks, set timeouts
+- Column-level configuration: Per-column hook settings
+- Hybrid approach: Boards define when, agents define what
+- Blocking vs non-blocking: before_* hooks block on failure, after_* hooks don't
+- Full observability: Telemetry, logging, timeout enforcement
+
+**Implementation Tasks:**
+
+- Task 13: Add Hook Configuration to Boards/Columns
+- Task 14: Implement Hook Execution Engine
+
+**Documentation:**
+
+- See [docs/WIP/UPDATE-TASKS/AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) for complete design
 
 The system is now ready for full-scale multi-agent collaboration with all requested improvements documented and ready for implementation.

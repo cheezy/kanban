@@ -56,6 +56,7 @@
   - `actual_complexity` (string) - Actual complexity experienced (small, medium, large) - reported by agent on completion
   - `actual_files_changed` (integer) - Actual number of files modified - reported by agent on completion
   - `time_spent_minutes` (integer) - Actual time spent in minutes - reported by agent on completion
+  - `needs_review` (boolean, default: false) - Whether task requires human review before being marked as complete
   - `review_status` (string) - Review status (pending, approved, changes_requested, rejected) - set by human reviewer
   - `review_notes` (text) - Human feedback on the completed work
   - `reviewed_by_id` (bigint, references users) - User who reviewed the task
@@ -181,6 +182,7 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
       add :time_spent_minutes, :integer
 
       # Human review queue (for human feedback on completed work)
+      add :needs_review, :boolean, default: false  # Whether task requires human review
       add :review_status, :string  # pending, approved, changes_requested, rejected
       add :review_notes, :text
       add :reviewed_by_id, references(:users, on_delete: :nilify_all)
@@ -194,6 +196,7 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
     create index(:tasks, [:claim_expires_at])
     create index(:tasks, [:status, :claim_expires_at])
     create index(:tasks, [:actual_complexity])
+    create index(:tasks, [:needs_review])
     create index(:tasks, [:review_status])
     create index(:tasks, [:reviewed_by_id])
   end
@@ -236,6 +239,7 @@ defmodule Kanban.Schemas.Task do
     field :time_spent_minutes, :integer
 
     # Human review queue
+    field :needs_review, :boolean, default: false
     field :review_status, :string
     field :review_notes, :string
     belongs_to :reviewed_by, Kanban.Schemas.User
@@ -252,7 +256,7 @@ defmodule Kanban.Schemas.Task do
       :completion_summary, :dependencies, :status,
       :claimed_at, :claim_expires_at, :required_capabilities,
       :actual_complexity, :actual_files_changed, :time_spent_minutes,
-      :review_status, :review_notes, :reviewed_by_id, :reviewed_at
+      :needs_review, :review_status, :review_notes, :reviewed_by_id, :reviewed_at
     ])
     |> validate_required([:title])
     |> validate_inclusion(:status, ["open", "in_progress", "completed", "blocked"])
