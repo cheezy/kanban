@@ -3,7 +3,7 @@
 **Type:** Epic
 **Identifier:** E1 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
-**Complexity:** Large (25 hours estimated)
+**Complexity:** Large (26 hours estimated)
 
 ## Description
 
@@ -70,8 +70,10 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
 
 1. Start with database schema (tasks 01-02)
 2. Build UI immediately to use new fields (tasks 03-05)
-3. Add API layer for AI agents (tasks 06-08)
-4. Implement task management features (tasks 09-11)
+3. Add API layer for AI agents (tasks 06-08, 15)
+4. Implement task management features (tasks 09-12)
+
+**Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this epic's scope.
 
 ## Key Documentation
 

@@ -3,7 +3,7 @@
 **Type:** Epic
 **Identifier:** E1 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
-**Complexity:** Large (25 hours estimated)
+**Complexity:** Large (26 hours estimated)
 **Created:** 2025-12-17
 
 ## Description
@@ -97,11 +97,12 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
    - Add board-level field visibility controls
    - Result: Users can view and create rich tasks
 
-3. **Phase 3: AI Agent API** (tasks 06-08, 12)
+3. **Phase 3: AI Agent API** (tasks 06-08, 12, 15)
    - Implement bearer token authentication
    - Build JSON API for task CRUD operations
    - Add atomic claiming endpoint for multi-agent coordination
    - Add hierarchical tree endpoint for task context
+   - Add agent documentation endpoint for system guidance
    - Result: AI agents can interact with tasks programmatically
 
 4. **Phase 4: Task Management** (tasks 09-11)
@@ -110,9 +111,11 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
    - Track AI agent metadata and show badges
    - Result: Full task lifecycle management with AI integration
 
+**Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this epic's scope.
+
 ## Success Criteria
 
-- [ ] All 12 tasks completed successfully
+- [ ] All 13 tasks completed successfully
 - [ ] All existing tests still pass (no regressions)
 - [ ] New tests cover all new functionality
 - [ ] Database migrations run cleanly on existing data
