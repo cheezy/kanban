@@ -74,9 +74,77 @@ Response Format
 }
 ```
 
-### Alternative: JSON with Markdown Description
+### Recommended: Structured JSON Based on TASKS.md Template
 
-One hybrid approach that works well:
+The optimal format combines structure with rich context (see **TASKS.md** for full template):
+
+```json
+{
+  "title": "Add priority filter to board list view",
+  "complexity": "medium",
+  "estimated_files": "2-3",
+  "description": {
+    "why": "Users need to focus on high-priority tasks without manually scanning",
+    "what": "Add a dropdown filter for task priority (0-4) in board header",
+    "where": "Board list view header, next to existing status filter"
+  },
+  "acceptance_criteria": [
+    "Dropdown shows priorities 0-4 with labels",
+    "Filtering updates task list in real-time via LiveView",
+    "Filter state persists in URL params"
+  ],
+  "key_files": [
+    {
+      "path": "lib/kanban_web/live/board_live.ex",
+      "note": "Main LiveView handling board display"
+    }
+  ],
+  "technical_notes": {
+    "patterns": ["Use existing filter pattern from status filter"],
+    "database": {
+      "tables": ["tasks"],
+      "migration_needed": true
+    },
+    "integration_points": {
+      "pubsub": false,
+      "channels": false
+    }
+  },
+  "verification": {
+    "commands": ["mix test test/kanban/boards_test.exs", "mix precommit"],
+    "manual_steps": ["Navigate to /boards", "Click priority filter dropdown"],
+    "success_indicators": ["Dropdown appears", "Task list updates without reload"]
+  },
+  "observability": {
+    "telemetry_events": [],
+    "metrics": ["Could add [:kanban, :filter, :used] counter"],
+    "logging": "No logging needed"
+  },
+  "error_handling": {
+    "user_sees": "Graceful degradation if invalid priority",
+    "on_failure": "Show all tasks",
+    "validation": "Ensure priority is 0-4 or nil"
+  },
+  "data_examples": {
+    "input": {"priority": "3", "status": "in_progress"},
+    "query": "from t in Task, where: t.priority == ^priority"
+  },
+  "common_pitfalls": [
+    "Remember to handle nil priority (tasks without priority set)",
+    "Avoid N+1 queries - filters happen at DB level"
+  ],
+  "out_of_scope": [
+    "Don't add sorting by priority",
+    "Don't modify task card layout"
+  ]
+}
+```
+
+This structured format gives AI everything needed to execute without exploration.
+
+### Alternative: Minimal JSON with Markdown Description
+
+For simpler tasks, a hybrid approach works:
 
 ```json
 {

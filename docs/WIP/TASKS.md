@@ -38,40 +38,279 @@
     - What NOT to change/refactor?
     - Minimal vs. full implementation?
 
-### Ideal Task Structure
+8. Related Code Locations (Discovery Shortcuts)
+    - Specific file paths to start reading
+    - Module/function names that are central to the task
+    - Database tables/schemas involved
+    - Routes or URLs affected
+    - This saves exploration time - jump straight to the right files
 
-Title: [Verb] [What] [Where/Context]
-e.g., "Add priority filter to board list view"
+9. Verification Commands
+    - Exact commands to run to verify the task works
+    - Expected output from those commands
+    - How to know if tests pass vs. fail
+    - Manual testing steps
 
-Description:
+10. Data Shape Examples
+    - Actual data structures (maps, structs, JSON)
+    - Before/after examples for mutations
+    - Sample database records
+    - API request/response examples
 
-- WHY: Users need to focus on high-priority tasks
-- WHAT: Add a dropdown filter for task priority (0-4)
-- WHERE: Board list view header
+11. Common Pitfalls / What NOT to Do
+    - Known issues in this area of code
+    - Previous bugs or mistakes to avoid
+    - "Don't forget to..." reminders
+    - Anti-patterns specific to this codebase
 
-Acceptance Criteria:
+12. Task Size/Complexity Indicator
+    - Small (< 30 min), Medium (1-2 hours), Large (> 2 hours)
+    - Number of files expected to change
+    - Whether this needs careful planning vs. can start coding immediately
 
-- [ ] Dropdown shows priorities 0-4 with labels
-- [ ] Filtering updates the task list in real-time
-- [ ] Filter state persists in URL params
-- [ ] Shows "All" option to clear filter
+13. Success Indicators Beyond Tests
+    - What should visibly work in the UI
+    - What should appear in logs
+    - Database state changes
+    - Performance benchmarks (if applicable)
 
-Technical Notes:
+14. Integration Points
+    - What other systems/features does this touch?
+    - WebSocket/Phoenix Channel events involved
+    - Background jobs triggered
+    - External API calls
+    - PubSub broadcasts needed
 
-- Files: lib/kanban_web/live/board_live.ex
-- Use existing filter pattern from status filter
-- Update get_tasks/2 in Kanban.Boards context
+15. Observability Requirements
+    - Should telemetry events be added?
+    - What metrics should be tracked?
+    - Any specific logging needed for debugging/monitoring?
+    - Performance metrics to capture
 
-Dependencies:
+16. Environment & Configuration
+    - Environment variables or config needed
+    - Feature flags that affect this code path
+    - Database state assumptions (migrations, seed data)
+    - External service dependencies
 
-- Blocks: beads-xyz (needs priority field in schema)
+17. Error Handling Expectations
+    - How to communicate errors to users
+    - What happens on failure (rollback, retry, silent fail)
+    - Logging requirements (level, info to include)
+    - Specific error messages or validation messages
 
-Out of Scope:
+18. Migration Path (for changes)
+    - Is this a breaking change?
+    - Do existing records need data migration?
+    - Backwards compatibility requirements?
+    - Deployment order (migration before/after deploy)
+
+### Task Template (Copy-Paste Ready)
+
+```markdown
+## [Verb] [What] [Where/Context]
+
+**Complexity:** [Small/Medium/Large] | **Est. Files:** [1-2 / 3-5 / 5+]
+
+### Description
+
+**WHY:** [Problem being solved / Value provided]
+**WHAT:** [Specific feature/change]
+**WHERE:** [UI location / code area]
+
+### Acceptance Criteria
+
+- [ ] [Specific behavior 1]
+- [ ] [Specific behavior 2]
+- [ ] [Specific behavior 3]
+
+### Key Files to Read First
+
+- `path/to/main/file.ex` - [Brief description of relevance]
+- `path/to/context.ex` - [Brief description]
+
+### Technical Notes
+
+**Patterns to Follow:**
+- [Existing pattern/convention to use]
+
+**Database/Schema:**
+- Tables: [table_names]
+- Migrations needed: [yes/no - description if yes]
+
+**Integration Points:**
+- [ ] PubSub broadcasts: [channel/event names]
+- [ ] Phoenix Channels: [socket/topic names]
+- [ ] External APIs: [which services]
+
+### Verification
+
+**Commands to Run:**
+```bash
+mix test path/to/test.exs
+mix precommit
+```
+
+**Manual Testing:**
+1. [Step-by-step testing instructions]
+2. [Expected outcome]
+
+**Success Looks Like:**
+- [UI shows X]
+- [Database has Y]
+- [Logs contain Z]
+
+### Data Examples
+
+**Input:**
+```elixir
+%{field: value}
+```
+
+**Output:**
+```elixir
+%Model{field: value, ...}
+```
+
+### Observability
+
+- [ ] Telemetry event: `[:app, :domain, :action]`
+- [ ] Metrics: [counter/sum/summary of what]
+- [ ] Logging: [info/warn/error for what scenarios]
+
+### Error Handling
+
+- User sees: [error message/UI state]
+- On failure: [rollback/retry/silent fail]
+- Validation: [what to validate and messages]
+
+### Common Pitfalls
+
+- [ ] Don't forget to [common mistake]
+- [ ] Remember to [important step]
+- [ ] Avoid [anti-pattern]
+
+### Dependencies
+
+**Requires:** [bead-id or "none"]
+**Blocks:** [bead-id or "none"]
+
+### Out of Scope
+
+- [What NOT to do/change]
+- [Future enhancements to skip]
+```
+
+### Example Task (Filled Out)
+
+```markdown
+## Add priority filter to board list view
+
+**Complexity:** Medium | **Est. Files:** 2-3
+
+### Description
+
+**WHY:** Users need to focus on high-priority tasks without manually scanning
+**WHAT:** Add a dropdown filter for task priority (0-4) in board header
+**WHERE:** Board list view header, next to existing status filter
+
+### Acceptance Criteria
+
+- [ ] Dropdown shows priorities 0-4 with labels (Critical, High, Medium, Low, None)
+- [ ] Filtering updates task list in real-time via LiveView
+- [ ] Filter state persists in URL params (?priority=3)
+- [ ] Shows "All Priorities" option to clear filter
+- [ ] Works with existing status filter (combines filters)
+
+### Key Files to Read First
+
+- `lib/kanban_web/live/board_live.ex` - Main LiveView handling board display
+- `lib/kanban/boards.ex` - Context with get_tasks/2 function to update
+- `lib/kanban/schemas/task.ex` - Check if priority field exists
+
+### Technical Notes
+
+**Patterns to Follow:**
+- Use same filter pattern as existing status filter in board_live.ex
+- Follow LiveView handle_event pattern for filter changes
+
+**Database/Schema:**
+- Tables: tasks
+- Migrations needed: Yes - add priority:integer field if not exists
+
+**Integration Points:**
+- [ ] PubSub broadcasts: Not needed (read-only filter)
+- [ ] Phoenix Channels: None
+- [ ] External APIs: None
+
+### Verification
+
+**Commands to Run:**
+```bash
+mix test test/kanban/boards_test.exs
+mix test test/kanban_web/live/board_live_test.exs
+mix precommit
+```
+
+**Manual Testing:**
+1. Navigate to /boards
+2. Click priority filter dropdown
+3. Select "High (3)" priority
+4. Verify only priority 3 tasks show
+5. Check URL contains ?priority=3
+6. Refresh page - filter should persist
+7. Select "All Priorities" - should show all tasks
+
+**Success Looks Like:**
+- Dropdown appears in board header
+- Task list updates without page reload
+- URL updates with query param
+- Page refresh maintains filter state
+
+### Data Examples
+
+**Query Params:**
+```elixir
+%{"priority" => "3", "status" => "in_progress"}
+```
+
+**Filtered Query:**
+```elixir
+# In Boards.get_tasks/2
+from t in Task,
+  where: t.priority == ^priority,
+  where: t.status == ^status
+```
+
+### Observability
+
+- [ ] Telemetry event: Not needed for this feature
+- [ ] Metrics: Could add `[:kanban, :filter, :used]` counter (optional)
+- [ ] Logging: No logging needed (simple read operation)
+
+### Error Handling
+
+- User sees: No special errors (graceful degradation if invalid priority)
+- On failure: Show all tasks (don't break the page)
+- Validation: Ensure priority is 0-4 or nil
+
+### Common Pitfalls
+
+- [ ] Don't forget to broadcast filter changes via PubSub (actually not needed - read-only)
+- [ ] Remember to handle nil priority (tasks without priority set)
+- [ ] Avoid N+1 queries - filters happen at DB level
+
+### Dependencies
+
+**Requires:** None (can add migration in this task)
+**Blocks:** None
+
+### Out of Scope
 
 - Don't add sorting by priority (separate task)
-- Don't modify the task card layout
-
-The more specific and complete the task description, the faster and more accurately I can implement it! Does this help? Are you thinking about how to structure issues in the Beads system for better AI implementation?
+- Don't modify the task card layout or styling
+- Don't add bulk priority assignment
+```
 
 ## Internal Mental Model During Task Execution
 

@@ -2,6 +2,8 @@
 
 Should technical_context be structured JSON, or free-form markdown?
 
+**Note:** This question is now largely answered by **TASKS.md**, which defines the complete task structure including technical context. This document provides additional depth on the structured JSON approach and a comprehensive schema.
+
 ## Structured JSON is significantly better
 
 Here's why:
@@ -605,4 +607,18 @@ Here's how it would look for a real task:
 }
 ```
 
-This schema gives AI agents everything they need while remaining flexible for future extensions. Would you like me to help implement this in your Kanban app?
+This schema gives AI agents everything they need while remaining flexible for future extensions.
+
+## Integration with TASKS.md
+
+The **TASKS.md** template incorporates many of these structured fields in a more practical, focused format:
+
+- **Key Files to Read First** → Simplified version of `files.to_modify` and `files.reference_files`
+- **Technical Notes** → Combines `patterns.to_follow` and database info
+- **Verification** → Includes `testing.key_scenarios` and commands
+- **Observability** → Telemetry and metrics requirements
+- **Common Pitfalls** → Maps to `patterns.to_avoid`
+
+The TASKS.md format is **production-ready** and optimized for actual use. This document's comprehensive schema is here for reference if you need more granular structure in the future.
+
+**Recommendation:** Start with TASKS.md template. If you find you need more structured technical context, incrementally adopt fields from this schema.

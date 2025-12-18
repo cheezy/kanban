@@ -147,3 +147,58 @@ If you implement subtasks, give me:
     `GET /api/tasks/ready?top_level=true` only shows parent tasks
 
 *My vote: Start with flat + dependencies, add subtasks in v2* when you see how planning actually works in practice. What's your intuition - do you think you'd want to see the hierarchy in the UI?
+
+## Task Format and Structure
+
+For the detailed task structure that AI can both create and execute efficiently, see **TASKS.md**. That document defines:
+
+- **18 categories** of essential information for task implementation
+- **Copy-paste template** for creating new tasks
+- **Completion summary format** - how AI updates tasks after finishing work
+- **Full lifecycle** from task creation → execution → completion
+
+### How Task Breakdown Fits with TASKS.md
+
+When creating tasks via API (flat or hierarchical), use the TASKS.md template structure:
+
+```json
+{
+  "title": "Add priority filter to board list view",
+  "complexity": "medium",
+  "estimated_files": "2-3",
+  "description": {
+    "why": "Users need to focus on high-priority tasks without manually scanning",
+    "what": "Add a dropdown filter for task priority (0-4) in board header",
+    "where": "Board list view header, next to existing status filter"
+  },
+  "acceptance_criteria": [
+    "Dropdown shows priorities 0-4 with labels (Critical, High, Medium, Low, None)",
+    "Filtering updates task list in real-time via LiveView",
+    "Filter state persists in URL params (?priority=3)"
+  ],
+  "key_files": [
+    {"path": "lib/kanban_web/live/board_live.ex", "note": "Main LiveView handling board display"},
+    {"path": "lib/kanban/boards.ex", "note": "Context with get_tasks/2 function to update"}
+  ],
+  "verification": {
+    "commands": ["mix test test/kanban/boards_test.exs", "mix precommit"],
+    "manual_steps": [
+      "Navigate to /boards",
+      "Click priority filter dropdown",
+      "Select 'High (3)' priority"
+    ]
+  },
+  "observability": {
+    "telemetry_events": ["[:kanban, :filter, :used]"],
+    "metrics": ["counter of filter usage"]
+  }
+}
+```
+
+This rich task structure enables AI to:
+1. **Execute without exploration** - key files are listed upfront
+2. **Verify correctly** - exact commands and manual steps provided
+3. **Complete properly** - knows what telemetry/metrics to add
+4. **Update post-completion** - structured format for completion summary
+
+See **TASKS.md** for the full template and examples.

@@ -24,10 +24,10 @@ Traditional project management tools treat AI integration as an afterthought. St
 
 ```text
 1. AI with the guidance of Product Owners or Technical Leads creates a structured plan with dependencies
-2. AI POSTs the plan to Stride as a set of interconnected tasks
+2. AI POSTs the plan to Stride as a set of interconnected tasks in a Backlog column
 3. Product Owners or Technical Leads reviews in the Kanban UI, refines as needed
-4. Human moves the tasks into the Ready column
-5. AI queries /api/tasks/ready to find unblocked work
+4. Human moves the tasks or a feature into the Ready column
+5. AI queries /api/tasks/next to find the next logical tasks
 6. AI claims a task (PATCH status=in_progress) and moves it to the In Progress column
 7. AI implements the task
 8. AI marks it complete (PATCH status=completed) and moves it to the Review column for a Human to review
