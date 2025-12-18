@@ -376,10 +376,89 @@ end
 **Requires:** 02-add-task-metadata-fields.md, 04-implement-task-crud-api.md
 **Blocks:** None
 
+## Follow-Up Task Creation Workflow
+
+**Important:** When completing tasks, agents should create new tasks for any follow-up work discovered.
+
+### Workflow Steps
+
+1. **Complete Current Task:** Call PATCH /api/tasks/:id/complete with completion summary
+2. **Document Follow-Ups:** Include follow-up tasks in `completion_summary.follow_up_tasks` array
+3. **Create New Tasks:** Immediately create new tasks via POST /api/tasks for each follow-up item
+4. **Link Dependencies:** Add current task ID to new task's dependencies if applicable
+
+### Example: Creating Follow-Up Tasks After Completion
+
+```bash
+# Step 1: Complete current task (W42: Add user authentication)
+curl -X PATCH http://localhost:4000/api/tasks/42/complete \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "completion": {
+      "completed_by": "ai_agent:claude-sonnet-4.5",
+      "actual_complexity": "large",
+      "actual_files_changed": 8,
+      "time_spent_minutes": 65,
+      "completion_summary": {
+        "files_changed": [...],
+        "verification_results": {...},
+        "follow_up_tasks": [
+          "Add password reset flow",
+          "Implement 2FA support",
+          "Add session timeout configuration"
+        ]
+      }
+    }
+  }'
+
+# Step 2: Create follow-up task #1
+curl -X POST http://localhost:4000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": {
+      "title": "Add password reset flow",
+      "complexity": "medium",
+      "estimated_files": "3-4",
+      "why": "Follow-up from W42: Users need ability to reset forgotten passwords",
+      "what": "Implement email-based password reset with token expiration",
+      "where_context": "Authentication system",
+      "dependencies": [42]
+    }
+  }'
+
+# Step 3: Create follow-up task #2
+curl -X POST http://localhost:4000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": {
+      "title": "Implement 2FA support",
+      "complexity": "large",
+      "estimated_files": "5-6",
+      "why": "Follow-up from W42: Enhanced security for sensitive accounts",
+      "what": "Add TOTP-based two-factor authentication",
+      "where_context": "Authentication system",
+      "dependencies": [42]
+    }
+  }'
+
+# Continue for remaining follow-up tasks...
+```
+
+### Benefits of Creating Follow-Up Tasks
+
+- **Prevents Work From Being Forgotten:** Follow-ups become visible, trackable tasks
+- **Enables Parallel Work:** Other agents can claim follow-up tasks
+- **Maintains Dependency Chain:** Proper ordering ensures prerequisites are met
+- **Provides Audit Trail:** Historical record of how work evolved
+- **Improves Planning:** Follow-ups are estimated and tracked like any other work
+
 ## Out of Scope
 
-- Don't implement automatic follow-up task creation (manual for now)
+- Don't implement automatic follow-up task creation (agents create manually via API)
 - Don't add completion approval workflow
 - Don't implement completion summary templates
 - Don't add AI-powered completion validation
-- Future enhancement: Auto-create follow-up tasks from completion_summary.follow_up_tasks
+- Future enhancement: Auto-create follow-up tasks from completion_summary.follow_up_tasks array

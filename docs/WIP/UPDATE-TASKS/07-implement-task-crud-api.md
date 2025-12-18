@@ -34,6 +34,7 @@
 3. Update task status via PATCH /api/tasks/:id as you work
 4. Use GET /api/tasks to view remaining work
 5. For tasks 09-15, use the API exclusively for task creation and updates
+6. When completing any task, create new tasks for follow-up work discovered
 
 ## Key Files to Read First
 

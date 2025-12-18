@@ -157,6 +157,49 @@ end
 3. **Planning Accuracy**: Improve sprint/iteration planning with real data
 4. **Cost Tracking**: Understand actual time investment per task
 
+## Follow-Up Task Creation
+
+**Important:** When agents discover follow-up tasks during work, they should **create new tasks** via the API, not just document them in the completion summary.
+
+### Workflow for Follow-Up Tasks
+
+1. **During Task Completion:** Agent identifies follow-up work needed (e.g., "Add caching layer", "Update documentation", "Refactor X")
+2. **Document in Completion Summary:** List follow-up tasks in `completion_summary.follow_up_tasks` array
+3. **Create New Tasks:** Immediately create new tasks via `POST /api/tasks` for each follow-up item
+4. **Link Tasks:** Consider adding dependency relationships if follow-ups depend on current task
+
+### Example: Creating Follow-Up Tasks
+
+**After completing task, agent creates follow-up tasks:**
+
+```bash
+# Task just completed: "Add user authentication"
+# Discovered follow-up: "Add password reset flow"
+
+curl -X POST http://localhost:4000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": {
+      "title": "Add password reset flow",
+      "complexity": "medium",
+      "estimated_files": "3-4",
+      "why": "Follow-up from W42: Users need ability to reset forgotten passwords",
+      "what": "Implement email-based password reset with token expiration",
+      "where_context": "Authentication system",
+      "dependencies": [42]
+    }
+  }'
+```
+
+**Benefits of Creating Tasks (Not Just Documenting):**
+
+- Follow-up work doesn't get forgotten
+- Other agents can claim follow-up tasks
+- Dependency tracking ensures proper order
+- Progress is visible on the board
+- Historical record of how work evolved
+
 ## Usage Examples
 
 ### Completing a Task with Feedback

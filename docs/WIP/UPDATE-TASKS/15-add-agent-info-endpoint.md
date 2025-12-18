@@ -606,6 +606,9 @@ defmodule KanbanWeb.API.AgentController do
           "Report actual_complexity (may differ from estimated)",
           "Count actual_files_changed",
           "Estimate time_spent_minutes",
+          "List follow-up tasks discovered in completion_summary.follow_up_tasks",
+          "Create new tasks via POST /api/tasks for each follow-up item",
+          "Link follow-up tasks to current task via dependencies field",
           "Execute after_complete hook (usually git commit/push)"
         ],
         if_blocked: [
@@ -630,7 +633,8 @@ defmodule KanbanWeb.API.AgentController do
           "Don't leave tasks claimed if you can't complete them",
           "Don't implement features marked as out_of_scope",
           "Don't forget to execute AGENTS.md hooks",
-          "Don't assume needs_review=false means skip quality checks"
+          "Don't assume needs_review=false means skip quality checks",
+          "Don't just document follow-up tasks - create them via POST /api/tasks"
         ],
         efficiency_tips: [
           "Use batch endpoint when creating multiple related tasks",
