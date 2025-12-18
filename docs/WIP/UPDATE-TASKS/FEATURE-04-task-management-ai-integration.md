@@ -2,6 +2,7 @@
 
 **Epic:** [EPIC-ai-optimized-task-system.md](EPIC-ai-optimized-task-system.md)
 **Type:** Feature
+**Identifier:** F4 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
 **Complexity:** Medium (6.5 hours estimated)
 

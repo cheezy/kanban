@@ -29,6 +29,7 @@
 - [lib/kanban_web/controllers/api/task_controller.ex](lib/kanban_web/controllers/api/task_controller.ex) - Add tree action
 - [lib/kanban/schemas/task.ex](lib/kanban/schemas/task.ex) - Check parent_id and task_type fields
 - [docs/WIP/TASK-BREAKDOWN.md](../TASK-BREAKDOWN.md) - Epic/Feature/Task structure
+- [docs/WIP/UPDATE-TASKS/TASK-ID-GENERATION.md](TASK-ID-GENERATION.md) - Prefixed ID system (E, F, W, D)
 
 ## Technical Notes
 

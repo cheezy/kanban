@@ -2,8 +2,9 @@
 
 **Epic:** [EPIC-ai-optimized-task-system.md](EPIC-ai-optimized-task-system.md)
 **Type:** Feature
+**Identifier:** F3 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
-**Complexity:** Large (8 hours estimated)
+**Complexity:** Large (9 hours estimated)
 
 ## Description
 
@@ -27,6 +28,7 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
 - RESTful JSON endpoints for task CRUD operations
 - Atomic claiming endpoint to prevent race conditions between multiple agents
 - Hierarchical tree endpoint to see full epic/feature/task structure
+- Agent documentation endpoint to provide system information
 - API accepts rich task fields in JSON format
 - API responses include all TASKS.md fields
 
@@ -59,6 +61,13 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
   - Feature returns all tasks (2 levels)
   - Task returns just that task (1 level)
   - Include statistics (total, completed, blocked counts)
+
+- [ ] **15** - [15-add-agent-info-endpoint.md](15-add-agent-info-endpoint.md) - **Small** (1 hour)
+  - GET /api/agent/info - Return comprehensive agent documentation
+  - System overview, workflow, hooks, review process
+  - API endpoints list, task metadata fields
+  - Best practices and common pitfalls
+  - Practical examples with request/response samples
 
 ## Dependencies
 

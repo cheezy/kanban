@@ -28,6 +28,7 @@
 - `priv/repo/migrations/XXXXXX_extend_tasks_schema.exs` - Previous migration
 - `docs/WIP/TASKS.md` - Completion summary format (lines 323-385)
 - `docs/WIP/AI-WORKFLOW.md` - Completion data structure (lines 73-103)
+- [docs/WIP/UPDATE-TASKS/TASK-ID-GENERATION.md](TASK-ID-GENERATION.md) - Prefixed ID system (E, F, W, D)
 
 ## Technical Notes
 
@@ -63,9 +64,39 @@
   - `reviewed_at` (utc_datetime) - When the task was reviewed
 
 **Integration Points:**
-- [ ] PubSub broadcasts: Broadcast when task status changes
-- [ ] Phoenix Channels: Update all clients on status change
+
+- [ ] PubSub broadcasts: Broadcast when task fields change (status, column, review status, etc.)
+- [ ] Phoenix Channels: Update all connected clients on task changes
+- [ ] Broadcast events: task_created, task_updated, task_status_changed, task_moved, task_reviewed
 - [ ] External APIs: None
+
+**PubSub Topics:**
+
+- `tasks:board:{board_id}` - All task changes for a board
+- `tasks:task:{task_id}` - Specific task changes
+
+**Broadcast Payload:**
+
+```elixir
+%{
+  event: "task_updated",  # or task_created, task_status_changed, task_moved, task_reviewed
+  task: %{
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    column_id: task.column_id,
+    needs_review: task.needs_review,
+    review_status: task.review_status,
+    claimed_at: task.claimed_at,
+    completed_at: task.completed_at,
+    # ... all relevant fields
+  },
+  changes: %{
+    status: {old_value, new_value},
+    column_id: {old_value, new_value}
+  }
+}
+```
 
 ## Verification
 
