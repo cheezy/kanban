@@ -28,6 +28,29 @@
 - [ ] Returns 401 if no/invalid token
 - [ ] Response is versioned (includes api_version field)
 
+## Eating Our Own Dog Food
+
+**Critical for Agent Onboarding:** This endpoint is the FIRST thing an AI agent should call when starting work.
+
+**Usage Pattern:**
+
+1. Agent receives API token
+2. Call GET /api/agent/info to understand system
+3. Review workflow steps, hook points, best practices
+4. Check available API endpoints
+5. Understand task metadata fields
+6. Call GET /api/tasks/next to start working
+
+**Why This Matters:**
+
+- Agents learn system conventions without asking humans
+- Documentation always matches current implementation
+- Reduces onboarding friction for new agent instances
+- Provides examples of proper API usage
+- Ensures agents follow best practices from day one
+
+**Testing Recommendation:** After implementing, use this endpoint yourself to verify the documentation is accurate and helpful. If you find yourself confused by any section, improve the response before marking task complete.
+
 ## Key Files to Read First
 
 - [lib/kanban_web/controllers/api/agent_controller.ex](lib/kanban_web/controllers/api/agent_controller.ex) - Create new controller

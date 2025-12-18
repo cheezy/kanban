@@ -113,6 +113,26 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
 
 **Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this epic's scope.
 
+## Eating Our Own Dog Food Strategy
+
+**Philosophy:** Use the system we're building to manage its own development starting from task 07 onwards.
+
+### Transition Timeline
+
+- **Tasks 01-06:** Traditional development (manual task management)
+- **Task 07:** Create task 08 via POST /api/tasks (**transition point**)
+- **Tasks 08-15:** Full API usage (claim, update, complete via API)
+
+### Why This Matters
+
+1. **Validates API works** for real task management workflow
+2. **Discovers UX issues** before AI agents encounter them
+3. **Proves system ready** for production agent usage
+4. **Creates real examples** for documentation
+5. **Builds confidence** in the implementation
+
+See [README.md](README.md#eating-our-own-dog-food) for detailed phase-by-phase adoption plan and example API calls.
+
 ## Success Criteria
 
 - [ ] All 13 tasks completed successfully

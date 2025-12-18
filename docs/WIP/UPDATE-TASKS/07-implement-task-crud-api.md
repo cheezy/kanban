@@ -23,6 +23,18 @@
 - [ ] Scopes enforced (tasks:read, tasks:write, tasks:delete)
 - [ ] All endpoints return proper HTTP status codes
 
+## Eating Our Own Dog Food
+
+**Start Using This:** Once this task is complete, all remaining tasks (08-15) should be created and managed via the API instead of manually in the UI.
+
+**How to use:**
+
+1. Complete this task (07) using manual/UI methods
+2. Create task 08 via POST /api/tasks endpoint
+3. Update task status via PATCH /api/tasks/:id as you work
+4. Use GET /api/tasks to view remaining work
+5. For tasks 09-15, use the API exclusively for task creation and updates
+
 ## Key Files to Read First
 
 - [lib/kanban/tasks.ex](lib/kanban/tasks.ex) - Task context functions to use

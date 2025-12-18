@@ -43,6 +43,26 @@
 - [ ] Returns 401 if no/invalid token
 - [ ] Response includes column information
 
+## Eating Our Own Dog Food
+
+**Start Using This:** Once this task is complete, use POST /api/tasks/claim to claim tasks 09-15 instead of manually assigning them.
+
+**Workflow:**
+
+1. Call GET /api/tasks/next to see what task is available
+2. Call POST /api/tasks/claim to atomically claim it
+3. Work on the task
+4. If blocked, call POST /api/tasks/:id/unclaim with reason
+5. Repeat for remaining tasks
+
+**Benefits:**
+
+- Validates atomic claiming works correctly
+- Tests capability matching in real workflow
+- Verifies claim timeout and auto-release
+- Ensures unclaim mechanism functions properly
+- Provides real-world API usage patterns
+
 ## Key Files to Read First
 
 - [lib/kanban/tasks.ex](lib/kanban/tasks.ex) - Add get_next_task/0 and claim_next_task/0 functions

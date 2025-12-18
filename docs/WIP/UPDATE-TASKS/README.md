@@ -75,6 +75,64 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
 
 **Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this epic's scope.
 
+## Eating Our Own Dog Food
+
+**Philosophy:** Start using the system we're building as soon as each feature becomes available.
+
+### Phase-by-Phase Adoption
+
+#### Phase 1-2 (Tasks 01-05): Manual/UI Entry
+
+- Tasks created and managed via UI
+- Use existing kanban board functionality
+- Manual status updates and tracking
+
+#### Phase 3 (Tasks 06-08): API Transition
+
+- Task 06: Create API token for yourself
+- Task 07: **START HERE** - Use POST /api/tasks to create task 08
+- Task 08: Use POST /api/tasks/claim to claim remaining tasks
+
+#### Phase 3-4 (Tasks 09-15): Full API Usage
+
+- All tasks created via POST /api/tasks
+- All claims via POST /api/tasks/claim
+- All updates via PATCH /api/tasks/:id
+- Verify GET /api/tasks/next returns correct task
+- Test unclaim if you get blocked
+- Use GET /api/agent/info for guidance
+
+### Benefits
+
+1. **Real-World Testing**: Find API issues immediately
+2. **Dogfooding**: Experience what AI agents will experience
+3. **Feedback Loop**: Fix UX problems before agents encounter them
+4. **Validation**: Proves the system works end-to-end
+5. **Documentation**: Creates real examples for other agents
+
+### Transition Point
+
+**After Task 07 completes**, the system is ready for API-first workflow. Create a script or use curl/httpie for remaining tasks.
+
+**Example:**
+
+```bash
+# Create task 09
+curl -X POST http://localhost:4000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Add task completion tracking",
+    "complexity": "medium",
+    "type": "work",
+    "dependencies": [7, 8]
+  }'
+
+# Claim next task
+curl -X POST http://localhost:4000/api/tasks/claim \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ## Key Documentation
 
 ### Core Specifications
