@@ -2,7 +2,7 @@
 
 **Type:** Epic
 **Status:** Planning
-**Complexity:** Large (23.5 hours estimated)
+**Complexity:** Large (25 hours estimated)
 
 ## Description
 
@@ -10,7 +10,7 @@ Enable the Kanban application to store and manage tasks using the rich format de
 
 ## Features & Tasks
 
-This epic is organized into 4 features with 11 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
+This epic is organized into 4 features with 12 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
 
 ### Feature 1: Database Schema Foundation
 **Goal:** Extend database to store all task metadata
@@ -31,6 +31,7 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
 - [ ] **06** - [06-create-api-authentication.md](06-create-api-authentication.md) - **Large** - Bearer token authentication for AI agents
 - [ ] **07** - [07-implement-task-crud-api.md](07-implement-task-crud-api.md) - **Large** - JSON API endpoints for task CRUD operations
 - [ ] **08** - [08-add-task-ready-endpoint.md](08-add-task-ready-endpoint.md) - **Medium** - GET /api/tasks/next and POST /api/tasks/claim endpoints with atomic claiming
+- [ ] **12** - [12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md) - **Medium** - GET /api/tasks/:id/tree endpoint for epic/feature/task hierarchy
 
 ### Feature 4: Task Management & AI Integration
 **Goal:** Add task completion tracking, dependencies, and AI metadata
@@ -45,17 +46,19 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
 01 → 02 → 03 → 04 → 05
           ↓
           06 → 07 → 08
-          ↓    ↓
+          ↓    ↓    ↓
           09 → 10 → 11
+               ↓
+               12
 ```
 
 ## Total Effort Estimate
 
 - Small: 1 task (~1 hour)
-- Medium: 5 tasks (~7.5 hours)
+- Medium: 6 tasks (~9 hours)
 - Large: 5 tasks (~15 hours)
 
-**Total: ~23.5 hours**
+**Total: ~25 hours**
 
 ## Implementation Strategy
 

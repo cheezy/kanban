@@ -3,15 +3,15 @@
 **Epic:** [EPIC-ai-optimized-task-system.md](EPIC-ai-optimized-task-system.md)
 **Type:** Feature
 **Status:** Planning
-**Complexity:** Large (6.5 hours estimated)
+**Complexity:** Large (8 hours estimated)
 
 ## Description
 
-Build a JSON API that enables AI agents to interact with tasks programmatically. AI agents need to authenticate with bearer tokens, create/read/update/delete tasks with full rich field support, query for ready-to-work tasks, and mark tasks as complete with structured summaries.
+Build a JSON API that enables AI agents to interact with tasks programmatically. AI agents need to authenticate with bearer tokens, create/read/update/delete tasks with full rich field support, query for and atomically claim ready-to-work tasks, and access the complete hierarchical structure of epics/features/tasks.
 
 ## Goal
 
-By the end of this feature, AI agents can authenticate via API tokens, perform full CRUD operations on tasks using the TASKS.md format, and query for unblocked tasks that are ready to work on.
+By the end of this feature, AI agents can authenticate via API tokens, perform full CRUD operations on tasks using the TASKS.md format, atomically claim the next available task to prevent race conditions, and retrieve the complete task hierarchy for context.
 
 ## Business Value
 
@@ -25,7 +25,8 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
 **What Changes:**
 - API token system for AI agent authentication
 - RESTful JSON endpoints for task CRUD operations
-- Special endpoint for finding unblocked/ready tasks
+- Atomic claiming endpoint to prevent race conditions between multiple agents
+- Hierarchical tree endpoint to see full epic/feature/task structure
 - API accepts rich task fields in JSON format
 - API responses include all TASKS.md fields
 
@@ -46,10 +47,18 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
   - TextFieldParser converts between text storage and JSON
 
 - [ ] **08** - [08-add-task-ready-endpoint.md](08-add-task-ready-endpoint.md) - **Medium** (1 hour)
-  - GET /api/tasks/ready - Find unblocked tasks
-  - Filter by status=open and no blocking dependencies
-  - Sort by priority/created_at
-  - Return tasks with all rich fields
+  - GET /api/tasks/next - Peek at next available task
+  - POST /api/tasks/claim - Atomically claim next task
+  - Filter by Ready column, status=open, dependencies completed
+  - Sort by priority (0=highest) then created_at
+  - Prevent race conditions with atomic update
+
+- [ ] **12** - [12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md) - **Medium** (1.5 hours)
+  - GET /api/tasks/:id/tree - Return hierarchical structure
+  - Epic returns all features and their tasks (3 levels)
+  - Feature returns all tasks (2 levels)
+  - Task returns just that task (1 level)
+  - Include statistics (total, completed, blocked counts)
 
 ## Dependencies
 
@@ -67,7 +76,9 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
 - [ ] PATCH /api/tasks/:id updates any field
 - [ ] DELETE /api/tasks/:id removes task
 - [ ] GET /api/tasks lists tasks with pagination
-- [ ] GET /api/tasks/ready returns only unblocked tasks
+- [ ] GET /api/tasks/next returns single unblocked task
+- [ ] POST /api/tasks/claim atomically claims next task
+- [ ] GET /api/tasks/:id/tree returns hierarchical structure
 - [ ] API validates input fields (complexity, status, etc.)
 - [ ] API returns appropriate HTTP status codes
 - [ ] Error messages are clear and actionable
@@ -90,12 +101,14 @@ By the end of this feature, AI agents can authenticate via API tokens, perform f
 
 **Endpoints:**
 ```
-POST   /api/tasks           - Create task
-GET    /api/tasks           - List tasks
-GET    /api/tasks/ready     - List ready tasks
-GET    /api/tasks/:id       - Show task
-PATCH  /api/tasks/:id       - Update task
-DELETE /api/tasks/:id       - Delete task
+POST   /api/tasks              - Create task
+GET    /api/tasks              - List tasks
+GET    /api/tasks/next         - Peek at next available task
+POST   /api/tasks/claim        - Atomically claim next task
+GET    /api/tasks/:id          - Show task
+GET    /api/tasks/:id/tree     - Show hierarchical tree
+PATCH  /api/tasks/:id          - Update task
+DELETE /api/tasks/:id          - Delete task
 PATCH  /api/tasks/:id/complete - Mark complete
 ```
 
@@ -146,8 +159,12 @@ curl -X POST http://localhost:4000/api/tasks \
   -H "Content-Type: application/json" \
   -d '{"task": {"title": "Test task", "complexity": "small"}}'
 
-# Get ready tasks
-curl http://localhost:4000/api/tasks/ready \
+# Claim next task
+curl -X POST http://localhost:4000/api/tasks/claim \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get task tree
+curl http://localhost:4000/api/tasks/1/tree \
   -H "Authorization: Bearer $TOKEN"
 
 # Run tests

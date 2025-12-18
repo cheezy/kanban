@@ -2,7 +2,7 @@
 
 **Type:** Epic
 **Status:** Planning
-**Complexity:** Large (23.5 hours estimated)
+**Complexity:** Large (25 hours estimated)
 **Created:** 2025-12-17
 
 ## Description
@@ -28,7 +28,7 @@ This epic transforms the Kanban application from a simple task tracker into an A
 
 ## Features
 
-This epic is organized into 4 features with 11 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
+This epic is organized into 4 features with 12 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
 
 ### Feature 1: Database Schema Foundation
 **Goal:** Extend database to store all task metadata
@@ -48,7 +48,8 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
 
 - [ ] **06** - [06-create-api-authentication.md](06-create-api-authentication.md) - **Large** - Bearer token authentication for AI agents
 - [ ] **07** - [07-implement-task-crud-api.md](07-implement-task-crud-api.md) - **Large** - JSON API endpoints for task CRUD operations
-- [ ] **08** - [08-add-task-ready-endpoint.md](08-add-task-ready-endpoint.md) - **Medium** - GET /api/tasks/ready endpoint for unblocked tasks
+- [ ] **08** - [08-add-task-ready-endpoint.md](08-add-task-ready-endpoint.md) - **Medium** - GET /api/tasks/next and POST /api/tasks/claim with atomic claiming
+- [ ] **12** - [12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md) - **Medium** - GET /api/tasks/:id/tree for epic/feature/task hierarchy
 
 ### Feature 4: Task Management & AI Integration
 **Goal:** Add task completion tracking, dependencies, and AI metadata
@@ -63,17 +64,19 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
 01 → 02 → 03 → 04 → 05
           ↓
           06 → 07 → 08
-          ↓    ↓
+          ↓    ↓    ↓
           09 → 10 → 11
+               ↓
+               12
 ```
 
 ## Total Effort Estimate
 
 - Small: 1 task (~1 hour)
-- Medium: 5 tasks (~7.5 hours)
+- Medium: 6 tasks (~9 hours)
 - Large: 5 tasks (~15 hours)
 
-**Total: ~23.5 hours**
+**Total: ~25 hours**
 
 ## Implementation Strategy
 
@@ -88,10 +91,11 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
    - Add board-level field visibility controls
    - Result: Users can view and create rich tasks
 
-3. **Phase 3: AI Agent API** (tasks 06-08)
+3. **Phase 3: AI Agent API** (tasks 06-08, 12)
    - Implement bearer token authentication
    - Build JSON API for task CRUD operations
-   - Add endpoint for finding ready-to-work tasks
+   - Add atomic claiming endpoint for multi-agent coordination
+   - Add hierarchical tree endpoint for task context
    - Result: AI agents can interact with tasks programmatically
 
 4. **Phase 4: Task Management** (tasks 09-11)
@@ -102,13 +106,15 @@ This epic is organized into 4 features with 11 tasks total. All tasks are flat (
 
 ## Success Criteria
 
-- [ ] All 11 tasks completed successfully
+- [ ] All 12 tasks completed successfully
 - [ ] All existing tests still pass (no regressions)
 - [ ] New tests cover all new functionality
 - [ ] Database migrations run cleanly on existing data
 - [ ] UI displays rich task fields without information overload
 - [ ] API accepts and returns tasks in TASKS.md format
 - [ ] AI agents can create, update, and complete tasks via API
+- [ ] AI agents can atomically claim tasks without race conditions
+- [ ] AI agents can retrieve hierarchical task structure for context
 - [ ] Board owners can control field visibility
 - [ ] Task dependencies prevent work on blocked tasks
 - [ ] Completion summaries provide clear audit trail
