@@ -18,6 +18,7 @@
 - [ ] completed_at timestamp set automatically
 - [ ] completed_by field populated
 - [ ] Status updated to "completed"
+- [ ] Estimation feedback fields populated (actual_complexity, actual_files_changed, time_spent_minutes)
 - [ ] PubSub broadcasts completion event
 - [ ] Validation ensures required completion fields present
 - [ ] Dependent tasks unblocked automatically
@@ -48,6 +49,9 @@
   - completed_by (string)
   - completion_summary (jsonb)
   - status (string) - updated to "completed"
+  - actual_complexity (string) - actual complexity experienced (small, medium, large)
+  - actual_files_changed (integer) - actual number of files modified
+  - time_spent_minutes (integer) - actual time spent in minutes
 
 **Completion Summary Structure:**
 ```elixir
@@ -63,6 +67,13 @@
     deviations: [string],
     discoveries: [string],
     edge_cases: [string]
+  },
+  estimation_feedback: %{
+    estimated_complexity: string,      # What was estimated
+    actual_complexity: string,         # What it actually was (stored in actual_complexity field)
+    estimated_files: string,           # e.g., "2-3"
+    actual_files_changed: integer,     # Count of files (stored in actual_files_changed field)
+    time_spent_minutes: integer        # Actual time (stored in time_spent_minutes field)
   },
   telemetry_added: [string],
   follow_up_tasks: [string],
@@ -97,6 +108,9 @@ alias Kanban.{Repo, Tasks, Schemas.Task}
 # Complete the task
 completion_data = %{
   completed_by: "ai_agent:claude-sonnet-4.5",
+  actual_complexity: "medium",
+  actual_files_changed: 3,
+  time_spent_minutes: 25,
   completion_summary: %{
     files_changed: [
       %{path: "lib/kanban/tasks.ex", changes: "Added complete_task/2 function"}
@@ -105,6 +119,13 @@ completion_data = %{
       commands_run: ["mix test"],
       status: "passed",
       output: "All tests passed"
+    },
+    estimation_feedback: %{
+      estimated_complexity: "small",
+      actual_complexity: "medium",
+      estimated_files: "1-2",
+      actual_files_changed: 3,
+      time_spent_minutes: 25
     }
   }
 }
@@ -112,6 +133,8 @@ completion_data = %{
 {:ok, completed_task} = Tasks.complete_task(task, completion_data)
 IO.inspect(completed_task.status, label: "Status")
 IO.inspect(completed_task.completed_at, label: "Completed at")
+IO.inspect(completed_task.actual_complexity, label: "Actual complexity")
+IO.inspect(completed_task.time_spent_minutes, label: "Time spent")
 
 # Test via API
 export TOKEN="kan_dev_your_token_here"
@@ -121,6 +144,9 @@ curl -X PATCH http://localhost:4000/api/tasks/1/complete \
   -d '{
     "completion": {
       "completed_by": "ai_agent:claude-sonnet-4.5",
+      "actual_complexity": "medium",
+      "actual_files_changed": 3,
+      "time_spent_minutes": 25,
       "completion_summary": {
         "files_changed": [
           {"path": "lib/kanban/tasks.ex", "changes": "Added function"}
@@ -128,6 +154,13 @@ curl -X PATCH http://localhost:4000/api/tasks/1/complete \
         "verification_results": {
           "status": "passed",
           "commands_run": ["mix test"]
+        },
+        "estimation_feedback": {
+          "estimated_complexity": "small",
+          "actual_complexity": "medium",
+          "estimated_files": "1-2",
+          "actual_files_changed": 3,
+          "time_spent_minutes": 25
         }
       }
     }
@@ -153,10 +186,11 @@ mix precommit
 - Task status updated to "completed"
 - Completion timestamp set
 - Summary stored in JSONB field
+- Estimation feedback fields populated (actual_complexity, actual_files_changed, time_spent_minutes)
 - PubSub broadcast sent
 - Dependent tasks unblocked
 - All tests pass
-- API returns updated task
+- API returns updated task with estimation data
 
 ## Data Examples
 
@@ -170,11 +204,12 @@ defmodule Kanban.Tasks do
   def complete_task(%Task{} = task, attrs) do
     changeset =
       task
-      |> cast(attrs, [:completed_by, :completion_summary])
+      |> cast(attrs, [:completed_by, :completion_summary, :actual_complexity, :actual_files_changed, :time_spent_minutes])
       |> put_change(:status, "completed")
       |> put_change(:completed_at, DateTime.utc_now() |> DateTime.truncate(:second))
       |> validate_required([:completed_by, :completion_summary])
       |> validate_inclusion(:status, ["in_progress", "blocked"], message: "can only complete tasks that are in progress or blocked")
+      |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
       |> validate_completion_summary()
 
     case Repo.update(changeset) do

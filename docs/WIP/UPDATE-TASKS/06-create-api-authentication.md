@@ -16,6 +16,8 @@
 - [ ] Token generation UI in user settings
 - [ ] Bearer token validation plug created
 - [ ] Tokens scoped with permissions (tasks:read, tasks:write)
+- [ ] Tokens include agent capabilities array
+- [ ] Tokens include metadata for agent identity (model name, version)
 - [ ] Tokens can be revoked
 - [ ] Tokens are hashed in database
 - [ ] API returns 401 for invalid/missing tokens
@@ -46,6 +48,8 @@
   - name (string) - User-friendly name
   - token_hash (string) - Hashed token
   - scopes (array of string) - ["tasks:read", "tasks:write", ...]
+  - capabilities (array of string) - Agent capabilities (e.g., `["code_generation", "testing", "documentation"]`)
+  - metadata (jsonb) - Additional agent metadata (model name, version, etc.)
   - last_used_at (utc_datetime)
   - revoked_at (utc_datetime, nullable)
   - inserted_at, updated_at
@@ -62,6 +66,29 @@ tasks:write      # Create/update tasks
 tasks:delete     # Delete tasks
 boards:read      # Read board structure
 ```
+
+**Standard Agent Capabilities:**
+```
+code_generation        # Can write code (most programming tasks)
+code_review            # Can review code quality and suggest improvements
+database_design        # Can design schemas and write migrations
+testing                # Can write automated tests
+documentation          # Can write docs, comments, READMEs
+debugging              # Can diagnose and fix bugs
+refactoring            # Can improve code structure without changing behavior
+api_design             # Can design REST/GraphQL APIs
+ui_implementation      # Can implement user interfaces
+performance_optimization  # Can optimize slow code
+security_analysis      # Can identify security vulnerabilities
+devops                 # Can write CI/CD, Docker, deployment configs
+```
+
+**Capability Matching Logic:**
+- When creating a task, specify `required_capabilities: ["code_generation", "testing"]`
+- When creating an API token, specify `capabilities: ["code_generation", "testing", "documentation"]`
+- GET /api/tasks/next and POST /api/tasks/claim only return tasks where agent has ALL required capabilities
+- Empty `required_capabilities` means any agent can claim the task
+- Prevents mismatched assignments (e.g., a documentation-only agent claiming a database task)
 
 ## Verification
 

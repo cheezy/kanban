@@ -50,6 +50,16 @@
   - `completion_summary` (text) - JSON string or formatted text with completion details
   - `dependencies` (array of bigint) - Other task IDs this task depends on
   - `status` (string) - "open", "in_progress", "completed", "blocked"
+  - `claimed_at` (utc_datetime) - When task was claimed by an agent
+  - `claim_expires_at` (utc_datetime) - When claim expires (60 minutes from claimed_at)
+  - `required_capabilities` (array of string) - Agent capabilities required to work on this task (e.g., `["code_generation", "database_design"]`). Empty array means any agent can claim it.
+  - `actual_complexity` (string) - Actual complexity experienced (small, medium, large) - reported by agent on completion
+  - `actual_files_changed` (integer) - Actual number of files modified - reported by agent on completion
+  - `time_spent_minutes` (integer) - Actual time spent in minutes - reported by agent on completion
+  - `review_status` (string) - Review status (pending, approved, changes_requested, rejected) - set by human reviewer
+  - `review_notes` (text) - Human feedback on the completed work
+  - `reviewed_by_id` (bigint, references users) - User who reviewed the task
+  - `reviewed_at` (utc_datetime) - When the task was reviewed
 
 **Integration Points:**
 - [ ] PubSub broadcasts: Broadcast when task status changes
@@ -157,12 +167,35 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
       # Task relationships and status
       add :dependencies, {:array, :bigint}, default: []
       add :status, :string, default: "open"
+
+      # Claim tracking (for task 08 - auto-release after 60 minutes)
+      add :claimed_at, :utc_datetime
+      add :claim_expires_at, :utc_datetime
+
+      # Agent capability matching (for task 08 - filter by agent capabilities)
+      add :required_capabilities, {:array, :string}, default: []
+
+      # Estimation feedback loop (for task 09 - track actual vs estimated)
+      add :actual_complexity, :string
+      add :actual_files_changed, :integer
+      add :time_spent_minutes, :integer
+
+      # Human review queue (for human feedback on completed work)
+      add :review_status, :string  # pending, approved, changes_requested, rejected
+      add :review_notes, :text
+      add :reviewed_by_id, references(:users, on_delete: :nilify_all)
+      add :reviewed_at, :utc_datetime
     end
 
     create index(:tasks, [:created_by_id])
     create index(:tasks, [:completed_by_id])
     create index(:tasks, [:status])
     create index(:tasks, [:created_by_agent])
+    create index(:tasks, [:claim_expires_at])
+    create index(:tasks, [:status, :claim_expires_at])
+    create index(:tasks, [:actual_complexity])
+    create index(:tasks, [:review_status])
+    create index(:tasks, [:reviewed_by_id])
   end
 end
 ```
@@ -186,9 +219,27 @@ defmodule Kanban.Schemas.Task do
     field :completed_by_agent, :string
     field :completion_summary, :string
 
-    # Task relationships
+    # Task relationships and status
     field :dependencies, {:array, :integer}, default: []
     field :status, :string, default: "open"
+
+    # Claim tracking
+    field :claimed_at, :utc_datetime
+    field :claim_expires_at, :utc_datetime
+
+    # Agent capability matching
+    field :required_capabilities, {:array, :string}, default: []
+
+    # Estimation feedback loop
+    field :actual_complexity, :string
+    field :actual_files_changed, :integer
+    field :time_spent_minutes, :integer
+
+    # Human review queue
+    field :review_status, :string
+    field :review_notes, :string
+    belongs_to :reviewed_by, Kanban.Schemas.User
+    field :reviewed_at, :utc_datetime
 
     timestamps()
   end
@@ -198,12 +249,18 @@ defmodule Kanban.Schemas.Task do
     |> cast(attrs, [
       :title, :description, :created_by_id, :created_by_agent,
       :completed_at, :completed_by_id, :completed_by_agent,
-      :completion_summary, :dependencies, :status
+      :completion_summary, :dependencies, :status,
+      :claimed_at, :claim_expires_at, :required_capabilities,
+      :actual_complexity, :actual_files_changed, :time_spent_minutes,
+      :review_status, :review_notes, :reviewed_by_id, :reviewed_at
     ])
     |> validate_required([:title])
     |> validate_inclusion(:status, ["open", "in_progress", "completed", "blocked"])
+    |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
+    |> validate_inclusion(:review_status, ["pending", "approved", "changes_requested", "rejected"], allow_nil: true)
     |> foreign_key_constraint(:created_by_id)
     |> foreign_key_constraint(:completed_by_id)
+    |> foreign_key_constraint(:reviewed_by_id)
   end
 end
 ```
