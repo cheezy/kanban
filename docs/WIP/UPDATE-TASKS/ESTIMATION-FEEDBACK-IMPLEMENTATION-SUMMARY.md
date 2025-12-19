@@ -16,7 +16,7 @@ Implemented estimation feedback tracking to allow agents to report actual comple
 
 **Key Changes:**
 - **Fields Added**:
-  - `actual_complexity` (string) - Actual complexity experienced (small, medium, large)
+  - `actual_complexity` (enum: small, medium, large) - Actual complexity experienced
   - `actual_files_changed` (integer) - Actual number of files modified
   - `time_spent_minutes` (integer) - Actual time spent in minutes
 - **Migration**: Added three columns for estimation feedback
@@ -68,7 +68,7 @@ CREATE INDEX idx_tasks_actual_complexity ON tasks(actual_complexity);
 **Schema Fields:**
 ```elixir
 # Estimation feedback loop
-field :actual_complexity, :string
+field :actual_complexity, Ecto.Enum, values: [:small, :medium, :large]
 field :actual_files_changed, :integer
 field :time_spent_minutes, :integer
 ```
@@ -103,8 +103,8 @@ end
     edge_cases: [string]
   },
   estimation_feedback: %{
-    estimated_complexity: string,      # What was estimated
-    actual_complexity: string,         # What it actually was
+    estimated_complexity: string,      # What was estimated (small, medium, large)
+    actual_complexity: string,         # What it actually was (small, medium, large)
     estimated_files: string,           # e.g., "2-3"
     actual_files_changed: integer,     # Actual count
     time_spent_minutes: integer        # Actual time

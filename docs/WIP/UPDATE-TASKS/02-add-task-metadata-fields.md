@@ -54,7 +54,7 @@
   - `claimed_at` (utc_datetime) - When task was claimed by an agent
   - `claim_expires_at` (utc_datetime) - When claim expires (60 minutes from claimed_at)
   - `required_capabilities` (array of string) - Agent capabilities required to work on this task (e.g., `["code_generation", "database_design"]`). Empty array means any agent can claim it.
-  - `actual_complexity` (string) - Actual complexity experienced (small, medium, large) - reported by agent on completion
+  - `actual_complexity` (enum: small, medium, large) - Actual complexity experienced - reported by agent on completion
   - `actual_files_changed` (integer) - Actual number of files modified - reported by agent on completion
   - `time_spent_minutes` (integer) - Actual time spent in minutes - reported by agent on completion
   - `needs_review` (boolean, default: false) - Whether task requires human review before being marked as complete
@@ -208,7 +208,7 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
       add :required_capabilities, {:array, :string}, default: []
 
       # Estimation feedback loop (for task 09 - track actual vs estimated)
-      add :actual_complexity, :string
+      add :actual_complexity, :string  # Enum: small, medium, large
       add :actual_files_changed, :integer
       add :time_spent_minutes, :integer
 
@@ -265,7 +265,7 @@ defmodule Kanban.Schemas.Task do
     field :required_capabilities, {:array, :string}, default: []
 
     # Estimation feedback loop
-    field :actual_complexity, :string
+    field :actual_complexity, Ecto.Enum, values: [:small, :medium, :large]
     field :actual_files_changed, :integer
     field :time_spent_minutes, :integer
 

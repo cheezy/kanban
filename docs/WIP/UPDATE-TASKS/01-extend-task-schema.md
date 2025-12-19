@@ -16,9 +16,13 @@
 - [ ] Text fields store collections (key_files, verification_steps, pitfalls, out_of_scope)
 - [ ] Task schema updated with new fields
 - [ ] Changeset validates new fields
+- [ ] Complexity field validates enum values (small, medium, large)
 - [ ] Default values set appropriately
 - [ ] Existing tasks compatible (nullable fields)
-- [ ] All tests pass after migration
+- [ ] New tests written for all new fields
+- [ ] Tests validate complexity enum values
+- [ ] Tests verify text field storage and retrieval
+- [ ] All existing tests pass after migration
 - [ ] Helper functions parse text fields into structured data for API/UI
 
 ## Key Files to Read First
@@ -43,7 +47,7 @@
 - Migrations needed: Yes - single migration adding columns to tasks table
 
 **New columns on tasks table:**
-- `complexity` (string) - "small", "medium", "large"
+- `complexity` (enum: small, medium, large) - Task complexity level
 - `estimated_files` (string) - "1-2", "3-5", "5+"
 - `why` (text) - Problem being solved
 - `what` (text) - Specific feature/change
@@ -143,7 +147,7 @@ defmodule Kanban.Repo.Migrations.ExtendTasksWithAiFields do
   def change do
     # Extend tasks table with all AI-optimized fields
     alter table(:tasks) do
-      # Complexity and scope
+      # Complexity and scope (enum with values: small, medium, large)
       add :complexity, :string
       add :estimated_files, :string
 
@@ -191,7 +195,7 @@ defmodule Kanban.Schemas.Task do
     belongs_to :column, Kanban.Schemas.Column
 
     # New AI-optimized fields
-    field :complexity, :string
+    field :complexity, Ecto.Enum, values: [:small, :medium, :large]
     field :estimated_files, :string
     field :why, :string
     field :what, :string
@@ -370,6 +374,168 @@ defmodule Kanban.Tasks.TextFieldParser do
   end
 end
 ```
+
+## Testing
+
+### New Tests to Write
+
+**Schema Tests (test/kanban/schemas/task_test.exs):**
+
+1. **Test complexity enum validation:**
+   ```elixir
+   test "validates complexity is small, medium, or large" do
+     valid_changeset = Task.changeset(%Task{}, %{title: "Test", complexity: "medium"})
+     assert valid_changeset.valid?
+
+     invalid_changeset = Task.changeset(%Task{}, %{title: "Test", complexity: "huge"})
+     refute invalid_changeset.valid?
+     assert "is invalid" in errors_on(invalid_changeset).complexity
+   end
+
+   test "allows nil complexity for backward compatibility" do
+     changeset = Task.changeset(%Task{}, %{title: "Test", complexity: nil})
+     assert changeset.valid?
+   end
+   ```
+
+2. **Test text field storage:**
+   ```elixir
+   test "stores key_files as text" do
+     changeset = Task.changeset(%Task{}, %{
+       title: "Test",
+       key_files: "lib/app.ex | Main module\nlib/helper.ex | Helper"
+     })
+     assert changeset.valid?
+     assert get_change(changeset, :key_files) == "lib/app.ex | Main module\nlib/helper.ex | Helper"
+   end
+   ```
+
+3. **Test all new fields are castable:**
+   ```elixir
+   test "casts all new AI-optimized fields" do
+     attrs = %{
+       title: "Test Task",
+       complexity: "large",
+       estimated_files: "3-5",
+       why: "Because reasons",
+       what: "Build feature X",
+       where_context: "Module Y",
+       patterns_to_follow: "Use pattern Z",
+       database_changes: "Add table foo",
+       technology_requirements: "Phoenix\nEcto",
+       telemetry_event: "[:app, :action]",
+       metrics_to_track: "Count, Duration",
+       logging_requirements: "Log at info level",
+       error_user_message: "Error occurred",
+       error_on_failure: "Return 500",
+       validation_rules: "Required field",
+       key_files: "file1.ex | Note 1",
+       verification_steps: "command | mix test | Pass",
+       pitfalls: "Don't do X",
+       out_of_scope: "Feature Y"
+     }
+
+     changeset = Task.changeset(%Task{}, attrs)
+     assert changeset.valid?
+   end
+   ```
+
+**Context Tests (test/kanban/tasks_test.exs):**
+
+4. **Test creating task with new fields:**
+   ```elixir
+   test "create_task/1 with AI-optimized fields" do
+     attrs = %{
+       title: "AI Task",
+       complexity: "medium",
+       estimated_files: "2-3",
+       why: "Users need feature",
+       what: "Implement feature",
+       key_files: "lib/app.ex | Main file"
+     }
+
+     assert {:ok, task} = Tasks.create_task(attrs)
+     assert task.complexity == "medium"
+     assert task.estimated_files == "2-3"
+     assert task.why == "Users need feature"
+     assert task.key_files == "lib/app.ex | Main file"
+   end
+   ```
+
+5. **Test updating task with new fields:**
+   ```elixir
+   test "update_task/2 preserves and updates new fields" do
+     {:ok, task} = Tasks.create_task(%{title: "Test"})
+
+     assert {:ok, updated} = Tasks.update_task(task, %{
+       complexity: "large",
+       why: "Updated reason"
+     })
+
+     assert updated.complexity == "large"
+     assert updated.why == "Updated reason"
+   end
+   ```
+
+**Parser Tests (test/kanban/tasks/text_field_parser_test.exs - NEW FILE):**
+
+6. **Test parsing key_files:**
+   ```elixir
+   test "parse_key_files/1 with valid format" do
+     text = "lib/app.ex | Main module\nlib/helper.ex | Helper functions"
+
+     result = TextFieldParser.parse_key_files(text)
+
+     assert length(result) == 2
+     assert hd(result).file_path == "lib/app.ex"
+     assert hd(result).note == "Main module"
+     assert hd(result).position == 1
+   end
+
+   test "parse_key_files/1 handles nil" do
+     assert TextFieldParser.parse_key_files(nil) == []
+   end
+   ```
+
+7. **Test parsing verification_steps:**
+   ```elixir
+   test "parse_verification_steps/1 with command and manual steps" do
+     text = "command | mix test | All pass\nmanual | Check UI | Looks good"
+
+     result = TextFieldParser.parse_verification_steps(text)
+
+     assert length(result) == 2
+     assert hd(result).step_type == "command"
+     assert hd(result).step_text == "mix test"
+     assert hd(result).expected_result == "All pass"
+   end
+   ```
+
+8. **Test formatting functions (round-trip):**
+   ```elixir
+   test "format_key_files/1 creates valid text format" do
+     files = [
+       %{file_path: "lib/app.ex", note: "Main", position: 1},
+       %{file_path: "lib/helper.ex", note: "Helper", position: 2}
+     ]
+
+     text = TextFieldParser.format_key_files(files)
+     parsed = TextFieldParser.parse_key_files(text)
+
+     assert length(parsed) == 2
+     assert hd(parsed).file_path == "lib/app.ex"
+   end
+   ```
+
+### Test Coverage Requirements
+
+- [ ] All new schema fields have validation tests
+- [ ] Complexity enum validation has positive and negative test cases
+- [ ] Text field parsing handles nil, empty, and malformed input
+- [ ] Round-trip tests (format → parse → format) maintain data integrity
+- [ ] Backward compatibility tested (existing tasks work with nil fields)
+- [ ] Context functions create/update tasks with new fields
+- [ ] All existing tests still pass after schema changes
 
 ## Observability
 
