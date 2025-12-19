@@ -6,6 +6,16 @@ This is a **demonstration task** showing how to use the TASKS.md format for plan
 
 **See:** [UPDATE-TASKS/README.md](UPDATE-TASKS/README.md) for the complete list of individual tasks with dependencies and status.
 
+## Recent Enhancements
+
+The implementation plan has been enhanced with several key improvements:
+
+1. **JSONB Collections** (Task 01B) - Using PostgreSQL JSONB with embedded schemas instead of pipe-delimited text for collections like key_files and verification_steps
+2. **API Authentication** (Task 06) - Comprehensive Bearer token system with scopes and capability matching
+3. **PubSub Broadcasts** (Task 02) - Real-time updates for all task lifecycle events with telemetry integration
+4. **API Integration Tests** (Task 02) - 27 comprehensive tests covering authentication, authorization, lifecycle events, and capability matching
+5. **Data Migration Strategy** (Task 02) - Backward compatibility for existing tasks with intelligent status inference
+
 ---
 
 ## Update Project Documentation to Use AI-Optimized Task Format

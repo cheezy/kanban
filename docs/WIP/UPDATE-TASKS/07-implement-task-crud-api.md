@@ -407,8 +407,8 @@ end
 
 ## Dependencies
 
-**Requires:** 01-extend-task-schema.md, 02-add-task-metadata-fields.md, 03-create-api-authentication.md
-**Blocks:** 05-add-task-ready-endpoint.md, 06-add-task-completion-tracking.md
+**Requires:** 01A-extend-task-schema-scalar-fields.md, 01B-extend-task-schema-jsonb-collections.md, 02-add-task-metadata-fields.md, 06-create-api-authentication.md
+**Blocks:** 08-add-task-ready-endpoint.md, 09-add-task-completion-tracking.md
 
 ## Out of Scope
 

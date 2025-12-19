@@ -3,14 +3,21 @@
 **Type:** Epic
 **Identifier:** E1 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
-**Complexity:** Large (26 hours estimated)
+**Complexity:** Large (29 hours estimated)
 **Created:** 2025-12-17
+**Last Updated:** 2025-12-19
 
 ## Description
 
 Enable the Kanban application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
 
 This epic transforms the Kanban application from a simple task tracker into an AI-friendly task management system that can be read and updated by AI agents while remaining useful for human developers.
+
+**Key Technical Decisions:**
+- Uses PostgreSQL JSONB with embedded Ecto schemas for type-safe collection storage
+- Implements Bearer token authentication with scope-based authorization
+- Provides real-time updates via Phoenix PubSub broadcasts
+- Includes comprehensive API integration tests with telemetry validation
 
 ## Business Value
 
@@ -35,8 +42,9 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
 
 **Goal:** Extend database to store all task metadata
 
-- [ ] **01** - [01-extend-task-schema.md](01-extend-task-schema.md) - **Large** - Add database columns for TASKS.md fields
-- [ ] **02** - [02-add-task-metadata-fields.md](02-add-task-metadata-fields.md) - **Medium** - Add lifecycle tracking (created_by, completed_at, status, dependencies)
+- [ ] **01A** - [01A-extend-task-schema-scalar-fields.md](01A-extend-task-schema-scalar-fields.md) - **Medium** - Add scalar fields for task metadata (complexity, why, what, where, patterns, etc.)
+- [ ] **01B** - [01B-extend-task-schema-jsonb-collections.md](01B-extend-task-schema-jsonb-collections.md) - **Medium** - Add JSONB collections with embedded schemas (key_files, verification_steps, etc.)
+- [ ] **02** - [02-add-task-metadata-fields.md](02-add-task-metadata-fields.md) - **Medium** - Add lifecycle tracking with PubSub broadcasts and API tests
 
 ### Feature 2: Rich Task UI
 
@@ -67,29 +75,32 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
 ## Dependencies
 
 ```text
-01 → 02 → 03 → 04 → 05
-          ↓
-          06 → 07 → 08 → 15
-          ↓    ↓    ↓
-          09 → 10 → 11
-               ↓
-               12
+01A → 01B → 02 → 03 → 04 → 05
+                  ↓
+                  06 → 07 → 08 → 15
+                  ↓    ↓    ↓
+                  09 → 10 → 11
+                       ↓
+                       12
 ```
 
 ## Total Effort Estimate
 
 - Small: 2 tasks (~2 hours)
-- Medium: 6 tasks (~9 hours)
-- Large: 5 tasks (~15 hours)
+- Medium: 8 tasks (~15 hours)
+- Large: 4 tasks (~12 hours)
 
-**Total: ~26 hours**
+**Total: ~29 hours**
+
+**Note:** Task 01 was split into 01A (scalar fields) and 01B (JSONB collections) for smaller, more manageable increments.
 
 ## Implementation Strategy
 
-1. **Phase 1: Database Foundation** (tasks 01-02)
-   - Extend task schema with all TASKS.md fields
-   - Add metadata for tracking creators and completion
-   - Result: Database ready to store rich task data
+1. **Phase 1: Database Foundation** (tasks 01A-02)
+   - 01A: Add scalar fields (complexity, why, what, patterns, etc.)
+   - 01B: Add JSONB collections with embedded schemas
+   - 02: Add lifecycle tracking, PubSub broadcasts, and API tests
+   - Result: Database ready to store rich task data with real-time updates
 
 2. **Phase 2: Rich Task UI** (tasks 03-05)
    - Build UI to display all new fields
