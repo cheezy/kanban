@@ -1,20 +1,21 @@
 # Task Identifier Generation System
 
-**Date:** 2025-12-18
-**Status:** Documented (Implementation needed for Epic and Feature IDs)
-**Related:** Task 01, Task 02, EPIC-ai-optimized-task-system.md
+**Date:** 2025-12-20
+**Status:** Documented (Implementation needed for Goal IDs)
+**Related:** Task 01, Task 02, goal-ai-optimized-task-system.md
 
 ## Overview
 
 The Kanban application generates human-readable, prefixed identifiers for all task types to make them easy to reference in conversation, documentation, and code reviews. Each entity type has a unique prefix letter followed by a sequential number.
 
+**Important:** The system uses two types of tasks: **Work** (new functionality) and **Defect** (bug fixes). Goals are large initiatives that contain multiple tasks.
+
 ## ID Prefixes by Entity Type
 
 | Entity Type | Prefix | Example | Description |
 |-------------|--------|---------|-------------|
-| **Epic** | E | E1, E2, E3 | Large initiatives (25+ hours, multiple features) |
-| **Feature** | F | F1, F2, F3 | Feature sets within epics (8-15 hours, multiple tasks) |
-| **Task/Work** | W | W1, W2, W3 | Individual work items (1-3 hours) |
+| **Goal** | G | G1, G2, G3 | Large initiatives (25+ hours, multiple tasks) |
+| **Work** | W | W1, W2, W3 | Individual work items (1-3 hours) |
 | **Defect** | D | D1, D2, D3 | Bug fixes and defect corrections |
 
 ## Current Implementation Status
@@ -141,58 +142,41 @@ defp populate_board_identifiers(board_id) do
 end
 ```
 
-### ⏳ Pending Implementation (Epics and Features)
+### ⏳ Pending Implementation (Goals)
 
-**Requirement:** Extend the same identifier generation pattern to support Epic (E prefix) and Feature (F prefix) task types.
+**Requirement:** Extend the same identifier generation pattern to support Goal (G prefix) task type.
 
 **Changes Needed:**
 
 1. **Update Task Schema** ([lib/kanban/tasks/task.ex](lib/kanban/tasks/task.ex))
 
-Add `:epic` and `:feature` to task type enum:
+Add task_type field to distinguish goals from tasks:
 ```elixir
-field :type, Ecto.Enum,
-  values: [:epic, :feature, :work, :defect],
-  default: :work
-```
-
-Update changeset validation:
-```elixir
-|> validate_inclusion(:type, [:epic, :feature, :work, :defect])
+field :task_type, :string  # "goal", "work", "defect"
 ```
 
 2. **Update ID Generation Logic** ([lib/kanban/tasks.ex](lib/kanban/tasks.ex))
 
-Extend prefix selection to include all four types:
+Extend prefix selection to include goal type:
 ```elixir
 defp generate_task_identifier(task_type) do
-  # Normalize task type
-  task_type =
-    case task_type do
-      "epic" -> :epic
-      "feature" -> :feature
-      "work" -> :work
-      "defect" -> :defect
-      atom when is_atom(atom) -> atom
-    end
-
   # Get the prefix for this task type
   prefix =
     case task_type do
-      :epic -> "E"
-      :feature -> "F"
+      "goal" -> "G"
       :work -> "W"
       :defect -> "D"
+      _ -> "W"
     end
 
   # Find the maximum identifier number for this type across ALL tasks
   max_number =
     Task
-    |> where([t], t.type == ^task_type)
+    |> where([t], t.task_type == ^to_string(task_type))
     |> select([t], t.identifier)
     |> Repo.all()
     |> Enum.map(fn identifier ->
-      # Extract numeric part (e.g., "E11" -> 11, "F5" -> 5)
+      # Extract numeric part (e.g., "G1" -> 1, "W5" -> 5)
       identifier
       |> String.replace(prefix, "")
       |> String.to_integer()
@@ -202,7 +186,7 @@ defp generate_task_identifier(task_type) do
       numbers -> Enum.max(numbers)
     end
 
-  # Generate identifier: E1, F1, W1, D1, etc.
+  # Generate identifier: G1, W1, D1, etc.
   "#{prefix}#{max_number + 1}"
 end
 ```
@@ -210,42 +194,29 @@ end
 3. **Create Migration**
 
 ```elixir
-defmodule Kanban.Repo.Migrations.AddEpicAndFeatureTaskTypes do
+defmodule Kanban.Repo.Migrations.AddTaskTypeField do
   use Ecto.Migration
 
-  def up do
-    # Add new task types to enum
-    # Note: This depends on database type (PostgreSQL, MySQL, etc.)
-    # For PostgreSQL with native enums:
-    execute "ALTER TYPE task_type ADD VALUE 'epic'"
-    execute "ALTER TYPE task_type ADD VALUE 'feature'"
+  def change do
+    alter table(:tasks) do
+      add :task_type, :string  # "goal", "work", "defect"
+    end
 
-    # OR if using string type instead of enum:
-    # No migration needed - validation is at application level
-  end
-
-  def down do
-    # Removing enum values is complex in PostgreSQL
-    # Consider keeping values but preventing new usage
+    create index(:tasks, [:task_type])
   end
 end
 ```
 
 ## Hierarchical Structure
 
-Epics, Features, and Tasks form a three-level hierarchy using the `parent_id` field:
+Goals and Tasks form a two-level hierarchy using the `parent_id` field:
 
 ```
-Epic (E1)
-├── Feature (F1)
-│   ├── Task (W1)
-│   ├── Task (W2)
-│   └── Task (W3)
-├── Feature (F2)
-│   ├── Task (W4)
-│   └── Task (W5)
-└── Feature (F3)
-    └── Task (W6)
+Goal (G1)
+├── Work Task (W1)
+├── Work Task (W2)
+├── Defect (D1)
+└── Defect (D2)
 
 Standalone Tasks (no parent):
 ├── Task (W7)

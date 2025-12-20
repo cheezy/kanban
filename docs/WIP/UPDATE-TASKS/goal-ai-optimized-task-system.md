@@ -1,7 +1,7 @@
-# Epic: Implement AI-Optimized Task System
+# Goal: Implement AI-Optimized Task System
 
-**Type:** Epic
-**Identifier:** E1 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
+**Type:** Goal
+**Identifier:** G1 (see [TASK-ID-GENERATION.md](TASK-ID-GENERATION.md))
 **Status:** Planning
 **Complexity:** Large (29 hours estimated)
 **Created:** 2025-12-17
@@ -11,7 +11,9 @@
 
 Enable the Kanban application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
 
-This epic transforms the Kanban application from a simple task tracker into an AI-friendly task management system that can be read and updated by AI agents while remaining useful for human developers.
+This goal transforms the Kanban application from a simple task tracker into an AI-friendly task management system that can be read and updated by AI agents while remaining useful for human developers.
+
+**Important:** Tasks have two types: **Work** (new functionality, enhancements) and **Defect** (bug fixes, corrections). This goal contains Work tasks only.
 
 **Key Technical Decisions:**
 - Uses PostgreSQL JSONB with embedded Ecto schemas for type-safe collection storage
@@ -34,39 +36,39 @@ This epic transforms the Kanban application from a simple task tracker into an A
 - Board owners can customize field visibility to avoid information overload
 - Structured completion summaries provide audit trail and learning for future tasks
 
-## Features
+## Tasks
 
-This epic is organized into 4 features with 13 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
+This goal is organized into 13 tasks total. All tasks are flat (no parent/child relationships) but use dependencies to ensure proper execution order.
 
-### Feature 1: Database Schema Foundation
+### Database Schema Foundation
 
-**Goal:** Extend database to store all task metadata
+**Description:** Extend database to store all task metadata
 
 - [ ] **01A** - [01A-extend-task-schema-scalar-fields.md](01A-extend-task-schema-scalar-fields.md) - **Medium** - Add scalar fields for task metadata (complexity, why, what, where, patterns, etc.)
 - [ ] **01B** - [01B-extend-task-schema-jsonb-collections.md](01B-extend-task-schema-jsonb-collections.md) - **Medium** - Add JSONB collections with embedded schemas (key_files, verification_steps, etc.)
 - [ ] **02** - [02-add-task-metadata-fields.md](02-add-task-metadata-fields.md) - **Medium** - Add lifecycle tracking with PubSub broadcasts and API tests
 
-### Feature 2: Rich Task UI
+### Rich Task UI
 
-**Goal:** Build UI for viewing and creating tasks with all new fields
+**Description:** Build UI for viewing and creating tasks with all new fields
 
 - [ ] **03** - [03-display-rich-task-details.md](03-display-rich-task-details.md) - **Medium** - Display all 18 TASKS.md categories in UI
 - [ ] **04** - [04-add-task-creation-form.md](04-add-task-creation-form.md) - **Large** - Comprehensive form with all fields
 - [ ] **05** - [05-add-field-visibility-toggles.md](05-add-field-visibility-toggles.md) - **Medium** - Board-level field visibility controls
 
-### Feature 3: AI Agent API
+### AI Agent API
 
-**Goal:** Enable AI agents to interact with tasks via JSON API
+**Description:** Enable AI agents to interact with tasks via JSON API
 
 - [ ] **06** - [06-create-api-authentication.md](06-create-api-authentication.md) - **Large** - Bearer token authentication for AI agents
 - [ ] **07** - [07-implement-task-crud-api.md](07-implement-task-crud-api.md) - **Large** - JSON API endpoints for task CRUD operations
 - [ ] **08** - [08-add-task-ready-endpoint.md](08-add-task-ready-endpoint.md) - **Medium** - GET /api/tasks/next and POST /api/tasks/claim with atomic claiming
-- [ ] **12** - [12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md) - **Medium** - GET /api/tasks/:id/tree for epic/feature/task hierarchy
+- [ ] **12** - [12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md) - **Medium** - GET /api/tasks/:id/tree for goal/task hierarchy
 - [ ] **15** - [15-add-agent-info-endpoint.md](15-add-agent-info-endpoint.md) - **Small** - GET /api/agent/info for agent documentation
 
-### Feature 4: Task Management & AI Integration
+### Task Management & AI Integration
 
-**Goal:** Add task completion tracking, dependencies, and AI metadata
+**Description:** Add task completion tracking, dependencies, and AI metadata
 
 - [ ] **09** - [09-add-task-completion-tracking.md](09-add-task-completion-tracking.md) - **Medium** - Task completion with detailed summary storage
 - [ ] **10** - [10-implement-task-dependencies.md](10-implement-task-dependencies.md) - **Large** - Dependency graph, circular detection, auto-unblocking
@@ -122,7 +124,7 @@ This epic is organized into 4 features with 13 tasks total. All tasks are flat (
    - Track AI agent metadata and show badges
    - Result: Full task lifecycle management with AI integration
 
-**Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this epic's scope.
+**Note:** Tasks 13-14 (Agent Workflow Hooks) are documented separately in [IMPROVEMENTS.md](IMPROVEMENTS.md) and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) as additional features beyond this goal's scope.
 
 ## Eating Our Own Dog Food Strategy
 
@@ -194,5 +196,5 @@ See [README.md](README.md#eating-our-own-dog-food) for detailed phase-by-phase a
 
 - [docs/WIP/TASKS.md](../TASKS.md) - Task format specification
 - [docs/WIP/AI-WORKFLOW.md](../AI-WORKFLOW.md) - AI agent workflow and completion format
-- [docs/WIP/TASK-BREAKDOWN.md](../TASK-BREAKDOWN.md) - Epic/Feature/Task structure guidelines
-- [docs/WIP/UPDATE-TASKS/TASK-ID-GENERATION.md](TASK-ID-GENERATION.md) - Prefixed ID system (E, F, W, D)
+- [docs/WIP/TASK-BREAKDOWN.md](../TASK-BREAKDOWN.md) - Goal/Task structure guidelines
+- [docs/WIP/UPDATE-TASKS/TASK-ID-GENERATION.md](TASK-ID-GENERATION.md) - Prefixed ID system (G, W, D)

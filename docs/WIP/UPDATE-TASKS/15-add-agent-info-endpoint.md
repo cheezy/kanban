@@ -251,18 +251,16 @@ defmodule KanbanWeb.API.AgentController do
       task_identifiers: %{
         description: "All tasks have human-readable prefixed identifiers",
         prefixes: %{
-          E: "Epic - Large initiatives (25+ hours, multiple features)",
-          F: "Feature - Feature sets (8-15 hours, multiple tasks)",
-          W: "Work/Task - Individual work items (1-3 hours)",
+          G: "Goal - Large initiatives (25+ hours, multiple tasks)",
+          W: "Work - Individual work items (1-3 hours)",
           D: "Defect - Bug fixes and corrections"
         },
         examples: [
-          "E1: Implement AI-Optimized Task System",
-          "F1: Database Schema Foundation",
+          "G1: Implement AI-Optimized Task System",
           "W42: Add task completion endpoint",
           "D7: Fix race condition in task claiming"
         ],
-        hierarchy: "Epic (E1) → Features (F1, F2) → Tasks (W1, W2, W3)",
+        hierarchy: "Goal (G1) → Tasks (W1, W2, W3, D1, D2)",
         reference: "See TASK-ID-GENERATION.md for complete documentation"
       },
 
@@ -402,7 +400,7 @@ defmodule KanbanWeb.API.AgentController do
           %{
             method: "GET",
             path: "/api/tasks/:id/tree",
-            description: "Get hierarchical tree (epic → features → tasks)",
+            description: "Get hierarchical tree (goal → tasks)",
             scope: "tasks:read"
           },
           %{
@@ -465,9 +463,9 @@ defmodule KanbanWeb.API.AgentController do
           identifier: "Human-readable ID (E1, F1, W42, D7)",
           title: "Task title (required)",
           description: "Detailed task description",
-          type: "epic | feature | work | defect",
-          task_type: "epic | feature | task (hierarchy level)",
-          parent_id: "Parent task ID (for features/tasks in epics)",
+          type: "work | defect (task type)",
+          task_type: "goal | work | defect (hierarchy level)",
+          parent_id: "Parent task ID (for tasks in goals)",
           complexity: "small | medium | large",
           estimated_files: "1-2 | 3-5 | 5+",
           priority: "0 (highest) to N (lowest)",

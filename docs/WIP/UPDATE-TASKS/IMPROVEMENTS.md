@@ -21,13 +21,12 @@ Solution Implemented:
 
 Problem: If I'm 80% done with a large task and crash, the next agent starts from scratch.
 
-Solution: **Keep tasks small and focused.** The Epic/Feature/Task hierarchy exists specifically to break down large work into small, completable units. Each task should be completable within the 60-minute claim timeout.
+Solution: **Keep tasks small and focused.** The Goal/Task hierarchy exists specifically to break down large work into small, completable units. Each task should be completable within the 60-minute claim timeout.
 
 Design Principle:
 - Tasks should be atomic units of work (15-45 minutes to complete)
 - If a task is too large to complete in 60 minutes, break it into multiple tasks
-- Use Features to group related tasks
-- Use Epics to group related features
+- Use Goals to group related tasks
 - The 60-minute timeout acts as a forcing function for proper decomposition
 
 ## ✅ 3. Agent Capability Matching (IMPLEMENTED)
@@ -163,15 +162,15 @@ Example response:
 
 **Status:** Added to task 12 with pagination and depth limiting
 
-Problem: The tree endpoint could return thousands of tasks for a large epic. That might exceed my context window.
+Problem: The tree endpoint could return thousands of tasks for a large goal. That might exceed my context window.
 
 Solution Implemented:
 
-- Added query parameters to GET /api/epics/:id/tree endpoint:
-  - `?depth=N` - Limit tree depth (e.g., depth=2 shows only epic → features → tasks, no subtasks)
+- Added query parameters to GET /api/tasks/:id/tree endpoint:
+  - `?depth=N` - Limit tree depth (e.g., depth=2 shows goal → tasks only)
   - `?max_tasks=N` - Limit total number of tasks returned (e.g., max_tasks=50)
   - `?page=N&per_page=N` - Pagination support for large result sets
-- Default depth=3, max_tasks=100, per_page=50
+- Default depth=2, max_tasks=100, per_page=50
 - Response includes pagination metadata (total_count, page, per_page, has_more)
 - Truncated results include indicator showing how many items were excluded
 - See task 12 for full implementation details
@@ -258,7 +257,7 @@ The system now has all the core features needed for effective AI agent collabora
 - ✅ **Capability matching**: Required capabilities filter on claim
 - ✅ **Feedback loop**: Actual complexity, files, time tracking
 - ✅ **Batch operations**: Create interconnected task graphs efficiently
-- ✅ **Context limits**: Pagination and depth limits for large epics
+- ✅ **Context limits**: Pagination and depth limits for large goals
 - ✅ **Human review**: Review status, notes, and feedback loop
 - ✅ **Coordination**: Server-side dependency resolution (no agent polling needed)
 - ✅ **Workflow hooks**: Agent-specific commands at workflow transition points (tasks 13, 14)
