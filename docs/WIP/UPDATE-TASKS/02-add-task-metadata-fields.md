@@ -910,7 +910,7 @@ defmodule KanbanWeb.Api.TaskControllerTest do
       completion_data = %{
         completed_by_id: user.id,
         completed_by_agent: "claude-sonnet-4.5",
-        actual_complexity: "medium",
+        actual_complexity: :medium,
         actual_files_changed: 5,
         time_spent_minutes: 45,
         completion_summary: """
@@ -1678,9 +1678,9 @@ defmodule Kanban.Schemas.Task do
       :needs_review, :review_status, :review_notes, :reviewed_by_id, :reviewed_at
     ])
     |> validate_required([:title])
-    |> validate_inclusion(:status, ["open", "in_progress", "completed", "blocked"])
-    |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
-    |> validate_inclusion(:review_status, ["pending", "approved", "changes_requested", "rejected"], allow_nil: true)
+    |> validate_inclusion(:status, [:open, :in_progress, :completed, :blocked])
+    |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
+    |> validate_inclusion(:review_status, [:pending, :approved, :changes_requested, :rejected])
     |> foreign_key_constraint(:created_by_id)
     |> foreign_key_constraint(:completed_by_id)
     |> foreign_key_constraint(:reviewed_by_id)

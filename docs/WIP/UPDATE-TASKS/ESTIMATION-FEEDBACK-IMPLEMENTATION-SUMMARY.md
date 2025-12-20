@@ -81,7 +81,7 @@ def changeset(task, attrs) do
     # ... other fields ...
     :actual_complexity, :actual_files_changed, :time_spent_minutes
   ])
-  |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
+  |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
 end
 ```
 
@@ -130,7 +130,7 @@ def complete_task(%Task{} = task, attrs) do
     |> put_change(:status, "completed")
     |> put_change(:completed_at, DateTime.utc_now() |> DateTime.truncate(:second))
     |> validate_required([:completed_by, :completion_summary])
-    |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
+    |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
     |> validate_completion_summary()
 
   # ... rest of function

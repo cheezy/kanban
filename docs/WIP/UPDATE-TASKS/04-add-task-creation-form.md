@@ -457,7 +457,7 @@ defmodule Kanban.Schemas.Task do
       :dependencies, :status
     ])
     |> validate_required([:title])
-    |> validate_inclusion(:complexity, ["small", "medium", "large"])
+    |> validate_inclusion(:complexity, [:small, :medium, :large])
     |> validate_inclusion(:estimated_files, ["1-2", "2-3", "3-5", "5+"])
     |> cast_assoc(:key_files, with: &TaskKeyFile.changeset/2)
     |> cast_assoc(:verification_steps, with: &TaskVerificationStep.changeset/2)

@@ -18,7 +18,7 @@ The scalar fields capture essential task metadata like complexity estimates, con
 Add 13 new scalar fields to the tasks table:
 
 **Planning & Context** (5 fields):
-- `complexity`: Complexity estimate (e.g., "small", "medium", "large")
+- `complexity`: Ecto.Enum with values [:small, :medium, :large], default: :small
 - `estimated_files`: File count estimate (e.g., "2-3", "5-7")
 - `why`: Why this task exists (business/technical rationale)
 - `what`: What needs to be implemented (high-level description)
@@ -60,7 +60,7 @@ defmodule Kanban.Repo.Migrations.ExtendTasksWithScalarFields do
   def change do
     alter table(:tasks) do
       # Planning & Context
-      add :complexity, :string
+      add :complexity, :string, default: "small"
       add :estimated_files, :string
       add :why, :text
       add :what, :text
@@ -83,6 +83,10 @@ defmodule Kanban.Repo.Migrations.ExtendTasksWithScalarFields do
 
     # Add index for common query patterns
     create index(:tasks, [:complexity])
+
+    # Optional: Add check constraint for complexity values
+    create constraint(:tasks, :complexity_must_be_valid,
+      check: "complexity IN ('small', 'medium', 'large')")
   end
 end
 ```
@@ -109,7 +113,7 @@ defmodule Kanban.Tasks.Task do
     field :identifier, :string
 
     # Planning & Context (01A)
-    field :complexity, :string
+    field :complexity, Ecto.Enum, values: [:small, :medium, :large], default: :small
     field :estimated_files, :string
     field :why, :string
     field :what, :string
@@ -173,23 +177,11 @@ defmodule Kanban.Tasks.Task do
     |> validate_required([:title, :position, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect])
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical])
-    |> validate_complexity()
+    |> validate_inclusion(:complexity, [:small, :medium, :large])
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:assigned_to_id)
     |> unique_constraint([:column_id, :position])
     |> unique_constraint(:identifier)
-  end
-
-  defp validate_complexity(changeset) do
-    if complexity = get_field(changeset, :complexity) do
-      if complexity in ["small", "medium", "large"] do
-        changeset
-      else
-        add_error(changeset, :complexity, "must be one of: small, medium, large")
-      end
-    else
-      changeset
-    end
   end
 end
 ```
@@ -245,7 +237,7 @@ describe "scalar AI fields" do
       title: "Implement user authentication",
       position: 1,
       column_id: column.id,
-      complexity: "medium",
+      complexity: :medium,
       estimated_files: "5-7",
       why: "Users need secure login functionality",
       what: "Add JWT-based authentication with refresh tokens",
@@ -254,7 +246,7 @@ describe "scalar AI fields" do
 
     {:ok, task} = Tasks.create_task(attrs)
 
-    assert task.complexity == "medium"
+    assert task.complexity == :medium
     assert task.estimated_files == "5-7"
     assert task.why == "Users need secure login functionality"
     assert task.what == "Add JWT-based authentication with refresh tokens"
@@ -328,17 +320,17 @@ test "validates complexity values" do
     title: "Test task",
     position: 1,
     column_id: column.id,
-    complexity: "invalid_value"
+    complexity: :invalid_value
   }
 
   {:error, changeset} = Tasks.create_task(attrs)
-  assert "must be one of: small, medium, large" in errors_on(changeset).complexity
+  assert "is invalid" in errors_on(changeset).complexity
 end
 
 test "allows valid complexity values" do
   column = column_fixture()
 
-  for complexity <- ["small", "medium", "large"] do
+  for complexity <- [:small, :medium, :large] do
     attrs = %{
       title: "Test task #{complexity}",
       position: 1,
@@ -367,7 +359,7 @@ test "creates task without scalar fields (backward compatibility)" do
   {:ok, task} = Tasks.create_task(attrs)
 
   assert task.title == "Simple task"
-  assert task.complexity == nil
+  assert task.complexity == :small
   assert task.why == nil
   assert task.telemetry_event == nil
 end
@@ -380,14 +372,14 @@ test "updates scalar fields" do
   task = task_fixture()
 
   update_attrs = %{
-    complexity: "large",
+    complexity: :large,
     why: "Updated rationale",
     telemetry_event: "updated.event"
   }
 
   {:ok, updated_task} = Tasks.update_task(task, update_attrs)
 
-  assert updated_task.complexity == "large"
+  assert updated_task.complexity == :large
   assert updated_task.why == "Updated rationale"
   assert updated_task.telemetry_event == "updated.event"
 end
@@ -427,7 +419,7 @@ After implementing this task:
      title: "Test AI task",
      position: 1,
      column_id: column.id,
-     complexity: "medium",
+     complexity: :medium,
      estimated_files: "3-5",
      why: "Testing new scalar fields"
    })
@@ -435,10 +427,10 @@ After implementing this task:
    task |> Repo.reload() |> IO.inspect()
    ```
 
-5. **Check for nil values on existing tasks**:
+5. **Check for default values on existing tasks**:
    ```elixir
    existing_task = Repo.get!(Task, 1)
-   existing_task.complexity  # Should be nil
+   existing_task.complexity  # Should be :small (default)
    existing_task.why  # Should be nil
    ```
 
@@ -446,19 +438,22 @@ After implementing this task:
 
 ## Patterns to Follow
 
-1. **All new fields are optional** - Use `field :name, :type` without defaults to allow nil
+1. **All new fields are optional except complexity** - Use `field :name, :type` without defaults to allow nil; complexity has default: :small
 2. **Validation is lenient** - Only validate complexity enum; other fields accept any text
-3. **Text vs String** - Use `:text` for potentially long content (why, what, patterns_to_follow), `:string` for short values (complexity, telemetry_event)
-4. **No UI changes yet** - This is pure backend work; UI will be added in later tasks
-5. **Preserve existing behavior** - All existing tests should continue to pass
+3. **Text vs String** - Use `:text` for potentially long content (why, what, patterns_to_follow), `:string` for short values (telemetry_event)
+4. **Ecto.Enum for complexity** - Matches existing schema patterns (type, priority), stores as integer, uses atoms in code
+5. **No UI changes yet** - This is pure backend work; UI will be added in later tasks
+6. **Preserve existing behavior** - All existing tests should continue to pass
 
 ---
 
 ## Database Changes
 
-Single migration adding 13 columns to `tasks` table. All columns nullable for backward compatibility.
+Single migration adding 13 columns to `tasks` table. All columns nullable except complexity (has default: "small").
 
 Index on `complexity` for common filtering queries (e.g., "show all medium complexity tasks").
+
+Check constraint ensures complexity values are valid ("small", "medium", or "large").
 
 ---
 
@@ -475,9 +470,9 @@ Index on `complexity` for common filtering queries (e.g., "show all medium compl
 
 ## Pitfalls
 
-1. **Don't add non-null constraints** - This breaks existing tasks
-2. **Don't add defaults** - Let nil mean "not specified" vs "empty string"
-3. **Don't over-validate** - AI agents will provide structured data; validation happens at API layer
+1. **Don't add non-null constraints** - Only complexity has a default; other fields stay nullable
+2. **Use atoms for complexity** - It's `:medium`, not `"medium"` in code (database stores as integer)
+3. **Don't over-validate** - Only validate complexity enum; other fields accept any text
 4. **Don't index text fields** - PostgreSQL full-text search comes later if needed
 5. **Don't forget to update changeset cast/2** - New fields must be in the cast list
 

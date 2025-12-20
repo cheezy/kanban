@@ -205,11 +205,11 @@ defmodule Kanban.Tasks do
     changeset =
       task
       |> cast(attrs, [:completed_by, :completion_summary, :actual_complexity, :actual_files_changed, :time_spent_minutes])
-      |> put_change(:status, "completed")
+      |> put_change(:status, :completed)
       |> put_change(:completed_at, DateTime.utc_now() |> DateTime.truncate(:second))
       |> validate_required([:completed_by, :completion_summary])
-      |> validate_inclusion(:status, ["in_progress", "blocked"], message: "can only complete tasks that are in progress or blocked")
-      |> validate_inclusion(:actual_complexity, ["small", "medium", "large"], allow_nil: true)
+      |> validate_inclusion(:status, [:in_progress, :blocked], message: "can only complete tasks that are in progress or blocked")
+      |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
       |> validate_completion_summary()
 
     case Repo.update(changeset) do

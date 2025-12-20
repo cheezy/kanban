@@ -124,7 +124,7 @@ alias Kanban.{Tasks, Repo}
 # Create task with rich fields (scalar)
 {:ok, task} = Tasks.create_task(%{
   title: "Test task",
-  complexity: "medium",
+  complexity: :medium,
   why: "Testing new schema",
   what: "Create test task with metadata",
   created_by_id: 1,
