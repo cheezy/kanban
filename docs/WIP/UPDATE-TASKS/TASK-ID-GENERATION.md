@@ -219,15 +219,16 @@ Goal (G1)
 └── Defect (D2)
 
 Standalone Tasks (no parent):
-├── Task (W7)
-└── Defect (D1)
+├── Work Task (W7)
+└── Defect (D3)
 ```
 
 **Database Schema for Hierarchy:**
 ```elixir
 # tasks table
-field :parent_id, :integer  # References another task (epic or feature)
-field :task_type, :string   # "epic", "feature", "task" (NOT same as :type field)
+field :parent_id, :integer  # References another task (goal)
+field :task_type, :string   # "goal", "work", "defect"
+field :type, Ecto.Enum, values: [:work, :defect]  # For tasks only
 
 # Self-referential foreign key
 add :parent_id, references(:tasks, on_delete: :delete_all)
@@ -235,47 +236,33 @@ create index(:tasks, [:parent_id])
 ```
 
 **Note:** There are two type-related fields:
-- `type` (Ecto.Enum): `:epic`, `:feature`, `:work`, `:defect` - determines ID prefix
-- `task_type` (string): `"epic"`, `"feature"`, `"task"` - determines hierarchy level
+- `type` (Ecto.Enum): `:work`, `:defect` - determines ID prefix for tasks (W or D)
+- `task_type` (string): `"goal"`, `"work"`, `"defect"` - determines hierarchy level
 
-These may be consolidated in the future, but currently serve different purposes in the codebase.
+Goals use `task_type: "goal"` and do not have a `type` value (or it's nullable).
 
 ## Usage Examples
 
 ### Creating Tasks with Auto-Generated IDs
 
-**Epic:**
+**Goal:**
 ```elixir
-{:ok, epic} = Tasks.create_task(%{
+{:ok, goal} = Tasks.create_task(%{
   title: "Implement AI-Optimized Task System",
-  type: :epic,
-  task_type: "epic",
+  task_type: "goal",
   status: "open"
 })
 
-epic.identifier  # => "E1"
+goal.identifier  # => "G1"
 ```
 
-**Feature:**
-```elixir
-{:ok, feature} = Tasks.create_task(%{
-  title: "Database Schema Foundation",
-  type: :feature,
-  task_type: "feature",
-  parent_id: epic.id,
-  status: "open"
-})
-
-feature.identifier  # => "F1"
-```
-
-**Work Task:**
+**Work Task (child of goal):**
 ```elixir
 {:ok, task} = Tasks.create_task(%{
   title: "Extend task schema",
   type: :work,
-  task_type: "task",
-  parent_id: feature.id,
+  task_type: "work",
+  parent_id: goal.id,
   status: "open",
   complexity: "large"
 })
@@ -283,12 +270,25 @@ feature.identifier  # => "F1"
 task.identifier  # => "W1"
 ```
 
+**Work Task (standalone):**
+```elixir
+{:ok, task} = Tasks.create_task(%{
+  title: "Add priority filter to board",
+  type: :work,
+  task_type: "work",
+  status: "open",
+  complexity: "medium"
+})
+
+task.identifier  # => "W2"
+```
+
 **Defect:**
 ```elixir
 {:ok, defect} = Tasks.create_task(%{
   title: "Fix task claiming race condition",
   type: :defect,
-  task_type: "task",
+  task_type: "defect",
   status: "open",
   complexity: "medium"
 })
@@ -302,9 +302,10 @@ defect.identifier  # => "D1"
 # Get task by identifier
 task = Repo.get_by(Task, identifier: "W42")
 
+# Get all goals
+goals = from(t in Task, where: t.task_type == "goal") |> Repo.all()
+
 # Get all tasks of a specific type
-epics = from(t in Task, where: t.type == :epic) |> Repo.all()
-features = from(t in Task, where: t.type == :feature) |> Repo.all()
 work_items = from(t in Task, where: t.type == :work) |> Repo.all()
 defects = from(t in Task, where: t.type == :defect) |> Repo.all()
 
@@ -312,67 +313,72 @@ defects = from(t in Task, where: t.type == :defect) |> Repo.all()
 tasks_starting_with_w =
   from(t in Task, where: like(t.identifier, "W%"))
   |> Repo.all()
+
+# Get all tasks for a specific goal
+goal_tasks =
+  from(t in Task, where: t.parent_id == ^goal_id)
+  |> Repo.all()
 ```
 
 ### API Usage
 
-**GET /api/tasks?type=epic**
+**GET /api/tasks?task_type=goal**
 ```json
 {
   "data": [
     {
       "id": 1,
-      "identifier": "E1",
+      "identifier": "G1",
       "title": "Implement AI-Optimized Task System",
-      "type": "epic",
-      "task_type": "epic",
+      "task_type": "goal",
       "status": "open"
     }
   ]
 }
 ```
 
-**GET /api/tasks/E1/tree** (Hierarchical view)
+**GET /api/tasks/G1/tree** (Hierarchical view)
 ```json
 {
-  "type": "epic",
+  "task_type": "goal",
   "task": {
     "id": 1,
-    "identifier": "E1",
+    "identifier": "G1",
     "title": "Implement AI-Optimized Task System",
-    "type": "epic"
+    "task_type": "goal"
   },
-  "features": [
+  "tasks": [
     {
-      "type": "feature",
-      "task": {
-        "id": 2,
-        "identifier": "F1",
-        "title": "Database Schema Foundation",
-        "type": "feature",
-        "parent_id": 1
-      },
-      "tasks": [
-        {
-          "id": 3,
-          "identifier": "W1",
-          "title": "Extend task schema",
-          "type": "work",
-          "parent_id": 2
-        },
-        {
-          "id": 4,
-          "identifier": "W2",
-          "title": "Add metadata fields",
-          "type": "work",
-          "parent_id": 2
-        }
-      ]
+      "id": 2,
+      "identifier": "W1",
+      "title": "Extend task schema",
+      "type": "work",
+      "task_type": "work",
+      "parent_id": 1,
+      "status": "open"
+    },
+    {
+      "id": 3,
+      "identifier": "W2",
+      "title": "Add metadata fields",
+      "type": "work",
+      "task_type": "work",
+      "parent_id": 1,
+      "status": "completed"
+    },
+    {
+      "id": 4,
+      "identifier": "D1",
+      "title": "Fix race condition in claiming",
+      "type": "defect",
+      "task_type": "defect",
+      "parent_id": 1,
+      "status": "open"
     }
   ],
   "statistics": {
-    "total_tasks": 2,
-    "completed_tasks": 0,
+    "total_tasks": 3,
+    "completed_tasks": 1,
     "blocked_tasks": 0
   }
 }
@@ -382,17 +388,17 @@ tasks_starting_with_w =
 
 ### For Humans
 
-1. **Easy Reference**: "Check out E1" is clearer than "Check out task ID 1287"
+1. **Easy Reference**: "Check out G1" is clearer than "Check out task ID 1287"
 2. **Type Recognition**: Instantly know what kind of entity you're looking at
-3. **Conversation**: Natural to discuss in meetings ("Let's focus on F2 tasks this sprint")
+3. **Conversation**: Natural to discuss in meetings ("Let's focus on G2 tasks this sprint")
 4. **Code Reviews**: Easy to reference in commit messages and PR descriptions
 
 ### For AI Agents
 
 1. **Semantic Clarity**: Prefix indicates entity type without additional queries
-2. **Dependency References**: Can reference "W42 depends on F3" in natural language
+2. **Dependency References**: Can reference "W42 depends on W3" in natural language
 3. **Documentation**: Clear references in documentation and comments
-4. **Logging**: Easy to grep logs for specific task types
+4. **Logging**: Easy to grep logs for specific task types (goals, work, defects)
 
 ### For System
 
@@ -408,12 +414,11 @@ tasks_starting_with_w =
 - [x] Add unique constraint on identifier field
 - [x] Create migration to backfill existing tasks
 - [x] Add identifier generation to task creation
-- [ ] **Implement E prefix for epics** (pending)
-- [ ] **Implement F prefix for features** (pending)
-- [ ] Update task schema to support epic and feature types
-- [ ] Update ID generation logic to handle all four prefixes
-- [ ] Add tests for epic and feature identifier generation
-- [ ] Update API documentation with all four prefixes
+- [ ] **Implement G prefix for goals** (pending)
+- [ ] Update task schema to support goal task_type
+- [ ] Update ID generation logic to handle goal prefix
+- [ ] Add tests for goal identifier generation
+- [ ] Update API documentation with all three prefixes (G, W, D)
 - [ ] Update UI to display identifiers for all types
 
 ## Testing Strategy
@@ -425,12 +430,8 @@ defmodule Kanban.TasksTest do
   use Kanban.DataCase
 
   describe "generate_task_identifier/1" do
-    test "generates E1 for first epic" do
-      assert Tasks.generate_task_identifier(:epic) == "E1"
-    end
-
-    test "generates F1 for first feature" do
-      assert Tasks.generate_task_identifier(:feature) == "F1"
+    test "generates G1 for first goal" do
+      assert Tasks.generate_task_identifier("goal") == "G1"
     end
 
     test "generates W1 for first work task" do
@@ -441,20 +442,18 @@ defmodule Kanban.TasksTest do
       assert Tasks.generate_task_identifier(:defect) == "D1"
     end
 
-    test "increments epic identifiers sequentially" do
-      create_task(%{type: :epic})  # E1
-      create_task(%{type: :epic})  # E2
-      assert Tasks.generate_task_identifier(:epic) == "E3"
+    test "increments goal identifiers sequentially" do
+      create_task(%{task_type: "goal"})  # G1
+      create_task(%{task_type: "goal"})  # G2
+      assert Tasks.generate_task_identifier("goal") == "G3"
     end
 
     test "identifiers are independent across types" do
-      create_task(%{type: :epic})     # E1
-      create_task(%{type: :feature})  # F1
-      create_task(%{type: :work})     # W1
-      create_task(%{type: :defect})   # D1
+      create_task(%{task_type: "goal"})      # G1
+      create_task(%{type: :work})            # W1
+      create_task(%{type: :defect})          # D1
 
-      assert Tasks.generate_task_identifier(:epic) == "E2"
-      assert Tasks.generate_task_identifier(:feature) == "F2"
+      assert Tasks.generate_task_identifier("goal") == "G2"
       assert Tasks.generate_task_identifier(:work) == "W2"
       assert Tasks.generate_task_identifier(:defect) == "D2"
     end
@@ -465,24 +464,23 @@ end
 ### Integration Tests
 
 ```elixir
-test "creates epic with E prefix identifier" do
-  {:ok, epic} = Tasks.create_task(%{
-    title: "Test Epic",
-    type: :epic,
-    task_type: "epic"
+test "creates goal with G prefix identifier" do
+  {:ok, goal} = Tasks.create_task(%{
+    title: "Test Goal",
+    task_type: "goal"
   })
 
-  assert epic.identifier =~ ~r/^E\d+$/
+  assert goal.identifier =~ ~r/^G\d+$/
 end
 
-test "creates feature with F prefix identifier" do
-  {:ok, feature} = Tasks.create_task(%{
-    title: "Test Feature",
-    type: :feature,
-    task_type: "feature"
+test "creates work task with W prefix identifier" do
+  {:ok, work} = Tasks.create_task(%{
+    title: "Test Work Task",
+    type: :work,
+    task_type: "work"
   })
 
-  assert feature.identifier =~ ~r/^F\d+$/
+  assert work.identifier =~ ~r/^W\d+$/
 end
 
 test "identifiers are globally unique" do
@@ -492,30 +490,29 @@ test "identifiers are globally unique" do
   refute task1.identifier == task2.identifier
 end
 
-test "epic-feature-task hierarchy has correct identifiers" do
-  {:ok, epic} = Tasks.create_task(%{
-    title: "Epic",
-    type: :epic,
-    task_type: "epic"
+test "goal-task hierarchy has correct identifiers" do
+  {:ok, goal} = Tasks.create_task(%{
+    title: "Goal",
+    task_type: "goal"
   })
 
-  {:ok, feature} = Tasks.create_task(%{
-    title: "Feature",
-    type: :feature,
-    task_type: "feature",
-    parent_id: epic.id
-  })
-
-  {:ok, task} = Tasks.create_task(%{
-    title: "Task",
+  {:ok, work_task} = Tasks.create_task(%{
+    title: "Work Task",
     type: :work,
-    task_type: "task",
-    parent_id: feature.id
+    task_type: "work",
+    parent_id: goal.id
   })
 
-  assert epic.identifier =~ ~r/^E\d+$/
-  assert feature.identifier =~ ~r/^F\d+$/
-  assert task.identifier =~ ~r/^W\d+$/
+  {:ok, defect} = Tasks.create_task(%{
+    title: "Defect",
+    type: :defect,
+    task_type: "defect",
+    parent_id: goal.id
+  })
+
+  assert goal.identifier =~ ~r/^G\d+$/
+  assert work_task.identifier =~ ~r/^W\d+$/
+  assert defect.identifier =~ ~r/^D\d+$/
 end
 ```
 
@@ -534,7 +531,7 @@ end
 - **Implementation:** [lib/kanban/tasks.ex:615-637](lib/kanban/tasks.ex#L615-L637)
 - **Schema:** [lib/kanban/tasks/task.ex](lib/kanban/tasks/task.ex)
 - **Migration:** [priv/repo/migrations/20251111234119_add_identifier_to_tasks.exs](priv/repo/migrations/20251111234119_add_identifier_to_tasks.exs)
-- **Epic Structure:** [docs/WIP/UPDATE-TASKS/EPIC-ai-optimized-task-system.md](EPIC-ai-optimized-task-system.md)
+- **Goal Structure:** [docs/WIP/UPDATE-TASKS/goal-ai-optimized-task-system.md](goal-ai-optimized-task-system.md)
 - **Hierarchical Tree:** [docs/WIP/UPDATE-TASKS/12-add-hierarchical-task-tree-endpoint.md](12-add-hierarchical-task-tree-endpoint.md)
 - **Task Breakdown:** [docs/WIP/TASK-BREAKDOWN.md](../TASK-BREAKDOWN.md)
 
@@ -542,9 +539,10 @@ end
 
 The prefixed ID system provides human-readable, type-aware identifiers for all task types:
 
-- **E** for Epics (large initiatives)
-- **F** for Features (feature sets)
-- **W** for Work tasks (individual items)
-- **D** for Defects (bug fixes)
+- **G** for Goals (large initiatives, 25+ hours)
+- **W** for Work tasks (individual work items, 1-3 hours)
+- **D** for Defects (bug fixes and corrections)
 
-The system currently supports W and D prefixes. Implementation of E and F prefixes requires updating the task type enum, extending the ID generation logic, and creating appropriate migrations. This simple prefix system makes tasks easier to reference in conversation, documentation, and code while maintaining global uniqueness through database constraints.
+The system currently supports W and D prefixes. Implementation of the G prefix requires updating the task_type field, extending the ID generation logic, and creating appropriate migrations. This simple prefix system makes tasks easier to reference in conversation, documentation, and code while maintaining global uniqueness through database constraints.
+
+The 2-level hierarchy (Goal → Task) with two task types (Work/Defect) provides the right balance of structure and simplicity for both human developers and AI agents.

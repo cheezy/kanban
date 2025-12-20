@@ -1,152 +1,174 @@
 # Task Breakdown
 
- Should I be able to create subtasks automatically, or just flat tasks?
+Should I be able to create subtasks automatically, or just flat tasks?
 
-## Both - But Start Simple
+## Decision: 2-Level Hierarchy (Goal → Tasks)
 
-### Start: Flat Tasks (MVP)
+### Current Structure
+
+The system uses a **2-level hierarchy** with **two task types**:
+
+**Levels:**
+1. **Goal** - Large initiatives (25+ hours, multiple tasks)
+2. **Task** - Individual work items (1-3 hours each)
+
+**Task Types:**
+1. **Work** (W prefix) - New functionality, enhancements
+2. **Defect** (D prefix) - Bug fixes, corrections
 
 ```json
-Just let me create independent tasks with dependencies:
+{
+  "title": "Implement AI-Optimized Task System",
+  "task_type": "goal",
+  "identifier": "G1",
+  "tasks": [
+    {"title": "Add API auth", "type": "work", "identifier": "W1", "blocks": []},
+    {"title": "Create /ready endpoint", "type": "work", "identifier": "W2", "blocks": ["W1"]},
+    {"title": "Fix race condition", "type": "defect", "identifier": "D1", "blocks": ["W2"]}
+  ]
+}
+```
+
+### Why This Structure
+
+- **Simpler data model** - Only 2 levels instead of 3 (Epic/Feature/Task)
+- **Dependencies handle ordering** - No need for complex nesting
+- **Easier to visualize** - Clearer in Kanban board
+- **Task types provide clarity** - Work vs Defect is more meaningful than Feature vs Task
+- **Less maintenance** - Fewer levels = less overhead
+
+### Flat Tasks with Dependencies (Default)
+
+For most work, use flat tasks with dependencies:
+
+```json
 {
   "tasks": [
-    {"id": 1, "title": "Add API auth", "blocks": []},
-    {"id": 2, "title": "Create /ready endpoint", "blocks": [1]},
-    {"id": 3, "title": "Add task creation endpoint", "blocks": [1]}
+    {"id": 1, "title": "Add API auth", "type": "work", "blocks": []},
+    {"id": 2, "title": "Create /ready endpoint", "type": "work", "blocks": [1]},
+    {"id": 3, "title": "Fix validation bug", "type": "defect", "blocks": [1]}
   ]
 }
 ```
 
-### Why start here
-
-- Simpler data model
-- Dependencies handle ordering
-- Easier to visualize in Kanban
-
-### Later: Hierarchical Subtasks (Better UX)
-
-But eventually hierarchical is more powerful because:
-
-```json
-{
-  "title": "Add AI workflow API",
-  "type": "epic",
-  "subtasks": [
-    {
-      "title": "Add API authentication",
-      "subtasks": [
-        {"title": "Create API token schema"},
-        {"title": "Add token validation plug"},
-        {"title": "Add UI for token generation"}
-      ]
-    },
-    {
-      "title": "Create task endpoints",
-      "blocks": ["Add API authentication"],
-      "subtasks": [
-        {"title": "GET /api/tasks/ready"},
-        {"title": "POST /api/tasks"},
-        {"title": "PATCH /api/tasks/:id"}
-      ]
-    }
-  ]
-}
-```
-
-## Why Subtasks Are Better for AI Planning
+## Why 2 Levels Work Better for AI
 
 ### 1. Natural Planning Structure
 
-When I break down work, I think hierarchically:
+When breaking down work, think in terms of goals and tasks:
 
-- Epic: "Add AI workflow API"
-  - Feature: "Authentication"
-    - Task: "Token schema"
-    - Task: "Validation plug"
+- Goal: "Implement AI-Optimized Task System"
+  - Work Task: "Add API authentication"
+  - Work Task: "Create task endpoints"
+  - Defect: "Fix race condition in claiming"
 
 ### 2. Progress Tracking
 
-- Parent shows "2/5 subtasks complete"
+- Goal shows "7/13 tasks complete"
 - Clear visibility into what's done
+- Task types visible (5 work, 2 defects)
 
 ### 3. Scope Management
 
-- Easy to see what's part of a larger effort
-- Can complete subtasks independently
-- Can defer some subtasks without losing context
+- Easy to see what's part of a larger goal
+- Tasks can be completed independently
+- Can defer some tasks without losing context
 
 ### 4. Better for Resuming Work
 
 If I get interrupted:
 
 - Flat tasks: I have to remember which tasks belong together
-- Subtasks: The parent task shows the full context
+- Goal hierarchy: The parent goal shows the full context and related tasks
 
-## Hybrid Approach (My Recommendation)
+## Implementation Approach
 
-Allow both patterns:
+The schema supports the 2-level hierarchy:
 
 ```elixir
-# Schema supports both
-field :parent_id, references(:tasks)  # null = top-level task
-field :task_type, :string  # epic, feature, task, bug
+# Schema
+field :parent_id, references(:tasks)  # null = top-level (goal), non-null = child task
+field :task_type, :string  # "goal", "work", "defect"
+field :type, Ecto.Enum, values: [:work, :defect]  # For tasks only
+field :identifier, :string  # G1, W42, D7
 ```
 
 ```json
-# API accepts both
+# API accepts goal with tasks
 POST /api/tasks
 {
-  "title": "Add auth",
-  "subtasks": [...]  # Creates children automatically
+  "title": "Implement user authentication",
+  "task_type": "goal",
+  "tasks": [
+    {"title": "Add JWT library", "type": "work"},
+    {"title": "Create auth controller", "type": "work"},
+    {"title": "Fix password validation", "type": "defect"}
+  ]
 }
 
-# OR
+# OR attach to existing goal
 POST /api/tasks
 {
   "title": "Add auth",
-  "parent_id": "kanban-5"  # Attach to existing parent
+  "type": "work",
+  "parent_id": "G1"  # Attach to existing goal
 }
 ```
 
-### What I'd Use When
+### When to Use What
 
-Flat tasks when:
+**Create a Goal** when:
 
-- Quick fixes/bugs
-- Independent features
+- Planning large initiatives (25+ hours)
+- Breaking down complex features into multiple work items
+- Grouping related tasks for a release or milestone
+
+**Create Flat Tasks** when:
+
+- Quick fixes/bugs (use type: "defect")
+- Independent features (use type: "work")
 - Simple requests from user
-
-Subtasks when:
-
-- Planning mode (breaking down complex work)
-- Epics with multiple parts
-- Related work that shares context
+- Tasks that don't belong to a larger initiative
 
 ## UI Considerations
 
 ### Kanban Board View
 
-- Show parent tasks as cards
-- Badge showing "3/5" subtasks complete
-- Click to expand/collapse subtasks
+- Show goal cards with badge showing "7/13 tasks complete"
+- Display task type icons (W for work, D for defect)
+- Click to expand/collapse tasks under goal
+- Color coding: Work tasks vs Defect tasks
 
 ### List View
 
-- Indent subtasks under parents
-- Or filter: "Show only top-level tasks"
+- Indent tasks under parent goals
+- Filter options:
+  - "Show only goals"
+  - "Show only tasks"
+  - "Show only defects"
 
-## What Would Help Me Most
+## API Features for Goal/Task Hierarchy
 
-If you implement subtasks, give me:
+The API provides:
 
-1. Auto-flattening API: I can send nested JSON, you create the hierarchy
-2. Smart completion: When all subtasks done, mark parent done
-3. Dependency inheritance: If parent blocks X, all subtasks implicitly block X
-4. Query flexibility:
-    `GET /api/tasks/ready` includes subtasks whose parent is complete
-    `GET /api/tasks/ready?top_level=true` only shows parent tasks
+1. **Auto-flattening API**: Send nested JSON, system creates the hierarchy
+2. **Smart completion**: When all tasks done, mark goal complete
+3. **Dependency inheritance**: If goal blocks X, all tasks implicitly block X
+4. **Query flexibility**:
+   - `GET /api/tasks/ready` - includes tasks whose parent goal is unblocked
+   - `GET /api/tasks/ready?type=work` - only work tasks
+   - `GET /api/tasks/ready?type=defect` - only defects
+   - `GET /api/tasks/:id/tree` - hierarchical view (goal → tasks)
 
-*My vote: Start with flat + dependencies, add subtasks in v2* when you see how planning actually works in practice. What's your intuition - do you think you'd want to see the hierarchy in the UI?
+## Identifier System
+
+All items have human-readable prefixed identifiers:
+
+- **G1, G2, G3** - Goals
+- **W1, W2, W3** - Work tasks
+- **D1, D2, D3** - Defects
+
+See [TASK-ID-GENERATION.md](UPDATE-TASKS/TASK-ID-GENERATION.md) for full details.
 
 ## Task Format and Structure
 

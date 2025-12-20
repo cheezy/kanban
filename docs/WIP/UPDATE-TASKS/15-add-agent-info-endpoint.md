@@ -15,7 +15,7 @@
 - [ ] GET /api/agent/info returns comprehensive agent documentation as JSON
 - [ ] Includes system overview and purpose
 - [ ] Documents complete task workflow (claim → work → complete → review)
-- [ ] Explains task ID prefixes (E, F, W, D)
+- [ ] Explains task ID prefixes (G, W, D)
 - [ ] Documents hook system and AGENTS.md file
 - [ ] Explains needs_review flag and review workflow
 - [ ] Lists all available API endpoints with descriptions
@@ -148,11 +148,11 @@ mix precommit
 1. Call endpoint with valid token
 2. Verify response includes all expected sections
 3. Verify workflow section explains claim → work → complete flow
-4. Verify task_identifiers section explains E, F, W, D prefixes
+4. Verify task_identifiers section explains G, W, D prefixes and 2-level hierarchy
 5. Verify hooks section references AGENTS.md
 6. Verify review_process section explains needs_review flag
 7. Verify api_endpoints section lists all available endpoints
-8. Verify examples section provides practical workflows
+8. Verify examples section provides practical workflows including goal creation
 9. Call endpoint without token (should return 401)
 10. Call endpoint with invalid token (should return 401)
 
@@ -255,12 +255,17 @@ defmodule KanbanWeb.API.AgentController do
           W: "Work - Individual work items (1-3 hours)",
           D: "Defect - Bug fixes and corrections"
         },
+        task_types: %{
+          goal: "Large initiatives that contain multiple tasks",
+          work: "New functionality or enhancements",
+          defect: "Bug fixes and corrections"
+        },
         examples: [
           "G1: Implement AI-Optimized Task System",
           "W42: Add task completion endpoint",
           "D7: Fix race condition in task claiming"
         ],
-        hierarchy: "Goal (G1) → Tasks (W1, W2, W3, D1, D2)",
+        hierarchy: "2-level: Goal (G1) → Tasks (W1, W2, W3, D1, D2)",
         reference: "See TASK-ID-GENERATION.md for complete documentation"
       },
 
@@ -460,10 +465,10 @@ defmodule KanbanWeb.API.AgentController do
         description: "Rich task metadata fields available on all tasks",
         core_fields: %{
           id: "Database ID (integer)",
-          identifier: "Human-readable ID (E1, F1, W42, D7)",
+          identifier: "Human-readable ID (G1, W42, D7)",
           title: "Task title (required)",
           description: "Detailed task description",
-          type: "work | defect (task type)",
+          type: "work | defect (for tasks only, not goals)",
           task_type: "goal | work | defect (hierarchy level)",
           parent_id: "Parent task ID (for tasks in goals)",
           complexity: "small | medium | large",
@@ -636,7 +641,7 @@ defmodule KanbanWeb.API.AgentController do
         ],
         efficiency_tips: [
           "Use batch endpoint when creating multiple related tasks",
-          "Use tree endpoint to understand full context (epic → features → tasks)",
+          "Use tree endpoint to understand full context (goal → tasks)",
           "Use validate endpoint before claiming to avoid wasted claims",
           "Read task dependencies to understand blocking relationships",
           "Check review_status regularly when needs_review=true"
@@ -799,37 +804,27 @@ defmodule KanbanWeb.API.AgentController do
           ]
         },
 
-        example_4_create_epic_structure: %{
-          description: "Create an epic with features and tasks using batch endpoint",
+        example_4_create_goal_structure: %{
+          description: "Create a goal with tasks using batch endpoint",
           steps: [
             %{
-              step: "Create epic, features, and tasks in one request",
+              step: "Create goal and tasks in one request",
               request: "POST /api/tasks/batch",
               body: %{
                 tasks: [
                   %{
-                    temp_id: "epic1",
+                    temp_id: "goal1",
                     title: "Implement notification system",
-                    type: "epic",
-                    task_type: "epic",
+                    task_type: "goal",
                     complexity: "large",
-                    dependencies: []
-                  },
-                  %{
-                    temp_id: "feature1",
-                    title: "Email notifications",
-                    type: "feature",
-                    task_type: "feature",
-                    parent_id: "epic1",
-                    complexity: "medium",
                     dependencies: []
                   },
                   %{
                     temp_id: "task1",
                     title: "Design notification schema",
                     type: "work",
-                    task_type: "task",
-                    parent_id: "feature1",
+                    task_type: "work",
+                    parent_id: "goal1",
                     complexity: "small",
                     dependencies: []
                   },
@@ -837,26 +832,35 @@ defmodule KanbanWeb.API.AgentController do
                     temp_id: "task2",
                     title: "Implement email sender",
                     type: "work",
-                    task_type: "task",
-                    parent_id: "feature1",
+                    task_type: "work",
+                    parent_id: "goal1",
                     complexity: "medium",
                     dependencies: ["task1"]
+                  },
+                  %{
+                    temp_id: "task3",
+                    title: "Fix notification race condition",
+                    type: "defect",
+                    task_type: "defect",
+                    parent_id: "goal1",
+                    complexity: "small",
+                    dependencies: ["task2"]
                   }
                 ]
               },
               response: %{
                 data: [
-                  %{id: 100, identifier: "E1", temp_id: "epic1"},
-                  %{id: 101, identifier: "F1", temp_id: "feature1"},
+                  %{id: 100, identifier: "G1", temp_id: "goal1"},
                   %{id: 102, identifier: "W45", temp_id: "task1"},
-                  %{id: 103, identifier: "W46", temp_id: "task2"}
+                  %{id: 103, identifier: "W46", temp_id: "task2"},
+                  %{id: 104, identifier: "D1", temp_id: "task3"}
                 ]
               }
             },
             %{
               step: "View hierarchy",
               request: "GET /api/tasks/100/tree",
-              description: "Get complete epic structure with all features and tasks"
+              description: "Get complete goal structure with all tasks"
             }
           ]
         },
@@ -992,10 +996,10 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert length(workflow["steps"]) == 7
 
       # Verify task identifiers section
-      assert task_identifiers["prefixes"]["E"] =~ "Epic"
-      assert task_identifiers["prefixes"]["F"] =~ "Feature"
+      assert task_identifiers["prefixes"]["G"] =~ "Goal"
       assert task_identifiers["prefixes"]["W"] =~ "Work"
       assert task_identifiers["prefixes"]["D"] =~ "Defect"
+      assert task_identifiers["hierarchy"] =~ "2-level"
 
       # Verify hooks section
       assert hooks["config_file"] == "AGENTS.md in repository root"
@@ -1015,7 +1019,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert examples["example_1_simple_task_workflow"]
       assert examples["example_2_task_requiring_review"]
       assert examples["example_3_unclaim_when_blocked"]
-      assert examples["example_4_create_epic_structure"]
+      assert examples["example_4_create_goal_structure"]
       assert examples["example_agents_md_file"]
     end
 
