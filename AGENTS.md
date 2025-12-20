@@ -21,17 +21,21 @@
 
 ### Quality guidelines  
 
+**ALWAYS** run follow these quality guidelines:
+
 - When you complete a task that has new functions write unit tests for the new function
 - When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
 - Each time you write or update a unit tests run them with `mix test` and ensure they pass
-- When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
-- When you complete a task run `mix credo --strict` to check for code quality issues and fix them
+- **IMPORTANT**: When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
+- **IMPORTANT**: When you complete a task run `mix credo --strict` to check for code quality issues and fix them
 
 ### Security guidelines
 
+**ALWAYS** run follow these security guidelines:
+
 - When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
 - When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
-- when you complete a task run `mix sobelow --config` to check for security issues and fix any issue
+- **IMPORTANT**: When you complete a task run `mix sobelow --config` to check for security issues and fix any issue
 
 ### Phoenix v1.8 guidelines
 
@@ -247,7 +251,7 @@ usage rules to understand the correct patterns, conventions, and best practices.
 - **Always** add unique DOM IDs to key elements (like forms, buttons, etc) when writing templates, these IDs can later be used in tests (`<.form for={@form} id="product-form">`)
 - For "app wide" template imports, you can import/alias into the `my_app_web.ex`'s `html_helpers` block, so they will be available to all LiveViews, LiveComponent's, and all modules that do `use MyAppWeb, :html` (replace "my_app" by the actual app name)
 
-- Elixir supports `if/else` but **does NOT support `if/else if` or `if/elsif`. **Never use `else if` or `elseif` in Elixir**, **always** use `cond` or `case` for multiple conditionals.
+- Elixir supports `if/else` but **does NOT support `if/else if` or `if/elsif`**. **Never use `else if` or `elseif` in Elixir**, **always** use `cond` or `case` for multiple conditionals.
 
   **Never do this (invalid)**:
 
