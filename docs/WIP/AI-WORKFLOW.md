@@ -246,4 +246,6 @@ This creates a **Kanban board that speaks AI natively** - structured enough for 
 
 ### Related Documentation
 
-See [UPDATE-TASKS/README.md](UPDATE-TASKS/README.md) for the complete implementation plan with 13 tasks covering database schema, UI, API, and task management features.
+- [UPDATE-TASKS/README.md](UPDATE-TASKS/README.md) - Complete implementation plan with 13 tasks
+- [UI-INTEGRATION.md](UI-INTEGRATION.md) - Goal card design and task attribution UI
+- [TASK-BREAKDOWN.md](TASK-BREAKDOWN.md) - Goal/Task hierarchy with UI considerations

@@ -1,5 +1,115 @@
 # UI Integration
 
+This document covers UI design decisions for the AI-optimized Kanban system, including Goal representation and task creation attribution.
+
+## Goal Card Design
+
+Goals appear on the Kanban board with a distinct but minimalist design that emphasizes their organizational role.
+
+### Visual Specifications
+
+**Card Height:** Shorter than regular task cards (approximately 40% height)
+
+**Background Color:** Light yellow (#FFF9C4 or similar) to distinguish from tasks
+
+**Layout:**
+```
+┌─────────────────────────────────┐
+│ Goal Title               [G1]   │ ← Top row: title + identifier
+│ ████████░░░░░░░ 55% (6/11)     │ ← Progress bar with percentage + count
+└─────────────────────────────────┘
+```
+
+**Components:**
+1. **Top Row:**
+   - Goal title (truncated with ellipsis if too long)
+   - Identifier badge (G1, G2, etc.) right-aligned
+
+2. **Progress Bar:**
+   - Visual progress indicator showing completion percentage
+   - Text showing: "XX% (completed/total)"
+   - Example: "55% (6/11)" means 6 out of 11 tasks completed
+
+### Behavior
+
+**Non-Draggable:**
+- Goals cannot be manually dragged between columns
+- User attempts to drag are prevented/ignored
+- Goals move automatically based on task status
+
+**Automatic Column Movement:**
+
+1. **Starting State:** Goal begins in the first column (typically "Open" or "Backlog")
+
+2. **Move to In Progress:**
+   - Triggered when the **first** child task moves to "In Progress"
+   - Goal card automatically transitions to "In Progress" column
+
+3. **Stay In Progress:**
+   - Goal remains in "In Progress" as long as at least one task is incomplete
+   - Progress bar updates with each task completion
+   - Percentage and count update in real-time
+
+4. **Move to Done:**
+   - Triggered when the **last** task is completed
+   - Goal card automatically transitions to "Done" column
+   - Progress bar shows 100% (total/total)
+
+**Progress Calculation:**
+- Completed tasks / Total tasks × 100
+- Only counts direct child tasks (not nested tasks if any)
+- Updates in real-time via LiveView or PubSub events
+
+### Technical Implementation Notes
+
+**LiveView Component:**
+```heex
+<div class="goal-card bg-yellow-50 h-20 rounded-lg shadow-sm p-3 cursor-default">
+  <div class="flex justify-between items-center mb-2">
+    <span class="font-medium text-sm truncate"><%= @goal.title %></span>
+    <span class="badge badge-goal text-xs"><%= @goal.identifier %></span>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar bg-gray-200 rounded-full h-2 overflow-hidden">
+      <div class="progress-fill bg-yellow-500 h-full transition-all duration-300"
+           style={"width: #{@goal.completion_percentage}%"}>
+      </div>
+    </div>
+    <div class="progress-text text-xs text-gray-600 mt-1">
+      <%= @goal.completion_percentage %>% (<%= @goal.completed_tasks %>/<%= @goal.total_tasks %>)
+    </div>
+  </div>
+</div>
+```
+
+**Data Requirements:**
+- `completion_percentage` - Calculated field (completed_tasks/total_tasks * 100)
+- `completed_tasks` - Count of child tasks with status="completed"
+- `total_tasks` - Count of all child tasks
+- Real-time updates via PubSub when child task status changes
+
+### Hover/Interaction States
+
+**Hover:**
+- Slight shadow increase or subtle highlight
+- No drag cursor (remains default cursor)
+- Optional: Show tooltip with full title if truncated
+
+**Click:**
+- Opens goal detail view showing all child tasks
+- Tree/hierarchical view of tasks and their status
+- Option to add new tasks to the goal
+
+### Accessibility
+
+- ARIA label: "Goal: [title], [X]% complete, [Y] of [Z] tasks done"
+- Keyboard navigation: Tab to focus, Enter to open details
+- Screen reader announces progress updates
+- Color contrast meets WCAG AA standards (yellow background with dark text)
+
+## Task Creation Attribution
+
 Do you want the Kanban board to show "AI-created" vs "human-created" tasks differently?
 
 I think showing them the same is the right default approach. Here's my reasoning:

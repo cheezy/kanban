@@ -12,6 +12,7 @@
 
 ## Acceptance Criteria
 
+**Task Detail View:**
 - [ ] Task detail view shows all rich fields
 - [ ] Key files displayed as clickable file paths
 - [ ] Verification steps shown as checklist
@@ -22,6 +23,18 @@
 - [ ] Completion summary displayed for completed tasks
 - [ ] All fields handle nil/empty values gracefully
 - [ ] UI is responsive and well-organized
+
+**Goal Card Display (Board View):**
+- [ ] Goals render as shorter cards (40% height of task cards)
+- [ ] Light yellow background (#FFF9C4) for visual distinction
+- [ ] Shows title and identifier (G1, G2, etc.) on top row
+- [ ] Progress bar below showing completion percentage
+- [ ] Progress text shows "XX% (completed/total)" format
+- [ ] Goals are non-draggable (cursor-default, no drag handlers)
+- [ ] Goals auto-move to "In Progress" when first child task starts
+- [ ] Goals auto-move to "Done" when last child task completes
+- [ ] Progress updates in real-time via PubSub
+- [ ] Click opens goal detail view with task tree
 
 ## Key Files to Read First
 

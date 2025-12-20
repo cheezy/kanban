@@ -134,10 +134,22 @@ POST /api/tasks
 
 ### Kanban Board View
 
-- Show goal cards with badge showing "7/13 tasks complete"
+**Goal Cards:**
+- Shorter height than task cards (40% of task height)
+- Light yellow background (#FFF9C4) for visual distinction
+- Top row: Title + identifier badge (G1, G2, etc.)
+- Progress bar below showing "55% (6/11)" format
+- Non-draggable - moves automatically based on child task status
+- Automatically moves to "In Progress" when first task starts
+- Automatically moves to "Done" when last task completes
+- Real-time progress updates via PubSub
+
+**Task Cards:**
+- Standard height and appearance
 - Display task type icons (W for work, D for defect)
-- Click to expand/collapse tasks under goal
+- Draggable between columns
 - Color coding: Work tasks vs Defect tasks
+- Shows standard task metadata
 
 ### List View
 
