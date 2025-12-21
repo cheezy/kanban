@@ -1,6 +1,6 @@
 <main class="min-h-screen">
   <div class="max-w-4xl mx-auto px-6 py-16">
-    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
       <div class="mb-6">
         <.link
           href={~p"/about"}
@@ -18,35 +18,77 @@
         </.link>
       </div>
 
-      <h1 class="text-4xl font-bold text-gray-900 mb-8">
+      <h1 class="text-4xl font-bold text-base-content mb-8">
         {gettext("Changelog")}
       </h1>
 
       <div class="prose prose-lg max-w-none">
-        <p class="text-gray-600 mb-4">
+        <p class="text-base-content opacity-70 mb-4">
           {gettext(
             "All notable changes to the Kanban Board application will be documented in this file."
           )}
         </p>
-        <p class="text-gray-600 mb-8">
+        <p class="text-base-content opacity-70 mb-8">
           {gettext(
             "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
           )}
         </p>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-gray-900 mb-4">[1.0.0] - 2025-12-15</h2>
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.0.1] - 2025-12-21</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Fixed")}
+            </h3>
+
+            <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+              <li>
+                {gettext(
+                  "Updated all UI components to use theme-aware daisyUI color tokens for proper dark mode support"
+                )}
+              </li>
+              <li>
+                {gettext(
+                  "Replaced hardcoded Tailwind gray colors with daisyUI semantic colors (base-100, base-200, base-300, base-content)"
+                )}
+              </li>
+              <li>
+                {gettext("Fixed text visibility issues in dark mode across all pages including:")}
+              </li>
+            </ul>
+            <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+              <li>{gettext("Board list, show, and form views")}</li>
+              <li>{gettext("Task view and form components")}</li>
+              <li>{gettext("Column form component")}</li>
+              <li>{gettext("Home, About, Changelog, and Tango pages")}</li>
+              <li>{gettext("Authentication pages")}</li>
+              <li>{gettext("Error pages (404, 500)")}</li>
+            </ul>
+            <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
+              <li>{gettext("Updated test expectations to match new dark mode compatible CSS classes")}</li>
+              <li>
+                {gettext(
+                  "All components now properly adapt to both light and dark themes using OKLCH color space"
+                )}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.0.0] - 2025-12-15</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
               {gettext("Core Features")}
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("User Authentication & Management")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("User registration with email and password")}</li>
                 <li>{gettext("Secure user login and logout with session management")}</li>
                 <li>{gettext("Password hashing and security using bcrypt")}</li>
@@ -59,15 +101,15 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Board Management")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Create, view, edit, and delete kanban boards")}</li>
                 <li>{gettext("Each board has a name and description")}</li>
                 <li>{gettext("Board-level access control with three permission levels:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Owner:")}</strong>
                   {gettext("Full control over board, columns, and tasks")}
@@ -80,7 +122,7 @@
                   <strong>{gettext("Read-only:")}</strong> {gettext("Can only view the board")}
                 </li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>{gettext("Share boards with other users with granular permissions")}</li>
                 <li>{gettext("Beautiful board cards with responsive design")}</li>
                 <li>{gettext("Board listing with quick access to all user boards")}</li>
@@ -88,35 +130,35 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Column Management")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Create, edit, and delete columns within boards")}</li>
                 <li>{gettext("Drag-and-drop column reordering")}</li>
                 <li>{gettext("Configurable Work-In-Progress (WIP) limits per column:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Set to 0 for unlimited tasks")}</li>
                 <li>{gettext("Set to positive integer to enforce maximum tasks")}</li>
                 <li>{gettext("Visual indicators when approaching or exceeding WIP limits")}</li>
                 <li>{gettext("Prevents task creation/movement when limit is reached")}</li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>{gettext("Visual task count display (e.g., \"3/5\" when limit is 5)")}</li>
                 <li>{gettext("Column deletion with cascade (removes all tasks in column)")}</li>
               </ul>
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Task Management")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Create, edit, and delete tasks within columns")}</li>
                 <li>{gettext("Rich task properties:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Title:")}</strong> {gettext("Required task name")}
                 </li>
@@ -144,27 +186,27 @@
                   {gettext("Auto-generated unique identifier (e.g., W1, W2, D1)")}
                 </li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>{gettext("Drag-and-drop task movement:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Move tasks within the same column (reorder)")}</li>
                 <li>{gettext("Move tasks between columns")}</li>
                 <li>{gettext("Respects WIP limits when moving")}</li>
                 <li>{gettext("Visual feedback during drag operations")}</li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>{gettext("Task comments:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Add comments to tasks for collaboration")}</li>
                 <li>{gettext("Timestamp and display for all comments")}</li>
                 <li>{gettext("View comment history")}</li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>{gettext("Task history tracking:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Automatic tracking of task lifecycle events")}</li>
                 <li>
                   {gettext(
@@ -177,19 +219,19 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Real-Time Collaboration")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Phoenix PubSub integration for real-time updates")}</li>
                 <li>{gettext("Live synchronization across all connected browsers:")}</li>
               </ul>
-              <ul class="list-disc list-inside ml-6 space-y-1 text-gray-600">
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Task creation, updates, and deletion")}</li>
                 <li>{gettext("Task movement between columns")}</li>
                 <li>{gettext("Automatic board refresh when changes occur")}</li>
               </ul>
-              <ul class="list-disc list-inside space-y-2 text-gray-600 mt-2">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>
                   {gettext(
                     "Multiple users can view and interact with the same board simultaneously"
@@ -199,10 +241,10 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("User Experience")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Modern, responsive design using TailwindCSS")}</li>
                 <li>{gettext("Smooth animations and transitions")}</li>
                 <li>{gettext("Drag-and-drop interfaces for intuitive task management")}</li>
@@ -216,10 +258,10 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Error Tracking & Monitoring")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Built-in error tracking with ErrorTracker")}</li>
                 <li>{gettext("Error dashboard for administrators")}</li>
                 <li>{gettext("Automatic error capture and reporting")}</li>
@@ -228,10 +270,10 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-gray-800 mb-3">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("Internationalization")}
               </h4>
-              <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>{gettext("Full Gettext integration")}</li>
                 <li>{gettext("English translations (default)")}</li>
                 <li>{gettext("French translations")}</li>
@@ -247,10 +289,10 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
               {gettext("Release Notes")}
             </h3>
-            <p class="text-gray-600 leading-relaxed">
+            <p class="text-base-content opacity-70 leading-relaxed">
               {gettext(
                 "This is the initial stable release of the Kanban Board application. All core features have been implemented, tested, and documented. The application is production-ready with comprehensive test coverage, security measures, and a polished user interface."
               )}
@@ -258,10 +300,10 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
               {gettext("Known Limitations")}
             </h3>
-            <p class="text-gray-600 leading-relaxed">
+            <p class="text-base-content opacity-70 leading-relaxed">
               {gettext(
                 "None identified. Please report any issues via the project's issue tracker. A form is available on the About page for easy submission."
               )}
@@ -269,8 +311,8 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-gray-800 mb-4">{gettext("Credits")}</h3>
-            <p class="text-gray-600 leading-relaxed">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">{gettext("Credits")}</h3>
+            <p class="text-base-content opacity-70 leading-relaxed">
               {gettext(
                 "This application was completely Vibecoded by Jeff \"Cheezy\" Morgan with the help of Claude Code and TideWave."
               )}
@@ -279,7 +321,7 @@
         </section>
       </div>
 
-      <div class="mt-12 pt-8 border-t border-gray-200">
+      <div class="mt-12 pt-8 border-t border-base-300">
         <.link
           href={~p"/about"}
           class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"

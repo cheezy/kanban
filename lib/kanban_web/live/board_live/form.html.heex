@@ -31,7 +31,7 @@
         <.input field={f[:description]} type="textarea" label={gettext("Description")} />
         <div class="mt-6 flex items-center gap-4">
           <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Board")}</.button>
-          <.link navigate={~p"/boards"} class="text-sm text-gray-600 hover:text-gray-900">
+          <.link navigate={~p"/boards"} class="text-sm text-base-content opacity-70 hover:opacity-100">
             {gettext("Cancel")}
           </.link>
         </div>
@@ -39,10 +39,10 @@
 
       <%= if @live_action == :edit do %>
         <div class="mt-12 border-t pt-8">
-          <h2 class="text-lg font-semibold text-gray-900 mb-2">
+          <h2 class="text-lg font-semibold text-base-content mb-2">
             {gettext("Manage Users")}
           </h2>
-          <p class="text-sm text-gray-600 mb-4">
+          <p class="text-sm text-base-content opacity-70 mb-4">
             {gettext(
               "Users must be already registered in the system in order to be added to Boards"
             )}
@@ -70,11 +70,11 @@
           </div>
 
           <%= if @searched_user do %>
-            <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div class="flex items-center justify-between mb-3">
                 <div>
-                  <p class="font-medium text-gray-900">{@searched_user.name}</p>
-                  <p class="text-sm text-gray-600">{@searched_user.email}</p>
+                  <p class="font-medium text-base-content">{@searched_user.name}</p>
+                  <p class="text-sm text-base-content opacity-70">{@searched_user.email}</p>
                 </div>
               </div>
               <div class="flex gap-2">
@@ -94,15 +94,15 @@
 
           <%= if @board_users != [] do %>
             <div class="mt-6">
-              <h3 class="text-sm font-medium text-gray-700 mb-3">
+              <h3 class="text-sm font-medium text-base-content opacity-80 mb-3">
                 {gettext("Current Users")}
               </h3>
               <div class="space-y-2">
                 <%= for %{user: user, access: access} <- @board_users do %>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
                     <div class="flex-1">
-                      <p class="font-medium text-gray-900">{user.name}</p>
-                      <p class="text-sm text-gray-600">{user.email}</p>
+                      <p class="font-medium text-base-content">{user.name}</p>
+                      <p class="text-sm text-base-content opacity-70">{user.email}</p>
                     </div>
                     <div class="flex items-center gap-3">
                       <span class={[

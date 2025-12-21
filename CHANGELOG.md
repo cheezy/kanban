@@ -5,6 +5,22 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-12-21
+
+### Fixed
+
+- Updated all UI components to use theme-aware daisyUI color tokens for proper dark mode support
+- Replaced hardcoded Tailwind gray colors with daisyUI semantic colors (base-100, base-200, base-300, base-content)
+- Fixed text visibility issues in dark mode across all pages including:
+  - Board list, show, and form views
+  - Task view and form components
+  - Column form component
+  - Home, About, Changelog, and Tango pages
+  - Authentication pages
+  - Error pages (404, 500)
+- Updated test expectations to match new dark mode compatible CSS classes
+- All components now properly adapt to both light and dark themes using OKLCH color space
+
 ## [1.0.0] - 2025-12-15
 
 ### Core Features

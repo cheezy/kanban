@@ -1,30 +1,30 @@
 <main class="min-h-screen">
   <div class="max-w-4xl mx-auto px-6 py-16">
-    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-      <h1 class="text-4xl font-bold text-gray-900 mb-8">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-base-content mb-8">
         {gettext("About Stride")}
       </h1>
 
       <div class="prose prose-lg max-w-none">
         <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Built with AI")}
           </h2>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
               "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
             )}
           </p>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
               "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
             )}
           </p>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext("See the entire process for yourself in the ")}
             <strong>{gettext("The Blog")}</strong> {gettext("section below.")}
           </p>
-          <p class="text-gray-600 leading-relaxed">
+          <p class="text-base-content opacity-70 leading-relaxed">
             <.link
               href={~p"/tango"}
               class="text-blue-600 hover:text-blue-800 underline font-medium"
@@ -35,13 +35,13 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Version History")}
           </h2>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext("View the complete version history and feature list for this application.")}
           </p>
-          <p class="text-gray-600 leading-relaxed">
+          <p class="text-base-content opacity-70 leading-relaxed">
             <.link
               href={~p"/changelog"}
               class="text-blue-600 hover:text-blue-800 underline font-medium"
@@ -52,10 +52,10 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Report Issues or Request Features")}
           </h2>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
               "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
             )}
@@ -69,10 +69,10 @@
         </section>
 
         <section>
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("The Blog")}
           </h2>
-          <p class="text-gray-600 leading-relaxed mb-4">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
               "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
             )}
@@ -215,7 +215,7 @@
         </section>
       </div>
 
-      <div class="mt-12 pt-8 border-t border-gray-200">
+      <div class="mt-12 pt-8 border-t border-base-300">
         <.link
           href={~p"/"}
           class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"

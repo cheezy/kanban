@@ -19,10 +19,10 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   def render(assigns) do
     ~H"""
     <div class="space-y-6">
-      <div class="border-b border-gray-200 pb-4">
+      <div class="border-b border-base-300 pb-4">
         <div class="flex items-start justify-between mb-2">
           <div class="flex items-center gap-3">
-            <h2 class="text-2xl font-bold text-gray-900">{@task.identifier}</h2>
+            <h2 class="text-2xl font-bold text-base-content">{@task.identifier}</h2>
             <span class={[
               "px-3 py-1 text-xs font-semibold rounded-full",
               case @task.type do
@@ -46,17 +46,17 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             </.link>
           <% end %>
         </div>
-        <h3 class="text-xl text-gray-800">{@task.title}</h3>
+        <h3 class="text-xl text-base-content">{@task.title}</h3>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Status")}</h4>
-          <p class="text-gray-900">{@task.column.name}</p>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Status")}</h4>
+          <p class="text-base-content">{@task.column.name}</p>
         </div>
 
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Priority")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Priority")}</h4>
           <p class={[
             "font-semibold",
             case @task.priority do
@@ -76,8 +76,8 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
 
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Assigned To")}</h4>
-          <p class="text-gray-900">
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Assigned To")}</h4>
+          <p class="text-base-content">
             <%= if @task.assigned_to do %>
               {@task.assigned_to.name || @task.assigned_to.email}
             <% else %>
@@ -87,29 +87,29 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
 
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Created")}</h4>
-          <p class="text-gray-900">{Calendar.strftime(@task.inserted_at, "%B %d, %Y at %I:%M %p")}</p>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Created")}</h4>
+          <p class="text-base-content">{Calendar.strftime(@task.inserted_at, "%B %d, %Y at %I:%M %p")}</p>
         </div>
       </div>
 
       <%= if @task.description do %>
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Description")}</h4>
-          <p class="text-gray-900 whitespace-pre-wrap">{@task.description}</p>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Description")}</h4>
+          <p class="text-base-content whitespace-pre-wrap">{@task.description}</p>
         </div>
       <% end %>
 
       <%= if @task.acceptance_criteria do %>
         <div>
-          <h4 class="text-sm font-semibold text-gray-700 mb-1">{gettext("Acceptance Criteria")}</h4>
-          <p class="text-gray-900 whitespace-pre-wrap">{@task.acceptance_criteria}</p>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Acceptance Criteria")}</h4>
+          <p class="text-base-content whitespace-pre-wrap">{@task.acceptance_criteria}</p>
         </div>
       <% end %>
 
       <div>
-        <h4 class="text-sm font-semibold text-gray-700 mb-2">{gettext("History")}</h4>
+        <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("History")}</h4>
         <%= if Enum.empty?(@task.task_histories) do %>
-          <p class="text-gray-500 text-sm">{gettext("No history available")}</p>
+          <p class="text-base-content opacity-60 text-sm">{gettext("No history available")}</p>
         <% else %>
           <div class="space-y-3 max-h-48 overflow-y-auto">
             <%= for history <- @task.task_histories do %>
@@ -127,7 +127,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                   <% end %>
                 </div>
                 <div class="flex-1">
-                  <p class="text-gray-900">
+                  <p class="text-base-content">
                     <%= case history.type do %>
                       <% :creation -> %>
                         <span class="font-semibold">{gettext("Created")}</span>
@@ -162,7 +162,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                         <% end %>
                     <% end %>
                   </p>
-                  <p class="text-xs text-gray-500">
+                  <p class="text-xs text-base-content opacity-60">
                     {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
                   </p>
                 </div>
@@ -173,18 +173,18 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
       </div>
 
       <div>
-        <h4 class="text-sm font-semibold text-gray-700 mb-2">{gettext("Comments")}</h4>
+        <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Comments")}</h4>
         <%= if Enum.empty?(@task.comments) do %>
-          <p class="text-gray-500 text-sm">{gettext("No comments yet")}</p>
+          <p class="text-base-content opacity-60 text-sm">{gettext("No comments yet")}</p>
         <% else %>
           <div class="space-y-3 max-h-48 overflow-y-auto">
             <%= for comment <- @task.comments do %>
               <div class="flex items-start gap-2 text-sm">
                 <div class="mt-0.5">
-                  <.icon name="hero-chat-bubble-left" class="w-4 h-4 text-gray-400" />
+                  <.icon name="hero-chat-bubble-left" class="w-4 h-4 text-base-content opacity-40" />
                 </div>
                 <div class="flex-1">
-                  <p class="text-gray-900 whitespace-pre-wrap">{comment.content}</p>
+                  <p class="text-base-content whitespace-pre-wrap">{comment.content}</p>
                   <p class="text-xs text-gray-500 mt-1">
                     {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
                   </p>

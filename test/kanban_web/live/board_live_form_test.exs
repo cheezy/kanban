@@ -488,7 +488,8 @@ defmodule KanbanWeb.BoardLive.FormTest do
         |> form("form[phx-submit='search_user']", email: other_user.email)
         |> render_submit()
 
-      assert html =~ "bg-blue-50 border border-blue-200"
+      assert html =~ "bg-blue-50 dark:bg-blue-900/20"
+      assert html =~ "border border-blue-200 dark:border-blue-800"
       assert html =~ other_user.name
       assert html =~ other_user.email
     end
