@@ -22,7 +22,7 @@ defmodule KanbanWeb.HomeComponents do
   def hero_title(assigns) do
     ~H"""
     <h1 class={[
-      "text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight",
+      "text-4xl sm:text-5xl lg:text-6xl font-bold text-base-content leading-tight",
       @class
     ]}>
       {render_slot(@inner_block)}
@@ -75,7 +75,7 @@ defmodule KanbanWeb.HomeComponents do
       href={@href}
       class={[
         "inline-flex items-center justify-center px-8 py-4 text-base font-semibold",
-        "text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-300",
+        "text-base-content bg-base-100 hover:bg-base-200 border-2 border-base-300",
         "rounded-lg shadow-sm hover:shadow-md transition-all",
         @class
       ]}
@@ -92,9 +92,9 @@ defmodule KanbanWeb.HomeComponents do
 
   def mock_board(assigns) do
     ~H"""
-    <div class="relative bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl p-6 space-y-4 border border-base-300">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-gray-900">{@title}</h3>
+        <h3 class="text-lg font-bold text-base-content">{@title}</h3>
         <div class="flex gap-1">
           <div class="w-3 h-3 bg-red-400 rounded-full"></div>
           <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
@@ -143,13 +143,13 @@ defmodule KanbanWeb.HomeComponents do
     ~H"""
     <div class={[
       "rounded-lg p-3 space-y-2",
-      @color == "gray" && "bg-gray-50",
-      @color == "blue" && "bg-blue-50",
-      @color == "green" && "bg-green-50"
+      @color == "gray" && "bg-base-200",
+      @color == "blue" && "bg-blue-50 dark:bg-blue-900/20",
+      @color == "green" && "bg-green-50 dark:bg-green-900/20"
     ]}>
       <div class={[
         "text-xs font-semibold uppercase tracking-wide",
-        @color == "gray" && "text-gray-600",
+        @color == "gray" && "text-base-content opacity-70",
         @color == "blue" && "text-blue-600",
         @color == "green" && "text-green-600"
       ]}>
@@ -166,10 +166,10 @@ defmodule KanbanWeb.HomeComponents do
   defp mock_card(assigns) do
     ~H"""
     <div class={[
-      "bg-white p-3 rounded-lg shadow-sm",
-      @color == "gray" && "border border-gray-200",
-      @color == "blue" && "border border-blue-200",
-      @color == "green" && "border border-green-200 opacity-75"
+      "bg-base-100 p-3 rounded-lg shadow-sm",
+      @color == "gray" && "border border-base-300",
+      @color == "blue" && "border border-blue-200 dark:border-blue-800",
+      @color == "green" && "border border-green-200 dark:border-green-800 opacity-75"
     ]}>
       {render_slot(@inner_block)}
     </div>
@@ -185,8 +185,8 @@ defmodule KanbanWeb.HomeComponents do
     ~H"""
     <div class={[
       "text-center p-6 rounded-xl transition-colors",
-      @icon_color == "blue" && "hover:bg-blue-50",
-      @icon_color == "orange" && "hover:bg-orange-50"
+      @icon_color == "blue" && "hover:bg-blue-50 dark:hover:bg-blue-900/20",
+      @icon_color == "orange" && "hover:bg-orange-50 dark:hover:bg-orange-900/20"
     ]}>
       <div class={[
         "inline-flex items-center justify-center w-14 h-14",
@@ -197,8 +197,8 @@ defmodule KanbanWeb.HomeComponents do
       ]}>
         {render_slot(@icon)}
       </div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2">{@title}</h3>
-      <p class="text-gray-600">{@description}</p>
+      <h3 class="text-xl font-bold text-base-content mb-2">{@title}</h3>
+      <p class="text-base-content opacity-70">{@description}</p>
     </div>
     """
   end

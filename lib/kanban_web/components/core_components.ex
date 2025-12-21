@@ -268,7 +268,7 @@ defmodule KanbanWeb.CoreComponents do
           tabindex="-1"
           data-toggle-password
           aria-label="Toggle password visibility"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none z-10 cursor-pointer"
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-base-content opacity-50 hover:opacity-80 focus:outline-none z-10 cursor-pointer"
         >
           <svg
             class="w-5 h-5 eye-open pointer-events-none"
@@ -560,7 +560,7 @@ defmodule KanbanWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 p-14 shadow-lg ring-1 transition"
             >
               <div class="absolute top-6 right-5">
                 <button

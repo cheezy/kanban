@@ -13,7 +13,7 @@ defmodule KanbanWeb.NavComponents do
         <div class="flex items-center justify-center w-10 h-10 rounded-lg group-hover:scale-110 transition-transform">
           <img src={~p"/images/logos/abstract-s-motion.svg"} alt="Stride Logo" class="w-10 h-10" />
         </div>
-        <span class="text-xl font-bold text-gray-900 dark:text-gray-100 hidden sm:block">
+        <span class="text-xl font-bold text-base-content hidden sm:block">
           {@brand_text}
         </span>
       </.link>
