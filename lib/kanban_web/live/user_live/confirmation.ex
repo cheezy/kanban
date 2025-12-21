@@ -8,7 +8,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="mx-auto max-w-md space-y-6 py-8">
-        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+        <div class="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300 text-center">
           <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg mb-4">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -22,9 +22,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
 
           <%= if @confirmed do %>
             <.header>
-              <p class="text-2xl font-bold text-gray-900 mb-6">{gettext("Account Confirmed!")}</p>
+              <p class="text-2xl font-bold text-base-content mb-6">{gettext("Account Confirmed!")}</p>
               <:subtitle>
-                <p class="text-gray-600 mt-2">
+                <p class="text-base-content opacity-70 mt-2">
                   {gettext("Your account has been confirmed successfully. You can now log in.")}
                 </p>
               </:subtitle>
@@ -40,7 +40,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
             <div class="flex items-center justify-center">
               <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
-            <p class="text-gray-600 mt-4">{gettext("Confirming your account...")}</p>
+            <p class="text-base-content opacity-70 mt-4">{gettext("Confirming your account...")}</p>
           <% end %>
         </div>
       </div>

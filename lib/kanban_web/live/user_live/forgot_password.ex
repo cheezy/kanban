@@ -8,7 +8,7 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="mx-auto max-w-md space-y-6 py-8">
-        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div class="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300">
           <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg mb-4">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,9 +21,9 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
               </svg>
             </div>
             <.header>
-              <p class="text-2xl font-bold text-gray-900">{gettext("Forgot your password?")}</p>
+              <p class="text-2xl font-bold text-base-content">{gettext("Forgot your password?")}</p>
               <:subtitle>
-                <p class="text-gray-600 mt-2">
+                <p class="text-base-content opacity-70 mt-2">
                   {gettext("We'll send you an email with instructions to reset your password.")}
                 </p>
               </:subtitle>

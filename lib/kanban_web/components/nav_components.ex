@@ -13,7 +13,7 @@ defmodule KanbanWeb.NavComponents do
         <div class="flex items-center justify-center w-10 h-10 rounded-lg group-hover:scale-110 transition-transform">
           <img src={~p"/images/logos/abstract-s-motion.svg"} alt="Stride Logo" class="w-10 h-10" />
         </div>
-        <span class="text-xl font-bold text-gray-900 hidden sm:block">
+        <span class="text-xl font-bold text-gray-900 dark:text-gray-100 hidden sm:block">
           {@brand_text}
         </span>
       </.link>
@@ -25,7 +25,7 @@ defmodule KanbanWeb.NavComponents do
 
   def user_badge(assigns) do
     ~H"""
-    <span class="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 bg-gray-100 rounded-lg">
+    <span class="hidden md:block text-sm font-medium text-base-content opacity-80 px-3 py-2 bg-base-200 rounded-lg">
       {@email}
     </span>
     """
@@ -38,7 +38,7 @@ defmodule KanbanWeb.NavComponents do
     ~H"""
     <.link
       href={@href}
-      class="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+      class="text-sm font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
     >
       {render_slot(@inner_block)}
     </.link>
@@ -92,14 +92,14 @@ defmodule KanbanWeb.NavComponents do
 
     ~H"""
     <div
-      class="relative flex items-center border-l border-gray-300 pl-4"
+      class="relative flex items-center border-l border-base-300 pl-4"
       id="language-switcher"
       phx-hook="Dropdown"
     >
       <button
         type="button"
         data-dropdown-toggle
-        class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-blue-600 px-2 py-1 rounded transition-colors"
+        class="flex items-center gap-1 text-sm font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-2 py-1 rounded transition-colors"
       >
         <.locale_flag locale={@current_locale} />
         <span class="hidden sm:inline">{String.upcase(@current_locale)}</span>
@@ -109,14 +109,14 @@ defmodule KanbanWeb.NavComponents do
       </button>
       <div
         data-dropdown-menu
-        class="hidden absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+        class="hidden absolute top-full right-0 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
       >
         <%= for locale <- @locales do %>
           <form action={~p"/locale/#{locale.code}"} method="post">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
             <button
               type="submit"
-              class={"flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-gray-100 transition-colors #{if @current_locale == locale.code, do: "bg-blue-50 text-blue-600", else: "text-gray-700"}"}
+              class={"flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-base-200 transition-colors #{if @current_locale == locale.code, do: "bg-blue-50 dark:bg-blue-900/20 text-blue-600", else: "text-base-content opacity-80"}"}
             >
               <.locale_flag locale={locale.code} />
               <span>{locale.name}</span>
