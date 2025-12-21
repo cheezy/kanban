@@ -104,6 +104,74 @@
 
 /* This file is for your main application CSS */
 
+@layer components {
+  .label {
+    color: var(--color-base-content) !important;
+    opacity: 1 !important;
+    font-weight: 500;
+  }
+
+  input.input,
+  textarea.input,
+  textarea.textarea,
+  select.select {
+    background-color: var(--color-base-100) !important;
+    color: var(--color-base-content) !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: var(--color-base-300) !important;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  input.input:focus,
+  textarea.input:focus,
+  textarea.textarea:focus,
+  select.select:focus {
+    outline: 2px solid var(--color-primary) !important;
+    outline-offset: 2px !important;
+    border-color: var(--color-primary) !important;
+  }
+
+  input.input::placeholder,
+  textarea.input::placeholder,
+  textarea.textarea::placeholder {
+    color: var(--color-base-content);
+    opacity: 0.5 !important;
+  }
+
+  /* Improved button contrast for dark mode */
+  .btn-primary {
+    background-color: var(--color-primary) !important;
+    color: var(--color-primary-content) !important;
+    border: none !important;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary) !important;
+    opacity: 0.9 !important;
+  }
+
+  .btn-primary.btn-soft {
+    background-color: var(--color-primary) !important;
+    color: var(--color-primary-content) !important;
+    opacity: 0.9;
+  }
+
+  .btn-primary.btn-soft:hover {
+    opacity: 1 !important;
+  }
+
+  /* Improved link contrast - only for plain links, not buttons */
+  a:not([class*="btn"]):not([class*="bg-"]):not([class*="text-white"]) {
+    color: var(--color-primary) !important;
+  }
+
+  a:not([class*="btn"]):not([class*="bg-"]):not([class*="text-white"]):hover {
+    opacity: 0.8;
+  }
+}
+
 /* Loading bar styles */
 .phx-loading-bar {
   transition: width 200ms ease-out, opacity 200ms ease-out;

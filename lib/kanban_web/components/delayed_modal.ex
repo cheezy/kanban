@@ -20,7 +20,7 @@ defmodule KanbanWeb.DelayedModal do
     >
       <div
         id={"#{@id}-bg"}
-        class="bg-zinc-50/90 fixed inset-0 transition-opacity"
+        class="bg-base-200/90 fixed inset-0 transition-opacity"
         aria-hidden="true"
       />
       <div
@@ -38,13 +38,13 @@ defmodule KanbanWeb.DelayedModal do
               data-modal-container
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 p-14 shadow-lg ring-1 transition"
             >
               <div class="absolute top-6 right-5">
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
-                  class="-m-3 flex-none p-3 opacity-20 hover:opacity-40"
+                  class="-m-3 flex-none p-3 text-base-content opacity-20 hover:opacity-40"
                   aria-label="close"
                 >
                   <span class={["hero-x-mark-solid", "size-5"]} />

@@ -357,10 +357,10 @@ defmodule KanbanWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-6"]}>
       <div>
-        <h1 class="text-3xl font-bold leading-tight text-gray-900 tracking-tight">
+        <h1 class="text-3xl font-bold leading-tight text-base-content tracking-tight">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-base text-gray-600 mt-2 leading-relaxed">
+        <p :if={@subtitle != []} class="text-base text-base-content opacity-70 mt-2 leading-relaxed">
           {render_slot(@subtitle)}
         </p>
       </div>

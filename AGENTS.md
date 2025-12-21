@@ -19,6 +19,142 @@
 - New buttons should use the `<.button>` component without custom classes unless specifically requested
 - Maintain consistency with existing color schemes, spacing, and typography throughout the application
 
+### Dark Mode Verification Guidelines
+
+**CRITICAL**: Always verify UI changes work in BOTH light and dark modes before considering a task complete.
+
+#### When to Verify Dark Mode
+- After adding or modifying any UI component
+- After changing CSS styles or Tailwind classes
+- After updating modal, form, or layout components
+- When users report visibility issues
+- Before marking any UI-related task as complete
+
+#### Common Dark Mode Issues and Fixes
+
+**1. Hardcoded Colors**
+- **Issue**: Using hardcoded Tailwind colors like `text-gray-900`, `bg-white`, `border-gray-200`
+- **Fix**: Replace with theme-aware daisyUI colors:
+  - `text-gray-900` → `text-base-content`
+  - `text-gray-600` → `text-base-content opacity-70`
+  - `text-gray-500` → `text-base-content opacity-60`
+  - `bg-white` → `bg-base-100`
+  - `bg-gray-50` → `bg-base-200`
+  - `border-gray-200` → `border-base-300`
+
+**2. Form Elements**
+- **Issue**: Labels and inputs invisible in dark mode
+- **Fix**: Ensure labels use `text-base-content` with full opacity
+- **Fix**: Ensure inputs have `bg-base-100` background and `text-base-content` text
+- Add visible borders with `border-base-300`
+
+**3. Buttons and Links**
+- **Issue**: Low contrast buttons/links in dark mode
+- **Fix**: Use `btn-primary` classes or override with `var(--color-primary)` background
+- **Fix**: Ensure button text uses `var(--color-primary-content)`
+- **Fix**: Links should use `var(--color-primary)` for visibility
+
+**4. Modal Backgrounds**
+- **Issue**: White modal backgrounds in dark mode
+- **Fix**: Use `bg-base-100` instead of `bg-white`
+- **Fix**: Modal backdrop should use `bg-base-200/90` for proper overlay
+
+#### Dark Mode Verification Process
+
+**Step 1: Use browser_eval to test both modes**
+```elixir
+# Test in dark mode
+await page.eval(() => {
+  localStorage.setItem('phx:theme', 'dark');
+  document.documentElement.setAttribute('data-theme', 'dark');
+});
+
+# Check element visibility
+await page.eval(() => {
+  const el = document.querySelector('.your-element');
+  const style = window.getComputedStyle(el);
+  console.log('Color:', style.color);
+  console.log('Background:', style.backgroundColor);
+});
+
+# Test in light mode
+await page.eval(() => {
+  localStorage.setItem('phx:theme', 'light');
+  document.documentElement.setAttribute('data-theme', 'light');
+});
+```
+
+**Step 2: Verify contrast**
+- Light mode: Dark text (oklch ~0.21) on light backgrounds (oklch ~0.98)
+- Dark mode: Light text (oklch ~0.97) on dark backgrounds (oklch ~0.30)
+- Buttons: High contrast in both modes using primary colors
+
+**Step 3: Test all sections**
+- Headers/titles
+- Form labels and inputs
+- Buttons and links
+- Text content
+- Borders and dividers
+- Modal overlays
+
+#### CSS Patterns for Dark Mode Support
+
+**In assets/css/app.css:**
+```css
+@layer components {
+  /* Labels with full opacity */
+  .label {
+    color: var(--color-base-content) !important;
+    opacity: 1 !important;
+  }
+
+  /* Inputs with theme-aware backgrounds */
+  input.input,
+  textarea.textarea,
+  select.select {
+    background-color: var(--color-base-100) !important;
+    color: var(--color-base-content) !important;
+    border-color: var(--color-base-300) !important;
+  }
+
+  /* High contrast buttons */
+  .btn-primary {
+    background-color: var(--color-primary) !important;
+    color: var(--color-primary-content) !important;
+  }
+
+  /* Visible links */
+  a {
+    color: var(--color-primary) !important;
+  }
+}
+```
+
+**In templates:**
+```heex
+<!-- Use theme-aware classes -->
+<h1 class="text-base-content">Title</h1>
+<p class="text-base-content opacity-70">Subtitle</p>
+<div class="bg-base-100 border-base-300">Content</div>
+```
+
+#### Remember: Session Summary
+
+During this session, the following dark mode fixes were applied:
+1. Modal container backgrounds (`bg-white` → `bg-base-100`)
+2. Form labels (added full opacity and `text-base-content`)
+3. Text inputs (added `bg-base-100` and `text-base-content`)
+4. Headers and subtitles (`text-gray-900` → `text-base-content`)
+5. Task History section (all text and borders)
+6. Comments section (backgrounds and text)
+7. Buttons and links (increased contrast with primary colors)
+
+**Files modified:**
+- `lib/kanban_web/components/delayed_modal.ex`
+- `lib/kanban_web/components/core_components.ex`
+- `lib/kanban_web/live/task_live/form_component.html.heex`
+- `assets/css/app.css`
+
 ### Quality guidelines  
 
 **ALWAYS** run follow these quality guidelines:

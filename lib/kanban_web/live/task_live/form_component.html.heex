@@ -79,8 +79,8 @@
   </.form>
 
   <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
-    <div class="mt-8 pt-8 border-t border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Task History")}</h3>
+    <div class="mt-8 pt-8 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Task History")}</h3>
       <div class="space-y-3">
         <%= for history <- @task.task_histories do %>
           <div class="flex items-start gap-3 text-sm">
@@ -99,11 +99,11 @@
             <div class="flex-1">
               <%= cond do %>
                 <% history.type == :creation -> %>
-                  <p class="text-gray-900">
+                  <p class="text-base-content">
                     <span class="font-medium">{gettext("Created")}</span>
                   </p>
                 <% history.type == :priority_change -> %>
-                  <p class="text-gray-900">
+                  <p class="text-base-content">
                     <span class="font-medium">{gettext("Priority changed")}</span>
                     {gettext("from")}
                     <span class="font-medium text-orange-600 capitalize">
@@ -115,7 +115,7 @@
                     </span>
                   </p>
                 <% history.type == :assignment -> %>
-                  <p class="text-gray-900">
+                  <p class="text-base-content">
                     <%= cond do %>
                       <% history.from_user_id == nil && history.to_user_id != nil -> %>
                         <span class="font-medium">{gettext("Assigned to")}</span>
@@ -132,7 +132,7 @@
                     <% end %>
                   </p>
                 <% true -> %>
-                  <p class="text-gray-900">
+                  <p class="text-base-content">
                     <span class="font-medium">{gettext("Moved")}</span>
                     {gettext("from")}
                     <span class="font-medium text-blue-600">{history.from_column}</span>
@@ -140,7 +140,7 @@
                     <span class="font-medium text-blue-600">{history.to_column}</span>
                   </p>
               <% end %>
-              <p class="text-xs text-gray-500 mt-0.5">
+              <p class="text-xs text-base-content opacity-60 mt-0.5">
                 {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
@@ -151,8 +151,8 @@
   <% end %>
 
   <%= if @action == :edit_task && @task.id do %>
-    <div class="mt-8 pt-8 border-t border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">{gettext("Comments")}</h3>
+    <div class="mt-8 pt-8 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Comments")}</h3>
 
       <.form
         :let={c}
@@ -180,16 +180,16 @@
       <%= if length(@task.comments || []) > 0 do %>
         <div class="space-y-4 mt-6">
           <%= for comment <- @task.comments do %>
-            <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-sm text-gray-900 whitespace-pre-wrap">{comment.content}</p>
-              <p class="text-xs text-gray-500 mt-2">
+            <div class="bg-base-200 rounded-lg p-4">
+              <p class="text-sm text-base-content whitespace-pre-wrap">{comment.content}</p>
+              <p class="text-xs text-base-content opacity-60 mt-2">
                 {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
           <% end %>
         </div>
       <% else %>
-        <p class="text-sm text-gray-500 italic mt-6">
+        <p class="text-sm text-base-content opacity-60 italic mt-6">
           {gettext("No comments yet. Be the first to comment!")}
         </p>
       <% end %>
