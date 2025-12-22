@@ -56,20 +56,24 @@
 **Database/Schema:**
 - Tables: tasks (read all rich fields)
 - Migrations needed: No
-- Preload: [:key_files, :verification_steps, :pitfalls, :out_of_scope]
+- Preload: [:key_files, :verification_steps, :created_by, :completed_by, :reviewed_by]
 
 **UI Sections to Display:**
-1. **Header**: Title, complexity badge, estimated files
-2. **Context**: Why, What, Where
-3. **Key Files**: File paths with notes
-4. **Verification**: Commands and manual steps
-5. **Technical Notes**: Patterns, database changes
-6. **Observability**: Telemetry, metrics, logging
-7. **Error Handling**: User messages, failure behavior
-8. **Dependencies**: Links to blocking/blocked tasks
-9. **Pitfalls**: Common mistakes to avoid
-10. **Out of Scope**: What not to do
-11. **Completion**: Summary if task completed
+1. **Header**: Title, complexity badge, estimated files, status badge
+2. **Creator Info**: Created by (user/agent), claim status if claimed
+3. **Context**: Why, What, Where
+4. **Key Files**: File paths with notes
+5. **Verification**: Commands and manual steps
+6. **Technical Notes**: Patterns, database changes, validation rules
+7. **Observability**: Telemetry, metrics, logging
+8. **Error Handling**: User messages, failure behavior
+9. **Dependencies**: Links to blocking/blocked tasks
+10. **Agent Requirements**: Required capabilities for AI agents
+11. **Pitfalls**: Common mistakes to avoid
+12. **Out of Scope**: What not to do
+13. **Actual vs Estimated**: Complexity, files changed, time spent (if completed)
+14. **Review Status**: Review status, notes, reviewer (if needs review)
+15. **Completion**: Summary, completed by (user/agent), timestamp if task completed
 
 **Integration Points:**
 - [ ] PubSub broadcasts: Subscribe to task updates
@@ -185,6 +189,9 @@ defmodule KanbanWeb.TaskDetailComponent do
           <div class="flex items-center justify-between">
             <h2 class="text-2xl font-bold"><%= @task.title %></h2>
             <div class="flex gap-2">
+              <.badge color={status_color(@task.status)}>
+                <%= @task.status %>
+              </.badge>
               <.badge :if={@task.complexity} color={complexity_color(@task.complexity)}>
                 <%= @task.complexity %>
               </.badge>
@@ -194,6 +201,23 @@ defmodule KanbanWeb.TaskDetailComponent do
             </div>
           </div>
         </div>
+
+        <!-- Creator Info -->
+        <.section title="Creator Info">
+          <.field label="Created By">
+            <%= if @task.created_by_agent do %>
+              AI: <%= @task.created_by_agent %> (authorized by <%= @task.created_by.email %>)
+            <% else %>
+              <%= @task.created_by.email %>
+            <% end %>
+          </.field>
+          <.field :if={@task.claimed_at} label="Claimed">
+            Claimed at <%= format_datetime(@task.claimed_at) %>
+            <%= if @task.claim_expires_at do %>
+              (expires <%= format_datetime(@task.claim_expires_at) %>)
+            <% end %>
+          </.field>
+        </.section>
 
         <!-- Context Section -->
         <.section :if={@task.why || @task.what || @task.where_context} title="Context">
@@ -264,32 +288,83 @@ defmodule KanbanWeb.TaskDetailComponent do
         </.section>
 
         <!-- Pitfalls -->
-        <.section :if={length(@task.pitfalls) > 0} title="Common Pitfalls">
+        <.section :if={@task.pitfalls && length(@task.pitfalls) > 0} title="Common Pitfalls">
           <ul class="space-y-1">
-            <%= for pitfall <- Enum.sort_by(@task.pitfalls, & &1.position) do %>
+            <%= for pitfall <- @task.pitfalls do %>
               <li class="flex items-start">
                 <.icon name="hero-exclamation-triangle" class="w-5 h-5 mr-2 text-yellow-500" />
-                <span class="text-sm"><%= pitfall.pitfall_text %></span>
+                <span class="text-sm"><%= pitfall %></span>
               </li>
             <% end %>
           </ul>
         </.section>
 
         <!-- Out of Scope -->
-        <.section :if={length(@task.out_of_scope) > 0} title="Out of Scope">
+        <.section :if={@task.out_of_scope && length(@task.out_of_scope) > 0} title="Out of Scope">
           <ul class="space-y-1">
-            <%= for item <- Enum.sort_by(@task.out_of_scope, & &1.position) do %>
+            <%= for item <- @task.out_of_scope do %>
               <li class="flex items-start">
                 <.icon name="hero-x-circle" class="w-5 h-5 mr-2 text-red-500" />
-                <span class="text-sm"><%= item.item_text %></span>
+                <span class="text-sm"><%= item %></span>
               </li>
             <% end %>
           </ul>
         </.section>
 
+        <!-- Agent Requirements -->
+        <.section :if={@task.required_capabilities && length(@task.required_capabilities) > 0} title="Required Agent Capabilities">
+          <div class="flex flex-wrap gap-2">
+            <%= for capability <- @task.required_capabilities do %>
+              <.badge color="purple"><%= capability %></.badge>
+            <% end %>
+          </div>
+        </.section>
+
+        <!-- Actual vs Estimated -->
+        <.section :if={@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes} title="Actual vs Estimated">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-sm text-gray-600 mb-2">Estimated</h4>
+              <.field :if={@task.complexity} label="Complexity" value={@task.complexity} />
+              <.field :if={@task.estimated_files} label="Files" value={@task.estimated_files} />
+            </div>
+            <div>
+              <h4 class="font-semibold text-sm text-gray-600 mb-2">Actual</h4>
+              <.field :if={@task.actual_complexity} label="Complexity" value={@task.actual_complexity} />
+              <.field :if={@task.actual_files_changed} label="Files Changed" value={@task.actual_files_changed} />
+              <.field :if={@task.time_spent_minutes} label="Time Spent" value={"#{@task.time_spent_minutes} minutes"} />
+            </div>
+          </div>
+        </.section>
+
+        <!-- Review Status -->
+        <.section :if={@task.needs_review || @task.review_status} title="Review Status" class={review_section_class(@task.review_status)}>
+          <.field :if={@task.review_status} label="Status">
+            <.badge color={review_status_color(@task.review_status)}>
+              <%= @task.review_status %>
+            </.badge>
+          </.field>
+          <.field :if={@task.reviewed_by} label="Reviewed By" value={@task.reviewed_by.email} />
+          <.field :if={@task.reviewed_at} label="Reviewed At" value={format_datetime(@task.reviewed_at)} />
+          <.field :if={@task.review_notes} label="Review Notes" value={@task.review_notes} />
+        </.section>
+
         <!-- Completion Summary -->
         <.section :if={@show_completion} title="Completion Summary" class="bg-green-50 p-4 rounded">
-          <.field label="Completed By" value={@task.completed_by} />
+          <.field label="Completed By">
+            <%= if @task.completed_by_agent do %>
+              AI: <%= @task.completed_by_agent %>
+              <%= if @task.completed_by do %>
+                (authorized by <%= @task.completed_by.email %>)
+              <% end %>
+            <% else %>
+              <%= if @task.completed_by do %>
+                <%= @task.completed_by.email %>
+              <% else %>
+                Unknown
+              <% end %>
+            <% end %>
+          </.field>
           <.field label="Completed At" value={format_datetime(@task.completed_at)} />
 
           <div :if={@task.completion_summary} class="mt-4">
@@ -369,7 +444,25 @@ defmodule KanbanWeb.TaskDetailComponent do
   defp badge_color_class("yellow"), do: "bg-yellow-100 text-yellow-800"
   defp badge_color_class("red"), do: "bg-red-100 text-red-800"
   defp badge_color_class("blue"), do: "bg-blue-100 text-blue-800"
+  defp badge_color_class("purple"), do: "bg-purple-100 text-purple-800"
   defp badge_color_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp status_color(:open), do: "gray"
+  defp status_color(:in_progress), do: "blue"
+  defp status_color(:completed), do: "green"
+  defp status_color(:blocked), do: "red"
+  defp status_color(_), do: "gray"
+
+  defp review_status_color(:pending), do: "yellow"
+  defp review_status_color(:approved), do: "green"
+  defp review_status_color(:changes_requested), do: "orange"
+  defp review_status_color(:rejected), do: "red"
+  defp review_status_color(_), do: "gray"
+
+  defp review_section_class(:approved), do: "bg-green-50 p-4 rounded"
+  defp review_section_class(:changes_requested), do: "bg-orange-50 p-4 rounded"
+  defp review_section_class(:rejected), do: "bg-red-50 p-4 rounded"
+  defp review_section_class(_), do: ""
 
   defp format_datetime(nil), do: "N/A"
   defp format_datetime(datetime) do
