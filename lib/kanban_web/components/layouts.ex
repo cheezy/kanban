@@ -38,9 +38,7 @@ defmodule KanbanWeb.Layouts do
   def app(assigns) do
     ~H"""
     <main class="min-h-screen">
-      <div class="mx-auto max-w-7xl">
-        {render_slot(@inner_block)}
-      </div>
+      {render_slot(@inner_block)}
     </main>
 
     <.flash_group flash={@flash} />

@@ -4,6 +4,7 @@ const ColumnSortableHook = {
   mounted() {
     this.isDragging = false
     this.initSortable()
+    this.initResponsiveColumns()
 
     // Listen for move success/failure events from server
     this.handleEvent("move_column_success", () => {
@@ -13,6 +14,38 @@ const ColumnSortableHook = {
     this.handleEvent("move_column_failed", () => {
       console.log("Column move failed on server - will reload")
     })
+  },
+
+  initResponsiveColumns() {
+    if (!this.el.dataset.responsiveColumns) return
+
+    const resizeColumns = () => {
+      const columns = Array.from(this.el.children).filter(child => child.dataset.columnId)
+      if (columns.length === 0) return
+
+      const columnCount = columns.length
+
+      const containerWidth = this.el.offsetWidth
+      const gap = 16
+      const minColumnWidth = 288
+      const totalGaps = (columnCount - 1) * gap
+      const minTotalWidth = (minColumnWidth * columnCount) + totalGaps
+
+      let columnWidth = minColumnWidth
+
+      if (containerWidth >= minTotalWidth) {
+        const availableWidth = containerWidth - totalGaps
+        columnWidth = Math.floor(availableWidth / columnCount)
+      }
+
+      columns.forEach(col => {
+        col.style.width = `${columnWidth}px`
+      })
+    }
+
+    resizeColumns()
+    this.resizeObserver = new ResizeObserver(resizeColumns)
+    this.resizeObserver.observe(this.el)
   },
 
   beforeUpdate() {
@@ -103,6 +136,9 @@ const ColumnSortableHook = {
   destroyed() {
     if (this.sortable) {
       this.sortable.destroy()
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
     }
   }
 }
