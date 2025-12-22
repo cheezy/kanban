@@ -681,12 +681,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        key_files: [
-          %{file_path: "lib/tasks.ex", note: "First file", position: 0}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "First file", position: 0}
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -710,12 +712,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        key_files: [
-          %{file_path: "lib/tasks.ex", note: "First file", position: 0}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "First file", position: 0}
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -741,13 +745,15 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        key_files: [
-          %{file_path: "lib/tasks.ex", note: "First", position: 0},
-          %{file_path: "lib/tasks/task.ex", note: "Second", position: 1}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "First", position: 0},
+            %{file_path: "lib/tasks/task.ex", note: "Second", position: 1}
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -771,12 +777,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        key_files: [
-          %{file_path: "lib/tasks.ex", note: "Only file", position: 0}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "Only file", position: 0}
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -826,12 +834,19 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        verification_steps: [
-          %{step_type: "command", step_text: "mix test", expected_result: "Success", position: 0}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "Success",
+              position: 0
+            }
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -857,13 +872,25 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        verification_steps: [
-          %{step_type: "command", step_text: "mix test", expected_result: "Success", position: 0},
-          %{step_type: "manual", step_text: "Check UI", expected_result: "Looks good", position: 1}
-        ]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "Success",
+              position: 0
+            },
+            %{
+              step_type: "manual",
+              step_text: "Check UI",
+              expected_result: "Looks good",
+              position: 1
+            }
+          ]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -905,7 +932,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event("add-technology", %{}, socket)
 
-      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      tech_list =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+
       assert length(tech_list) == 1
       assert hd(tech_list) == ""
     end
@@ -914,10 +943,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        technology_requirements: ["Phoenix", "Ecto"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          technology_requirements: ["Phoenix", "Ecto"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -932,7 +963,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event("add-technology", %{}, socket)
 
-      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      tech_list =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+
       assert length(tech_list) == 3
       assert Enum.at(tech_list, 0) == "Phoenix"
       assert Enum.at(tech_list, 1) == "Ecto"
@@ -945,10 +978,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        technology_requirements: ["Phoenix", "Ecto", "LiveView"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          technology_requirements: ["Phoenix", "Ecto", "LiveView"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -963,7 +998,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event("remove-technology", %{"index" => "1"}, socket)
 
-      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      tech_list =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+
       assert length(tech_list) == 2
       assert tech_list == ["Phoenix", "LiveView"]
     end
@@ -1001,10 +1038,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        pitfalls: ["Don't forget to test", "Watch for race conditions"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          pitfalls: ["Don't forget to test", "Watch for race conditions"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1057,10 +1096,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        out_of_scope: ["No UI changes", "No database migrations"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          out_of_scope: ["No UI changes", "No database migrations"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1113,10 +1154,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        dependencies: ["W01A", "W01B"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          dependencies: ["W01A", "W01B"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1158,7 +1201,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event("add-capability", %{}, socket)
 
-      capabilities = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
       assert length(capabilities) == 1
       assert hd(capabilities) == ""
     end
@@ -1169,10 +1214,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Test",
-        required_capabilities: ["elixir", "phoenix", "liveview"]
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          required_capabilities: ["elixir", "phoenix", "liveview"]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1187,7 +1234,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event("remove-capability", %{"index" => "1"}, socket)
 
-      capabilities = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
       assert length(capabilities) == 2
       assert capabilities == ["elixir", "liveview"]
     end
@@ -1245,10 +1294,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{
-        title: "Original Title",
-        complexity: :small
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Original Title",
+          complexity: :small
+        })
 
       {:ok, socket} =
         FormComponent.update(

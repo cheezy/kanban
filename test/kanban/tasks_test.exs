@@ -1237,7 +1237,10 @@ defmodule Kanban.TasksTest do
       # Verify tasks were created with the right data
       all_tasks = Tasks.list_tasks(column)
       assert length(all_tasks) == 2
-      assert Enum.any?(all_tasks, fn t -> t.id == task1.id && t.technology_requirements == ["ecto", "phoenix"] end)
+
+      assert Enum.any?(all_tasks, fn t ->
+               t.id == task1.id && t.technology_requirements == ["ecto", "phoenix"]
+             end)
 
       results = Tasks.get_tasks_requiring_technology("ecto")
 
@@ -1496,7 +1499,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{key_files: [%{position: ["must be greater than or equal to 0"]}]} = errors_on(changeset)
+
+      assert %{key_files: [%{position: ["must be greater than or equal to 0"]}]} =
+               errors_on(changeset)
     end
   end
 
@@ -1554,7 +1559,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{verification_steps: [%{position: ["must be greater than or equal to 0"]}]} = errors_on(changeset)
+
+      assert %{verification_steps: [%{position: ["must be greater than or equal to 0"]}]} =
+               errors_on(changeset)
     end
 
     test "allows optional expected_result in verification_steps" do
@@ -1979,7 +1986,10 @@ defmodule Kanban.TasksTest do
       assert DateTime.compare(task.reviewed_at, reviewed_at) == :eq
     end
 
-    test "validates reviewed_at must be set when review_status is not pending", %{column: column, user: user} do
+    test "validates reviewed_at must be set when review_status is not pending", %{
+      column: column,
+      user: user
+    } do
       attrs = %{
         title: "Test task",
         position: 0,
@@ -1992,7 +2002,9 @@ defmodule Kanban.TasksTest do
       assert "must be set when review_status is not pending" in errors_on(changeset).reviewed_at
     end
 
-    test "validates reviewed_by_id must be set when review_status is not pending", %{column: column} do
+    test "validates reviewed_by_id must be set when review_status is not pending", %{
+      column: column
+    } do
       reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
 
       attrs = %{
@@ -2216,7 +2228,9 @@ defmodule Kanban.TasksTest do
       assert_received {Kanban.Tasks, :task_created, _}
 
       completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
-      {:ok, updated_task} = Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
 
       assert_received {Kanban.Tasks, :task_status_changed, broadcasted_task}
       assert broadcasted_task.id == updated_task.id
@@ -2243,7 +2257,9 @@ defmodule Kanban.TasksTest do
       assert_received {Kanban.Tasks, :task_created, _}
 
       completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
-      {:ok, updated_task} = Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
 
       # Should broadcast status_changed (not completed) because status changed first
       assert_received {Kanban.Tasks, :task_status_changed, broadcasted_task}
@@ -2257,11 +2273,13 @@ defmodule Kanban.TasksTest do
       assert_received {Kanban.Tasks, :task_created, _}
 
       reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
-      {:ok, updated_task} = Tasks.update_task(task, %{
-        review_status: :approved,
-        reviewed_by_id: user.id,
-        reviewed_at: reviewed_at
-      })
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{
+          review_status: :approved,
+          reviewed_by_id: user.id,
+          reviewed_at: reviewed_at
+        })
 
       assert_received {Kanban.Tasks, :task_reviewed, broadcasted_task}
       assert broadcasted_task.id == updated_task.id
@@ -2292,7 +2310,10 @@ defmodule Kanban.TasksTest do
       assert broadcasted_task.id == deleted_task.id
     end
 
-    test "broadcasts :task_moved when task is moved to different column", %{column: column, board: board} do
+    test "broadcasts :task_moved when task is moved to different column", %{
+      column: column,
+      board: board
+    } do
       column2 = column_fixture(board, %{name: "Another column"})
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
 
@@ -2308,6 +2329,7 @@ defmodule Kanban.TasksTest do
     test "includes telemetry data for broadcasts", %{column: column, board: board} do
       # Attach a test telemetry handler
       test_pid = self()
+
       :telemetry.attach(
         "test-handler",
         [:kanban, :pubsub, :broadcast],
@@ -2320,7 +2342,9 @@ defmodule Kanban.TasksTest do
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
 
       # Should receive telemetry event
-      assert_received {:telemetry, %{count: 1}, %{event: :task_created, task_id: task_id, board_id: board_id}}
+      assert_received {:telemetry, %{count: 1},
+                       %{event: :task_created, task_id: task_id, board_id: board_id}}
+
       assert task_id == task.id
       assert board_id == board.id
 

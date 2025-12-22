@@ -713,12 +713,16 @@ defmodule Kanban.Tasks do
     cond do
       Map.has_key?(changeset.changes, :status) ->
         broadcast_task_change(task, :task_status_changed)
+
       Map.has_key?(changeset.changes, :claimed_at) ->
         broadcast_task_change(task, :task_claimed)
+
       Map.has_key?(changeset.changes, :completed_at) ->
         broadcast_task_change(task, :task_completed)
+
       Map.has_key?(changeset.changes, :review_status) ->
         broadcast_task_change(task, :task_reviewed)
+
       true ->
         broadcast_task_change(task, :task_updated)
     end

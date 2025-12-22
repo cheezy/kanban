@@ -11,6 +11,23 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
 
+  defp all_fields_visible do
+    %{
+      "acceptance_criteria" => true,
+      "complexity" => true,
+      "context" => true,
+      "key_files" => true,
+      "verification_steps" => true,
+      "technical_notes" => true,
+      "observability" => true,
+      "error_handling" => true,
+      "technology_requirements" => true,
+      "pitfalls" => true,
+      "out_of_scope" => true,
+      "required_capabilities" => true
+    }
+  end
+
   describe "ViewComponent" do
     setup do
       user = user_fixture()
@@ -25,7 +42,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ task.title
@@ -39,7 +57,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Description"
@@ -53,7 +72,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Description"
@@ -63,7 +83,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Column"
@@ -77,7 +98,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Work"
@@ -91,7 +113,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Defect"
@@ -105,7 +128,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Low"
@@ -119,7 +143,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Medium"
@@ -133,7 +158,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "High"
@@ -147,7 +173,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Critical"
@@ -162,7 +189,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Assigned To"
@@ -173,7 +201,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Assigned To"
@@ -184,7 +213,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Created"
@@ -195,7 +225,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "History"
@@ -214,7 +245,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Created"
@@ -236,7 +268,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Moved"
@@ -270,7 +303,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Created"
@@ -281,7 +315,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Comments"
@@ -300,7 +335,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "This is a test comment"
@@ -327,7 +363,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "First comment"
@@ -346,7 +383,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ ~r/\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
@@ -364,7 +402,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ ~r/\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
@@ -375,6 +414,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
           task_id: task.id,
+          field_visibility: all_fields_visible(),
           board_id: board.id,
           can_modify: true
         )
@@ -388,6 +428,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
           task_id: task.id,
+          field_visibility: all_fields_visible(),
           board_id: board.id,
           can_modify: false
         )
@@ -400,6 +441,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
           task_id: task.id,
+          field_visibility: all_fields_visible(),
           can_modify: true
         )
 
@@ -420,7 +462,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Priority changed"
@@ -448,7 +491,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Assigned to"
@@ -473,7 +517,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Unassigned from"
@@ -499,7 +544,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Reassigned"
@@ -556,7 +602,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Created"
@@ -579,7 +626,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Creator Info"
@@ -600,7 +648,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Creator Info"
@@ -624,7 +673,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Claimed at"
@@ -644,7 +694,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Context"
@@ -663,14 +714,19 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         task_fixture(column, %{
           key_files: [
             %{file_path: "lib/kanban/auth.ex", note: "Main auth module", position: 0},
-            %{file_path: "lib/kanban_web/controllers/auth_controller.ex", note: "OAuth controller", position: 1}
+            %{
+              file_path: "lib/kanban_web/controllers/auth_controller.ex",
+              note: "OAuth controller",
+              position: 1
+            }
           ]
         })
 
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Key Files"
@@ -704,7 +760,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Verification Steps"
@@ -729,7 +786,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Implementation Guidance"
@@ -754,7 +812,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Observability"
@@ -778,7 +837,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Error Handling"
@@ -799,7 +859,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Technology Requirements"
@@ -819,7 +880,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Required Agent Capabilities"
@@ -835,7 +897,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Dependencies"
@@ -857,7 +920,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Pitfalls to Avoid"
@@ -877,7 +941,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Out of Scope"
@@ -903,7 +968,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Actual vs Estimated"
@@ -937,7 +1003,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Review Status"
@@ -966,7 +1033,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Review Status"
@@ -992,7 +1060,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Completion"
@@ -1010,7 +1079,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Creator Info"
@@ -1020,7 +1090,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Context"
@@ -1030,7 +1101,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Key Files"
@@ -1041,7 +1113,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Verification Steps"
@@ -1062,7 +1135,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Actual vs Estimated"
@@ -1082,7 +1156,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       refute result =~ "Completion"
@@ -1095,7 +1170,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
           id: "test-view",
-          task_id: task.id
+          task_id: task.id,
+          field_visibility: all_fields_visible()
         )
 
       assert result =~ "Estimated Files"
@@ -1118,7 +1194,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         result =
           render_component(KanbanWeb.TaskLive.ViewComponent,
             id: "test-view-#{status}",
-            task_id: task.id
+            task_id: task.id,
+          field_visibility: all_fields_visible()
           )
 
         status_label =
@@ -1142,7 +1219,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         result =
           render_component(KanbanWeb.TaskLive.ViewComponent,
             id: "test-view-#{complexity}",
-            task_id: task.id
+            task_id: task.id,
+          field_visibility: all_fields_visible()
           )
 
         complexity_label =

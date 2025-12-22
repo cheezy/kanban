@@ -96,7 +96,8 @@
                 </div>
                 <div class="mt-2 flex items-center gap-2">
                   <span class="text-xs text-base-content opacity-70 bg-base-100/60 px-2.5 py-1 rounded-full font-medium border border-base-300/50">
-                    {gettext("Tasks")}: <span class="font-bold text-base-content">{task_count}</span>
+                    {gettext("Tasks")}:
+                    <span class="font-bold text-base-content">{task_count}</span>
                   </span>
                   <%= if column.wip_limit > 0 do %>
                     <span class={[
@@ -347,6 +348,7 @@
         task_id={@viewing_task_id}
         board_id={@board.id}
         can_modify={@can_modify}
+        field_visibility={@field_visibility}
       />
     </KanbanWeb.DelayedModal.delayed_modal>
   </div>

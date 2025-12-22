@@ -175,14 +175,19 @@ defmodule Kanban.Tasks.Task do
 
   defp validate_technology_requirements(changeset) do
     case get_field(changeset, :technology_requirements) do
-      nil -> changeset
-      [] -> changeset
+      nil ->
+        changeset
+
+      [] ->
+        changeset
+
       techs when is_list(techs) ->
         if Enum.all?(techs, &is_binary/1) do
           changeset
         else
           add_error(changeset, :technology_requirements, "must be a list of strings")
         end
+
       _ ->
         add_error(changeset, :technology_requirements, "must be a list")
     end
@@ -190,14 +195,19 @@ defmodule Kanban.Tasks.Task do
 
   defp validate_required_capabilities(changeset) do
     case get_field(changeset, :required_capabilities) do
-      nil -> changeset
-      [] -> changeset
+      nil ->
+        changeset
+
+      [] ->
+        changeset
+
       caps when is_list(caps) ->
         if Enum.all?(caps, &is_binary/1) do
           changeset
         else
           add_error(changeset, :required_capabilities, "must be a list of strings")
         end
+
       _ ->
         add_error(changeset, :required_capabilities, "must be a list")
     end
@@ -205,14 +215,19 @@ defmodule Kanban.Tasks.Task do
 
   defp validate_dependencies(changeset) do
     case get_field(changeset, :dependencies) do
-      nil -> changeset
-      [] -> changeset
+      nil ->
+        changeset
+
+      [] ->
+        changeset
+
       deps when is_list(deps) ->
         if Enum.all?(deps, &is_binary/1) do
           changeset
         else
           add_error(changeset, :dependencies, "must be a list of task identifiers (strings)")
         end
+
       _ ->
         add_error(changeset, :dependencies, "must be a list")
     end
@@ -223,15 +238,19 @@ defmodule Kanban.Tasks.Task do
     claim_expires_at = get_field(changeset, :claim_expires_at)
 
     case {claimed_at, claim_expires_at} do
-      {nil, nil} -> changeset
+      {nil, nil} ->
+        changeset
+
       {%DateTime{}, %DateTime{}} ->
         if DateTime.compare(claim_expires_at, claimed_at) == :gt do
           changeset
         else
           add_error(changeset, :claim_expires_at, "must be after claimed_at")
         end
+
       {nil, %DateTime{}} ->
         add_error(changeset, :claimed_at, "must be set when claim_expires_at is set")
+
       {%DateTime{}, nil} ->
         changeset
     end
@@ -265,7 +284,8 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_reviewed_at(changeset, review_status) do
-    if review_status_requires_metadata?(review_status) and is_nil(get_field(changeset, :reviewed_at)) do
+    if review_status_requires_metadata?(review_status) and
+         is_nil(get_field(changeset, :reviewed_at)) do
       add_error(changeset, :reviewed_at, "must be set when review_status is not pending")
     else
       changeset
@@ -273,7 +293,8 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_reviewed_by_id(changeset, review_status) do
-    if review_status_requires_metadata?(review_status) and is_nil(get_field(changeset, :reviewed_by_id)) do
+    if review_status_requires_metadata?(review_status) and
+         is_nil(get_field(changeset, :reviewed_by_id)) do
       add_error(changeset, :reviewed_by_id, "must be set when review_status is not pending")
     else
       changeset

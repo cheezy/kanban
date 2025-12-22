@@ -31,8 +31,10 @@ defmodule Kanban.Schemas.Task.KeyFile do
       cond do
         String.starts_with?(file_path, "/") ->
           add_error(changeset, :file_path, "must be a relative path, not absolute")
+
         String.contains?(file_path, "..") ->
           add_error(changeset, :file_path, "must not contain .. path traversal")
+
         true ->
           changeset
       end

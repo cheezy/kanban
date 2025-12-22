@@ -292,4 +292,41 @@ defmodule Kanban.Boards do
       {access_priority, user.email}
     end)
   end
+
+  @doc """
+  Updates field visibility settings for a board.
+  Only board owners can update field visibility.
+  Broadcasts changes to all connected clients.
+
+  ## Examples
+
+      iex> update_field_visibility(board, %{"complexity" => true}, user)
+      {:ok, %Board{}}
+
+      iex> update_field_visibility(board, %{"complexity" => true}, non_owner_user)
+      {:error, :unauthorized}
+
+  """
+  def update_field_visibility(%Board{} = board, field_visibility, user) do
+    if owner?(board, user) do
+      board
+      |> Board.changeset(%{field_visibility: field_visibility})
+      |> Repo.update()
+      |> case do
+        {:ok, updated_board} ->
+          Phoenix.PubSub.broadcast(
+            Kanban.PubSub,
+            "board:#{board.id}",
+            {:field_visibility_updated, updated_board.field_visibility}
+          )
+
+          {:ok, updated_board}
+
+        error ->
+          error
+      end
+    else
+      {:error, :unauthorized}
+    end
+  end
 end

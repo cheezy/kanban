@@ -30,6 +30,7 @@ defmodule Kanban.Repo.Migrations.ExtendTasksWithScalarFields do
 
     # Add check constraint for complexity values
     create constraint(:tasks, :complexity_must_be_valid,
-      check: "complexity IN ('small', 'medium', 'large')")
+             check: "complexity IN ('small', 'medium', 'large')"
+           )
   end
 end

@@ -75,7 +75,9 @@
 
     <%!-- Complexity & Planning Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Complexity & Planning")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Complexity & Planning")}
+      </h3>
       <div class="grid grid-cols-2 gap-4">
         <.input
           field={f[:complexity]}
@@ -88,7 +90,12 @@
           ]}
           prompt={gettext("Select complexity")}
         />
-        <.input field={f[:estimated_files]} type="text" label={gettext("Estimated Files")} placeholder="e.g., 3-5" />
+        <.input
+          field={f[:estimated_files]}
+          type="text"
+          label={gettext("Estimated Files")}
+          placeholder="e.g., 3-5"
+        />
       </div>
     </div>
 
@@ -97,12 +104,19 @@
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Context")}</h3>
       <.input field={f[:why]} type="textarea" label={gettext("Why (Problem/Rationale)")} rows="2" />
       <.input field={f[:what]} type="textarea" label={gettext("What (Implementation)")} rows="2" />
-      <.input field={f[:where_context]} type="textarea" label={gettext("Where (Code Location)")} rows="2" />
+      <.input
+        field={f[:where_context]}
+        type="textarea"
+        label={gettext("Where (Code Location)")}
+        rows="2"
+      />
     </div>
 
     <%!-- Key Files Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Key Files to Read First")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Key Files to Read First")}
+      </h3>
       <.inputs_for :let={kf} field={f[:key_files]}>
         <div class="flex gap-2 items-start mb-2">
           <div class="flex-1">
@@ -135,7 +149,9 @@
 
     <%!-- Verification Steps Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Verification Steps")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Verification Steps")}
+      </h3>
       <.inputs_for :let={vs} field={f[:verification_steps]}>
         <div class="flex gap-2 items-start mb-2">
           <div class="w-32">
@@ -176,14 +192,31 @@
     <%!-- Technical Notes Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Technical Notes")}</h3>
-      <.input field={f[:patterns_to_follow]} type="textarea" label={gettext("Patterns to Follow")} rows="2" />
-      <.input field={f[:database_changes]} type="textarea" label={gettext("Database/Schema Changes")} rows="2" />
-      <.input field={f[:validation_rules]} type="textarea" label={gettext("Validation Rules")} rows="2" />
+      <.input
+        field={f[:patterns_to_follow]}
+        type="textarea"
+        label={gettext("Patterns to Follow")}
+        rows="2"
+      />
+      <.input
+        field={f[:database_changes]}
+        type="textarea"
+        label={gettext("Database/Schema Changes")}
+        rows="2"
+      />
+      <.input
+        field={f[:validation_rules]}
+        type="textarea"
+        label={gettext("Validation Rules")}
+        rows="2"
+      />
     </div>
 
     <%!-- Technology Requirements Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Technology Requirements")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Technology Requirements")}
+      </h3>
       <%= for {tech, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :technology_requirements) || []) do %>
         <div class="flex gap-2 mb-2">
           <input
@@ -217,16 +250,36 @@
     <%!-- Observability Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Observability")}</h3>
-      <.input field={f[:telemetry_event]} type="text" label={gettext("Telemetry Event")} placeholder="[:kanban, :domain, :action]" />
-      <.input field={f[:metrics_to_track]} type="textarea" label={gettext("Metrics to Track")} rows="2" />
-      <.input field={f[:logging_requirements]} type="textarea" label={gettext("Logging Requirements")} rows="2" />
+      <.input
+        field={f[:telemetry_event]}
+        type="text"
+        label={gettext("Telemetry Event")}
+        placeholder="[:kanban, :domain, :action]"
+      />
+      <.input
+        field={f[:metrics_to_track]}
+        type="textarea"
+        label={gettext("Metrics to Track")}
+        rows="2"
+      />
+      <.input
+        field={f[:logging_requirements]}
+        type="textarea"
+        label={gettext("Logging Requirements")}
+        rows="2"
+      />
     </div>
 
     <%!-- Error Handling Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Error Handling")}</h3>
       <.input field={f[:error_user_message]} type="text" label={gettext("User Error Message")} />
-      <.input field={f[:error_on_failure]} type="textarea" label={gettext("On Failure (What Happens)")} rows="2" />
+      <.input
+        field={f[:error_on_failure]}
+        type="textarea"
+        label={gettext("On Failure (What Happens)")}
+        rows="2"
+      />
     </div>
 
     <%!-- Pitfalls Section --%>
@@ -330,7 +383,9 @@
 
     <%!-- Status & Agent Tracking Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Status & Agent Tracking")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Status & Agent Tracking")}
+      </h3>
       <.input
         field={f[:status]}
         type="select"
@@ -344,12 +399,19 @@
       />
       <.input field={f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
       <.input field={f[:completed_by_agent]} type="text" label={gettext("Completed By Agent")} />
-      <.input field={f[:completion_summary]} type="textarea" label={gettext("Completion Summary")} rows="2" />
+      <.input
+        field={f[:completion_summary]}
+        type="textarea"
+        label={gettext("Completion Summary")}
+        rows="2"
+      />
     </div>
 
     <%!-- Claim Tracking Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Claim Tracking & Required Capabilities")}</h3>
+      <h3 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Claim Tracking & Required Capabilities")}
+      </h3>
       <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
         <div class="flex gap-2 mb-2">
           <input
@@ -395,8 +457,16 @@
           ]}
           prompt={gettext("Select")}
         />
-        <.input field={f[:actual_files_changed]} type="text" label={gettext("Actual Files Changed")} />
-        <.input field={f[:time_spent_minutes]} type="number" label={gettext("Time Spent (minutes)")} />
+        <.input
+          field={f[:actual_files_changed]}
+          type="text"
+          label={gettext("Actual Files Changed")}
+        />
+        <.input
+          field={f[:time_spent_minutes]}
+          type="number"
+          label={gettext("Time Spent (minutes)")}
+        />
       </div>
     </div>
 

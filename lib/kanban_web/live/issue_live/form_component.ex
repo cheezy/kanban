@@ -52,7 +52,10 @@ defmodule KanbanWeb.IssueLive.FormComponent do
         >
           <div class="space-y-4">
             <div>
-              <label for="issue_title" class="block text-sm font-medium text-base-content opacity-80 mb-1">
+              <label
+                for="issue_title"
+                class="block text-sm font-medium text-base-content opacity-80 mb-1"
+              >
                 {gettext("Title")}
               </label>
               <input
@@ -70,7 +73,10 @@ defmodule KanbanWeb.IssueLive.FormComponent do
             </div>
 
             <div>
-              <label for="issue_label" class="block text-sm font-medium text-base-content opacity-80 mb-1">
+              <label
+                for="issue_label"
+                class="block text-sm font-medium text-base-content opacity-80 mb-1"
+              >
                 {gettext("Type")}
               </label>
               <select
@@ -87,7 +93,10 @@ defmodule KanbanWeb.IssueLive.FormComponent do
             </div>
 
             <div>
-              <label for="issue_body" class="block text-sm font-medium text-base-content opacity-80 mb-1">
+              <label
+                for="issue_body"
+                class="block text-sm font-medium text-base-content opacity-80 mb-1"
+              >
                 {gettext("Description")}
               </label>
               <textarea

@@ -31,11 +31,148 @@
         <.input field={f[:description]} type="textarea" label={gettext("Description")} />
         <div class="mt-6 flex items-center gap-4">
           <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Board")}</.button>
-          <.link navigate={~p"/boards"} class="text-sm text-base-content opacity-70 hover:opacity-100">
+          <.link
+            navigate={~p"/boards"}
+            class="text-sm text-base-content opacity-70 hover:opacity-100"
+          >
             {gettext("Cancel")}
           </.link>
         </div>
       </.form>
+
+      <%= if @live_action == :edit do %>
+        <div class="mt-8 pt-8 border-t">
+          <h2 class="text-lg font-semibold text-base-content mb-2">
+            {gettext("Field Visibility Settings")}
+          </h2>
+          <p class="text-sm text-base-content opacity-70 mb-4">
+            {gettext("Control which task fields are visible on the board")}
+          </p>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="acceptance_criteria"
+                checked={Map.get(@field_visibility, "acceptance_criteria", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Acceptance Criteria")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="complexity"
+                checked={Map.get(@field_visibility, "complexity", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Complexity & Scope")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="context"
+                checked={Map.get(@field_visibility, "context", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Context (Why/What/Where)")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="key_files"
+                checked={Map.get(@field_visibility, "key_files", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Key Files")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="verification_steps"
+                checked={Map.get(@field_visibility, "verification_steps", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Verification Steps")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="technical_notes"
+                checked={Map.get(@field_visibility, "technical_notes", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Technical Notes")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="observability"
+                checked={Map.get(@field_visibility, "observability", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Observability")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="error_handling"
+                checked={Map.get(@field_visibility, "error_handling", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Error Handling")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="technology_requirements"
+                checked={Map.get(@field_visibility, "technology_requirements", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Technology Requirements")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="pitfalls"
+                checked={Map.get(@field_visibility, "pitfalls", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Pitfalls")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="out_of_scope"
+                checked={Map.get(@field_visibility, "out_of_scope", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Out of Scope")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="required_capabilities"
+                checked={Map.get(@field_visibility, "required_capabilities", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Required Agent Capabilities")}
+            </label>
+          </div>
+        </div>
+
+      <% end %>
 
       <%= if @live_action == :edit do %>
         <div class="mt-12 border-t pt-8">

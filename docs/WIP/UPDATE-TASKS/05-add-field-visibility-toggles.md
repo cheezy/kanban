@@ -6,7 +6,7 @@
 
 **WHY:** Board owners need control over which task fields are visible to avoid information overload and customize the board view for all users based on the team's workflow needs.
 
-**WHAT:** Add checkboxes to board UI that toggle visibility of rich task fields. Store visibility preferences in the boards table. Only board owners can change settings. All users viewing the board see the same field visibility. Show acceptance criteria by default, hide all other new fields by default.
+**WHAT:** Add checkboxes to board UI that toggle visibility of rich task fields. Store visibility preferences in the boards table. Only board owners can change settings. All users viewing the board see the same field visibility. Show acceptance criteria, why, what, metrics_to_track, error_user_message, error_on_failure, completion_summary, dependencies, status, needs_review, review_status, and review_notes by default, hide all other new fields by default.
 
 **WHERE:** Board LiveView header (owner-only settings panel)
 

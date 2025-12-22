@@ -261,4 +261,218 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Edit Task"
     end
   end
+
+  describe "Show authorization and permissions" do
+    setup [:register_and_log_in_user]
+
+    test "non-owner cannot access new column page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      assert {:error, {:live_redirect, %{to: _path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/columns/new")
+
+      assert error =~ "Only the board owner can create columns"
+    end
+
+    test "non-owner cannot access edit column page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      assert {:error, {:live_redirect, %{to: _path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/columns/#{column}/edit")
+
+      assert error =~ "Only the board owner can manage columns"
+    end
+
+    test "non-owner cannot delete columns", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Try to delete column via event (bypassing UI restrictions)
+      show_live
+      |> render_hook("delete_column", %{"id" => to_string(column.id)})
+
+      assert render(show_live) =~ "Only the board owner can delete columns"
+    end
+
+    test "non-owner cannot reorder columns", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("move_column", %{
+        "column_id" => to_string(column1.id),
+        "column_ids" => [to_string(column2.id), to_string(column1.id)]
+      })
+
+      assert render(show_live) =~ "Only the board owner can reorder columns"
+    end
+
+    test "non-owner cannot toggle field visibility", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("toggle_field", %{"field" => "complexity"})
+
+      assert render(show_live) =~ "Only board owners can change field visibility"
+    end
+
+    test "owner can toggle field visibility", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _task = task_fixture(column)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("toggle_field", %{"field" => "complexity"})
+
+      # Verify field visibility was updated
+      updated_board = Kanban.Boards.get_board!(board.id, user)
+      assert updated_board.field_visibility["complexity"] == true
+    end
+
+    test "owner can reorder columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("move_column", %{
+        "column_id" => to_string(column1.id),
+        "column_ids" => [to_string(column2.id), to_string(column1.id)]
+      })
+
+      # Should succeed without errors
+      refute render(show_live) =~ "Only the board owner can reorder columns"
+    end
+  end
+
+  describe "Show task operations" do
+    setup [:register_and_log_in_user]
+
+    test "close task view event resets viewing state", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # First view the task
+      show_live
+      |> element("[phx-click='view_task'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # Then close it
+      show_live
+      |> render_hook("close_task_view", %{})
+
+      # Task modal should not be visible
+      refute has_element?(show_live, "#task-view-modal")
+    end
+
+    test "delete task removes task from column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Verify task exists
+      assert render(show_live) =~ task.title
+
+      # Delete the task
+      show_live
+      |> render_hook("delete_task", %{"id" => to_string(task.id)})
+
+      # Verify task is removed
+      refute render(show_live) =~ task.title
+    end
+
+    test "moving task within same column reorders tasks", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task1 = task_fixture(column, %{title: "Task 1", position: 0})
+      _task2 = task_fixture(column, %{title: "Task 2", position: 1})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task1 to position 1
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(task1.id),
+        "old_column_id" => to_string(column.id),
+        "new_column_id" => to_string(column.id),
+        "new_position" => 1
+      })
+
+      # Should succeed
+      refute render(show_live) =~ "Failed to move task"
+    end
+
+    test "moving task to different column updates task location", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+      task = task_fixture(column1)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Move task to column2
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(task.id),
+        "old_column_id" => to_string(column1.id),
+        "new_column_id" => to_string(column2.id),
+        "new_position" => 0
+      })
+
+      # Should succeed
+      refute render(show_live) =~ "Failed to move task"
+    end
+  end
 end

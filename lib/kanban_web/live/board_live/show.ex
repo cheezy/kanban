@@ -32,6 +32,8 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:board, board)
      |> assign(:user_access, user_access)
      |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:is_owner, user_access == :owner)
+     |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:column, column)
      |> assign(:task, task)
      |> assign(:has_columns, not Enum.empty?(columns))
@@ -71,6 +73,8 @@ defmodule KanbanWeb.BoardLive.Show do
       |> assign(:board, board)
       |> assign(:user_access, user_access)
       |> assign(:can_modify, user_access in [:owner, :modify])
+      |> assign(:is_owner, user_access == :owner)
+      |> assign(:field_visibility, board.field_visibility || %{})
       |> assign(:task, task)
       |> assign(:has_columns, not Enum.empty?(columns))
       |> assign(:viewing_task_id, nil)
@@ -108,6 +112,8 @@ defmodule KanbanWeb.BoardLive.Show do
        |> assign(:board, board)
        |> assign(:user_access, user_access)
        |> assign(:can_modify, user_access in [:owner, :modify])
+       |> assign(:is_owner, user_access == :owner)
+       |> assign(:field_visibility, board.field_visibility || %{})
        |> assign(:has_columns, not Enum.empty?(columns))
        |> stream(:columns, columns, reset: true)
        |> load_tasks_for_columns(columns)}
@@ -232,6 +238,36 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_field", %{"field" => field_name}, socket) do
+    if socket.assigns.is_owner do
+      board = socket.assigns.board
+      current_visibility = socket.assigns.field_visibility
+
+      new_visibility =
+        Map.put(current_visibility, field_name, !Map.get(current_visibility, field_name, false))
+
+      case Boards.update_field_visibility(
+             board,
+             new_visibility,
+             socket.assigns.current_scope.user
+           ) do
+        {:ok, updated_board} ->
+          {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
+
+        {:error, :unauthorized} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
+      end
+    else
+      {:noreply,
+       put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+    end
+  end
+
+  @impl true
   def handle_info({:show_task_modal, task_id}, socket) do
     require Logger
 
@@ -297,6 +333,17 @@ defmodule KanbanWeb.BoardLive.Show do
     # Reload all tasks when a task is deleted
     # This is simpler and ensures consistency
     reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({Kanban.Tasks, :task_status_changed, _task}, socket) do
+    # Reload all tasks when a task status changes
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({:field_visibility_updated, new_visibility}, socket) do
+    {:noreply, assign(socket, :field_visibility, new_visibility)}
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
@@ -418,6 +465,8 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:board, board)
      |> assign(:user_access, user_access)
      |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:is_owner, user_access == :owner)
+     |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:column, column)
      |> assign(:column_id, column.id)
      |> assign(:has_columns, not Enum.empty?(columns))

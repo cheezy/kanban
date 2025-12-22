@@ -28,6 +28,7 @@ defmodule KanbanWeb.BoardLive.Form do
       |> assign(:page_title, gettext("Edit Board"))
       |> assign(:board, board)
       |> assign(:board_users, board_users)
+      |> assign(:field_visibility, board.field_visibility || %{})
       |> assign(:form, to_form(Boards.change_board(board)))
     else
       socket
@@ -142,6 +143,30 @@ defmodule KanbanWeb.BoardLive.Form do
              socket
              |> put_flash(:error, gettext("Failed to remove user from board"))}
         end
+    end
+  end
+
+  def handle_event("toggle_field", %{"field" => field_name}, socket) do
+    board = socket.assigns.board
+    current_visibility = socket.assigns.field_visibility
+
+    new_visibility =
+      Map.put(current_visibility, field_name, !Map.get(current_visibility, field_name, false))
+
+    case Boards.update_field_visibility(
+           board,
+           new_visibility,
+           socket.assigns.current_scope.user
+         ) do
+      {:ok, updated_board} ->
+        {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
     end
   end
 

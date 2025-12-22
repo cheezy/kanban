@@ -12,7 +12,12 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
      |> assign(assigns)
      |> assign(:task, task)
      |> assign(:board_id, Map.get(assigns, :board_id))
-     |> assign(:can_modify, Map.get(assigns, :can_modify, false))}
+     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
+     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+  end
+
+  defp field_visible?(field_visibility, field_name) do
+    Map.get(field_visibility, field_name, false)
   end
 
   defp status_badge_class(:open), do: "bg-gray-100 text-gray-800"
@@ -27,7 +32,8 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp status_label(:blocked), do: gettext("Blocked")
   defp status_label(_), do: gettext("Unknown")
 
-  defp review_status_badge_class(:pending), do: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800"
+  defp review_status_badge_class(:pending),
+    do: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800"
 
   defp review_status_badge_class(:approved),
     do: "px-2 py-1 text-xs rounded bg-green-100 text-green-800"
@@ -75,7 +81,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                 :defect -> gettext("Defect")
               end}
             </span>
-            <%= if @task.complexity do %>
+            <%= if @task.complexity && field_visible?(@field_visibility, "complexity") do %>
               <span class={[
                 "px-3 py-1 text-xs font-semibold rounded-full",
                 case @task.complexity do
@@ -120,7 +126,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
 
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Priority")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+            {gettext("Priority")}
+          </h4>
           <p class={[
             "font-semibold",
             case @task.priority do
@@ -140,12 +148,27 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
 
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Assigned To")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+            {gettext("Assigned To")}
+          </h4>
           <p class="text-base-content">
             <%= if @task.assigned_to do %>
               {@task.assigned_to.name || @task.assigned_to.email}
             <% else %>
               {gettext("Unassigned")}
+            <% end %>
+          </p>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+            {gettext("Needs Review")}
+          </h4>
+          <p class="text-base-content">
+            <%= if @task.needs_review do %>
+              {gettext("Yes")}
+            <% else %>
+              {gettext("No")}
             <% end %>
           </p>
         </div>
@@ -162,7 +185,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
       <%= if @task.created_by || @task.created_by_agent do %>
         <div class="bg-base-200 rounded-lg p-4">
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Creator Info")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Creator Info")}
+          </h4>
           <div class="space-y-2">
             <%= if @task.created_by do %>
               <p class="text-base-content">
@@ -192,25 +217,33 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.why || @task.what || @task.where_context do %>
+      <%= if (@task.why || @task.what || @task.where_context) && field_visible?(@field_visibility, "context") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Context")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Context")}
+          </h4>
           <div class="space-y-3">
             <%= if @task.why do %>
               <div>
-                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">{gettext("Why")}</p>
+                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">
+                  {gettext("Why")}
+                </p>
                 <p class="text-base-content whitespace-pre-wrap">{@task.why}</p>
               </div>
             <% end %>
             <%= if @task.what do %>
               <div>
-                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">{gettext("What")}</p>
+                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">
+                  {gettext("What")}
+                </p>
                 <p class="text-base-content whitespace-pre-wrap">{@task.what}</p>
               </div>
             <% end %>
             <%= if @task.where_context do %>
               <div>
-                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">{gettext("Where")}</p>
+                <p class="text-xs font-semibold text-base-content opacity-60 mb-1">
+                  {gettext("Where")}
+                </p>
                 <p class="text-base-content whitespace-pre-wrap">{@task.where_context}</p>
               </div>
             <% end %>
@@ -220,21 +253,27 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
       <%= if @task.description do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Description")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+            {gettext("Description")}
+          </h4>
           <p class="text-base-content whitespace-pre-wrap">{@task.description}</p>
         </div>
       <% end %>
 
-      <%= if @task.acceptance_criteria do %>
+      <%= if @task.acceptance_criteria && field_visible?(@field_visibility, "acceptance_criteria") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">{gettext("Acceptance Criteria")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+            {gettext("Acceptance Criteria")}
+          </h4>
           <p class="text-base-content whitespace-pre-wrap">{@task.acceptance_criteria}</p>
         </div>
       <% end %>
 
-      <%= if @task.key_files && !Enum.empty?(@task.key_files) do %>
+      <%= if @task.key_files && !Enum.empty?(@task.key_files) && field_visible?(@field_visibility, "key_files") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Key Files")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Key Files")}
+          </h4>
           <div class="space-y-2">
             <%= for key_file <- @task.key_files do %>
               <div class="bg-base-200 rounded p-3">
@@ -248,9 +287,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.verification_steps && !Enum.empty?(@task.verification_steps) do %>
+      <%= if @task.verification_steps && !Enum.empty?(@task.verification_steps) && field_visible?(@field_visibility, "verification_steps") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Verification Steps")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Verification Steps")}
+          </h4>
           <div class="space-y-2">
             <%= for step <- @task.verification_steps do %>
               <div class="bg-base-200 rounded p-3">
@@ -268,7 +309,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                 </div>
                 <p class={[
                   "text-sm text-base-content",
-                  (if step.step_type == "command", do: "font-mono bg-base-300 rounded px-2 py-1")
+                  if(step.step_type == "command", do: "font-mono bg-base-300 rounded px-2 py-1")
                 ]}>
                   {step.step_text}
                 </p>
@@ -283,7 +324,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.patterns_to_follow || @task.database_changes || @task.validation_rules do %>
+      <%= if (@task.patterns_to_follow || @task.database_changes || @task.validation_rules) && field_visible?(@field_visibility, "technical_notes") do %>
         <div>
           <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
             {gettext("Implementation Guidance")}
@@ -317,9 +358,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.telemetry_event || @task.metrics_to_track || @task.logging_requirements do %>
+      <%= if (@task.telemetry_event || @task.metrics_to_track || @task.logging_requirements) && field_visible?(@field_visibility, "observability") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Observability")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Observability")}
+          </h4>
           <div class="space-y-3">
             <%= if @task.telemetry_event do %>
               <div>
@@ -349,9 +392,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.error_user_message || @task.error_on_failure do %>
+      <%= if (@task.error_user_message || @task.error_on_failure) && field_visible?(@field_visibility, "error_handling") do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Error Handling")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Error Handling")}
+          </h4>
           <div class="space-y-3">
             <%= if @task.error_user_message do %>
               <div>
@@ -373,7 +418,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.technology_requirements && !Enum.empty?(@task.technology_requirements) do %>
+      <%= if @task.technology_requirements && !Enum.empty?(@task.technology_requirements) && field_visible?(@field_visibility, "technology_requirements") do %>
         <div>
           <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
             {gettext("Technology Requirements")}
@@ -386,7 +431,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.required_capabilities && !Enum.empty?(@task.required_capabilities) do %>
+      <%= if @task.required_capabilities && !Enum.empty?(@task.required_capabilities) && field_visible?(@field_visibility, "required_capabilities") do %>
         <div>
           <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
             {gettext("Required Agent Capabilities")}
@@ -401,14 +446,16 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
       <%= if @task.dependencies && !Enum.empty?(@task.dependencies) do %>
         <div>
-          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">{gettext("Dependencies")}</h4>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Dependencies")}
+          </h4>
           <p class="text-base-content">
             {gettext("Depends on tasks")}: {Enum.join(@task.dependencies, ", ")}
           </p>
         </div>
       <% end %>
 
-      <%= if @task.pitfalls && !Enum.empty?(@task.pitfalls) do %>
+      <%= if @task.pitfalls && !Enum.empty?(@task.pitfalls) && field_visible?(@field_visibility, "pitfalls") do %>
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h4 class="text-sm font-semibold text-yellow-900 mb-2">{gettext("Pitfalls to Avoid")}</h4>
           <ul class="list-disc list-inside space-y-1">
@@ -419,7 +466,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
-      <%= if @task.out_of_scope && !Enum.empty?(@task.out_of_scope) do %>
+      <%= if @task.out_of_scope && !Enum.empty?(@task.out_of_scope) && field_visible?(@field_visibility, "out_of_scope") do %>
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
           <h4 class="text-sm font-semibold text-red-900 mb-2">{gettext("Out of Scope")}</h4>
           <ul class="list-disc list-inside space-y-1">
@@ -465,7 +512,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                 <p class="text-blue-900">
                   {@task.actual_files_changed}
                   <%= if @task.estimated_files do %>
-                    <span class="text-xs opacity-60">({gettext("Est")}: {@task.estimated_files})</span>
+                    <span class="text-xs opacity-60">
+                      ({gettext("Est")}: {@task.estimated_files})
+                    </span>
                   <% end %>
                 </p>
               </div>
