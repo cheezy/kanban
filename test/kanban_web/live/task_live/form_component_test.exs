@@ -650,4 +650,667 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert comment.task_id == task.id
     end
   end
+
+  describe "handle_event add-key-file" do
+    test "adds new key file to empty list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-key-file", %{}, socket)
+
+      key_files = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :key_files)
+      assert length(key_files) == 1
+      assert hd(key_files).position == 0
+    end
+
+    test "adds key file to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        key_files: [
+          %{file_path: "lib/tasks.ex", note: "First file", position: 0}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-key-file", %{}, socket)
+
+      key_files = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :key_files)
+      assert length(key_files) == 2
+      assert Enum.at(key_files, 1).position == 1
+    end
+
+    test "preserves existing key files when adding new one" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        key_files: [
+          %{file_path: "lib/tasks.ex", note: "First file", position: 0}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-key-file", %{}, socket)
+
+      key_files = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :key_files)
+      assert Enum.at(key_files, 0).file_path == "lib/tasks.ex"
+      assert Enum.at(key_files, 0).note == "First file"
+    end
+  end
+
+  describe "handle_event remove-key-file" do
+    test "removes key file at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        key_files: [
+          %{file_path: "lib/tasks.ex", note: "First", position: 0},
+          %{file_path: "lib/tasks/task.ex", note: "Second", position: 1}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-key-file", %{"index" => "0"}, socket)
+
+      key_files = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :key_files)
+      assert length(key_files) == 1
+      assert hd(key_files).file_path == "lib/tasks/task.ex"
+    end
+
+    test "removes last key file" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        key_files: [
+          %{file_path: "lib/tasks.ex", note: "Only file", position: 0}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-key-file", %{"index" => "0"}, socket)
+
+      key_files = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :key_files)
+      assert Enum.empty?(key_files)
+    end
+  end
+
+  describe "handle_event add-verification-step" do
+    test "adds new verification step to empty list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-verification-step", %{}, socket)
+
+      steps = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :verification_steps)
+      assert length(steps) == 1
+      assert hd(steps).position == 0
+    end
+
+    test "adds verification step to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        verification_steps: [
+          %{step_type: "command", step_text: "mix test", expected_result: "Success", position: 0}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-verification-step", %{}, socket)
+
+      steps = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :verification_steps)
+      assert length(steps) == 2
+      assert Enum.at(steps, 1).position == 1
+    end
+  end
+
+  describe "handle_event remove-verification-step" do
+    test "removes verification step at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        verification_steps: [
+          %{step_type: "command", step_text: "mix test", expected_result: "Success", position: 0},
+          %{step_type: "manual", step_text: "Check UI", expected_result: "Looks good", position: 1}
+        ]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-verification-step", %{"index" => "0"}, socket)
+
+      steps = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :verification_steps)
+      assert length(steps) == 1
+      assert hd(steps).step_text == "Check UI"
+    end
+  end
+
+  describe "handle_event add-technology" do
+    test "adds empty technology to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-technology", %{}, socket)
+
+      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      assert length(tech_list) == 1
+      assert hd(tech_list) == ""
+    end
+
+    test "adds technology to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        technology_requirements: ["Phoenix", "Ecto"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-technology", %{}, socket)
+
+      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      assert length(tech_list) == 3
+      assert Enum.at(tech_list, 0) == "Phoenix"
+      assert Enum.at(tech_list, 1) == "Ecto"
+      assert Enum.at(tech_list, 2) == ""
+    end
+  end
+
+  describe "handle_event remove-technology" do
+    test "removes technology at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        technology_requirements: ["Phoenix", "Ecto", "LiveView"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-technology", %{"index" => "1"}, socket)
+
+      tech_list = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :technology_requirements)
+      assert length(tech_list) == 2
+      assert tech_list == ["Phoenix", "LiveView"]
+    end
+  end
+
+  describe "handle_event add-pitfall" do
+    test "adds empty pitfall to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-pitfall", %{}, socket)
+
+      pitfalls = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :pitfalls)
+      assert length(pitfalls) == 1
+      assert hd(pitfalls) == ""
+    end
+  end
+
+  describe "handle_event remove-pitfall" do
+    test "removes pitfall at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        pitfalls: ["Don't forget to test", "Watch for race conditions"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-pitfall", %{"index" => "0"}, socket)
+
+      pitfalls = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :pitfalls)
+      assert length(pitfalls) == 1
+      assert hd(pitfalls) == "Watch for race conditions"
+    end
+  end
+
+  describe "handle_event add-out-of-scope" do
+    test "adds empty out of scope item to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-out-of-scope", %{}, socket)
+
+      out_of_scope = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :out_of_scope)
+      assert length(out_of_scope) == 1
+      assert hd(out_of_scope) == ""
+    end
+  end
+
+  describe "handle_event remove-out-of-scope" do
+    test "removes out of scope item at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        out_of_scope: ["No UI changes", "No database migrations"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-out-of-scope", %{"index" => "1"}, socket)
+
+      out_of_scope = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :out_of_scope)
+      assert length(out_of_scope) == 1
+      assert hd(out_of_scope) == "No UI changes"
+    end
+  end
+
+  describe "handle_event add-dependency" do
+    test "adds empty dependency to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-dependency", %{}, socket)
+
+      dependencies = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :dependencies)
+      assert length(dependencies) == 1
+      assert hd(dependencies) == ""
+    end
+  end
+
+  describe "handle_event remove-dependency" do
+    test "removes dependency at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        dependencies: ["W01A", "W01B"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-dependency", %{"index" => "0"}, socket)
+
+      dependencies = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :dependencies)
+      assert length(dependencies) == 1
+      assert hd(dependencies) == "W01B"
+    end
+  end
+
+  describe "handle_event add-capability" do
+    test "adds empty capability to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-capability", %{}, socket)
+
+      capabilities = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+      assert length(capabilities) == 1
+      assert hd(capabilities) == ""
+    end
+  end
+
+  describe "handle_event remove-capability" do
+    test "removes capability at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Test",
+        required_capabilities: ["elixir", "phoenix", "liveview"]
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-capability", %{"index" => "1"}, socket)
+
+      capabilities = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+      assert length(capabilities) == 2
+      assert capabilities == ["elixir", "liveview"]
+    end
+  end
+
+  describe "handle_event save for new task" do
+    test "creates task with all rich fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Initialize flash and add test process to receive messages
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Rich Task",
+        "description" => "Full task with all fields",
+        "complexity" => "medium",
+        "why" => "To test all fields",
+        "what" => "Create comprehensive test",
+        "where_context" => "test/",
+        "technology_requirements" => ["Phoenix", "LiveView"],
+        "pitfalls" => ["Don't forget validation"],
+        "out_of_scope" => ["No UI styling"],
+        "dependencies" => ["W01A"]
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Verify task was created
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Rich Task")
+      assert created_task
+      assert created_task.complexity == :medium
+      assert created_task.why == "To test all fields"
+      assert created_task.technology_requirements == ["Phoenix", "LiveView"]
+    end
+  end
+
+  describe "handle_event save for edit task" do
+    test "updates task with rich fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{
+        title: "Original Title",
+        complexity: :small
+      })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Initialize flash
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Updated Title",
+        "complexity" => "large",
+        "technology_requirements" => ["Ecto"]
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Verify task was updated
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert updated_task.title == "Updated Title"
+      assert updated_task.complexity == :large
+      assert updated_task.technology_requirements == ["Ecto"]
+    end
+  end
+
+  describe "assignable users" do
+    test "builds assignable users list from board users" do
+      user1 = user_fixture(%{email: "user1@example.com", name: "User One"})
+      user2 = user_fixture(%{email: "user2@example.com", name: ""})
+      board = board_fixture(user1)
+      Kanban.Boards.add_user_to_board(board, user2, :modify)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      assignable_users = socket.assigns.assignable_users
+      # Should have "Unassigned" option plus 2 users
+      assert length(assignable_users) == 3
+
+      # First option should be "Unassigned" with nil value
+      assert {"Unassigned", nil} in assignable_users
+
+      # Should use name if available, otherwise email
+      assert {"User One", user1.id} in assignable_users
+      assert {"user2@example.com", user2.id} in assignable_users
+    end
+  end
 end

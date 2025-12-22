@@ -73,6 +73,352 @@
       />
     <% end %>
 
+    <%!-- Complexity & Planning Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Complexity & Planning")}</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <.input
+          field={f[:complexity]}
+          type="select"
+          label={gettext("Complexity")}
+          options={[
+            {gettext("Small"), :small},
+            {gettext("Medium"), :medium},
+            {gettext("Large"), :large}
+          ]}
+          prompt={gettext("Select complexity")}
+        />
+        <.input field={f[:estimated_files]} type="text" label={gettext("Estimated Files")} placeholder="e.g., 3-5" />
+      </div>
+    </div>
+
+    <%!-- Context Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Context")}</h3>
+      <.input field={f[:why]} type="textarea" label={gettext("Why (Problem/Rationale)")} rows="2" />
+      <.input field={f[:what]} type="textarea" label={gettext("What (Implementation)")} rows="2" />
+      <.input field={f[:where_context]} type="textarea" label={gettext("Where (Code Location)")} rows="2" />
+    </div>
+
+    <%!-- Key Files Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Key Files to Read First")}</h3>
+      <.inputs_for :let={kf} field={f[:key_files]}>
+        <div class="flex gap-2 items-start mb-2">
+          <div class="flex-1">
+            <.input field={kf[:file_path]} type="text" placeholder="lib/kanban/tasks.ex" />
+          </div>
+          <div class="flex-1">
+            <.input field={kf[:note]} type="text" placeholder="Note about this file" />
+          </div>
+          <input type="hidden" name={kf[:position].name} value={kf[:position].value} />
+          <button
+            type="button"
+            phx-click="remove-key-file"
+            phx-value-index={kf.index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error mt-8"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      </.inputs_for>
+      <button
+        type="button"
+        phx-click="add-key-file"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Key File")}
+      </button>
+    </div>
+
+    <%!-- Verification Steps Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Verification Steps")}</h3>
+      <.inputs_for :let={vs} field={f[:verification_steps]}>
+        <div class="flex gap-2 items-start mb-2">
+          <div class="w-32">
+            <.input
+              field={vs[:step_type]}
+              type="select"
+              options={[{gettext("Command"), "command"}, {gettext("Manual"), "manual"}]}
+            />
+          </div>
+          <div class="flex-1">
+            <.input field={vs[:step_text]} type="text" placeholder="mix test" />
+          </div>
+          <div class="flex-1">
+            <.input field={vs[:expected_result]} type="text" placeholder="Expected result" />
+          </div>
+          <input type="hidden" name={vs[:position].name} value={vs[:position].value} />
+          <button
+            type="button"
+            phx-click="remove-verification-step"
+            phx-value-index={vs.index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error mt-8"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      </.inputs_for>
+      <button
+        type="button"
+        phx-click="add-verification-step"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Verification Step")}
+      </button>
+    </div>
+
+    <%!-- Technical Notes Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Technical Notes")}</h3>
+      <.input field={f[:patterns_to_follow]} type="textarea" label={gettext("Patterns to Follow")} rows="2" />
+      <.input field={f[:database_changes]} type="textarea" label={gettext("Database/Schema Changes")} rows="2" />
+      <.input field={f[:validation_rules]} type="textarea" label={gettext("Validation Rules")} rows="2" />
+    </div>
+
+    <%!-- Technology Requirements Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Technology Requirements")}</h3>
+      <%= for {tech, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :technology_requirements) || []) do %>
+        <div class="flex gap-2 mb-2">
+          <input
+            type="text"
+            name="task[technology_requirements][]"
+            value={tech}
+            placeholder={gettext("Technology/library name")}
+            class="input input-bordered flex-1"
+          />
+          <button
+            type="button"
+            phx-click="remove-technology"
+            phx-value-index={index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      <% end %>
+      <button
+        type="button"
+        phx-click="add-technology"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Technology")}
+      </button>
+    </div>
+
+    <%!-- Observability Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Observability")}</h3>
+      <.input field={f[:telemetry_event]} type="text" label={gettext("Telemetry Event")} placeholder="[:kanban, :domain, :action]" />
+      <.input field={f[:metrics_to_track]} type="textarea" label={gettext("Metrics to Track")} rows="2" />
+      <.input field={f[:logging_requirements]} type="textarea" label={gettext("Logging Requirements")} rows="2" />
+    </div>
+
+    <%!-- Error Handling Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Error Handling")}</h3>
+      <.input field={f[:error_user_message]} type="text" label={gettext("User Error Message")} />
+      <.input field={f[:error_on_failure]} type="textarea" label={gettext("On Failure (What Happens)")} rows="2" />
+    </div>
+
+    <%!-- Pitfalls Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Common Pitfalls")}</h3>
+      <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :pitfalls) || []) do %>
+        <div class="flex gap-2 mb-2">
+          <input
+            type="text"
+            name="task[pitfalls][]"
+            value={pitfall}
+            placeholder={gettext("Common pitfall to avoid")}
+            class="input input-bordered flex-1"
+          />
+          <button
+            type="button"
+            phx-click="remove-pitfall"
+            phx-value-index={index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      <% end %>
+      <button
+        type="button"
+        phx-click="add-pitfall"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Pitfall")}
+      </button>
+    </div>
+
+    <%!-- Out of Scope Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Out of Scope")}</h3>
+      <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :out_of_scope) || []) do %>
+        <div class="flex gap-2 mb-2">
+          <input
+            type="text"
+            name="task[out_of_scope][]"
+            value={item}
+            placeholder={gettext("Out of scope item")}
+            class="input input-bordered flex-1"
+          />
+          <button
+            type="button"
+            phx-click="remove-out-of-scope"
+            phx-value-index={index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      <% end %>
+      <button
+        type="button"
+        phx-click="add-out-of-scope"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Out of Scope Item")}
+      </button>
+    </div>
+
+    <%!-- Dependencies Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Dependencies")}</h3>
+      <%= for {dep, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :dependencies) || []) do %>
+        <div class="flex gap-2 mb-2">
+          <input
+            type="text"
+            name="task[dependencies][]"
+            value={dep}
+            placeholder={gettext("Task identifier (e.g., W01A)")}
+            class="input input-bordered flex-1"
+          />
+          <button
+            type="button"
+            phx-click="remove-dependency"
+            phx-value-index={index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      <% end %>
+      <button
+        type="button"
+        phx-click="add-dependency"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Dependency")}
+      </button>
+    </div>
+
+    <%!-- Status & Agent Tracking Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Status & Agent Tracking")}</h3>
+      <.input
+        field={f[:status]}
+        type="select"
+        label={gettext("Status")}
+        options={[
+          {gettext("Open"), :open},
+          {gettext("In Progress"), :in_progress},
+          {gettext("Completed"), :completed},
+          {gettext("Blocked"), :blocked}
+        ]}
+      />
+      <.input field={f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
+      <.input field={f[:completed_by_agent]} type="text" label={gettext("Completed By Agent")} />
+      <.input field={f[:completion_summary]} type="textarea" label={gettext("Completion Summary")} rows="2" />
+    </div>
+
+    <%!-- Claim Tracking Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Claim Tracking & Required Capabilities")}</h3>
+      <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
+        <div class="flex gap-2 mb-2">
+          <input
+            type="text"
+            name="task[required_capabilities][]"
+            value={cap}
+            placeholder={gettext("Required capability")}
+            class="input input-bordered flex-1"
+          />
+          <button
+            type="button"
+            phx-click="remove-capability"
+            phx-value-index={index}
+            phx-target={@myself}
+            class="btn btn-sm btn-error"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      <% end %>
+      <button
+        type="button"
+        phx-click="add-capability"
+        phx-target={@myself}
+        class="btn btn-sm btn-secondary"
+      >
+        + {gettext("Add Required Capability")}
+      </button>
+    </div>
+
+    <%!-- Actual Metrics Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Actual Metrics")}</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <.input
+          field={f[:actual_complexity]}
+          type="select"
+          label={gettext("Actual Complexity")}
+          options={[
+            {gettext("Small"), :small},
+            {gettext("Medium"), :medium},
+            {gettext("Large"), :large}
+          ]}
+          prompt={gettext("Select")}
+        />
+        <.input field={f[:actual_files_changed]} type="text" label={gettext("Actual Files Changed")} />
+        <.input field={f[:time_spent_minutes]} type="number" label={gettext("Time Spent (minutes)")} />
+      </div>
+    </div>
+
+    <%!-- Review Queue Section --%>
+    <div class="mt-6 pt-6 border-t border-base-300">
+      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>
+      <.input field={f[:needs_review]} type="checkbox" label={gettext("Needs Review")} />
+      <.input
+        field={f[:review_status]}
+        type="select"
+        label={gettext("Review Status")}
+        options={[
+          {gettext("Pending"), :pending},
+          {gettext("Approved"), :approved},
+          {gettext("Changes Requested"), :changes_requested},
+          {gettext("Rejected"), :rejected}
+        ]}
+        prompt={gettext("Select status")}
+      />
+      <.input field={f[:review_notes]} type="textarea" label={gettext("Review Notes")} rows="2" />
+    </div>
+
     <div class="mt-6 flex items-center gap-4">
       <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
     </div>

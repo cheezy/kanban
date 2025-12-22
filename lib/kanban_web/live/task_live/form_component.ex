@@ -78,6 +78,93 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  def handle_event("add-key-file", _params, socket) do
+    existing = Ecto.Changeset.get_field(socket.assigns.form.source, :key_files) || []
+    key_files = existing ++ [%Kanban.Schemas.Task.KeyFile{position: length(existing)}]
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:key_files, key_files)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  def handle_event("remove-key-file", %{"index" => index}, socket) do
+    {index, _} = Integer.parse(index)
+    key_files = (Ecto.Changeset.get_field(socket.assigns.form.source, :key_files) || []) |> List.delete_at(index)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:key_files, key_files)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  def handle_event("add-verification-step", _params, socket) do
+    existing = Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || []
+    steps = existing ++ [%Kanban.Schemas.Task.VerificationStep{position: length(existing)}]
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:verification_steps, steps)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  def handle_event("remove-verification-step", %{"index" => index}, socket) do
+    {index, _} = Integer.parse(index)
+    steps = (Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || []) |> List.delete_at(index)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:verification_steps, steps)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  def handle_event("add-technology", _params, socket), do: handle_add_to_array(socket, :technology_requirements)
+  def handle_event("remove-technology", %{"index" => index}, socket), do: handle_remove_from_array(socket, :technology_requirements, index)
+
+  def handle_event("add-pitfall", _params, socket), do: handle_add_to_array(socket, :pitfalls)
+  def handle_event("remove-pitfall", %{"index" => index}, socket), do: handle_remove_from_array(socket, :pitfalls, index)
+
+  def handle_event("add-out-of-scope", _params, socket), do: handle_add_to_array(socket, :out_of_scope)
+  def handle_event("remove-out-of-scope", %{"index" => index}, socket), do: handle_remove_from_array(socket, :out_of_scope, index)
+
+  def handle_event("add-dependency", _params, socket), do: handle_add_to_array(socket, :dependencies)
+  def handle_event("remove-dependency", %{"index" => index}, socket), do: handle_remove_from_array(socket, :dependencies, index)
+
+  def handle_event("add-capability", _params, socket), do: handle_add_to_array(socket, :required_capabilities)
+  def handle_event("remove-capability", %{"index" => index}, socket), do: handle_remove_from_array(socket, :required_capabilities, index)
+
+  defp handle_add_to_array(socket, field) do
+    existing = Ecto.Changeset.get_field(socket.assigns.form.source, field) || []
+    new_list = existing ++ [""]
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_change(field, new_list)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  defp handle_remove_from_array(socket, field, index) do
+    {index, _} = Integer.parse(index)
+    list = (Ecto.Changeset.get_field(socket.assigns.form.source, field) || []) |> List.delete_at(index)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_change(field, list)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
   defp save_task(socket, :edit_task, task_params) do
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
