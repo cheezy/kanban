@@ -50,7 +50,7 @@
   - `completed_by_agent` (string) - AI model name if AI-completed
   - `completion_summary` (text) - JSON string or formatted text with completion details
   - `dependencies` (array of bigint) - Other task IDs this task depends on
-  - `status` (string) - "open", "in_progress", "completed", "blocked"
+  - `status` (Ecto.Enum: :open, :in_progress, :completed, :blocked) - Task lifecycle status
   - `claimed_at` (utc_datetime) - When task was claimed by an agent
   - `claim_expires_at` (utc_datetime) - When claim expires (60 minutes from claimed_at)
   - `required_capabilities` (array of string) - Agent capabilities required to work on this task (e.g., `["code_generation", "database_design"]`). Empty array means any agent can claim it.
@@ -58,7 +58,7 @@
   - `actual_files_changed` (integer) - Actual number of files modified - reported by agent on completion
   - `time_spent_minutes` (integer) - Actual time spent in minutes - reported by agent on completion
   - `needs_review` (boolean, default: false) - Whether task requires human review before being marked as complete
-  - `review_status` (string) - Review status (pending, approved, changes_requested, rejected) - set by human reviewer
+  - `review_status` (Ecto.Enum: :pending, :approved, :changes_requested, :rejected) - Review status set by human reviewer
   - `review_notes` (text) - Human feedback on the completed work
   - `reviewed_by_id` (bigint, references users) - User who reviewed the task
   - `reviewed_at` (utc_datetime) - When the task was reviewed
@@ -1285,7 +1285,7 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
 
       # Task relationships and status
       add :dependencies, {:array, :bigint}, default: []
-      add :status, :string, default: "open"
+      add :status, :string, default: "open"  # Will be converted to Ecto.Enum in schema
 
       # Claim tracking (for task 08 - auto-release after 60 minutes)
       add :claimed_at, :utc_datetime
@@ -1301,7 +1301,7 @@ defmodule Kanban.Repo.Migrations.AddTaskMetadata do
 
       # Human review queue (for human feedback on completed work)
       add :needs_review, :boolean, default: false  # Whether task requires human review
-      add :review_status, :string  # pending, approved, changes_requested, rejected
+      add :review_status, :string  # Will be converted to Ecto.Enum in schema: pending, approved, changes_requested, rejected
       add :review_notes, :text
       add :reviewed_by_id, references(:users, on_delete: :nilify_all)
       add :reviewed_at, :utc_datetime
@@ -1643,7 +1643,7 @@ defmodule Kanban.Schemas.Task do
 
     # Task relationships and status
     field :dependencies, {:array, :integer}, default: []
-    field :status, :string, default: "open"
+    field :status, Ecto.Enum, values: [:open, :in_progress, :completed, :blocked], default: :open
 
     # Claim tracking
     field :claimed_at, :utc_datetime
@@ -1659,7 +1659,7 @@ defmodule Kanban.Schemas.Task do
 
     # Human review queue
     field :needs_review, :boolean, default: false
-    field :review_status, :string
+    field :review_status, Ecto.Enum, values: [:pending, :approved, :changes_requested, :rejected]
     field :review_notes, :string
     belongs_to :reviewed_by, Kanban.Schemas.User
     field :reviewed_at, :utc_datetime
