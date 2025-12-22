@@ -626,10 +626,15 @@ defmodule Kanban.Tasks do
       |> select([t], t.identifier)
       |> Repo.all()
       |> Enum.map(fn identifier ->
-        # Extract numeric part (e.g., "W11" -> 11)
+        # Extract numeric part (e.g., "W11" -> 11, "W01A" -> 1)
+        # Remove prefix and extract only leading digits
         identifier
         |> String.replace(prefix, "")
-        |> String.to_integer()
+        |> String.replace(~r/[^0-9].*$/, "")
+        |> case do
+          "" -> 0
+          num_str -> String.to_integer(num_str)
+        end
       end)
       |> case do
         [] -> 0
