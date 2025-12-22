@@ -90,6 +90,9 @@ defmodule Kanban.Tasks do
     |> Repo.preload([
       :assigned_to,
       :column,
+      :created_by,
+      :completed_by,
+      :reviewed_by,
       task_histories:
         from(h in TaskHistory,
           order_by: [desc: h.inserted_at],

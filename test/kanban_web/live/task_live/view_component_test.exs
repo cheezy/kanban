@@ -66,7 +66,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           task_id: task.id
         )
 
-      assert result =~ "Status"
+      assert result =~ "Column"
       assert result =~ column.name
     end
 
@@ -567,6 +567,593 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "hero-arrow-right-circle"
       assert result =~ "hero-exclamation-circle"
       assert result =~ "hero-user-circle"
+    end
+
+    # Tests for Task 03: Rich Task Details
+
+    test "displays creator info section when created_by is set", %{board: board} do
+      creator = user_fixture(%{name: "Alice Creator", email: "alice@example.com"})
+      column = column_fixture(board)
+      task = task_fixture(column, %{created_by_id: creator.id})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Creator Info"
+      assert result =~ "Created by"
+      assert result =~ "Alice Creator"
+    end
+
+    test "displays creator info with agent name when created_by_agent is set", %{board: board} do
+      creator = user_fixture(%{name: "Bob User"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          created_by_id: creator.id,
+          created_by_agent: "Claude-3.5-Sonnet"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Creator Info"
+      assert result =~ "Agent"
+      assert result =~ "Claude-3.5-Sonnet"
+    end
+
+    test "displays claim status when task is claimed", %{board: board} do
+      creator = user_fixture(%{name: "Task Creator"})
+      column = column_fixture(board)
+      claimed_at = ~U[2024-01-15 10:00:00Z]
+      claim_expires = ~U[2024-01-15 11:00:00Z]
+
+      task =
+        task_fixture(column, %{
+          created_by_id: creator.id,
+          claimed_at: claimed_at,
+          claim_expires_at: claim_expires
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Claimed at"
+      assert result =~ "Claim expires"
+    end
+
+    test "displays why/what/where context section", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          why: "To improve user experience",
+          what: "Add OAuth authentication",
+          where_context: "User authentication module"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Context"
+      assert result =~ "Why"
+      assert result =~ "To improve user experience"
+      assert result =~ "What"
+      assert result =~ "Add OAuth authentication"
+      assert result =~ "Where"
+      assert result =~ "User authentication module"
+    end
+
+    test "displays key files with file paths and notes", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          key_files: [
+            %{file_path: "lib/kanban/auth.ex", note: "Main auth module", position: 0},
+            %{file_path: "lib/kanban_web/controllers/auth_controller.ex", note: "OAuth controller", position: 1}
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Key Files"
+      assert result =~ "lib/kanban/auth.ex"
+      assert result =~ "Main auth module"
+      assert result =~ "lib/kanban_web/controllers/auth_controller.ex"
+      assert result =~ "OAuth controller"
+    end
+
+    test "displays verification steps with command and manual types", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "All tests pass",
+              position: 0
+            },
+            %{
+              step_type: "manual",
+              step_text: "Log in with OAuth",
+              expected_result: "User successfully authenticated",
+              position: 1
+            }
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Verification Steps"
+      assert result =~ "command"
+      assert result =~ "mix test"
+      assert result =~ "All tests pass"
+      assert result =~ "manual"
+      assert result =~ "Log in with OAuth"
+      assert result =~ "User successfully authenticated"
+    end
+
+    test "displays implementation guidance section", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          patterns_to_follow: "Follow existing authentication patterns",
+          database_changes: "Add oauth_tokens table",
+          validation_rules: "Email must be unique"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Implementation Guidance"
+      assert result =~ "Patterns to Follow"
+      assert result =~ "Follow existing authentication patterns"
+      assert result =~ "Database Changes"
+      assert result =~ "Add oauth_tokens table"
+      assert result =~ "Validation Rules"
+      assert result =~ "Email must be unique"
+    end
+
+    test "displays observability section", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          telemetry_event: "[:kanban, :auth, :login]",
+          metrics_to_track: "Login success rate, OAuth latency",
+          logging_requirements: "Log all authentication attempts"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Observability"
+      assert result =~ "Telemetry Event"
+      assert result =~ "[:kanban, :auth, :login]"
+      assert result =~ "Metrics to Track"
+      assert result =~ "Login success rate, OAuth latency"
+      assert result =~ "Logging Requirements"
+      assert result =~ "Log all authentication attempts"
+    end
+
+    test "displays error handling section", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          error_user_message: "Authentication failed. Please try again.",
+          error_on_failure: "Redirect to login page and show error message"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Error Handling"
+      assert result =~ "User Message"
+      assert result =~ "Authentication failed. Please try again."
+      assert result =~ "On Failure"
+      assert result =~ "Redirect to login page and show error message"
+    end
+
+    test "displays technology requirements", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          technology_requirements: ["Ueberauth", "Ueberauth.Strategy.Google", "HTTPoison"]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Technology Requirements"
+      assert result =~ "Ueberauth"
+      assert result =~ "Ueberauth.Strategy.Google"
+      assert result =~ "HTTPoison"
+    end
+
+    test "displays required agent capabilities", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          required_capabilities: ["web_browsing", "code_execution", "file_operations"]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Required Agent Capabilities"
+      assert result =~ "web_browsing"
+      assert result =~ "code_execution"
+      assert result =~ "file_operations"
+    end
+
+    test "displays dependencies section", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{dependencies: ["W1", "W2", "W3"]})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Dependencies"
+      assert result =~ "Depends on tasks"
+      assert result =~ "W1, W2, W3"
+    end
+
+    test "displays pitfalls section with yellow background", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          pitfalls: [
+            "Don't store OAuth tokens in plain text",
+            "Remember to refresh expired tokens"
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Pitfalls to Avoid"
+      assert result =~ "bg-yellow-50"
+      assert result =~ "Don&#39;t store OAuth tokens in plain text"
+      assert result =~ "Remember to refresh expired tokens"
+    end
+
+    test "displays out of scope section with red background", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          out_of_scope: ["Multi-factor authentication", "Password reset functionality"]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Out of Scope"
+      assert result =~ "bg-red-50"
+      assert result =~ "Multi-factor authentication"
+      assert result =~ "Password reset functionality"
+    end
+
+    test "displays actual vs estimated section for completed tasks", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          complexity: :medium,
+          estimated_files: "5",
+          actual_complexity: :large,
+          actual_files_changed: "8",
+          time_spent_minutes: 240
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Actual vs Estimated"
+      assert result =~ "bg-blue-50"
+      assert result =~ "Actual Complexity"
+      assert result =~ "Large"
+      assert result =~ "Est"
+      assert result =~ "Medium"
+      assert result =~ "Actual Files Changed"
+      assert result =~ "8"
+      assert result =~ "5"
+      assert result =~ "Time Spent"
+      assert result =~ "240"
+      assert result =~ "minutes"
+    end
+
+    test "displays review status section when needs_review is true", %{board: board} do
+      reviewer = user_fixture(%{name: "Carol Reviewer"})
+      column = column_fixture(board)
+      reviewed_at = ~U[2024-01-15 14:00:00Z]
+
+      task =
+        task_fixture(column, %{
+          needs_review: true,
+          review_status: :approved,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: reviewed_at,
+          review_notes: "Looks good! Well implemented."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Review Status"
+      assert result =~ "bg-green-50"
+      assert result =~ "Approved"
+      assert result =~ "Reviewed by"
+      assert result =~ "Carol Reviewer"
+      assert result =~ "Reviewed at"
+      assert result =~ "Review Notes"
+      assert result =~ "Looks good! Well implemented."
+    end
+
+    test "displays review status with changes_requested styling", %{board: board} do
+      reviewer = user_fixture(%{name: "Reviewer User"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          needs_review: true,
+          review_status: :changes_requested,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z],
+          review_notes: "Please add more tests"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Review Status"
+      assert result =~ "bg-orange-50"
+      assert result =~ "Changes Requested"
+      assert result =~ "Please add more tests"
+    end
+
+    test "displays completion section for completed tasks", %{board: board} do
+      completer = user_fixture(%{name: "Dave Completer"})
+      column = column_fixture(board)
+      completed_at = ~U[2024-01-15 15:00:00Z]
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: completed_at,
+          completed_by_id: completer.id,
+          completed_by_agent: "Claude-3.5-Sonnet",
+          completion_summary: "Implemented OAuth with Google and GitHub providers"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Completion"
+      assert result =~ "bg-green-50"
+      assert result =~ "Completed at"
+      assert result =~ "Completed by"
+      assert result =~ "Dave Completer"
+      assert result =~ "Agent"
+      assert result =~ "Claude-3.5-Sonnet"
+      assert result =~ "Summary"
+      assert result =~ "Implemented OAuth with Google and GitHub providers"
+    end
+
+    test "does not display creator info section when no creator data", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Creator Info"
+    end
+
+    test "does not display context section when all context fields are nil", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Context"
+    end
+
+    test "does not display key files section when key_files is empty", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Key Files"
+    end
+
+    test "does not display verification steps section when verification_steps is empty",
+         %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Verification Steps"
+    end
+
+    test "does not display actual vs estimated section for non-completed tasks", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :in_progress,
+          actual_complexity: :large,
+          actual_files_changed: "8"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Actual vs Estimated"
+    end
+
+    test "does not display completion section for non-completed tasks", %{board: board} do
+      completer = user_fixture(%{name: "Dave Completer"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :in_progress,
+          completed_by_id: completer.id,
+          completion_summary: "Some summary"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      refute result =~ "Completion"
+    end
+
+    test "displays estimated_files in header grid", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{estimated_files: "7"})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id
+        )
+
+      assert result =~ "Estimated Files"
+      assert result =~ "7"
+    end
+
+    test "displays status badge for all status types", %{board: board} do
+      column = column_fixture(board)
+
+      for status <- [:open, :in_progress, :completed, :blocked] do
+        attrs =
+          if status == :completed do
+            %{status: status, completed_at: ~U[2024-01-15 15:00:00Z]}
+          else
+            %{status: status}
+          end
+
+        task = task_fixture(column, attrs)
+
+        result =
+          render_component(KanbanWeb.TaskLive.ViewComponent,
+            id: "test-view-#{status}",
+            task_id: task.id
+          )
+
+        status_label =
+          case status do
+            :open -> "Open"
+            :in_progress -> "In Progress"
+            :completed -> "Completed"
+            :blocked -> "Blocked"
+          end
+
+        assert result =~ status_label
+      end
+    end
+
+    test "displays complexity badge for all complexity types", %{board: board} do
+      column = column_fixture(board)
+
+      for complexity <- [:small, :medium, :large] do
+        task = task_fixture(column, %{complexity: complexity})
+
+        result =
+          render_component(KanbanWeb.TaskLive.ViewComponent,
+            id: "test-view-#{complexity}",
+            task_id: task.id
+          )
+
+        complexity_label =
+          case complexity do
+            :small -> "Small"
+            :medium -> "Medium"
+            :large -> "Large"
+          end
+
+        assert result =~ complexity_label
+      end
     end
   end
 end

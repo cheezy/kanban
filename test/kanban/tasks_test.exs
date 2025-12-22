@@ -1766,12 +1766,12 @@ defmodule Kanban.TasksTest do
       attrs = %{
         title: "Test task",
         position: 0,
-        dependencies: [1, 2, 3]
+        dependencies: ["W1", "W2", "W3"]
       }
 
       {:ok, task} = Tasks.create_task(column, attrs)
 
-      assert task.dependencies == [1, 2, 3]
+      assert task.dependencies == ["W1", "W2", "W3"]
     end
 
     test "validates status enum values", %{column: column} do
@@ -1899,19 +1899,19 @@ defmodule Kanban.TasksTest do
       assert "must be a list" in errors_on(changeset).required_capabilities
     end
 
-    test "validates dependencies must be list of integers" do
+    test "validates dependencies must be list of strings" do
       task = %Kanban.Tasks.Task{
         title: "Test task",
         position: 0,
         type: :work,
         priority: :medium,
         status: :open,
-        dependencies: [1, "2", 3]
+        dependencies: ["W1", 2, "W3"]
       }
 
       changeset = Kanban.Tasks.Task.changeset(task, %{})
       refute changeset.valid?
-      assert "must be a list of integers" in errors_on(changeset).dependencies
+      assert "must be a list of task identifiers (strings)" in errors_on(changeset).dependencies
     end
 
     test "validates dependencies must be a list" do
@@ -2048,7 +2048,7 @@ defmodule Kanban.TasksTest do
         completed_by_id: user.id,
         completed_by_agent: "claude-code",
         completion_summary: "All tests passing",
-        dependencies: [1, 2],
+        dependencies: ["W1", "W2"],
         status: :completed,
         claimed_at: claimed_at,
         claim_expires_at: claim_expires_at,
@@ -2071,7 +2071,7 @@ defmodule Kanban.TasksTest do
       assert task.completed_by_id == user.id
       assert task.completed_by_agent == "claude-code"
       assert task.completion_summary == "All tests passing"
-      assert task.dependencies == [1, 2]
+      assert task.dependencies == ["W1", "W2"]
       assert task.status == :completed
       assert DateTime.compare(task.claimed_at, claimed_at) == :eq
       assert DateTime.compare(task.claim_expires_at, claim_expires_at) == :eq

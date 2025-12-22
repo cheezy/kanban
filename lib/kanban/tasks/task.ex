@@ -51,7 +51,7 @@ defmodule Kanban.Tasks.Task do
     field :completion_summary, :string
 
     # Task relationships (02)
-    field :dependencies, {:array, :integer}, default: []
+    field :dependencies, {:array, :string}, default: []
 
     # Status tracking (02)
     field :status, Ecto.Enum, values: [:open, :in_progress, :completed, :blocked], default: :open
@@ -208,10 +208,10 @@ defmodule Kanban.Tasks.Task do
       nil -> changeset
       [] -> changeset
       deps when is_list(deps) ->
-        if Enum.all?(deps, &is_integer/1) do
+        if Enum.all?(deps, &is_binary/1) do
           changeset
         else
-          add_error(changeset, :dependencies, "must be a list of integers")
+          add_error(changeset, :dependencies, "must be a list of task identifiers (strings)")
         end
       _ ->
         add_error(changeset, :dependencies, "must be a list")
