@@ -200,8 +200,8 @@ defmodule Kanban.Tasks do
           )
         end
 
-        # Broadcast task update
-        broadcast_task_change(updated_task, :task_updated)
+        # Broadcast specific event based on what changed
+        broadcast_task_update(updated_task, changeset)
 
         {:ok, updated_task}
 
@@ -673,7 +673,7 @@ defmodule Kanban.Tasks do
   defp broadcast_task_change(%Task{} = task, event) do
     require Logger
     # Get the task's column to know which board to broadcast to
-    task_with_column = Repo.preload(task, :column)
+    task_with_column = Repo.preload(task, [:column, :created_by, :completed_by, :reviewed_by])
     column = task_with_column.column
 
     if column do
@@ -686,10 +686,33 @@ defmodule Kanban.Tasks do
       Phoenix.PubSub.broadcast(
         Kanban.PubSub,
         "board:#{board_id}",
-        {__MODULE__, event, task}
+        {__MODULE__, event, task_with_column}
+      )
+
+      # Telemetry event for monitoring
+      :telemetry.execute(
+        [:kanban, :pubsub, :broadcast],
+        %{count: 1},
+        %{event: event, task_id: task.id, board_id: board_id}
       )
     else
       Logger.warning("Cannot broadcast #{event} for task #{task.id} - no column found")
+    end
+  end
+
+  # Helper to broadcast specific events based on changeset changes
+  defp broadcast_task_update(%Task{} = task, %Ecto.Changeset{} = changeset) do
+    cond do
+      Map.has_key?(changeset.changes, :status) ->
+        broadcast_task_change(task, :task_status_changed)
+      Map.has_key?(changeset.changes, :claimed_at) ->
+        broadcast_task_change(task, :task_claimed)
+      Map.has_key?(changeset.changes, :completed_at) ->
+        broadcast_task_change(task, :task_completed)
+      Map.has_key?(changeset.changes, :review_status) ->
+        broadcast_task_change(task, :task_reviewed)
+      true ->
+        broadcast_task_change(task, :task_updated)
     end
   end
 

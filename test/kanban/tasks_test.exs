@@ -1717,4 +1717,615 @@ defmodule Kanban.TasksTest do
       assert task.error_on_failure == "Alert ops"
     end
   end
+
+  describe "Task metadata fields (02)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, column: column, user: user}
+    end
+
+    test "creates task with creator tracking", %{column: column, user: user} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        created_by_id: user.id,
+        created_by_agent: "claude-code"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.created_by_id == user.id
+      assert task.created_by_agent == "claude-code"
+    end
+
+    test "creates task with completion tracking", %{column: column, user: user} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        status: :completed,
+        completed_at: now,
+        completed_by_id: user.id,
+        completed_by_agent: "claude-code",
+        completion_summary: "Task completed successfully"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.status == :completed
+      assert DateTime.compare(task.completed_at, now) == :eq
+      assert task.completed_by_id == user.id
+      assert task.completed_by_agent == "claude-code"
+      assert task.completion_summary == "Task completed successfully"
+    end
+
+    test "creates task with dependencies", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        dependencies: [1, 2, 3]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.dependencies == [1, 2, 3]
+    end
+
+    test "validates status enum values", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        status: :invalid
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "is invalid" in errors_on(changeset).status
+    end
+
+    test "validates actual_complexity enum values", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        actual_complexity: :invalid
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "is invalid" in errors_on(changeset).actual_complexity
+    end
+
+    test "validates review_status enum values", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        review_status: :invalid
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "is invalid" in errors_on(changeset).review_status
+    end
+
+    test "creates task with claim tracking", %{column: column} do
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      claim_expires_at = DateTime.add(claimed_at, 3600, :second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        claimed_at: claimed_at,
+        claim_expires_at: claim_expires_at
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert DateTime.compare(task.claimed_at, claimed_at) == :eq
+      assert DateTime.compare(task.claim_expires_at, claim_expires_at) == :eq
+    end
+
+    test "validates claim_expires_at is after claimed_at", %{column: column} do
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      claim_expires_at = DateTime.add(claimed_at, -3600, :second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        claimed_at: claimed_at,
+        claim_expires_at: claim_expires_at
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be after claimed_at" in errors_on(changeset).claim_expires_at
+    end
+
+    test "validates claimed_at is set when claim_expires_at is set", %{column: column} do
+      claim_expires_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        claim_expires_at: claim_expires_at
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be set when claim_expires_at is set" in errors_on(changeset).claimed_at
+    end
+
+    test "creates task with required_capabilities", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        required_capabilities: ["elixir", "phoenix", "liveview"]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.required_capabilities == ["elixir", "phoenix", "liveview"]
+    end
+
+    test "validates required_capabilities must be list of strings" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        required_capabilities: ["elixir", 123, :phoenix]
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list of strings" in errors_on(changeset).required_capabilities
+    end
+
+    test "validates required_capabilities must be a list" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        required_capabilities: "not a list"
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list" in errors_on(changeset).required_capabilities
+    end
+
+    test "validates dependencies must be list of integers" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        dependencies: [1, "2", 3]
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list of integers" in errors_on(changeset).dependencies
+    end
+
+    test "validates dependencies must be a list" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        dependencies: "not a list"
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list" in errors_on(changeset).dependencies
+    end
+
+    test "creates task with actual vs estimated tracking", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        actual_complexity: :large,
+        actual_files_changed: "lib/kanban/tasks.ex\nlib/kanban/tasks/task.ex",
+        time_spent_minutes: 120
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.actual_complexity == :large
+      assert task.actual_files_changed == "lib/kanban/tasks.ex\nlib/kanban/tasks/task.ex"
+      assert task.time_spent_minutes == 120
+    end
+
+    test "validates time_spent_minutes must be non-negative", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        time_spent_minutes: -10
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be greater than or equal to 0" in errors_on(changeset).time_spent_minutes
+    end
+
+    test "creates task with review queue fields", %{column: column, user: user} do
+      reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        needs_review: true,
+        review_status: :approved,
+        review_notes: "Looks good!",
+        reviewed_by_id: user.id,
+        reviewed_at: reviewed_at
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.needs_review == true
+      assert task.review_status == :approved
+      assert task.review_notes == "Looks good!"
+      assert task.reviewed_by_id == user.id
+      assert DateTime.compare(task.reviewed_at, reviewed_at) == :eq
+    end
+
+    test "validates reviewed_at must be set when review_status is not pending", %{column: column, user: user} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        review_status: :approved,
+        reviewed_by_id: user.id
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be set when review_status is not pending" in errors_on(changeset).reviewed_at
+    end
+
+    test "validates reviewed_by_id must be set when review_status is not pending", %{column: column} do
+      reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        review_status: :approved,
+        reviewed_at: reviewed_at
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be set when review_status is not pending" in errors_on(changeset).reviewed_by_id
+    end
+
+    test "validates completed_at must be set when status is completed", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        status: :completed
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert "must be set when status is completed" in errors_on(changeset).completed_at
+    end
+
+    test "allows pending review_status without reviewed_at or reviewed_by_id", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        review_status: :pending
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.review_status == :pending
+      assert is_nil(task.reviewed_at)
+      assert is_nil(task.reviewed_by_id)
+    end
+
+    test "creates task with all metadata fields together", %{column: column, user: user} do
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      claim_expires_at = DateTime.add(claimed_at, 3600, :second)
+      completed_at = DateTime.add(claimed_at, 7200, :second)
+      reviewed_at = DateTime.add(claimed_at, 7300, :second)
+
+      attrs = %{
+        title: "Complex task",
+        position: 0,
+        created_by_id: user.id,
+        created_by_agent: "claude-code",
+        completed_at: completed_at,
+        completed_by_id: user.id,
+        completed_by_agent: "claude-code",
+        completion_summary: "All tests passing",
+        dependencies: [1, 2],
+        status: :completed,
+        claimed_at: claimed_at,
+        claim_expires_at: claim_expires_at,
+        required_capabilities: ["elixir", "phoenix"],
+        actual_complexity: :medium,
+        actual_files_changed: "lib/kanban/tasks.ex",
+        time_spent_minutes: 90,
+        needs_review: true,
+        review_status: :approved,
+        review_notes: "Great work!",
+        reviewed_by_id: user.id,
+        reviewed_at: reviewed_at
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.created_by_id == user.id
+      assert task.created_by_agent == "claude-code"
+      assert DateTime.compare(task.completed_at, completed_at) == :eq
+      assert task.completed_by_id == user.id
+      assert task.completed_by_agent == "claude-code"
+      assert task.completion_summary == "All tests passing"
+      assert task.dependencies == [1, 2]
+      assert task.status == :completed
+      assert DateTime.compare(task.claimed_at, claimed_at) == :eq
+      assert DateTime.compare(task.claim_expires_at, claim_expires_at) == :eq
+      assert task.required_capabilities == ["elixir", "phoenix"]
+      assert task.actual_complexity == :medium
+      assert task.actual_files_changed == "lib/kanban/tasks.ex"
+      assert task.time_spent_minutes == 90
+      assert task.needs_review == true
+      assert task.review_status == :approved
+      assert task.review_notes == "Great work!"
+      assert task.reviewed_by_id == user.id
+      assert DateTime.compare(task.reviewed_at, reviewed_at) == :eq
+    end
+
+    test "default values are set correctly", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.dependencies == []
+      assert task.status == :open
+      assert task.required_capabilities == []
+      assert task.needs_review == false
+    end
+
+    test "allows nil for all optional metadata fields", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        created_by_id: nil,
+        created_by_agent: nil,
+        completed_at: nil,
+        completed_by_id: nil,
+        completed_by_agent: nil,
+        completion_summary: nil,
+        dependencies: nil,
+        claimed_at: nil,
+        claim_expires_at: nil,
+        required_capabilities: nil,
+        actual_complexity: nil,
+        actual_files_changed: nil,
+        time_spent_minutes: nil,
+        review_status: nil,
+        review_notes: nil,
+        reviewed_by_id: nil,
+        reviewed_at: nil
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert is_nil(task.created_by_id)
+      assert is_nil(task.created_by_agent)
+      assert is_nil(task.completed_at)
+      assert is_nil(task.completed_by_id)
+      assert is_nil(task.completed_by_agent)
+      assert is_nil(task.completion_summary)
+      assert is_nil(task.claimed_at)
+      assert is_nil(task.claim_expires_at)
+      assert is_nil(task.actual_complexity)
+      assert is_nil(task.actual_files_changed)
+      assert is_nil(task.time_spent_minutes)
+      assert is_nil(task.review_status)
+      assert is_nil(task.review_notes)
+      assert is_nil(task.reviewed_by_id)
+      assert is_nil(task.reviewed_at)
+    end
+
+    test "allows empty arrays for collection fields", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        dependencies: [],
+        required_capabilities: []
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.dependencies == []
+      assert task.required_capabilities == []
+    end
+
+    test "validates completion without completed_by_id", %{column: column} do
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        status: :completed,
+        completed_at: completed_at,
+        completion_summary: "Done"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.status == :completed
+      assert DateTime.compare(task.completed_at, completed_at) == :eq
+      assert is_nil(task.completed_by_id)
+    end
+
+    test "allows claimed_at without claim_expires_at", %{column: column} do
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        claimed_at: claimed_at
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert DateTime.compare(task.claimed_at, claimed_at) == :eq
+      assert is_nil(task.claim_expires_at)
+    end
+  end
+
+  describe "PubSub broadcasts for task metadata changes" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Subscribe to PubSub for testing
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      {:ok, column: column, user: user, board: board}
+    end
+
+    test "broadcasts :task_created when task is created", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "New task"})
+
+      assert_received {Kanban.Tasks, :task_created, broadcasted_task}
+      assert broadcasted_task.id == task.id
+    end
+
+    test "broadcasts :task_status_changed when status changes", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, updated_task} = Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
+
+      assert_received {Kanban.Tasks, :task_status_changed, broadcasted_task}
+      assert broadcasted_task.id == updated_task.id
+      assert broadcasted_task.status == :completed
+    end
+
+    test "broadcasts :task_claimed when task is claimed", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, updated_task} = Tasks.update_task(task, %{claimed_at: claimed_at})
+
+      assert_received {Kanban.Tasks, :task_claimed, broadcasted_task}
+      assert broadcasted_task.id == updated_task.id
+    end
+
+    test "broadcasts :task_completed when completed_at is set", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, updated_task} = Tasks.update_task(task, %{status: :completed, completed_at: completed_at})
+
+      # Should broadcast status_changed (not completed) because status changed first
+      assert_received {Kanban.Tasks, :task_status_changed, broadcasted_task}
+      assert broadcasted_task.id == updated_task.id
+    end
+
+    test "broadcasts :task_reviewed when review_status changes", %{column: column, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, updated_task} = Tasks.update_task(task, %{
+        review_status: :approved,
+        reviewed_by_id: user.id,
+        reviewed_at: reviewed_at
+      })
+
+      assert_received {Kanban.Tasks, :task_reviewed, broadcasted_task}
+      assert broadcasted_task.id == updated_task.id
+      assert broadcasted_task.review_status == :approved
+    end
+
+    test "broadcasts :task_updated for general field changes", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      {:ok, updated_task} = Tasks.update_task(task, %{title: "Updated title"})
+
+      assert_received {Kanban.Tasks, :task_updated, broadcasted_task}
+      assert broadcasted_task.id == updated_task.id
+    end
+
+    test "broadcasts :task_deleted when task is deleted", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      {:ok, deleted_task} = Tasks.delete_task(task)
+
+      assert_received {Kanban.Tasks, :task_deleted, broadcasted_task}
+      assert broadcasted_task.id == deleted_task.id
+    end
+
+    test "broadcasts :task_moved when task is moved to different column", %{column: column, board: board} do
+      column2 = column_fixture(board, %{name: "Another column"})
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Clear the create message
+      assert_received {Kanban.Tasks, :task_created, _}
+
+      {:ok, moved_task} = Tasks.move_task(task, column2, 0)
+
+      assert_received {Kanban.Tasks, :task_moved, broadcasted_task}
+      assert broadcasted_task.id == moved_task.id
+    end
+
+    test "includes telemetry data for broadcasts", %{column: column, board: board} do
+      # Attach a test telemetry handler
+      test_pid = self()
+      :telemetry.attach(
+        "test-handler",
+        [:kanban, :pubsub, :broadcast],
+        fn _event_name, measurements, metadata, _config ->
+          send(test_pid, {:telemetry, measurements, metadata})
+        end,
+        nil
+      )
+
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      # Should receive telemetry event
+      assert_received {:telemetry, %{count: 1}, %{event: :task_created, task_id: task_id, board_id: board_id}}
+      assert task_id == task.id
+      assert board_id == board.id
+
+      # Clean up
+      :telemetry.detach("test-handler")
+    end
+  end
 end
