@@ -865,4 +865,156 @@ defmodule Kanban.TasksTest do
       assert Enum.at(tasks, 2).id == moved_task.id
     end
   end
+
+  describe "scalar AI fields" do
+    test "stores and retrieves planning context fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Implement user authentication",
+        complexity: :medium,
+        estimated_files: "5-7",
+        why: "Users need secure login functionality",
+        what: "Add JWT-based authentication with refresh tokens",
+        where_context: "lib/kanban_web/controllers/auth and lib/kanban/accounts"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.complexity == :medium
+      assert task.estimated_files == "5-7"
+      assert task.why == "Users need secure login functionality"
+      assert task.what == "Add JWT-based authentication with refresh tokens"
+      assert task.where_context =~ "lib/kanban_web/controllers/auth"
+    end
+
+    test "stores and retrieves implementation guidance fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Add user settings page",
+        patterns_to_follow: "Use LiveView components, follow Phoenix naming conventions",
+        database_changes: "Add settings table with user_id foreign key",
+        validation_rules: "Email must be unique, password min 12 chars"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.patterns_to_follow =~ "LiveView"
+      assert task.database_changes =~ "settings table"
+      assert task.validation_rules =~ "Email must be unique"
+    end
+
+    test "stores and retrieves observability fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Add metrics endpoint",
+        telemetry_event: "kanban.tasks.metrics_exported",
+        metrics_to_track: "Export count, export duration, error rate",
+        logging_requirements: "Log exports at info level, errors at error level"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.telemetry_event == "kanban.tasks.metrics_exported"
+      assert task.metrics_to_track =~ "Export count"
+      assert task.logging_requirements =~ "info level"
+    end
+
+    test "stores and retrieves error handling fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Add file upload",
+        error_user_message: "File upload failed. Please try again or contact support.",
+        error_on_failure: "Send alert to ops team, log full stack trace"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.error_user_message =~ "File upload failed"
+      assert task.error_on_failure =~ "Send alert to ops team"
+    end
+  end
+
+  describe "complexity validation" do
+    test "validates complexity values" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        complexity: :invalid_value
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert "is invalid" in errors_on(changeset).complexity
+    end
+
+    test "allows valid complexity values" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      for complexity <- [:small, :medium, :large] do
+        attrs = %{
+          title: "Test task #{complexity}",
+          complexity: complexity
+        }
+
+        {:ok, task} = Tasks.create_task(column, attrs)
+        assert task.complexity == complexity
+      end
+    end
+  end
+
+  describe "backward compatibility" do
+    test "creates task without scalar fields (backward compatibility)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Simple task"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.title == "Simple task"
+      assert task.complexity == :small
+      assert task.why == nil
+      assert task.telemetry_event == nil
+    end
+  end
+
+  describe "scalar field updates" do
+    test "updates scalar fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      update_attrs = %{
+        complexity: :large,
+        why: "Updated rationale",
+        telemetry_event: "updated.event"
+      }
+
+      {:ok, updated_task} = Tasks.update_task(task, update_attrs)
+
+      assert updated_task.complexity == :large
+      assert updated_task.why == "Updated rationale"
+      assert updated_task.telemetry_event == "updated.event"
+    end
+  end
 end
