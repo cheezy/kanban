@@ -10,6 +10,20 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   @impl true
   def update(%{task: task, board: board, action: action} = assigns, socket) do
+    task_data = prepare_task_data(task, board, action, assigns)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:task, task_data.task_with_associations)
+     |> assign(:column_options, task_data.column_options)
+     |> assign(:assignable_users, task_data.assignable_users)
+     |> assign(:comment_form, task_data.comment_form)
+     |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign_form(task_data.changeset)}
+  end
+
+  defp prepare_task_data(task, board, action, assigns) do
     columns = Columns.list_columns(board)
     column_id = get_column_id(assigns, task)
     changeset = build_changeset(task, column_id)
@@ -18,25 +32,27 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     board_users = Kanban.Boards.list_board_users(board)
     assignable_users = build_assignable_users_options(board_users)
 
-    # Preload task histories and comments when editing
-    task_with_associations =
-      if action == :edit_task && task.id do
-        Tasks.get_task_with_history!(task.id)
-        |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
-      else
-        task
-      end
+    task_with_associations = load_task_associations(task, action)
+    comment_form = to_form(TaskComment.changeset(%TaskComment{}, %{}))
 
-    comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
+    %{
+      task_with_associations: task_with_associations,
+      column_options: column_options,
+      assignable_users: assignable_users,
+      comment_form: comment_form,
+      changeset: changeset
+    }
+  end
 
-    {:ok,
-     socket
-     |> assign(assigns)
-     |> assign(:task, task_with_associations)
-     |> assign(:column_options, column_options)
-     |> assign(:assignable_users, assignable_users)
-     |> assign(:comment_form, to_form(comment_changeset))
-     |> assign_form(changeset)}
+  defp load_task_associations(task, :edit_task) when not is_nil(task.id) do
+    Tasks.get_task_with_history!(task.id)
+    |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+  end
+
+  defp load_task_associations(task, _action), do: task
+
+  defp field_visible?(field_visibility, field_name) do
+    Map.get(field_visibility, field_name, false)
   end
 
   @impl true
