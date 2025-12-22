@@ -13,19 +13,24 @@
 ## Acceptance Criteria
 
 - [ ] Form displays all task fields organized in sections
+- [ ] Basic fields: title, description, acceptance_criteria, type (work/defect), priority
 - [ ] Complexity dropdown (small, medium, large)
-- [ ] Estimated files dropdown (1-2, 2-3, 3-5, 5+)
-- [ ] Text inputs for why/what/where
-- [ ] Dynamic nested forms for key files (add/remove)
-- [ ] Dynamic nested forms for verification steps
-- [ ] Dynamic nested forms for pitfalls
-- [ ] Dynamic nested forms for out of scope items
-- [ ] Checkboxes for boolean fields (pubsub_required, migration_needed, etc.)
-- [ ] Dependency selector (multi-select existing tasks)
-- [ ] Form validates all required fields
+- [ ] Estimated files input (text field)
+- [ ] Text inputs for why/what/where_context
+- [ ] Dynamic embedded forms for key_files (add/remove file_path, note)
+- [ ] Dynamic embedded forms for verification_steps (add/remove step_type, step_text, expected_result)
+- [ ] Simple array inputs for technology_requirements (add/remove strings)
+- [ ] Simple array inputs for pitfalls (add/remove strings)
+- [ ] Simple array inputs for out_of_scope (add/remove strings)
+- [ ] Dependencies as string array (task identifiers)
+- [ ] Status dropdown (open, in_progress, completed, blocked)
+- [ ] Agent tracking fields: created_by_agent, completed_by_agent, completion_summary
+- [ ] Claim tracking: claimed_at, claim_expires_at, required_capabilities
+- [ ] Actual metrics: actual_complexity, actual_files_changed, time_spent_minutes
+- [ ] Review fields: needs_review checkbox, review_status, review_notes
+- [ ] Form validates all required fields (title, position, type, priority, status)
 - [ ] Form handles create and edit modes
 - [ ] Real-time validation feedback
-- [ ] Auto-save draft support (optional)
 
 ## Key Files to Read First
 
@@ -46,23 +51,28 @@
 - Use inputs_for for nested associations
 
 **Database/Schema:**
-- Tables: tasks, task_key_files, task_verification_steps, task_pitfalls, task_out_of_scope
+- Tables: tasks (only, all nested data stored as JSONB)
+- Embedded schemas: key_files, verification_steps (use cast_embed)
+- String arrays: technology_requirements, pitfalls, out_of_scope (simple arrays)
 - Migrations needed: No
-- Changeset: Use cast_assoc for nested forms
+- Changeset: Use cast_embed for key_files and verification_steps
 
 **Form Sections:**
-1. **Basic Info**: Title, description
+1. **Basic Info**: Title, description, acceptance_criteria, type (work/defect), priority
 2. **Complexity**: Dropdown, estimated files
 3. **Context**: Why, what, where (textareas)
-4. **Key Files**: Nested form (file_path, note, position)
-5. **Verification**: Nested form (type, text, expected_result)
-6. **Technical**: Patterns, database changes (textareas)
+4. **Key Files**: Embedded form (file_path, note, position)
+5. **Verification**: Embedded form (step_type, step_text, expected_result)
+6. **Technical**: Patterns, database changes, technology_requirements (textareas)
 7. **Observability**: Telemetry event, metrics, logging
 8. **Error Handling**: User message, on failure, validation rules
-9. **Integration**: Checkboxes for pubsub/channels/migration/breaking
-10. **Dependencies**: Multi-select task IDs
-11. **Pitfalls**: Nested form
-12. **Out of Scope**: Nested form
+9. **Dependencies**: String array of task identifiers
+10. **Pitfalls**: Simple string array (add/remove text items)
+11. **Out of Scope**: Simple string array (add/remove text items)
+12. **Status & Agent Tracking**: status, created_by_agent, completed_by_agent, completion_summary
+13. **Claim Tracking**: claimed_at, claim_expires_at, required_capabilities
+14. **Actual Metrics**: actual_complexity, actual_files_changed, time_spent_minutes
+15. **Review Queue**: needs_review, review_status, review_notes
 
 **Integration Points:**
 - [ ] PubSub broadcasts: Broadcast task created/updated
@@ -154,12 +164,12 @@ defmodule KanbanWeb.TaskFormComponent do
 
   def handle_event("add-key-file", _params, socket) do
     changeset = socket.assigns.changeset
-    existing = Ecto.Changeset.get_assoc(changeset, :key_files, :struct)
-    key_files = existing ++ [%Kanban.Schemas.TaskKeyFile{position: length(existing)}]
+    existing = Ecto.Changeset.get_field(changeset, :key_files) || []
+    key_files = existing ++ [%Kanban.Schemas.Task.KeyFile{position: length(existing)}]
 
     changeset =
       changeset
-      |> Ecto.Changeset.put_assoc(:key_files, key_files)
+      |> Ecto.Changeset.put_embed(:key_files, key_files)
 
     {:noreply, assign(socket, :changeset, changeset)}
   end
@@ -168,25 +178,24 @@ defmodule KanbanWeb.TaskFormComponent do
     {index, _} = Integer.parse(index)
     changeset = socket.assigns.changeset
     key_files =
-      changeset
-      |> Ecto.Changeset.get_assoc(:key_files, :struct)
+      (Ecto.Changeset.get_field(changeset, :key_files) || [])
       |> List.delete_at(index)
 
     changeset =
       changeset
-      |> Ecto.Changeset.put_assoc(:key_files, key_files)
+      |> Ecto.Changeset.put_embed(:key_files, key_files)
 
     {:noreply, assign(socket, :changeset, changeset)}
   end
 
   def handle_event("add-verification-step", _params, socket) do
     changeset = socket.assigns.changeset
-    existing = Ecto.Changeset.get_assoc(changeset, :verification_steps, :struct)
-    steps = existing ++ [%Kanban.Schemas.TaskVerificationStep{position: length(existing)}]
+    existing = Ecto.Changeset.get_field(changeset, :verification_steps) || []
+    steps = existing ++ [%Kanban.Schemas.Task.VerificationStep{position: length(existing)}]
 
     changeset =
       changeset
-      |> Ecto.Changeset.put_assoc(:verification_steps, steps)
+      |> Ecto.Changeset.put_embed(:verification_steps, steps)
 
     {:noreply, assign(socket, :changeset, changeset)}
   end
@@ -195,14 +204,49 @@ defmodule KanbanWeb.TaskFormComponent do
     {index, _} = Integer.parse(index)
     changeset = socket.assigns.changeset
     steps =
-      changeset
-      |> Ecto.Changeset.get_assoc(:verification_steps, :struct)
+      (Ecto.Changeset.get_field(changeset, :verification_steps) || [])
       |> List.delete_at(index)
 
     changeset =
       changeset
-      |> Ecto.Changeset.put_assoc(:verification_steps, steps)
+      |> Ecto.Changeset.put_embed(:verification_steps, steps)
 
+    {:noreply, assign(socket, :changeset, changeset)}
+  end
+
+  def handle_event("add-pitfall", _params, socket) do
+    changeset = socket.assigns.changeset
+    existing = Ecto.Changeset.get_field(changeset, :pitfalls) || []
+    pitfalls = existing ++ [""]
+
+    changeset = Ecto.Changeset.put_change(changeset, :pitfalls, pitfalls)
+    {:noreply, assign(socket, :changeset, changeset)}
+  end
+
+  def handle_event("remove-pitfall", %{"index" => index}, socket) do
+    {index, _} = Integer.parse(index)
+    changeset = socket.assigns.changeset
+    pitfalls = (Ecto.Changeset.get_field(changeset, :pitfalls) || []) |> List.delete_at(index)
+
+    changeset = Ecto.Changeset.put_change(changeset, :pitfalls, pitfalls)
+    {:noreply, assign(socket, :changeset, changeset)}
+  end
+
+  def handle_event("add-out-of-scope", _params, socket) do
+    changeset = socket.assigns.changeset
+    existing = Ecto.Changeset.get_field(changeset, :out_of_scope) || []
+    out_of_scope = existing ++ [""]
+
+    changeset = Ecto.Changeset.put_change(changeset, :out_of_scope, out_of_scope)
+    {:noreply, assign(socket, :changeset, changeset)}
+  end
+
+  def handle_event("remove-out-of-scope", %{"index" => index}, socket) do
+    {index, _} = Integer.parse(index)
+    changeset = socket.assigns.changeset
+    out_of_scope = (Ecto.Changeset.get_field(changeset, :out_of_scope) || []) |> List.delete_at(index)
+
+    changeset = Ecto.Changeset.put_change(changeset, :out_of_scope, out_of_scope)
     {:noreply, assign(socket, :changeset, changeset)}
   end
 
@@ -399,23 +443,99 @@ defmodule KanbanWeb.TaskFormComponent do
           multiple
         />
 
-        <!-- Pitfalls (simplified - similar pattern to key files) -->
-        <.inputs_for :let={pf} field={@changeset[:pitfalls]}>
-          <div class="flex gap-2 mb-2">
-            <.input field={pf[:pitfall_text]} type="text" placeholder="Common pitfall to avoid" class="flex-1" />
-            <.input field={pf[:position]} type="hidden" />
-            <!-- Remove button similar to key files -->
-          </div>
-        </.inputs_for>
+        <!-- Pitfalls (simple string array) -->
+        <fieldset class="border border-gray-300 rounded p-4 mt-4">
+          <legend class="text-lg font-semibold px-2">Common Pitfalls</legend>
+          <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@changeset, :pitfalls) || []) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[pitfalls][]"
+                value={pitfall}
+                placeholder="Common pitfall to avoid"
+                class="flex-1"
+              />
+              <button
+                type="button"
+                phx-click="remove-pitfall"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="px-3 py-2 bg-red-500 text-white rounded"
+              >
+                Remove
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-pitfall"
+            phx-target={@myself}
+            class="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Add Pitfall
+          </button>
+        </fieldset>
 
-        <!-- Out of Scope (similar pattern) -->
-        <.inputs_for :let={oos} field={@changeset[:out_of_scope]}>
-          <div class="flex gap-2 mb-2">
-            <.input field={oos[:item_text]} type="text" placeholder="Out of scope item" class="flex-1" />
-            <.input field={oos[:position]} type="hidden" />
-            <!-- Remove button -->
-          </div>
-        </.inputs_for>
+        <!-- Out of Scope (simple string array) -->
+        <fieldset class="border border-gray-300 rounded p-4 mt-4">
+          <legend class="text-lg font-semibold px-2">Out of Scope</legend>
+          <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@changeset, :out_of_scope) || []) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[out_of_scope][]"
+                value={item}
+                placeholder="Out of scope item"
+                class="flex-1"
+              />
+              <button
+                type="button"
+                phx-click="remove-out-of-scope"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="px-3 py-2 bg-red-500 text-white rounded"
+              >
+                Remove
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-out-of-scope"
+            phx-target={@myself}
+            class="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Add Out of Scope Item
+          </button>
+        </fieldset>
+
+        <!-- Status & Agent Tracking -->
+        <fieldset class="border border-gray-300 rounded p-4 mt-4">
+          <legend class="text-lg font-semibold px-2">Status & Agent Tracking</legend>
+          <.input
+            field={@changeset[:status]}
+            type="select"
+            label="Status"
+            options={[{"Open", "open"}, {"In Progress", "in_progress"}, {"Completed", "completed"}, {"Blocked", "blocked"}]}
+          />
+          <.input field={@changeset[:created_by_agent]} type="text" label="Created By Agent" />
+          <.input field={@changeset[:completed_by_agent]} type="text" label="Completed By Agent" />
+          <.input field={@changeset[:completion_summary]} type="textarea" label="Completion Summary" />
+        </fieldset>
+
+        <!-- Review Queue -->
+        <fieldset class="border border-gray-300 rounded p-4 mt-4">
+          <legend class="text-lg font-semibold px-2">Review Queue</legend>
+          <.input field={@changeset[:needs_review]} type="checkbox" label="Needs Review" />
+          <.input
+            field={@changeset[:review_status]}
+            type="select"
+            label="Review Status"
+            options={[{"Pending", "pending"}, {"Approved", "approved"}, {"Changes Requested", "changes_requested"}, {"Rejected", "rejected"}]}
+            prompt="Select status"
+          />
+          <.input field={@changeset[:review_notes]} type="textarea" label="Review Notes" />
+        </fieldset>
 
         <:actions>
           <.button phx-disable-with="Saving...">Save Task</.button>
@@ -446,23 +566,26 @@ defmodule Kanban.Schemas.Task do
   def changeset(task, attrs) do
     task
     |> cast(attrs, [
-      :title, :description, :position, :complexity,
-      :estimated_files, :why, :what, :where_context,
-      :patterns_to_follow, :database_changes,
-      :pubsub_required, :channels_required,
-      :telemetry_event, :metrics_to_track,
-      :logging_requirements, :error_user_message,
-      :error_on_failure, :validation_rules,
-      :migration_needed, :breaking_change,
-      :dependencies, :status
+      :title, :description, :acceptance_criteria, :position, :type, :priority,
+      :complexity, :estimated_files, :why, :what, :where_context,
+      :patterns_to_follow, :database_changes, :validation_rules,
+      :telemetry_event, :metrics_to_track, :logging_requirements,
+      :error_user_message, :error_on_failure,
+      :technology_requirements, :pitfalls, :out_of_scope,
+      :created_by_agent, :completed_at, :completed_by_agent, :completion_summary,
+      :dependencies, :status, :claimed_at, :claim_expires_at,
+      :required_capabilities, :actual_complexity, :actual_files_changed,
+      :time_spent_minutes, :needs_review, :review_status, :review_notes
     ])
-    |> validate_required([:title])
+    |> validate_required([:title, :position, :type, :priority, :status])
+    |> validate_inclusion(:type, [:work, :defect])
+    |> validate_inclusion(:priority, [:low, :medium, :high, :critical])
     |> validate_inclusion(:complexity, [:small, :medium, :large])
-    |> validate_inclusion(:estimated_files, ["1-2", "2-3", "3-5", "5+"])
-    |> cast_assoc(:key_files, with: &TaskKeyFile.changeset/2)
-    |> cast_assoc(:verification_steps, with: &TaskVerificationStep.changeset/2)
-    |> cast_assoc(:pitfalls, with: &TaskPitfall.changeset/2)
-    |> cast_assoc(:out_of_scope, with: &TaskOutOfScope.changeset/2)
+    |> validate_inclusion(:status, [:open, :in_progress, :completed, :blocked])
+    |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
+    |> validate_inclusion(:review_status, [:pending, :approved, :changes_requested, :rejected])
+    |> cast_embed(:key_files)
+    |> cast_embed(:verification_steps)
   end
 end
 ```
