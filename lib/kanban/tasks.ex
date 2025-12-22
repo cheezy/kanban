@@ -692,4 +692,69 @@ defmodule Kanban.Tasks do
       Logger.warning("Cannot broadcast #{event} for task #{task.id} - no column found")
     end
   end
+
+  @doc """
+  Returns all tasks that modify a specific file.
+
+  Uses PostgreSQL's @> (contains) operator with GIN index for fast lookups.
+
+  ## Examples
+
+      iex> get_tasks_modifying_file("lib/kanban/tasks.ex")
+      [%Task{}, ...]
+
+  """
+  def get_tasks_modifying_file(file_path) do
+    # Query for tasks where key_files JSONB array contains an element with file_path
+    from(t in Task,
+      where:
+        fragment(
+          "EXISTS (SELECT 1 FROM jsonb_array_elements(?) elem WHERE elem->>'file_path' = ?)",
+          t.key_files,
+          ^file_path
+        )
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns all tasks that require a specific technology.
+
+  Uses PostgreSQL's array contains operator.
+
+  ## Examples
+
+      iex> get_tasks_requiring_technology("ecto")
+      [%Task{}, ...]
+
+  """
+  def get_tasks_requiring_technology(tech) do
+    # Query for tasks where technology_requirements JSONB array contains the tech string
+    # Pass the array directly and let Ecto handle the JSONB conversion
+    from(t in Task,
+      where: fragment("? @> ?", t.technology_requirements, ^[tech])
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns all tasks with command-based verification steps.
+
+  ## Examples
+
+      iex> get_tasks_with_automated_verification()
+      [%Task{}, ...]
+
+  """
+  def get_tasks_with_automated_verification do
+    from(t in Task,
+      where:
+        fragment(
+          "? @> ?::jsonb",
+          t.verification_steps,
+          ^Jason.encode!([%{step_type: "command"}])
+        )
+    )
+    |> Repo.all()
+  end
 end

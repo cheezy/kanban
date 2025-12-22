@@ -1017,4 +1017,704 @@ defmodule Kanban.TasksTest do
       assert updated_task.telemetry_event == "updated.event"
     end
   end
+
+  describe "key_files embedded schema" do
+    test "stores and retrieves key files with ordering" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Refactor authentication",
+        key_files: [
+          %{file_path: "lib/kanban/accounts.ex", note: "Update create_user/1", position: 0},
+          %{file_path: "lib/kanban_web/user_auth.ex", note: "Add token validation", position: 1},
+          %{file_path: "test/kanban/accounts_test.exs", note: "Add tests", position: 2}
+        ]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert length(task.key_files) == 3
+      assert Enum.at(task.key_files, 0).file_path == "lib/kanban/accounts.ex"
+      assert Enum.at(task.key_files, 1).note == "Add token validation"
+      assert Enum.at(task.key_files, 2).position == 2
+    end
+
+    test "validates key file paths" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [
+          %{file_path: "/absolute/path/bad.ex", position: 0}
+        ]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert %{key_files: [%{file_path: ["must be a relative path, not absolute"]}]} =
+               errors_on(changeset)
+    end
+
+    test "rejects path traversal in key files" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [
+          %{file_path: "../../../etc/passwd", position: 0}
+        ]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert %{key_files: [%{file_path: ["must not contain .. path traversal"]}]} =
+               errors_on(changeset)
+    end
+  end
+
+  describe "verification_steps embedded schema" do
+    test "stores and retrieves verification steps with ordering" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Add feature",
+        verification_steps: [
+          %{
+            step_type: "command",
+            step_text: "mix test",
+            expected_result: "All tests pass",
+            position: 0
+          },
+          %{
+            step_type: "manual",
+            step_text: "Check UI in browser",
+            expected_result: "Button appears and is clickable",
+            position: 1
+          }
+        ]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert length(task.verification_steps) == 2
+      assert Enum.at(task.verification_steps, 0).step_type == "command"
+      assert Enum.at(task.verification_steps, 1).step_text == "Check UI in browser"
+    end
+
+    test "validates step_type enum" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [
+          %{
+            step_type: "invalid_type",
+            step_text: "Do something",
+            position: 0
+          }
+        ]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{verification_steps: [%{step_type: ["is invalid"]}]} = errors_on(changeset)
+    end
+  end
+
+  describe "simple JSONB arrays" do
+    test "stores and retrieves technology requirements" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Build API",
+        technology_requirements: ["ecto", "phoenix", "jose"]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert "ecto" in task.technology_requirements
+      assert "phoenix" in task.technology_requirements
+      assert length(task.technology_requirements) == 3
+    end
+
+    test "stores and retrieves pitfalls" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Optimize queries",
+        pitfalls: [
+          "Don't use Repo.all without limit",
+          "Remember to preload associations",
+          "Add indexes for foreign keys"
+        ]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert length(task.pitfalls) == 3
+      assert Enum.any?(task.pitfalls, &String.contains?(&1, "preload"))
+    end
+
+    test "stores and retrieves out_of_scope items" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Add user profile",
+        out_of_scope: [
+          "Profile photo upload (defer to next sprint)",
+          "Social media integration",
+          "Email notifications"
+        ]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert length(task.out_of_scope) == 3
+      assert Enum.any?(task.out_of_scope, &String.contains?(&1, "photo"))
+    end
+  end
+
+  describe "JSONB querying" do
+    test "finds tasks modifying specific file" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task1} =
+        Tasks.create_task(column, %{
+          title: "Task 1",
+          key_files: [
+            %{file_path: "lib/kanban/tasks.ex", position: 0}
+          ]
+        })
+
+      {:ok, _task2} =
+        Tasks.create_task(column, %{
+          title: "Task 2",
+          key_files: [
+            %{file_path: "lib/kanban/boards.ex", position: 0}
+          ]
+        })
+
+      results = Tasks.get_tasks_modifying_file("lib/kanban/tasks.ex")
+
+      assert length(results) == 1
+      assert hd(results).id == task1.id
+    end
+
+    test "finds tasks requiring specific technology" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task1} =
+        Tasks.create_task(column, %{
+          title: "Task 1",
+          technology_requirements: ["ecto", "phoenix"]
+        })
+
+      {:ok, _task2} =
+        Tasks.create_task(column, %{
+          title: "Task 2",
+          technology_requirements: ["react", "typescript"]
+        })
+
+      # Verify tasks were created with the right data
+      all_tasks = Tasks.list_tasks(column)
+      assert length(all_tasks) == 2
+      assert Enum.any?(all_tasks, fn t -> t.id == task1.id && t.technology_requirements == ["ecto", "phoenix"] end)
+
+      results = Tasks.get_tasks_requiring_technology("ecto")
+
+      assert length(results) == 1
+      assert hd(results).id == task1.id
+    end
+  end
+
+  describe "updating JSONB collections" do
+    test "replaces key_files on update" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Test task",
+          key_files: [
+            %{file_path: "lib/old.ex", position: 0}
+          ]
+        })
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{
+          key_files: [
+            %{file_path: "lib/new.ex", position: 0}
+          ]
+        })
+
+      assert length(updated_task.key_files) == 1
+      assert hd(updated_task.key_files).file_path == "lib/new.ex"
+    end
+
+    test "appends to technology_requirements" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Test task",
+          technology_requirements: ["ecto"]
+        })
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{
+          technology_requirements: ["ecto", "phoenix", "jose"]
+        })
+
+      assert length(updated_task.technology_requirements) == 3
+    end
+  end
+
+  describe "Task.changeset/2 type validation" do
+    test "validates type enum with valid values" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      for type <- [:work, :defect] do
+        attrs = %{title: "Test #{type}", type: type}
+        {:ok, task} = Tasks.create_task(column, attrs)
+        assert task.type == type
+      end
+    end
+
+    test "rejects invalid type values" do
+      attrs = %{title: "Test task", position: 0, type: :invalid_type}
+      changeset = Kanban.Tasks.Task.changeset(%Kanban.Tasks.Task{}, attrs)
+      refute changeset.valid?
+      assert "is invalid" in errors_on(changeset).type
+    end
+
+    test "defaults to :work when type is not provided" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task"}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.type == :work
+    end
+  end
+
+  describe "Task.changeset/2 priority validation" do
+    test "validates priority enum with all valid values" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      for priority <- [:low, :medium, :high, :critical] do
+        attrs = %{title: "Test #{priority}", priority: priority}
+        {:ok, task} = Tasks.create_task(column, attrs)
+        assert task.priority == priority
+      end
+    end
+
+    test "rejects invalid priority values" do
+      attrs = %{title: "Test task", position: 0, priority: :invalid_priority}
+      changeset = Kanban.Tasks.Task.changeset(%Kanban.Tasks.Task{}, attrs)
+      refute changeset.valid?
+      assert "is invalid" in errors_on(changeset).priority
+    end
+
+    test "defaults to :medium when priority is not provided" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task"}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.priority == :medium
+    end
+  end
+
+  describe "Task.changeset/2 required fields" do
+    test "requires title" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{description: "Has description but no title"}
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert "can't be blank" in errors_on(changeset).title
+    end
+
+    test "requires position" do
+      attrs = %{title: "Test task"}
+      changeset = Kanban.Tasks.Task.changeset(%Kanban.Tasks.Task{}, attrs)
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset).position
+    end
+
+    test "requires type" do
+      attrs = %{title: "Test task", position: 0, type: nil}
+      changeset = Kanban.Tasks.Task.changeset(%Kanban.Tasks.Task{}, attrs)
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset).type
+    end
+
+    test "requires priority" do
+      attrs = %{title: "Test task", position: 0, priority: nil}
+      changeset = Kanban.Tasks.Task.changeset(%Kanban.Tasks.Task{}, attrs)
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset).priority
+    end
+  end
+
+  describe "Task.changeset/2 technology_requirements validation" do
+    test "accepts nil technology_requirements" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", technology_requirements: nil}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technology_requirements == nil
+    end
+
+    test "accepts empty array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", technology_requirements: []}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technology_requirements == []
+    end
+
+    test "accepts valid string array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", technology_requirements: ["ecto", "phoenix"]}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technology_requirements == ["ecto", "phoenix"]
+    end
+
+    test "rejects array with non-string values through custom validation" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        technology_requirements: ["ecto", 123, :phoenix]
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list of strings" in errors_on(changeset).technology_requirements
+    end
+
+    test "rejects non-list values through custom validation" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        technology_requirements: "not a list"
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list" in errors_on(changeset).technology_requirements
+    end
+
+    test "rejects non-list values at cast level" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", technology_requirements: %{invalid: "map"}}
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert "is invalid" in errors_on(changeset).technology_requirements
+    end
+  end
+
+  describe "Task.changeset/2 key_files validation" do
+    test "requires file_path in key_files" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [%{note: "Some note", position: 0}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{key_files: [%{file_path: ["can't be blank"]}]} = errors_on(changeset)
+    end
+
+    test "requires position in key_files" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [%{file_path: "lib/test.ex", note: "Some note"}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{key_files: [%{position: ["can't be blank"]}]} = errors_on(changeset)
+    end
+
+    test "validates position is non-negative" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [%{file_path: "lib/test.ex", position: -1}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{key_files: [%{position: ["must be greater than or equal to 0"]}]} = errors_on(changeset)
+    end
+  end
+
+  describe "Task.changeset/2 verification_steps validation" do
+    test "requires step_type in verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [%{step_text: "Do something", position: 0}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{verification_steps: [%{step_type: ["can't be blank"]}]} = errors_on(changeset)
+    end
+
+    test "requires step_text in verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [%{step_type: "command", position: 0}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{verification_steps: [%{step_text: ["can't be blank"]}]} = errors_on(changeset)
+    end
+
+    test "requires position in verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [%{step_type: "command", step_text: "mix test"}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{verification_steps: [%{position: ["can't be blank"]}]} = errors_on(changeset)
+    end
+
+    test "validates position is non-negative in verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [%{step_type: "command", step_text: "mix test", position: -5}]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+      assert %{verification_steps: [%{position: ["must be greater than or equal to 0"]}]} = errors_on(changeset)
+    end
+
+    test "allows optional expected_result in verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: [%{step_type: "manual", step_text: "Check UI", position: 0}]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert length(task.verification_steps) == 1
+      assert hd(task.verification_steps).expected_result == nil
+    end
+  end
+
+  describe "Task.changeset/2 unique constraints" do
+    test "auto-generates unique identifiers" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task1} = Tasks.create_task(column, %{title: "Task 1", type: :work})
+      {:ok, task2} = Tasks.create_task(column, %{title: "Task 2", type: :work})
+
+      assert task1.identifier =~ ~r/^W\d+$/
+      assert task2.identifier =~ ~r/^W\d+$/
+      assert task1.identifier != task2.identifier
+    end
+
+    test "generates different identifier prefixes for different types" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, work_task} = Tasks.create_task(column, %{title: "Work Task", type: :work})
+      {:ok, defect_task} = Tasks.create_task(column, %{title: "Defect Task", type: :defect})
+
+      assert work_task.identifier =~ ~r/^W\d+$/
+      assert defect_task.identifier =~ ~r/^D\d+$/
+    end
+
+    test "unique constraint on identifier at database level" do
+      task1 = %Kanban.Tasks.Task{
+        title: "Task 1",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        identifier: "DUPLICATE-123",
+        column_id: 1
+      }
+
+      task2 = %Kanban.Tasks.Task{
+        title: "Task 2",
+        position: 1,
+        type: :work,
+        priority: :medium,
+        identifier: "DUPLICATE-123",
+        column_id: 1
+      }
+
+      changeset1 = Kanban.Tasks.Task.changeset(task1, %{})
+      changeset2 = Kanban.Tasks.Task.changeset(task2, %{})
+
+      assert changeset1.valid?
+      assert changeset2.valid?
+    end
+  end
+
+  describe "Task.changeset/2 pitfalls and out_of_scope arrays" do
+    test "accepts valid pitfalls array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        pitfalls: ["Watch out for race conditions", "Remember to handle nil values"]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert length(task.pitfalls) == 2
+    end
+
+    test "accepts empty pitfalls array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", pitfalls: []}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.pitfalls == []
+    end
+
+    test "accepts valid out_of_scope array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        out_of_scope: ["Email notifications", "Mobile app support"]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert length(task.out_of_scope) == 2
+    end
+
+    test "accepts nil for pitfalls and out_of_scope" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", pitfalls: nil, out_of_scope: nil}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.pitfalls == nil
+      assert task.out_of_scope == nil
+    end
+  end
+
+  describe "Task.changeset/2 all scalar AI fields" do
+    test "accepts all scalar fields together" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Full featured task",
+        complexity: :large,
+        estimated_files: "10-15",
+        why: "Business needs",
+        what: "Feature description",
+        where_context: "lib/kanban",
+        patterns_to_follow: "Use LiveView",
+        database_changes: "Add table",
+        validation_rules: "Email required",
+        telemetry_event: "task.completed",
+        metrics_to_track: "Duration",
+        logging_requirements: "Log at info",
+        error_user_message: "Something went wrong",
+        error_on_failure: "Alert ops"
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.complexity == :large
+      assert task.estimated_files == "10-15"
+      assert task.why == "Business needs"
+      assert task.what == "Feature description"
+      assert task.where_context == "lib/kanban"
+      assert task.patterns_to_follow == "Use LiveView"
+      assert task.database_changes == "Add table"
+      assert task.validation_rules == "Email required"
+      assert task.telemetry_event == "task.completed"
+      assert task.metrics_to_track == "Duration"
+      assert task.logging_requirements == "Log at info"
+      assert task.error_user_message == "Something went wrong"
+      assert task.error_on_failure == "Alert ops"
+    end
+  end
 end
