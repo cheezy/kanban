@@ -331,50 +331,36 @@ end
 ```
 
 **Context Functions:**
+
+**IMPORTANT:** Always use the `Tasks` context functions (`Tasks.create_task/2`, `Tasks.update_task/2`, `Tasks.delete_task/1`) instead of calling `Repo` directly. These context functions include critical broadcasting logic via Phoenix PubSub that ensures all connected LiveView clients receive real-time updates.
+
 ```elixir
 defmodule Kanban.Tasks do
   alias Kanban.Repo
   alias Kanban.Schemas.Task
 
-  def list_tasks(params \\ %{}) do
-    Task
-    |> maybe_filter_by_status(params["status"])
-    |> maybe_filter_by_complexity(params["complexity"])
-    |> Repo.all()
-    |> Repo.preload([:key_files, :verification_steps, :pitfalls, :out_of_scope, :column])
-  end
+  # Use existing context functions - they handle PubSub broadcasting automatically
+  # Located in lib/kanban/tasks.ex
 
-  def get_task!(id) do
-    Task
-    |> Repo.get!(id)
-    |> Repo.preload([:key_files, :verification_steps, :pitfalls, :out_of_scope, :column])
-  end
+  # Key functions for API:
+  # - Tasks.create_task(column, attrs) - Creates task and broadcasts :task_created
+  # - Tasks.update_task(task, attrs) - Updates task and broadcasts appropriate event
+  # - Tasks.delete_task(task) - Deletes task and broadcasts :task_deleted
+  # - Tasks.get_task!(id) - Gets task with preloaded associations
+  # - Tasks.move_task(task, column, position) - Moves task and broadcasts :task_moved
 
-  def create_task(attrs \\ %{}) do
-    %Task{}
-    |> Task.changeset(attrs)
-    |> Repo.insert()
-  end
+  # Broadcasting is handled automatically:
+  # - create_task/2 broadcasts {Kanban.Tasks, :task_created, task}
+  # - update_task/2 broadcasts based on what changed:
+  #   - :task_status_changed when status changes
+  #   - :task_claimed when claimed_at changes
+  #   - :task_completed when completed_at changes
+  #   - :task_reviewed when review_status changes
+  #   - :task_updated for other updates
+  # - delete_task/1 broadcasts {Kanban.Tasks, :task_deleted, task}
+  # - move_task/3 broadcasts {Kanban.Tasks, :task_moved, task}
 
-  def update_task(%Task{} = task, attrs) do
-    task
-    |> Task.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def delete_task(%Task{} = task) do
-    Repo.delete(task)
-  end
-
-  defp maybe_filter_by_status(query, nil), do: query
-  defp maybe_filter_by_status(query, status) do
-    from t in query, where: t.status == ^status
-  end
-
-  defp maybe_filter_by_complexity(query, nil), do: query
-  defp maybe_filter_by_complexity(query, complexity) do
-    from t in query, where: t.complexity == ^complexity
-  end
+  # All broadcasts go to "board:#{board_id}" topic
 end
 ```
 
