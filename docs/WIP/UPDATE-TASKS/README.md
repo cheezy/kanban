@@ -7,7 +7,7 @@
 
 ## Description
 
-Enable the Kanban application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
+Enable the Stride application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
 
 **Important:** Tasks have two types: **Work** (new functionality, enhancements) and **Defect** (bug fixes, corrections). This goal contains Work tasks only.
 

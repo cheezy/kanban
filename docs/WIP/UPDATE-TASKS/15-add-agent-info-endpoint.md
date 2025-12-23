@@ -4,7 +4,7 @@
 
 ## Description
 
-**WHY:** AI agents need to understand how the Kanban system works, what's expected of them, workflow requirements, and system conventions before they can effectively complete tasks. Providing this information via an API endpoint ensures agents always have access to current documentation.
+**WHY:** AI agents need to understand how the Stride system works, what's expected of them, workflow requirements, and system conventions before they can effectively complete tasks. Providing this information via an API endpoint ensures agents always have access to current documentation.
 
 **WHAT:** Create GET /api/agent/info endpoint that returns comprehensive JSON documentation including system overview, workflow expectations, task lifecycle, ID conventions, hook system, review process, API endpoints, and best practices.
 
@@ -1123,4 +1123,4 @@ Increment `documentation_version` field when making updates.
 
 ## Summary
 
-The GET /api/agent/info endpoint provides comprehensive, versioned documentation to AI agents about how the Kanban system works, what's expected of them, and how to successfully complete tasks. This single endpoint eliminates the need for agents to hunt through multiple documentation files or ask humans basic questions, ensuring all agents receive consistent, up-to-date information about system operation, workflows, hooks, review processes, and best practices.
+The GET /api/agent/info endpoint provides comprehensive, versioned documentation to AI agents about how the Stride system works, what's expected of them, and how to successfully complete tasks. This single endpoint eliminates the need for agents to hunt through multiple documentation files or ask humans basic questions, ensuring all agents receive consistent, up-to-date information about system operation, workflows, hooks, review processes, and best practices.

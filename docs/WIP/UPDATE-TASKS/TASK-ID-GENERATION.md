@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Kanban application generates human-readable, prefixed identifiers for all task types to make them easy to reference in conversation, documentation, and code reviews. Each entity type has a unique prefix letter followed by a sequential number.
+The Stride application generates human-readable, prefixed identifiers for all task types to make them easy to reference in conversation, documentation, and code reviews. Each entity type has a unique prefix letter followed by a sequential number.
 
 **Important:** The system uses two types of tasks: **Work** (new functionality) and **Defect** (bug fixes). Goals are large initiatives that contain multiple tasks.
 

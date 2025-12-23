@@ -9,9 +9,9 @@
 
 ## Description
 
-Enable the Kanban application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
+Enable the Stride application to store and manage tasks using the rich format defined in `docs/WIP/TASKS.md`, including 18 categories of task information, key files, verification commands, observability requirements, and completion summaries.
 
-This goal transforms the Kanban application from a simple task tracker into an AI-friendly task management system that can be read and updated by AI agents while remaining useful for human developers.
+This goal transforms the Stride application from a simple task tracker into an AI-friendly task management system that can be read and updated by AI agents while remaining useful for human developers.
 
 **Important:** Tasks have two types: **Work** (new functionality, enhancements) and **Defect** (bug fixes, corrections). This goal contains Work tasks only.
 
