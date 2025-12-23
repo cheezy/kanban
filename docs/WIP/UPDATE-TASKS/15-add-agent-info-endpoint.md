@@ -16,7 +16,7 @@
 - [ ] Includes system overview and purpose
 - [ ] Documents complete task workflow (claim → work → complete → review)
 - [ ] Explains task ID prefixes (G, W, D)
-- [ ] Documents hook system and AGENTS.md file
+- [ ] Documents hook system and .stride.md configuration file
 - [ ] Explains needs_review flag and review workflow
 - [ ] Lists all available API endpoints with descriptions
 - [ ] Includes best practices and common pitfalls
@@ -68,7 +68,7 @@
 - Organize by topic (workflow, hooks, API, best practices)
 - Provide examples for each major concept
 - Keep response comprehensive but concise
-- Include links to AGENTS.md and other key resources
+- Include references to .stride.md (hooks) and .stride_auth.md (authentication)
 
 **Database/Schema:**
 - Tables: None (read-only endpoint, no database interaction)
@@ -103,8 +103,9 @@
 **Commands to Run:**
 
 ```bash
-# Test endpoint
-export TOKEN="kan_dev_your_token_here"
+# Load authentication from .stride_auth.md
+# (or export manually)
+export TOKEN="stride_dev_your_token_here"
 
 # Get agent documentation
 curl http://localhost:4000/api/agent/info \
@@ -149,7 +150,7 @@ mix precommit
 2. Verify response includes all expected sections
 3. Verify workflow section explains claim → work → complete flow
 4. Verify task_identifiers section explains G, W, D prefixes and 2-level hierarchy
-5. Verify hooks section references AGENTS.md
+5. Verify hooks section references .stride.md configuration file
 6. Verify review_process section explains needs_review flag
 7. Verify api_endpoints section lists all available endpoints
 8. Verify examples section provides practical workflows including goal creation
@@ -220,7 +221,7 @@ defmodule KanbanWeb.API.AgentController do
             step: 4,
             action: "Execute workflow hooks",
             hook: "after_claim, before_column_enter[In Progress], etc.",
-            description: "Run commands defined in AGENTS.md file at workflow transition points",
+            description: "Run commands defined in .stride.md file at workflow transition points",
             notes: "See hooks section below for complete documentation"
           },
           %{
@@ -271,7 +272,8 @@ defmodule KanbanWeb.API.AgentController do
 
       hooks: %{
         description: "Execute custom commands at workflow transition points",
-        config_file: "AGENTS.md in repository root",
+        config_file: ".stride.md in repository root (version-controlled)",
+        auth_file: ".stride_auth.md in repository root (NOT version-controlled, contains API tokens)",
         hook_points: [
           "before_claim - Runs before claiming a task",
           "after_claim - Runs after successfully claiming a task",
@@ -578,15 +580,16 @@ defmodule KanbanWeb.API.AgentController do
       best_practices: %{
         before_starting: [
           "Read this documentation endpoint first",
-          "Review AGENTS.md file in repository root",
-          "Understand the task ID prefix system (E, F, W, D)",
+          "Review .stride.md file for hook configuration",
+          "Set up .stride_auth.md with API authentication (do NOT commit this file)",
+          "Understand the task ID prefix system (G, W, D)",
           "Check your capabilities match task requirements",
           "Use validate endpoint before claiming"
         ],
         when_claiming: [
           "Always use GET /api/tasks/next instead of selecting tasks yourself",
           "Claim expires in 60 minutes - complete work or unclaim before timeout",
-          "Execute after_claim hook if defined in AGENTS.md",
+          "Execute after_claim hook if defined in .stride.md",
           "Move task to 'In Progress' column if not automatic"
         ],
         during_work: [
@@ -633,9 +636,10 @@ defmodule KanbanWeb.API.AgentController do
           "Don't claim tasks beyond your capabilities",
           "Don't skip verification steps",
           "Don't ignore hook execution failures",
+          "Don't commit .stride_auth.md to version control (add to .gitignore)",
           "Don't leave tasks claimed if you can't complete them",
           "Don't implement features marked as out_of_scope",
-          "Don't forget to execute AGENTS.md hooks",
+          "Don't forget to execute .stride.md hooks",
           "Don't assume needs_review=false means skip quality checks",
           "Don't just document follow-up tasks - create them via POST /api/tasks"
         ],
@@ -679,7 +683,7 @@ defmodule KanbanWeb.API.AgentController do
             },
             %{
               step: "Execute after_claim hook",
-              hook: "Run commands from AGENTS.md after_claim section",
+              hook: "Run commands from .stride.md after_claim section",
               example: "git checkout -b task-42-update-api-documentation"
             },
             %{
@@ -688,7 +692,7 @@ defmodule KanbanWeb.API.AgentController do
             },
             %{
               step: "Execute before_complete hook",
-              hook: "Run commands from AGENTS.md before_complete section",
+              hook: "Run commands from .stride.md before_complete section",
               example: "mix precommit (runs tests, linters, etc.)"
             },
             %{
@@ -703,7 +707,7 @@ defmodule KanbanWeb.API.AgentController do
             },
             %{
               step: "Execute after_complete hook",
-              hook: "Run commands from AGENTS.md after_complete section",
+              hook: "Run commands from .stride.md after_complete section",
               example: "git commit && git push"
             },
             %{
@@ -865,8 +869,8 @@ defmodule KanbanWeb.API.AgentController do
           ]
         },
 
-        example_agents_md_file: %{
-          description: "Example AGENTS.md file defining hook behaviors",
+        example_stride_md_file: %{
+          description: "Example .stride.md file defining hook behaviors",
           content: """
 # Agent Configuration
 
@@ -1002,7 +1006,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert task_identifiers["hierarchy"] =~ "2-level"
 
       # Verify hooks section
-      assert hooks["config_file"] == "AGENTS.md in repository root"
+      assert hooks["config_file"] == ".stride.md in repository root (version-controlled)"
+      assert hooks["auth_file"] == ".stride_auth.md in repository root (NOT version-controlled, contains API tokens)"
       assert length(hooks["hook_points"]) > 0
       assert length(hooks["environment_variables"]) > 0
 

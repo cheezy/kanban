@@ -70,19 +70,39 @@ boards:read      # Read board structure
     - Selects scopes
     - Copies token
 
-2. User configures me (via env var or config)
+2. User configures me via `.stride_auth.md` file (NOT version-controlled)
 
-    ```text
+    **Create `.stride_auth.md` in project root:**
+    ```markdown
+    # Stride API Authentication
+
+    **DO NOT commit this file to version control!**
+
+    ## API Configuration
+
+    - **API URL:** `http://localhost:4000`
+    - **API Token:** `stride_live_abc123...`
+
+    ## Environment Variables
+
+    ```bash
     export STRIDE_API_TOKEN="stride_live_abc123..."
     export STRIDE_API_URL="http://localhost:4000"
     ```
+    ```
 
-3. I make requests
+    **Add to `.gitignore`:**
+    ```
+    .stride_auth.md
+    ```
+
+3. I read `.stride_auth.md` and make requests
 
     ```elixir
+    # Agent reads auth from .stride_auth.md
     Req.get!(
-    "#{System.get_env("STRIDE_API_URL")}/api/tasks/ready",
-    auth: {:bearer, System.get_env("STRIDE_API_TOKEN")}
+      "http://localhost:4000/api/tasks/ready",
+      auth: {:bearer, "stride_live_abc123..."}
     )
     ```
 

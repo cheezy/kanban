@@ -244,6 +244,20 @@ The system has made the following design decisions for AI optimization:
 
 This creates a **Kanban board that speaks AI natively** - structured enough for automation, flexible enough for human collaboration.
 
+### Configuration Files
+
+**`.stride.md`** - Version-controlled agent configuration
+- Hook definitions (before_claim, after_complete, etc.)
+- Agent capabilities
+- Workflow automation scripts
+
+**`.stride_auth.md`** - NOT version-controlled (add to .gitignore)
+- API authentication tokens
+- API endpoint URLs
+- Sensitive credentials
+
+See [AI-AUTHENTICATION.md](AI-AUTHENTICATION.md) and [UPDATE-TASKS/AGENTS-AND-HOOKS.md](UPDATE-TASKS/AGENTS-AND-HOOKS.md) for details.
+
 ### Related Documentation
 
 - [UPDATE-TASKS/README.md](UPDATE-TASKS/README.md) - Complete implementation plan with 13 tasks

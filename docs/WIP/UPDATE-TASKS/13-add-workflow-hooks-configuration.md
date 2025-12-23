@@ -27,6 +27,7 @@
 - `lib/kanban/boards.ex` - Board context
 - `lib/kanban/columns.ex` - Column context
 - `docs/WIP/UPDATE-TASKS/AGENTS-AND-HOOKS.md` - Hook design specification
+- `.stride.md` - Agent hook configuration file (version-controlled)
 
 ## Technical Notes
 

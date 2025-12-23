@@ -154,11 +154,11 @@ Tasks have a `needs_review` boolean field (default: false) that controls whether
 
 This allows humans to focus review effort on high-risk changes while allowing agents to autonomously complete low-risk tasks.
 
-## Agent Configuration (AGENTS.md)
+## Agent Configuration (.stride.md)
 
-Agents define their behavior for each hook point in an `AGENTS.md` file at the root of the repository.
+Agents define their behavior for each hook point in a `.stride.md` file at the root of the repository. This file should be checked into version control so the entire team can see and use the configured hooks.
 
-### AGENTS.md Format
+### .stride.md Format
 
 ```markdown
 # Agent Configuration
@@ -384,7 +384,7 @@ When an agent performs an action that has hooks:
    }
    ```
 
-4. **Agent reads AGENTS.md** and finds matching hook implementation
+4. **Agent reads .stride.md** and finds matching hook implementation
 
 5. **Agent executes hook commands**:
    ```bash
@@ -553,7 +553,7 @@ UNCLAIM_REASON="Missing OAuth2 library dependencies"  # Only for unclaim hooks
 
 ### Unit Tests
 
-1. Test hook parsing from AGENTS.md
+1. Test hook parsing from .stride.md
 2. Test environment variable substitution
 3. Test timeout enforcement
 4. Test error handling for failing hooks
@@ -570,7 +570,7 @@ UNCLAIM_REASON="Missing OAuth2 library dependencies"  # Only for unclaim hooks
 
 ### Manual Testing
 
-1. Create AGENTS.md with sample hooks
+1. Create .stride.md with sample hooks
 2. Enable hooks in board settings
 3. Claim task via API as agent
 4. Verify hooks execute correctly
@@ -589,7 +589,7 @@ Add workflow_hooks field to boards table and enter_hooks/exit_hooks to columns t
 
 **Complexity:** Large | **Est. Files:** 5-6
 
-Build system to parse AGENTS.md, substitute environment variables, execute hooks, handle timeouts, and report results.
+Build system to parse .stride.md, substitute environment variables, execute hooks, handle timeouts, and report results.
 
 ### Task: Add Hook Reporting to API (New Task)
 
@@ -602,7 +602,7 @@ Add endpoints for agents to report hook execution status and results.
 1. **Conditional Hooks**: Run hooks only if certain conditions met
 2. **Hook Dependencies**: Chain multiple hooks together
 3. **Hook Templates**: Predefined hook libraries
-4. **Visual Hook Editor**: UI for editing AGENTS.md
+4. **Visual Hook Editor**: UI for editing .stride.md
 5. **Hook Testing Tool**: Test hooks without claiming tasks
 6. **Hook Marketplace**: Share hook configurations
 7. **Remote Hook Execution**: Run hooks on separate servers

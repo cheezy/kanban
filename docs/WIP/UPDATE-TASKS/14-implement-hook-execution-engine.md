@@ -6,13 +6,13 @@
 
 **WHY:** Agents need to execute custom commands at workflow transition points (before/after claim, before/after column transitions, before/after completion).
 
-**WHAT:** Build system to parse AGENTS.md file, substitute environment variables in hook commands, execute hooks with timeout enforcement, capture output, and handle errors. Integrate hook execution into task workflow (claim, move, complete, unclaim).
+**WHAT:** Build system to parse .stride.md file, substitute environment variables in hook commands, execute hooks with timeout enforcement, capture output, and handle errors. Integrate hook execution into task workflow (claim, move, complete, unclaim).
 
-**WHERE:** New Hooks context module, Task workflow integration, AGENTS.md parser
+**WHERE:** New Hooks context module, Task workflow integration, .stride.md parser
 
 ## Acceptance Criteria
 
-- [ ] Parser reads and parses AGENTS.md file format
+- [ ] Parser reads and parses .stride.md file format
 - [ ] Hook commands extracted by agent name and hook point
 - [ ] Environment variables substituted in hook commands
 - [ ] Hook execution with timeout enforcement
@@ -35,14 +35,14 @@
 **Patterns to Follow:**
 - Use `System.cmd/3` for executing hook commands
 - Use `Task.async/1` with timeout for hook execution
-- Parse AGENTS.md using regex or markdown parser
+- Parse .stride.md using regex or markdown parser
 - Substitute environment variables before execution
 - Capture all output for debugging
 
 **Architecture:**
 ```
 Kanban.Hooks (new context)
-├── Parser - Parse AGENTS.md file
+├── Parser - Parse .stride.md file
 ├── Executor - Execute hook commands
 ├── Environment - Build environment variables
 └── Reporter - Report hook execution results
@@ -61,8 +61,8 @@ No new tables needed. Hook execution is stateless but logged via telemetry.
 
 **Commands to Run:**
 ```bash
-# Create AGENTS.md in project root
-cat > AGENTS.md <<'EOF'
+# Create .stride.md in project root (version-controlled)
+cat > .stride.md <<'EOF'
 # Agent Configuration
 
 ## Agent: Claude Sonnet 4.5
@@ -97,8 +97,8 @@ EOF
 iex -S mix
 alias Kanban.{Hooks, Tasks}
 
-# Parse AGENTS.md
-{:ok, agents} = Hooks.Parser.parse_agents_md("AGENTS.md")
+# Parse .stride.md
+{:ok, agents} = Hooks.Parser.parse_agents_md(".stride.md")
 
 # Execute a hook
 env = Hooks.Environment.build(task, board, column, agent_name: "Claude Sonnet 4.5")

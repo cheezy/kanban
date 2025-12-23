@@ -87,6 +87,27 @@ This goal is organized into 13 tasks total. All tasks are flat (no parent/child 
 
 **Philosophy:** Start using the system we're building as soon as each feature becomes available.
 
+### Setup: Configuration Files
+
+Before using the API workflow, set up your local configuration:
+
+**1. Create `.stride.md` (version-controlled)** - Agent hook configuration
+```bash
+# This file should be committed to version control
+touch .stride.md
+```
+
+**2. Create `.stride_auth.md` (NOT version-controlled)** - API authentication
+```bash
+# Create file for authentication tokens
+touch .stride_auth.md
+
+# Add to .gitignore to prevent accidental commits
+echo ".stride_auth.md" >> .gitignore
+```
+
+See [AI-AUTHENTICATION.md](../AI-AUTHENTICATION.md) for `.stride_auth.md` format and [AGENTS-AND-HOOKS.md](AGENTS-AND-HOOKS.md) for `.stride.md` format.
+
 ### Phase-by-Phase Adoption
 
 #### Phase 1-2 (Tasks 01-05): Manual/UI Entry
@@ -97,7 +118,7 @@ This goal is organized into 13 tasks total. All tasks are flat (no parent/child 
 
 #### Phase 3 (Tasks 06-08): API Transition
 
-- Task 06: Create API token for yourself
+- Task 06: Create API token and save to `.stride_auth.md`
 - Task 07: **START HERE** - Use POST /api/tasks to create task 08
 - Task 08: Use POST /api/tasks/claim to claim remaining tasks
 
@@ -109,6 +130,7 @@ This goal is organized into 13 tasks total. All tasks are flat (no parent/child 
 - Verify GET /api/tasks/next returns correct task
 - Test unclaim if you get blocked
 - Use GET /api/agent/info for guidance
+- Configure hooks in `.stride.md` for automation
 
 ### Benefits
 

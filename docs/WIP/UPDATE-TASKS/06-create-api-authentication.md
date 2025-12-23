@@ -225,12 +225,45 @@ mix precommit
 6. Add metadata: model="claude-3.5-sonnet"
 7. Click "Generate Token"
 8. Copy token (shown once with warning it won't be shown again)
-9. Use token in curl to test API endpoint
-10. Verify token appears in "Active Tokens" list
-11. Test API endpoint with valid token (should work)
-12. Test API endpoint without token (should 401)
-13. Test API endpoint with invalid token (should 401)
-14. Click "Revoke" on token
+9. **Save token to `.stride_auth.md`** (NOT version-controlled)
+10. Use token in curl to test API endpoint
+11. Verify token appears in "Active Tokens" list
+
+**Create `.stride_auth.md`:**
+```markdown
+# Stride API Authentication
+
+**DO NOT commit this file to version control!**
+
+## API Configuration
+
+- **API URL:** `http://localhost:4000`
+- **API Token:** `stride_dev_abc123...` (paste your token here)
+- **Token Name:** Development Agent
+- **Scopes:** tasks:read, tasks:write
+- **Capabilities:** code_generation, testing
+
+## Usage
+
+```bash
+export STRIDE_API_TOKEN="stride_dev_abc123..."
+export STRIDE_API_URL="http://localhost:4000"
+
+curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  $STRIDE_API_URL/api/tasks/ready
+```
+```
+
+**Add to `.gitignore`:**
+```
+.stride_auth.md
+```
+
+**Continue Testing:**
+12. Test API endpoint with valid token (should work)
+13. Test API endpoint without token (should 401)
+14. Test API endpoint with invalid token (should 401)
+15. Click "Revoke" on token
 15. Test API with revoked token (should 401)
 16. Verify token moved to "Revoked Tokens" section
 17. Check last_used_at timestamp updates after API calls

@@ -52,7 +52,11 @@ Flat tasks vs. hierarchical subtasks - which to implement?
 **Integration:** When creating tasks (flat or hierarchical), use the TASKS.md template structure in JSON format.
 
 ### [AI-AUTHENTICATION.md](AI-AUTHENTICATION.md)
-How AI agents authenticate to the API.
+How AI agents authenticate to the API via Bearer tokens stored in `.stride_auth.md`.
+
+**Configuration Files:**
+- **`.stride.md`** - Version-controlled agent configuration (hooks, capabilities, workflow scripts)
+- **`.stride_auth.md`** - NOT version-controlled (API tokens, authentication credentials) - **Add to .gitignore!**
 
 ### [UI-INTEGRATION.md](UI-INTEGRATION.md)
 How the Kanban UI displays AI-created vs. human-created tasks.
@@ -81,6 +85,25 @@ AI-WORKFLOW.md
 TASK-BREAKDOWN.md
     └── Whether flat or hierarchical, uses TASKS.md structure
 ```
+
+## Quick Start: Setup for AI Agents
+
+**Before creating or executing tasks:**
+
+1. **Create `.stride.md`** (version-controlled) - Agent hook configuration
+   ```bash
+   touch .stride.md
+   # Add workflow hooks, capabilities, and automation scripts
+   # See UPDATE-TASKS/AGENTS-AND-HOOKS.md for format
+   ```
+
+2. **Create `.stride_auth.md`** (NOT version-controlled) - API authentication
+   ```bash
+   touch .stride_auth.md
+   echo ".stride_auth.md" >> .gitignore
+   # Store API tokens and credentials here
+   # See AI-AUTHENTICATION.md for format
+   ```
 
 ## Quick Start: Creating AI-Friendly Tasks
 
