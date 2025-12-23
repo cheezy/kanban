@@ -42,6 +42,11 @@ defmodule Kanban.Tasks.Task do
     field :pitfalls, {:array, :string}
     field :out_of_scope, {:array, :string}
 
+    # AI Context Fields (W23)
+    field :security_considerations, {:array, :string}, default: []
+    field :testing_strategy, :map, default: %{}
+    field :integration_points, :map, default: %{}
+
     # Creator tracking (02)
     field :created_by_agent, :string
 
@@ -120,6 +125,10 @@ defmodule Kanban.Tasks.Task do
       :technology_requirements,
       :pitfalls,
       :out_of_scope,
+      # AI Context Fields (W23)
+      :security_considerations,
+      :testing_strategy,
+      :integration_points,
       # Creator tracking (02)
       :created_by_id,
       :created_by_agent,
@@ -150,6 +159,7 @@ defmodule Kanban.Tasks.Task do
     ])
     |> cast_embed(:key_files)
     |> cast_embed(:verification_steps)
+    |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority, :status])
     |> validate_inclusion(:type, [:work, :defect])
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical])
@@ -164,6 +174,9 @@ defmodule Kanban.Tasks.Task do
     |> validate_claim_expiration()
     |> validate_completion_fields()
     |> validate_review_fields()
+    |> validate_security_considerations()
+    |> validate_testing_strategy()
+    |> validate_integration_points()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:assigned_to_id)
     |> foreign_key_constraint(:created_by_id)
@@ -171,6 +184,27 @@ defmodule Kanban.Tasks.Task do
     |> foreign_key_constraint(:reviewed_by_id)
     |> unique_constraint([:column_id, :position])
     |> unique_constraint(:identifier)
+  end
+
+  defp normalize_ai_context_fields(changeset) do
+    changeset
+    |> normalize_field(:security_considerations, [])
+    |> normalize_field(:testing_strategy, %{})
+    |> normalize_field(:integration_points, %{})
+  end
+
+  defp normalize_field(changeset, field, default) do
+    case get_change(changeset, field) do
+      nil ->
+        if is_nil(get_field(changeset, field)) do
+          put_change(changeset, field, default)
+        else
+          changeset
+        end
+
+      _value ->
+        changeset
+    end
   end
 
   defp validate_technology_requirements(changeset) do
@@ -298,6 +332,112 @@ defmodule Kanban.Tasks.Task do
       add_error(changeset, :reviewed_by_id, "must be set when review_status is not pending")
     else
       changeset
+    end
+  end
+
+  defp validate_security_considerations(changeset) do
+    case get_field(changeset, :security_considerations) do
+      nil ->
+        changeset
+
+      [] ->
+        changeset
+
+      items when is_list(items) ->
+        if Enum.all?(items, &is_binary/1) do
+          changeset
+        else
+          add_error(changeset, :security_considerations, "must be a list of strings")
+        end
+
+      _ ->
+        add_error(changeset, :security_considerations, "must be a list")
+    end
+  end
+
+  defp validate_testing_strategy(changeset) do
+    case get_field(changeset, :testing_strategy) do
+      nil ->
+        changeset
+
+      %{} = strategy when map_size(strategy) == 0 ->
+        changeset
+
+      %{} = strategy ->
+        valid_keys = ["unit_tests", "integration_tests", "manual_tests"]
+        invalid_keys = Map.keys(strategy) -- valid_keys
+
+        if Enum.empty?(invalid_keys) do
+          validate_testing_strategy_values(changeset, strategy)
+        else
+          add_error(
+            changeset,
+            :testing_strategy,
+            "contains invalid keys: #{Enum.join(invalid_keys, ", ")}. Valid keys: #{Enum.join(valid_keys, ", ")}"
+          )
+        end
+
+      _ ->
+        add_error(changeset, :testing_strategy, "must be a map")
+    end
+  end
+
+  defp validate_testing_strategy_values(changeset, strategy) do
+    invalid_values =
+      Enum.reject(strategy, fn {_key, value} ->
+        is_list(value) and Enum.all?(value, &is_binary/1)
+      end)
+
+    if Enum.empty?(invalid_values) do
+      changeset
+    else
+      add_error(changeset, :testing_strategy, "all values must be arrays of strings")
+    end
+  end
+
+  defp validate_integration_points(changeset) do
+    case get_field(changeset, :integration_points) do
+      nil ->
+        changeset
+
+      %{} = points when map_size(points) == 0 ->
+        changeset
+
+      %{} = points ->
+        valid_keys = [
+          "telemetry_events",
+          "pubsub_broadcasts",
+          "phoenix_channels",
+          "external_apis"
+        ]
+
+        invalid_keys = Map.keys(points) -- valid_keys
+
+        if Enum.empty?(invalid_keys) do
+          validate_integration_points_values(changeset, points)
+        else
+          add_error(
+            changeset,
+            :integration_points,
+            "contains invalid keys: #{Enum.join(invalid_keys, ", ")}. Valid keys: #{Enum.join(valid_keys, ", ")}"
+          )
+        end
+
+      _ ->
+        add_error(changeset, :integration_points, "must be a map")
+    end
+  end
+
+  defp validate_integration_points_values(changeset, points) do
+    invalid_values =
+      Enum.reject(points, fn {_key, value} ->
+        is_list(value) and Enum.all?(value, &is_binary/1)
+      end)
+
+    if Enum.empty?(invalid_values) do
+      changeset
+    else
+      add_error(changeset, :integration_points, "all values must be arrays of strings")
     end
   end
 end

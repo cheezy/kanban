@@ -24,7 +24,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       "technology_requirements" => true,
       "pitfalls" => true,
       "out_of_scope" => true,
-      "required_capabilities" => true
+      "required_capabilities" => true,
+      "security_considerations" => true,
+      "testing_strategy" => true,
+      "integration_points" => true
     }
   end
 
@@ -1232,6 +1235,283 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
         assert result =~ complexity_label
       end
+    end
+
+    test "displays security considerations section with purple background", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          security_considerations: [
+            "Hash all passwords with bcrypt",
+            "Never log sensitive data",
+            "Validate all user input"
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Security Considerations"
+      assert result =~ "bg-purple-50"
+      assert result =~ "Hash all passwords with bcrypt"
+      assert result =~ "Never log sensitive data"
+      assert result =~ "Validate all user input"
+    end
+
+    test "does not display security considerations when field_visibility is false", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          security_considerations: ["Hash passwords"]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: %{"security_considerations" => false}
+        )
+
+      refute result =~ "Security Considerations"
+      refute result =~ "Hash passwords"
+    end
+
+    test "does not display security considerations when empty", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{security_considerations: []})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Security Considerations"
+    end
+
+    test "displays testing strategy section with cyan background and all test types", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          testing_strategy: %{
+            "unit_tests" => ["Test authentication module", "Test validation functions"],
+            "integration_tests" => ["Test end-to-end login flow"],
+            "manual_tests" => ["Verify password reset email"]
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Testing Strategy"
+      assert result =~ "bg-cyan-50"
+      assert result =~ "Unit Tests"
+      assert result =~ "Test authentication module"
+      assert result =~ "Test validation functions"
+      assert result =~ "Integration Tests"
+      assert result =~ "Test end-to-end login flow"
+      assert result =~ "Manual Tests"
+      assert result =~ "Verify password reset email"
+    end
+
+    test "displays testing strategy with only unit tests", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          testing_strategy: %{
+            "unit_tests" => ["Test module A", "Test module B"]
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Testing Strategy"
+      assert result =~ "Unit Tests"
+      assert result =~ "Test module A"
+      assert result =~ "Test module B"
+      refute result =~ "Integration Tests"
+      refute result =~ "Manual Tests"
+    end
+
+    test "does not display testing strategy when field_visibility is false", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          testing_strategy: %{"unit_tests" => ["Test something"]}
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: %{"testing_strategy" => false}
+        )
+
+      refute result =~ "Testing Strategy"
+      refute result =~ "Test something"
+    end
+
+    test "does not display testing strategy when empty", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{testing_strategy: %{}})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Testing Strategy"
+    end
+
+    test "displays integration points section with indigo background and all point types", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          integration_points: %{
+            "telemetry_events" => ["[:kanban, :task, :created]", "[:kanban, :task, :updated]"],
+            "pubsub_broadcasts" => ["board:updated", "task:moved"],
+            "phoenix_channels" => ["task:123"],
+            "external_apis" => ["https://api.stripe.com", "https://api.sendgrid.com"]
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Integration Points"
+      assert result =~ "bg-indigo-50"
+      assert result =~ "Telemetry Events"
+      assert result =~ "[:kanban, :task, :created]"
+      assert result =~ "[:kanban, :task, :updated]"
+      assert result =~ "PubSub Broadcasts"
+      assert result =~ "board:updated"
+      assert result =~ "task:moved"
+      assert result =~ "Phoenix Channels"
+      assert result =~ "task:123"
+      assert result =~ "External APIs"
+      assert result =~ "https://api.stripe.com"
+      assert result =~ "https://api.sendgrid.com"
+    end
+
+    test "displays integration points with only telemetry events", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          integration_points: %{
+            "telemetry_events" => ["[:kanban, :auth, :login]"]
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Integration Points"
+      assert result =~ "Telemetry Events"
+      assert result =~ "[:kanban, :auth, :login]"
+      refute result =~ "PubSub Broadcasts"
+      refute result =~ "Phoenix Channels"
+      refute result =~ "External APIs"
+    end
+
+    test "does not display integration points when field_visibility is false", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          integration_points: %{"telemetry_events" => ["[:kanban, :event]"]}
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: %{"integration_points" => false}
+        )
+
+      refute result =~ "Integration Points"
+      refute result =~ "[:kanban, :event]"
+    end
+
+    test "does not display integration points when empty", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{integration_points: %{}})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Integration Points"
+    end
+
+    test "displays all three AI context fields together", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          security_considerations: ["Use HTTPS", "Hash passwords"],
+          testing_strategy: %{
+            "unit_tests" => ["Test auth module"],
+            "integration_tests" => ["Test login flow"]
+          },
+          integration_points: %{
+            "telemetry_events" => ["[:app, :auth, :success]"],
+            "pubsub_broadcasts" => ["user:authenticated"]
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Security Considerations"
+      assert result =~ "Use HTTPS"
+      assert result =~ "Testing Strategy"
+      assert result =~ "Test auth module"
+      assert result =~ "Integration Points"
+      assert result =~ "[:app, :auth, :success]"
     end
   end
 end

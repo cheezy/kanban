@@ -169,6 +169,36 @@
               />
               {gettext("Required Agent Capabilities")}
             </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="security_considerations"
+                checked={Map.get(@field_visibility, "security_considerations", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Security Considerations")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="testing_strategy"
+                checked={Map.get(@field_visibility, "testing_strategy", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Testing Strategy")}
+            </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="integration_points"
+                checked={Map.get(@field_visibility, "integration_points", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Integration Points")}
+            </label>
           </div>
         </div>
 

@@ -370,6 +370,301 @@
       </div>
     <% end %>
 
+    <%= if field_visible?(@field_visibility, "security_considerations") do %>
+      <%!-- Security Considerations Section --%>
+      <div class="mt-6 pt-6 border-t border-base-300">
+        <h3 class="text-lg font-semibold text-base-content mb-4">
+          {gettext("Security Considerations")}
+        </h3>
+        <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :security_considerations) || []) do %>
+          <div class="flex gap-2 mb-2">
+            <input
+              type="text"
+              name="task[security_considerations][]"
+              value={item}
+              placeholder={gettext("Security consideration or requirement")}
+              class="input input-bordered flex-1"
+            />
+            <button
+              type="button"
+              phx-click="remove-security-consideration"
+              phx-value-index={index}
+              phx-target={@myself}
+              class="btn btn-sm btn-error"
+            >
+              {gettext("Remove")}
+            </button>
+          </div>
+        <% end %>
+        <button
+          type="button"
+          phx-click="add-security-consideration"
+          phx-target={@myself}
+          class="btn btn-sm btn-secondary"
+        >
+          + {gettext("Add Security Consideration")}
+        </button>
+      </div>
+    <% end %>
+
+    <%= if field_visible?(@field_visibility, "testing_strategy") do %>
+      <%!-- Testing Strategy Section --%>
+      <div class="mt-6 pt-6 border-t border-base-300">
+        <h3 class="text-lg font-semibold text-base-content mb-4">
+          {gettext("Testing Strategy")}
+        </h3>
+        <% testing_strategy = Ecto.Changeset.get_field(@form.source, :testing_strategy) || %{} %>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("Unit Tests")}</span>
+          </label>
+          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "unit_tests", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[testing_strategy][unit_tests][]"
+                value={test}
+                placeholder={gettext("Unit test description")}
+                class="input input-bordered flex-1"
+              />
+              <button
+                type="button"
+                phx-click="remove-unit-test"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-unit-test"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add Unit Test")}
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("Integration Tests")}</span>
+          </label>
+          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "integration_tests", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[testing_strategy][integration_tests][]"
+                value={test}
+                placeholder={gettext("Integration test description")}
+                class="input input-bordered flex-1"
+              />
+              <button
+                type="button"
+                phx-click="remove-integration-test"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-integration-test"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add Integration Test")}
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("Manual Tests")}</span>
+          </label>
+          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "manual_tests", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[testing_strategy][manual_tests][]"
+                value={test}
+                placeholder={gettext("Manual test description")}
+                class="input input-bordered flex-1"
+              />
+              <button
+                type="button"
+                phx-click="remove-manual-test"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-manual-test"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add Manual Test")}
+          </button>
+        </div>
+      </div>
+    <% end %>
+
+    <%= if field_visible?(@field_visibility, "integration_points") do %>
+      <%!-- Integration Points Section --%>
+      <div class="mt-6 pt-6 border-t border-base-300">
+        <h3 class="text-lg font-semibold text-base-content mb-4">
+          {gettext("Integration Points")}
+        </h3>
+        <% integration_points = Ecto.Changeset.get_field(@form.source, :integration_points) || %{} %>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("Telemetry Events")}</span>
+          </label>
+          <%= for {event, index} <- Enum.with_index(Map.get(integration_points, "telemetry_events", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[integration_points][telemetry_events][]"
+                value={event}
+                placeholder={gettext("[:kanban, :domain, :action]")}
+                class="input input-bordered flex-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                phx-click="remove-telemetry-event"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-telemetry-event"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add Telemetry Event")}
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("PubSub Broadcasts")}</span>
+          </label>
+          <%= for {broadcast, index} <- Enum.with_index(Map.get(integration_points, "pubsub_broadcasts", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[integration_points][pubsub_broadcasts][]"
+                value={broadcast}
+                placeholder={gettext("topic:event")}
+                class="input input-bordered flex-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                phx-click="remove-pubsub-broadcast"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-pubsub-broadcast"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add PubSub Broadcast")}
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("Phoenix Channels")}</span>
+          </label>
+          <%= for {channel, index} <- Enum.with_index(Map.get(integration_points, "phoenix_channels", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[integration_points][phoenix_channels][]"
+                value={channel}
+                placeholder={gettext("channel:event")}
+                class="input input-bordered flex-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                phx-click="remove-phoenix-channel"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-phoenix-channel"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add Phoenix Channel")}
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text font-semibold">{gettext("External APIs")}</span>
+          </label>
+          <%= for {api, index} <- Enum.with_index(Map.get(integration_points, "external_apis", [])) do %>
+            <div class="flex gap-2 mb-2">
+              <input
+                type="text"
+                name="task[integration_points][external_apis][]"
+                value={api}
+                placeholder={gettext("API endpoint or service")}
+                class="input input-bordered flex-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                phx-click="remove-external-api"
+                phx-value-index={index}
+                phx-target={@myself}
+                class="btn btn-sm btn-error"
+              >
+                {gettext("Remove")}
+              </button>
+            </div>
+          <% end %>
+          <button
+            type="button"
+            phx-click="add-external-api"
+            phx-target={@myself}
+            class="btn btn-sm btn-secondary btn-xs"
+          >
+            + {gettext("Add External API")}
+          </button>
+        </div>
+      </div>
+    <% end %>
+
     <%!-- Dependencies Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Dependencies")}</h3>

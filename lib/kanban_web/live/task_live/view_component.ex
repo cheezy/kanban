@@ -477,6 +477,121 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         </div>
       <% end %>
 
+      <%= if @task.security_considerations && !Enum.empty?(@task.security_considerations) && field_visible?(@field_visibility, "security_considerations") do %>
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-purple-900 mb-2">
+            {gettext("Security Considerations")}
+          </h4>
+          <ul class="list-disc list-inside space-y-1">
+            <%= for item <- @task.security_considerations do %>
+              <li class="text-purple-900">{item}</li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <%= if @task.testing_strategy && map_size(@task.testing_strategy) > 0 && field_visible?(@field_visibility, "testing_strategy") do %>
+        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-cyan-900 mb-2">{gettext("Testing Strategy")}</h4>
+          <div class="space-y-3">
+            <%= if Map.has_key?(@task.testing_strategy, "unit_tests") && !Enum.empty?(@task.testing_strategy["unit_tests"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
+                  {gettext("Unit Tests")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for test <- @task.testing_strategy["unit_tests"] do %>
+                    <li class="text-cyan-900">{test}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@task.testing_strategy, "integration_tests") && !Enum.empty?(@task.testing_strategy["integration_tests"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
+                  {gettext("Integration Tests")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for test <- @task.testing_strategy["integration_tests"] do %>
+                    <li class="text-cyan-900">{test}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@task.testing_strategy, "manual_tests") && !Enum.empty?(@task.testing_strategy["manual_tests"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
+                  {gettext("Manual Tests")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for test <- @task.testing_strategy["manual_tests"] do %>
+                    <li class="text-cyan-900">{test}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%= if @task.integration_points && map_size(@task.integration_points) > 0 && field_visible?(@field_visibility, "integration_points") do %>
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-indigo-900 mb-2">
+            {gettext("Integration Points")}
+          </h4>
+          <div class="space-y-3">
+            <%= if Map.has_key?(@task.integration_points, "telemetry_events") && !Enum.empty?(@task.integration_points["telemetry_events"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-indigo-900 opacity-70 mb-1">
+                  {gettext("Telemetry Events")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for event <- @task.integration_points["telemetry_events"] do %>
+                    <li class="text-indigo-900 font-mono text-xs">{event}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@task.integration_points, "pubsub_broadcasts") && !Enum.empty?(@task.integration_points["pubsub_broadcasts"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-indigo-900 opacity-70 mb-1">
+                  {gettext("PubSub Broadcasts")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for broadcast <- @task.integration_points["pubsub_broadcasts"] do %>
+                    <li class="text-indigo-900 font-mono text-xs">{broadcast}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@task.integration_points, "phoenix_channels") && !Enum.empty?(@task.integration_points["phoenix_channels"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-indigo-900 opacity-70 mb-1">
+                  {gettext("Phoenix Channels")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for channel <- @task.integration_points["phoenix_channels"] do %>
+                    <li class="text-indigo-900 font-mono text-xs">{channel}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <%= if Map.has_key?(@task.integration_points, "external_apis") && !Enum.empty?(@task.integration_points["external_apis"]) do %>
+              <div>
+                <p class="text-xs font-semibold text-indigo-900 opacity-70 mb-1">
+                  {gettext("External APIs")}
+                </p>
+                <ul class="list-disc list-inside space-y-1">
+                  <%= for api <- @task.integration_points["external_apis"] do %>
+                    <li class="text-indigo-900 font-mono text-xs">{api}</li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
       <%= if @task.status == :completed && (@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes) do %>
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 class="text-sm font-semibold text-blue-900 mb-2">{gettext("Actual vs Estimated")}</h4>

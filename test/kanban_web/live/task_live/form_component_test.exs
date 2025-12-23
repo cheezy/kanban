@@ -1364,4 +1364,477 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert {"user2@example.com", user2.id} in assignable_users
     end
   end
+
+  describe "handle_event add-security-consideration" do
+    test "adds empty security consideration to list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-security-consideration", %{}, socket)
+
+      security_considerations =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :security_considerations)
+
+      assert length(security_considerations) == 1
+      assert hd(security_considerations) == ""
+    end
+
+    test "adds security consideration to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          security_considerations: ["Hash passwords", "Validate input"]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-security-consideration", %{}, socket)
+
+      security_considerations =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :security_considerations)
+
+      assert length(security_considerations) == 3
+      assert Enum.at(security_considerations, 0) == "Hash passwords"
+      assert Enum.at(security_considerations, 1) == "Validate input"
+      assert Enum.at(security_considerations, 2) == ""
+    end
+  end
+
+  describe "handle_event remove-security-consideration" do
+    test "removes security consideration at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          security_considerations: ["Hash passwords", "Validate input", "Use HTTPS"]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-security-consideration", %{"index" => "1"}, socket)
+
+      security_considerations =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :security_considerations)
+
+      assert length(security_considerations) == 2
+      assert security_considerations == ["Hash passwords", "Use HTTPS"]
+    end
+  end
+
+  describe "handle_event add-unit-test" do
+    test "adds empty unit test to testing_strategy map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-unit-test", %{}, socket)
+
+      testing_strategy =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :testing_strategy)
+
+      assert testing_strategy["unit_tests"] == [""]
+    end
+
+    test "adds unit test to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          testing_strategy: %{
+            "unit_tests" => ["Test validation"]
+          }
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-unit-test", %{}, socket)
+
+      testing_strategy =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :testing_strategy)
+
+      assert length(testing_strategy["unit_tests"]) == 2
+      assert Enum.at(testing_strategy["unit_tests"], 0) == "Test validation"
+      assert Enum.at(testing_strategy["unit_tests"], 1) == ""
+    end
+  end
+
+  describe "handle_event remove-unit-test" do
+    test "removes unit test at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          testing_strategy: %{
+            "unit_tests" => ["Test auth", "Test validation", "Test errors"]
+          }
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-unit-test", %{"index" => "1"}, socket)
+
+      testing_strategy =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :testing_strategy)
+
+      assert testing_strategy["unit_tests"] == ["Test auth", "Test errors"]
+    end
+  end
+
+  describe "handle_event add-integration-test" do
+    test "adds integration test to testing_strategy map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-integration-test", %{}, socket)
+
+      testing_strategy =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :testing_strategy)
+
+      assert testing_strategy["integration_tests"] == [""]
+    end
+  end
+
+  describe "handle_event add-manual-test" do
+    test "adds manual test to testing_strategy map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-manual-test", %{}, socket)
+
+      testing_strategy =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :testing_strategy)
+
+      assert testing_strategy["manual_tests"] == [""]
+    end
+  end
+
+  describe "handle_event add-telemetry-event" do
+    test "adds telemetry event to integration_points map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-telemetry-event", %{}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert integration_points["telemetry_events"] == [""]
+    end
+
+    test "adds telemetry event to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          integration_points: %{
+            "telemetry_events" => ["[:kanban, :task, :created]"]
+          }
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-telemetry-event", %{}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert length(integration_points["telemetry_events"]) == 2
+    end
+  end
+
+  describe "handle_event remove-telemetry-event" do
+    test "removes telemetry event at specified index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          integration_points: %{
+            "telemetry_events" => ["[:kanban, :task, :created]", "[:kanban, :task, :updated]"]
+          }
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("remove-telemetry-event", %{"index" => "0"}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert integration_points["telemetry_events"] == ["[:kanban, :task, :updated]"]
+    end
+  end
+
+  describe "handle_event add-pubsub-broadcast" do
+    test "adds pubsub broadcast to integration_points map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-pubsub-broadcast", %{}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert integration_points["pubsub_broadcasts"] == [""]
+    end
+  end
+
+  describe "handle_event add-phoenix-channel" do
+    test "adds phoenix channel to integration_points map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-phoenix-channel", %{}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert integration_points["phoenix_channels"] == [""]
+    end
+  end
+
+  describe "handle_event add-external-api" do
+    test "adds external API to integration_points map" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-external-api", %{}, socket)
+
+      integration_points =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :integration_points)
+
+      assert integration_points["external_apis"] == [""]
+    end
+  end
+
+  describe "AI context fields integration" do
+    test "creates task with all AI context fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "AI Enhanced Task",
+        "security_considerations" => ["Hash all tokens", "Use HTTPS only"],
+        "testing_strategy" => %{
+          "unit_tests" => ["Test validation", "Test error handling"],
+          "integration_tests" => ["Test API flow"],
+          "manual_tests" => ["Verify UI"]
+        },
+        "integration_points" => %{
+          "telemetry_events" => ["[:kanban, :task, :completed]"],
+          "pubsub_broadcasts" => ["task:updated"],
+          "phoenix_channels" => ["task:123"],
+          "external_apis" => ["https://api.example.com"]
+        }
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "AI Enhanced Task")
+      assert created_task
+      assert created_task.security_considerations == ["Hash all tokens", "Use HTTPS only"]
+      assert created_task.testing_strategy["unit_tests"] == ["Test validation", "Test error handling"]
+      assert created_task.integration_points["telemetry_events"] == ["[:kanban, :task, :completed]"]
+    end
+  end
 end

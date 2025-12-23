@@ -166,7 +166,10 @@ defmodule KanbanWeb.BoardLive.Form do
       "technology_requirements" => false,
       "pitfalls" => false,
       "out_of_scope" => false,
-      "required_capabilities" => false
+      "required_capabilities" => false,
+      "security_considerations" => false,
+      "testing_strategy" => false,
+      "integration_points" => false
     }
 
     # Merge current with defaults to ensure all keys present

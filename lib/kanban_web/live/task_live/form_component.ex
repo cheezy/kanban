@@ -177,6 +177,54 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   def handle_event("remove-capability", %{"index" => index}, socket),
     do: handle_remove_from_array(socket, :required_capabilities, index)
 
+  def handle_event("add-security-consideration", _params, socket),
+    do: handle_add_to_array(socket, :security_considerations)
+
+  def handle_event("remove-security-consideration", %{"index" => index}, socket),
+    do: handle_remove_from_array(socket, :security_considerations, index)
+
+  def handle_event("add-unit-test", _params, socket),
+    do: handle_add_to_map_array(socket, :testing_strategy, "unit_tests")
+
+  def handle_event("remove-unit-test", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :testing_strategy, "unit_tests", index)
+
+  def handle_event("add-integration-test", _params, socket),
+    do: handle_add_to_map_array(socket, :testing_strategy, "integration_tests")
+
+  def handle_event("remove-integration-test", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :testing_strategy, "integration_tests", index)
+
+  def handle_event("add-manual-test", _params, socket),
+    do: handle_add_to_map_array(socket, :testing_strategy, "manual_tests")
+
+  def handle_event("remove-manual-test", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :testing_strategy, "manual_tests", index)
+
+  def handle_event("add-telemetry-event", _params, socket),
+    do: handle_add_to_map_array(socket, :integration_points, "telemetry_events")
+
+  def handle_event("remove-telemetry-event", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :integration_points, "telemetry_events", index)
+
+  def handle_event("add-pubsub-broadcast", _params, socket),
+    do: handle_add_to_map_array(socket, :integration_points, "pubsub_broadcasts")
+
+  def handle_event("remove-pubsub-broadcast", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :integration_points, "pubsub_broadcasts", index)
+
+  def handle_event("add-phoenix-channel", _params, socket),
+    do: handle_add_to_map_array(socket, :integration_points, "phoenix_channels")
+
+  def handle_event("remove-phoenix-channel", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :integration_points, "phoenix_channels", index)
+
+  def handle_event("add-external-api", _params, socket),
+    do: handle_add_to_map_array(socket, :integration_points, "external_apis")
+
+  def handle_event("remove-external-api", %{"index" => index}, socket),
+    do: handle_remove_from_map_array(socket, :integration_points, "external_apis", index)
+
   defp handle_add_to_array(socket, field) do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, field) || []
     new_list = existing ++ [""]
@@ -199,6 +247,35 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       socket.assigns.task
       |> Tasks.Task.changeset(%{})
       |> Ecto.Changeset.put_change(field, list)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  defp handle_add_to_map_array(socket, field, key) do
+    existing_map = Ecto.Changeset.get_field(socket.assigns.form.source, field) || %{}
+    existing_list = Map.get(existing_map, key, [])
+    new_list = existing_list ++ [""]
+    new_map = Map.put(existing_map, key, new_list)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_change(field, new_map)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  defp handle_remove_from_map_array(socket, field, key, index) do
+    {index, _} = Integer.parse(index)
+    existing_map = Ecto.Changeset.get_field(socket.assigns.form.source, field) || %{}
+    existing_list = Map.get(existing_map, key, [])
+    new_list = List.delete_at(existing_list, index)
+    new_map = Map.put(existing_map, key, new_list)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_change(field, new_map)
 
     {:noreply, assign_form(socket, changeset)}
   end
