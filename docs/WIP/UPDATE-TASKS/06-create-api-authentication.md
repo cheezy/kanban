@@ -41,7 +41,7 @@
 
 **Patterns to Follow:**
 - Follow existing `UserToken` pattern from lib/kanban/accounts/user_token.ex
-- Token format: `kan_{env}_{random}` (e.g., `kan_dev_vX7kL...`, `kan_prod_mN2pQ...`)
+- Token format: `stride_{env}_{random}` (e.g., `stride_dev_vX7kL...`, `stride_prod_mN2pQ...`)
 - Store hashed tokens (SHA-256) like passwords - NEVER plain text
 - Use custom plug for validation (similar to `UserAuth` patterns)
 - Follow telemetry patterns from existing auth (see user_auth.ex:121)
@@ -193,7 +193,7 @@ mix phx.server
 # Copy token (shown once in green alert)
 
 # Test API with curl
-export TOKEN="kan_dev_abc123..."
+export TOKEN="stride_dev_abc123..."
 
 # Test valid token
 curl -H "Authorization: Bearer $TOKEN" \
@@ -288,7 +288,7 @@ end
 ```elixir
 defmodule Kanban.Accounts.ApiToken do
   @moduledoc """
-  API token for programmatic access to the Kanban API.
+  API token for programmatic access to the Stride API.
 
   Tokens are scoped with permissions and capabilities for intelligent
   task-agent matching. Tokens are hashed before storage and never
@@ -424,17 +424,17 @@ defmodule Kanban.Accounts do
       ...>   capabilities: ["code_generation", "testing"],
       ...>   metadata: %{model: "claude-3.5-sonnet"}
       ...> })
-      {:ok, %ApiToken{}, "kan_dev_vX7kL2m..."}
+      {:ok, %ApiToken{}, "stride_dev_vX7kL2m..."}
 
   """
   def create_api_token(user, attrs) do
     # Generate cryptographically secure random token
-    # Format: kan_{env}_{32_bytes_base64}
+    # Format: stride_{env}_{32_bytes_base64}
     env = Atom.to_string(Mix.env())
     random_part = :crypto.strong_rand_bytes(32)
                   |> Base.url_encode64(padding: false)
 
-    token = "kan_#{env}_#{random_part}"
+    token = "stride_#{env}_#{random_part}"
 
     # Hash for storage (SHA-256)
     token_hash = :crypto.hash(:sha256, token)
@@ -754,7 +754,7 @@ end
   <section class="bg-white shadow rounded-lg p-6">
     <h2 class="text-lg font-semibold text-gray-900 mb-4">API Tokens</h2>
     <p class="text-sm text-gray-600 mb-6">
-      Generate tokens for programmatic access to the Kanban API.
+      Generate tokens for programmatic access to the Stride API.
       Use these tokens with AI agents or automation scripts.
     </p>
 
@@ -959,7 +959,7 @@ describe "api_tokens" do
 
     assert plain1 != plain2
     assert token1.token_hash != token2.token_hash
-    assert String.starts_with?(plain1, "kan_test_")
+    assert String.starts_with?(plain1, "stride_test_")
   end
 
   test "verify_api_token/1 validates token" do
@@ -1097,12 +1097,12 @@ end
 - [ ] Don't forget to emit telemetry events for monitoring
 - [ ] Test both valid and invalid token scenarios
 - [ ] Handle missing Authorization header gracefully
-- [ ] Validate token format (should start with "kan_{env}_")
+- [ ] Validate token format (should start with "stride_{env}_")
 
 ## Security Considerations
 
 **Token Format:**
-- Prefix with `kan_{env}_` for easy identification and environment separation
+- Prefix with `stride_{env}_` for easy identification and environment separation
 - Use 32 bytes of cryptographically secure random data
 - Base64 URL-safe encoding (no padding) for clean tokens
 - Total length ~50-60 characters
