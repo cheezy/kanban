@@ -35,6 +35,88 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.3.0] - 2025-12-23</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("AI Context Fields for Enhanced Task Intelligence")}
+              </h4>
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Three New Task Fields")}</strong>
+                  {gettext(" - Added specialized fields to capture AI-relevant context for task execution:")}
+                </li>
+              </ul>
+
+              <div class="ml-6 mt-4 space-y-4">
+                <div>
+                  <h5 class="font-semibold text-base-content mb-2">
+                    {gettext("Security Considerations")} (<code class="text-sm">security_considerations</code>)
+                  </h5>
+                  <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
+                    <li>{gettext("Array field for documenting security-related requirements and notes")}</li>
+                    <li>{gettext("Examples: token hashing requirements, validation rules, security headers")}</li>
+                    <li>{gettext("Purple background color in UI for high visibility")}</li>
+                    <li>{gettext("Dynamic add/remove interface in task forms")}</li>
+                    <li>{gettext("Defaults to empty array when not provided")}</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 class="font-semibold text-base-content mb-2">
+                    {gettext("Testing Strategy")} (<code class="text-sm">testing_strategy</code>)
+                  </h5>
+                  <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
+                    <li>
+                      {gettext("Map field with three standardized categories: ")}
+                      <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>, <code class="text-sm">manual_tests</code>
+                    </li>
+                    <li>{gettext("Each category contains an array of test descriptions")}</li>
+                    <li>{gettext("Cyan background color in UI to distinguish from security considerations")}</li>
+                    <li>{gettext("Dynamic add/remove interface with category-specific sections")}</li>
+                    <li>{gettext("Defaults to empty map when not provided")}</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h5 class="font-semibold text-base-content mb-2">
+                    {gettext("Integration Points")} (<code class="text-sm">integration_points</code>)
+                  </h5>
+                  <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
+                    <li>{gettext("Map field with four standardized categories:")}</li>
+                  </ul>
+                  <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                    <li>
+                      <code class="text-sm">telemetry_events</code>: {gettext("Phoenix telemetry events to emit")}
+                    </li>
+                    <li>
+                      <code class="text-sm">pubsub_broadcasts</code>: {gettext("PubSub topics to broadcast to")}
+                    </li>
+                    <li>
+                      <code class="text-sm">phoenix_channels</code>: {gettext("Phoenix channels to update")}
+                    </li>
+                    <li>
+                      <code class="text-sm">external_apis</code>: {gettext("External API integrations")}
+                    </li>
+                  </ul>
+                  <ul class="list-disc list-inside space-y-1 text-base-content opacity-70 mt-1">
+                    <li>{gettext("Each category contains an array of integration descriptions")}</li>
+                    <li>{gettext("Indigo background color in UI to distinguish from other AI fields")}</li>
+                    <li>{gettext("Dynamic add/remove interface with category-specific sections")}</li>
+                    <li>{gettext("Defaults to empty map when not provided")}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.2.0] - 2025-12-22</h2>
 
           <div class="mb-8">

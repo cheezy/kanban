@@ -5,6 +5,39 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-12-23
+
+### Added
+
+#### AI Context Fields for Enhanced Task Intelligence
+
+- **Three New Task Fields** - Added specialized fields to capture AI-relevant context for task execution:
+
+  - **Security Considerations** (`security_considerations`):
+    - Array field for documenting security-related requirements and notes
+    - Examples: token hashing requirements, validation rules, security headers
+    - Purple background color in UI for high visibility
+    - Dynamic add/remove interface in task forms
+    - Defaults to empty array when not provided
+
+  - **Testing Strategy** (`testing_strategy`):
+    - Map field with three standardized categories: `unit_tests`, `integration_tests`, `manual_tests`
+    - Each category contains an array of test descriptions
+    - Cyan background color in UI to distinguish from security considerations
+    - Dynamic add/remove interface with category-specific sections
+    - Defaults to empty map when not provided
+
+  - **Integration Points** (`integration_points`):
+    - Map field with four standardized categories:
+      - `telemetry_events`: Phoenix telemetry events to emit
+      - `pubsub_broadcasts`: PubSub topics to broadcast to
+      - `phoenix_channels`: Phoenix channels to update
+      - `external_apis`: External API integrations
+    - Each category contains an array of integration descriptions
+    - Indigo background color in UI to distinguish from other AI fields
+    - Dynamic add/remove interface with category-specific sections
+    - Defaults to empty map when not provided
+
 ## [1.2.0] - 2025-12-22
 
 ### Added
