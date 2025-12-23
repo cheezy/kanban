@@ -5,6 +5,19 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-22
+
+### Added
+
+#### AI Optimized Boards
+
+- **New Board Type** - Introduced AI Optimized Boards with predefined, immutable structure:
+  - Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done
+  - Columns are locked and cannot be added, edited, deleted, or reordered
+  - Designed for AI-driven workflows with consistent, predictable structure
+  - Board owners retain full control over tasks, but column structure is fixed
+  - Clear visual distinction from regular boards throughout the interface
+
 ## [1.1.0] - 2025-12-22
 
 ### Added
