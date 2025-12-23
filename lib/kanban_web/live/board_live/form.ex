@@ -149,12 +149,32 @@ defmodule KanbanWeb.BoardLive.Form do
     end
   end
 
-  def handle_event("toggle_field", %{"field" => field_name}, socket) do
+  def handle_event("toggle_field", %{"field" => field_name} = _params, socket) do
     board = socket.assigns.board
     current_visibility = socket.assigns.field_visibility
 
+    # Ensure all required keys are present with defaults
+    default_visibility = %{
+      "acceptance_criteria" => false,
+      "complexity" => false,
+      "context" => false,
+      "key_files" => false,
+      "verification_steps" => false,
+      "technical_notes" => false,
+      "observability" => false,
+      "error_handling" => false,
+      "technology_requirements" => false,
+      "pitfalls" => false,
+      "out_of_scope" => false,
+      "required_capabilities" => false
+    }
+
+    # Merge current with defaults to ensure all keys present
+    complete_visibility = Map.merge(default_visibility, current_visibility)
+
+    # Toggle the requested field
     new_visibility =
-      Map.put(current_visibility, field_name, !Map.get(current_visibility, field_name, false))
+      Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
 
     case Boards.update_field_visibility(
            board,
