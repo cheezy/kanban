@@ -48,13 +48,15 @@ defmodule KanbanWeb.BoardLive.Show do
 
     subscribe_to_board_updates(socket, board.id)
 
-    if socket.assigns.live_action in [:new_column, :edit_column] and user_access != :owner do
-      {:noreply,
-       socket
-       |> put_flash(:error, gettext("Only the board owner can manage columns"))
-       |> push_patch(to: ~p"/boards/#{board}")}
-    else
-      assign_board_with_column(socket, board, user_access, column_id)
+    case check_column_action_authorization(socket.assigns.live_action, user_access, board) do
+      :ok ->
+        assign_board_with_column(socket, board, user_access, column_id)
+
+      {:error, message} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, message)
+         |> push_patch(to: ~p"/boards/#{board}")}
     end
   end
 
@@ -98,50 +100,47 @@ defmodule KanbanWeb.BoardLive.Show do
 
     subscribe_to_board_updates(socket, board.id)
 
-    if socket.assigns.live_action == :new_column and user_access != :owner do
-      {:noreply,
-       socket
-       |> put_flash(:error, gettext("Only the board owner can create columns"))
-       |> push_patch(to: ~p"/boards/#{board}")}
-    else
-      columns = Columns.list_columns(board)
+    case check_new_column_authorization(socket.assigns.live_action, user_access, board) do
+      :ok ->
+        assign_board_state(socket, board, user_access)
 
-      {:noreply,
-       socket
-       |> assign(:page_title, page_title(socket.assigns.live_action))
-       |> assign(:board, board)
-       |> assign(:user_access, user_access)
-       |> assign(:can_modify, user_access in [:owner, :modify])
-       |> assign(:is_owner, user_access == :owner)
-       |> assign(:field_visibility, board.field_visibility || %{})
-       |> assign(:has_columns, not Enum.empty?(columns))
-       |> stream(:columns, columns, reset: true)
-       |> load_tasks_for_columns(columns)}
+      {:error, message} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, message)
+         |> push_patch(to: ~p"/boards/#{board}")}
     end
   end
 
   @impl true
   def handle_event("delete_column", %{"id" => id}, socket) do
-    if socket.assigns.user_access != :owner do
-      {:noreply,
-       socket
-       |> put_flash(:error, gettext("Only the board owner can delete columns"))}
-    else
-      column = Columns.get_column!(id)
+    cond do
+      socket.assigns.user_access != :owner ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Only the board owner can delete columns"))}
 
-      case Columns.delete_column(column) do
-        {:ok, _column} ->
-          columns = Columns.list_columns(socket.assigns.board)
+      socket.assigns.board.ai_optimized_board ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Cannot delete columns on AI optimized boards"))}
 
-          {:noreply,
-           socket
-           |> put_flash(:info, gettext("Column deleted successfully"))
-           |> assign(:has_columns, not Enum.empty?(columns))
-           |> stream_delete(:columns, column)}
+      true ->
+        column = Columns.get_column!(id)
 
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}
-      end
+        case Columns.delete_column(column) do
+          {:ok, _column} ->
+            columns = Columns.list_columns(socket.assigns.board)
+
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Column deleted successfully"))
+             |> assign(:has_columns, not Enum.empty?(columns))
+             |> stream_delete(:columns, column)}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}
+        end
     end
   end
 
@@ -214,26 +213,33 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("move_column", %{"column_id" => column_id, "column_ids" => column_ids}, socket) do
-    if socket.assigns.user_access != :owner do
-      {:noreply,
-       socket
-       |> put_flash(:error, gettext("Only the board owner can reorder columns"))}
-    else
-      require Logger
+    cond do
+      socket.assigns.user_access != :owner ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Only the board owner can reorder columns"))}
 
-      column_ids = Enum.map(column_ids, &String.to_integer/1)
+      socket.assigns.board.ai_optimized_board ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Cannot reorder columns on AI optimized boards"))}
 
-      Logger.info("Move column event: column_id=#{column_id}, new_order=#{inspect(column_ids)}")
+      true ->
+        require Logger
 
-      Columns.reorder_columns(socket.assigns.board, column_ids)
+        column_ids = Enum.map(column_ids, &String.to_integer/1)
 
-      columns = Columns.list_columns(socket.assigns.board)
+        Logger.info("Move column event: column_id=#{column_id}, new_order=#{inspect(column_ids)}")
 
-      {:noreply,
-       socket
-       |> push_event("move_column_success", %{})
-       |> stream(:columns, columns, reset: true)
-       |> load_tasks_for_columns(columns)}
+        Columns.reorder_columns(socket.assigns.board, column_ids)
+
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> push_event("move_column_success", %{})
+         |> stream(:columns, columns, reset: true)
+         |> load_tasks_for_columns(columns)}
     end
   end
 
@@ -344,6 +350,56 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
+  end
+
+  defp check_column_action_authorization(live_action, user_access, board)
+       when live_action in [:new_column, :edit_column] do
+    cond do
+      user_access != :owner ->
+        {:error, gettext("Only the board owner can manage columns")}
+
+      live_action == :new_column and board.ai_optimized_board ->
+        {:error, gettext("Cannot add columns to AI optimized boards")}
+
+      live_action == :edit_column and board.ai_optimized_board ->
+        {:error, gettext("Cannot edit columns on AI optimized boards")}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp check_column_action_authorization(_live_action, _user_access, _board), do: :ok
+
+  defp check_new_column_authorization(:new_column, user_access, board) do
+    cond do
+      user_access != :owner ->
+        {:error, gettext("Only the board owner can create columns")}
+
+      board.ai_optimized_board ->
+        {:error, gettext("Cannot add columns to AI optimized boards")}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp check_new_column_authorization(_live_action, _user_access, _board), do: :ok
+
+  defp assign_board_state(socket, board, user_access) do
+    columns = Columns.list_columns(board)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:is_owner, user_access == :owner)
+     |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign(:has_columns, not Enum.empty?(columns))
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do

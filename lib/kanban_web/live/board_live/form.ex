@@ -37,10 +37,13 @@ defmodule KanbanWeb.BoardLive.Form do
     end
   end
 
-  defp apply_action(socket, :new, _params) do
+  defp apply_action(socket, :new, params) do
+    ai_optimized = Map.get(params, "ai_optimized") == "true"
+
     socket
     |> assign(:page_title, gettext("New Board"))
     |> assign(:board, %Board{})
+    |> assign(:ai_optimized, ai_optimized)
     |> assign(:form, to_form(Boards.change_board(%Board{})))
   end
 
@@ -185,8 +188,16 @@ defmodule KanbanWeb.BoardLive.Form do
 
   defp save_board(socket, :new, board_params) do
     user = socket.assigns.current_scope.user
+    ai_optimized = Map.get(socket.assigns, :ai_optimized, false)
 
-    case Boards.create_board(user, board_params) do
+    result =
+      if ai_optimized do
+        Boards.create_ai_optimized_board(user, board_params)
+      else
+        Boards.create_board(user, board_params)
+      end
+
+    case result do
       {:ok, _board} ->
         {:noreply,
          socket

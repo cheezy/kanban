@@ -4,7 +4,7 @@
       {@board.name}
       <:subtitle>{@board.description}</:subtitle>
       <:actions>
-        <.link :if={@user_access == :owner} patch={~p"/boards/#{@board}/columns/new"}>
+        <.link :if={@user_access == :owner and not @board.ai_optimized_board} patch={~p"/boards/#{@board}/columns/new"}>
           <.button>{gettext("New Column")}</.button>
         </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
@@ -27,7 +27,7 @@
             <p class="text-base text-base-content opacity-70 mb-8 leading-relaxed">
               {gettext("Get started by creating columns for your board.")}
             </p>
-            <div :if={@user_access == :owner}>
+            <div :if={@user_access == :owner and not @board.ai_optimized_board}>
               <.link patch={~p"/boards/#{@board}/columns/new"}>
                 <.button>{gettext("Create your first column")}</.button>
               </.link>
@@ -52,7 +52,7 @@
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-4 pb-3 border-b border-base-300/60 group">
-              <%= if @user_access == :owner do %>
+              <%= if @user_access == :owner and not @board.ai_optimized_board do %>
                 <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
                   <.icon name="hero-bars-3" class="h-5 w-5 text-base-content" />
                 </div>
@@ -111,7 +111,7 @@
                   <% end %>
                 </div>
               </div>
-              <%= if @user_access == :owner do %>
+              <%= if @user_access == :owner and not @board.ai_optimized_board do %>
                 <div class="flex gap-1.5">
                   <.link
                     patch={~p"/boards/#{@board}/columns/#{column}/edit"}

@@ -5,6 +5,7 @@ defmodule Kanban.Boards.Board do
   schema "boards" do
     field :name, :string
     field :description, :string
+    field :ai_optimized_board, :boolean, default: false
 
     field :field_visibility, :map,
       default: %{

@@ -1,0 +1,25 @@
+## "boards" domain.
+msgid ""
+msgstr ""
+"Language: zh\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: lib/kanban/boards.ex:207
+msgid "Backlog"
+msgstr "待办事项"
+
+#: lib/kanban/boards.ex:208
+msgid "Ready"
+msgstr "准备就绪"
+
+#: lib/kanban/boards.ex:209
+msgid "Doing"
+msgstr "进行中"
+
+#: lib/kanban/boards.ex:210
+msgid "Review"
+msgstr "审查"
+
+#: lib/kanban/boards.ex:211
+msgid "Done"
+msgstr "已完成"

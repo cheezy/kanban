@@ -159,6 +159,72 @@ defmodule Kanban.Boards do
   end
 
   @doc """
+  Creates an AI-optimized board with default columns: Backlog, Ready, Doing, Review, and Done.
+  Sets ai_optimized_board to true.
+
+  ## Examples
+
+      iex> create_ai_optimized_board(user, %{name: "AI Board"})
+      {:ok, %Board{}}
+
+  """
+  def create_ai_optimized_board(user, attrs \\ %{}) do
+    result = create_ai_board_transaction(user, attrs)
+
+    case result do
+      {:ok, %{board: board}} ->
+        setup_ai_board_columns(board, user)
+
+      {:error, :board, changeset, _} ->
+        {:error, changeset}
+
+      {:error, :board_user, changeset, _} ->
+        {:error, changeset}
+    end
+  end
+
+  defp create_ai_board_transaction(user, attrs) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:board, fn _ ->
+      %Board{}
+      |> Board.changeset(attrs)
+      |> Ecto.Changeset.change(ai_optimized_board: true)
+    end)
+    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
+      BoardUser.changeset(%BoardUser{}, %{
+        board_id: board.id,
+        user_id: user.id,
+        access: :owner
+      })
+    end)
+    |> Repo.transaction()
+  end
+
+  defp setup_ai_board_columns(board, user) do
+    alias Kanban.Columns
+
+    default_columns = [
+      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Backlog"), wip_limit: 0},
+      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Ready"), wip_limit: 0},
+      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Doing"), wip_limit: 0},
+      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Review"), wip_limit: 0},
+      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Done"), wip_limit: 0}
+    ]
+
+    Enum.each(default_columns, fn column_attrs ->
+      Columns.create_column(board, column_attrs)
+    end)
+
+    :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{
+      board_id: board.id,
+      user_id: user.id
+    })
+
+    board = Repo.preload(board, :columns, force: true)
+    {:ok, board}
+  end
+
+  @doc """
   Updates a board.
 
   ## Examples

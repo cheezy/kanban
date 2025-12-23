@@ -3,9 +3,45 @@
     <.header>
       {gettext("Listing Boards")}
       <:actions>
-        <.link navigate={~p"/boards/new"}>
-          <.button>{gettext("New Board")}</.button>
-        </.link>
+        <div class="dropdown dropdown-end">
+          <label tabindex="0" class="btn btn-primary">
+            {gettext("New Board")}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 ml-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </label>
+          <ul
+            tabindex="0"
+            class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-64 mt-2 border border-base-300"
+          >
+            <li>
+              <.link navigate={~p"/boards/new"} class="flex items-start gap-3 py-3">
+                <.icon name="hero-document" class="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div class="font-semibold">{gettext("New Empty Board")}</div>
+                  <div class="text-xs opacity-70">{gettext("Start with a blank board")}</div>
+                </div>
+              </.link>
+            </li>
+            <li>
+              <.link navigate={~p"/boards/new?ai_optimized=true"} class="flex items-start gap-3 py-3">
+                <.icon name="hero-sparkles" class="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div class="font-semibold">{gettext("New AI Optimized Board")}</div>
+                  <div class="text-xs opacity-70">
+                    {gettext("Pre-configured for AI workflow")}
+                  </div>
+                </div>
+              </.link>
+            </li>
+          </ul>
+        </div>
       </:actions>
     </.header>
 

@@ -1,0 +1,25 @@
+## "boards" domain.
+msgid ""
+msgstr ""
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/kanban/boards.ex:207
+msgid "Backlog"
+msgstr "Backlog"
+
+#: lib/kanban/boards.ex:208
+msgid "Ready"
+msgstr "Ready"
+
+#: lib/kanban/boards.ex:209
+msgid "Doing"
+msgstr "Doing"
+
+#: lib/kanban/boards.ex:210
+msgid "Review"
+msgstr "Review"
+
+#: lib/kanban/boards.ex:211
+msgid "Done"
+msgstr "Done"

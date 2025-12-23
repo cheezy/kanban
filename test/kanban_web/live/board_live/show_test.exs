@@ -392,6 +392,144 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "AI Optimized Board restrictions" do
+    setup [:register_and_log_in_user]
+
+    test "owner cannot see new column button on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "New Column"
+    end
+
+    test "owner can see new column button on regular board", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "New Column"
+    end
+
+    test "owner cannot see edit column link on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, "a[aria-label='Edit column']")
+    end
+
+    test "owner can see edit column link on regular board", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, "a[aria-label='Edit column']")
+    end
+
+    test "owner cannot see delete column link on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, "a[data-confirm][phx-click*='delete_column']")
+    end
+
+    test "owner can see delete column link on regular board", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, "a[data-confirm][phx-click*='delete_column']")
+    end
+
+    test "owner cannot see column drag handle on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, ".column-drag-handle")
+    end
+
+    test "owner can see column drag handle on regular board", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, ".column-drag-handle")
+    end
+
+    test "AI optimized board has 5 default columns", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Backlog"
+      assert html =~ "Ready"
+      assert html =~ "Doing"
+      assert html =~ "Review"
+      assert html =~ "Done"
+    end
+
+    test "owner cannot access new column page for AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      assert {:error, {:live_redirect, %{to: path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/columns/new")
+
+      assert path == "/boards/#{board.id}"
+      assert error =~ "Cannot add columns to AI optimized boards"
+    end
+
+    test "owner cannot access edit column page for AI optimized board", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      column = List.first(board.columns)
+
+      assert {:error, {:live_redirect, %{to: path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/columns/#{column}/edit")
+
+      assert path == "/boards/#{board.id}"
+      assert error =~ "Cannot edit columns on AI optimized boards"
+    end
+
+    test "owner cannot delete columns on AI optimized board via event", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      column = List.first(board.columns)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("delete_column", %{"id" => to_string(column.id)})
+
+      assert render(show_live) =~ "Cannot delete columns on AI optimized boards"
+    end
+
+    test "owner cannot reorder columns on AI optimized board via event", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      column1 = Enum.at(board.columns, 0)
+      column2 = Enum.at(board.columns, 1)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("move_column", %{
+        "column_id" => to_string(column1.id),
+        "column_ids" => [to_string(column2.id), to_string(column1.id)]
+      })
+
+      assert render(show_live) =~ "Cannot reorder columns on AI optimized boards"
+    end
+  end
+
   describe "Show task operations" do
     setup [:register_and_log_in_user]
 
