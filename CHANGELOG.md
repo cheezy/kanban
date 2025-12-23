@@ -5,6 +5,81 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-22
+
+### Added
+
+#### Rich Task Metadata System
+
+- **Extended Task Schema** - Added 18+ new fields to support AI-optimized task management:
+  - **Planning & Context**: complexity (small/medium/large), estimated_files, why, what, where_context
+  - **Implementation Guidance**: patterns_to_follow, database_changes, validation_rules, required_capabilities
+  - **Observability**: telemetry_event, metrics_to_track, logging_requirements
+  - **Error Handling**: error_user_message, error_on_failure
+  - **Collections**: key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)
+  - **Metadata Tracking**: created_by, creator_name, completed_at, completed_by, completer_name, completion_summary
+  - **Assignment Tracking**: claimed_at, claimed_by, claimer_name
+  - **Review System**: needs_review (boolean), review_status (pending/approved/changes_requested), review_notes
+  - **Dependencies**: dependencies (JSONB array) to track task relationships
+
+#### Board-Level Field Visibility System
+
+- **Field Visibility Toggles** - Board owners can control which task fields are visible to all users:
+  - 12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities
+  - Stored in boards table as JSONB (field_visibility column)
+  - Real-time PubSub broadcasts synchronize visibility changes across all connected clients
+  - Owner-only access control - only board owners can modify field visibility settings
+  - Default visibility: acceptance_criteria shown, all others hidden
+  - Settings persist in database and apply to all users viewing the board
+
+#### Enhanced Task Forms
+
+- **Comprehensive Task Creation/Edit Form** - Support for all rich task fields with dynamic sections:
+  - Dynamic key files editor with add/remove functionality
+  - Dynamic verification steps editor with add/remove functionality
+  - Embedded schema support for structured JSONB data
+  - Validation for all new fields with proper error handling
+  - Field visibility awareness - form fields show/hide based on board settings
+  - Reduced code complexity (Credo compliant) through helper function extraction
+
+#### Task Detail View Enhancements
+
+- **Rich Task Display** - All 18 TASK.md categories displayed in organized, scannable format:
+  - Planning context (Why/What/Where)
+  - Implementation guidance section
+  - Key files to read (with file paths and descriptions)
+  - Verification steps checklist
+  - Observability requirements
+  - Error handling guidelines
+  - Technology requirements
+  - Known pitfalls
+  - Out of scope clarifications
+  - Dependencies visualization
+  - Review status indicators
+  - Assignment and completion tracking
+
+### Technical Improvements
+
+- **Real-Time Collaboration**:
+  - PubSub broadcasts for field visibility changes
+  - Instant synchronization of board settings across all connected clients
+
+### Developer Experience
+
+- **AI-Optimized Task Structure** - Tasks now contain comprehensive information for AI agents to:
+  - Understand context and rationale (why/what/where)
+  - Follow project patterns and conventions
+  - Locate relevant code files
+  - Verify implementation success
+  - Handle errors appropriately
+  - Track dependencies and review status
+
+- **Flexible Board Configuration** - Teams can customize their workflow by:
+  - Showing only relevant fields for their process
+  - Reducing information overload on task cards
+  - Maintaining consistent views across all team members
+  - Adjusting visibility as workflow needs evolve
+
 ## [1.0.1] - 2025-12-21
 
 ### Fixed

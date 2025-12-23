@@ -35,6 +35,190 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.1.0] - 2025-12-22</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Rich Task Metadata System")}
+              </h4>
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Extended Task Schema")}</strong>
+                  {gettext(" - Added 18+ new fields to support AI-optimized task management:")}
+                </li>
+              </ul>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Planning & Context:")}</strong>
+                  {gettext(" complexity (small/medium/large), estimated_files, why, what, where_context")}
+                </li>
+                <li>
+                  <strong>{gettext("Implementation Guidance:")}</strong>
+                  {gettext(" patterns_to_follow, database_changes, validation_rules, required_capabilities")}
+                </li>
+                <li>
+                  <strong>{gettext("Observability:")}</strong>
+                  {gettext(" telemetry_event, metrics_to_track, logging_requirements")}
+                </li>
+                <li>
+                  <strong>{gettext("Error Handling:")}</strong>
+                  {gettext(" error_user_message, error_on_failure")}
+                </li>
+                <li>
+                  <strong>{gettext("Collections:")}</strong>
+                  {gettext(" key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)")}
+                </li>
+                <li>
+                  <strong>{gettext("Metadata Tracking:")}</strong>
+                  {gettext(" created_by, creator_name, completed_at, completed_by, completer_name, completion_summary")}
+                </li>
+                <li>
+                  <strong>{gettext("Assignment Tracking:")}</strong>
+                  {gettext(" claimed_at, claimed_by, claimer_name")}
+                </li>
+                <li>
+                  <strong>{gettext("Review System:")}</strong>
+                  {gettext(" needs_review (boolean), review_status (pending/approved/changes_requested), review_notes")}
+                </li>
+                <li>
+                  <strong>{gettext("Dependencies:")}</strong>
+                  {gettext(" dependencies (JSONB array) to track task relationships")}
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Board-Level Field Visibility System")}
+              </h4>
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Field Visibility Toggles")}</strong>
+                  {gettext(" - Board owners can control which task fields are visible to all users:")}
+                </li>
+              </ul>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>
+                  {gettext("12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities")}
+                </li>
+                <li>{gettext("Stored in boards table as JSONB (field_visibility column)")}</li>
+                <li>
+                  {gettext("Real-time PubSub broadcasts synchronize visibility changes across all connected clients")}
+                </li>
+                <li>{gettext("Owner-only access control - only board owners can modify field visibility settings")}</li>
+                <li>{gettext("Default visibility: acceptance_criteria shown, all others hidden")}</li>
+                <li>{gettext("Settings persist in database and apply to all users viewing the board")}</li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Enhanced Task Forms")}
+              </h4>
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Comprehensive Task Creation/Edit Form")}</strong>
+                  {gettext(" - Support for all rich task fields with dynamic sections:")}
+                </li>
+              </ul>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>{gettext("Dynamic key files editor with add/remove functionality")}</li>
+                <li>{gettext("Dynamic verification steps editor with add/remove functionality")}</li>
+                <li>{gettext("Embedded schema support for structured JSONB data")}</li>
+                <li>{gettext("Validation for all new fields with proper error handling")}</li>
+                <li>{gettext("Field visibility awareness - form fields show/hide based on board settings")}</li>
+                <li>{gettext("Reduced code complexity (Credo compliant) through helper function extraction")}</li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task Detail View Enhancements")}
+              </h4>
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+                <li>
+                  <strong>{gettext("Rich Task Display")}</strong>
+                  {gettext(" - All 18 TASK.md categories displayed in organized, scannable format:")}
+                </li>
+              </ul>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>{gettext("Planning context (Why/What/Where)")}</li>
+                <li>{gettext("Implementation guidance section")}</li>
+                <li>{gettext("Key files to read (with file paths and descriptions)")}</li>
+                <li>{gettext("Verification steps checklist")}</li>
+                <li>{gettext("Observability requirements")}</li>
+                <li>{gettext("Error handling guidelines")}</li>
+                <li>{gettext("Technology requirements")}</li>
+                <li>{gettext("Known pitfalls")}</li>
+                <li>{gettext("Out of scope clarifications")}</li>
+                <li>{gettext("Dependencies visualization")}</li>
+                <li>{gettext("Review status indicators")}</li>
+                <li>{gettext("Assignment and completion tracking")}</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Technical Improvements")}
+            </h3>
+
+            <div class="mb-4">
+              <h4 class="text-lg font-semibold text-base-content mb-2">
+                {gettext("Real-Time Collaboration")}
+              </h4>
+              <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
+                <li>{gettext("PubSub broadcasts for field visibility changes")}</li>
+                <li>{gettext("Instant synchronization of board settings across all connected clients")}</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Developer Experience")}
+            </h3>
+
+            <div class="mb-4">
+              <h4 class="text-lg font-semibold text-base-content mb-2">
+                {gettext("AI-Optimized Task Structure")}
+              </h4>
+              <p class="text-base-content opacity-70 mb-2">
+                {gettext("Tasks now contain comprehensive information for AI agents to:")}
+              </p>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>{gettext("Understand context and rationale (why/what/where)")}</li>
+                <li>{gettext("Follow project patterns and conventions")}</li>
+                <li>{gettext("Locate relevant code files")}</li>
+                <li>{gettext("Verify implementation success")}</li>
+                <li>{gettext("Handle errors appropriately")}</li>
+                <li>{gettext("Track dependencies and review status")}</li>
+              </ul>
+            </div>
+
+            <div class="mb-4">
+              <h4 class="text-lg font-semibold text-base-content mb-2">
+                {gettext("Flexible Board Configuration")}
+              </h4>
+              <p class="text-base-content opacity-70 mb-2">
+                {gettext("Teams can customize their workflow by:")}
+              </p>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>{gettext("Showing only relevant fields for their process")}</li>
+                <li>{gettext("Reducing information overload on task cards")}</li>
+                <li>{gettext("Maintaining consistent views across all team members")}</li>
+                <li>{gettext("Adjusting visibility as workflow needs evolve")}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.0.1] - 2025-12-21</h2>
 
           <div class="mb-8">
