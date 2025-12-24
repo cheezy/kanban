@@ -5,6 +5,32 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-12-24
+
+### Added
+
+#### Task CRU API Endpoints
+
+- **RESTful JSON API for Tasks** - AI agents can now programmatically create, read, and update tasks:
+  - **POST /api/tasks** - Create tasks with all fields including nested associations (key_files, verification_steps)
+  - **GET /api/tasks** - List all tasks for the authenticated board with optional column filtering
+  - **GET /api/tasks/:id** - Retrieve a single task with all associations preloaded
+  - **PATCH /api/tasks/:id** - Update task fields including nested associations
+  - Board-scoped access control - tokens can only access tasks from their associated board
+  - Automatic default column selection (Backlog > Ready > first column) when column_id not specified
+  - Full field support for all 60+ task fields including metadata, observability, and AI context fields
+  - Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)
+
+- **Real-Time Integration**:
+  - All API mutations automatically broadcast via Phoenix PubSub
+  - LiveView clients receive instant updates when tasks are created or modified via API
+  - Seamless integration between UI and API workflows
+
+- **Telemetry & Observability**:
+  - Emits telemetry events for all API operations (`[:kanban, :api, :task_created]`, `[:kanban, :api, :task_updated]`, `[:kanban, :api, :task_listed]`)
+  - Tracks API usage including board_id, user_id, request path, and HTTP method
+  - Provides metrics for monitoring API performance and usage patterns
+
 ## [1.4.0] - 2025-12-24
 
 ### Added

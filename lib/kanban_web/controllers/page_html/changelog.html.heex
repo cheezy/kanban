@@ -35,6 +35,73 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.5.0] - 2025-12-24</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task CRU API Endpoints")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("RESTful JSON API for Tasks")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("AI agents can now programmatically create, read, and update tasks:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>POST /api/tasks</strong> - {gettext("Create tasks with all fields including nested associations (key_files, verification_steps)")}
+                  </li>
+                  <li>
+                    <strong>GET /api/tasks</strong> - {gettext("List all tasks for the authenticated board with optional column filtering")}
+                  </li>
+                  <li>
+                    <strong>GET /api/tasks/:id</strong> - {gettext("Retrieve a single task with all associations preloaded")}
+                  </li>
+                  <li>
+                    <strong>PATCH /api/tasks/:id</strong> - {gettext("Update task fields including nested associations")}
+                  </li>
+                  <li>{gettext("Board-scoped access control - tokens can only access tasks from their associated board")}</li>
+                  <li>{gettext("Automatic default column selection (Backlog > Ready > first column) when column_id not specified")}</li>
+                  <li>{gettext("Full field support for all 60+ task fields including metadata, observability, and AI context fields")}</li>
+                  <li>{gettext("Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Real-Time Integration")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("All API mutations automatically broadcast via Phoenix PubSub")}</li>
+                  <li>{gettext("LiveView clients receive instant updates when tasks are created or modified via API")}</li>
+                  <li>{gettext("Seamless integration between UI and API workflows")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Telemetry & Observability")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    {gettext("Emits telemetry events for all API operations")} (<code class="text-sm">[:kanban, :api, :task_created]</code>, <code class="text-sm">[:kanban, :api, :task_updated]</code>, <code class="text-sm">[:kanban, :api, :task_listed]</code>)
+                  </li>
+                  <li>{gettext("Tracks API usage including board_id, user_id, request path, and HTTP method")}</li>
+                  <li>{gettext("Provides metrics for monitoring API performance and usage patterns")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.4.0] - 2025-12-24</h2>
 
           <div class="mb-8">
