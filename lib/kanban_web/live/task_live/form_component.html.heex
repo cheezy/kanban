@@ -65,6 +65,8 @@
       prompt={gettext("Select a user")}
     />
 
+    <.input field={f[:needs_review]} type="checkbox" label={gettext("Needs Review")} />
+
     <%= if @action == :new_task do %>
       <.input
         field={f[:column_id]}
@@ -792,7 +794,6 @@
     <%!-- Review Queue Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>
-      <.input field={f[:needs_review]} type="checkbox" label={gettext("Needs Review")} />
       <.input
         field={f[:review_status]}
         type="select"
