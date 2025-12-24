@@ -63,7 +63,7 @@ No new tables needed. Hook execution is stateless but logged via telemetry.
 ```bash
 # Create .stride.md in project root (version-controlled)
 cat > .stride.md <<'EOF'
-# Agent Configuration
+# Stride Agent Configuration
 
 ## Agent: Claude Sonnet 4.5
 

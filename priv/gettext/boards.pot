@@ -1,30 +1,37 @@
-## "boards" domain.
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new messages manually only if they're dynamic
+## messages that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here has no
+## effect: edit them in PO (.po) files instead.
+#
 msgid ""
 msgstr ""
-"Language: pt\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/kanban_web/live/board_live/show.ex:635
 #, elixir-autogen, elixir-format
 msgid "Backlog"
-msgstr "Pendências"
+msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:637
 #, elixir-autogen, elixir-format
 msgid "Doing"
-msgstr "Em andamento"
+msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:639
 #, elixir-autogen, elixir-format
 msgid "Done"
-msgstr "Concluído"
+msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:636
 #, elixir-autogen, elixir-format
 msgid "Ready"
-msgstr "Pronto"
+msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:638
 #, elixir-autogen, elixir-format
 msgid "Review"
-msgstr "Revisão"
+msgstr ""

@@ -171,4 +171,5 @@ defmodule KanbanWeb.UserLive.Settings do
         {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
     end
   end
+
 end

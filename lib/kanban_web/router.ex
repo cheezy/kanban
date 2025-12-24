@@ -23,6 +23,7 @@ defmodule KanbanWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug KanbanWeb.Plugs.AuthenticateApiToken
   end
 
   scope "/", KanbanWeb do
@@ -35,10 +36,12 @@ defmodule KanbanWeb.Router do
     post "/locale/:locale", PageController, :set_locale
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", KanbanWeb do
-  #   pipe_through :api
-  # end
+  # API routes with token authentication
+  scope "/api", KanbanWeb do
+    pipe_through :api
+
+    # API endpoints will be added here by task W14 (Implement Task CRUD API)
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:kanban, :dev_routes) do
@@ -86,6 +89,7 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show
+      live "/boards/:id/api_tokens", BoardLive.Show, :api_tokens
       live "/boards/:id/columns/new", BoardLive.Show, :new_column
       live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
       live "/boards/:id/columns/:column_id/tasks/new", BoardLive.Show, :new_task

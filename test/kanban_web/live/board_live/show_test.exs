@@ -530,6 +530,183 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "API Tokens" do
+    setup [:register_and_log_in_user]
+
+    test "owner can access API tokens page", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert html =~ "API Tokens"
+      assert html =~ "Generate Token"
+    end
+
+    test "user with modify access can access API tokens page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert html =~ "API Tokens"
+    end
+
+    test "user with read-only access cannot access API tokens page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      readonly_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+
+      conn = log_in_user(conn, readonly_user)
+
+      assert {:error, {:live_redirect, %{to: path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert path == "/boards/#{board.id}"
+      assert error =~ "don't have permission to manage API tokens"
+    end
+
+    test "displays existing API tokens", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, {_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{
+          name: "Test Token"
+        })
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert html =~ "Test Token"
+    end
+
+    test "creates new API token via form submission", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> form("#api-tokens-modal form",
+        api_token: %{name: "New Token", agent_model: "claude"}
+      )
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "Token created successfully"
+      assert html =~ "New Token"
+      assert html =~ "stride_"
+    end
+
+    test "shows validation errors for invalid token creation", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> form("#api-tokens-modal form",
+        api_token: %{name: ""}
+      )
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "can&#39;t be blank" or html =~ "can't be blank"
+    end
+
+    test "revokes API token", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, {token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{
+          name: "Token to Revoke"
+        })
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> element("button[phx-click='revoke_token'][phx-value-id='#{token.id}']")
+      |> render_click()
+
+      html = render(show_live)
+      assert html =~ "revoked successfully" or html =~ "Revoked"
+    end
+
+    test "displays 'Never' for unused tokens", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, {_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{
+          name: "Unused Token"
+        })
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert html =~ "Never"
+    end
+
+    test "shows plain-text token only once after creation", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      # Create token
+      show_live
+      |> form("#api-tokens-modal form",
+        api_token: %{name: "One-time Token"}
+      )
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "stride_"
+      assert html =~ "Copy this token now"
+
+      # Navigate away and back
+      {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}")
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      # Plain-text token should not be visible anymore
+      refute html =~ "Copy this token now"
+    end
+
+    test "owner can see API Tokens button", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "API Tokens"
+    end
+
+    test "user with modify access can see API Tokens button", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "API Tokens"
+    end
+
+    test "user with read-only access cannot see API Tokens button", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      readonly_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+
+      conn = log_in_user(conn, readonly_user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "API Tokens"
+    end
+  end
+
   describe "Show task operations" do
     setup [:register_and_log_in_user]
 

@@ -7,6 +7,9 @@
         <.link :if={@user_access == :owner and not @board.ai_optimized_board} patch={~p"/boards/#{@board}/columns/new"}>
           <.button>{gettext("New Column")}</.button>
         </.link>
+        <.link :if={@can_modify} patch={~p"/boards/#{@board}/api_tokens"}>
+          <.button>{gettext("API Tokens")}</.button>
+        </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
           <.button>{gettext("Edit board")}</.button>
         </.link>
@@ -59,7 +62,7 @@
               <% end %>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
-                  <h2 class="font-bold text-base-content text-base">{column.name}</h2>
+                  <h2 class="font-bold text-base-content text-base">{translate_column_name(column.name)}</h2>
                   <%= if over_limit do %>
                     <span
                       title={gettext("WIP limit exceeded")}
@@ -352,4 +355,180 @@
       />
     </KanbanWeb.DelayedModal.delayed_modal>
   </div>
+
+  <%!-- API Tokens Modal --%>
+  <.modal
+      :if={@live_action == :api_tokens}
+      id="api-tokens-modal"
+      show
+      on_cancel={JS.patch(~p"/boards/#{@board}")}
+    >
+      <h2 class="text-2xl font-bold mb-6">{gettext("API Tokens for %{board_name}", board_name: @board.name)}</h2>
+
+      <div class="space-y-6">
+        <%= if @new_token do %>
+          <div class="alert alert-success">
+            <div class="flex-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="stroke-current flex-shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div class="flex-1">
+                <h3 class="font-bold">{gettext("Token created successfully!")}</h3>
+                <div class="text-sm">
+                  {gettext("Copy this token now - you won't be able to see it again:")}
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <code
+                    id="new-token-value"
+                    class="bg-base-300 px-3 py-2 rounded font-mono text-sm flex-1 break-all"
+                  >
+                    <%= @new_token %>
+                  </code>
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    onclick="
+                      const text = this.getAttribute('data-token-value');
+                      const copiedText = this.getAttribute('data-copied-text');
+                      const copyText = this.getAttribute('data-copy-text');
+                      const textarea = document.createElement('textarea');
+                      textarea.value = text;
+                      textarea.style.position = 'fixed';
+                      textarea.style.opacity = '0';
+                      document.body.appendChild(textarea);
+                      textarea.select();
+                      try {
+                        document.execCommand('copy');
+                        this.innerHTML = copiedText;
+                        setTimeout(() => { this.innerHTML = copyText; }, 2000);
+                      } catch (err) {
+                        console.error('Copy failed:', err);
+                        alert('Failed to copy: ' + err.message);
+                      } finally {
+                        document.body.removeChild(textarea);
+                      }
+                    "
+                    data-token-value={@new_token}
+                    data-copy-text={gettext("Copy")}
+                    data-copied-text={"✓ " <> gettext("Copied!")}
+                  >{gettext("Copy")}</button>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost"
+              phx-click="dismiss_token"
+              title={gettext("Dismiss")}
+            >
+              ×
+            </button>
+          </div>
+        <% end %>
+
+        <.form for={@token_form} phx-submit="create_token">
+          <.input
+            field={@token_form[:name]}
+            type="text"
+            label={gettext("Token Name")}
+            placeholder={gettext("My AI Agent")}
+            required
+          />
+
+          <.input
+            field={@token_form[:agent_model]}
+            type="text"
+            label={gettext("Agent Model (Optional)")}
+            placeholder="claude-3-opus"
+          />
+
+          <.input
+            field={@token_form[:agent_purpose]}
+            type="text"
+            label={gettext("Purpose (Optional)")}
+            placeholder="Task automation"
+          />
+
+          <div class="mt-4">
+            <.button phx-disable-with={gettext("Creating...")}>
+              {gettext("Generate Token")}
+            </.button>
+          </div>
+        </.form>
+
+        <div class="divider"></div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-base-content mb-3">
+            {gettext("Active Tokens")}
+          </h3>
+          <%= if Enum.empty?(@api_tokens) do %>
+            <p class="text-base-content opacity-60 italic">
+              {gettext("No API tokens yet. Generate one above to get started.")}
+            </p>
+          <% else %>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra w-full table-sm">
+                <thead>
+                  <tr>
+                    <th>{gettext("Name")}</th>
+                    <th>{gettext("User")}</th>
+                    <th>{gettext("Last Used")}</th>
+                    <th>{gettext("Actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <%= for token <- @api_tokens do %>
+                    <tr>
+                      <td>
+                        <%= token.name %>
+                        <%= if token.agent_model do %>
+                          <br />
+                          <span class="text-xs opacity-60">
+                            <%= token.agent_model %>
+                          </span>
+                        <% end %>
+                      </td>
+                      <td><%= token.user.email %></td>
+                      <td>
+                        <%= if token.last_used_at do %>
+                          <%= Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M") %>
+                        <% else %>
+                          <span class="opacity-60">{gettext("Never")}</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <%= if is_nil(token.revoked_at) do %>
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-error"
+                            phx-click="revoke_token"
+                            phx-value-id={token.id}
+                            data-confirm={gettext("Are you sure you want to revoke this token?")}
+                          >
+                            {gettext("Revoke")}
+                          </button>
+                        <% else %>
+                          <span class="badge badge-error">{gettext("Revoked")}</span>
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </.modal>
 </Layouts.app>

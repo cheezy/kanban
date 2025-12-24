@@ -4,22 +4,27 @@ msgstr ""
 "Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban/boards.ex:207
+#: lib/kanban_web/live/board_live/show.ex:635
+#, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr "Rückstand"
 
-#: lib/kanban/boards.ex:208
-msgid "Ready"
-msgstr "Bereit"
-
-#: lib/kanban/boards.ex:209
+#: lib/kanban_web/live/board_live/show.ex:637
+#, elixir-autogen, elixir-format
 msgid "Doing"
 msgstr "In Bearbeitung"
 
-#: lib/kanban/boards.ex:210
-msgid "Review"
-msgstr "Überprüfung"
-
-#: lib/kanban/boards.ex:211
+#: lib/kanban_web/live/board_live/show.ex:639
+#, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "Erledigt"
+
+#: lib/kanban_web/live/board_live/show.ex:636
+#, elixir-autogen, elixir-format
+msgid "Ready"
+msgstr "Bereit"
+
+#: lib/kanban_web/live/board_live/show.ex:638
+#, elixir-autogen, elixir-format
+msgid "Review"
+msgstr "Überprüfung"

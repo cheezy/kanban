@@ -240,18 +240,8 @@ mix precommit
 - **API URL:** `http://localhost:4000`
 - **API Token:** `stride_dev_abc123...` (paste your token here)
 - **Token Name:** Development Agent
-- **Scopes:** tasks:read, tasks:write
 - **Capabilities:** code_generation, testing
 
-## Usage
-
-```bash
-export STRIDE_API_TOKEN="stride_dev_abc123..."
-export STRIDE_API_URL="http://localhost:4000"
-
-curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  $STRIDE_API_URL/api/tasks/ready
-```
 ```
 
 **Add to `.gitignore`:**
@@ -269,14 +259,13 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
 17. Check last_used_at timestamp updates after API calls
 
 **Success Looks Like:**
-- Can create tokens via UI with name, scopes, capabilities
+- Can create tokens via UI with name and capabilities
 - Token displayed once with security warning
 - Tokens work for API authentication
 - Invalid/missing tokens return 401 with JSON error
 - Revoked tokens immediately stop working
 - Token list shows active and revoked tokens separately
 - last_used_at updates after each API call
-- Scopes enforced (can't access endpoints without scope)
 - Audit trail exists for security review
 
 ## Data Examples
@@ -291,7 +280,6 @@ defmodule Kanban.Repo.Migrations.CreateApiTokens do
     create table(:api_tokens) do
       add :name, :string, null: false
       add :token_hash, :string, null: false
-      add :scopes, {:array, :string}, default: [], null: false
       add :capabilities, {:array, :string}, default: [], null: false
       add :metadata, :map, default: %{}, null: false
       add :last_used_at, :utc_datetime
@@ -323,18 +311,6 @@ defmodule Kanban.Accounts.ApiToken do
   @moduledoc """
   API token for programmatic access to the Stride API.
 
-  Tokens are scoped with permissions and capabilities for intelligent
-  task-agent matching. Tokens are hashed before storage and never
-  stored in plain text.
-
-  ## Scopes
-
-  - tasks:read - Can read tasks
-  - tasks:write - Can create and update tasks
-  - tasks:delete - Can delete tasks
-  - tasks:claim - Can atomically claim tasks
-  - boards:read - Can read board structure
-
   ## Capabilities
 
   Agent capabilities for intelligent task matching. Tasks can specify
@@ -346,14 +322,6 @@ defmodule Kanban.Accounts.ApiToken do
   """
   use Ecto.Schema
   import Ecto.Changeset
-
-  @valid_scopes ~w(
-    tasks:read
-    tasks:write
-    tasks:delete
-    tasks:claim
-    boards:read
-  )
 
   @standard_capabilities ~w(
     code_generation
@@ -374,7 +342,6 @@ defmodule Kanban.Accounts.ApiToken do
   schema "api_tokens" do
     field :name, :string
     field :token_hash, :string
-    field :scopes, {:array, :string}, default: []
     field :capabilities, {:array, :string}, default: []
     field :metadata, :map, default: %{}
     field :last_used_at, :utc_datetime
@@ -390,24 +357,9 @@ defmodule Kanban.Accounts.ApiToken do
     |> cast(attrs, [:name, :token_hash, :scopes, :capabilities, :metadata, :user_id])
     |> validate_required([:name, :token_hash, :user_id])
     |> validate_length(:name, min: 3, max: 100)
-    |> validate_scopes()
     |> validate_capabilities()
     |> foreign_key_constraint(:user_id)
     |> unique_constraint(:token_hash)
-  end
-
-  defp validate_scopes(changeset) do
-    case get_change(changeset, :scopes) do
-      nil ->
-        changeset
-      scopes ->
-        invalid = Enum.reject(scopes, &(&1 in @valid_scopes))
-        if Enum.empty?(invalid) do
-          changeset
-        else
-          add_error(changeset, :scopes, "contains invalid scopes: #{Enum.join(invalid, ", ")}")
-        end
-    end
   end
 
   defp validate_capabilities(changeset) do
@@ -427,7 +379,6 @@ defmodule Kanban.Accounts.ApiToken do
     end
   end
 
-  def valid_scopes, do: @valid_scopes
   def standard_capabilities, do: @standard_capabilities
 end
 ```
@@ -453,7 +404,6 @@ defmodule Kanban.Accounts do
 
       iex> create_api_token(user, %{
       ...>   name: "Backend Agent",
-      ...>   scopes: ["tasks:read", "tasks:write"],
       ...>   capabilities: ["code_generation", "testing"],
       ...>   metadata: %{model: "claude-3.5-sonnet"}
       ...> })
@@ -595,13 +545,6 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
-  Checks if a token has a specific scope.
-  """
-  def has_scope?(%ApiToken{scopes: scopes}, required_scope) do
-    required_scope in scopes
-  end
-
-  @doc """
   Checks if a token has all required capabilities.
   """
   def has_capabilities?(%ApiToken{capabilities: caps}, required_capabilities)
@@ -645,7 +588,6 @@ defmodule KanbanWeb.Plugs.ApiAuth do
   import Phoenix.Controller, only: [json: 2]
 
   alias Kanban.Accounts
-  alias Kanban.Accounts.Scope
 
   def init(opts), do: opts
 

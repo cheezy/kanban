@@ -1,6 +1,7 @@
 defmodule KanbanWeb.BoardLive.Show do
   use KanbanWeb, :live_view
 
+  alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
@@ -91,6 +92,23 @@ defmodule KanbanWeb.BoardLive.Show do
       end
 
     {:noreply, socket}
+  end
+
+  def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :api_tokens do
+    user = socket.assigns.current_scope.user
+    board = Boards.get_board!(id, user)
+    user_access = Boards.get_user_access(board.id, user.id)
+
+    subscribe_to_board_updates(socket, board.id)
+
+    if user_access in [:owner, :modify] do
+      assign_api_tokens_state(socket, board, user_access)
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
+       |> push_patch(to: ~p"/boards/#{board}")}
+    end
   end
 
   def handle_params(%{"id" => id}, _, socket) do
@@ -274,6 +292,57 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("create_token", params, socket) do
+    user = socket.assigns.current_scope.user
+    board = socket.assigns.board
+
+    token_params = Map.merge(params["api_token"] || %{}, params["token"] || %{})
+
+    case ApiTokens.create_api_token(user, board, token_params) do
+      {:ok, {_api_token, plain_text_token}} ->
+        api_tokens = ApiTokens.list_api_tokens(board)
+        token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
+
+        {:noreply,
+         socket
+         |> assign(:api_tokens, api_tokens)
+         |> assign(:new_token, plain_text_token)
+         |> assign(:token_form, to_form(token_changeset))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
+    end
+  end
+
+  @impl true
+  def handle_event("dismiss_token", _params, socket) do
+    {:noreply, assign(socket, :new_token, nil)}
+  end
+
+  @impl true
+  def handle_event("revoke_token", %{"id" => id}, socket) do
+    api_token = ApiTokens.get_api_token!(id)
+    board = socket.assigns.board
+
+    if api_token.board_id == board.id do
+      case ApiTokens.revoke_api_token(api_token) do
+        {:ok, _api_token} ->
+          api_tokens = ApiTokens.list_api_tokens(board)
+
+          {:noreply,
+           socket
+           |> assign(:api_tokens, api_tokens)
+           |> put_flash(:info, gettext("API token revoked successfully"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to revoke token"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
+    end
+  end
+
+  @impl true
   def handle_info({:show_task_modal, task_id}, socket) do
     require Logger
 
@@ -402,6 +471,31 @@ defmodule KanbanWeb.BoardLive.Show do
      |> load_tasks_for_columns(columns)}
   end
 
+  defp assign_api_tokens_state(socket, board, user_access) do
+    columns = Columns.list_columns(board)
+    api_tokens = ApiTokens.list_api_tokens(board)
+    token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
+
+    new_token = Map.get(socket.assigns, :new_token, nil)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, gettext("API Tokens"))
+     |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:is_owner, user_access == :owner)
+     |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign(:has_columns, not Enum.empty?(columns))
+     |> assign(:api_tokens, api_tokens)
+     |> assign(:token_form, to_form(token_changeset))
+     |> assign(:new_token, new_token)
+     |> assign(:viewing_task_id, nil)
+     |> assign(:show_task_modal, false)
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
+  end
+
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
     column = Columns.get_column!(column_id)
     tasks = Tasks.list_tasks(column)
@@ -483,6 +577,7 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:new_column), do: "New Column"
   defp page_title(:edit_column), do: "Edit Column"
   defp page_title(:new_task), do: "New Task"
+  defp page_title(:api_tokens), do: "API Tokens"
   defp page_title(:edit_task), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
@@ -528,5 +623,21 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(:has_columns, not Enum.empty?(columns))
      |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)}
+  end
+
+  @doc """
+  Translates AI board column names if they match the standard keys.
+  For AI optimized boards, column names are stored as English keys and translated dynamically.
+  For custom boards, column names are returned as-is.
+  """
+  def translate_column_name(column_name) do
+    case column_name do
+      "Backlog" -> dgettext("boards", "Backlog")
+      "Ready" -> dgettext("boards", "Ready")
+      "Doing" -> dgettext("boards", "Doing")
+      "Review" -> dgettext("boards", "Review")
+      "Done" -> dgettext("boards", "Done")
+      _ -> column_name
+    end
   end
 end

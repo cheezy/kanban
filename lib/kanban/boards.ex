@@ -3,7 +3,9 @@ defmodule Kanban.Boards do
   The Boards context.
   """
 
+  use Gettext, backend: KanbanWeb.Gettext
   import Ecto.Query, warn: false
+
   alias Kanban.Repo
 
   alias Kanban.Boards.Board
@@ -204,11 +206,11 @@ defmodule Kanban.Boards do
     alias Kanban.Columns
 
     default_columns = [
-      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Backlog"), wip_limit: 0},
-      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Ready"), wip_limit: 0},
-      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Doing"), wip_limit: 0},
-      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Review"), wip_limit: 0},
-      %{name: Gettext.dgettext(KanbanWeb.Gettext, "boards", "Done"), wip_limit: 0}
+      %{name: "Backlog", wip_limit: 0},
+      %{name: "Ready", wip_limit: 0},
+      %{name: "Doing", wip_limit: 0},
+      %{name: "Review", wip_limit: 0},
+      %{name: "Done", wip_limit: 0}
     ]
 
     Enum.each(default_columns, fn column_attrs ->
