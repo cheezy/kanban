@@ -1,10 +1,10 @@
-# Implement Task CRUD API Endpoints
+# Implement Task CRU API Endpoints
 
 **Complexity:** Large | **Est. Files:** 6-8
 
 ## Description
 
-**WHY:** AI agents need JSON API endpoints to create, read, update, and delete tasks programmatically. HTTP REST API is the standard way for external tools to interact with the application.
+**WHY:** AI agents need JSON API endpoints to create, read, and update tasks programmatically. HTTP REST API is the standard way for external tools to interact with the application.
 
 **WHAT:** Create JSON API endpoints for task CRUD operations, including creating tasks with nested associations (key_files, verification_steps, pitfalls), fetching tasks with all related data, and updating task fields.
 
@@ -16,11 +16,9 @@
 - [ ] GET /api/tasks lists tasks with pagination
 - [ ] GET /api/tasks/:id returns single task with associations
 - [ ] PATCH /api/tasks/:id updates task fields
-- [ ] DELETE /api/tasks/:id soft-deletes or removes task
 - [ ] Nested associations handled in create/update
 - [ ] JSON responses follow consistent format
 - [ ] Error responses include validation details
-- [ ] Scopes enforced (tasks:read, tasks:write, tasks:delete)
 - [ ] All endpoints return proper HTTP status codes
 
 ## Eating Our Own Dog Food
@@ -62,10 +60,9 @@
   - Tasks.get_task!(id) with preloads
   - Tasks.create_task(attrs) with nested associations
   - Tasks.update_task(task, attrs)
-  - Tasks.delete_task(task)
 
 **Integration Points:**
-- [ ] PubSub broadcasts: Broadcast task created/updated/deleted to board channel
+- [ ] PubSub broadcasts: Broadcast task created/updated to board channel
 - [ ] Phoenix Channels: Notify all board subscribers of changes
 - [ ] External APIs: None
 
@@ -126,11 +123,10 @@ mix precommit
 4. Test GET /api/tasks (verify pagination)
 5. Test GET /api/tasks/:id (verify associations loaded)
 6. Test PATCH /api/tasks/:id
-7. Test DELETE /api/tasks/:id
-8. Verify PubSub broadcasts to board channel
-9. Check LiveView updates in real-time
-10. Test without token (should 401)
-11. Test with revoked token (should 401)
+7. Verify PubSub broadcasts to board channel
+8. Check LiveView updates in real-time
+9. Test without token (should 401)
+10. Test with revoked token (should 401)
 
 **Success Looks Like:**
 - Can create tasks via API with all fields
@@ -139,8 +135,7 @@ mix precommit
 - Validation errors returned clearly
 - PubSub broadcasts work
 - LiveView updates without refresh
-- All CRUD operations functional
-- Scopes enforced correctly
+- All create, read, and update operations functional
 
 ## Data Examples
 
@@ -148,90 +143,111 @@ mix precommit
 ```elixir
 defmodule KanbanWeb.API.TaskController do
   use KanbanWeb, :controller
-  alias Kanban.Tasks
-  alias Kanban.Schemas.Task
+  alias Kanban.{Tasks, Columns}
 
-  action_fallback KanbanWeb.FallbackController
+  action_fallback KanbanWeb.API.FallbackController
 
   def index(conn, params) do
-    # Enforce scope
-    if has_scope?(conn, "tasks:read") do
-      tasks = Tasks.list_tasks(params)
-      render(conn, "index.json", tasks: tasks)
+    board = conn.assigns.current_board
+    column_id = params["column_id"]
+
+    tasks = if column_id do
+      column = Columns.get_column!(column_id)
+
+      if column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Column does not belong to this board"})
+      else
+        Tasks.list_tasks(column)
+      end
     else
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Insufficient permissions"})
+      columns = Columns.list_columns(board)
+      Enum.flat_map(columns, &Tasks.list_tasks/1)
     end
+
+    render(conn, :index, tasks: tasks)
   end
 
   def show(conn, %{"id" => id}) do
-    if has_scope?(conn, "tasks:read") do
-      task = Tasks.get_task!(id)
-      render(conn, "show.json", task: task)
-    else
+    board = conn.assigns.current_board
+    task = Tasks.get_task_for_view!(id)
+
+    if task.column.board_id != board.id do
       conn
       |> put_status(:forbidden)
-      |> json(%{error: "Insufficient permissions"})
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      render(conn, :show, task: task)
     end
   end
 
   def create(conn, %{"task" => task_params}) do
-    if has_scope?(conn, "tasks:write") do
-      case Tasks.create_task(task_params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+
+    column_id = task_params["column_id"] || get_default_column_id(board)
+    column = Columns.get_column!(column_id)
+
+    if column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Column does not belong to this board"})
+    else
+      task_params_with_creator =
+        task_params
+        |> Map.put("created_by_id", user.id)
+        |> Map.delete("column_id")
+
+      case Tasks.create_task(column, task_params_with_creator) do
         {:ok, task} ->
-          # Broadcast to PubSub
-          Phoenix.PubSub.broadcast(
-            Kanban.PubSub,
-            "board:#{task.column.board_id}",
-            {:task_created, task}
-          )
+          task = Tasks.get_task_for_view!(task.id)
 
           conn
           |> put_status(:created)
-          |> render("show.json", task: task)
+          |> put_resp_header("location", ~p"/api/tasks/#{task}")
+          |> render(:show, task: task)
 
         {:error, %Ecto.Changeset{} = changeset} ->
           conn
           |> put_status(:unprocessable_entity)
-          |> render("error.json", changeset: changeset)
+          |> render(:error, changeset: changeset)
       end
-    else
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Insufficient permissions"})
     end
   end
 
   def update(conn, %{"id" => id, "task" => task_params}) do
-    if has_scope?(conn, "tasks:write") do
-      task = Tasks.get_task!(id)
+    board = conn.assigns.current_board
+    task = Tasks.get_task_for_view!(id)
 
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
       case Tasks.update_task(task, task_params) do
         {:ok, task} ->
-          Phoenix.PubSub.broadcast(
-            Kanban.PubSub,
-            "board:#{task.column.board_id}",
-            {:task_updated, task}
-          )
-
-          render(conn, "show.json", task: task)
+          task = Tasks.get_task_for_view!(task.id)
+          render(conn, :show, task: task)
 
         {:error, %Ecto.Changeset{} = changeset} ->
           conn
           |> put_status(:unprocessable_entity)
-          |> render("error.json", changeset: changeset)
+          |> render(:error, changeset: changeset)
       end
-    else
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Insufficient permissions"})
     end
   end
 
-  defp has_scope?(conn, required_scope) do
-    api_token = conn.assigns[:api_token]
-    required_scope in api_token.scopes
+  defp get_default_column_id(board) do
+    columns = Columns.list_columns(board)
+    backlog = Enum.find(columns, fn col -> col.name == "Backlog" end)
+    ready = Enum.find(columns, fn col -> col.name == "Ready" end)
+
+    cond do
+      backlog -> backlog.id
+      ready -> ready.id
+      true -> List.first(columns).id
+    end
   end
 end
 ```
@@ -332,7 +348,7 @@ end
 
 **Context Functions:**
 
-**IMPORTANT:** Always use the `Tasks` context functions (`Tasks.create_task/2`, `Tasks.update_task/2`, `Tasks.delete_task/1`) instead of calling `Repo` directly. These context functions include critical broadcasting logic via Phoenix PubSub that ensures all connected LiveView clients receive real-time updates.
+**IMPORTANT:** Always use the `Tasks` context functions (`Tasks.create_task/2`, `Tasks.update_task/2`) instead of calling `Repo` directly. These context functions include critical broadcasting logic via Phoenix PubSub that ensures all connected LiveView clients receive real-time updates.
 
 ```elixir
 defmodule Kanban.Tasks do
@@ -345,7 +361,6 @@ defmodule Kanban.Tasks do
   # Key functions for API:
   # - Tasks.create_task(column, attrs) - Creates task and broadcasts :task_created
   # - Tasks.update_task(task, attrs) - Updates task and broadcasts appropriate event
-  # - Tasks.delete_task(task) - Deletes task and broadcasts :task_deleted
   # - Tasks.get_task!(id) - Gets task with preloaded associations
   # - Tasks.move_task(task, column, position) - Moves task and broadcasts :task_moved
 
@@ -357,7 +372,6 @@ defmodule Kanban.Tasks do
   #   - :task_completed when completed_at changes
   #   - :task_reviewed when review_status changes
   #   - :task_updated for other updates
-  # - delete_task/1 broadcasts {Kanban.Tasks, :task_deleted, task}
   # - move_task/3 broadcasts {Kanban.Tasks, :task_moved, task}
 
   # All broadcasts go to "board:#{board_id}" topic
@@ -368,7 +382,6 @@ end
 
 - [ ] Telemetry event: `[:kanban, :api, :task_created]`
 - [ ] Telemetry event: `[:kanban, :api, :task_updated]`
-- [ ] Telemetry event: `[:kanban, :api, :task_deleted]`
 - [ ] Telemetry event: `[:kanban, :api, :task_listed]`
 - [ ] Metrics: Counter of API requests by endpoint
 - [ ] Metrics: Counter of API errors by type
@@ -385,10 +398,9 @@ end
 - [ ] Don't forget to preload associations (avoid N+1 queries)
 - [ ] Remember to broadcast PubSub events after mutations
 - [ ] Avoid returning sensitive data in JSON (like token hashes)
-- [ ] Don't forget to check scopes before each action
 - [ ] Remember to handle nested association params in changeset
 - [ ] Avoid circular dependencies in JSON rendering
-- [ ] Don't forget proper HTTP status codes (201 for create, 204 for delete, etc.)
+- [ ] Don't forget proper HTTP status codes (201 for create, 200 for update, etc.)
 - [ ] Remember to validate position fields in nested associations
 
 ## Dependencies

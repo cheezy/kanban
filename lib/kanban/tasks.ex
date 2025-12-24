@@ -136,9 +136,12 @@ defmodule Kanban.Tasks do
     task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
     identifier = generate_identifier(column, task_type)
 
-    attrs
-    |> prepare_task_attrs(next_position)
-    |> Map.put(:identifier, identifier)
+    prepared_attrs = prepare_task_attrs(attrs, next_position)
+
+    # Use string or atom key based on what position key was used
+    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+
+    Map.put(prepared_attrs, identifier_key, identifier)
   end
 
   defp insert_task_with_history(column, attrs) do
@@ -351,18 +354,15 @@ defmodule Kanban.Tasks do
   # Private functions
 
   defp prepare_task_attrs(attrs, position) do
-    case attrs do
-      %{} = map when is_map_key(map, "title") or is_map_key(map, :title) ->
-        # Convert to atom keys if needed, then add position
-        attrs
-        |> Enum.into(%{}, fn
-          {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
-          {k, v} -> {k, v}
-        end)
-        |> Map.put(:position, position)
+    # Check if map has string keys by looking for any string key
+    has_string_keys? = Enum.any?(Map.keys(attrs), &is_binary/1)
 
-      _ ->
-        Map.put(attrs, :position, position)
+    if has_string_keys? do
+      # Map has string keys, keep position as string too
+      Map.put(attrs, "position", position)
+    else
+      # Map has atom keys, keep position as atom
+      Map.put(attrs, :position, position)
     end
   end
 

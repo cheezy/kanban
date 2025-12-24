@@ -37,10 +37,10 @@ defmodule KanbanWeb.Router do
   end
 
   # API routes with token authentication
-  scope "/api", KanbanWeb do
+  scope "/api", KanbanWeb.API, as: :api do
     pipe_through :api
 
-    # API endpoints will be added here by task W14 (Implement Task CRUD API)
+    resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
