@@ -9,6 +9,7 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: data(task)}
   end
 
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp data(%Task{} = task) do
     %{
       id: task.id,

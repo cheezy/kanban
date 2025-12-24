@@ -1,7 +1,8 @@
 defmodule KanbanWeb.API.TaskController do
   use KanbanWeb, :controller
 
-  alias Kanban.{Tasks, Columns}
+  alias Kanban.Columns
+  alias Kanban.Tasks
 
   action_fallback KanbanWeb.API.FallbackController
 

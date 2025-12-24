@@ -355,7 +355,7 @@ defmodule Kanban.Tasks do
 
   defp prepare_task_attrs(attrs, position) do
     # Check if map has string keys by looking for any string key
-    has_string_keys? = Enum.any?(Map.keys(attrs), &is_binary/1)
+    has_string_keys? = Map.keys(attrs) |> Enum.any?(&is_binary/1)
 
     if has_string_keys? do
       # Map has string keys, keep position as string too

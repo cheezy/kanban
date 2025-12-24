@@ -4,7 +4,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
 
-  alias Kanban.{ApiTokens, Columns, Tasks}
+  alias Kanban.ApiTokens
+  alias Kanban.Columns
+  alias Kanban.Tasks
 
   setup %{conn: conn} do
     user = user_fixture()
