@@ -7,7 +7,7 @@
         <.link :if={@user_access == :owner and not @board.ai_optimized_board} patch={~p"/boards/#{@board}/columns/new"}>
           <.button>{gettext("New Column")}</.button>
         </.link>
-        <.link :if={@can_modify} patch={~p"/boards/#{@board}/api_tokens"}>
+        <.link :if={@can_modify and @board.ai_optimized_board} patch={~p"/boards/#{@board}/api_tokens"}>
           <.button>{gettext("API Tokens")}</.button>
         </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>

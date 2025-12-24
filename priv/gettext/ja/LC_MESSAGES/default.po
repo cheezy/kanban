@@ -363,7 +363,7 @@ msgstr "ボードを表示"
 msgid "Column created successfully"
 msgstr "列が正常に作成されました"
 
-#: lib/kanban_web/live/board_live/show.ex:155
+#: lib/kanban_web/live/board_live/show.ex:163
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "列が正常に削除されました"
@@ -383,7 +383,7 @@ msgstr "ボード用の新しい列を作成"
 msgid "Create your first column"
 msgstr "最初の列を作成"
 
-#: lib/kanban_web/live/board_live/show.ex:160
+#: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "列の削除に失敗しました"
@@ -439,7 +439,7 @@ msgstr "列"
 msgid "Create a new task"
 msgstr "新しいタスクを作成"
 
-#: lib/kanban_web/live/board_live/show.ex:197
+#: lib/kanban_web/live/board_live/show.ex:205
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "タスクの削除に失敗しました"
@@ -459,7 +459,7 @@ msgstr "タスクを保存"
 msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
 
-#: lib/kanban_web/live/board_live/show.ex:192
+#: lib/kanban_web/live/board_live/show.ex:200
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "タスクが正常に削除されました"
@@ -502,7 +502,7 @@ msgstr "Stride"
 msgid "Organize Your Work"
 msgstr "作業を整理"
 
-#: lib/kanban_web/live/board_live/show.ex:552
+#: lib/kanban_web/live/board_live/show.ex:560
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "タスクを移動できません：列がWIP制限に達しています"
@@ -528,7 +528,7 @@ msgstr "重大"
 msgid "Defect"
 msgstr "不具合"
 
-#: lib/kanban_web/live/board_live/show.ex:561
+#: lib/kanban_web/live/board_live/show.ex:569
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "タスクの移動に失敗しました"
@@ -804,22 +804,22 @@ msgstr "ボードに追加するには、ユーザーが既にシステムに登
 msgid "You cannot add yourself to the board"
 msgstr "自分自身をボードに追加することはできません"
 
-#: lib/kanban_web/live/board_live/show.ex:139
+#: lib/kanban_web/live/board_live/show.ex:147
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "ボードの所有者のみが列を削除できます"
 
-#: lib/kanban_web/live/board_live/show.ex:428
+#: lib/kanban_web/live/board_live/show.ex:436
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "ボードの所有者のみが列を管理できます"
 
-#: lib/kanban_web/live/board_live/show.ex:446
+#: lib/kanban_web/live/board_live/show.ex:454
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "ボードの所有者のみが列を作成できます"
 
-#: lib/kanban_web/live/board_live/show.ex:238
+#: lib/kanban_web/live/board_live/show.ex:246
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "ボードの所有者のみが列を並べ替えできます"
@@ -2044,23 +2044,23 @@ msgstr ""
 msgid "Board-Level Field Visibility System"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:431
-#: lib/kanban_web/live/board_live/show.ex:449
+#: lib/kanban_web/live/board_live/show.ex:439
+#: lib/kanban_web/live/board_live/show.ex:457
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:144
+#: lib/kanban_web/live/board_live/show.ex:152
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:434
+#: lib/kanban_web/live/board_live/show.ex:442
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:243
+#: lib/kanban_web/live/board_live/show.ex:251
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr ""
@@ -2299,7 +2299,7 @@ msgid "Extended Task Schema"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:195
-#: lib/kanban_web/live/board_live/show.ex:286
+#: lib/kanban_web/live/board_live/show.ex:294
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr ""
@@ -2480,8 +2480,8 @@ msgid "On Failure (What Happens)"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:192
-#: lib/kanban_web/live/board_live/show.ex:283
-#: lib/kanban_web/live/board_live/show.ex:290
+#: lib/kanban_web/live/board_live/show.ex:291
+#: lib/kanban_web/live/board_live/show.ex:298
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr ""
@@ -2887,7 +2887,7 @@ msgstr ""
 msgid "AI Optimized Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:483
+#: lib/kanban_web/live/board_live/show.ex:491
 #: lib/kanban_web/live/board_live/show.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
@@ -2903,7 +2903,7 @@ msgstr "%{board_name}のAPIトークン"
 msgid "API endpoint or service"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:335
+#: lib/kanban_web/live/board_live/show.ex:343
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "APIトークンが正常に取り消されました"
@@ -3062,7 +3062,7 @@ msgstr ""
 msgid "External APIs"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:338
+#: lib/kanban_web/live/board_live/show.ex:346
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to revoke token"
 msgstr "タスクの移動に失敗しました"
@@ -3231,7 +3231,7 @@ msgstr "トークン名"
 msgid "Token created successfully!"
 msgstr "列が正常に作成されました"
 
-#: lib/kanban_web/live/board_live/show.ex:341
+#: lib/kanban_web/live/board_live/show.ex:349
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr "未承認"
@@ -3252,7 +3252,7 @@ msgstr ""
 msgid "User"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:109
+#: lib/kanban_web/live/board_live/show.ex:117
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "APIトークンを管理する権限がありません"
@@ -3281,3 +3281,8 @@ msgstr "閉じる"
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "コピーしました！"
+
+#: lib/kanban_web/live/board_live/show.ex:108
+#, elixir-autogen, elixir-format
+msgid "API tokens are only available for AI Optimized boards"
+msgstr "APIトークンはAI最適化ボード専用です"

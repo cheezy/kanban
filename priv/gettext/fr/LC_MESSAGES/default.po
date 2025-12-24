@@ -363,7 +363,7 @@ msgstr "Voir le Tableau"
 msgid "Column created successfully"
 msgstr "Colonne créée avec succès"
 
-#: lib/kanban_web/live/board_live/show.ex:155
+#: lib/kanban_web/live/board_live/show.ex:163
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "Colonne supprimée avec succès"
@@ -383,7 +383,7 @@ msgstr "Créer une nouvelle colonne pour votre tableau"
 msgid "Create your first column"
 msgstr "Créez votre première colonne"
 
-#: lib/kanban_web/live/board_live/show.ex:160
+#: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "Échec de la suppression de la colonne"
@@ -439,7 +439,7 @@ msgstr "Colonne"
 msgid "Create a new task"
 msgstr "Créer une nouvelle tâche"
 
-#: lib/kanban_web/live/board_live/show.ex:197
+#: lib/kanban_web/live/board_live/show.ex:205
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "Échec de la suppression de la tâche"
@@ -459,7 +459,7 @@ msgstr "Enregistrer la tâche"
 msgid "Task created successfully"
 msgstr "Tâche créée avec succès"
 
-#: lib/kanban_web/live/board_live/show.ex:192
+#: lib/kanban_web/live/board_live/show.ex:200
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "Tâche supprimée avec succès"
@@ -502,7 +502,7 @@ msgstr "Stride"
 msgid "Organize Your Work"
 msgstr "Organisez Votre Travail"
 
-#: lib/kanban_web/live/board_live/show.ex:552
+#: lib/kanban_web/live/board_live/show.ex:560
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "Impossible de déplacer la tâche : la colonne a atteint sa limite WIP"
@@ -528,7 +528,7 @@ msgstr "Critique"
 msgid "Defect"
 msgstr "Défaut"
 
-#: lib/kanban_web/live/board_live/show.ex:561
+#: lib/kanban_web/live/board_live/show.ex:569
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "Échec du déplacement de la tâche"
@@ -804,22 +804,22 @@ msgstr "Les utilisateurs doivent déjà être enregistrés dans le système pour
 msgid "You cannot add yourself to the board"
 msgstr "Vous ne pouvez pas vous ajouter au tableau"
 
-#: lib/kanban_web/live/board_live/show.ex:139
+#: lib/kanban_web/live/board_live/show.ex:147
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "Seul le propriétaire du tableau peut supprimer des colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:428
+#: lib/kanban_web/live/board_live/show.ex:436
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "Seul le propriétaire du tableau peut gérer les colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:446
+#: lib/kanban_web/live/board_live/show.ex:454
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "Seul le propriétaire du tableau peut créer des colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:238
+#: lib/kanban_web/live/board_live/show.ex:246
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "Seul le propriétaire du tableau peut réorganiser les colonnes"
@@ -2044,23 +2044,23 @@ msgstr ""
 msgid "Board-Level Field Visibility System"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:431
-#: lib/kanban_web/live/board_live/show.ex:449
+#: lib/kanban_web/live/board_live/show.ex:439
+#: lib/kanban_web/live/board_live/show.ex:457
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:144
+#: lib/kanban_web/live/board_live/show.ex:152
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:434
+#: lib/kanban_web/live/board_live/show.ex:442
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:243
+#: lib/kanban_web/live/board_live/show.ex:251
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr ""
@@ -2299,7 +2299,7 @@ msgid "Extended Task Schema"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:195
-#: lib/kanban_web/live/board_live/show.ex:286
+#: lib/kanban_web/live/board_live/show.ex:294
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr ""
@@ -2480,8 +2480,8 @@ msgid "On Failure (What Happens)"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:192
-#: lib/kanban_web/live/board_live/show.ex:283
-#: lib/kanban_web/live/board_live/show.ex:290
+#: lib/kanban_web/live/board_live/show.ex:291
+#: lib/kanban_web/live/board_live/show.ex:298
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr ""
@@ -2887,7 +2887,7 @@ msgstr ""
 msgid "AI Optimized Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:483
+#: lib/kanban_web/live/board_live/show.ex:491
 #: lib/kanban_web/live/board_live/show.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
@@ -2903,7 +2903,7 @@ msgstr "Jetons API pour %{board_name}"
 msgid "API endpoint or service"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:335
+#: lib/kanban_web/live/board_live/show.ex:343
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "Jeton API révoqué avec succès"
@@ -3062,7 +3062,7 @@ msgstr ""
 msgid "External APIs"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:338
+#: lib/kanban_web/live/board_live/show.ex:346
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to revoke token"
 msgstr "Échec du déplacement de la tâche"
@@ -3231,7 +3231,7 @@ msgstr "Nom du Jeton"
 msgid "Token created successfully!"
 msgstr "Colonne créée avec succès"
 
-#: lib/kanban_web/live/board_live/show.ex:341
+#: lib/kanban_web/live/board_live/show.ex:349
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr "Non autorisé"
@@ -3252,7 +3252,7 @@ msgstr ""
 msgid "User"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:109
+#: lib/kanban_web/live/board_live/show.ex:117
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "Vous n'avez pas la permission de gérer les jetons API"
@@ -3281,3 +3281,8 @@ msgstr "Rejeter"
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "Copié!"
+
+#: lib/kanban_web/live/board_live/show.ex:108
+#, elixir-autogen, elixir-format
+msgid "API tokens are only available for AI Optimized boards"
+msgstr "Les jetons API ne sont disponibles que pour les tableaux optimisés pour l'IA"

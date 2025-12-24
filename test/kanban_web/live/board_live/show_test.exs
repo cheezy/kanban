@@ -534,7 +534,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     setup [:register_and_log_in_user]
 
     test "owner can access API tokens page", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
       assert html =~ "API Tokens"
@@ -543,7 +543,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
     test "user with modify access can access API tokens page", %{conn: conn, user: _user} do
       owner = user_fixture()
-      board = board_fixture(owner)
+      board = ai_optimized_board_fixture(owner)
 
       modify_user = user_fixture()
       Kanban.Boards.add_user_to_board(board, modify_user, :modify)
@@ -557,7 +557,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
     test "user with read-only access cannot access API tokens page", %{conn: conn, user: _user} do
       owner = user_fixture()
-      board = board_fixture(owner)
+      board = ai_optimized_board_fixture(owner)
 
       readonly_user = user_fixture()
       Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
@@ -572,7 +572,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "displays existing API tokens", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_token, _plain}} =
         Kanban.ApiTokens.create_api_token(user, board, %{
@@ -585,7 +585,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "creates new API token via form submission", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
@@ -602,7 +602,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "shows validation errors for invalid token creation", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
@@ -617,7 +617,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "revokes API token", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {token, _plain}} =
         Kanban.ApiTokens.create_api_token(user, board, %{
@@ -635,7 +635,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "displays 'Never' for unused tokens", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_token, _plain}} =
         Kanban.ApiTokens.create_api_token(user, board, %{
@@ -648,7 +648,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "shows plain-text token only once after creation", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
@@ -672,7 +672,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
 
     test "owner can see API Tokens button", %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert html =~ "API Tokens"
@@ -680,7 +680,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
     test "user with modify access can see API Tokens button", %{conn: conn, user: _user} do
       owner = user_fixture()
-      board = board_fixture(owner)
+      board = ai_optimized_board_fixture(owner)
 
       modify_user = user_fixture()
       Kanban.Boards.add_user_to_board(board, modify_user, :modify)
@@ -694,13 +694,30 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
     test "user with read-only access cannot see API Tokens button", %{conn: conn, user: _user} do
       owner = user_fixture()
-      board = board_fixture(owner)
+      board = ai_optimized_board_fixture(owner)
 
       readonly_user = user_fixture()
       Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
 
       conn = log_in_user(conn, readonly_user)
 
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "API Tokens"
+    end
+
+    test "non-AI-optimized boards cannot access API tokens page", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      assert {:error, {:live_redirect, %{to: path, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert path == "/boards/#{board.id}"
+      assert error =~ "only available for AI Optimized boards"
+    end
+
+    test "non-AI-optimized boards do not show API Tokens button", %{conn: conn, user: user} do
+      board = board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       refute html =~ "API Tokens"

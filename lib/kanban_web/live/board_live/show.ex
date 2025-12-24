@@ -101,13 +101,21 @@ defmodule KanbanWeb.BoardLive.Show do
 
     subscribe_to_board_updates(socket, board.id)
 
-    if user_access in [:owner, :modify] do
-      assign_api_tokens_state(socket, board, user_access)
-    else
-      {:noreply,
-       socket
-       |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
-       |> push_patch(to: ~p"/boards/#{board}")}
+    cond do
+      not board.ai_optimized_board ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("API tokens are only available for AI Optimized boards"))
+         |> push_patch(to: ~p"/boards/#{board}")}
+
+      user_access in [:owner, :modify] ->
+        assign_api_tokens_state(socket, board, user_access)
+
+      true ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
+         |> push_patch(to: ~p"/boards/#{board}")}
     end
   end
 
