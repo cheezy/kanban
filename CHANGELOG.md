@@ -5,6 +5,36 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-12-24
+
+### Added
+
+#### API Token Authentication for AI Agents
+
+- **Bearer Token Authentication** - Enable AI agents and automation tools to interact with your boards programmatically:
+  - Generate API tokens for AI Optimized Boards from the board's API Tokens page
+  - Simple Bearer token authentication via HTTP headers
+  - Each token is scoped to a specific board for security
+  - One-time token display after creation with easy copy-to-clipboard functionality
+  - Token name and optional metadata tracking (AI model, version, purpose)
+
+- **Secure Token Management**:
+  - Tokens are cryptographically hashed (SHA-256) before storage
+  - Never stored in plaintext - shown only once at creation
+  - Easy token revocation without affecting your login session
+  - Usage tracking shows when each token was last used
+  - Create multiple tokens for different AI agents or purposes
+
+- **AI Optimized Board Integration**:
+  - API Tokens feature available exclusively for AI Optimized Boards
+  - Provides AI agents with programmatic access to the standardized 5-column workflow
+  - Perfect for Claude Code, MCP servers, and other automation tools
+  - Works with any HTTP client or programming language
+
+### Changed
+
+- API Tokens button now only appears on AI Optimized Boards
+
 ## [1.3.0] - 2025-12-23
 
 ### Added

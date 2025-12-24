@@ -35,6 +35,73 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.4.0] - 2025-12-24</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("API Token Authentication for AI Agents")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Bearer Token Authentication")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Enable AI agents and automation tools to interact with your boards programmatically:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Generate API tokens for AI Optimized Boards from the board's API Tokens page")}</li>
+                  <li>{gettext("Simple Bearer token authentication via HTTP headers")}</li>
+                  <li>{gettext("Each token is scoped to a specific board for security")}</li>
+                  <li>{gettext("One-time token display after creation with easy copy-to-clipboard functionality")}</li>
+                  <li>{gettext("Token name and optional metadata tracking (AI model, version, purpose)")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Secure Token Management")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Tokens are cryptographically hashed (SHA-256) before storage")}</li>
+                  <li>{gettext("Never stored in plaintext - shown only once at creation")}</li>
+                  <li>{gettext("Easy token revocation without affecting your login session")}</li>
+                  <li>{gettext("Usage tracking shows when each token was last used")}</li>
+                  <li>{gettext("Create multiple tokens for different AI agents or purposes")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("AI Optimized Board Integration")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("API Tokens feature available exclusively for AI Optimized Boards")}</li>
+                  <li>{gettext("Provides AI agents with programmatic access to the standardized 5-column workflow")}</li>
+                  <li>{gettext("Perfect for Claude Code, MCP servers, and other automation tools")}</li>
+                  <li>{gettext("Works with any HTTP client or programming language")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Changed")}
+            </h3>
+
+            <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
+              <li>{gettext("API Tokens button now only appears on AI Optimized Boards")}</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.3.0] - 2025-12-23</h2>
 
           <div class="mb-8">
