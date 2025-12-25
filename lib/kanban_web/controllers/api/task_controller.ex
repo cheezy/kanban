@@ -11,7 +11,7 @@ defmodule KanbanWeb.API.TaskController do
 
     column_id = params["column_id"]
 
-    tasks = if column_id do
+    if column_id do
       column = Columns.get_column!(column_id)
 
       if column.board_id != board.id do
@@ -19,16 +19,16 @@ defmodule KanbanWeb.API.TaskController do
         |> put_status(:forbidden)
         |> json(%{error: "Column does not belong to this board"})
       else
-        Tasks.list_tasks(column)
+        tasks = Tasks.list_tasks(column)
+        emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+        render(conn, :index, tasks: tasks)
       end
     else
       columns = Columns.list_columns(board)
-      Enum.flat_map(columns, &Tasks.list_tasks/1)
+      tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
+      emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+      render(conn, :index, tasks: tasks)
     end
-
-    emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-
-    render(conn, :index, tasks: tasks)
   end
 
   def show(conn, %{"id" => id_or_identifier}) do
@@ -95,6 +95,83 @@ defmodule KanbanWeb.API.TaskController do
           render(conn, :show, task: task)
 
         {:error, %Ecto.Changeset{} = changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(:error, changeset: changeset)
+      end
+    end
+  end
+
+  def next(conn, _params) do
+    board = conn.assigns.current_board
+    api_token = conn.assigns.api_token
+    agent_capabilities = api_token.agent_capabilities || []
+
+    case Tasks.get_next_task(agent_capabilities, board.id) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "No tasks available in Ready column matching your capabilities"})
+
+      task ->
+        emit_telemetry(conn, :next_task_fetched, %{task_id: task.id, priority: task.priority})
+        render(conn, :show, task: task)
+    end
+  end
+
+  def claim(conn, _params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
+    agent_capabilities = api_token.agent_capabilities || []
+
+    case Tasks.claim_next_task(agent_capabilities, user, board.id) do
+      {:ok, task} ->
+        emit_telemetry(conn, :task_claimed, %{
+          task_id: task.id,
+          priority: task.priority,
+          api_token_id: api_token.id
+        })
+
+        render(conn, :show, task: task)
+
+      {:error, :no_tasks_available} ->
+        conn
+        |> put_status(:conflict)
+        |> json(%{
+          error:
+            "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
+        })
+    end
+  end
+
+  def unclaim(conn, %{"id" => id_or_identifier} = params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+    reason = params["reason"]
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      case Tasks.unclaim_task(task, user, reason) do
+        {:ok, task} ->
+          emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
+          render(conn, :show, task: task)
+
+        {:error, :not_authorized} ->
+          conn
+          |> put_status(:forbidden)
+          |> json(%{error: "You can only unclaim tasks that you claimed"})
+
+        {:error, :not_claimed} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: "Task is not currently claimed"})
+
+        {:error, changeset} ->
           conn
           |> put_status(:unprocessable_entity)
           |> render(:error, changeset: changeset)

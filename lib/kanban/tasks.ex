@@ -828,4 +828,263 @@ defmodule Kanban.Tasks do
     )
     |> Repo.all()
   end
+
+  @doc """
+  Gets the next task for an AI agent to work on.
+
+  Returns the next available task from the "Ready" column using optimized filtering:
+  1. Tasks in "Ready" column (indexed lookup)
+  2. Agent has all required capabilities (array operation)
+  3. All dependencies completed (subquery check)
+  4. No key_file conflicts with tasks in "Doing" or "Review" (JSONB comparison)
+  5. Ordered by position in column (earlier = higher priority)
+
+  Has status "open" (not claimed) OR has expired claim.
+  Returns nil if no task available.
+
+  ## Examples
+
+      iex> get_next_task(["code_generation", "testing"])
+      %Task{}
+
+      iex> get_next_task([])
+      nil
+
+  """
+  def get_next_task(agent_capabilities \\ [], board_id) do
+    now = DateTime.utc_now()
+
+    # Subquery to find completed task IDs (cast to text to match dependencies array type)
+    completed_task_ids =
+      from(t in Task,
+        where: t.status == :completed,
+        select: fragment("?::text", t.id)
+      )
+
+    # Subquery to find task IDs with key_file conflicts in Doing or Review
+    conflicting_task_ids =
+      from(t in Task,
+        join: c in Column,
+        on: t.column_id == c.id,
+        where: c.name in ["Doing", "Review"],
+        where: c.board_id == ^board_id,
+        where: t.status == :in_progress,
+        select: %{
+          id: t.id,
+          key_files: t.key_files
+        }
+      )
+      |> Repo.all()
+
+    # Main query for next task
+    query =
+      from(t in Task,
+        join: c in Column,
+        on: t.column_id == c.id,
+        where: c.name == "Ready",
+        where: c.board_id == ^board_id,
+        where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+        order_by: [asc: t.position],
+        preload: [:column, :assigned_to, :created_by]
+      )
+
+    # Apply capability filter (always check that agent has required capabilities)
+    query =
+      from(t in query,
+        where:
+          fragment("cardinality(?)", t.required_capabilities) == 0 or
+            fragment("? <@ ?", t.required_capabilities, ^agent_capabilities)
+      )
+
+    # Apply dependency filter
+    query =
+      from(t in query,
+        where:
+          fragment("cardinality(?)", t.dependencies) == 0 or
+            fragment(
+              "NOT EXISTS (
+                SELECT 1
+                FROM unnest(?) AS dep_id
+                WHERE dep_id NOT IN (?)
+              )",
+              t.dependencies,
+              subquery(completed_task_ids)
+            )
+      )
+
+    # Get all potential tasks and find first without key_file conflicts
+    tasks = Repo.all(query)
+
+    Enum.find(tasks, fn task ->
+      not has_key_file_conflict?(task, conflicting_task_ids)
+    end)
+  end
+
+  defp has_key_file_conflict?(task, conflicting_tasks) do
+    if task.key_files && not Enum.empty?(task.key_files) do
+      task_file_paths =
+        task.key_files
+        |> Enum.map(fn kf -> kf.file_path end)
+        |> Enum.reject(&is_nil/1)
+
+      Enum.any?(conflicting_tasks, fn conflict ->
+        if conflict.key_files && not Enum.empty?(conflict.key_files) do
+          conflict_paths =
+            conflict.key_files
+            |> Enum.map(fn kf -> kf.file_path end)
+            |> Enum.reject(&is_nil/1)
+
+          Enum.any?(task_file_paths, fn path -> path in conflict_paths end)
+        else
+          false
+        end
+      end)
+    else
+      false
+    end
+  end
+
+  @doc """
+  Atomically claims the next available task for an AI agent.
+
+  Updates the task status to "in_progress", sets claimed_at, claim_expires_at,
+  assigned_to, and moves it to the "Doing" column.
+
+  Returns {:ok, task} if successful, {:error, :no_tasks_available} if no tasks available.
+
+  ## Examples
+
+      iex> claim_next_task(["code_generation"], user, board_id)
+      {:ok, %Task{}}
+
+      iex> claim_next_task([], user, board_id)
+      {:error, :no_tasks_available}
+
+  """
+  def claim_next_task(agent_capabilities \\ [], user, board_id) do
+    case get_next_task(agent_capabilities, board_id) do
+      nil ->
+        {:error, :no_tasks_available}
+
+      task ->
+        # Get the Doing column for this board
+        doing_column =
+          from(c in Column,
+            where: c.board_id == ^board_id and c.name == "Doing"
+          )
+          |> Repo.one()
+
+        now = DateTime.utc_now()
+        expires_at = now |> DateTime.add(60 * 60, :second)
+        next_position = get_next_position(doing_column)
+
+        # Atomically update the task
+        update_query =
+          from(t in Task,
+            where: t.id == ^task.id,
+            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
+          )
+
+        case Repo.update_all(
+               update_query,
+               set: [
+                 status: :in_progress,
+                 claimed_at: now,
+                 claim_expires_at: expires_at,
+                 assigned_to_id: user.id,
+                 column_id: doing_column.id,
+                 position: next_position,
+                 updated_at: now
+               ]
+             ) do
+          {1, _} ->
+            # Successfully claimed, reload the task with associations
+            updated_task = get_task_for_view!(task.id)
+
+            # Broadcast the update
+            Phoenix.PubSub.broadcast(
+              Kanban.PubSub,
+              "board:#{board_id}",
+              {:task_updated, updated_task}
+            )
+
+            {:ok, updated_task}
+
+          {0, _} ->
+            # Task was claimed by another agent
+            {:error, :no_tasks_available}
+        end
+    end
+  end
+
+  @doc """
+  Releases a claimed task back to the "open" status and "Ready" column.
+
+  Clears claimed_at, claim_expires_at, and assigned_to fields.
+  Optionally accepts a reason for analytics.
+
+  Returns {:ok, task} if successful, {:error, reason} otherwise.
+
+  ## Examples
+
+      iex> unclaim_task(task, user, "task too complex")
+      {:ok, %Task{}}
+
+      iex> unclaim_task(task, wrong_user)
+      {:error, :not_authorized}
+
+  """
+  def unclaim_task(task, user, reason \\ nil) do
+    task = Repo.preload(task, [:column, :assigned_to])
+
+    cond do
+      task.status != :in_progress ->
+        {:error, :not_claimed}
+
+      task.assigned_to_id != user.id ->
+        {:error, :not_authorized}
+
+      true ->
+        # Get the Ready column for this board
+        ready_column =
+          from(c in Column,
+            where: c.board_id == ^task.column.board_id and c.name == "Ready"
+          )
+          |> Repo.one()
+
+        # Update the task
+        changeset =
+          task
+          |> Ecto.Changeset.change(%{
+            status: :open,
+            claimed_at: nil,
+            claim_expires_at: nil,
+            assigned_to_id: nil,
+            column_id: ready_column.id
+          })
+
+        case Repo.update(changeset) do
+          {:ok, updated_task} ->
+            updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
+
+            # Log the reason if provided
+            if reason do
+              require Logger
+              Logger.info("Task #{task.id} unclaimed by user #{user.id}. Reason: #{reason}")
+            end
+
+            # Broadcast the update
+            Phoenix.PubSub.broadcast(
+              Kanban.PubSub,
+              "board:#{task.column.board_id}",
+              {:task_updated, updated_task}
+            )
+
+            {:ok, updated_task}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+    end
+  end
 end

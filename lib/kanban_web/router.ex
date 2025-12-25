@@ -40,6 +40,9 @@ defmodule KanbanWeb.Router do
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through :api
 
+    get "/tasks/next", TaskController, :next
+    post "/tasks/claim", TaskController, :claim
+    post "/tasks/:id/unclaim", TaskController, :unclaim
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

@@ -8,28 +8,31 @@
 
 **WHAT:** Create four endpoints: GET /api/tasks/next (peek at next available task), POST /api/tasks/claim (atomically claim the next task), POST /api/tasks/:id/unclaim (release a claimed task back to "open"), and GET /api/tasks/:id/validate (validate task readiness before claiming). The claim endpoint ensures only one agent can claim a task even if multiple agents request simultaneously. The unclaim endpoint allows agents to release tasks they realize they can't complete. The validate endpoint checks authentication, scopes, capabilities, and dependencies without side effects. Add automatic task release after 60 minutes of inactivity (no updates to the task). All endpoints filter tasks by agent capabilities - only return tasks where the agent has ALL required capabilities.
 
-**Note:** Column names are configurable per board. The "Ready" column referenced in this document is the default name, but boards may use different names like "To Do", "Backlog", or "Ready for Development". The system should use column configuration (e.g., column type or board settings) to identify which column contains claimable tasks, not hardcoded column names.
+**Note:** All boards using the API are AI Optimized Boards with the standard 5 columns: Backlog, Ready, Doing, Review, Done. Tasks in the "Ready" column are claimable by AI agents.
 
 **WHERE:** API controller, Tasks context
 
 ## Acceptance Criteria
 
 - [ ] GET /api/tasks/next returns single task (not array)
-- [ ] Only returns tasks in claimable column (default: "Ready", configurable per board)
+- [ ] Only returns tasks in "Ready" column (AI Optimized Board standard) - filter first
 - [ ] Only returns tasks with status "open" (not claimed)
-- [ ] Excludes tasks with incomplete dependencies
-- [ ] Filters by agent capabilities - only returns tasks where agent has ALL required capabilities
+- [ ] Filters by agent capabilities - only returns tasks where agent has ALL required capabilities - filter second
 - [ ] Tasks with empty required_capabilities are available to all agents
-- [ ] Ordered by priority (0 = highest) then created_at (oldest first)
+- [ ] Excludes tasks with incomplete dependencies - filter third
+- [ ] Excludes tasks where key_files conflict with tasks in "Doing" or "Review" columns - filter fourth
+- [ ] Ordered by position in column (earlier = higher priority) - order last
 - [ ] Returns 404 if no tasks available
 - [ ] POST /api/tasks/claim atomically claims next available task
 - [ ] Claim endpoint updates status to "in_progress" and sets claimed_at timestamp
 - [ ] Claim endpoint sets claim_expires_at to 60 minutes from now
+- [ ] Claim endpoint moves task from "Ready" column to "Doing" column
 - [ ] Claim returns 409 Conflict if all tasks already claimed
 - [ ] POST /api/tasks/:id/unclaim releases claimed task back to "open"
 - [ ] Unclaim endpoint validates agent can only unclaim tasks they claimed
 - [ ] Unclaim endpoint accepts optional reason parameter for analytics
 - [ ] Unclaim endpoint clears claimed_at and claim_expires_at timestamps
+- [ ] Unclaim endpoint moves task from "Doing" column back to "Ready" column
 - [ ] Unclaim endpoint broadcasts task change via PubSub
 - [ ] GET /api/tasks/:id/validate validates task readiness without claiming
 - [ ] Validate endpoint checks authentication and scopes
@@ -68,42 +71,52 @@
 - [lib/kanban/tasks.ex](lib/kanban/tasks.ex) - Add get_next_task/0 and claim_next_task/0 functions
 - [lib/kanban_web/controllers/api/task_controller.ex](lib/kanban_web/controllers/api/task_controller.ex) - Add next and claim actions
 - [lib/kanban/schemas/task.ex](lib/kanban/schemas/task.ex) - Check dependencies, status, and column_id
-- [lib/kanban/columns.ex](lib/kanban/columns.ex) - Query for claimable column (board configuration)
-- [lib/kanban/schemas/board.ex](lib/kanban/schemas/board.ex) - Check claimable_column_id or column settings
+- [lib/kanban/columns.ex](lib/kanban/columns.ex) - Query for "Ready" column
 - [README.md](../../../README.md) - AI Workflow section (lines 23-36)
 
 ## Technical Notes
 
 **Patterns to Follow:**
-- Use Ecto query with join to Column and Board tables
-- Filter by board's claimable column (use board.claimable_column_id or column.is_claimable flag)
-- Default: Filter by column name = "Ready" if no board configuration exists
+- Use Ecto query with join to Column table
+- Filter in optimal order for efficiency:
+  1. Filter by column name = "Ready" (AI Optimized Board standard) - indexed, very fast
+  2. Filter by agent capabilities: task.required_capabilities is subset of agent.capabilities - array operation, fast
+  3. Subquery to check if all dependency tasks are completed - moderate cost
+  4. Exclude tasks with key_file conflicts in "Doing" or "Review" columns - most expensive (JSONB comparison)
+  5. Order by position in column (earlier = higher priority) - cheap on filtered result set
 - Filter out tasks with expired claims (claim_expires_at IS NULL OR claim_expires_at > NOW())
-- Filter by agent capabilities: task.required_capabilities is subset of agent.capabilities
-- Subquery to check if all dependency tasks are completed
 - Return single task (use `Repo.one()`, not `Repo.all()`)
-- Order by priority (0 = highest), then created_at (oldest first)
 - For claim endpoint, use `Repo.update_all()` with WHERE status = 'open' for atomicity
 - Set claimed_at = NOW() and claim_expires_at = NOW() + 60 minutes
-- Background job (Oban) runs every 5 minutes to release expired claims
+- Move task to "Doing" column when claimed (query for "Doing" column ID and update column_id)
+- Move task back to "Ready" column when unclaimed (query for "Ready" column ID and update column_id)
+- Background job (Oban) runs every 5 minutes to release expired claims and move tasks back to "Ready"
 - Preload all associations
 - Return 404 if no task available
 - Return 409 Conflict if claim fails (task already claimed)
 
 **Database/Schema:**
-- Tables: tasks, columns, boards, api_tokens
+- Tables: tasks, columns, api_tokens
 - Migrations needed:
   - Add claimed_at, claim_expires_at, and required_capabilities to tasks table
-  - Add claimable_column_id to boards table (references columns, nullable)
-  - OR add is_claimable boolean to columns table (default false)
-- Query logic for GET /api/tasks/next:
+- Query logic for GET /api/tasks/next (optimized filter order):
   - JOIN columns ON task.column_id = column.id
-  - JOIN boards ON column.board_id = board.id
-  - WHERE (board.claimable_column_id = column.id OR column.is_claimable = true OR column.name = 'Ready')  # Configurable claimable column
+  - WHERE column.name = 'Ready'  # Filter 1: Column (indexed, very fast)
   - AND (task.status = 'open' OR (task.status = 'in_progress' AND task.claim_expires_at < NOW()))
-  - AND (dependencies = [] OR all dependencies.status = 'completed')
-  - AND (task.required_capabilities = [] OR task.required_capabilities <@ agent.capabilities)  # PostgreSQL array subset operator
-  - ORDER BY COALESCE(priority, 999) ASC, inserted_at ASC
+  - AND (task.required_capabilities = [] OR task.required_capabilities <@ agent.capabilities)  # Filter 2: Capabilities (array operation, fast)
+  - AND (dependencies = [] OR all dependencies.status = 'completed')  # Filter 3: Dependencies (subquery, moderate cost)
+  - AND NOT EXISTS (  # Filter 4: Key file conflicts (JSONB comparison, most expensive)
+      SELECT 1 FROM tasks active_task
+      JOIN columns ac ON active_task.column_id = ac.id
+      WHERE ac.name IN ('Doing', 'Review')
+      AND active_task.status = 'in_progress'
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(task.key_files) AS tf
+        CROSS JOIN jsonb_array_elements(active_task.key_files) AS af
+        WHERE tf->>'file_path' = af->>'file_path'
+      )
+    )
+  - ORDER BY task.position ASC  # Filter 5: Position in column (cheap on filtered result)
   - LIMIT 1
 - Query logic for POST /api/tasks/claim (atomic):
   - Same filters as above
@@ -138,22 +151,22 @@ mix test test/kanban/tasks_test.exs
 iex -S mix
 alias Kanban.{Repo, Tasks, Columns, Schemas.Task}
 
-# Get or create claimable column (default: "Ready")
-claimable_column = Columns.get_claimable_column(board_id) || Columns.get_column_by_name("Ready")
+# Get the "Ready" column (AI Optimized Board standard)
+ready_column = Columns.get_column_by_name(board_id, "Ready")
 
-# Create tasks in claimable column with different priorities
+# Create tasks in Ready column with different priorities
 {:ok, task1} = Tasks.create_task(%{
   title: "Low priority task",
   status: "open",
   priority: 3,
-  column_id: claimable_column.id
+  column_id: ready_column.id
 })
 
 {:ok, task2} = Tasks.create_task(%{
   title: "High priority task",
   status: "open",
   priority: 0,
-  column_id: claimable_column.id
+  column_id: ready_column.id
 })
 
 {:ok, task3} = Tasks.create_task(%{
@@ -161,7 +174,7 @@ claimable_column = Columns.get_claimable_column(board_id) || Columns.get_column_
   status: "open",
   priority: 0,
   dependencies: [task1.id],
-  column_id: claimable_column.id
+  column_id: ready_column.id
 })
 
 # Get next task (should return task2 - highest priority, unblocked)
@@ -222,8 +235,8 @@ mix precommit
 
 **Manual Testing:**
 
-1. Create board with claimable column (default: "Ready", or configure via board.claimable_column_id)
-2. Create 3 tasks in claimable column: A (priority 0), B (priority 1), C (priority 0, depends on B)
+1. Use an AI Optimized Board with standard "Ready" column
+2. Create 3 tasks in Ready column: A (priority 0), B (priority 1), C (priority 0, depends on B)
 3. Call GET /api/tasks/next
 4. Verify returns A (priority 0, oldest if tied)
 5. Call POST /api/tasks/claim
@@ -238,15 +251,13 @@ mix precommit
 14. Test claim expiry: Claim a task, manually set claim_expires_at to past, call release_expired_claims()
 15. Verify expired task returns to "open" status and becomes available
 16. Test with invalid token (should 401)
-17. Test when no tasks in claimable column (should 404 or 409)
+17. Test when no tasks in Ready column (should 404 or 409)
 18. Wait 60 minutes (or manually trigger Oban job) and verify claimed task auto-releases
-19. Test with board configured to use different claimable column name (e.g., "To Do", "Backlog")
-20. Test with multiple boards having different claimable column configurations
 
 **Success Looks Like:**
 
 - Endpoint returns single task object (not array)
-- Only tasks in claimable column are considered (respects board configuration)
+- Only tasks in "Ready" column are considered
 - Priority 0 tasks returned before priority 1, 2, 3
 - Blocked tasks not returned
 - Claimed tasks (status != "open") not returned unless claim expired
@@ -289,17 +300,14 @@ defmodule Kanban.Tasks do
   @doc """
   Gets the next task for an AI agent to work on.
 
-  Returns the highest priority task from the claimable column that:
-  - Has status "open" (not claimed) OR has expired claim
-  - Has all dependencies completed
-  - Agent has all required capabilities (or task has no capability requirements)
+  Returns the next available task from the "Ready" column using optimized filtering:
+  1. Tasks in "Ready" column (indexed lookup)
+  2. Agent has all required capabilities (array operation)
+  3. All dependencies completed (subquery check)
+  4. No key_file conflicts with tasks in "Doing" or "Review" (JSONB comparison)
+  5. Ordered by position in column (earlier = higher priority)
 
-  The claimable column is determined by:
-  1. Board's claimable_column_id setting (preferred)
-  2. Column's is_claimable flag
-  3. Default to column name "Ready" if no configuration
-
-  Orders by priority (0 = highest) then inserted_at (oldest first).
+  Has status "open" (not claimed) OR has expired claim.
   Returns nil if no task available.
   """
   def get_next_task(agent_capabilities \\ []) do
@@ -314,9 +322,7 @@ defmodule Kanban.Tasks do
 
     from t in Task,
     join: c in Column, on: t.column_id == c.id,
-    join: b in Board, on: c.board_id == b.id,
-    # Flexible column matching: board config > column flag > default name
-    where: (b.claimable_column_id == c.id or c.is_claimable == true or c.name == "Ready"),
+    where: c.name == "Ready",
     where: t.status == "open" or (t.status == "in_progress" and t.claim_expires_at < ^now),
     where: fragment(
       "CASE
@@ -367,8 +373,7 @@ defmodule Kanban.Tasks do
     next_task_id =
       from t in Task,
       join: c in Column, on: t.column_id == c.id,
-      join: b in Board, on: c.board_id == b.id,
-      where: (b.claimable_column_id == c.id or c.is_claimable == true or c.name == "Ready"),
+      where: c.name == "Ready",
       where: t.status == "open" or (t.status == "in_progress" and t.claim_expires_at < ^now),
       where: fragment(
         "CASE
@@ -488,16 +493,9 @@ defmodule Kanban.Tasks do
         task = Repo.preload(task, [:column])
         now = DateTime.utc_now()
 
-        # Check if column is claimable
-        board = Repo.preload(task.column, :board).board
-        is_claimable =
-          board.claimable_column_id == task.column_id or
-          task.column.is_claimable or
-          task.column.name == "Ready"
-
         cond do
-          not is_claimable ->
-            {:ok, %{ready: false, reason: "Task is not in claimable column (currently in '#{task.column.name}')"}}
+          task.column.name != "Ready" ->
+            {:ok, %{ready: false, reason: "Task is not in Ready column (currently in '#{task.column.name}')"}}
 
           # Check if already claimed (and not expired)
           task.status == "in_progress" and task.claim_expires_at > now ->
@@ -661,7 +659,7 @@ defmodule KanbanWeb.API.TaskController do
         nil ->
           conn
           |> put_status(:not_found)
-          |> json(%{error: "No tasks available in claimable column matching your capabilities"})
+          |> json(%{error: "No tasks available in Ready column matching your capabilities"})
 
         task ->
           :telemetry.execute(
@@ -712,7 +710,7 @@ defmodule KanbanWeb.API.TaskController do
         {:error, :no_tasks_available} ->
           conn
           |> put_status(:conflict)
-          |> json(%{error: "No tasks available to claim matching your capabilities. All tasks in claimable column are either blocked, already claimed, or require capabilities you don't have."})
+          |> json(%{error: "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."})
       end
     else
       conn
@@ -901,7 +899,7 @@ end
 
 ```json
 {
-  "error": "No tasks available in claimable column"
+  "error": "No tasks available in Ready column"
 }
 ```
 
@@ -1063,8 +1061,7 @@ curl -X POST http://localhost:4000/api/tasks/claim \
 
 - [ ] Don't forget to check ALL dependencies are completed (not just some)
 - [ ] Remember route order matters - put /tasks/next and /tasks/claim BEFORE /tasks/:id
-- [ ] Don't hardcode column name - use board configuration or column flags to identify claimable column
-- [ ] Don't forget to join Board table to check claimable_column_id configuration
+- [ ] Use column name "Ready" for AI Optimized Boards (standard configuration)
 - [ ] Don't forget to filter out tasks with status != "open" unless claim expired
 - [ ] Remember to handle empty dependencies array vs nil
 - [ ] Avoid returning tasks that block themselves (circular deps)

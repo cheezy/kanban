@@ -22,7 +22,7 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
         security_considerations: [
           "Store tokens hashed with SHA-256",
           "Never log tokens in telemetry",
-          "Validate scopes before allowing operations"
+          "Validate agent capabilities before allowing operations"
         ]
       }
 

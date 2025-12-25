@@ -2352,4 +2352,321 @@ defmodule Kanban.TasksTest do
       :telemetry.detach("test-handler")
     end
   end
+
+  describe "get_next_task/2" do
+    setup do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      %{user: user, board: board, ready_column: ready_column, doing_column: doing_column, review_column: review_column}
+    end
+
+    test "returns next available task from Ready column", %{ready_column: column, board: board, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Next Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task.id
+      assert result.title == "Next Task"
+    end
+
+    test "returns nil when no tasks available", %{board: board} do
+      result = Tasks.get_next_task([], board.id)
+
+      assert result == nil
+    end
+
+    test "excludes tasks with active claims", %{ready_column: column, board: board, user: user} do
+      {:ok, _claimed_task} = Tasks.create_task(column, %{
+        "title" => "Claimed Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result == nil
+    end
+
+    test "includes tasks with expired claims", %{ready_column: column, board: board, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Expired Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.add(DateTime.utc_now(), -3600, :second),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), -60, :second),
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task.id
+    end
+
+    test "filters by agent capabilities", %{ready_column: column, board: board, user: user} do
+      {:ok, _task1} = Tasks.create_task(column, %{
+        "title" => "Requires Testing",
+        "status" => "open",
+        "required_capabilities" => ["testing", "deployment"],
+        "created_by_id" => user.id
+      })
+
+      {:ok, task2} = Tasks.create_task(column, %{
+        "title" => "Requires Code Gen",
+        "status" => "open",
+        "required_capabilities" => ["code_generation"],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task(["code_generation", "testing"], board.id)
+
+      assert result.id == task2.id
+    end
+
+    test "returns tasks with empty required_capabilities", %{ready_column: column, board: board, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "No Requirements",
+        "status" => "open",
+        "required_capabilities" => [],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task.id
+    end
+
+    test "orders by position in column", %{ready_column: column, board: board, user: user} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1",
+        "status" => "open",
+        "position" => 1,
+        "created_by_id" => user.id
+      })
+
+      {:ok, _task2} = Tasks.create_task(column, %{
+        "title" => "Task 2",
+        "status" => "open",
+        "position" => 0,
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      # Task 1 is created first, so it gets position 0 and should be returned first
+      assert result.id == task1.id
+    end
+
+    test "excludes tasks with incomplete dependencies", %{ready_column: column, board: board, user: user} do
+      {:ok, dependency_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, _blocked_task} = Tasks.create_task(column, %{
+        "title" => "Blocked Task",
+        "status" => "open",
+        "dependencies" => [to_string(dependency_task.id)],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == dependency_task.id
+    end
+
+    test "includes tasks with completed dependencies", %{ready_column: column, board: board, user: user} do
+      {:ok, dependency_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Unblocked Task",
+        "status" => "open",
+        "dependencies" => [to_string(dependency_task.id)],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task.id
+    end
+
+    test "excludes tasks with key_file conflicts in Doing column", %{ready_column: ready_column, doing_column: doing_column, board: board, user: user} do
+      {:ok, _active_task} = Tasks.create_task(doing_column, %{
+        "title" => "Active Task",
+        "status" => "in_progress",
+        "key_files" => [%{"file_path" => "lib/test.ex", "note" => "Main file", "position" => 0}],
+        "created_by_id" => user.id
+      })
+
+      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
+        "title" => "Conflicting Task",
+        "status" => "open",
+        "key_files" => [%{"file_path" => "lib/test.ex", "note" => "Same file", "position" => 0}],
+        "created_by_id" => user.id
+      })
+
+      {:ok, task} = Tasks.create_task(ready_column, %{
+        "title" => "Non-conflicting Task",
+        "status" => "open",
+        "key_files" => [%{"file_path" => "lib/other.ex", "note" => "Different file", "position" => 0}],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task.id
+    end
+  end
+
+  describe "claim_next_task/3" do
+    setup do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      %{user: user, board: board, ready_column: ready_column, doing_column: doing_column}
+    end
+
+    test "atomically claims next available task", %{ready_column: column, board: board, user: user, doing_column: doing_column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task to Claim",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, result} = Tasks.claim_next_task([], user, board.id)
+
+      assert result.id == task.id
+      assert result.status == :in_progress
+      assert result.column_id == doing_column.id
+      assert result.assigned_to_id == user.id
+      assert result.claimed_at != nil
+      assert result.claim_expires_at != nil
+    end
+
+    test "returns error when no tasks available", %{board: board, user: user} do
+      result = Tasks.claim_next_task([], user, board.id)
+
+      assert result == {:error, :no_tasks_available}
+    end
+
+    test "prevents double claiming", %{ready_column: column, board: board, user: user} do
+      {:ok, _task} = Tasks.create_task(column, %{
+        "title" => "Only Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      user2 = Kanban.AccountsFixtures.user_fixture()
+
+      {:ok, _result1} = Tasks.claim_next_task([], user, board.id)
+      result2 = Tasks.claim_next_task([], user2, board.id)
+
+      assert result2 == {:error, :no_tasks_available}
+    end
+
+    test "sets claim expiration to 60 minutes", %{ready_column: column, board: board, user: user} do
+      {:ok, _task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      now = DateTime.utc_now()
+      {:ok, result} = Tasks.claim_next_task([], user, board.id)
+
+      expires_at = result.claim_expires_at
+      diff = DateTime.diff(expires_at, now, :second)
+
+      assert diff >= 3590
+      assert diff <= 3610
+    end
+
+    test "respects capability requirements", %{ready_column: column, board: board, user: user} do
+      {:ok, _task} = Tasks.create_task(column, %{
+        "title" => "Requires Deployment",
+        "status" => "open",
+        "required_capabilities" => ["deployment"],
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.claim_next_task(["code_generation"], user, board.id)
+
+      assert result == {:error, :no_tasks_available}
+    end
+  end
+
+  describe "unclaim_task/3" do
+    setup do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} = Tasks.create_task(doing_column, %{
+        "title" => "Claimed Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      %{user: user, board: board, ready_column: ready_column, doing_column: doing_column, task: task}
+    end
+
+    test "releases claimed task back to Ready column", %{task: task, user: user, ready_column: ready_column} do
+      {:ok, result} = Tasks.unclaim_task(task, user)
+
+      assert result.status == :open
+      assert result.column_id == ready_column.id
+      assert result.assigned_to_id == nil
+      assert result.claimed_at == nil
+      assert result.claim_expires_at == nil
+    end
+
+    test "accepts optional reason parameter", %{task: task, user: user} do
+      {:ok, result} = Tasks.unclaim_task(task, user, "task too complex")
+
+      assert result.status == :open
+    end
+
+    test "returns error when unclaiming someone else's task", %{task: task} do
+      other_user = Kanban.AccountsFixtures.user_fixture()
+
+      result = Tasks.unclaim_task(task, other_user)
+
+      assert result == {:error, :not_authorized}
+    end
+
+    test "returns error when task is not claimed", %{ready_column: column, user: user} do
+      {:ok, open_task} = Tasks.create_task(column, %{
+        "title" => "Open Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      result = Tasks.unclaim_task(open_task, user)
+
+      assert result == {:error, :not_claimed}
+    end
+  end
 end

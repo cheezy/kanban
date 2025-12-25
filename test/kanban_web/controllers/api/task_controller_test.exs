@@ -13,7 +13,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
     board = ai_optimized_board_fixture(user)
 
     {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-      "name" => "Test Token"
+      "name" => "Test Token",
+      "agent_capabilities" => ["code_generation", "testing"]
     })
 
     column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
@@ -268,6 +269,489 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       conn = get(conn, ~p"/api/tasks/#{other_task.id}")
       assert json_response(conn, 403)
+    end
+  end
+
+  describe "GET /api/tasks/next" do
+    setup %{board: board, user: _user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      %{ready_column: ready_column, doing_column: doing_column}
+    end
+
+    test "returns next available task from Ready column", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, task} = Tasks.create_task(ready_column, %{
+        "title" => "Next Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["title"] == "Next Task"
+      assert response["status"] == "open"
+    end
+
+    test "returns 404 when no tasks available", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next")
+      assert json_response(conn, 404)["error"] =~ "No tasks available"
+    end
+
+    test "excludes tasks with status in_progress", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _claimed_task} = Tasks.create_task(ready_column, %{
+        "title" => "Claimed Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      assert json_response(conn, 404)
+    end
+
+    test "includes tasks with expired claims", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, task} = Tasks.create_task(ready_column, %{
+        "title" => "Expired Claim Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.add(DateTime.utc_now(), -3600, :second),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), -60, :second),
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+    end
+
+    test "filters by agent capabilities", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _task1} = Tasks.create_task(ready_column, %{
+        "title" => "Requires Testing",
+        "status" => "open",
+        "required_capabilities" => ["testing", "deployment"],
+        "created_by_id" => user.id
+      })
+
+      {:ok, task2} = Tasks.create_task(ready_column, %{
+        "title" => "Requires Code Gen",
+        "status" => "open",
+        "required_capabilities" => [],
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      # Task 1 requires capabilities agent doesn't have (deployment)
+      # Task 2 has no capability requirements
+      # So task 1 is skipped and task 2 should be returned
+      assert response["id"] == task2.id
+    end
+
+    test "returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = get(conn, ~p"/api/tasks/next")
+      assert json_response(conn, 401)
+    end
+  end
+
+  describe "POST /api/tasks/claim" do
+    setup %{board: board, user: _user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      %{ready_column: ready_column, doing_column: doing_column}
+    end
+
+    test "atomically claims next available task", %{conn: conn, ready_column: ready_column, user: user, doing_column: doing_column} do
+      {:ok, task} = Tasks.create_task(ready_column, %{
+        "title" => "Task to Claim",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == doing_column.id
+      assert response["assigned_to_id"] == user.id
+      assert response["claimed_at"] != nil
+      assert response["claim_expires_at"] != nil
+    end
+
+    test "returns 409 when no tasks available", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks/claim")
+      assert json_response(conn, 409)["error"] =~ "No tasks available"
+    end
+
+    test "prevents double claiming", %{conn: conn, ready_column: ready_column, user: user, board: board} do
+      {:ok, _task} = Tasks.create_task(ready_column, %{
+        "title" => "Only Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      user2 = user_fixture()
+      {:ok, {_token_struct, plain_token2}} = Kanban.ApiTokens.create_api_token(user2, board, %{
+        "name" => "Test Token 2",
+        "agent_capabilities" => ["code_generation", "testing"]
+      })
+
+      conn2 = build_conn()
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("authorization", "Bearer #{plain_token2}")
+
+      conn1_response = post(conn, ~p"/api/tasks/claim")
+      assert json_response(conn1_response, 200)
+
+      conn2_response = post(conn2, ~p"/api/tasks/claim")
+      assert json_response(conn2_response, 409)
+    end
+
+    test "respects capability requirements", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _task} = Tasks.create_task(ready_column, %{
+        "title" => "Requires Deployment",
+        "status" => "open",
+        "required_capabilities" => ["deployment"],
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim")
+      assert json_response(conn, 409)["error"] =~ "No tasks available"
+    end
+
+    test "returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = post(conn, ~p"/api/tasks/claim")
+      assert json_response(conn, 401)
+    end
+  end
+
+  describe "POST /api/tasks/:id/unclaim" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} = Tasks.create_task(doing_column, %{
+        "title" => "Claimed Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      %{ready_column: ready_column, doing_column: doing_column, claimed_task: task}
+    end
+
+    test "releases claimed task back to Ready column", %{conn: conn, claimed_task: task, ready_column: ready_column, user: _user} do
+      conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["status"] == "open"
+      assert response["column_id"] == ready_column.id
+      assert response["assigned_to_id"] == nil
+      assert response["claimed_at"] == nil
+      assert response["claim_expires_at"] == nil
+    end
+
+    test "accepts optional reason parameter", %{conn: conn, claimed_task: task} do
+      conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => "task too complex"})
+      assert json_response(conn, 200)
+    end
+
+    test "returns 403 when unclaiming someone else's task", %{conn: _conn, claimed_task: task, board: board} do
+      other_user = user_fixture()
+      {:ok, {_token_struct, plain_token}} = Kanban.ApiTokens.create_api_token(other_user, board, %{
+        "name" => "Other Token",
+        "agent_capabilities" => ["code_generation", "testing"]
+      })
+
+      other_conn = build_conn()
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn = post(other_conn, ~p"/api/tasks/#{task.id}/unclaim")
+      assert json_response(conn, 403)["error"] =~ "You can only unclaim tasks that you claimed"
+    end
+
+    test "returns 422 when task is not claimed", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, open_task} = Tasks.create_task(ready_column, %{
+        "title" => "Open Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/#{open_task.id}/unclaim")
+      assert json_response(conn, 422)["error"] =~ "not currently claimed"
+    end
+
+    test "unclaims task using identifier instead of ID", %{conn: conn, claimed_task: task, ready_column: ready_column} do
+      conn = post(conn, ~p"/api/tasks/#{task.identifier}/unclaim")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["status"] == "open"
+      assert response["column_id"] == ready_column.id
+    end
+
+    test "returns 401 without authentication", %{claimed_task: task} do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim")
+      assert json_response(conn, 401)
+    end
+  end
+
+  describe "dependency filtering" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      {:ok, completed_task} = Tasks.create_task(done_column, %{
+        "title" => "Completed Dependency",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      {:ok, incomplete_task} = Tasks.create_task(doing_column, %{
+        "title" => "Incomplete Dependency",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      %{
+        ready_column: ready_column,
+        doing_column: doing_column,
+        completed_task: completed_task,
+        incomplete_task: incomplete_task
+      }
+    end
+
+    test "GET /api/tasks/next skips tasks with incomplete dependencies", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      incomplete_task: incomplete_task
+    } do
+      {:ok, _available_task} = Tasks.create_task(ready_column, %{
+        "title" => "Available Task",
+        "status" => "open",
+        "dependencies" => [],
+        "created_by_id" => user.id
+      })
+
+      {:ok, _blocked_task} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task",
+        "status" => "open",
+        "dependencies" => [to_string(incomplete_task.id)],
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "Available Task"
+    end
+
+    test "GET /api/tasks/next returns task when all dependencies completed", %{conn: conn, ready_column: ready_column, user: user, completed_task: completed_task} do
+      {:ok, task} = Tasks.create_task(ready_column, %{
+        "title" => "Ready Task",
+        "status" => "open",
+        "dependencies" => [to_string(completed_task.id)],
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+    end
+
+    test "POST /api/tasks/claim skips tasks with incomplete dependencies", %{conn: conn, ready_column: ready_column, user: user, incomplete_task: incomplete_task} do
+      {:ok, _available_task} = Tasks.create_task(ready_column, %{
+        "title" => "Available Task for Claim",
+        "status" => "open",
+        "dependencies" => [],
+        "created_by_id" => user.id
+      })
+
+      {:ok, _blocked_task} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task",
+        "status" => "open",
+        "dependencies" => [to_string(incomplete_task.id)],
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim")
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "Available Task for Claim"
+      assert response["status"] == "in_progress"
+    end
+  end
+
+  describe "key file conflict detection" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, in_progress_task} = Tasks.create_task(doing_column, %{
+        "title" => "In Progress Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "key_files" => [
+          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Core tasks", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      %{ready_column: ready_column, doing_column: doing_column, in_progress_task: in_progress_task}
+    end
+
+    test "GET /api/tasks/next skips tasks with conflicting key files", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _safe_task} = Tasks.create_task(ready_column, %{
+        "title" => "Safe Task",
+        "status" => "open",
+        "key_files" => [
+          %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
+        "title" => "Conflicting Task",
+        "status" => "open",
+        "key_files" => [
+          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "Safe Task"
+    end
+
+    test "POST /api/tasks/claim skips tasks with conflicting key files", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _safe_task} = Tasks.create_task(ready_column, %{
+        "title" => "Safe Task for Claim",
+        "status" => "open",
+        "key_files" => [
+          %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
+        "title" => "Conflicting Task",
+        "status" => "open",
+        "key_files" => [
+          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim")
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "Safe Task for Claim"
+    end
+
+    test "GET /api/tasks/next returns task with no key files when conflicts exist", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _no_files_task} = Tasks.create_task(ready_column, %{
+        "title" => "No Files Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
+        "title" => "Conflicting Task",
+        "status" => "open",
+        "key_files" => [
+          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+        ],
+        "created_by_id" => user.id
+      })
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "No Files Task"
+    end
+  end
+
+  describe "column access control" do
+    test "cannot create task with column from different board", %{conn: conn, user: _user} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      task_params = %{
+        "title" => "Invalid Task",
+        "column_id" => other_column.id
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+      assert json_response(conn, 403)["error"] =~ "Column does not belong to this board"
+    end
+  end
+
+  describe "task identifier operations" do
+    setup %{column: column, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Identifier Test Task",
+        "description" => "For testing identifier-based operations",
+        "created_by_id" => user.id
+      })
+
+      %{task: task}
+    end
+
+    test "updates task using identifier instead of ID", %{conn: conn, task: task} do
+      update_params = %{"title" => "Updated via Identifier"}
+
+      conn = patch(conn, ~p"/api/tasks/#{task.identifier}", task: update_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["title"] == "Updated via Identifier"
+    end
+  end
+
+  describe "filter tasks by column belonging to different board" do
+    test "returns 403 when filtering by column from different board", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      conn = get(conn, ~p"/api/tasks?column_id=#{other_column.id}")
+      assert json_response(conn, 403)["error"] =~ "Column does not belong to this board"
     end
   end
 end

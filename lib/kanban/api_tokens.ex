@@ -85,7 +85,7 @@ defmodule Kanban.ApiTokens do
 
   ## Examples
 
-      iex> create_api_token(user, board, %{name: "My Token", scopes: ["tasks:read"]})
+      iex> create_api_token(user, board, %{name: "My Token", agent_capabilities: ["code_generation"]})
       {:ok, {%ApiToken{}, "stride_dev_abc123..."}}
 
       iex> create_api_token(user, board, %{name: ""})
