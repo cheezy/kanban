@@ -31,9 +31,9 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :index, tasks: tasks)
   end
 
-  def show(conn, %{"id" => id}) do
+  def show(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
-    task = Tasks.get_task_for_view!(id)
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
     if task.column.board_id != board.id do
       conn
@@ -79,9 +79,9 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  def update(conn, %{"id" => id, "task" => task_params}) do
+  def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do
     board = conn.assigns.current_board
-    task = Tasks.get_task_for_view!(id)
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
     if task.column.board_id != board.id do
       conn
@@ -99,6 +99,21 @@ defmodule KanbanWeb.API.TaskController do
           |> put_status(:unprocessable_entity)
           |> render(:error, changeset: changeset)
       end
+    end
+  end
+
+  defp get_task_by_id_or_identifier!(id_or_identifier, board) do
+    case Integer.parse(id_or_identifier) do
+      {id, ""} ->
+        # It's a numeric ID
+        Tasks.get_task_for_view!(id)
+
+      _ ->
+        # It's an identifier like "W14"
+        columns = Columns.list_columns(board)
+        column_ids = Enum.map(columns, & &1.id)
+
+        Tasks.get_task_by_identifier_for_view!(id_or_identifier, column_ids)
     end
   end
 

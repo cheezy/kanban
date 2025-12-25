@@ -160,9 +160,25 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["column_id"] == task.column_id
     end
 
+    test "returns single task by identifier", %{conn: conn, task: task} do
+      conn = get(conn, ~p"/api/tasks/#{task.identifier}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["identifier"] == task.identifier
+      assert response["title"] == "Detailed Task"
+      assert response["description"] == "Full details"
+    end
+
     test "returns 404 for nonexistent task", %{conn: conn} do
       assert_error_sent 404, fn ->
         get(conn, ~p"/api/tasks/999999")
+      end
+    end
+
+    test "returns 404 for nonexistent identifier", %{conn: conn} do
+      assert_error_sent 404, fn ->
+        get(conn, ~p"/api/tasks/INVALID99")
       end
     end
 

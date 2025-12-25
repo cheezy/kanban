@@ -103,6 +103,42 @@ defmodule Kanban.Tasks do
   end
 
   @doc """
+  Gets a task by its identifier (e.g. "W14", "D5") with all associations preloaded.
+
+  Raises `Ecto.NoResultsError` if the Task does not exist or doesn't belong to
+  any of the given column_ids.
+
+  ## Examples
+
+      iex> get_task_by_identifier_for_view!("W14", [1, 2, 3])
+      %Task{identifier: "W14", ...}
+
+      iex> get_task_by_identifier_for_view!("INVALID", [1, 2, 3])
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_task_by_identifier_for_view!(identifier, column_ids) do
+    alias Kanban.Tasks.TaskComment
+
+    Task
+    |> where([t], t.identifier == ^identifier and t.column_id in ^column_ids)
+    |> Repo.one!()
+    |> Repo.preload([
+      :assigned_to,
+      :column,
+      :created_by,
+      :completed_by,
+      :reviewed_by,
+      task_histories:
+        from(h in TaskHistory,
+          order_by: [desc: h.inserted_at],
+          preload: [:from_user, :to_user]
+        ),
+      comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+    ])
+  end
+
+  @doc """
   Creates a task for a column with automatic position assignment.
   Respects WIP limit - returns error if column is at capacity.
 

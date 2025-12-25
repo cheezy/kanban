@@ -14,12 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **RESTful JSON API for Tasks** - AI agents can now programmatically create, read, and update tasks:
   - **POST /api/tasks** - Create tasks with all fields including nested associations (key_files, verification_steps)
   - **GET /api/tasks** - List all tasks for the authenticated board with optional column filtering
-  - **GET /api/tasks/:id** - Retrieve a single task with all associations preloaded
-  - **PATCH /api/tasks/:id** - Update task fields including nested associations
+  - **GET /api/tasks/:id** - Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like "W14")
+  - **PATCH /api/tasks/:id** - Update task fields including nested associations (supports both database IDs and identifiers)
   - Board-scoped access control - tokens can only access tasks from their associated board
   - Automatic default column selection (Backlog > Ready > first column) when column_id not specified
   - Full field support for all 60+ task fields including metadata, observability, and AI context fields
   - Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)
+  - **Flexible Task Identification** - API endpoints accept both numeric database IDs (e.g., "73") and human-readable identifiers (e.g., "W14") for improved developer experience
 
 - **Real-Time Integration**:
   - All API mutations automatically broadcast via Phoenix PubSub

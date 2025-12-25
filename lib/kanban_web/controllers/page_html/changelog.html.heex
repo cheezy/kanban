@@ -62,15 +62,18 @@
                     <strong>GET /api/tasks</strong> - {gettext("List all tasks for the authenticated board with optional column filtering")}
                   </li>
                   <li>
-                    <strong>GET /api/tasks/:id</strong> - {gettext("Retrieve a single task with all associations preloaded")}
+                    <strong>GET /api/tasks/:id</strong> - {gettext("Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like \"W14\")")}
                   </li>
                   <li>
-                    <strong>PATCH /api/tasks/:id</strong> - {gettext("Update task fields including nested associations")}
+                    <strong>PATCH /api/tasks/:id</strong> - {gettext("Update task fields including nested associations (supports both database IDs and identifiers)")}
                   </li>
                   <li>{gettext("Board-scoped access control - tokens can only access tasks from their associated board")}</li>
                   <li>{gettext("Automatic default column selection (Backlog > Ready > first column) when column_id not specified")}</li>
                   <li>{gettext("Full field support for all 60+ task fields including metadata, observability, and AI context fields")}</li>
                   <li>{gettext("Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)")}</li>
+                  <li>
+                    <strong>{gettext("Flexible Task Identification")}</strong> - {gettext("API endpoints accept both numeric database IDs (e.g., \"73\") and human-readable identifiers (e.g., \"W14\") for improved developer experience")}
+                  </li>
                 </ul>
               </div>
 
