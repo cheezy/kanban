@@ -5,6 +5,48 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-12-25
+
+### Added
+
+#### Task Claiming API Endpoints
+
+- **Intelligent Task Discovery & Claiming** - AI agents can now discover and claim tasks with advanced filtering:
+  - **GET /api/tasks/next** - Retrieve the next available task from the Ready column matching agent capabilities
+  - **POST /api/tasks/claim** - Atomically claim the next available task and move it to Doing column
+  - **POST /api/tasks/:id/unclaim** - Release a claimed task back to Ready column with optional reason
+  - Supports both numeric IDs and human-readable identifiers (e.g., "W14") for task unclaiming
+  - Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed
+
+- **Capability-Based Task Filtering**:
+  - Agents only see tasks matching their declared capabilities via `agent_capabilities` array on API tokens
+  - Tasks can specify `required_capabilities` to restrict which agents can work on them
+  - PostgreSQL array containment operations ensure efficient capability matching
+  - Agents without specific capabilities see all tasks without requirements
+
+- **Dependency-Aware Task Selection**:
+  - Automatically skips tasks with incomplete dependencies
+  - Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks
+  - Ensures agents always receive tasks that are truly ready to be worked on
+  - Prevents blocked tasks from being claimed
+
+- **Key File Conflict Detection**:
+  - Prevents concurrent work on the same files by different agents
+  - Tasks with overlapping `key_files` are automatically excluded from next/claim operations
+  - JSONB operations efficiently compare file paths across in-progress tasks
+  - Reduces merge conflicts and ensures safe parallel work
+
+- **Automatic Task State Management**:
+  - Tasks claimed via `/api/tasks/claim` are automatically moved to Doing column
+  - Sets `claimed_at`, `claim_expires_at` (24 hours), `assigned_to_id`, and `status` fields
+  - Calculates correct position in Doing column to maintain sort order
+  - Unclaimed tasks return to Ready column with all claim metadata cleared
+
+- **Enhanced Telemetry**:
+  - New telemetry events: `[:kanban, :api, :next_task_fetched]`, `[:kanban, :api, :task_claimed]`, `[:kanban, :api, :task_unclaimed]`
+  - Tracks task priority, API token usage, and unclaim reasons
+  - Provides insights into agent behavior and task workflow efficiency
+
 ## [1.5.0] - 2025-12-24
 
 ### Added

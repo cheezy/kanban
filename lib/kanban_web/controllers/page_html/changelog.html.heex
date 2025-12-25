@@ -35,6 +35,105 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.6.0] - 2025-12-25</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task Claiming API Endpoints")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Intelligent Task Discovery & Claiming")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("AI agents can now discover and claim tasks with advanced filtering:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>GET /api/tasks/next</strong> - {gettext("Retrieve the next available task from the Ready column matching agent capabilities")}
+                  </li>
+                  <li>
+                    <strong>POST /api/tasks/claim</strong> - {gettext("Atomically claim the next available task and move it to Doing column")}
+                  </li>
+                  <li>
+                    <strong>POST /api/tasks/:id/unclaim</strong> - {gettext("Release a claimed task back to Ready column with optional reason")}
+                  </li>
+                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W14\") for task unclaiming")}</li>
+                  <li>{gettext("Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Capability-Based Task Filtering")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens")}</li>
+                  <li>{gettext("Tasks can specify required_capabilities to restrict which agents can work on them")}</li>
+                  <li>{gettext("PostgreSQL array containment operations ensure efficient capability matching")}</li>
+                  <li>{gettext("Agents without specific capabilities see all tasks without requirements")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Dependency-Aware Task Selection")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Automatically skips tasks with incomplete dependencies")}</li>
+                  <li>{gettext("Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks")}</li>
+                  <li>{gettext("Ensures agents always receive tasks that are truly ready to be worked on")}</li>
+                  <li>{gettext("Prevents blocked tasks from being claimed")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Key File Conflict Detection")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Prevents concurrent work on the same files by different agents")}</li>
+                  <li>{gettext("Tasks with overlapping key_files are automatically excluded from next/claim operations")}</li>
+                  <li>{gettext("JSONB operations efficiently compare file paths across in-progress tasks")}</li>
+                  <li>{gettext("Reduces merge conflicts and ensures safe parallel work")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Automatic Task State Management")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Tasks claimed via /api/tasks/claim are automatically moved to Doing column")}</li>
+                  <li>{gettext("Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields")}</li>
+                  <li>{gettext("Calculates correct position in Doing column to maintain sort order")}</li>
+                  <li>{gettext("Unclaimed tasks return to Ready column with all claim metadata cleared")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Enhanced Telemetry")}
+                </h5>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    {gettext("New telemetry events:")} <code class="text-sm">[:kanban, :api, :next_task_fetched]</code>, <code class="text-sm">[:kanban, :api, :task_claimed]</code>, <code class="text-sm">[:kanban, :api, :task_unclaimed]</code>
+                  </li>
+                  <li>{gettext("Tracks task priority, API token usage, and unclaim reasons")}</li>
+                  <li>{gettext("Provides insights into agent behavior and task workflow efficiency")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.5.0] - 2025-12-24</h2>
 
           <div class="mb-8">
