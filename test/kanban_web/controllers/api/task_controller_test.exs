@@ -437,6 +437,58 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = post(conn, ~p"/api/tasks/claim")
       assert json_response(conn, 401)
     end
+
+    test "claims specific task by identifier", %{conn: conn, ready_column: ready_column, user: user, doing_column: doing_column} do
+      {:ok, _task1} = Tasks.create_task(ready_column, %{
+        "title" => "First Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, task2} = Tasks.create_task(ready_column, %{
+        "title" => "Second Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => task2.identifier})
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task2.id
+      assert response["identifier"] == task2.identifier
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == doing_column.id
+      assert response["assigned_to_id"] == user.id
+    end
+
+    test "returns error when claiming specific task with dependencies", %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, dependency_task} = Tasks.create_task(ready_column, %{
+        "title" => "Dependency Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, blocked_task} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task",
+        "status" => "open",
+        "dependencies" => [to_string(dependency_task.id)],
+        "created_by_id" => user.id
+      })
+
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => blocked_task.identifier})
+      response = json_response(conn, 409)
+
+      assert response["error"] =~ blocked_task.identifier
+      assert response["error"] =~ "not available to claim"
+    end
+
+    test "returns error when claiming non-existent task", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => "W99999"})
+      response = json_response(conn, 409)
+
+      assert response["error"] =~ "W99999"
+      assert response["error"] =~ "not available to claim"
+    end
   end
 
   describe "POST /api/tasks/:id/unclaim" do

@@ -119,29 +119,35 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  def claim(conn, _params) do
+  def claim(conn, params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
     api_token = conn.assigns.api_token
     agent_capabilities = api_token.agent_capabilities || []
+    task_identifier = params["identifier"]
 
-    case Tasks.claim_next_task(agent_capabilities, user, board.id) do
+    case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier) do
       {:ok, task} ->
         emit_telemetry(conn, :task_claimed, %{
           task_id: task.id,
           priority: task.priority,
-          api_token_id: api_token.id
+          api_token_id: api_token.id,
+          specific_task: !!task_identifier
         })
 
         render(conn, :show, task: task)
 
       {:error, :no_tasks_available} ->
+        error_message =
+          if task_identifier do
+            "Task '#{task_identifier}' is not available to claim. It may be blocked by dependencies, already claimed, require capabilities you don't have, or not exist on this board."
+          else
+            "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
+          end
+
         conn
         |> put_status(:conflict)
-        |> json(%{
-          error:
-            "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
-        })
+        |> json(%{error: error_message})
     end
   end
 

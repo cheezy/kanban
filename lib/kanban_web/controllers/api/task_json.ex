@@ -96,7 +96,12 @@ defmodule KanbanWeb.API.TaskJSON do
     %{
       errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
         Enum.reduce(opts, msg, fn {key, value}, acc ->
-          String.replace(acc, "%{#{key}}", to_string(value))
+          string_value = if is_binary(value) or is_number(value) or is_atom(value) do
+            to_string(value)
+          else
+            inspect(value)
+          end
+          String.replace(acc, "%{#{key}}", string_value)
         end)
       end)
     }

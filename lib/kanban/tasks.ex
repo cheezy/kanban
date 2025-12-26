@@ -945,75 +945,128 @@ defmodule Kanban.Tasks do
   end
 
   @doc """
-  Atomically claims the next available task for an AI agent.
+  Atomically claims the next available task for an AI agent, or a specific task by identifier.
 
   Updates the task status to "in_progress", sets claimed_at, claim_expires_at,
   assigned_to, and moves it to the "Doing" column.
 
-  Returns {:ok, task} if successful, {:error, :no_tasks_available} if no tasks available.
+  Returns {:ok, task} if successful, {:error, reason} if unsuccessful.
 
   ## Examples
 
       iex> claim_next_task(["code_generation"], user, board_id)
       {:ok, %Task{}}
 
+      iex> claim_next_task(["code_generation"], user, board_id, "W15")
+      {:ok, %Task{}}
+
       iex> claim_next_task([], user, board_id)
       {:error, :no_tasks_available}
 
   """
-  def claim_next_task(agent_capabilities \\ [], user, board_id) do
-    case get_next_task(agent_capabilities, board_id) do
+  def claim_next_task(agent_capabilities \\ [], user, board_id, task_identifier \\ nil) do
+    task =
+      if task_identifier do
+        get_specific_task_for_claim(task_identifier, agent_capabilities, board_id)
+      else
+        get_next_task(agent_capabilities, board_id)
+      end
+
+    case task do
       nil ->
         {:error, :no_tasks_available}
 
       task ->
-        # Get the Doing column for this board
-        doing_column =
-          from(c in Column,
-            where: c.board_id == ^board_id and c.name == "Doing"
-          )
-          |> Repo.one()
+        perform_claim(task, user, board_id)
+    end
+  end
 
-        now = DateTime.utc_now()
-        expires_at = now |> DateTime.add(60 * 60, :second)
-        next_position = get_next_position(doing_column)
+  defp get_specific_task_for_claim(identifier, agent_capabilities, board_id) do
+    now = DateTime.utc_now()
 
-        # Atomically update the task
-        update_query =
-          from(t in Task,
-            where: t.id == ^task.id,
-            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
-          )
+    completed_task_ids =
+      from(t in Task,
+        where: t.status == :completed,
+        select: fragment("?::text", t.id)
+      )
 
-        case Repo.update_all(
-               update_query,
-               set: [
-                 status: :in_progress,
-                 claimed_at: now,
-                 claim_expires_at: expires_at,
-                 assigned_to_id: user.id,
-                 column_id: doing_column.id,
-                 position: next_position,
-                 updated_at: now
-               ]
-             ) do
-          {1, _} ->
-            # Successfully claimed, reload the task with associations
-            updated_task = get_task_for_view!(task.id)
+    query =
+      from(t in Task,
+        join: c in Column,
+        on: t.column_id == c.id,
+        where: t.identifier == ^identifier,
+        where: c.board_id == ^board_id,
+        where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+        preload: [:column, :assigned_to, :created_by]
+      )
 
-            # Broadcast the update
-            Phoenix.PubSub.broadcast(
-              Kanban.PubSub,
-              "board:#{board_id}",
-              {:task_updated, updated_task}
+    query =
+      from(t in query,
+        where:
+          fragment("cardinality(?)", t.required_capabilities) == 0 or
+            fragment("? <@ ?", t.required_capabilities, ^agent_capabilities)
+      )
+
+    query =
+      from(t in query,
+        where:
+          fragment("cardinality(?)", t.dependencies) == 0 or
+            fragment(
+              "NOT EXISTS (
+                SELECT 1
+                FROM unnest(?) AS dep_id
+                WHERE dep_id NOT IN (?)
+              )",
+              t.dependencies,
+              subquery(completed_task_ids)
             )
+      )
 
-            {:ok, updated_task}
+    Repo.one(query)
+  end
 
-          {0, _} ->
-            # Task was claimed by another agent
-            {:error, :no_tasks_available}
-        end
+  defp perform_claim(task, user, board_id) do
+    doing_column =
+      from(c in Column,
+        where: c.board_id == ^board_id and c.name == "Doing"
+      )
+      |> Repo.one()
+
+    now = DateTime.utc_now()
+    expires_at = now |> DateTime.add(60 * 60, :second)
+    next_position = get_next_position(doing_column)
+
+    update_query =
+      from(t in Task,
+        where: t.id == ^task.id,
+        where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
+      )
+
+    case Repo.update_all(
+           update_query,
+           set: [
+             status: :in_progress,
+             claimed_at: now,
+             claim_expires_at: expires_at,
+             assigned_to_id: user.id,
+             column_id: doing_column.id,
+             position: next_position,
+             updated_at: now
+           ]
+         ) do
+      {1, _} ->
+        updated_task = get_task_for_view!(task.id)
+
+        Phoenix.PubSub.broadcast(
+          Kanban.PubSub,
+          "board:#{board_id}",
+          {:task_updated, updated_task}
+        )
+
+        {:ok, updated_task}
+
+      {0, _} ->
+        {:error, :no_tasks_available}
     end
   end
 
