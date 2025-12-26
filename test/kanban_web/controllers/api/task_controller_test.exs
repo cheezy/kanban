@@ -952,4 +952,69 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 403)["error"] =~ "Column does not belong to this board"
     end
   end
+
+  describe "PATCH /api/tasks/:id/mark_done" do
+    test "marks task as done when in Review column", %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      {:ok, task} = Tasks.create_task(review_column, %{
+        "title" => "Task to mark done",
+        "status" => "in_progress",
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "completed"
+      assert response["completed_at"] != nil
+      assert response["column_id"] == done_column.id
+    end
+
+    test "marks task as done using identifier", %{conn: conn, board: board, user: user} do
+      review_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Review"))
+
+      {:ok, task} = Tasks.create_task(review_column, %{
+        "title" => "Task to mark done",
+        "status" => "in_progress",
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.identifier}/mark_done")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "completed"
+      assert response["identifier"] == task.identifier
+    end
+
+    test "returns 422 when task is not in Review column", %{conn: conn, board: board, user: user} do
+      backlog_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} = Tasks.create_task(backlog_column, %{
+        "title" => "Task not in review",
+        "created_by_id" => user.id
+      })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
+      assert json_response(conn, 422)["error"] =~ "Task must be in Review column"
+    end
+
+    test "returns 403 when task belongs to different board", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      review_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Review"))
+
+      {:ok, task} = Tasks.create_task(review_column, %{
+        "title" => "Task on other board",
+        "created_by_id" => other_user.id
+      })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
+      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+  end
 end

@@ -1234,4 +1234,75 @@ defmodule Kanban.Tasks do
         end
     end
   end
+
+  @doc """
+  Marks a task as done by moving it from Review to Done column.
+
+  Sets status to :completed, sets completed_at timestamp,
+  and moves the task to the Done column. This is the final step in the task workflow.
+
+  Only tasks in the Review column can be marked as done.
+
+  ## Parameters
+
+    * task - The task to mark as done
+    * user - The user marking the task as done
+
+  ## Examples
+
+      iex> mark_done(task, user)
+      {:ok, %Task{}}
+
+  """
+  def mark_done(task, user) do
+    task = Repo.preload(task, [:column, :assigned_to, :created_by])
+    board_id = task.column.board_id
+
+    if task.column.name != "Review" do
+      {:error, :invalid_column}
+    else
+      done_column =
+        from(c in Column,
+          where: c.board_id == ^board_id and c.name == "Done"
+        )
+        |> Repo.one()
+
+      next_position = get_next_position(done_column)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      changeset =
+        task
+        |> Ecto.Changeset.change(%{
+          status: :completed,
+          completed_at: now,
+          column_id: done_column.id,
+          position: next_position
+        })
+
+      case Repo.update(changeset) do
+        {:ok, _updated_task} ->
+          updated_task = get_task_for_view!(task.id)
+
+          require Logger
+          Logger.info("Task #{task.id} marked as done by user #{user.id}")
+
+          :telemetry.execute(
+            [:kanban, :task, :completed],
+            %{task_id: updated_task.id},
+            %{completed_by: user.id}
+          )
+
+          Phoenix.PubSub.broadcast(
+            Kanban.PubSub,
+            "board:#{board_id}",
+            {:task_completed, updated_task}
+          )
+
+          {:ok, updated_task}
+
+        {:error, changeset} ->
+          {:error, changeset}
+      end
+    end
+  end
 end

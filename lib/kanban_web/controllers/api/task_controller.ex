@@ -222,6 +222,34 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def mark_done(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      case Tasks.mark_done(task, user) do
+        {:ok, task} ->
+          emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
+          render(conn, :show, task: task)
+
+        {:error, :invalid_column} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: "Task must be in Review column to mark as done"})
+
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(:error, changeset: changeset)
+      end
+    end
+  end
+
   defp get_task_by_id_or_identifier!(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
       {id, ""} ->

@@ -44,6 +44,7 @@ defmodule KanbanWeb.Router do
     post "/tasks/claim", TaskController, :claim
     post "/tasks/:id/unclaim", TaskController, :unclaim
     patch "/tasks/:id/complete", TaskController, :complete
+    patch "/tasks/:id/mark_done", TaskController, :mark_done
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

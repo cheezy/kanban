@@ -425,6 +425,24 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_info({:task_updated, _task}, socket) do
+    # Reload board when a task is updated via API (simple format)
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({:task_moved_to_review, _task}, socket) do
+    # Reload board when a task is moved to Review column via API
+    reload_board_data(socket)
+  end
+
+  @impl true
+  def handle_info({:task_completed, _task}, socket) do
+    # Reload board when a task is completed via API
+    reload_board_data(socket)
+  end
+
+  @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
   end
