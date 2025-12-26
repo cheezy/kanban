@@ -151,6 +151,43 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def complete(conn, %{"id" => id_or_identifier} = params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      case Tasks.complete_task(task, user, params) do
+        {:ok, task} ->
+          emit_telemetry(conn, :task_completed, %{
+            task_id: task.id,
+            time_spent_minutes: task.time_spent_minutes
+          })
+
+          render(conn, :show, task: task)
+
+        {:error, :invalid_status} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: "Task must be in progress or blocked to complete"})
+
+        {:error, :not_authorized} ->
+          conn
+          |> put_status(:forbidden)
+          |> json(%{error: "You can only complete tasks that you are assigned to"})
+
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(:error, changeset: changeset)
+      end
+    end
+  end
+
   def unclaim(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user

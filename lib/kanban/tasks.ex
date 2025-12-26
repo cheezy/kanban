@@ -1098,14 +1098,12 @@ defmodule Kanban.Tasks do
         {:error, :not_authorized}
 
       true ->
-        # Get the Ready column for this board
         ready_column =
           from(c in Column,
             where: c.board_id == ^task.column.board_id and c.name == "Ready"
           )
           |> Repo.one()
 
-        # Update the task
         changeset =
           task
           |> Ecto.Changeset.change(%{
@@ -1120,17 +1118,113 @@ defmodule Kanban.Tasks do
           {:ok, updated_task} ->
             updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
 
-            # Log the reason if provided
             if reason do
               require Logger
               Logger.info("Task #{task.id} unclaimed by user #{user.id}. Reason: #{reason}")
             end
 
-            # Broadcast the update
             Phoenix.PubSub.broadcast(
               Kanban.PubSub,
               "board:#{task.column.board_id}",
               {:task_updated, updated_task}
+            )
+
+            {:ok, updated_task}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+    end
+  end
+
+  @doc """
+  Completes a task by moving it to the Review column with completion summary.
+
+  Stores completion details (summary, actual complexity, files changed, time spent)
+  and moves the task from Doing to Review. Status remains "in_progress" - final
+  completion (moving to Done with status="completed") is handled by mark_done.
+
+  ## Parameters
+
+    * task - The task to complete
+    * user - The user completing the task
+    * params - Map with completion data:
+      * completion_summary - String (JSON) with completion details
+      * actual_complexity - Actual complexity (:small, :medium, :large)
+      * actual_files_changed - Integer count of files changed
+      * time_spent_minutes - Integer minutes spent
+
+  ## Examples
+
+      iex> complete_task(task, user, %{
+        "completion_summary" => "{...json...}",
+        "actual_complexity" => "medium",
+        "actual_files_changed" => 3,
+        "time_spent_minutes" => 25
+      })
+      {:ok, %Task{}}
+
+  """
+  def complete_task(task, user, params) do
+    task = Repo.preload(task, [:column, :assigned_to])
+    board_id = task.column.board_id
+
+    cond do
+      task.status not in [:in_progress, :blocked] ->
+        {:error, :invalid_status}
+
+      task.assigned_to_id != user.id ->
+        {:error, :not_authorized}
+
+      true ->
+        review_column =
+          from(c in Column,
+            where: c.board_id == ^board_id and c.name == "Review"
+          )
+          |> Repo.one()
+
+        next_position = get_next_position(review_column)
+
+        changeset =
+          task
+          |> Ecto.Changeset.cast(params, [
+            :completion_summary,
+            :actual_complexity,
+            :actual_files_changed,
+            :time_spent_minutes
+          ])
+          |> Ecto.Changeset.put_change(:column_id, review_column.id)
+          |> Ecto.Changeset.put_change(:position, next_position)
+          |> Ecto.Changeset.put_change(:completed_by_id, user.id)
+          |> Ecto.Changeset.validate_required([
+            :completion_summary,
+            :actual_complexity,
+            :actual_files_changed,
+            :time_spent_minutes
+          ])
+          |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
+          |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
+
+        case Repo.update(changeset) do
+          {:ok, updated_task} ->
+            updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
+
+            require Logger
+
+            Logger.info(
+              "Task #{task.id} completed and moved to Review by user #{user.id}. Time spent: #{params["time_spent_minutes"]} minutes"
+            )
+
+            :telemetry.execute(
+              [:kanban, :task, :moved_to_review],
+              %{task_id: updated_task.id, time_spent_minutes: params["time_spent_minutes"]},
+              %{completed_by_id: user.id}
+            )
+
+            Phoenix.PubSub.broadcast(
+              Kanban.PubSub,
+              "board:#{board_id}",
+              {:task_moved_to_review, updated_task}
             )
 
             {:ok, updated_task}

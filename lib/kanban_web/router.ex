@@ -43,6 +43,7 @@ defmodule KanbanWeb.Router do
     get "/tasks/next", TaskController, :next
     post "/tasks/claim", TaskController, :claim
     post "/tasks/:id/unclaim", TaskController, :unclaim
+    patch "/tasks/:id/complete", TaskController, :complete
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

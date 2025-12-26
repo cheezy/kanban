@@ -1,12 +1,12 @@
-# Add Task Completion Tracking with Summary
+# Move Task to Review with Completion Summary
 
 **Complexity:** Medium | **Est. Files:** 3-4
 
 ## Description
 
-**WHY:** When AI agents or users complete tasks, we need to capture detailed completion information: what files changed, what tests passed, any deviations from plan, and follow-up tasks identified. This creates an audit trail and helps improve future task planning.
+**WHY:** When AI agents or users finish working on tasks, we need to capture detailed completion information: what files changed, what tests passed, any deviations from plan, and follow-up tasks identified. The task should then move to Review column for human review before final completion.
 
-**WHAT:** Implement complete_task function that updates task status, stores completion summary (JSONB), sets completed_at timestamp, and broadcasts completion event.
+**WHAT:** Implement complete_task function that moves task to Review column, stores completion summary (JSONB), keeps status as "in_progress", and broadcasts event. A separate endpoint will handle final completion (moving to Done).
 
 **WHERE:** Tasks context, API controller
 
@@ -14,15 +14,15 @@
 
 - [ ] Tasks.complete_task/2 function created
 - [ ] PATCH /api/tasks/:id/complete endpoint added
+- [ ] Task moved from Doing to Review column
 - [ ] Completion summary stored as JSONB
-- [ ] completed_at timestamp set automatically
+- [ ] Status remains as "in_progress" (not changed to "completed")
 - [ ] completed_by field populated
-- [ ] Status updated to "completed"
 - [ ] Estimation feedback fields populated (actual_complexity, actual_files_changed, time_spent_minutes)
-- [ ] PubSub broadcasts completion event
+- [ ] PubSub broadcasts task_moved_to_review event
 - [ ] Validation ensures required completion fields present
-- [ ] Dependent tasks unblocked automatically
 - [ ] Tests cover happy path and validation
+- [ ] Note: Final completion (status="completed", move to Done) handled by separate endpoint (task 10)
 
 ## Key Files to Read First
 
@@ -42,16 +42,17 @@
 - Return updated task with all associations
 
 **Database/Schema:**
-- Tables: tasks (use existing completion fields from task 02)
+- Tables: tasks (use existing completion fields from task 02), columns (to get Review column)
 - Migrations needed: No (fields added in task 02)
 - Fields used:
-  - completed_at (utc_datetime)
-  - completed_by (string)
-  - completion_summary (jsonb)
-  - status (string) - updated to "completed"
+  - column_id (integer) - updated to Review column ID
+  - completed_by (string) - who finished the work
+  - completion_summary (jsonb) - full completion details
+  - status (string) - **remains "in_progress"** (not changed to "completed" yet)
   - actual_complexity (string) - actual complexity experienced (small, medium, large)
   - actual_files_changed (integer) - actual number of files modified
   - time_spent_minutes (integer) - actual time spent in minutes
+  - position (integer) - updated for new column
 
 **Completion Summary Structure:**
 ```elixir
@@ -82,9 +83,10 @@
 ```
 
 **Integration Points:**
-- [ ] PubSub broadcasts: Broadcast task completion to board channel
-- [ ] Phoenix Channels: Notify all board subscribers
+- [ ] PubSub broadcasts: Broadcast task moved to Review column to board channel
+- [ ] Phoenix Channels: Notify all board subscribers of task movement
 - [ ] External APIs: None
+- [ ] Related: Task 10 will handle final completion (Review → Done with status="completed")
 
 ## Verification
 
@@ -171,63 +173,70 @@ mix precommit
 ```
 
 **Manual Testing:**
-1. Create task via API
-2. Update status to "in_progress"
+1. Create task via API in Ready column
+2. Claim task (moves to Doing, status="in_progress")
 3. Complete task via PATCH /complete with full summary
-4. Verify status changed to "completed"
-5. Verify completed_at timestamp set
+4. Verify task moved from Doing to Review column
+5. Verify status **still "in_progress"** (not "completed")
 6. Verify completion_summary stored correctly
-7. Verify PubSub broadcast received
-8. Create task B that depends on task A
-9. Complete task A
-10. Verify task B now appears in /ready endpoint
+7. Verify completed_by field populated
+8. Verify PubSub broadcast received
+9. Verify task appears in Review column in UI
+10. (Separate task 10 will test moving from Review → Done with status="completed")
 
 **Success Looks Like:**
-- Task status updated to "completed"
-- Completion timestamp set
-- Summary stored in JSONB field
+- Task moved from Doing column to Review column
+- Status **remains "in_progress"** (not changed to "completed" - that's task 10)
+- Completion summary stored in JSONB field
+- completed_by field populated
 - Estimation feedback fields populated (actual_complexity, actual_files_changed, time_spent_minutes)
 - PubSub broadcast sent
-- Dependent tasks unblocked
+- Position calculated correctly in Review column
 - All tests pass
-- API returns updated task with estimation data
+- API returns updated task with estimation data and new column_id
 
 ## Data Examples
 
 **Context Function:**
 ```elixir
 defmodule Kanban.Tasks do
-  alias Kanban.Repo
+  alias Kanban.{Repo, Columns}
   alias Kanban.Schemas.Task
   import Ecto.Changeset
 
-  def complete_task(%Task{} = task, attrs) do
+  def complete_task(%Task{} = task, attrs, board_id) do
+    # Get Review column for the board
+    review_column = Columns.get_column_by_name(board_id, "Review")
+    next_position = get_next_position(review_column)
+
     changeset =
       task
       |> cast(attrs, [:completed_by, :completion_summary, :actual_complexity, :actual_files_changed, :time_spent_minutes])
-      |> put_change(:status, :completed)
-      |> put_change(:completed_at, DateTime.utc_now() |> DateTime.truncate(:second))
+      |> put_change(:column_id, review_column.id)
+      |> put_change(:position, next_position)
+      # Status stays "in_progress" - NOT changed to "completed"
       |> validate_required([:completed_by, :completion_summary])
-      |> validate_inclusion(:status, [:in_progress, :blocked], message: "can only complete tasks that are in progress or blocked")
       |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
       |> validate_completion_summary()
 
     case Repo.update(changeset) do
-      {:ok, completed_task} = result ->
-        # Broadcast completion
+      {:ok, updated_task} = result ->
+        task = Repo.preload(updated_task, [:column, :goal])
+
+        # Broadcast move to Review
         :telemetry.execute(
-          [:kanban, :task, :completed],
-          %{task_id: completed_task.id},
-          %{completed_by: completed_task.completed_by}
+          [:kanban, :task, :moved_to_review],
+          %{task_id: task.id},
+          %{completed_by: task.completed_by}
         )
 
         Phoenix.PubSub.broadcast(
           Kanban.PubSub,
-          "board:#{completed_task.column.board_id}",
-          {:task_completed, completed_task}
+          "board:#{board_id}",
+          {:task_moved_to_review, task}
         )
 
-        result
+        {:ok, task}
 
       error ->
         error
@@ -458,7 +467,9 @@ curl -X POST http://localhost:4000/api/tasks \
 ## Out of Scope
 
 - Don't implement automatic follow-up task creation (agents create manually via API)
-- Don't add completion approval workflow
+- Don't add completion approval workflow (that's manual review in UI)
 - Don't implement completion summary templates
 - Don't add AI-powered completion validation
+- **Don't move task to Done column or set status="completed"** - That's handled by separate Task 10 endpoint
+- **Don't set completed_at timestamp** - That's set when task moves to Done (Task 10)
 - Future enhancement: Auto-create follow-up tasks from completion_summary.follow_up_tasks array

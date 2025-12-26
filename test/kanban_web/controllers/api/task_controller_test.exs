@@ -570,6 +570,152 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "PATCH /api/tasks/:id/complete" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      {:ok, task} = Tasks.create_task(doing_column, %{
+        "title" => "Test Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id
+      })
+
+      %{
+        doing_column: doing_column,
+        review_column: review_column,
+        task: task
+      }
+    end
+
+    test "completes task and moves to Review column", %{conn: conn, task: task, review_column: review_column} do
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+          verification_results: %{status: "passed", commands_run: ["mix test"]}
+        }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == review_column.id
+      assert response["completion_summary"] == completion_params["completion_summary"]
+      assert response["actual_complexity"] == "medium"
+      assert response["actual_files_changed"] == "2"
+      assert response["time_spent_minutes"] == 15
+    end
+
+    test "completes task using identifier instead of ID", %{conn: conn, task: task, review_column: review_column} do
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+          verification_results: %{status: "passed", commands_run: ["mix test"]}
+        }),
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1",
+        "time_spent_minutes" => 10
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.identifier}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["column_id"] == review_column.id
+    end
+
+    test "returns 422 when completion_summary is missing", %{conn: conn, task: task} do
+      completion_params = %{
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 422)
+
+      assert response["errors"]["completion_summary"] != nil
+    end
+
+    test "returns 422 when actual_complexity is invalid", %{conn: conn, task: task} do
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [],
+          verification_results: %{status: "passed"}
+        }),
+        "actual_complexity" => "invalid",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 422)
+
+      assert response["errors"]["actual_complexity"] != nil
+    end
+
+    test "returns 403 when completing someone else's task", %{task: task, board: board} do
+      other_user = user_fixture(%{email: "other@example.com"})
+      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(other_user, board, %{
+        "name" => "Other Token"
+      })
+
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [],
+          verification_results: %{status: "passed"}
+        }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 403)
+
+      assert response["error"] =~ "only complete tasks that you are assigned to"
+    end
+
+    test "returns 422 when task is not in progress", %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, open_task} = Tasks.create_task(ready_column, %{
+        "title" => "Open Task",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [],
+          verification_results: %{status: "passed"}
+        }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{open_task.id}/complete", completion_params)
+      response = json_response(conn, 422)
+
+      assert response["error"] =~ "must be in progress or blocked"
+    end
+  end
+
   describe "dependency filtering" do
     setup %{board: board, user: user} do
       columns = Columns.list_columns(board)
