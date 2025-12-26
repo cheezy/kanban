@@ -282,6 +282,13 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp save_task(socket, :edit_task, task_params) do
+    # Auto-populate review fields when review_status changes
+    task_params =
+      case Map.get(socket.assigns, :current_scope) do
+        %{user: user} -> maybe_add_review_metadata(task_params, user)
+        _ -> task_params
+      end
+
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
         notify_parent({:saved, task})
@@ -325,6 +332,20 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, :form, to_form(changeset))
+  end
+
+  defp maybe_add_review_metadata(task_params, current_user) do
+    review_status = task_params["review_status"]
+
+    # If review_status is being set to something other than pending,
+    # and reviewed_at/reviewed_by_id are not already set, set them automatically
+    if review_status && review_status != "" && review_status != "pending" do
+      task_params
+      |> Map.put_new("reviewed_at", DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Map.put_new("reviewed_by_id", current_user.id)
+    else
+      task_params
+    end
   end
 
   defp normalize_array_params(params) do

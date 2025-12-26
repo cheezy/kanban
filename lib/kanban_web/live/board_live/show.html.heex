@@ -345,6 +345,7 @@
       board={@board}
       task={(@live_action == :edit_task && @task) || %Kanban.Tasks.Task{}}
       column_id={(@live_action == :new_task && Map.get(assigns, :column_id)) || nil}
+      current_scope={@current_scope}
       patch={~p"/boards/#{@board}"}
     />
   </KanbanWeb.DelayedModal.delayed_modal>

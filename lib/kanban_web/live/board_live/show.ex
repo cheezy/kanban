@@ -443,6 +443,12 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_info({Kanban.Tasks, :task_reviewed, _task}, socket) do
+    # Reload board when a task review status changes
+    reload_board_data(socket)
+  end
+
+  @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
   end
