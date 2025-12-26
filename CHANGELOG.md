@@ -5,6 +5,33 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-12-26
+
+### Added
+
+#### Task Completion API Endpoint
+
+- **Task Completion Workflow** - AI agents can now complete tasks and move them to Review column:
+  - **PATCH /api/tasks/:id/complete** - Complete a task by moving it from Doing to Review column with completion summary
+  - Supports both numeric IDs and human-readable identifiers (e.g., "W16") for task completion
+  - Status remains "in_progress" (final completion to Done column handled by separate endpoint)
+  - Stores detailed completion metadata including:
+    - `completion_summary` - JSON string with comprehensive completion details (files changed, verification results, implementation notes)
+    - `actual_complexity` - Actual complexity experienced (small, medium, large)
+    - `actual_files_changed` - String count of files modified during implementation
+    - `time_spent_minutes` - Integer minutes spent on the task
+    - `completed_by_id` - User ID of the completer
+
+- **Completion Summary Structure** - Supports rich completion data in JSON format:
+  - `files_changed` - Array of file paths and what changed in each
+  - `tests_added` - Array of test files created
+  - `verification_results` - Commands run, status (passed/failed), and output
+  - `implementation_notes` - Deviations, discoveries, and edge cases encountered
+  - `estimation_feedback` - Comparison of estimated vs actual complexity, files, and time
+  - `telemetry_added` - Array of telemetry events added
+  - `follow_up_tasks` - Array of follow-up work identified
+  - `known_limitations` - Array of limitations or constraints
+
 ## [1.6.0] - 2025-12-25
 
 ### Added

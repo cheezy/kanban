@@ -35,6 +35,65 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.7.0] - 2025-12-26</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task Completion API Endpoint")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Task Completion Workflow")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("AI agents can now complete tasks and move them to Review column:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>PATCH /api/tasks/:id/complete</strong> - {gettext("Complete a task by moving it from Doing to Review column with completion summary")}
+                  </li>
+                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W16\") for task completion")}</li>
+                  <li>{gettext("Status remains \"in_progress\" (final completion to Done column handled by separate endpoint)")}</li>
+                  <li>{gettext("Stores detailed completion metadata including:")}</li>
+                </ul>
+                <ul class="list-disc list-inside ml-12 space-y-1 text-base-content opacity-70 mt-2">
+                  <li><code class="text-sm">completion_summary</code> - {gettext("JSON string with comprehensive completion details (files changed, verification results, implementation notes)")}</li>
+                  <li><code class="text-sm">actual_complexity</code> - {gettext("Actual complexity experienced (small, medium, large)")}</li>
+                  <li><code class="text-sm">actual_files_changed</code> - {gettext("String count of files modified during implementation")}</li>
+                  <li><code class="text-sm">time_spent_minutes</code> - {gettext("Integer minutes spent on the task")}</li>
+                  <li><code class="text-sm">completed_by_id</code> - {gettext("User ID of the completer")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Completion Summary Structure")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Supports rich completion data in JSON format:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li><code class="text-sm">files_changed</code> - {gettext("Array of file paths and what changed in each")}</li>
+                  <li><code class="text-sm">tests_added</code> - {gettext("Array of test files created")}</li>
+                  <li><code class="text-sm">verification_results</code> - {gettext("Commands run, status (passed/failed), and output")}</li>
+                  <li><code class="text-sm">implementation_notes</code> - {gettext("Deviations, discoveries, and edge cases encountered")}</li>
+                  <li><code class="text-sm">estimation_feedback</code> - {gettext("Comparison of estimated vs actual complexity, files, and time")}</li>
+                  <li><code class="text-sm">telemetry_added</code> - {gettext("Array of telemetry events added")}</li>
+                  <li><code class="text-sm">follow_up_tasks</code> - {gettext("Array of follow-up work identified")}</li>
+                  <li><code class="text-sm">known_limitations</code> - {gettext("Array of limitations or constraints")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.6.0] - 2025-12-25</h2>
 
           <div class="mb-8">

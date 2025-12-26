@@ -66,6 +66,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
+    task_params = normalize_array_params(task_params)
     save_task(socket, socket.assigns.action, task_params)
   end
 
@@ -325,6 +326,73 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, :form, to_form(changeset))
   end
+
+  defp normalize_array_params(params) do
+    array_fields = [
+      "dependencies",
+      "required_capabilities",
+      "technology_requirements",
+      "pitfalls",
+      "out_of_scope",
+      "security_considerations"
+    ]
+
+    params
+    |> normalize_array_fields(array_fields)
+    |> normalize_map_fields()
+  end
+
+  defp normalize_array_fields(params, fields) do
+    Enum.reduce(fields, params, fn field, acc ->
+      acc
+      |> Map.put_new(field, [])
+      |> Map.update(field, [], &filter_empty_strings/1)
+    end)
+  end
+
+  defp normalize_map_fields(params) do
+    params
+    |> normalize_testing_strategy()
+    |> normalize_integration_points()
+  end
+
+  defp normalize_testing_strategy(params) do
+    normalize_map_with_arrays(params, "testing_strategy", [
+      "unit_tests",
+      "integration_tests",
+      "manual_tests"
+    ])
+  end
+
+  defp normalize_integration_points(params) do
+    normalize_map_with_arrays(params, "integration_points", [
+      "telemetry_events",
+      "pubsub_broadcasts",
+      "phoenix_channels",
+      "external_apis"
+    ])
+  end
+
+  defp normalize_map_with_arrays(params, field_name, array_keys) do
+    case Map.get(params, field_name) do
+      nil ->
+        default_map = Map.new(array_keys, fn key -> {key, []} end)
+        Map.put(params, field_name, default_map)
+
+      field_map when is_map(field_map) ->
+        normalized_map = normalize_array_fields(field_map, array_keys)
+        Map.put(params, field_name, normalized_map)
+
+      _ ->
+        params
+    end
+  end
+
+  defp filter_empty_strings(list) when is_list(list) do
+    Enum.reject(list, &(&1 == "" || is_nil(&1)))
+  end
+
+  defp filter_empty_strings(value), do: value
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 

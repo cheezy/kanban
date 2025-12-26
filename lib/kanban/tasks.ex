@@ -837,7 +837,7 @@ defmodule Kanban.Tasks do
   2. Agent has all required capabilities (array operation)
   3. All dependencies completed (subquery check)
   4. No key_file conflicts with tasks in "Doing" or "Review" (JSONB comparison)
-  5. Ordered by position in column (earlier = higher priority)
+  5. Ordered by priority (descending), then position (ascending)
 
   Has status "open" (not claimed) OR has expired claim.
   Returns nil if no task available.
@@ -884,7 +884,7 @@ defmodule Kanban.Tasks do
         where: c.name == "Ready",
         where: c.board_id == ^board_id,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
-        order_by: [asc: t.position],
+        order_by: [desc: t.priority, asc: t.position],
         preload: [:column, :assigned_to, :created_by]
       )
 
