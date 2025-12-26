@@ -5,6 +5,48 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2025-12-26
+
+### Added
+
+#### Task Dependencies and Blocking Logic
+
+- **Dependency Graph System** - Tasks can now have dependencies on other tasks with full validation:
+  - Tasks can specify dependencies using task identifiers (e.g., "W14", "W15")
+  - Circular dependency detection prevents invalid dependency relationships
+  - Automatic task status management based on dependency completion
+  - Visual blocked indicator on task cards when dependencies are incomplete
+
+- **Automatic Blocking/Unblocking** - Task status automatically updates based on dependencies:
+  - When a task has incomplete dependencies, status changes to `:blocked`
+  - When all dependencies are completed, task automatically unblocks
+  - Blocking status checked on task creation, update, and dependency completion
+  - Dependent tasks automatically unblocked when a task is marked done
+
+- **Dependency API Endpoints** - New endpoints for querying task relationships:
+  - **GET /api/tasks/:id/dependencies** - Returns full dependency tree for a task
+  - **GET /api/tasks/:id/dependents** - Returns all tasks that depend on this task
+  - Supports both numeric IDs and human-readable identifiers
+  - Recursive dependency tree structure with nested dependencies
+
+- **Validation and Safety** - Comprehensive validation to ensure data integrity:
+  - Circular dependency detection using depth-first search with visited tracking
+  - Prevention of task deletion when other tasks depend on it
+  - Prevention of self-dependencies
+  - PostgreSQL array operations for efficient dependency queries
+
+- **UI Enhancements** - Visual indicators for blocked tasks:
+  - Blocked icon displayed in upper right of task cards
+  - Clear visual distinction for tasks that cannot be started
+  - Real-time updates when blocking status changes
+
+### Fixed
+
+- **Review Status Update** - Fixed issue preventing review status updates on tasks:
+  - Added automatic population of `reviewed_at` and `reviewed_by_id` when review status changes
+  - Added missing `handle_info` handler for `:task_reviewed` PubSub events
+  - Form component now properly receives user context for review metadata
+
 ## [1.7.0] - 2025-12-26
 
 ### Added

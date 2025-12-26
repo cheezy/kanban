@@ -35,6 +35,120 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.8.0] - 2025-12-26</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task Dependencies and Blocking Logic")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Dependency Graph System")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Tasks can now have dependencies on other tasks with full validation:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Tasks can specify dependencies using task identifiers (e.g., \"W14\", \"W15\")")}</li>
+                  <li>{gettext("Circular dependency detection prevents invalid dependency relationships")}</li>
+                  <li>{gettext("Automatic task status management based on dependency completion")}</li>
+                  <li>{gettext("Visual blocked indicator on task cards when dependencies are incomplete")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Automatic Blocking/Unblocking")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Task status automatically updates based on dependencies:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("When a task has incomplete dependencies, status changes to :blocked")}</li>
+                  <li>{gettext("When all dependencies are completed, task automatically unblocks")}</li>
+                  <li>{gettext("Blocking status checked on task creation, update, and dependency completion")}</li>
+                  <li>{gettext("Dependent tasks automatically unblocked when a task is marked done")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Dependency API Endpoints")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("New endpoints for querying task relationships:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>GET /api/tasks/:id/dependencies</strong> - {gettext("Returns full dependency tree for a task")}
+                  </li>
+                  <li>
+                    <strong>GET /api/tasks/:id/dependents</strong> - {gettext("Returns all tasks that depend on this task")}
+                  </li>
+                  <li>{gettext("Supports both numeric IDs and human-readable identifiers")}</li>
+                  <li>{gettext("Recursive dependency tree structure with nested dependencies")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Validation and Safety")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Comprehensive validation to ensure data integrity:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Circular dependency detection using depth-first search with visited tracking")}</li>
+                  <li>{gettext("Prevention of task deletion when other tasks depend on it")}</li>
+                  <li>{gettext("Prevention of self-dependencies")}</li>
+                  <li>{gettext("PostgreSQL array operations for efficient dependency queries")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("UI Enhancements")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Visual indicators for blocked tasks:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Blocked icon displayed in upper right of task cards")}</li>
+                  <li>{gettext("Clear visual distinction for tasks that cannot be started")}</li>
+                  <li>{gettext("Real-time updates when blocking status changes")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Fixed")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Review Status Update")}
+              </h4>
+              <p class="text-base-content opacity-70 mb-2">
+                {gettext("Fixed issue preventing review status updates on tasks:")}
+              </p>
+              <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                <li>{gettext("Added automatic population of reviewed_at and reviewed_by_id when review status changes")}</li>
+                <li>{gettext("Added missing handle_info handler for :task_reviewed PubSub events")}</li>
+                <li>{gettext("Form component now properly receives user context for review metadata")}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.7.0] - 2025-12-26</h2>
 
           <div class="mb-8">
