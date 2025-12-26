@@ -1155,11 +1155,13 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
 
-      task =
-        task_fixture(column, %{
-          title: "Test",
-          dependencies: ["W01A", "W01B"]
-        })
+      {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep A"})
+      {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep B"})
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Test",
+        "dependencies" => [dep1.identifier, dep2.identifier]
+      })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1176,7 +1178,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       dependencies = Ecto.Changeset.get_field(updated_socket.assigns.form.source, :dependencies)
       assert length(dependencies) == 1
-      assert hd(dependencies) == "W01B"
+      assert hd(dependencies) == dep2.identifier
     end
   end
 

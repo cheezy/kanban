@@ -8,6 +8,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
   import Kanban.AccountsFixtures
 
   alias Kanban.Repo
+  alias Kanban.Tasks
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
 
@@ -895,7 +896,14 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
     test "displays dependencies section", %{board: board} do
       column = column_fixture(board)
-      task = task_fixture(column, %{dependencies: ["W1", "W2", "W3"]})
+      {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep 1"})
+      {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep 2"})
+      {:ok, dep3} = Tasks.create_task(column, %{"title" => "Dep 3"})
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Test Task",
+        "dependencies" => [dep1.identifier, dep2.identifier, dep3.identifier]
+      })
 
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
@@ -906,7 +914,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Dependencies"
       assert result =~ "Depends on tasks"
-      assert result =~ "W1, W2, W3"
+      assert result =~ "#{dep1.identifier}, #{dep2.identifier}, #{dep3.identifier}"
     end
 
     test "displays pitfalls section with yellow background", %{board: board} do

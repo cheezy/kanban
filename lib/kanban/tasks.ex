@@ -190,10 +190,28 @@ defmodule Kanban.Tasks do
       })
     end)
     |> Repo.transaction()
-    |> case do
-      {:ok, %{task: task}} -> {:ok, task}
-      {:error, :task, changeset, _} -> {:error, changeset}
-      {:error, :history, changeset, _} -> {:error, changeset}
+    |> handle_task_creation_result(attrs)
+  end
+
+  defp handle_task_creation_result(transaction_result, attrs) do
+    case transaction_result do
+      {:ok, %{task: task}} ->
+        update_blocking_status_after_creation(task, attrs)
+        {:ok, task}
+
+      {:error, :task, changeset, _} ->
+        {:error, changeset}
+
+      {:error, :history, changeset, _} ->
+        {:error, changeset}
+    end
+  end
+
+  defp update_blocking_status_after_creation(task, attrs) do
+    dependencies = Map.get(attrs, :dependencies, Map.get(attrs, "dependencies", []))
+
+    if dependencies != [] do
+      update_task_blocking_status(task)
     end
   end
 
@@ -227,6 +245,7 @@ defmodule Kanban.Tasks do
     changeset = Task.changeset(task, attrs)
     priority_changed? = Map.has_key?(changeset.changes, :priority)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
+    dependencies_changed? = Map.has_key?(changeset.changes, :dependencies)
 
     case Repo.update(changeset) do
       {:ok, updated_task} ->
@@ -242,6 +261,10 @@ defmodule Kanban.Tasks do
           )
         end
 
+        if dependencies_changed? do
+          update_task_blocking_status(updated_task)
+        end
+
         # Broadcast specific event based on what changed
         broadcast_task_update(updated_task, changeset)
 
@@ -255,6 +278,8 @@ defmodule Kanban.Tasks do
   @doc """
   Deletes a task and reorders the remaining tasks.
 
+  Returns {:error, :has_dependents} if other tasks depend on this task.
+
   ## Examples
 
       iex> delete_task(task)
@@ -265,18 +290,22 @@ defmodule Kanban.Tasks do
 
   """
   def delete_task(%Task{} = task) do
-    result = Repo.delete(task)
+    dependent_tasks = get_dependent_tasks(task)
 
-    # Reorder remaining tasks after deletion
-    case result do
-      {:ok, deleted_task} ->
-        reorder_after_deletion(deleted_task)
-        # Broadcast task deletion
-        broadcast_task_change(deleted_task, :task_deleted)
-        {:ok, deleted_task}
+    if dependent_tasks != [] do
+      {:error, :has_dependents}
+    else
+      result = Repo.delete(task)
 
-      error ->
-        error
+      case result do
+        {:ok, deleted_task} ->
+          reorder_after_deletion(deleted_task)
+          broadcast_task_change(deleted_task, :task_deleted)
+          {:ok, deleted_task}
+
+        error ->
+          error
+      end
     end
   end
 
@@ -854,11 +883,11 @@ defmodule Kanban.Tasks do
   def get_next_task(agent_capabilities \\ [], board_id) do
     now = DateTime.utc_now()
 
-    # Subquery to find completed task IDs (cast to text to match dependencies array type)
-    completed_task_ids =
+    # Subquery to find completed task identifiers
+    completed_task_identifiers =
       from(t in Task,
         where: t.status == :completed,
-        select: fragment("?::text", t.id)
+        select: t.identifier
       )
 
     # Subquery to find task IDs with key_file conflicts in Doing or Review
@@ -908,7 +937,7 @@ defmodule Kanban.Tasks do
                 WHERE dep_id NOT IN (?)
               )",
               t.dependencies,
-              subquery(completed_task_ids)
+              subquery(completed_task_identifiers)
             )
       )
 
@@ -1298,11 +1327,157 @@ defmodule Kanban.Tasks do
             {:task_completed, updated_task}
           )
 
+          unblock_dependent_tasks(updated_task.identifier)
+
           {:ok, updated_task}
 
         {:error, changeset} ->
           {:error, changeset}
       end
     end
+  end
+
+  @doc """
+  Updates a task's blocked status based on its dependencies.
+
+  Sets status to :blocked if any dependencies are incomplete,
+  or to :open if all dependencies are complete.
+
+  ## Examples
+
+      iex> update_task_blocking_status(task)
+      {:ok, %Task{status: :blocked}}
+
+  """
+  def update_task_blocking_status(task) do
+    task = Repo.preload(task, [:column])
+
+    dependencies = task.dependencies || []
+
+    if Enum.empty?(dependencies) do
+      {:ok, task}
+    else
+      incomplete_deps = get_incomplete_dependencies(dependencies)
+
+      new_status =
+        if Enum.empty?(incomplete_deps) do
+          :open
+        else
+          :blocked
+        end
+
+      if task.status != new_status && task.status != :completed do
+        changeset = Ecto.Changeset.change(task, %{status: new_status})
+
+        case Repo.update(changeset) do
+          {:ok, updated_task} ->
+            board_id = task.column.board_id
+
+            Phoenix.PubSub.broadcast(
+              Kanban.PubSub,
+              "board:#{board_id}",
+              {:task_updated, updated_task}
+            )
+
+            {:ok, updated_task}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
+      else
+        {:ok, task}
+      end
+    end
+  end
+
+  @doc """
+  Gets all tasks that are blocked by incomplete dependencies and unblocks them
+  if their dependencies are now complete.
+
+  Called after a task is marked as done to unblock dependent tasks.
+
+  ## Examples
+
+      iex> unblock_dependent_tasks("W15")
+      :ok
+
+  """
+  def unblock_dependent_tasks(completed_task_identifier) do
+    dependent_tasks =
+      from(t in Task,
+        where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^completed_task_identifier),
+        where: t.status == :blocked,
+        preload: [:column]
+      )
+      |> Repo.all()
+
+    Enum.each(dependent_tasks, fn task ->
+      update_task_blocking_status(task)
+    end)
+
+    :ok
+  end
+
+  defp get_incomplete_dependencies(dependency_identifiers) do
+    completed_tasks =
+      from(t in Task,
+        where: t.identifier in ^dependency_identifiers,
+        where: t.status == :completed,
+        select: t.identifier
+      )
+      |> Repo.all()
+      |> MapSet.new()
+
+    dependency_identifiers
+    |> Enum.reject(&MapSet.member?(completed_tasks, &1))
+  end
+
+  @doc """
+  Gets the full dependency tree for a task.
+
+  Returns a map with the task and all its recursive dependencies.
+
+  ## Examples
+
+      iex> get_dependency_tree(task)
+      %{task: %Task{}, dependencies: [...]}
+
+  """
+  def get_dependency_tree(task) do
+    dependencies = task.dependencies || []
+
+    if Enum.empty?(dependencies) do
+      %{task: task, dependencies: []}
+    else
+      dep_tasks =
+        from(t in Task,
+          where: t.identifier in ^dependencies,
+          preload: [:column, :assigned_to]
+        )
+        |> Repo.all()
+
+      dep_trees = Enum.map(dep_tasks, &get_dependency_tree/1)
+
+      %{task: task, dependencies: dep_trees}
+    end
+  end
+
+  @doc """
+  Gets all tasks that depend on the given task.
+
+  Returns tasks that have the given task's identifier in their dependencies array.
+
+  ## Examples
+
+      iex> get_dependent_tasks(task)
+      [%Task{}, ...]
+
+  """
+  def get_dependent_tasks(task) do
+    from(t in Task,
+      where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^task.identifier),
+      preload: [:column, :assigned_to]
+    )
+    |> Repo.all()
   end
 end

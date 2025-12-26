@@ -185,8 +185,18 @@
                 >
                   <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-50/40 to-purple-50/40 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full blur-xl -z-10 group-hover:from-blue-100/50 group-hover:to-purple-100/50 dark:group-hover:from-blue-800/30 dark:group-hover:to-purple-800/30 transition-all duration-200">
                   </div>
+                  <%= if task.status == :blocked do %>
+                    <div class="absolute top-2 right-2 z-10" title={gettext("Task is blocked")}>
+                      <div class="p-1.5 bg-red-100 dark:bg-red-900/50 rounded-md shadow-md border border-red-300 dark:border-red-700">
+                        <.icon name="hero-lock-closed-solid" class="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </div>
+                    </div>
+                  <% end %>
                   <%= if @can_modify do %>
-                    <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div class={[
+                      "absolute top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                      task.status == :blocked && "right-12" || "right-2"
+                    ]}>
                       <.link
                         patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
                         aria-label={gettext("Edit task")}

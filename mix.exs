@@ -112,6 +112,7 @@ defmodule Kanban.MixProject do
         Kanban.DataCase,
         Kanban.Release,
         Kanban.Repo,
+        Kanban.TasksFixtures,
         KanbanWeb.API.ErrorJSON,
         KanbanWeb.API.FallbackController,
         KanbanWeb.BoardLive.FormComponent,

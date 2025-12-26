@@ -250,6 +250,44 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def dependencies(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      dependency_tree = Tasks.get_dependency_tree(task)
+      emit_telemetry(conn, :dependencies_fetched, %{task_id: task.id})
+
+      json(conn, %{
+        task: render_task_summary(task),
+        dependencies: render_dependency_tree(dependency_tree.dependencies)
+      })
+    end
+  end
+
+  def dependents(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      dependent_tasks = Tasks.get_dependent_tasks(task)
+      emit_telemetry(conn, :dependents_fetched, %{task_id: task.id, count: length(dependent_tasks)})
+
+      json(conn, %{
+        task: render_task_summary(task),
+        dependents: Enum.map(dependent_tasks, &render_task_summary/1)
+      })
+    end
+  end
+
   defp get_task_by_id_or_identifier!(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
       {id, ""} ->
@@ -289,5 +327,26 @@ defmodule KanbanWeb.API.TaskController do
         method: conn.method
       })
     )
+  end
+
+  defp render_task_summary(task) do
+    %{
+      id: task.id,
+      identifier: task.identifier,
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      complexity: task.complexity,
+      dependencies: task.dependencies || []
+    }
+  end
+
+  defp render_dependency_tree(dependencies) do
+    Enum.map(dependencies, fn dep_tree ->
+      %{
+        task: render_task_summary(dep_tree.task),
+        dependencies: render_dependency_tree(dep_tree.dependencies)
+      }
+    end)
   end
 end

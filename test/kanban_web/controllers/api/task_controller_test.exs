@@ -777,7 +777,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       {:ok, task} = Tasks.create_task(ready_column, %{
         "title" => "Ready Task",
         "status" => "open",
-        "dependencies" => [to_string(completed_task.id)],
+        "dependencies" => [completed_task.identifier],
         "created_by_id" => user.id
       })
 
@@ -1014,6 +1014,196 @@ defmodule KanbanWeb.API.TaskControllerTest do
       })
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
+      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+  end
+
+  describe "GET /api/tasks/:id/dependencies" do
+    test "returns dependency tree for task without dependencies", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert response["task"]["identifier"] == task.identifier
+      assert response["dependencies"] == []
+    end
+
+    test "returns single level dependency tree", %{conn: conn, column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+        "dependencies" => [dep_task.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert length(response["dependencies"]) == 1
+      assert hd(response["dependencies"])["task"]["id"] == dep_task.id
+      assert hd(response["dependencies"])["task"]["identifier"] == dep_task.identifier
+    end
+
+    test "returns nested dependency tree", %{conn: conn, column: column} do
+      {:ok, dep1} = Tasks.create_task(column, %{
+        "title" => "Dependency 1",
+      })
+
+      {:ok, dep2} = Tasks.create_task(column, %{
+        "title" => "Dependency 2",
+        "dependencies" => [dep1.identifier]
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "dependencies" => [dep2.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert length(response["dependencies"]) == 1
+
+      dep2_node = hd(response["dependencies"])
+      assert dep2_node["task"]["id"] == dep2.id
+      assert length(dep2_node["dependencies"]) == 1
+      assert hd(dep2_node["dependencies"])["task"]["id"] == dep1.id
+    end
+
+    test "works with task identifier instead of ID", %{conn: conn, column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.identifier}/dependencies")
+      response = json_response(conn, 200)
+
+      assert response["task"]["identifier"] == task.identifier
+      assert length(response["dependencies"]) == 1
+      assert hd(response["dependencies"])["task"]["identifier"] == dep_task.identifier
+    end
+
+    test "returns 403 for task on different board", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> List.first()
+
+      {:ok, task} = Tasks.create_task(other_column, %{
+        "title" => "Task on other board"
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
+      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+  end
+
+  describe "GET /api/tasks/:id/dependents" do
+    test "returns empty list for task without dependents", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert response["task"]["identifier"] == task.identifier
+      assert response["dependents"] == []
+    end
+
+    test "returns single dependent task", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+      })
+
+      {:ok, dependent} = Tasks.create_task(column, %{
+        "title" => "Dependent",
+        "dependencies" => [task.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert length(response["dependents"]) == 1
+      assert hd(response["dependents"])["id"] == dependent.id
+      assert hd(response["dependents"])["identifier"] == dependent.identifier
+    end
+
+    test "returns multiple dependent tasks", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+      })
+
+      {:ok, dependent1} = Tasks.create_task(column, %{
+        "title" => "Dependent 1",
+        "dependencies" => [task.identifier]
+      })
+
+      {:ok, dependent2} = Tasks.create_task(column, %{
+        "title" => "Dependent 2",
+        "dependencies" => [task.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
+      response = json_response(conn, 200)
+
+      assert response["task"]["id"] == task.id
+      assert length(response["dependents"]) == 2
+
+      dependent_ids = Enum.map(response["dependents"], & &1["id"])
+      assert dependent1.id in dependent_ids
+      assert dependent2.id in dependent_ids
+    end
+
+    test "works with task identifier instead of ID", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+      })
+
+      {:ok, dependent} = Tasks.create_task(column, %{
+        "title" => "Dependent",
+        "dependencies" => [task.identifier]
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.identifier}/dependents")
+      response = json_response(conn, 200)
+
+      assert response["task"]["identifier"] == task.identifier
+      assert length(response["dependents"]) == 1
+      assert hd(response["dependents"])["identifier"] == dependent.identifier
+    end
+
+    test "returns 403 for task on different board", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> List.first()
+
+      {:ok, task} = Tasks.create_task(other_column, %{
+        "title" => "Task on other board",
+
+      })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
     end
   end

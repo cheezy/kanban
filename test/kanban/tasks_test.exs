@@ -1770,15 +1770,19 @@ defmodule Kanban.TasksTest do
     end
 
     test "creates task with dependencies", %{column: column} do
+      {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep 1"})
+      {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep 2"})
+      {:ok, dep3} = Tasks.create_task(column, %{"title" => "Dep 3"})
+
       attrs = %{
         title: "Test task",
         position: 0,
-        dependencies: ["W1", "W2", "W3"]
+        dependencies: [dep1.identifier, dep2.identifier, dep3.identifier]
       }
 
       {:ok, task} = Tasks.create_task(column, attrs)
 
-      assert task.dependencies == ["W1", "W2", "W3"]
+      assert task.dependencies == [dep1.identifier, dep2.identifier, dep3.identifier]
     end
 
     test "validates status enum values", %{column: column} do
@@ -2046,6 +2050,9 @@ defmodule Kanban.TasksTest do
     end
 
     test "creates task with all metadata fields together", %{column: column, user: user} do
+      {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep 1"})
+      {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep 2"})
+
       claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
       claim_expires_at = DateTime.add(claimed_at, 3600, :second)
       completed_at = DateTime.add(claimed_at, 7200, :second)
@@ -2060,7 +2067,7 @@ defmodule Kanban.TasksTest do
         completed_by_id: user.id,
         completed_by_agent: "claude-code",
         completion_summary: "All tests passing",
-        dependencies: ["W1", "W2"],
+        dependencies: [dep1.identifier, dep2.identifier],
         status: :completed,
         claimed_at: claimed_at,
         claim_expires_at: claim_expires_at,
@@ -2083,7 +2090,7 @@ defmodule Kanban.TasksTest do
       assert task.completed_by_id == user.id
       assert task.completed_by_agent == "claude-code"
       assert task.completion_summary == "All tests passing"
-      assert task.dependencies == ["W1", "W2"]
+      assert task.dependencies == [dep1.identifier, dep2.identifier]
       assert task.status == :completed
       assert DateTime.compare(task.claimed_at, claimed_at) == :eq
       assert DateTime.compare(task.claim_expires_at, claim_expires_at) == :eq
@@ -2476,7 +2483,7 @@ defmodule Kanban.TasksTest do
       {:ok, _blocked_task} = Tasks.create_task(column, %{
         "title" => "Blocked Task",
         "status" => "open",
-        "dependencies" => [to_string(dependency_task.id)],
+        "dependencies" => [dependency_task.identifier],
         "created_by_id" => user.id
       })
 
@@ -2496,7 +2503,7 @@ defmodule Kanban.TasksTest do
       {:ok, task} = Tasks.create_task(column, %{
         "title" => "Unblocked Task",
         "status" => "open",
-        "dependencies" => [to_string(dependency_task.id)],
+        "dependencies" => [dependency_task.identifier],
         "created_by_id" => user.id
       })
 
@@ -2667,6 +2674,550 @@ defmodule Kanban.TasksTest do
       result = Tasks.unclaim_task(open_task, user)
 
       assert result == {:error, :not_claimed}
+    end
+  end
+
+  describe "circular dependency detection" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "prevents task from depending on itself", %{column: column} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1"
+      })
+
+      changeset = Kanban.Tasks.Task.changeset(task1, %{dependencies: [task1.identifier]})
+
+      refute changeset.valid?
+      assert "cannot depend on itself" in errors_on(changeset).dependencies
+    end
+
+    test "prevents simple circular dependency (A->B->A)", %{column: column} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1"
+      })
+
+      {:ok, task2} = Tasks.create_task(column, %{
+        "title" => "Task 2",
+        "dependencies" => [task1.identifier]
+      })
+
+      result = Tasks.update_task(task1, %{dependencies: [task2.identifier]})
+
+      assert {:error, changeset} = result
+      assert "creates a circular dependency" in errors_on(changeset).dependencies
+    end
+
+    test "prevents complex circular dependency (A->B->C->A)", %{column: column} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1"
+      })
+
+      {:ok, task2} = Tasks.create_task(column, %{
+        "title" => "Task 2",
+        "dependencies" => [task1.identifier]
+      })
+
+      {:ok, task3} = Tasks.create_task(column, %{
+        "title" => "Task 3",
+        "dependencies" => [task2.identifier]
+      })
+
+      result = Tasks.update_task(task1, %{dependencies: [task3.identifier]})
+
+      assert {:error, changeset} = result
+      assert "creates a circular dependency" in errors_on(changeset).dependencies
+    end
+
+    test "allows valid dependency chains without cycles", %{column: column} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1"
+      })
+
+      {:ok, task2} = Tasks.create_task(column, %{
+        "title" => "Task 2",
+        "dependencies" => [task1.identifier]
+      })
+
+      {:ok, task3} = Tasks.create_task(column, %{
+        "title" => "Task 3",
+        "dependencies" => [task2.identifier]
+      })
+
+      assert task3.dependencies == [task2.identifier]
+      assert task2.dependencies == [task1.identifier]
+    end
+  end
+
+  describe "auto-blocking on task creation" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "task is blocked when created with incomplete dependencies", %{column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency Task",
+        "status" => "open"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task with dependency",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      refreshed_task = Tasks.get_task!(task.id)
+      assert refreshed_task.status == :blocked
+    end
+
+    test "task remains open when created with completed dependencies", %{column: column, user: user} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency Task",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task with completed dependency",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      refreshed_task = Tasks.get_task!(task.id)
+      assert refreshed_task.status == :open
+    end
+
+    test "task remains open when created without dependencies", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task without dependencies"
+      })
+
+      assert task.status == :open
+    end
+
+    test "task is blocked when some dependencies are incomplete", %{column: column, user: user} do
+      {:ok, completed_dep} = Tasks.create_task(column, %{
+        "title" => "Completed Dependency",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      {:ok, incomplete_dep} = Tasks.create_task(column, %{
+        "title" => "Incomplete Dependency",
+        "status" => "open"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task with mixed dependencies",
+        "dependencies" => [completed_dep.identifier, incomplete_dep.identifier]
+      })
+
+      refreshed_task = Tasks.get_task!(task.id)
+      assert refreshed_task.status == :blocked
+    end
+  end
+
+  describe "auto-blocking on task update" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "task becomes blocked when dependencies are added", %{column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency Task",
+        "status" => "open"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "status" => "open"
+      })
+
+      assert task.status == :open
+
+      {:ok, updated_task} = Tasks.update_task(task, %{dependencies: [dep_task.identifier]})
+      refreshed_task = Tasks.get_task!(updated_task.id)
+
+      assert refreshed_task.status == :blocked
+    end
+
+    test "task remains open when all dependencies are completed", %{column: column, user: user} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency Task",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "status" => "open"
+      })
+
+      {:ok, updated_task} = Tasks.update_task(task, %{dependencies: [dep_task.identifier]})
+      refreshed_task = Tasks.get_task!(updated_task.id)
+
+      assert refreshed_task.status == :open
+    end
+
+    test "completed task does not change status when dependencies are added", %{column: column, user: user} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency Task",
+        "status" => "open"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now(),
+        "created_by_id" => user.id
+      })
+
+      assert task.status == :completed
+
+      {:ok, updated_task} = Tasks.update_task(task, %{dependencies: [dep_task.identifier]})
+
+      assert updated_task.status == :completed
+    end
+  end
+
+  describe "auto-unblocking when dependencies complete" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready"})
+      review_column = column_fixture(board, %{name: "Review"})
+      done_column = column_fixture(board, %{name: "Done"})
+      %{user: user, board: board, ready_column: ready_column, review_column: review_column, done_column: done_column}
+    end
+
+    test "unblocks dependent task when dependency is completed", %{ready_column: ready_column, review_column: review_column, user: user} do
+      {:ok, dep_task} = Tasks.create_task(ready_column, %{
+        "title" => "Dependency Task",
+        "identifier" => "W220",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, blocked_task} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      refreshed_blocked = Tasks.get_task!(blocked_task.id)
+      assert refreshed_blocked.status == :blocked
+
+      {:ok, moved_dep} = Tasks.move_task(dep_task, review_column, 0)
+      {:ok, _} = Tasks.mark_done(moved_dep, user)
+
+      final_task = Tasks.get_task!(blocked_task.id)
+      assert final_task.status == :open
+    end
+
+    test "unblocks multiple dependent tasks", %{ready_column: ready_column, review_column: review_column, user: user} do
+      {:ok, dep_task} = Tasks.create_task(ready_column, %{
+        "title" => "Dependency Task",
+        "identifier" => "W222",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, blocked_task1} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task 1",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      {:ok, blocked_task2} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task 2",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      assert Tasks.get_task!(blocked_task1.id).status == :blocked
+      assert Tasks.get_task!(blocked_task2.id).status == :blocked
+
+      {:ok, moved_dep} = Tasks.move_task(dep_task, review_column, 0)
+      {:ok, _} = Tasks.mark_done(moved_dep, user)
+
+      assert Tasks.get_task!(blocked_task1.id).status == :open
+      assert Tasks.get_task!(blocked_task2.id).status == :open
+    end
+
+    test "task remains blocked if other dependencies are incomplete", %{ready_column: ready_column, review_column: review_column, user: user} do
+      {:ok, dep_task1} = Tasks.create_task(ready_column, %{
+        "title" => "Dependency Task 1",
+        "identifier" => "W225",
+        "status" => "open",
+        "created_by_id" => user.id
+      })
+
+      {:ok, dep_task2} = Tasks.create_task(ready_column, %{
+        "title" => "Dependency Task 2",
+        "status" => "open"
+      })
+
+      {:ok, blocked_task} = Tasks.create_task(ready_column, %{
+        "title" => "Blocked Task",
+        "dependencies" => [dep_task1.identifier, dep_task2.identifier]
+      })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      {:ok, moved_dep} = Tasks.move_task(dep_task1, review_column, 0)
+      {:ok, _} = Tasks.mark_done(moved_dep, user)
+
+      final_task = Tasks.get_task!(blocked_task.id)
+      assert final_task.status == :blocked
+    end
+  end
+
+  describe "get_dependency_tree/1" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "returns empty dependencies for task without dependencies", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W230"
+      })
+
+      tree = Tasks.get_dependency_tree(task)
+
+      assert tree.task.id == task.id
+      assert tree.dependencies == []
+    end
+
+    test "returns single level dependency tree", %{column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+        "identifier" => "W231"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+        "dependencies" => [dep_task.identifier]
+      })
+
+      tree = Tasks.get_dependency_tree(task)
+
+      assert tree.task.id == task.id
+      assert length(tree.dependencies) == 1
+      assert hd(tree.dependencies).task.id == dep_task.id
+    end
+
+    test "returns nested dependency tree", %{column: column} do
+      {:ok, dep1} = Tasks.create_task(column, %{
+        "title" => "Dependency 1",
+        "identifier" => "W233"
+      })
+
+      {:ok, dep2} = Tasks.create_task(column, %{
+        "title" => "Dependency 2",
+
+        "dependencies" => [dep1.identifier]
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+
+        "dependencies" => [dep2.identifier]
+      })
+
+      tree = Tasks.get_dependency_tree(task)
+
+      assert tree.task.id == task.id
+      assert length(tree.dependencies) == 1
+
+      dep2_tree = hd(tree.dependencies)
+      assert dep2_tree.task.id == dep2.id
+      assert length(dep2_tree.dependencies) == 1
+      assert hd(dep2_tree.dependencies).task.id == dep1.id
+    end
+
+    test "returns tree with multiple dependencies at each level", %{column: column} do
+      {:ok, dep1} = Tasks.create_task(column, %{
+        "title" => "Dependency 1",
+        "identifier" => "W236"
+      })
+
+      {:ok, dep2} = Tasks.create_task(column, %{
+        "title" => "Dependency 2",
+        "identifier" => "W237"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "dependencies" => [dep1.identifier, dep2.identifier]
+      })
+
+      tree = Tasks.get_dependency_tree(task)
+
+      assert tree.task.id == task.id
+      assert length(tree.dependencies) == 2
+
+      dep_ids = Enum.map(tree.dependencies, & &1.task.id)
+      assert dep1.id in dep_ids
+      assert dep2.id in dep_ids
+    end
+  end
+
+  describe "get_dependent_tasks/1" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "returns empty list for task with no dependents", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W240"
+      })
+
+      dependents = Tasks.get_dependent_tasks(task)
+
+      assert dependents == []
+    end
+
+    test "returns single dependent task", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W241"
+      })
+
+      {:ok, dependent} = Tasks.create_task(column, %{
+        "title" => "Dependent",
+
+        "dependencies" => [task.identifier]
+      })
+
+      dependents = Tasks.get_dependent_tasks(task)
+
+      assert length(dependents) == 1
+      assert hd(dependents).id == dependent.id
+    end
+
+    test "returns multiple dependent tasks", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W243"
+      })
+
+      {:ok, dependent1} = Tasks.create_task(column, %{
+        "title" => "Dependent 1",
+
+        "dependencies" => [task.identifier]
+      })
+
+      {:ok, dependent2} = Tasks.create_task(column, %{
+        "title" => "Dependent 2",
+
+        "dependencies" => [task.identifier]
+      })
+
+      dependents = Tasks.get_dependent_tasks(task)
+
+      assert length(dependents) == 2
+
+      dependent_ids = Enum.map(dependents, & &1.id)
+      assert dependent1.id in dependent_ids
+      assert dependent2.id in dependent_ids
+    end
+
+    test "does not return tasks that depend on other tasks", %{column: column} do
+      {:ok, task1} = Tasks.create_task(column, %{
+        "title" => "Task 1",
+        "identifier" => "W246"
+      })
+
+      {:ok, task2} = Tasks.create_task(column, %{
+        "title" => "Task 2",
+        "identifier" => "W247"
+      })
+
+      {:ok, _dependent} = Tasks.create_task(column, %{
+        "title" => "Dependent",
+
+        "dependencies" => [task2.identifier]
+      })
+
+      dependents = Tasks.get_dependent_tasks(task1)
+
+      assert dependents == []
+    end
+  end
+
+  describe "delete_task/1 with dependencies" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "prevents deletion of task with dependent tasks", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W250"
+      })
+
+      {:ok, _dependent} = Tasks.create_task(column, %{
+        "title" => "Dependent",
+
+        "dependencies" => [task.identifier]
+      })
+
+      result = Tasks.delete_task(task)
+
+      assert result == {:error, :has_dependents}
+      assert Tasks.get_task!(task.id)
+    end
+
+    test "allows deletion of task without dependents", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W252"
+      })
+
+      result = Tasks.delete_task(task)
+
+      assert {:ok, _deleted} = result
+      assert_raise Ecto.NoResultsError, fn ->
+        Tasks.get_task!(task.id)
+      end
+    end
+
+    test "allows deletion of task that depends on other tasks", %{column: column} do
+      {:ok, dep_task} = Tasks.create_task(column, %{
+        "title" => "Dependency",
+        "identifier" => "W253"
+      })
+
+      {:ok, task} = Tasks.create_task(column, %{
+        "title" => "Task",
+        "identifier" => "W254",
+        "dependencies" => [dep_task.identifier]
+      })
+
+      result = Tasks.delete_task(task)
+
+      assert {:ok, _deleted} = result
+      assert Tasks.get_task!(dep_task.id)
     end
   end
 end
