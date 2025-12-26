@@ -32,6 +32,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `follow_up_tasks` - Array of follow-up work identified
   - `known_limitations` - Array of limitations or constraints
 
+#### Task Mark Done API Endpoint
+
+- **Final Task Completion** - AI agents can now mark reviewed tasks as done and move them to Done column:
+  - **PATCH /api/tasks/:id/mark_done** - Mark a task as done by moving it from Review to Done column
+  - Supports both numeric IDs and human-readable identifiers (e.g., "W24") for marking done
+  - Sets `status` to `:completed` and `completed_at` timestamp automatically
+  - Only tasks in Review column can be marked as done (validation enforced)
+  - Final step in the task workflow after review is complete
+  - Broadcasts `{:task_completed, task}` PubSub event for real-time UI updates
+  - Emits telemetry events: `[:kanban, :task, :completed]` and `[:kanban, :api, :task_marked_done]`
+  - Returns 422 error if task is not in Review column
+  - Returns 403 error if task belongs to different board
+
 ## [1.6.0] - 2025-12-25
 
 ### Added

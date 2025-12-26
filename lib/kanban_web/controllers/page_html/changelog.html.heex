@@ -90,6 +90,34 @@
                 </ul>
               </div>
             </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Task Mark Done API Endpoint")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Final Task Completion")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("AI agents can now mark reviewed tasks as done and move them to Done column:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>PATCH /api/tasks/:id/mark_done</strong> - {gettext("Mark a task as done by moving it from Review to Done column")}
+                  </li>
+                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W24\") for marking done")}</li>
+                  <li>{gettext("Sets status to :completed and completed_at timestamp automatically")}</li>
+                  <li>{gettext("Only tasks in Review column can be marked as done (validation enforced)")}</li>
+                  <li>{gettext("Final step in the task workflow after review is complete")}</li>
+                  <li>{gettext("Broadcasts {:task_completed, task} PubSub event for real-time UI updates")}</li>
+                  <li>{gettext("Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]")}</li>
+                  <li>{gettext("Returns 422 error if task is not in Review column")}</li>
+                  <li>{gettext("Returns 403 error if task belongs to different board")}</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 
