@@ -5,6 +5,32 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2025-12-27
+
+### Added
+
+#### AI Agent Metadata Tracking
+
+- **Agent Tracking on Task Creation** - Tasks created via API now track the AI agent model:
+  - Added `created_by_agent` field to store agent information in format `"ai_agent:model_name"`
+  - Automatically populated when API token has `agent_model` configured
+  - Visible indicator (purple CPU chip icon) on task cards for AI-created tasks
+  - Helps track which tasks were created by AI agents vs. human users
+
+- **Agent Tracking on Task Completion** - Tasks completed via API now track the AI agent model:
+  - Added `completed_by_agent` field to store agent information in format `"ai_agent:model_name"`
+  - Automatically populated when API token has `agent_model` configured during task completion
+  - Provides audit trail of which AI agent completed specific tasks
+
+- **UI Enhancements** - Visual indicators for AI-created tasks:
+  - Purple gradient CPU chip icon displayed on task cards
+  - Hover tooltip shows full agent identifier
+
+- **API Token Schema Updates** - Enhanced API token model to support agent metadata:
+  - `agent_model` field stores the model identifier (e.g., "claude-sonnet-4")
+  - Used by `maybe_add_created_by_agent/2` and `maybe_add_completed_by_agent/2` helpers
+  - Only adds metadata when `agent_model` is present on the token
+
 ## [1.8.0] - 2025-12-26
 
 ### Added

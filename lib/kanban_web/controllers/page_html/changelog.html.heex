@@ -35,6 +35,78 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.9.0] - 2025-12-27</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("AI Agent Metadata Tracking")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Agent Tracking on Task Creation")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Tasks created via API now track the AI agent model:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Added created_by_agent field to store agent information in format \"ai_agent:model_name\"")}</li>
+                  <li>{gettext("Automatically populated when API token has agent_model configured")}</li>
+                  <li>{gettext("Visible indicator (purple CPU chip icon) on task cards for AI-created tasks")}</li>
+                  <li>{gettext("Helps track which tasks were created by AI agents vs. human users")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Agent Tracking on Task Completion")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Tasks completed via API now track the AI agent model:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Added completed_by_agent field to store agent information in format \"ai_agent:model_name\"")}</li>
+                  <li>{gettext("Automatically populated when API token has agent_model configured during task completion")}</li>
+                  <li>{gettext("Provides audit trail of which AI agent completed specific tasks")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("UI Enhancements")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Visual indicators for AI-created tasks:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Purple gradient CPU chip icon displayed on task cards")}</li>
+                  <li>{gettext("Hover tooltip shows full agent identifier")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("API Token Schema Updates")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Enhanced API token model to support agent metadata:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("agent_model field stores the model identifier (e.g., \"claude-sonnet-4\")")}</li>
+                  <li>{gettext("Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers")}</li>
+                  <li>{gettext("Only adds metadata when agent_model is present on the token")}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.8.0] - 2025-12-26</h2>
 
           <div class="mb-8">
