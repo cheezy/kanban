@@ -47,6 +47,7 @@ defmodule KanbanWeb.API.TaskController do
   def create(conn, %{"task" => task_params}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
 
     column_id = task_params["column_id"] || get_default_column_id(board)
     column = Columns.get_column!(column_id)
@@ -56,26 +57,11 @@ defmodule KanbanWeb.API.TaskController do
       |> put_status(:forbidden)
       |> json(%{error: "Column does not belong to this board"})
     else
-      task_params_with_creator =
-        task_params
-        |> Map.put("created_by_id", user.id)
-        |> Map.delete("column_id")
+      task_params_with_creator = build_task_params_with_creator(task_params, user, api_token)
 
-      case Tasks.create_task(column, task_params_with_creator) do
-        {:ok, task} ->
-          task = Tasks.get_task_for_view!(task.id)
-          emit_telemetry(conn, :task_created, %{task_id: task.id})
-
-          conn
-          |> put_status(:created)
-          |> put_resp_header("location", ~p"/api/tasks/#{task}")
-          |> render(:show, task: task)
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
-      end
+      column
+      |> Tasks.create_task(task_params_with_creator)
+      |> handle_task_creation(conn)
     end
   end
 
@@ -154,6 +140,7 @@ defmodule KanbanWeb.API.TaskController do
   def complete(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
     if task.column.board_id != board.id do
@@ -161,7 +148,9 @@ defmodule KanbanWeb.API.TaskController do
       |> put_status(:forbidden)
       |> json(%{error: "Task does not belong to this board"})
     else
-      case Tasks.complete_task(task, user, params) do
+      params_with_agent = maybe_add_completed_by_agent(params, api_token)
+
+      case Tasks.complete_task(task, user, params_with_agent) do
         {:ok, task} ->
           emit_telemetry(conn, :task_completed, %{
             task_id: task.id,
@@ -303,6 +292,29 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  defp build_task_params_with_creator(task_params, user, api_token) do
+    task_params
+    |> Map.put("created_by_id", user.id)
+    |> maybe_add_created_by_agent(api_token)
+    |> Map.delete("column_id")
+  end
+
+  defp handle_task_creation({:ok, task}, conn) do
+    task = Tasks.get_task_for_view!(task.id)
+    emit_telemetry(conn, :task_created, %{task_id: task.id})
+
+    conn
+    |> put_status(:created)
+    |> put_resp_header("location", ~p"/api/tasks/#{task}")
+    |> render(:show, task: task)
+  end
+
+  defp handle_task_creation({:error, %Ecto.Changeset{} = changeset}, conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> render(:error, changeset: changeset)
+  end
+
   defp get_default_column_id(board) do
     columns = Columns.list_columns(board)
 
@@ -348,5 +360,19 @@ defmodule KanbanWeb.API.TaskController do
         dependencies: render_dependency_tree(dep_tree.dependencies)
       }
     end)
+  end
+
+  defp maybe_add_created_by_agent(task_params, api_token) do
+    case api_token.agent_model do
+      nil -> task_params
+      agent_model -> Map.put(task_params, "created_by_agent", "ai_agent:#{agent_model}")
+    end
+  end
+
+  defp maybe_add_completed_by_agent(task_params, api_token) do
+    case api_token.agent_model do
+      nil -> task_params
+      agent_model -> Map.put(task_params, "completed_by_agent", "ai_agent:#{agent_model}")
+    end
   end
 end

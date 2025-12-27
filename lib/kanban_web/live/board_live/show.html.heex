@@ -187,8 +187,8 @@
                   </div>
                   <%= if task.status == :blocked do %>
                     <div class="absolute top-2 right-2 z-10" title={gettext("Task is blocked")}>
-                      <div class="p-1.5 bg-red-100 dark:bg-red-900/50 rounded-md shadow-md border border-red-300 dark:border-red-700">
-                        <.icon name="hero-lock-closed-solid" class="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <div class="p-1 bg-red-100 dark:bg-red-900/50 rounded shadow-sm border border-red-300 dark:border-red-700">
+                        <.icon name="hero-lock-closed-solid" class="h-3 w-3 text-red-600 dark:text-red-400" />
                       </div>
                     </div>
                   <% end %>
@@ -240,67 +240,74 @@
                             {task.description}
                           </p>
                         <% end %>
-                        <div class="mt-3 flex items-center justify-between flex-wrap gap-2">
-                          <div class="flex gap-1.5 flex-wrap">
-                            <span
-                              class={[
-                                "inline-flex items-center px-2 py-1 rounded-md text-xs font-medium shadow-sm transition-transform hover:scale-105",
-                                (task.type == :defect &&
-                                   "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200/50") ||
-                                  "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200/50"
-                              ]}
-                              title={
-                                if task.type == :defect,
-                                  do: gettext("Defect"),
-                                  else: gettext("Work")
-                              }
-                            >
-                              <%= if task.type == :defect do %>
-                                <.icon name="hero-bug-ant" class="h-3.5 w-3.5" />
-                              <% else %>
-                                <.icon name="hero-wrench-screwdriver" class="h-3.5 w-3.5" />
-                              <% end %>
-                            </span>
-                            <span class={[
-                              "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium shadow-sm transition-transform hover:scale-105 border",
-                              case task.priority do
-                                :critical ->
-                                  "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
-
-                                :high ->
-                                  "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200/50"
-
-                                :medium ->
-                                  "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200/50"
-
-                                :low ->
-                                  "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200/50"
-                              end
-                            ]}>
-                              {case task.priority do
-                                :critical -> gettext("Critical")
-                                :high -> gettext("High")
-                                :medium -> gettext("Medium")
-                                :low -> gettext("Low")
-                              end}
-                            </span>
-                          </div>
-                          <div class="flex items-center gap-2">
-                            <%= if task.assigned_to do %>
-                              <span
-                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 border border-blue-200/50 transition-transform hover:scale-110"
-                                title={task.assigned_to.name || task.assigned_to.email}
-                              >
-                                <.icon
-                                  name="hero-user-solid"
-                                  class="h-3.5 w-3.5 text-blue-600"
-                                />
-                              </span>
+                        <div class="mt-3 flex items-center gap-1 flex-nowrap overflow-x-auto">
+                          <span
+                            class={[
+                              "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shadow-sm transition-transform hover:scale-105 flex-shrink-0",
+                              (task.type == :defect &&
+                                 "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200/50") ||
+                                "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200/50"
+                            ]}
+                            title={
+                              if task.type == :defect,
+                                do: gettext("Defect"),
+                                else: gettext("Work")
+                            }
+                          >
+                            <%= if task.type == :defect do %>
+                              <.icon name="hero-bug-ant" class="h-3 w-3" />
+                            <% else %>
+                              <.icon name="hero-wrench-screwdriver" class="h-3 w-3" />
                             <% end %>
-                            <span class="text-xs font-bold text-base-content opacity-60 bg-base-200/80 px-2 py-0.5 rounded-full">
-                              {task.identifier}
+                          </span>
+                          <span class={[
+                            "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shadow-sm transition-transform hover:scale-105 border flex-shrink-0",
+                            case task.priority do
+                              :critical ->
+                                "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
+
+                              :high ->
+                                "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200/50"
+
+                              :medium ->
+                                "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200/50"
+
+                              :low ->
+                                "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200/50"
+                            end
+                          ]}>
+                            {case task.priority do
+                              :critical -> gettext("Critical")
+                              :high -> gettext("High")
+                              :medium -> gettext("Medium")
+                              :low -> gettext("Low")
+                            end}
+                          </span>
+                          <%= if task.created_by_agent do %>
+                            <span
+                              class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 border border-purple-200/50 transition-transform hover:scale-110 flex-shrink-0"
+                              title={"Created by #{task.created_by_agent}"}
+                            >
+                              <.icon
+                                name="hero-cpu-chip-solid"
+                                class="h-3 w-3 text-purple-600"
+                              />
                             </span>
-                          </div>
+                          <% end %>
+                          <%= if task.assigned_to do %>
+                            <span
+                              class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 border border-blue-200/50 transition-transform hover:scale-110 flex-shrink-0"
+                              title={task.assigned_to.name || task.assigned_to.email}
+                            >
+                              <.icon
+                                name="hero-user-solid"
+                                class="h-3 w-3 text-blue-600"
+                              />
+                            </span>
+                          <% end %>
+                          <span class="text-xs font-bold text-base-content opacity-60 bg-base-200/80 px-1.5 py-0.5 rounded-full flex-shrink-0 ml-auto">
+                            {task.identifier}
+                          </span>
                         </div>
                       </div>
                     </div>

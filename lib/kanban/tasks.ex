@@ -1220,7 +1220,8 @@ defmodule Kanban.Tasks do
             :completion_summary,
             :actual_complexity,
             :actual_files_changed,
-            :time_spent_minutes
+            :time_spent_minutes,
+            :completed_by_agent
           ])
           |> Ecto.Changeset.put_change(:column_id, review_column.id)
           |> Ecto.Changeset.put_change(:position, next_position)

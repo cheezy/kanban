@@ -87,6 +87,41 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = post(conn, ~p"/api/tasks", task: %{"title" => "Test"})
       assert json_response(conn, 401)
     end
+
+    test "tracks AI agent when creating task with agent_model", %{conn: conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
+        "name" => "AI Agent Token",
+        "agent_model" => "claude-sonnet-4"
+      })
+
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      task_params = %{
+        "title" => "AI Created Task"
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+      assert %{"id" => _id, "created_by_agent" => created_by_agent} = json_response(conn, 201)["data"]
+
+      assert created_by_agent == "ai_agent:claude-sonnet-4"
+    end
+
+    test "does not track AI agent when creating task without agent_model", %{conn: conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
+        "name" => "Regular Token"
+      })
+
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      task_params = %{
+        "title" => "Human Created Task"
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+      assert %{"id" => _id, "created_by_agent" => created_by_agent} = json_response(conn, 201)["data"]
+
+      assert created_by_agent == nil
+    end
   end
 
   describe "GET /api/tasks" do
@@ -713,6 +748,57 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(conn, 422)
 
       assert response["error"] =~ "must be in progress or blocked"
+    end
+
+    test "tracks AI agent when completing task with agent_model", %{task: task, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
+        "name" => "AI Agent Token",
+        "agent_model" => "claude-sonnet-4"
+      })
+
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+          verification_results: %{status: "passed", commands_run: ["mix test"]}
+        }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["completed_by_agent"] == "ai_agent:claude-sonnet-4"
+    end
+
+    test "does not track AI agent when completing task without agent_model", %{task: task, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
+        "name" => "Regular Token"
+      })
+
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      completion_params = %{
+        "completion_summary" => Jason.encode!(%{
+          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+          verification_results: %{status: "passed", commands_run: ["mix test"]}
+        }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["completed_by_agent"] == nil
     end
   end
 
