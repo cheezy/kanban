@@ -211,6 +211,54 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def mark_reviewed(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      case Tasks.mark_reviewed(task, user) do
+        {:ok, task} ->
+          event_name =
+            if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+
+          emit_telemetry(conn, event_name, %{
+            task_id: task.id,
+            review_status: task.review_status
+          })
+
+          render(conn, :show, task: task)
+
+        {:error, :invalid_column} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: "Task must be in Review column to mark as reviewed"})
+
+        {:error, :review_not_performed} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{error: "Task must have a review status before being marked as reviewed"})
+
+        {:error, :invalid_review_status} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error:
+              "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
+          })
+
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> render(:error, changeset: changeset)
+      end
+    end
+  end
+
   def mark_done(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user

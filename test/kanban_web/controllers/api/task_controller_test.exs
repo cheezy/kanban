@@ -1039,6 +1039,188 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "PATCH /api/tasks/:id/mark_reviewed" do
+    test "moves task to Done when review status is approved", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Reviewed task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "completed"
+      assert response["completed_at"] != nil
+      assert response["column_id"] == done_column.id
+      assert response["reviewed_by_id"] == user.id
+    end
+
+    test "moves task to Doing when review status is changes_requested", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task needing changes",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "changes_requested",
+          "review_notes" => "Please update the error handling",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == doing_column.id
+      assert response["reviewed_by_id"] == user.id
+      assert response["review_notes"] == "Please update the error handling"
+    end
+
+    test "moves task to Doing when review status is rejected", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Rejected task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "rejected",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == doing_column.id
+    end
+
+    test "works with task identifier", %{conn: conn, board: board, user: user} do
+      review_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Review"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task with identifier",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.identifier}/mark_reviewed")
+      response = json_response(conn, 200)["data"]
+
+      assert response["status"] == "completed"
+      assert response["identifier"] == task.identifier
+    end
+
+    test "returns 422 when task is not in Review column", %{conn: conn, board: board, user: user} do
+      backlog_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} =
+        Tasks.create_task(backlog_column, %{
+          "title" => "Task not in review",
+          "created_by_id" => user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      assert json_response(conn, 422)["error"] =~ "Task must be in Review column"
+    end
+
+    test "returns 422 when review status is not set", %{conn: conn, board: board, user: user} do
+      review_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Review"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task without review",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      assert json_response(conn, 422)["error"] =~ "review status"
+    end
+
+    test "returns 403 when task belongs to different board", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      review_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Review"))
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task on other board",
+          "created_by_id" => other_user.id
+        })
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => other_user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_reviewed")
+      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+  end
+
   describe "PATCH /api/tasks/:id/mark_done" do
     test "marks task as done when in Review column", %{conn: conn, board: board, user: user} do
       columns = Columns.list_columns(board)

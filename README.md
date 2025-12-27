@@ -28,11 +28,16 @@ Traditional project management tools treat AI integration as an afterthought. St
 3. Product Owners or Technical Leads reviews in the Kanban UI, refines as needed
 4. Human moves the tasks or a feature into the Ready column
 5. AI queries /api/tasks/next to find the next logical tasks
-6. AI claims a task (PATCH status=in_progress) and moves it to the In Progress column
+6. AI claims a task (POST /claim) and moves it to the Doing column
 7. AI implements the task
-8. AI marks it complete (PATCH status=completed) and moves it to the Review column for a Human to review
-9. Human reviews the task and moves it to the Done column
-10. Dependencies automatically unblock downstream work
+8. AI marks it complete (PATCH /complete) and moves it to the Review column
+9. Human reviews the work and sets review_status (approved/changes_requested/rejected)
+10. Human notifies AI that review is complete
+11. AI calls PATCH /mark_reviewed endpoint:
+    - If review_status = "approved": Task moves to Done column
+    - If review_status = "changes_requested" or "rejected": Task moves back to Doing column
+12. For tasks needing changes, AI reads review_notes and addresses feedback (returns to step 7)
+13. Dependencies automatically unblock downstream work when tasks are marked done
 ```
 
 ## Key Features
@@ -126,7 +131,7 @@ Tasks in Stride aren't just titles and descriptions—they contain everything an
 }
 ```
 
-## API Endpoints (Planned)
+## API Endpoints
 
 ### Authentication
 
@@ -134,12 +139,17 @@ Tasks in Stride aren't just titles and descriptions—they contain everything an
 
 ### Task Management
 
-- `GET /api/tasks/ready` - Tasks ready to work (unblocked, status=open)
-- `GET /api/tasks/:id` - Full task details with context
+- `GET /api/tasks/next` - Get next available task ready to work
+- `GET /api/tasks/:id` - Full task details with context (supports identifiers like "W14")
 - `POST /api/tasks` - Create task(s) with dependencies
-- `PATCH /api/tasks/:id` - Update status/progress
-- `POST /api/tasks/:id/subtasks` - Break down into smaller tasks
-- `GET /api/tasks/:id/context` - Related tasks/dependencies
+- `PATCH /api/tasks/:id` - Update task fields
+- `POST /api/tasks/claim` - Claim next available task (or specific task by identifier)
+- `POST /api/tasks/:id/unclaim` - Release claimed task back to Ready
+- `PATCH /api/tasks/:id/complete` - Complete task and move to Review
+- `PATCH /api/tasks/:id/mark_reviewed` - Process reviewed task based on review_status
+- `PATCH /api/tasks/:id/mark_done` - Mark task as done (deprecated, use mark_reviewed)
+- `GET /api/tasks/:id/dependencies` - Get full dependency tree
+- `GET /api/tasks/:id/dependents` - Get tasks that depend on this task
 
 ### Authentication Model
 

@@ -1266,7 +1266,148 @@ defmodule Kanban.Tasks do
   end
 
   @doc """
+  Processes a reviewed task based on its review status.
+
+  If review_status is "approved", moves the task from Review to Done column,
+  sets status to :completed, and sets completed_at timestamp.
+
+  If review_status is "changes_requested" or "rejected", moves the task from
+  Review back to Doing column and keeps status as :in_progress.
+
+  Only tasks in the Review column can be marked as reviewed.
+
+  ## Parameters
+
+    * task - The task to mark as reviewed
+    * user - The user marking the task as reviewed
+
+  ## Examples
+
+      iex> mark_reviewed(task, user)
+      {:ok, %Task{}}
+
+  """
+  def mark_reviewed(task, user) do
+    task = Repo.preload(task, [:column, :assigned_to, :created_by])
+    board_id = task.column.board_id
+
+    cond do
+      task.column.name != "Review" ->
+        {:error, :invalid_column}
+
+      is_nil(task.review_status) ->
+        {:error, :review_not_performed}
+
+      task.review_status == :approved ->
+        move_to_done(task, user, board_id)
+
+      task.review_status in [:changes_requested, :rejected] ->
+        move_to_doing(task, user, board_id)
+
+      true ->
+        {:error, :invalid_review_status}
+    end
+  end
+
+  defp move_to_done(task, user, board_id) do
+    done_column =
+      from(c in Column,
+        where: c.board_id == ^board_id and c.name == "Done"
+      )
+      |> Repo.one()
+
+    next_position = get_next_position(done_column)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    changeset =
+      task
+      |> Ecto.Changeset.change(%{
+        status: :completed,
+        completed_at: now,
+        reviewed_by_id: user.id,
+        column_id: done_column.id,
+        position: next_position
+      })
+
+    case Repo.update(changeset) do
+      {:ok, _updated_task} ->
+        updated_task = get_task_for_view!(task.id)
+
+        require Logger
+        Logger.info("Task #{task.id} approved and moved to Done by user #{user.id}")
+
+        :telemetry.execute(
+          [:kanban, :task, :completed],
+          %{task_id: updated_task.id},
+          %{completed_by: user.id}
+        )
+
+        Phoenix.PubSub.broadcast(
+          Kanban.PubSub,
+          "board:#{board_id}",
+          {:task_completed, updated_task}
+        )
+
+        unblock_dependent_tasks(updated_task.identifier)
+
+        {:ok, updated_task}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  defp move_to_doing(task, user, board_id) do
+    doing_column =
+      from(c in Column,
+        where: c.board_id == ^board_id and c.name == "Doing"
+      )
+      |> Repo.one()
+
+    next_position = get_next_position(doing_column)
+
+    changeset =
+      task
+      |> Ecto.Changeset.change(%{
+        status: :in_progress,
+        reviewed_by_id: user.id,
+        column_id: doing_column.id,
+        position: next_position
+      })
+
+    case Repo.update(changeset) do
+      {:ok, _updated_task} ->
+        updated_task = get_task_for_view!(task.id)
+
+        require Logger
+
+        Logger.info(
+          "Task #{task.id} needs changes (review status: #{task.review_status}) and moved back to Doing by user #{user.id}"
+        )
+
+        :telemetry.execute(
+          [:kanban, :task, :returned_to_doing],
+          %{task_id: updated_task.id},
+          %{reviewed_by: user.id, review_status: task.review_status}
+        )
+
+        Phoenix.PubSub.broadcast(
+          Kanban.PubSub,
+          "board:#{board_id}",
+          {:task_returned_to_doing, updated_task}
+        )
+
+        {:ok, updated_task}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @doc """
   Marks a task as done by moving it from Review to Done column.
+
+  DEPRECATED: Use mark_reviewed/2 instead.
 
   Sets status to :completed, sets completed_at timestamp,
   and moves the task to the Done column. This is the final step in the task workflow.

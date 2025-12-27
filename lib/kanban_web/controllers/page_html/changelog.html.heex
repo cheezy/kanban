@@ -44,6 +44,74 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Intelligent Review Workflow with mark_reviewed Endpoint")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Smart Review Processing")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("New mark_reviewed endpoint that intelligently routes tasks based on review status:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li><strong>PATCH /api/tasks/:id/mark_reviewed</strong> - {gettext("Process reviewed tasks with automatic routing")}</li>
+                  <li>{gettext("If review_status == \"approved\": Moves task from Review to Done column, sets status to :completed")}</li>
+                  <li>{gettext("If review_status in [\"changes_requested\", \"rejected\"]: Moves task back to Doing column, keeps status as :in_progress")}</li>
+                  <li>{gettext("Returns 422 error if task not in Review column or review_status not set")}</li>
+                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W14\")")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Enhanced Review Workflow")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Improved human-AI collaboration on task review:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Human reviews task in Review column and sets review_status field")}</li>
+                  <li>{gettext("Human adds review_notes to guide AI on required changes")}</li>
+                  <li>{gettext("Human notifies AI that review is complete")}</li>
+                  <li>{gettext("AI calls /mark_reviewed to automatically route task based on review outcome")}</li>
+                  <li>{gettext("Eliminates need for polling - explicit notification-based workflow")}</li>
+                  <li>{gettext("Agent can read review_notes to understand what needs to be fixed")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Telemetry and Observability")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Comprehensive tracking of review outcomes:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("Emits [:kanban, :task, :completed] when task approved and moved to Done")}</li>
+                  <li>{gettext("Emits [:kanban, :task, :returned_to_doing] when task needs changes")}</li>
+                  <li>{gettext("Tracks review status in telemetry metadata")}</li>
+                  <li>{gettext("Logs reviewer information with reviewed_by_id field")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Backwards Compatibility")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Preserved existing endpoints:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>{gettext("mark_done endpoint still available but marked as deprecated")}</li>
+                  <li>{gettext("Both endpoints coexist for gradual migration")}</li>
+                  <li>{gettext("New workflow recommended for all new integrations")}</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 {gettext("AI Agent Metadata Tracking")}
               </h4>
 

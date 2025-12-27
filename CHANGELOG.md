@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Intelligent Review Workflow with mark_reviewed Endpoint
+
+- **Smart Review Processing** - New `mark_reviewed` endpoint that intelligently routes tasks based on review status:
+  - **PATCH /api/tasks/:id/mark_reviewed** - Process reviewed tasks with automatic routing
+  - If `review_status == "approved"`: Moves task from Review to Done column, sets status to `:completed`
+  - If `review_status in ["changes_requested", "rejected"]`: Moves task back to Doing column, keeps status as `:in_progress`
+  - Returns 422 error if task not in Review column or review_status not set
+  - Supports both numeric IDs and human-readable identifiers (e.g., "W14")
+
+- **Enhanced Review Workflow** - Improved human-AI collaboration on task review:
+  - Human reviews task in Review column and sets `review_status` field
+  - Human adds `review_notes` to guide AI on required changes
+  - Human notifies AI that review is complete
+  - AI calls `/mark_reviewed` to automatically route task based on review outcome
+  - Eliminates need for polling - explicit notification-based workflow
+  - Agent can read `review_notes` to understand what needs to be fixed
+
+- **Telemetry and Observability** - Comprehensive tracking of review outcomes:
+  - Emits `[:kanban, :task, :completed]` when task approved and moved to Done
+  - Emits `[:kanban, :task, :returned_to_doing]` when task needs changes
+  - Tracks review status in telemetry metadata
+  - Logs reviewer information with `reviewed_by_id` field
+
+- **Backwards Compatibility** - Preserved existing endpoints:
+  - `mark_done` endpoint still available but marked as deprecated
+  - Both endpoints coexist for gradual migration
+  - New workflow recommended for all new integrations
+
 #### AI Agent Metadata Tracking
 
 - **Agent Tracking on Task Creation** - Tasks created via API now track the AI agent model:
