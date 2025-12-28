@@ -35,6 +35,215 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.0] - 2025-12-28</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Goal → Task Hierarchy System")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("2-Level Task Hierarchy")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Introduced goal-based task organization:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Goals (G prefix)")}</strong>
+                    {gettext(" - Large initiatives (25+ hours) that contain multiple related tasks")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Tasks (W/D prefix)")}</strong>
+                    {gettext(" - Individual work items that can belong to a goal via parent_id field")}
+                  </li>
+                  <li>{gettext("Standalone tasks (no parent) remain fully supported")}</li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Goal Card UI")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Compact, visually distinct cards for goals:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Yellow gradient styling")}</strong>
+                    {gettext(" - from-yellow-50 to-yellow-100 background with border-yellow-300/60")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Compact dimensions")}</strong>
+                    {gettext(" - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Reduced spacing")}</strong>
+                    {gettext(" - mt-1 between title and progress bar, mt-1.5 between progress bar and badges")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Three-line layout:")}</strong>
+                    {gettext(" Line 1: Goal title, Line 2: Progress bar showing completion (e.g., \"6/11\"), Line 3: Badge row (G badge, priority, identifier)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Non-draggable")}</strong>
+                    {gettext(" - No drag handle displayed (goals move automatically)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Type badge")}</strong>
+                    {gettext(" - Yellow \"G\" badge with gradient background matching card style")}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Automatic Goal Movement")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Goals reposition based on child task status:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Smart column detection")}</strong>
+                    {gettext(" - When ALL child tasks are in same column, goal moves to that column")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Before-child positioning")}</strong>
+                    {gettext(" - Goal positions BEFORE first child in target column")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Done column special handling")}</strong>
+                    {gettext(" - Goal positions at END when all children complete")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Real-time updates")}</strong>
+                    {gettext(" - Movement triggers immediately when last child task moves")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Position shifting")}</strong>
+                    {gettext(" - Other tasks shift to maintain proper ordering")}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Goal Progress Tracking")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Real-time progress calculation and display:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Progress bar")}</strong>
+                    {gettext(" - Green gradient bar (from-green-500 to-emerald-500) on yellow background")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Completion count")}</strong>
+                    {gettext(" - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Percentage calculation")}</strong>
+                    {gettext(" - Computed via calculate_goal_progress/1 helper")}
+                  </li>
+                  <li>
+                    <strong>{gettext("PubSub updates")}</strong>
+                    {gettext(" - Progress updates broadcast in real-time as child tasks complete")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Status tracking")}</strong>
+                    {gettext(" - Counts completed vs total children for accurate progress")}
+                  </li>
+                </ul>
+              </div>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Parent Goal Selection")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Tasks can be assigned to goals during creation/edit:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Goal dropdown")}</strong>
+                    {gettext(" - New \"Parent Goal\" field in task form")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Goal options")}</strong>
+                    {gettext(" - Shows all goals in format \"G1 - Goal Title\"")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Filtered by board")}</strong>
+                    {gettext(" - Only shows goals from current board")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Self-exclusion")}</strong>
+                    {gettext(" - Goals cannot be their own parent (prevents circular references)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Ordered display")}</strong>
+                    {gettext(" - Goals sorted by identifier (G1, G2, G3, etc.)")}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Hierarchical Task Tree API Endpoint")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  <strong>GET /api/tasks/:id/tree</strong>
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Returns nested JSON structure showing task hierarchy:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("For goals:")}</strong>
+                    {gettext(" Returns goal data + array of child tasks + progress counts")}
+                  </li>
+                  <li>
+                    <strong>{gettext("For tasks:")}</strong>
+                    {gettext(" Returns just the task data (no children)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Full field support")}</strong>
+                    {gettext(" - Includes all rich task fields (complexity, dependencies, etc.)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Progress statistics")}</strong>
+                    {gettext(" - Includes total children and completed count for goals")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Ordered children")}</strong>
+                    {gettext(" - Child tasks ordered by position ascending")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Scope enforcement")}</strong>
+                    {gettext(" - Respects tasks:read scope, returns 401/404 appropriately")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Supports identifiers")}</strong>
+                    {gettext(" - Accepts both numeric IDs and identifiers (e.g., \"G1\", \"W14\")")}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.9.0] - 2025-12-27</h2>
 
           <div class="mb-8">

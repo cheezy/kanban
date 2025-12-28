@@ -5,6 +5,60 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2025-12-28
+
+### Added
+
+#### Goal → Task Hierarchy System
+
+- **2-Level Task Hierarchy** - Introduced goal-based task organization:
+  - **Goals (G prefix)** - Large initiatives (25+ hours) that contain multiple related tasks
+  - **Tasks (W/D prefix)** - Individual work items that can belong to a goal via `parent_id` field
+  - Standalone tasks (no parent) remain fully supported
+
+- **Goal Card UI** - Compact, visually distinct cards for goals:
+  - **Yellow gradient styling** - `from-yellow-50 to-yellow-100` background with `border-yellow-300/60`
+  - **Compact dimensions** - `min-h-[45px]` height with `p-1.5` padding (vs `p-3` for regular tasks)
+  - **Reduced spacing** - `mt-1` between title and progress bar, `mt-1.5` between progress bar and badges
+  - **Three-line layout**:
+    - Line 1: Goal title (text-sm, leading-snug)
+    - Line 2: Progress bar showing completion (e.g., "6/11")
+    - Line 3: Badge row (G badge, priority, identifier)
+  - **Non-draggable** - No drag handle displayed (goals move automatically)
+  - **Type badge** - Yellow "G" badge with gradient background matching card style
+
+- **Automatic Goal Movement** - Goals reposition based on child task status:
+  - **Smart column detection** - When ALL child tasks are in same column, goal moves to that column
+  - **Before-child positioning** - Goal positions BEFORE first child in target column
+  - **Done column special handling** - Goal positions at END when all children complete
+  - **Real-time updates** - Movement triggers immediately when last child task moves
+  - **Position shifting** - Other tasks shift to maintain proper ordering
+
+- **Goal Progress Tracking** - Real-time progress calculation and display:
+  - **Progress bar** - Green gradient bar (`from-green-500 to-emerald-500`) on yellow background
+  - **Completion count** - Shows "completed/total" (e.g., "6/11") next to progress bar
+  - **Percentage calculation** - Computed via `calculate_goal_progress/1` helper
+  - **PubSub updates** - Progress updates broadcast in real-time as child tasks complete
+  - **Status tracking** - Counts completed vs total children for accurate progress
+
+- **Parent Goal Selection** - Tasks can be assigned to goals during creation/edit:
+  - **Goal dropdown** - New "Parent Goal" field in task form
+  - **Goal options** - Shows all goals in format "G1 - Goal Title"
+  - **Filtered by board** - Only shows goals from current board
+  - **Self-exclusion** - Goals cannot be their own parent (prevents circular references)
+  - **Ordered display** - Goals sorted by identifier (G1, G2, G3, etc.)
+
+#### Hierarchical Task Tree API Endpoint
+
+- **GET /api/tasks/:id/tree** - Returns nested JSON structure showing task hierarchy:
+  - **For goals**: Returns goal data + array of child tasks + progress counts
+  - **For tasks**: Returns just the task data (no children)
+  - **Full field support** - Includes all rich task fields (complexity, dependencies, etc.)
+  - **Progress statistics** - Includes total children and completed count for goals
+  - **Ordered children** - Child tasks ordered by position ascending
+  - **Scope enforcement** - Respects tasks:read scope, returns 401/404 appropriately
+  - **Supports identifiers** - Accepts both numeric IDs and identifiers (e.g., "G1", "W14")
+
 ## [1.9.0] - 2025-12-27
 
 ### Added
