@@ -772,7 +772,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "claimed_at" => DateTime.utc_now(),
           "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
           "assigned_to_id" => user.id,
-          "created_by_id" => user.id
+          "created_by_id" => user.id,
+          "needs_review" => true
         })
 
       %{

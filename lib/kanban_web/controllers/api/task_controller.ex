@@ -119,9 +119,10 @@ defmodule KanbanWeb.API.TaskController do
     api_token = conn.assigns.api_token
     agent_capabilities = api_token.agent_capabilities || []
     task_identifier = params["identifier"]
+    agent_name = params["agent_name"] || "Unknown"
 
-    case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier) do
-      {:ok, task} ->
+    case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier, agent_name) do
+      {:ok, task, hook_info} ->
         emit_telemetry(conn, :task_claimed, %{
           task_id: task.id,
           priority: task.priority,
@@ -129,7 +130,7 @@ defmodule KanbanWeb.API.TaskController do
           specific_task: !!task_identifier
         })
 
-        render(conn, :show, task: task)
+        render(conn, :show, task: task, hook: hook_info)
 
       {:error, :no_tasks_available} ->
         error_message =
@@ -142,14 +143,21 @@ defmodule KanbanWeb.API.TaskController do
         conn
         |> put_status(:conflict)
         |> json(%{error: error_message})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "Failed to claim task", reason: inspect(reason)})
     end
   end
 
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def complete(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
     api_token = conn.assigns.api_token
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
+    agent_name = params["agent_name"] || "Unknown"
 
     if task.column.board_id != board.id do
       conn
@@ -158,14 +166,14 @@ defmodule KanbanWeb.API.TaskController do
     else
       params_with_agent = maybe_add_completed_by_agent(params, api_token)
 
-      case Tasks.complete_task(task, user, params_with_agent) do
-        {:ok, task} ->
+      case Tasks.complete_task(task, user, params_with_agent, agent_name) do
+        {:ok, task, hooks} ->
           emit_telemetry(conn, :task_completed, %{
             task_id: task.id,
             time_spent_minutes: task.time_spent_minutes
           })
 
-          render(conn, :show, task: task)
+          render(conn, :show, task: task, hooks: hooks)
 
         {:error, :invalid_status} ->
           conn
@@ -219,6 +227,7 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  # credo:disable-for-lines:57
   def mark_reviewed(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
@@ -230,6 +239,17 @@ defmodule KanbanWeb.API.TaskController do
       |> json(%{error: "Task does not belong to this board"})
     else
       case Tasks.mark_reviewed(task, user) do
+        {:ok, task, hook_info} ->
+          event_name =
+            if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+
+          emit_telemetry(conn, event_name, %{
+            task_id: task.id,
+            review_status: task.review_status
+          })
+
+          render(conn, :show, task: task, hook: hook_info)
+
         {:ok, task} ->
           event_name =
             if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing

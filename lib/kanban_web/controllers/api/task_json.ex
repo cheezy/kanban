@@ -5,6 +5,14 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: for(task <- tasks, do: data(task))}
   end
 
+  def show(%{task: task, hook: hook}) do
+    %{data: data(task), hook: hook}
+  end
+
+  def show(%{task: task, hooks: hooks}) do
+    %{data: data(task), hooks: hooks}
+  end
+
   def show(%{task: task}) do
     %{data: data(task)}
   end

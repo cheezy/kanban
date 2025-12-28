@@ -35,6 +35,55 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.11.0] - 2025-12-28</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Workflow Hooks System for AI Agent Integration")}
+              </h4>
+
+              <div class="mb-4">
+                <p class="text-base-content opacity-70 mb-4">
+                  {gettext("Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines.")}
+                </p>
+
+                <ul class="list-disc list-inside ml-6 space-y-2 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Four fixed hook points:")}</strong>
+                    {gettext(" before_doing, after_doing, before_review, after_review")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Client-side execution:")}</strong>
+                    {gettext(" Agents read .stride.md configuration and execute hooks on their local machine")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Language-agnostic:")}</strong>
+                    {gettext(" Works with any programming language (Elixir, Java, Python, etc.)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Hook metadata:")}</strong>
+                    {gettext(" Server returns name, environment variables, timeout, and blocking status")}
+                  </li>
+                  <li>
+                    <strong>{gettext("API integration:")}</strong>
+                    {gettext(" POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Automatic completion:")}</strong>
+                    {gettext(" Tasks with needs_review=false automatically move to Done after executing all hooks")}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.1] - 2025-12-28</h2>
 
           <div class="mb-8">

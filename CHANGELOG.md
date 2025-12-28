@@ -5,6 +5,47 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2025-12-28
+
+### Added
+
+#### Workflow Hooks System for AI Agent Integration
+
+- **Client-Side Hook Execution Architecture** - Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle:
+  - **Server provides hook metadata** - Server does NOT execute hooks; instead returns hook metadata (name, environment variables, timeout, blocking status) to the agent
+  - **Agent executes locally** - Agents read `.stride.md` configuration file from their project root and execute hook commands on their local machine
+  - **Language-agnostic** - Works with any programming language or environment (Elixir, Java, Python, etc.) since hooks run on agent's machine
+  - **Four fixed hook points**:
+    - `before_doing` - Executes before task is moved to Doing (blocking, 60s timeout)
+    - `after_doing` - Executes after task completes to Review (blocking, 120s timeout)
+    - `before_review` - Executes when task enters Review column (non-blocking, 60s timeout)
+    - `after_review` - Executes after review approval/rejection (non-blocking, 60s timeout)
+
+- **Hook Metadata System** - New `Kanban.Hooks` context provides hook information to agents:
+  - **`get_hook_info/4`** - Returns hook metadata for a specific task and hook point
+  - **`list_hooks/0`** - Returns all available hook configurations
+  - **Environment variables** - Rich environment context provided for each hook:
+    - Task metadata: `TASK_ID`, `TASK_IDENTIFIER`, `TASK_TITLE`, `TASK_DESCRIPTION`, `TASK_COMPLEXITY`, `TASK_PRIORITY`, `TASK_STATUS`, `TASK_NEEDS_REVIEW`
+    - Board context: `BOARD_ID`, `BOARD_NAME`, `COLUMN_ID`, `COLUMN_NAME`
+    - Agent context: `AGENT_NAME`, `HOOK_NAME`
+  - **Timeout configuration** - Each hook has a configured timeout for safe execution
+  - **Blocking behavior** - Hooks can be blocking (prevent action on failure) or non-blocking (log errors but continue)
+
+- **API Integration** - Hook metadata returned in API responses:
+  - **POST /api/tasks/claim** - Returns `before_doing` hook metadata along with claimed task
+  - **PATCH /api/tasks/:id/complete** - Returns array of hook metadata: `[after_doing, before_review, after_review?]`
+  - **PATCH /api/tasks/:id/mark_reviewed** - Returns `after_review` hook metadata
+  - **Hook execution sequence** - Agents receive hooks in correct execution order for their workflow
+  - **Conditional hook inclusion** - `after_review` hook included in complete response only when `needs_review=false`
+
+- **Automatic Task Completion for No-Review Tasks** - Enhanced `complete_task/4` to handle tasks that don't require review:
+  - When `needs_review=false`, task automatically moves from Review to Done after hook execution
+  - Sets `status` to `:completed` and `completed_at` timestamp
+  - Moves parent goal to Done column as well
+  - Unblocks dependent tasks
+  - Returns all three hooks (`after_doing`, `before_review`, `after_review`) for agent execution
+  - Ensures proper workflow even when human review is skipped
+
 ## [1.10.1] - 2025-12-28
 
 ### Added

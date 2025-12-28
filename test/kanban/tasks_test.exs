@@ -2608,7 +2608,7 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      {:ok, result} = Tasks.claim_next_task([], user, board.id)
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], user, board.id)
 
       assert result.id == task.id
       assert result.status == :in_progress
@@ -2634,7 +2634,7 @@ defmodule Kanban.TasksTest do
 
       user2 = Kanban.AccountsFixtures.user_fixture()
 
-      {:ok, _result1} = Tasks.claim_next_task([], user, board.id)
+      {:ok, _result1, _hook_info} = Tasks.claim_next_task([], user, board.id)
       result2 = Tasks.claim_next_task([], user2, board.id)
 
       assert result2 == {:error, :no_tasks_available}
@@ -2649,7 +2649,7 @@ defmodule Kanban.TasksTest do
         })
 
       now = DateTime.utc_now()
-      {:ok, result} = Tasks.claim_next_task([], user, board.id)
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], user, board.id)
 
       expires_at = result.claim_expires_at
       diff = DateTime.diff(expires_at, now, :second)

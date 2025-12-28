@@ -7,6 +7,7 @@ defmodule Kanban.Tasks do
 
   alias Kanban.Columns
   alias Kanban.Columns.Column
+  alias Kanban.Hooks
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -608,6 +609,35 @@ defmodule Kanban.Tasks do
     end
   end
 
+  defp maybe_move_parent_task(task, new_column_id) do
+    if task.parent_id do
+      parent = Repo.get!(Task, task.parent_id)
+
+      if parent.column_id != new_column_id do
+        new_column = Repo.get!(Column, new_column_id)
+        next_position = get_next_position(new_column)
+
+        parent
+        |> Ecto.Changeset.change(%{
+          column_id: new_column_id,
+          position: next_position
+        })
+        |> Repo.update!()
+
+        board_id = new_column.board_id
+        updated_parent = get_task_for_view!(parent.id)
+
+        Phoenix.PubSub.broadcast(
+          Kanban.PubSub,
+          "board:#{board_id}",
+          {:task_updated, updated_parent}
+        )
+      end
+    end
+
+    :ok
+  end
+
   defp reorder_after_deletion(deleted_task) do
     # Get all tasks after the deleted position in the same column
     query =
@@ -1147,6 +1177,8 @@ defmodule Kanban.Tasks do
   Updates the task status to "in_progress", sets claimed_at, claim_expires_at,
   assigned_to, and moves it to the "Doing" column.
 
+  Executes the before_doing hook before moving the task.
+
   Returns {:ok, task} if successful, {:error, reason} if unsuccessful.
 
   ## Examples
@@ -1161,7 +1193,7 @@ defmodule Kanban.Tasks do
       {:error, :no_tasks_available}
 
   """
-  def claim_next_task(agent_capabilities \\ [], user, board_id, task_identifier \\ nil) do
+  def claim_next_task(agent_capabilities \\ [], user, board_id, task_identifier \\ nil, agent_name \\ "Unknown") do
     task =
       if task_identifier do
         get_specific_task_for_claim(task_identifier, agent_capabilities, board_id)
@@ -1174,7 +1206,7 @@ defmodule Kanban.Tasks do
         {:error, :no_tasks_available}
 
       task ->
-        perform_claim(task, user, board_id)
+        perform_claim(task, user, board_id, agent_name)
     end
   end
 
@@ -1222,7 +1254,8 @@ defmodule Kanban.Tasks do
     Repo.one(query)
   end
 
-  defp perform_claim(task, user, board_id) do
+  defp perform_claim(task, user, board_id, agent_name) do
+    board = Repo.get!(Kanban.Boards.Board, board_id)
     doing_column =
       from(c in Column,
         where: c.board_id == ^board_id and c.name == "Doing"
@@ -1254,13 +1287,16 @@ defmodule Kanban.Tasks do
       {1, _} ->
         updated_task = get_task_for_view!(task.id)
 
+        maybe_move_parent_task(updated_task, doing_column.id)
+
         Phoenix.PubSub.broadcast(
           Kanban.PubSub,
           "board:#{board_id}",
           {:task_updated, updated_task}
         )
 
-        {:ok, updated_task}
+        {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
+        {:ok, updated_task, hook_info}
 
       {0, _} ->
         {:error, :no_tasks_available}
@@ -1362,9 +1398,11 @@ defmodule Kanban.Tasks do
       {:ok, %Task{}}
 
   """
-  def complete_task(task, user, params) do
+  # credo:disable-for-lines:128
+  def complete_task(task, user, params, agent_name \\ "Unknown") do
     task = Repo.preload(task, [:column, :assigned_to])
     board_id = task.column.board_id
+    board = Repo.get!(Kanban.Boards.Board, board_id)
 
     cond do
       task.status not in [:in_progress, :blocked] ->
@@ -1407,6 +1445,8 @@ defmodule Kanban.Tasks do
           {:ok, updated_task} ->
             updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
 
+            maybe_move_parent_task(updated_task, review_column.id)
+
             require Logger
 
             Logger.info(
@@ -1425,7 +1465,62 @@ defmodule Kanban.Tasks do
               {:task_moved_to_review, updated_task}
             )
 
-            {:ok, updated_task}
+            {:ok, after_doing_hook} = Hooks.get_hook_info(updated_task, board, "after_doing", agent_name)
+            {:ok, before_review_hook} = Hooks.get_hook_info(updated_task, board, "before_review", agent_name)
+
+            if updated_task.needs_review do
+              hooks = [after_doing_hook, before_review_hook]
+              {:ok, updated_task, hooks}
+            else
+              done_column =
+                from(c in Column,
+                  where: c.board_id == ^board_id and c.name == "Done"
+                )
+                |> Repo.one()
+
+              next_position = get_next_position(done_column)
+              now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+              done_changeset =
+                updated_task
+                |> Ecto.Changeset.change(%{
+                  status: :completed,
+                  completed_at: now,
+                  column_id: done_column.id,
+                  position: next_position
+                })
+
+              case Repo.update(done_changeset) do
+                {:ok, _final_task} ->
+                  final_task = get_task_for_view!(updated_task.id)
+
+                  maybe_move_parent_task(final_task, done_column.id)
+
+                  Logger.info("Task #{task.id} auto-moved to Done (needs_review=false)")
+
+                  :telemetry.execute(
+                    [:kanban, :task, :completed],
+                    %{task_id: final_task.id},
+                    %{completed_by: user.id}
+                  )
+
+                  Phoenix.PubSub.broadcast(
+                    Kanban.PubSub,
+                    "board:#{board_id}",
+                    {:task_completed, final_task}
+                  )
+
+                  unblock_dependent_tasks(final_task.identifier)
+
+                  {:ok, after_review_hook} = Hooks.get_hook_info(final_task, board, "after_review", agent_name)
+                  hooks = [after_doing_hook, before_review_hook, after_review_hook]
+
+                  {:ok, final_task, hooks}
+
+                {:error, changeset} ->
+                  {:error, changeset}
+              end
+            end
 
           {:error, changeset} ->
             {:error, changeset}
@@ -1478,6 +1573,9 @@ defmodule Kanban.Tasks do
   end
 
   defp move_to_done(task, user, board_id) do
+    board = Repo.get!(Kanban.Boards.Board, board_id)
+    agent_name = task.completed_by_agent || "Unknown"
+
     done_column =
       from(c in Column,
         where: c.board_id == ^board_id and c.name == "Done"
@@ -1501,6 +1599,8 @@ defmodule Kanban.Tasks do
       {:ok, _updated_task} ->
         updated_task = get_task_for_view!(task.id)
 
+        maybe_move_parent_task(updated_task, done_column.id)
+
         require Logger
         Logger.info("Task #{task.id} approved and moved to Done by user #{user.id}")
 
@@ -1518,7 +1618,8 @@ defmodule Kanban.Tasks do
 
         unblock_dependent_tasks(updated_task.identifier)
 
-        {:ok, updated_task}
+        {:ok, after_review_hook} = Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
+        {:ok, updated_task, after_review_hook}
 
       {:error, changeset} ->
         {:error, changeset}
@@ -1546,6 +1647,8 @@ defmodule Kanban.Tasks do
     case Repo.update(changeset) do
       {:ok, _updated_task} ->
         updated_task = get_task_for_view!(task.id)
+
+        maybe_move_parent_task(updated_task, doing_column.id)
 
         require Logger
 
