@@ -114,6 +114,14 @@ The Kanban system uses a **2-level hierarchy** with **two task types** optimized
 9. **Update** with completion summary (PATCH with completion data)
 10. **Mark complete** (status=completed with detailed completion_summary)
 11. **Dependencies** automatically unblock (next tasks become available)
+12. **Automatic continuation**: When a task is completed and doesn't need review:
+    - Task automatically moves to Done column
+    - Parent goal position updates if applicable (moves when all children in same column)
+    - AI **immediately starts next task** without waiting for human prompt
+    - AI continues working through tasks until:
+      - No more tasks available (all blocked or completed)
+      - A task requires human review (needs_review flag set)
+      - AI encounters an error or blocker requiring human intervention
 
 ### Task Type Workflow Patterns
 

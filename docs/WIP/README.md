@@ -31,8 +31,11 @@ How AI interacts with the Kanban system throughout the development lifecycle.
 6. Implements
 7. Updates with completion summary
 8. Marks complete (PATCH status=completed)
+9. **Automatically starts next task** (continuous workflow mode)
 
 **Key Feature:** Completion updates include actual implementation details, deviations from plan, and follow-up tasks created.
+
+**Continuous Mode:** When a task completes without needing review, AI immediately starts the next task without waiting for human prompt. See [UPDATE-TASKS/CONTINUOUS-WORKFLOW.md](UPDATE-TASKS/CONTINUOUS-WORKFLOW.md) for details.
 
 ### [API-FORMAT.md](API-FORMAT.md)
 JSON structure for the AI workflow API.

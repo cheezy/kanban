@@ -132,6 +132,20 @@ See [AI-AUTHENTICATION.md](../AI-AUTHENTICATION.md) for `.stride_auth.md` format
 - Use GET /api/agent/info for guidance
 - Configure hooks in `.stride.md` for automation
 
+#### Continuous Workflow Mode
+
+**When a task completes without needing review:**
+
+1. Task automatically moves to Done column
+2. Parent goal repositions if all children are in same column
+3. AI **immediately starts next task** without waiting for prompt
+4. AI continues until:
+   - No more tasks available (all blocked or completed)
+   - A task requires review (`needs_review` flag set)
+   - AI encounters an error requiring human intervention
+
+**This creates a continuous flow** where AI agents work through task queues autonomously, stopping only when human input is genuinely needed.
+
 ### Benefits
 
 1. **Real-World Testing**: Find API issues immediately
