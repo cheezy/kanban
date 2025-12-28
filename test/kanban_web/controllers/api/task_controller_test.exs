@@ -137,6 +137,72 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert created_by_agent == nil
     end
+
+    test "creates goal with nested child tasks", %{conn: conn, column: _column} do
+      goal_params = %{
+        "title" => "Test Goal",
+        "description" => "A goal with child tasks",
+        "tasks" => [
+          %{"title" => "Child Task 1", "type" => "work", "complexity" => "small"},
+          %{"title" => "Child Task 2", "type" => "defect", "complexity" => "medium"},
+          %{"title" => "Child Task 3", "type" => "work", "complexity" => "large"}
+        ]
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: goal_params)
+      response = json_response(conn, 201)
+
+      assert %{"goal" => goal, "child_tasks" => child_tasks} = response
+      assert goal["title"] == "Test Goal"
+      assert goal["type"] == "goal"
+      assert String.starts_with?(goal["identifier"], "G")
+      assert length(child_tasks) == 3
+
+      assert Enum.at(child_tasks, 0)["title"] == "Child Task 1"
+      assert Enum.at(child_tasks, 0)["complexity"] == "small"
+      assert String.starts_with?(Enum.at(child_tasks, 0)["identifier"], "W")
+
+      assert Enum.at(child_tasks, 1)["title"] == "Child Task 2"
+      assert Enum.at(child_tasks, 1)["complexity"] == "medium"
+      assert String.starts_with?(Enum.at(child_tasks, 1)["identifier"], "D")
+
+      assert Enum.at(child_tasks, 2)["title"] == "Child Task 3"
+      assert Enum.at(child_tasks, 2)["complexity"] == "large"
+      assert String.starts_with?(Enum.at(child_tasks, 2)["identifier"], "W")
+
+      goal_id = goal["id"]
+      conn = get(conn, ~p"/api/tasks/#{goal_id}/tree")
+      tree_response = json_response(conn, 200)["data"]
+
+      assert tree_response["task"]["id"] == goal_id
+      assert length(tree_response["children"]) == 3
+      assert Enum.all?(tree_response["children"], fn child -> child["parent_id"] == goal_id end)
+    end
+
+    test "creates goal without child tasks (empty array)", %{conn: conn} do
+      goal_params = %{
+        "title" => "Empty Goal",
+        "tasks" => []
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: goal_params)
+      response = json_response(conn, 201)
+
+      assert %{"data" => task} = response
+      assert task["title"] == "Empty Goal"
+    end
+
+    test "returns error when goal creation fails", %{conn: conn} do
+      goal_params = %{
+        "title" => "",
+        "tasks" => [
+          %{"title" => "Child Task", "type" => "work"}
+        ]
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: goal_params)
+      assert json_response(conn, 422)["errors"] != %{}
+    end
   end
 
   describe "GET /api/tasks" do

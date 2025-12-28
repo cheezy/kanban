@@ -35,6 +35,73 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.1] - 2025-12-28</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Bulk Task Creation with Nested Goals")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  <strong>POST /api/tasks with nested tasks</strong>
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Create a goal with multiple child tasks in a single atomic API call:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Atomic transactions")}</strong>
+                    {gettext(" - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Automatic parent_id assignment")}</strong>
+                    {gettext(" - Child tasks automatically linked to parent goal")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Automatic identifier generation")}</strong>
+                    {gettext(" - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Position management")}</strong>
+                    {gettext(" - Goal positioned first, child tasks positioned sequentially after")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Task history tracking")}</strong>
+                    {gettext(" - Creation history entries created for goal and all child tasks")}
+                  </li>
+                  <li>
+                    <strong>{gettext("PubSub broadcasting")}</strong>
+                    {gettext(" - Real-time updates broadcast for goal and all children")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Telemetry events")}</strong>
+                    {gettext(" - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts")}
+                  </li>
+                  <li>
+                    <strong>{gettext("WIP limit enforcement")}</strong>
+                    {gettext(" - Respects column WIP limits before creating goal")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Full field support")}</strong>
+                    {gettext(" - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Response format")}</strong>
+                    {gettext(" - Returns {goal: ..., child_tasks: [...]} with complete task data")}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.0] - 2025-12-28</h2>
 
           <div class="mb-8">

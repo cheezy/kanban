@@ -175,6 +175,136 @@ defmodule Kanban.Tasks do
     end
   end
 
+  @doc """
+  Creates a goal with nested child tasks in a single atomic transaction.
+
+  Accepts a column, goal attributes, and a list of child task attributes.
+  Creates the goal first, then creates all child tasks with parent_id set.
+  All tasks are created atomically using Ecto.Multi.
+
+  ## Examples
+
+      iex> create_goal_with_tasks(column, %{title: "My Goal"}, [
+        %{title: "Task 1", type: "work"},
+        %{title: "Task 2", type: "defect"}
+      ])
+      {:ok, %{goal: %Task{}, child_tasks: [%Task{}, %Task{}]}}
+
+      iex> create_goal_with_tasks(column, %{title: nil}, [])
+      {:error, :goal, %Ecto.Changeset{}, %{}}
+
+  """
+  def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []) do
+    if can_add_task?(column) do
+      goal_attrs = prepare_goal_attrs(column, goal_attrs)
+
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:goal, Task.changeset(%Task{column_id: column.id}, goal_attrs))
+      |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: goal.id,
+          type: :creation
+        })
+      end)
+      |> insert_child_tasks(column, child_tasks_attrs)
+      |> Repo.transaction()
+      |> handle_goal_creation_result(column)
+    else
+      {:error, :wip_limit_reached}
+    end
+  end
+
+  defp prepare_goal_attrs(column, attrs) do
+    next_position = get_next_position(column)
+    identifier = generate_identifier(column, :goal)
+
+    prepared_attrs = prepare_task_attrs(attrs, next_position)
+
+    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+    type_key = if is_map_key(prepared_attrs, "position"), do: "type", else: :type
+
+    prepared_attrs
+    |> Map.put(identifier_key, identifier)
+    |> Map.put(type_key, :goal)
+  end
+
+  defp insert_child_tasks(multi, column, child_tasks_attrs) do
+    child_tasks_attrs
+    |> Enum.with_index()
+    |> Enum.reduce(multi, fn {child_attrs, index}, multi_acc ->
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
+      task_key = String.to_atom("child_task_#{index}")
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
+      history_key = String.to_atom("child_task_#{index}_history")
+
+      multi_acc
+      |> Ecto.Multi.insert(task_key, fn %{goal: goal} ->
+        child_attrs_with_parent = prepare_child_task_attrs(column, child_attrs, goal.id, index)
+        Task.changeset(%Task{column_id: column.id}, child_attrs_with_parent)
+      end)
+      |> Ecto.Multi.insert(history_key, fn changes ->
+        child_task = Map.get(changes, task_key)
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: child_task.id,
+          type: :creation
+        })
+      end)
+    end)
+  end
+
+  defp prepare_child_task_attrs(column, attrs, parent_id, index) do
+    next_position = get_next_position(column) + index + 1
+    task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
+    identifier = generate_identifier(column, task_type)
+
+    prepared_attrs = prepare_task_attrs(attrs, next_position)
+
+    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+    parent_id_key = if is_map_key(prepared_attrs, "position"), do: "parent_id", else: :parent_id
+
+    prepared_attrs
+    |> Map.put(identifier_key, identifier)
+    |> Map.put(parent_id_key, parent_id)
+  end
+
+  defp handle_goal_creation_result(transaction_result, column) do
+    case transaction_result do
+      {:ok, changes} ->
+        goal = changes.goal
+        child_tasks = extract_child_tasks(changes)
+
+        broadcast_goal_and_children(goal, child_tasks)
+        emit_goal_creation_telemetry(goal, child_tasks, column)
+
+        {:ok, %{goal: goal, child_tasks: child_tasks}}
+
+      {:error, failed_operation, changeset, _changes} ->
+        {:error, failed_operation, changeset}
+    end
+  end
+
+  defp extract_child_tasks(changes) do
+    changes
+    |> Enum.filter(fn {key, _value} ->
+      key_string = Atom.to_string(key)
+      String.starts_with?(key_string, "child_task_") and not String.ends_with?(key_string, "_history")
+    end)
+    |> Enum.map(fn {_key, task} -> task end)
+  end
+
+  defp broadcast_goal_and_children(goal, child_tasks) do
+    broadcast_task_change(goal, :task_created)
+    Enum.each(child_tasks, fn task -> broadcast_task_change(task, :task_created) end)
+  end
+
+  defp emit_goal_creation_telemetry(goal, child_tasks, column) do
+    :telemetry.execute(
+      [:kanban, :goal, :created_with_tasks],
+      %{goal_count: 1, task_count: length(child_tasks)},
+      %{goal_id: goal.id, column_id: column.id}
+    )
+  end
+
   defp prepare_task_creation_attrs(column, attrs) do
     next_position = get_next_position(column)
     task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))

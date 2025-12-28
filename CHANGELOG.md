@@ -5,6 +5,37 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2025-12-28
+
+### Added
+
+#### Bulk Task Creation with Nested Goals
+
+- **POST /api/tasks with nested tasks** - Create a goal with multiple child tasks in a single atomic API call:
+  - **Atomic transactions** - Uses `Ecto.Multi` to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)
+  - **Automatic parent_id assignment** - Child tasks automatically linked to parent goal
+  - **Automatic identifier generation** - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type
+  - **Position management** - Goal positioned first, child tasks positioned sequentially after
+  - **Task history tracking** - Creation history entries created for goal and all child tasks
+  - **PubSub broadcasting** - Real-time updates broadcast for goal and all children
+  - **Telemetry events** - `[:kanban, :goal, :created_with_tasks]` event emitted with goal and task counts
+  - **WIP limit enforcement** - Respects column WIP limits before creating goal
+  - **Full field support** - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)
+  - **Response format** - Returns `{goal: ..., child_tasks: [...]}` with complete task data
+
+- **Request Format**:
+  ```json
+  POST /api/tasks
+  {
+    "title": "Implement search feature",
+    "tasks": [
+      {"title": "Add search schema", "type": "work", "complexity": "small"},
+      {"title": "Build search UI", "type": "work", "complexity": "medium"},
+      {"title": "Fix search bug", "type": "defect", "complexity": "small"}
+    ]
+  }
+  ```
+
 ## [1.10.0] - 2025-12-28
 
 ### Added

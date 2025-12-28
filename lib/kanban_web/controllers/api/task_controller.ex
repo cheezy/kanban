@@ -59,9 +59,17 @@ defmodule KanbanWeb.API.TaskController do
     else
       task_params_with_creator = build_task_params_with_creator(task_params, user, api_token)
 
-      column
-      |> Tasks.create_task(task_params_with_creator)
-      |> handle_task_creation(conn)
+      child_tasks = Map.get(task_params, "tasks", [])
+
+      if child_tasks != [] do
+        column
+        |> Tasks.create_goal_with_tasks(task_params_with_creator, child_tasks)
+        |> handle_goal_creation(conn)
+      else
+        column
+        |> Tasks.create_task(task_params_with_creator)
+        |> handle_task_creation(conn)
+      end
     end
   end
 
@@ -380,6 +388,53 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)
+  end
+
+  defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn) do
+    goal = Tasks.get_task_for_view!(goal.id)
+
+    emit_telemetry(conn, :goal_created, %{
+      goal_id: goal.id,
+      child_task_count: length(child_tasks)
+    })
+
+    conn
+    |> put_status(:created)
+    |> put_resp_header("location", ~p"/api/tasks/#{goal}")
+    |> json(%{
+      goal: render_goal_with_children(goal),
+      child_tasks: Enum.map(child_tasks, &render_task_summary/1)
+    })
+  end
+
+  defp handle_goal_creation({:error, _operation, %Ecto.Changeset{} = changeset}, conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> render(:error, changeset: changeset)
+  end
+
+  defp handle_goal_creation({:error, :wip_limit_reached}, conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: "WIP limit reached for this column"})
+  end
+
+  defp render_goal_with_children(goal) do
+    %{
+      id: goal.id,
+      identifier: goal.identifier,
+      title: goal.title,
+      description: goal.description,
+      status: goal.status,
+      priority: goal.priority,
+      complexity: goal.complexity,
+      type: goal.type,
+      created_by_id: goal.created_by_id,
+      created_by_agent: goal.created_by_agent,
+      column_id: goal.column_id,
+      inserted_at: goal.inserted_at,
+      updated_at: goal.updated_at
+    }
   end
 
   defp get_default_column_id(board) do

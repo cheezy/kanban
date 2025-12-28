@@ -3759,4 +3759,226 @@ defmodule Kanban.TasksTest do
       assert length(Enum.uniq(positions)) == length(positions), "No duplicate positions"
     end
   end
+
+  describe "create_goal_with_tasks/3" do
+    test "creates a goal with multiple child tasks in a single transaction" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "Test Goal",
+        description: "A goal with child tasks",
+        created_by_id: user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Child Task 1", "type" => "work", "complexity" => "small"},
+        %{"title" => "Child Task 2", "type" => "defect", "complexity" => "medium"},
+        %{"title" => "Child Task 3", "type" => "work", "complexity" => "large"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: created_tasks}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert goal.title == "Test Goal"
+      assert goal.type == :goal
+      assert String.starts_with?(goal.identifier, "G")
+      assert length(created_tasks) == 3
+
+      Enum.each(created_tasks, fn task ->
+        assert task.parent_id == goal.id
+        assert task.column_id == column.id
+      end)
+
+      assert Enum.at(created_tasks, 0).identifier =~ ~r/^W\d+$/
+      assert Enum.at(created_tasks, 1).identifier =~ ~r/^D\d+$/
+      assert Enum.at(created_tasks, 2).identifier =~ ~r/^W\d+$/
+    end
+
+    test "creates goal without child tasks when empty array provided" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "Standalone Goal",
+        created_by_id: user.id
+      }
+
+      assert {:ok, %{goal: goal, child_tasks: created_tasks}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, [])
+
+      assert goal.title == "Standalone Goal"
+      assert goal.type == :goal
+      assert created_tasks == []
+    end
+
+    test "sets correct positions for child tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{title: "Goal", created_by_id: user.id}
+
+      child_tasks = [
+        %{"title" => "Task 1", "type" => "work"},
+        %{"title" => "Task 2", "type" => "work"},
+        %{"title" => "Task 3", "type" => "work"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: created_tasks}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert goal.position == 0
+
+      positions = Enum.map(created_tasks, & &1.position)
+      assert length(Enum.uniq(positions)) == 3
+      assert Enum.sort(positions) == positions
+      assert Enum.all?(positions, &(&1 > goal.position))
+    end
+
+    test "rolls back everything if goal creation fails" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      invalid_goal_attrs = %{
+        title: nil,
+        created_by_id: user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Task 1", "type" => "work"}
+      ]
+
+      initial_task_count = Repo.aggregate(Task, :count, :id)
+
+      assert {:error, :goal, changeset} =
+               Tasks.create_goal_with_tasks(column, invalid_goal_attrs, child_tasks)
+
+      assert changeset.errors[:title]
+
+      final_task_count = Repo.aggregate(Task, :count, :id)
+      assert final_task_count == initial_task_count
+    end
+
+    test "rolls back everything if child task creation fails" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "Valid Goal",
+        created_by_id: user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Valid Task", "type" => "work"},
+        %{"title" => nil, "type" => "work"}
+      ]
+
+      initial_task_count = Repo.aggregate(Task, :count, :id)
+
+      assert {:error, _operation, _changeset} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      final_task_count = Repo.aggregate(Task, :count, :id)
+      assert final_task_count == initial_task_count
+    end
+
+    test "respects WIP limit when creating goal" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 1})
+
+      task_fixture(column)
+
+      goal_attrs = %{title: "Goal", created_by_id: user.id}
+      child_tasks = [%{"title" => "Task", "type" => "work"}]
+
+      assert {:error, :wip_limit_reached} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+    end
+
+    test "sets created_by_agent when provided" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "AI Created Goal",
+        created_by_id: user.id,
+        created_by_agent: "Claude Sonnet 4.5"
+      }
+
+      child_tasks = [
+        %{"title" => "AI Task", "type" => "work", "created_by_agent" => "Claude Sonnet 4.5"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: [child_task]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert goal.created_by_agent == "Claude Sonnet 4.5"
+      assert child_task.created_by_agent == "Claude Sonnet 4.5"
+    end
+
+    test "creates task history entries for goal and all child tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{title: "Goal", created_by_id: user.id}
+      child_tasks = [%{"title" => "Task", "type" => "work"}]
+
+      assert {:ok, %{goal: goal, child_tasks: [child_task]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      goal_with_history = Tasks.get_task_with_history!(goal.id)
+      assert Enum.any?(goal_with_history.task_histories, fn h -> h.type == :creation end)
+
+      child_with_history = Tasks.get_task_with_history!(child_task.id)
+      assert Enum.any?(child_with_history.task_histories, fn h -> h.type == :creation end)
+    end
+
+    test "preserves all AI-optimized fields from child task attributes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{title: "Goal", created_by_id: user.id}
+
+      child_tasks = [
+        %{
+          "title" => "Rich Task",
+          "type" => "work",
+          "complexity" => "large",
+          "why" => "To test rich fields",
+          "what" => "Verify all fields are preserved",
+          "patterns_to_follow" => "Follow existing patterns",
+          "verification_steps" => [
+            %{
+              "step_type" => "command",
+              "step_text" => "mix test",
+              "position" => 0
+            }
+          ]
+        }
+      ]
+
+      assert {:ok, %{child_tasks: [task]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert task.complexity == :large
+      assert task.why == "To test rich fields"
+      assert task.what == "Verify all fields are preserved"
+      assert task.patterns_to_follow == "Follow existing patterns"
+      assert is_list(task.verification_steps)
+      assert length(task.verification_steps) == 1
+
+      step = hd(task.verification_steps)
+      assert step.step_type == "command"
+      assert step.step_text == "mix test"
+    end
+  end
 end
