@@ -85,21 +85,29 @@ defmodule Kanban.Tasks do
   def get_task_for_view!(id) do
     alias Kanban.Tasks.TaskComment
 
-    Task
-    |> Repo.get!(id)
-    |> Repo.preload([
-      :assigned_to,
-      :column,
-      :created_by,
-      :completed_by,
-      :reviewed_by,
-      task_histories:
-        from(h in TaskHistory,
-          order_by: [desc: h.inserted_at],
-          preload: [:from_user, :to_user]
-        ),
-      comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
-    ])
+    task =
+      Task
+      |> Repo.get!(id)
+      |> Repo.preload([
+        :assigned_to,
+        :column,
+        :created_by,
+        :completed_by,
+        :reviewed_by,
+        task_histories:
+          from(h in TaskHistory,
+            order_by: [desc: h.inserted_at],
+            preload: [:from_user, :to_user]
+          ),
+        comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+      ])
+
+    if task.type == :goal do
+      task
+      |> Repo.preload(children: from(t in Task, order_by: [asc: t.position], preload: [:column]))
+    else
+      task
+    end
   end
 
   @doc """
@@ -175,7 +183,8 @@ defmodule Kanban.Tasks do
     prepared_attrs = prepare_task_attrs(attrs, next_position)
 
     # Use string or atom key based on what position key was used
-    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+    identifier_key =
+      if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
 
     Map.put(prepared_attrs, identifier_key, identifier)
   end
@@ -484,6 +493,9 @@ defmodule Kanban.Tasks do
       if is_cross_column_move do
         old_column = Columns.get_column!(old_column_id)
         create_move_history(updated_task, old_column.name, new_column.name)
+
+        # Update parent goal position if this task has a parent
+        update_parent_goal_position(updated_task, old_column_id, new_column.id)
       end
 
       updated_task
@@ -672,43 +684,43 @@ defmodule Kanban.Tasks do
   end
 
   defp generate_identifier(_column, task_type) do
-    # Normalize task_type to atom
-    task_type =
-      case task_type do
-        "work" -> :work
-        "defect" -> :defect
-        atom when is_atom(atom) -> atom
-      end
+    task_type = normalize_task_type(task_type)
+    prefix = get_task_type_prefix(task_type)
+    max_number = get_max_identifier_number(task_type, prefix)
 
-    # Get the prefix for this task type
-    prefix = if task_type == :work, do: "W", else: "D"
-
-    # Find the maximum identifier number for this type across ALL tasks
-    # Since identifier has a global unique constraint, we need global uniqueness
-    max_number =
-      Task
-      |> where([t], t.type == ^task_type)
-      |> select([t], t.identifier)
-      |> Repo.all()
-      |> Enum.map(fn identifier ->
-        # Extract numeric part (e.g., "W11" -> 11, "W01A" -> 1)
-        # Remove prefix and extract only leading digits
-        identifier
-        |> String.replace(prefix, "")
-        |> String.replace(~r/[^0-9].*$/, "")
-        |> case do
-          "" -> 0
-          num_str -> String.to_integer(num_str)
-        end
-      end)
-      |> case do
-        [] -> 0
-        numbers -> Enum.max(numbers)
-      end
-
-    # Generate identifier: W1, W2, D1, D2, etc.
     "#{prefix}#{max_number + 1}"
   end
+
+  defp normalize_task_type(task_type) when is_atom(task_type), do: task_type
+  defp normalize_task_type("work"), do: :work
+  defp normalize_task_type("defect"), do: :defect
+  defp normalize_task_type("goal"), do: :goal
+
+  defp get_task_type_prefix(:work), do: "W"
+  defp get_task_type_prefix(:defect), do: "D"
+  defp get_task_type_prefix(:goal), do: "G"
+
+  defp get_max_identifier_number(task_type, prefix) do
+    Task
+    |> where([t], t.type == ^task_type)
+    |> select([t], t.identifier)
+    |> Repo.all()
+    |> Enum.map(&extract_identifier_number(&1, prefix))
+    |> get_max_number()
+  end
+
+  defp extract_identifier_number(identifier, prefix) do
+    identifier
+    |> String.replace(prefix, "")
+    |> String.replace(~r/[^0-9].*$/, "")
+    |> parse_number()
+  end
+
+  defp parse_number(""), do: 0
+  defp parse_number(num_str), do: String.to_integer(num_str)
+
+  defp get_max_number([]), do: 0
+  defp get_max_number(numbers), do: Enum.max(numbers)
 
   defp create_move_history(task, from_column_name, to_column_name) do
     %TaskHistory{}
@@ -1621,5 +1633,240 @@ defmodule Kanban.Tasks do
       preload: [:column, :assigned_to]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Gets a task with hierarchical tree structure.
+
+  For now, returns just the task itself (1 level) since goal hierarchy is not yet implemented.
+  When goals are added, this will return goal → tasks (2 levels).
+
+  Returns a map with:
+  - task: The full task data
+  - children: Array of child tasks (empty for now, will contain tasks when goals exist)
+  - counts: Statistics about the task tree
+
+  ## Examples
+
+      iex> get_task_tree(123)
+      %{
+        task: %Task{},
+        children: [],
+        counts: %{total: 1, completed: 0, blocked: 0}
+      }
+
+  """
+  def get_task_tree(task_id) when is_integer(task_id) do
+    task = get_task_for_view!(task_id)
+
+    # If this is a goal, query its child tasks
+    children =
+      if task.type == :goal do
+        from(t in Task,
+          where: t.parent_id == ^task_id,
+          order_by: [asc: t.position],
+          preload: [:column, :assigned_to, :created_by, :completed_by, :reviewed_by]
+        )
+        |> Repo.all()
+      else
+        []
+      end
+
+    # Calculate counts including children
+    total_count = 1 + length(children)
+
+    completed_count =
+      if(task.status == :completed, do: 1, else: 0) +
+        Enum.count(children, &(&1.status == :completed))
+
+    blocked_count =
+      if(task.status == :blocked, do: 1, else: 0) +
+        Enum.count(children, &(&1.status == :blocked))
+
+    %{
+      task: task,
+      children: children,
+      counts: %{
+        total: total_count,
+        completed: completed_count,
+        blocked: blocked_count
+      }
+    }
+  end
+
+  @doc """
+  Gets all child tasks for a given parent task (goal).
+
+  ## Examples
+
+      iex> get_task_children(123)
+      [%Task{}, ...]
+
+  """
+  def get_task_children(parent_task_id) do
+    from(t in Task,
+      where: t.parent_id == ^parent_task_id,
+      order_by: [asc: t.position]
+    )
+    |> Repo.all()
+  end
+
+  defp update_parent_goal_position(moving_task, _task_old_column_id, _task_new_column_id) do
+    with {:ok, parent_goal} <- get_parent_goal(moving_task),
+         {:ok, goal_context} <- build_goal_context(parent_goal),
+         {:ok, target_column} <- determine_target_column(goal_context),
+         {:ok, _} <- move_goal_if_needed(parent_goal, target_column, goal_context) do
+      :ok
+    else
+      _ -> :ok
+    end
+  end
+
+  defp get_parent_goal(%{parent_id: nil}), do: :error
+
+  defp get_parent_goal(%{parent_id: parent_id}) do
+    parent_goal = get_task!(parent_id)
+    if parent_goal.type == :goal, do: {:ok, parent_goal}, else: :error
+  end
+
+  defp build_goal_context(parent_goal) do
+    parent_column = Columns.get_column!(parent_goal.column_id)
+
+    all_columns =
+      from(c in Kanban.Columns.Column,
+        where: c.board_id == ^parent_column.board_id,
+        order_by: [asc: c.position]
+      )
+      |> Repo.all()
+
+    column_map = Map.new(all_columns, fn col -> {col.id, col} end)
+
+    children_data =
+      from(t in Task,
+        where: t.parent_id == ^parent_goal.id,
+        select: {t.id, t.column_id}
+      )
+      |> Repo.all()
+
+    if children_data == [] do
+      :error
+    else
+      {:ok,
+       %{
+         all_columns: all_columns,
+         column_map: column_map,
+         children_data: children_data,
+         child_ids: Enum.map(children_data, fn {id, _} -> id end)
+       }}
+    end
+  end
+
+  defp determine_target_column(goal_context) do
+    done_column = find_done_column(goal_context.all_columns)
+
+    all_in_done? =
+      done_column != nil &&
+        Enum.all?(goal_context.children_data, fn {_id, column_id} ->
+          column_id == done_column.id
+        end)
+
+    target_column =
+      if all_in_done? do
+        done_column
+      else
+        goal_context.children_data
+        |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
+        |> Enum.min_by(& &1.position)
+      end
+
+    {:ok, target_column}
+  end
+
+  defp find_done_column(columns) do
+    Enum.find(columns, fn col -> String.downcase(col.name) == "done" end)
+  end
+
+  defp move_goal_if_needed(parent_goal, target_column, goal_context) do
+    children_positions =
+      get_children_positions_in_column(goal_context.child_ids, target_column.id)
+
+    if children_positions == [] do
+      move_goal_to_end_of_column(parent_goal, target_column)
+    else
+      move_goal_before_children(parent_goal, target_column, children_positions)
+    end
+  end
+
+  defp get_children_positions_in_column(child_ids, column_id) do
+    from(t in Task,
+      where: t.id in ^child_ids and t.column_id == ^column_id,
+      select: t.position
+    )
+    |> Repo.all()
+  end
+
+  defp move_goal_to_end_of_column(parent_goal, target_column) do
+    if target_column.id != parent_goal.column_id do
+      last_position =
+        from(t in Task,
+          where: t.column_id == ^target_column.id,
+          select: max(t.position)
+        )
+        |> Repo.one() || -1
+
+      Task
+      |> where([t], t.id == ^parent_goal.id)
+      |> Repo.update_all(set: [column_id: target_column.id, position: last_position + 1])
+
+      updated_goal = get_task!(parent_goal.id)
+      broadcast_task_change(updated_goal, :task_moved)
+      {:ok, :moved}
+    else
+      {:ok, :no_change}
+    end
+  end
+
+  defp move_goal_before_children(parent_goal, target_column, children_positions) do
+    min_child_position = Enum.min(children_positions)
+
+    goal_needs_move =
+      target_column.id != parent_goal.column_id or
+        parent_goal.position > min_child_position
+
+    if goal_needs_move do
+      shift_tasks_and_position_goal(parent_goal, target_column, min_child_position)
+      {:ok, :moved}
+    else
+      {:ok, :no_change}
+    end
+  end
+
+  defp shift_tasks_and_position_goal(parent_goal, target_column, min_child_position) do
+    Task
+    |> where([t], t.id == ^parent_goal.id)
+    |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
+
+    tasks_to_shift =
+      from(t in Task,
+        where:
+          t.column_id == ^target_column.id and t.position >= ^min_child_position and
+            t.id != ^parent_goal.id,
+        select: {t.id, t.position},
+        order_by: [desc: t.position]
+      )
+      |> Repo.all()
+
+    Enum.each(tasks_to_shift, fn {task_id, current_pos} ->
+      Task
+      |> where([t], t.id == ^task_id)
+      |> Repo.update_all(set: [position: current_pos + 1])
+    end)
+
+    Task
+    |> where([t], t.id == ^parent_goal.id)
+    |> Repo.update_all(set: [position: min_child_position])
+
+    updated_goal = get_task!(parent_goal.id)
+    broadcast_task_change(updated_goal, :task_moved)
   end
 end

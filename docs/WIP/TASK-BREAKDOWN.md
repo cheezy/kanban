@@ -140,7 +140,7 @@ POST /api/tasks
 - Top row: Title + identifier badge (G1, G2, etc.)
 - Progress bar below showing "55% (6/11)" format
 - Non-draggable - moves automatically based on child task status
-- Automatically moves to "In Progress" when first task starts
+- Automatically moves to "Doing" when first task starts
 - Automatically moves to "Done" when last task completes
 - Real-time progress updates via PubSub
 

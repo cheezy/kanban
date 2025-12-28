@@ -620,7 +620,22 @@ defmodule KanbanWeb.BoardLive.Show do
         {column.id, Tasks.list_tasks(column)}
       end)
 
-    assign(socket, :tasks_by_column, tasks_by_column)
+    # Calculate progress for each goal task
+    goal_progress =
+      tasks_by_column
+      |> Enum.flat_map(fn {_column_id, tasks} -> tasks end)
+      |> Enum.filter(&(&1.type == :goal))
+      |> Enum.into(%{}, fn goal ->
+        children = Tasks.get_task_children(goal.id)
+        total = length(children)
+        completed = Enum.count(children, &(&1.status == :completed))
+        percentage = if total > 0, do: round(completed / total * 100), else: 0
+        {goal.id, %{total: total, completed: completed, percentage: percentage}}
+      end)
+
+    socket
+    |> assign(:tasks_by_column, tasks_by_column)
+    |> assign(:goal_progress, goal_progress)
   end
 
   defp reload_board_data(socket) do

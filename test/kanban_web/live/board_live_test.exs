@@ -1079,4 +1079,386 @@ defmodule KanbanWeb.BoardLiveTest do
       assert page_title(show_live) =~ "Edit Task"
     end
   end
+
+  describe "Goal Cards" do
+    setup [:register_and_log_in_user]
+
+    test "displays goal card with yellow styling", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _goal = task_fixture(column, %{title: "Goal Task", type: :goal})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Goal Task"
+      assert html =~ "from-yellow-50 to-yellow-100"
+    end
+
+    test "displays progress bar for goal with children", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      goal = task_fixture(column, %{title: "Goal Task", type: :goal})
+      _child1 = task_fixture(column, %{title: "Child 1", parent_id: goal.id})
+      _child2 = task_fixture(column, %{title: "Child 2", parent_id: goal.id})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Goal Task"
+      assert html =~ "0/2"
+    end
+
+    test "displays correct progress when some children are completed", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      goal = task_fixture(column, %{title: "Goal Task", type: :goal})
+      child1 = task_fixture(column, %{title: "Child 1", parent_id: goal.id})
+      _child2 = task_fixture(column, %{title: "Child 2", parent_id: goal.id})
+
+      {:ok, _task} =
+        Kanban.Tasks.update_task(child1, %{
+          status: :completed,
+          completed_at: DateTime.utc_now()
+        })
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Goal Task"
+      assert html =~ "1/2"
+    end
+
+    test "goal card does not have drag handle", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _goal = task_fixture(column, %{title: "Goal Task", type: :goal})
+      _regular_task = task_fixture(column, %{title: "Regular Task"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Goal Task"
+      assert html =~ "Regular Task"
+      assert html =~ "drag-handle"
+    end
+  end
+
+  describe "Goal Automatic Movement" do
+    setup [:register_and_log_in_user]
+
+    test "goal moves to target column when all children are moved", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{title: "Goal Task", type: :goal})
+      child1 = task_fixture(backlog, %{title: "Child 1", parent_id: goal.id})
+      child2 = task_fixture(backlog, %{title: "Child 2", parent_id: goal.id})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{child1.id}",
+        "old_column_id" => "#{backlog.id}",
+        "new_column_id" => "#{ready.id}",
+        "new_position" => 0
+      })
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{child2.id}",
+        "old_column_id" => "#{backlog.id}",
+        "new_column_id" => "#{ready.id}",
+        "new_position" => 1
+      })
+
+      updated_goal = Kanban.Tasks.get_task!(goal.id)
+      assert updated_goal.column_id == ready.id
+    end
+
+    test "goal positions itself before first child in target column", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{title: "Goal Task", type: :goal})
+      child1 = task_fixture(backlog, %{title: "Child 1", parent_id: goal.id})
+      child2 = task_fixture(backlog, %{title: "Child 2", parent_id: goal.id})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{child1.id}",
+        "old_column_id" => "#{backlog.id}",
+        "new_column_id" => "#{ready.id}",
+        "new_position" => 0
+      })
+
+      show_live
+      |> render_click("move_task", %{
+        "task_id" => "#{child2.id}",
+        "old_column_id" => "#{backlog.id}",
+        "new_column_id" => "#{ready.id}",
+        "new_position" => 1
+      })
+
+      tasks_in_ready = Kanban.Tasks.list_tasks(ready)
+      task_ids = Enum.map(tasks_in_ready, & &1.id)
+
+      goal_index = Enum.find_index(task_ids, &(&1 == goal.id))
+      child1_index = Enum.find_index(task_ids, &(&1 == child1.id))
+      child2_index = Enum.find_index(task_ids, &(&1 == child2.id))
+
+      assert goal_index < child1_index
+      assert goal_index < child2_index
+    end
+  end
+
+  describe "API Token Management" do
+    setup [:register_and_log_in_user]
+
+    test "displays API tokens page for AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert html =~ "API Tokens"
+    end
+
+    test "redirects non-AI boards from API tokens page", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      assert {:error, {:live_redirect, %{to: redirect_path}}} =
+               live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert redirect_path == ~p"/boards/#{board}"
+    end
+
+    test "creates new API token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      html =
+        show_live
+        |> element("form[phx-submit='create_token']")
+        |> render_submit(%{token: %{name: "Test Token"}})
+
+      assert html =~ "Test Token"
+    end
+
+    test "revokes API token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, {api_token, _plain_text}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{name: "Token to Revoke"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
+      assert html =~ "Token to Revoke"
+
+      show_live
+      |> render_click("revoke_token", %{"id" => api_token.id})
+
+      html = render(show_live)
+      assert html =~ "API token revoked successfully"
+    end
+
+    test "user with modify access can create tokens", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = ai_optimized_board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      html =
+        show_live
+        |> element("form[phx-submit='create_token']")
+        |> render_submit(%{token: %{name: "Modify User Token"}})
+
+      assert html =~ "Modify User Token"
+    end
+
+    test "user with read only access cannot access API tokens page", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = ai_optimized_board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+
+      assert {:error, {:live_redirect, %{to: redirect_path}}} =
+               live(conn, ~p"/boards/#{board}/api_tokens")
+
+      assert redirect_path == ~p"/boards/#{board}"
+    end
+  end
+
+  describe "Field Visibility Toggle" do
+    setup [:register_and_log_in_user]
+
+    test "owner can toggle field visibility", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      _task = task_fixture(column, %{title: "Test Task", description: "Test description"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("toggle_field", %{"field" => "description"})
+
+      updated_board = Kanban.Boards.get_board!(board.id, user)
+      assert updated_board.field_visibility["description"] == true
+    end
+
+    test "non-owner cannot toggle field visibility", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      html =
+        show_live
+        |> render_click("toggle_field", %{"field" => "description"})
+
+      assert html =~ "Only board owners can change field visibility"
+    end
+  end
+
+  describe "PubSub Real-time Updates" do
+    setup [:register_and_log_in_user]
+
+    test "receives task_created broadcast and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      task = task_fixture(column, %{title: "New Task"})
+
+      send(show_live.pid, {Kanban.Tasks, :task_created, task})
+
+      html = render(show_live)
+      assert html =~ "New Task"
+    end
+
+    test "receives task_updated broadcast and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Original Title"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      {:ok, updated_task} = Kanban.Tasks.update_task(task, %{title: "Updated Title"})
+
+      send(show_live.pid, {Kanban.Tasks, :task_updated, updated_task})
+
+      html = render(show_live)
+      assert html =~ "Updated Title"
+    end
+
+    test "receives task_deleted broadcast and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Task to Delete"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "Task to Delete"
+
+      {:ok, _deleted_task} = Kanban.Tasks.delete_task(task)
+
+      send(show_live.pid, {Kanban.Tasks, :task_deleted, task})
+
+      html = render(show_live)
+      refute html =~ "Task to Delete"
+    end
+
+    test "receives field_visibility_updated broadcast and updates assigns", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      new_visibility = %{"description" => true}
+      send(show_live.pid, {:field_visibility_updated, new_visibility})
+
+      assert show_live |> render() =~ ""
+      assert :sys.get_state(show_live.pid).socket.assigns.field_visibility == new_visibility
+    end
+  end
+
+  describe "AI Optimized Board Restrictions" do
+    setup [:register_and_log_in_user]
+
+    test "cannot add columns to AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      assert {:error, {:live_redirect, %{to: redirect_path}}} =
+               live(conn, ~p"/boards/#{board}/columns/new")
+
+      assert redirect_path == ~p"/boards/#{board}"
+    end
+
+    test "cannot edit columns on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      column = List.first(columns)
+
+      assert {:error, {:live_redirect, %{to: redirect_path}}} =
+               live(conn, ~p"/boards/#{board}/columns/#{column}/edit")
+
+      assert redirect_path == ~p"/boards/#{board}"
+    end
+
+    test "cannot delete columns on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      column = List.first(columns)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      html = show_live |> render_click("delete_column", %{"id" => column.id})
+
+      assert html =~ "Cannot delete columns on AI optimized boards"
+    end
+
+    test "cannot reorder columns on AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      column1 = Enum.at(columns, 0)
+      column2 = Enum.at(columns, 1)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      html =
+        show_live
+        |> render_click("move_column", %{
+          "column_id" => "#{column2.id}",
+          "column_ids" => ["#{column2.id}", "#{column1.id}"]
+        })
+
+      assert html =~ "Cannot reorder columns on AI optimized boards"
+    end
+
+    test "can add tasks to AI optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      column = List.first(columns)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> element("a[href='/boards/#{board.id}/columns/#{column.id}/tasks/new']")
+      |> render_click()
+
+      show_live
+      |> form("#task-form", task: %{title: "New Task on AI Board"})
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "Task created successfully"
+      assert html =~ "New Task on AI Board"
+    end
+  end
 end

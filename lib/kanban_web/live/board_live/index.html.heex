@@ -13,7 +13,12 @@
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </label>
           <ul
@@ -30,7 +35,10 @@
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/boards/new?ai_optimized=true"} class="flex items-start gap-3 py-3">
+              <.link
+                navigate={~p"/boards/new?ai_optimized=true"}
+                class="flex items-start gap-3 py-3"
+              >
                 <.icon name="hero-sparkles" class="h-5 w-5 mt-0.5 flex-shrink-0" />
                 <div>
                   <div class="font-semibold">{gettext("New AI Optimized Board")}</div>

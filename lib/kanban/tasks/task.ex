@@ -10,7 +10,7 @@ defmodule Kanban.Tasks.Task do
     field :description, :string
     field :acceptance_criteria, :string
     field :position, :integer
-    field :type, Ecto.Enum, values: [:work, :defect], default: :work
+    field :type, Ecto.Enum, values: [:work, :defect, :goal], default: :work
     field :priority, Ecto.Enum, values: [:low, :medium, :high, :critical], default: :medium
     field :identifier, :string
 
@@ -79,6 +79,10 @@ defmodule Kanban.Tasks.Task do
     field :review_notes, :string
     field :reviewed_at, :utc_datetime
 
+    # Hierarchy
+    belongs_to :parent, __MODULE__, foreign_key: :parent_id
+    has_many :children, __MODULE__, foreign_key: :parent_id
+
     belongs_to :column, Kanban.Columns.Column
     belongs_to :assigned_to, Kanban.Accounts.User
     belongs_to :created_by, Kanban.Accounts.User
@@ -139,6 +143,7 @@ defmodule Kanban.Tasks.Task do
       :completion_summary,
       # Task relationships (02)
       :dependencies,
+      :parent_id,
       # Status tracking (02)
       :status,
       # Claim tracking (02)
@@ -161,7 +166,7 @@ defmodule Kanban.Tasks.Task do
     |> cast_embed(:verification_steps)
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority, :status])
-    |> validate_inclusion(:type, [:work, :defect])
+    |> validate_inclusion(:type, [:work, :defect, :goal])
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical])
     |> validate_inclusion(:complexity, [:small, :medium, :large])
     |> validate_inclusion(:status, [:open, :in_progress, :completed, :blocked])

@@ -100,5 +100,4 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       assert updated_token.last_used_at != nil
     end
   end
-
 end

@@ -125,6 +125,21 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "bg-red-100 text-red-800"
     end
 
+    test "displays Goal type with yellow badge", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{type: :goal})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Goal"
+      assert result =~ "bg-yellow-100 text-yellow-800"
+    end
+
     test "displays Low priority with blue color", %{board: board} do
       column = column_fixture(board)
       task = task_fixture(column, %{priority: :low})
@@ -900,10 +915,11 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep 2"})
       {:ok, dep3} = Tasks.create_task(column, %{"title" => "Dep 3"})
 
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Test Task",
-        "dependencies" => [dep1.identifier, dep2.identifier, dep3.identifier]
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Test Task",
+          "dependencies" => [dep1.identifier, dep2.identifier, dep3.identifier]
+        })
 
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,
@@ -1206,7 +1222,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           render_component(KanbanWeb.TaskLive.ViewComponent,
             id: "test-view-#{status}",
             task_id: task.id,
-          field_visibility: all_fields_visible()
+            field_visibility: all_fields_visible()
           )
 
         status_label =
@@ -1231,7 +1247,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           render_component(KanbanWeb.TaskLive.ViewComponent,
             id: "test-view-#{complexity}",
             task_id: task.id,
-          field_visibility: all_fields_visible()
+            field_visibility: all_fields_visible()
           )
 
         complexity_label =

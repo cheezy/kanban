@@ -1158,10 +1158,11 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep A"})
       {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep B"})
 
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Test",
-        "dependencies" => [dep1.identifier, dep2.identifier]
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Test",
+          "dependencies" => [dep1.identifier, dep2.identifier]
+        })
 
       {:ok, socket} =
         FormComponent.update(
@@ -1835,8 +1836,15 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       created_task = Kanban.Repo.get_by(Tasks.Task, title: "AI Enhanced Task")
       assert created_task
       assert created_task.security_considerations == ["Hash all tokens", "Use HTTPS only"]
-      assert created_task.testing_strategy["unit_tests"] == ["Test validation", "Test error handling"]
-      assert created_task.integration_points["telemetry_events"] == ["[:kanban, :task, :completed]"]
+
+      assert created_task.testing_strategy["unit_tests"] == [
+               "Test validation",
+               "Test error handling"
+             ]
+
+      assert created_task.integration_points["telemetry_events"] == [
+               "[:kanban, :task, :completed]"
+             ]
     end
   end
 end

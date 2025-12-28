@@ -48,6 +48,7 @@ defmodule KanbanWeb.Router do
     patch "/tasks/:id/mark_done", TaskController, :mark_done
     get "/tasks/:id/dependencies", TaskController, :dependencies
     get "/tasks/:id/dependents", TaskController, :dependents
+    get "/tasks/:id/tree", TaskController, :tree
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

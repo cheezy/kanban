@@ -12,10 +12,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
     user = user_fixture()
     board = ai_optimized_board_fixture(user)
 
-    {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-      "name" => "Test Token",
-      "agent_capabilities" => ["code_generation", "testing"]
-    })
+    {:ok, {_token_struct, plain_token}} =
+      ApiTokens.create_api_token(user, board, %{
+        "name" => "Test Token",
+        "agent_capabilities" => ["code_generation", "testing"]
+      })
 
     column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
 
@@ -88,11 +89,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 401)
     end
 
-    test "tracks AI agent when creating task with agent_model", %{conn: conn, user: user, board: board} do
-      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-        "name" => "AI Agent Token",
-        "agent_model" => "claude-sonnet-4"
-      })
+    test "tracks AI agent when creating task with agent_model", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "AI Agent Token",
+          "agent_model" => "claude-sonnet-4"
+        })
 
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
@@ -101,15 +107,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
       }
 
       conn = post(conn, ~p"/api/tasks", task: task_params)
-      assert %{"id" => _id, "created_by_agent" => created_by_agent} = json_response(conn, 201)["data"]
+
+      assert %{"id" => _id, "created_by_agent" => created_by_agent} =
+               json_response(conn, 201)["data"]
 
       assert created_by_agent == "ai_agent:claude-sonnet-4"
     end
 
-    test "does not track AI agent when creating task without agent_model", %{conn: conn, user: user, board: board} do
-      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-        "name" => "Regular Token"
-      })
+    test "does not track AI agent when creating task without agent_model", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Regular Token"
+        })
 
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
@@ -118,7 +131,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
       }
 
       conn = post(conn, ~p"/api/tasks", task: task_params)
-      assert %{"id" => _id, "created_by_agent" => created_by_agent} = json_response(conn, 201)["data"]
+
+      assert %{"id" => _id, "created_by_agent" => created_by_agent} =
+               json_response(conn, 201)["data"]
 
       assert created_by_agent == nil
     end
@@ -126,17 +141,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "GET /api/tasks" do
     setup %{column: column, user: user} do
-      {:ok, task1} = Tasks.create_task(column, %{
-        "title" => "Task 1",
-        "description" => "First task",
-        "created_by_id" => user.id
-      })
+      {:ok, task1} =
+        Tasks.create_task(column, %{
+          "title" => "Task 1",
+          "description" => "First task",
+          "created_by_id" => user.id
+        })
 
-      {:ok, task2} = Tasks.create_task(column, %{
-        "title" => "Task 2",
-        "description" => "Second task",
-        "created_by_id" => user.id
-      })
+      {:ok, task2} =
+        Tasks.create_task(column, %{
+          "title" => "Task 2",
+          "description" => "Second task",
+          "created_by_id" => user.id
+        })
 
       %{task1: task1, task2: task2}
     end
@@ -173,13 +190,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "GET /api/tasks/:id" do
     setup %{column: column, user: user} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Detailed Task",
-        "description" => "Full details",
-        "complexity" => "large",
-        "why" => "Important reason",
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Detailed Task",
+          "description" => "Full details",
+          "complexity" => "large",
+          "why" => "Important reason",
+          "created_by_id" => user.id
+        })
 
       %{task: task}
     end
@@ -229,12 +247,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "PATCH /api/tasks/:id" do
     setup %{column: column, user: user} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Original Title",
-        "description" => "Original description",
-        "complexity" => "small",
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Original Title",
+          "description" => "Original description",
+          "complexity" => "small",
+          "created_by_id" => user.id
+        })
 
       %{task: task}
     end
@@ -297,10 +316,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
 
-      {:ok, other_task} = Tasks.create_task(other_column, %{
-        "title" => "Other Board Task",
-        "created_by_id" => other_user.id
-      })
+      {:ok, other_task} =
+        Tasks.create_task(other_column, %{
+          "title" => "Other Board Task",
+          "created_by_id" => other_user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/#{other_task.id}")
       assert json_response(conn, 403)
@@ -316,12 +336,17 @@ defmodule KanbanWeb.API.TaskControllerTest do
       %{ready_column: ready_column, doing_column: doing_column}
     end
 
-    test "returns next available task from Ready column", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, task} = Tasks.create_task(ready_column, %{
-        "title" => "Next Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "returns next available task from Ready column", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Next Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -336,27 +361,37 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 404)["error"] =~ "No tasks available"
     end
 
-    test "excludes tasks with status in_progress", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _claimed_task} = Tasks.create_task(ready_column, %{
-        "title" => "Claimed Task",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.utc_now(),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
-        "created_by_id" => user.id
-      })
+    test "excludes tasks with status in_progress", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _claimed_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Claimed Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       assert json_response(conn, 404)
     end
 
-    test "includes tasks with expired claims", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, task} = Tasks.create_task(ready_column, %{
-        "title" => "Expired Claim Task",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.add(DateTime.utc_now(), -3600, :second),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), -60, :second),
-        "created_by_id" => user.id
-      })
+    test "includes tasks with expired claims", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Expired Claim Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.add(DateTime.utc_now(), -3600, :second),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), -60, :second),
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -365,19 +400,21 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "filters by agent capabilities", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _task1} = Tasks.create_task(ready_column, %{
-        "title" => "Requires Testing",
-        "status" => "open",
-        "required_capabilities" => ["testing", "deployment"],
-        "created_by_id" => user.id
-      })
+      {:ok, _task1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Testing",
+          "status" => "open",
+          "required_capabilities" => ["testing", "deployment"],
+          "created_by_id" => user.id
+        })
 
-      {:ok, task2} = Tasks.create_task(ready_column, %{
-        "title" => "Requires Code Gen",
-        "status" => "open",
-        "required_capabilities" => [],
-        "created_by_id" => user.id
-      })
+      {:ok, task2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Code Gen",
+          "status" => "open",
+          "required_capabilities" => [],
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -406,12 +443,18 @@ defmodule KanbanWeb.API.TaskControllerTest do
       %{ready_column: ready_column, doing_column: doing_column}
     end
 
-    test "atomically claims next available task", %{conn: conn, ready_column: ready_column, user: user, doing_column: doing_column} do
-      {:ok, task} = Tasks.create_task(ready_column, %{
-        "title" => "Task to Claim",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "atomically claims next available task", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      doing_column: doing_column
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Task to Claim",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim")
       response = json_response(conn, 200)["data"]
@@ -429,22 +472,31 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 409)["error"] =~ "No tasks available"
     end
 
-    test "prevents double claiming", %{conn: conn, ready_column: ready_column, user: user, board: board} do
-      {:ok, _task} = Tasks.create_task(ready_column, %{
-        "title" => "Only Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "prevents double claiming", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Only Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       user2 = user_fixture()
-      {:ok, {_token_struct, plain_token2}} = Kanban.ApiTokens.create_api_token(user2, board, %{
-        "name" => "Test Token 2",
-        "agent_capabilities" => ["code_generation", "testing"]
-      })
 
-      conn2 = build_conn()
-      |> put_req_header("accept", "application/json")
-      |> put_req_header("authorization", "Bearer #{plain_token2}")
+      {:ok, {_token_struct, plain_token2}} =
+        Kanban.ApiTokens.create_api_token(user2, board, %{
+          "name" => "Test Token 2",
+          "agent_capabilities" => ["code_generation", "testing"]
+        })
+
+      conn2 =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token2}")
 
       conn1_response = post(conn, ~p"/api/tasks/claim")
       assert json_response(conn1_response, 200)
@@ -454,12 +506,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "respects capability requirements", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _task} = Tasks.create_task(ready_column, %{
-        "title" => "Requires Deployment",
-        "status" => "open",
-        "required_capabilities" => ["deployment"],
-        "created_by_id" => user.id
-      })
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Deployment",
+          "status" => "open",
+          "required_capabilities" => ["deployment"],
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim")
       assert json_response(conn, 409)["error"] =~ "No tasks available"
@@ -473,18 +526,25 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 401)
     end
 
-    test "claims specific task by identifier", %{conn: conn, ready_column: ready_column, user: user, doing_column: doing_column} do
-      {:ok, _task1} = Tasks.create_task(ready_column, %{
-        "title" => "First Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "claims specific task by identifier", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      doing_column: doing_column
+    } do
+      {:ok, _task1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "First Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
-      {:ok, task2} = Tasks.create_task(ready_column, %{
-        "title" => "Second Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+      {:ok, task2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Second Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => task2.identifier})
       response = json_response(conn, 200)["data"]
@@ -496,19 +556,25 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["assigned_to_id"] == user.id
     end
 
-    test "returns error when claiming specific task with dependencies", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, dependency_task} = Tasks.create_task(ready_column, %{
-        "title" => "Dependency Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "returns error when claiming specific task with dependencies", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, dependency_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Dependency Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
-      {:ok, blocked_task} = Tasks.create_task(ready_column, %{
-        "title" => "Blocked Task",
-        "status" => "open",
-        "dependencies" => [to_string(dependency_task.id)],
-        "created_by_id" => user.id
-      })
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "status" => "open",
+          "dependencies" => [to_string(dependency_task.id)],
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => blocked_task.identifier})
       response = json_response(conn, 409)
@@ -532,19 +598,25 @@ defmodule KanbanWeb.API.TaskControllerTest do
       ready_column = Enum.find(columns, &(&1.name == "Ready"))
       doing_column = Enum.find(columns, &(&1.name == "Doing"))
 
-      {:ok, task} = Tasks.create_task(doing_column, %{
-        "title" => "Claimed Task",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.utc_now(),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
-        "assigned_to_id" => user.id,
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Claimed Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
 
       %{ready_column: ready_column, doing_column: doing_column, claimed_task: task}
     end
 
-    test "releases claimed task back to Ready column", %{conn: conn, claimed_task: task, ready_column: ready_column, user: _user} do
+    test "releases claimed task back to Ready column", %{
+      conn: conn,
+      claimed_task: task,
+      ready_column: ready_column,
+      user: _user
+    } do
       conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim")
       response = json_response(conn, 200)["data"]
 
@@ -561,33 +633,49 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 200)
     end
 
-    test "returns 403 when unclaiming someone else's task", %{conn: _conn, claimed_task: task, board: board} do
+    test "returns 403 when unclaiming someone else's task", %{
+      conn: _conn,
+      claimed_task: task,
+      board: board
+    } do
       other_user = user_fixture()
-      {:ok, {_token_struct, plain_token}} = Kanban.ApiTokens.create_api_token(other_user, board, %{
-        "name" => "Other Token",
-        "agent_capabilities" => ["code_generation", "testing"]
-      })
 
-      other_conn = build_conn()
-      |> put_req_header("accept", "application/json")
-      |> put_req_header("authorization", "Bearer #{plain_token}")
+      {:ok, {_token_struct, plain_token}} =
+        Kanban.ApiTokens.create_api_token(other_user, board, %{
+          "name" => "Other Token",
+          "agent_capabilities" => ["code_generation", "testing"]
+        })
+
+      other_conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
 
       conn = post(other_conn, ~p"/api/tasks/#{task.id}/unclaim")
       assert json_response(conn, 403)["error"] =~ "You can only unclaim tasks that you claimed"
     end
 
-    test "returns 422 when task is not claimed", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, open_task} = Tasks.create_task(ready_column, %{
-        "title" => "Open Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "returns 422 when task is not claimed", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, open_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Open Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/#{open_task.id}/unclaim")
       assert json_response(conn, 422)["error"] =~ "not currently claimed"
     end
 
-    test "unclaims task using identifier instead of ID", %{conn: conn, claimed_task: task, ready_column: ready_column} do
+    test "unclaims task using identifier instead of ID", %{
+      conn: conn,
+      claimed_task: task,
+      ready_column: ready_column
+    } do
       conn = post(conn, ~p"/api/tasks/#{task.identifier}/unclaim")
       response = json_response(conn, 200)["data"]
 
@@ -611,14 +699,15 @@ defmodule KanbanWeb.API.TaskControllerTest do
       doing_column = Enum.find(columns, &(&1.name == "Doing"))
       review_column = Enum.find(columns, &(&1.name == "Review"))
 
-      {:ok, task} = Tasks.create_task(doing_column, %{
-        "title" => "Test Task",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.utc_now(),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
-        "assigned_to_id" => user.id,
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Test Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
 
       %{
         doing_column: doing_column,
@@ -627,12 +716,17 @@ defmodule KanbanWeb.API.TaskControllerTest do
       }
     end
 
-    test "completes task and moves to Review column", %{conn: conn, task: task, review_column: review_column} do
+    test "completes task and moves to Review column", %{
+      conn: conn,
+      task: task,
+      review_column: review_column
+    } do
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
-          verification_results: %{status: "passed", commands_run: ["mix test"]}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+            verification_results: %{status: "passed", commands_run: ["mix test"]}
+          }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -650,12 +744,17 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["time_spent_minutes"] == 15
     end
 
-    test "completes task using identifier instead of ID", %{conn: conn, task: task, review_column: review_column} do
+    test "completes task using identifier instead of ID", %{
+      conn: conn,
+      task: task,
+      review_column: review_column
+    } do
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
-          verification_results: %{status: "passed", commands_run: ["mix test"]}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+            verification_results: %{status: "passed", commands_run: ["mix test"]}
+          }),
         "actual_complexity" => "small",
         "actual_files_changed" => "1",
         "time_spent_minutes" => 10
@@ -683,10 +782,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
     test "returns 422 when actual_complexity is invalid", %{conn: conn, task: task} do
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [],
-          verification_results: %{status: "passed"}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [],
+            verification_results: %{status: "passed"}
+          }),
         "actual_complexity" => "invalid",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -700,19 +800,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
     test "returns 403 when completing someone else's task", %{task: task, board: board} do
       other_user = user_fixture(%{email: "other@example.com"})
-      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(other_user, board, %{
-        "name" => "Other Token"
-      })
+
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(other_user, board, %{
+          "name" => "Other Token"
+        })
 
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [],
-          verification_results: %{status: "passed"}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [],
+            verification_results: %{status: "passed"}
+          }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -728,17 +831,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
       columns = Columns.list_columns(board)
       ready_column = Enum.find(columns, &(&1.name == "Ready"))
 
-      {:ok, open_task} = Tasks.create_task(ready_column, %{
-        "title" => "Open Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+      {:ok, open_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Open Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [],
-          verification_results: %{status: "passed"}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [],
+            verification_results: %{status: "passed"}
+          }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -750,21 +855,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] =~ "must be in progress or blocked"
     end
 
-    test "tracks AI agent when completing task with agent_model", %{task: task, user: user, board: board} do
-      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-        "name" => "AI Agent Token",
-        "agent_model" => "claude-sonnet-4"
-      })
+    test "tracks AI agent when completing task with agent_model", %{
+      task: task,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "AI Agent Token",
+          "agent_model" => "claude-sonnet-4"
+        })
 
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
-          verification_results: %{status: "passed", commands_run: ["mix test"]}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+            verification_results: %{status: "passed", commands_run: ["mix test"]}
+          }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -776,20 +887,26 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["completed_by_agent"] == "ai_agent:claude-sonnet-4"
     end
 
-    test "does not track AI agent when completing task without agent_model", %{task: task, user: user, board: board} do
-      {:ok, {_token_struct, plain_token}} = ApiTokens.create_api_token(user, board, %{
-        "name" => "Regular Token"
-      })
+    test "does not track AI agent when completing task without agent_model", %{
+      task: task,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Regular Token"
+        })
 
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
       completion_params = %{
-        "completion_summary" => Jason.encode!(%{
-          files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
-          verification_results: %{status: "passed", commands_run: ["mix test"]}
-        }),
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+            verification_results: %{status: "passed", commands_run: ["mix test"]}
+          }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
         "time_spent_minutes" => 15
@@ -809,21 +926,23 @@ defmodule KanbanWeb.API.TaskControllerTest do
       doing_column = Enum.find(columns, &(&1.name == "Doing"))
       done_column = Enum.find(columns, &(&1.name == "Done"))
 
-      {:ok, completed_task} = Tasks.create_task(done_column, %{
-        "title" => "Completed Dependency",
-        "status" => "completed",
-        "completed_at" => DateTime.utc_now(),
-        "created_by_id" => user.id
-      })
+      {:ok, completed_task} =
+        Tasks.create_task(done_column, %{
+          "title" => "Completed Dependency",
+          "status" => "completed",
+          "completed_at" => DateTime.utc_now(),
+          "created_by_id" => user.id
+        })
 
-      {:ok, incomplete_task} = Tasks.create_task(doing_column, %{
-        "title" => "Incomplete Dependency",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.utc_now(),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
-        "assigned_to_id" => user.id,
-        "created_by_id" => user.id
-      })
+      {:ok, incomplete_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Incomplete Dependency",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
 
       %{
         ready_column: ready_column,
@@ -839,19 +958,21 @@ defmodule KanbanWeb.API.TaskControllerTest do
       user: user,
       incomplete_task: incomplete_task
     } do
-      {:ok, _available_task} = Tasks.create_task(ready_column, %{
-        "title" => "Available Task",
-        "status" => "open",
-        "dependencies" => [],
-        "created_by_id" => user.id
-      })
+      {:ok, _available_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Available Task",
+          "status" => "open",
+          "dependencies" => [],
+          "created_by_id" => user.id
+        })
 
-      {:ok, _blocked_task} = Tasks.create_task(ready_column, %{
-        "title" => "Blocked Task",
-        "status" => "open",
-        "dependencies" => [to_string(incomplete_task.id)],
-        "created_by_id" => user.id
-      })
+      {:ok, _blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "status" => "open",
+          "dependencies" => [to_string(incomplete_task.id)],
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -859,13 +980,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["title"] == "Available Task"
     end
 
-    test "GET /api/tasks/next returns task when all dependencies completed", %{conn: conn, ready_column: ready_column, user: user, completed_task: completed_task} do
-      {:ok, task} = Tasks.create_task(ready_column, %{
-        "title" => "Ready Task",
-        "status" => "open",
-        "dependencies" => [completed_task.identifier],
-        "created_by_id" => user.id
-      })
+    test "GET /api/tasks/next returns task when all dependencies completed", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      completed_task: completed_task
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Ready Task",
+          "status" => "open",
+          "dependencies" => [completed_task.identifier],
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -873,20 +1000,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["id"] == task.id
     end
 
-    test "POST /api/tasks/claim skips tasks with incomplete dependencies", %{conn: conn, ready_column: ready_column, user: user, incomplete_task: incomplete_task} do
-      {:ok, _available_task} = Tasks.create_task(ready_column, %{
-        "title" => "Available Task for Claim",
-        "status" => "open",
-        "dependencies" => [],
-        "created_by_id" => user.id
-      })
+    test "POST /api/tasks/claim skips tasks with incomplete dependencies", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      incomplete_task: incomplete_task
+    } do
+      {:ok, _available_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Available Task for Claim",
+          "status" => "open",
+          "dependencies" => [],
+          "created_by_id" => user.id
+        })
 
-      {:ok, _blocked_task} = Tasks.create_task(ready_column, %{
-        "title" => "Blocked Task",
-        "status" => "open",
-        "dependencies" => [to_string(incomplete_task.id)],
-        "created_by_id" => user.id
-      })
+      {:ok, _blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "status" => "open",
+          "dependencies" => [to_string(incomplete_task.id)],
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim")
       response = json_response(conn, 200)["data"]
@@ -902,39 +1036,50 @@ defmodule KanbanWeb.API.TaskControllerTest do
       ready_column = Enum.find(columns, &(&1.name == "Ready"))
       doing_column = Enum.find(columns, &(&1.name == "Doing"))
 
-      {:ok, in_progress_task} = Tasks.create_task(doing_column, %{
-        "title" => "In Progress Task",
-        "status" => "in_progress",
-        "claimed_at" => DateTime.utc_now(),
-        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
-        "assigned_to_id" => user.id,
-        "key_files" => [
-          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Core tasks", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+      {:ok, in_progress_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "In Progress Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "key_files" => [
+            %{"file_path" => "lib/kanban/tasks.ex", "note" => "Core tasks", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
-      %{ready_column: ready_column, doing_column: doing_column, in_progress_task: in_progress_task}
+      %{
+        ready_column: ready_column,
+        doing_column: doing_column,
+        in_progress_task: in_progress_task
+      }
     end
 
-    test "GET /api/tasks/next skips tasks with conflicting key files", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _safe_task} = Tasks.create_task(ready_column, %{
-        "title" => "Safe Task",
-        "status" => "open",
-        "key_files" => [
-          %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+    test "GET /api/tasks/next skips tasks with conflicting key files", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _safe_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Safe Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
-      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
-        "title" => "Conflicting Task",
-        "status" => "open",
-        "key_files" => [
-          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+      {:ok, _conflicting_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicting Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -942,24 +1087,30 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["title"] == "Safe Task"
     end
 
-    test "POST /api/tasks/claim skips tasks with conflicting key files", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _safe_task} = Tasks.create_task(ready_column, %{
-        "title" => "Safe Task for Claim",
-        "status" => "open",
-        "key_files" => [
-          %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+    test "POST /api/tasks/claim skips tasks with conflicting key files", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _safe_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Safe Task for Claim",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/kanban/boards.ex", "note" => "Different file", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
-      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
-        "title" => "Conflicting Task",
-        "status" => "open",
-        "key_files" => [
-          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+      {:ok, _conflicting_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicting Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
       conn = post(conn, ~p"/api/tasks/claim")
       response = json_response(conn, 200)["data"]
@@ -967,21 +1118,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["title"] == "Safe Task for Claim"
     end
 
-    test "GET /api/tasks/next returns task with no key files when conflicts exist", %{conn: conn, ready_column: ready_column, user: user} do
-      {:ok, _no_files_task} = Tasks.create_task(ready_column, %{
-        "title" => "No Files Task",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "GET /api/tasks/next returns task with no key files when conflicts exist", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _no_files_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "No Files Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
-      {:ok, _conflicting_task} = Tasks.create_task(ready_column, %{
-        "title" => "Conflicting Task",
-        "status" => "open",
-        "key_files" => [
-          %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
-        ],
-        "created_by_id" => user.id
-      })
+      {:ok, _conflicting_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicting Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/kanban/tasks.ex", "note" => "Same file", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
 
       conn = get(conn, ~p"/api/tasks/next")
       response = json_response(conn, 200)["data"]
@@ -1008,11 +1165,12 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "task identifier operations" do
     setup %{column: column, user: user} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Identifier Test Task",
-        "description" => "For testing identifier-based operations",
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Identifier Test Task",
+          "description" => "For testing identifier-based operations",
+          "created_by_id" => user.id
+        })
 
       %{task: task}
     end
@@ -1227,12 +1385,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
       review_column = Enum.find(columns, &(&1.name == "Review"))
       done_column = Enum.find(columns, &(&1.name == "Done"))
 
-      {:ok, task} = Tasks.create_task(review_column, %{
-        "title" => "Task to mark done",
-        "status" => "in_progress",
-        "assigned_to_id" => user.id,
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task to mark done",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
       response = json_response(conn, 200)["data"]
@@ -1245,12 +1404,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
     test "marks task as done using identifier", %{conn: conn, board: board, user: user} do
       review_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Review"))
 
-      {:ok, task} = Tasks.create_task(review_column, %{
-        "title" => "Task to mark done",
-        "status" => "in_progress",
-        "assigned_to_id" => user.id,
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task to mark done",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
 
       conn = patch(conn, ~p"/api/tasks/#{task.identifier}/mark_done")
       response = json_response(conn, 200)["data"]
@@ -1262,10 +1422,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
     test "returns 422 when task is not in Review column", %{conn: conn, board: board, user: user} do
       backlog_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
 
-      {:ok, task} = Tasks.create_task(backlog_column, %{
-        "title" => "Task not in review",
-        "created_by_id" => user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(backlog_column, %{
+          "title" => "Task not in review",
+          "created_by_id" => user.id
+        })
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
       assert json_response(conn, 422)["error"] =~ "Task must be in Review column"
@@ -1276,10 +1437,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
       other_board = ai_optimized_board_fixture(other_user)
       review_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Review"))
 
-      {:ok, task} = Tasks.create_task(review_column, %{
-        "title" => "Task on other board",
-        "created_by_id" => other_user.id
-      })
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Task on other board",
+          "created_by_id" => other_user.id
+        })
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
@@ -1288,10 +1450,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "GET /api/tasks/:id/dependencies" do
     test "returns dependency tree for task without dependencies", %{conn: conn, column: column} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task"
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
       response = json_response(conn, 200)
@@ -1302,16 +1464,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns single level dependency tree", %{conn: conn, column: column} do
-      {:ok, dep_task} = Tasks.create_task(column, %{
-        "title" => "Dependency",
+      {:ok, dep_task} =
+        Tasks.create_task(column, %{
+          "title" => "Dependency"
+        })
 
-      })
-
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-
-        "dependencies" => [dep_task.identifier]
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task",
+          "dependencies" => [dep_task.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
       response = json_response(conn, 200)
@@ -1323,19 +1485,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns nested dependency tree", %{conn: conn, column: column} do
-      {:ok, dep1} = Tasks.create_task(column, %{
-        "title" => "Dependency 1",
-      })
+      {:ok, dep1} =
+        Tasks.create_task(column, %{
+          "title" => "Dependency 1"
+        })
 
-      {:ok, dep2} = Tasks.create_task(column, %{
-        "title" => "Dependency 2",
-        "dependencies" => [dep1.identifier]
-      })
+      {:ok, dep2} =
+        Tasks.create_task(column, %{
+          "title" => "Dependency 2",
+          "dependencies" => [dep1.identifier]
+        })
 
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-        "dependencies" => [dep2.identifier]
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task",
+          "dependencies" => [dep2.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
       response = json_response(conn, 200)
@@ -1350,14 +1515,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "works with task identifier instead of ID", %{conn: conn, column: column} do
-      {:ok, dep_task} = Tasks.create_task(column, %{
-        "title" => "Dependency",
-      })
+      {:ok, dep_task} =
+        Tasks.create_task(column, %{
+          "title" => "Dependency"
+        })
 
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-        "dependencies" => [dep_task.identifier]
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task",
+          "dependencies" => [dep_task.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.identifier}/dependencies")
       response = json_response(conn, 200)
@@ -1372,9 +1539,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> List.first()
 
-      {:ok, task} = Tasks.create_task(other_column, %{
-        "title" => "Task on other board"
-      })
+      {:ok, task} =
+        Tasks.create_task(other_column, %{
+          "title" => "Task on other board"
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
@@ -1383,10 +1551,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   describe "GET /api/tasks/:id/dependents" do
     test "returns empty list for task without dependents", %{conn: conn, column: column} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task"
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
       response = json_response(conn, 200)
@@ -1397,15 +1565,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns single dependent task", %{conn: conn, column: column} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task"
+        })
 
-      })
-
-      {:ok, dependent} = Tasks.create_task(column, %{
-        "title" => "Dependent",
-        "dependencies" => [task.identifier]
-      })
+      {:ok, dependent} =
+        Tasks.create_task(column, %{
+          "title" => "Dependent",
+          "dependencies" => [task.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
       response = json_response(conn, 200)
@@ -1417,20 +1586,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns multiple dependent tasks", %{conn: conn, column: column} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task"
+        })
 
-      })
+      {:ok, dependent1} =
+        Tasks.create_task(column, %{
+          "title" => "Dependent 1",
+          "dependencies" => [task.identifier]
+        })
 
-      {:ok, dependent1} = Tasks.create_task(column, %{
-        "title" => "Dependent 1",
-        "dependencies" => [task.identifier]
-      })
-
-      {:ok, dependent2} = Tasks.create_task(column, %{
-        "title" => "Dependent 2",
-        "dependencies" => [task.identifier]
-      })
+      {:ok, dependent2} =
+        Tasks.create_task(column, %{
+          "title" => "Dependent 2",
+          "dependencies" => [task.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
       response = json_response(conn, 200)
@@ -1444,14 +1615,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "works with task identifier instead of ID", %{conn: conn, column: column} do
-      {:ok, task} = Tasks.create_task(column, %{
-        "title" => "Task",
-      })
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task"
+        })
 
-      {:ok, dependent} = Tasks.create_task(column, %{
-        "title" => "Dependent",
-        "dependencies" => [task.identifier]
-      })
+      {:ok, dependent} =
+        Tasks.create_task(column, %{
+          "title" => "Dependent",
+          "dependencies" => [task.identifier]
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.identifier}/dependents")
       response = json_response(conn, 200)
@@ -1466,10 +1639,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> List.first()
 
-      {:ok, task} = Tasks.create_task(other_column, %{
-        "title" => "Task on other board",
-
-      })
+      {:ok, task} =
+        Tasks.create_task(other_column, %{
+          "title" => "Task on other board"
+        })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"

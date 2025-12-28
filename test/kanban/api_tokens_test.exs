@@ -43,7 +43,10 @@ defmodule Kanban.ApiTokensTest do
     test "get_api_token_by_token/1 returns {:ok, token} for valid non-revoked token" do
       user = user_fixture()
       board = board_fixture(user)
-      {:ok, {_api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      {:ok, {_api_token, plain_text_token}} =
+        ApiTokens.create_api_token(user, board, @valid_attrs)
+
       assert {:ok, found_token} = ApiTokens.get_api_token_by_token(plain_text_token)
       assert found_token.name == "Test Token"
       assert found_token.user.id == user.id
@@ -65,7 +68,10 @@ defmodule Kanban.ApiTokensTest do
     test "create_api_token/3 with valid data creates an api_token" do
       user = user_fixture()
       board = board_fixture(user)
-      assert {:ok, {%ApiToken{} = api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      assert {:ok, {%ApiToken{} = api_token, plain_text_token}} =
+               ApiTokens.create_api_token(user, board, @valid_attrs)
+
       assert api_token.name == "Test Token"
       assert api_token.agent_model == "claude-3-opus"
       assert api_token.agent_version == "v1.0"

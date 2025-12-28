@@ -9,6 +9,16 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: data(task)}
   end
 
+  def tree(%{tree: tree}) do
+    %{
+      data: %{
+        task: data(tree.task),
+        children: Enum.map(tree.children, &data/1),
+        counts: tree.counts
+      }
+    }
+  end
+
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp data(%Task{} = task) do
     %{
@@ -22,6 +32,7 @@ defmodule KanbanWeb.API.TaskJSON do
       identifier: task.identifier,
       column_id: task.column_id,
       assigned_to_id: task.assigned_to_id,
+      parent_id: task.parent_id,
       complexity: task.complexity,
       estimated_files: task.estimated_files,
       why: task.why,
@@ -94,16 +105,19 @@ defmodule KanbanWeb.API.TaskJSON do
 
   def error(%{changeset: changeset}) do
     %{
-      errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-        Enum.reduce(opts, msg, fn {key, value}, acc ->
-          string_value = if is_binary(value) or is_number(value) or is_atom(value) do
-            to_string(value)
-          else
-            inspect(value)
-          end
-          String.replace(acc, "%{#{key}}", string_value)
+      errors:
+        Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+          Enum.reduce(opts, msg, fn {key, value}, acc ->
+            string_value =
+              if is_binary(value) or is_number(value) or is_atom(value) do
+                to_string(value)
+              else
+                inspect(value)
+              end
+
+            String.replace(acc, "%{#{key}}", string_value)
+          end)
         end)
-      end)
     }
   end
 end

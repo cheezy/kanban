@@ -247,8 +247,7 @@ defmodule KanbanWeb.API.TaskController do
           conn
           |> put_status(:unprocessable_entity)
           |> json(%{
-            error:
-              "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
+            error: "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
           })
 
         {:error, changeset} ->
@@ -316,12 +315,32 @@ defmodule KanbanWeb.API.TaskController do
       |> json(%{error: "Task does not belong to this board"})
     else
       dependent_tasks = Tasks.get_dependent_tasks(task)
-      emit_telemetry(conn, :dependents_fetched, %{task_id: task.id, count: length(dependent_tasks)})
+
+      emit_telemetry(conn, :dependents_fetched, %{
+        task_id: task.id,
+        count: length(dependent_tasks)
+      })
 
       json(conn, %{
         task: render_task_summary(task),
         dependents: Enum.map(dependent_tasks, &render_task_summary/1)
       })
+    end
+  end
+
+  def tree(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+    task = get_task_by_id_or_identifier!(id_or_identifier, board)
+
+    if task.column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Task does not belong to this board"})
+    else
+      tree_data = Tasks.get_task_tree(task.id)
+      emit_telemetry(conn, :task_tree_fetched, %{task_id: task.id})
+
+      render(conn, :tree, tree: tree_data)
     end
   end
 

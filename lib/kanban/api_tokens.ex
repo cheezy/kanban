@@ -194,5 +194,4 @@ defmodule Kanban.ApiTokens do
       %{user_id: api_token.user_id, token_id: api_token.id}
     )
   end
-
 end

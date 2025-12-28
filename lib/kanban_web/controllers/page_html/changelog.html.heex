@@ -52,14 +52,35 @@
                   {gettext("Smart Review Processing")}
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("New mark_reviewed endpoint that intelligently routes tasks based on review status:")}
+                  {gettext(
+                    "New mark_reviewed endpoint that intelligently routes tasks based on review status:"
+                  )}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li><strong>PATCH /api/tasks/:id/mark_reviewed</strong> - {gettext("Process reviewed tasks with automatic routing")}</li>
-                  <li>{gettext("If review_status == \"approved\": Moves task from Review to Done column, sets status to :completed")}</li>
-                  <li>{gettext("If review_status in [\"changes_requested\", \"rejected\"]: Moves task back to Doing column, keeps status as :in_progress")}</li>
-                  <li>{gettext("Returns 422 error if task not in Review column or review_status not set")}</li>
-                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W14\")")}</li>
+                  <li>
+                    <strong>PATCH /api/tasks/:id/mark_reviewed</strong>
+                    - {gettext("Process reviewed tasks with automatic routing")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "If review_status == \"approved\": Moves task from Review to Done column, sets status to :completed"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "If review_status in [\"changes_requested\", \"rejected\"]: Moves task back to Doing column, keeps status as :in_progress"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Returns 422 error if task not in Review column or review_status not set"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\")"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -71,12 +92,22 @@
                   {gettext("Improved human-AI collaboration on task review:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Human reviews task in Review column and sets review_status field")}</li>
+                  <li>
+                    {gettext("Human reviews task in Review column and sets review_status field")}
+                  </li>
                   <li>{gettext("Human adds review_notes to guide AI on required changes")}</li>
                   <li>{gettext("Human notifies AI that review is complete")}</li>
-                  <li>{gettext("AI calls /mark_reviewed to automatically route task based on review outcome")}</li>
-                  <li>{gettext("Eliminates need for polling - explicit notification-based workflow")}</li>
-                  <li>{gettext("Agent can read review_notes to understand what needs to be fixed")}</li>
+                  <li>
+                    {gettext(
+                      "AI calls /mark_reviewed to automatically route task based on review outcome"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Eliminates need for polling - explicit notification-based workflow")}
+                  </li>
+                  <li>
+                    {gettext("Agent can read review_notes to understand what needs to be fixed")}
+                  </li>
                 </ul>
               </div>
 
@@ -88,8 +119,14 @@
                   {gettext("Comprehensive tracking of review outcomes:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Emits [:kanban, :task, :completed] when task approved and moved to Done")}</li>
-                  <li>{gettext("Emits [:kanban, :task, :returned_to_doing] when task needs changes")}</li>
+                  <li>
+                    {gettext(
+                      "Emits [:kanban, :task, :completed] when task approved and moved to Done"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Emits [:kanban, :task, :returned_to_doing] when task needs changes")}
+                  </li>
                   <li>{gettext("Tracks review status in telemetry metadata")}</li>
                   <li>{gettext("Logs reviewer information with reviewed_by_id field")}</li>
                 </ul>
@@ -103,7 +140,9 @@
                   {gettext("Preserved existing endpoints:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("mark_done endpoint still available but marked as deprecated")}</li>
+                  <li>
+                    {gettext("mark_done endpoint still available but marked as deprecated")}
+                  </li>
                   <li>{gettext("Both endpoints coexist for gradual migration")}</li>
                   <li>{gettext("New workflow recommended for all new integrations")}</li>
                 </ul>
@@ -123,10 +162,22 @@
                   {gettext("Tasks created via API now track the AI agent model:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Added created_by_agent field to store agent information in format \"ai_agent:model_name\"")}</li>
-                  <li>{gettext("Automatically populated when API token has agent_model configured")}</li>
-                  <li>{gettext("Visible indicator (purple CPU chip icon) on task cards for AI-created tasks")}</li>
-                  <li>{gettext("Helps track which tasks were created by AI agents vs. human users")}</li>
+                  <li>
+                    {gettext(
+                      "Added created_by_agent field to store agent information in format \"ai_agent:model_name\""
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Automatically populated when API token has agent_model configured")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Visible indicator (purple CPU chip icon) on task cards for AI-created tasks"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Helps track which tasks were created by AI agents vs. human users")}
+                  </li>
                 </ul>
               </div>
 
@@ -138,9 +189,19 @@
                   {gettext("Tasks completed via API now track the AI agent model:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Added completed_by_agent field to store agent information in format \"ai_agent:model_name\"")}</li>
-                  <li>{gettext("Automatically populated when API token has agent_model configured during task completion")}</li>
-                  <li>{gettext("Provides audit trail of which AI agent completed specific tasks")}</li>
+                  <li>
+                    {gettext(
+                      "Added completed_by_agent field to store agent information in format \"ai_agent:model_name\""
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Automatically populated when API token has agent_model configured during task completion"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Provides audit trail of which AI agent completed specific tasks")}
+                  </li>
                 </ul>
               </div>
 
@@ -165,9 +226,19 @@
                   {gettext("Enhanced API token model to support agent metadata:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("agent_model field stores the model identifier (e.g., \"claude-sonnet-4\")")}</li>
-                  <li>{gettext("Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers")}</li>
-                  <li>{gettext("Only adds metadata when agent_model is present on the token")}</li>
+                  <li>
+                    {gettext(
+                      "agent_model field stores the model identifier (e.g., \"claude-sonnet-4\")"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Only adds metadata when agent_model is present on the token")}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -195,10 +266,24 @@
                   {gettext("Tasks can now have dependencies on other tasks with full validation:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Tasks can specify dependencies using task identifiers (e.g., \"W14\", \"W15\")")}</li>
-                  <li>{gettext("Circular dependency detection prevents invalid dependency relationships")}</li>
-                  <li>{gettext("Automatic task status management based on dependency completion")}</li>
-                  <li>{gettext("Visual blocked indicator on task cards when dependencies are incomplete")}</li>
+                  <li>
+                    {gettext(
+                      "Tasks can specify dependencies using task identifiers (e.g., \"W14\", \"W15\")"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Circular dependency detection prevents invalid dependency relationships"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Automatic task status management based on dependency completion")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Visual blocked indicator on task cards when dependencies are incomplete"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -210,10 +295,22 @@
                   {gettext("Task status automatically updates based on dependencies:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("When a task has incomplete dependencies, status changes to :blocked")}</li>
-                  <li>{gettext("When all dependencies are completed, task automatically unblocks")}</li>
-                  <li>{gettext("Blocking status checked on task creation, update, and dependency completion")}</li>
-                  <li>{gettext("Dependent tasks automatically unblocked when a task is marked done")}</li>
+                  <li>
+                    {gettext(
+                      "When a task has incomplete dependencies, status changes to :blocked"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("When all dependencies are completed, task automatically unblocks")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Blocking status checked on task creation, update, and dependency completion"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Dependent tasks automatically unblocked when a task is marked done")}
+                  </li>
                 </ul>
               </div>
 
@@ -226,13 +323,17 @@
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>GET /api/tasks/:id/dependencies</strong> - {gettext("Returns full dependency tree for a task")}
+                    <strong>GET /api/tasks/:id/dependencies</strong>
+                    - {gettext("Returns full dependency tree for a task")}
                   </li>
                   <li>
-                    <strong>GET /api/tasks/:id/dependents</strong> - {gettext("Returns all tasks that depend on this task")}
+                    <strong>GET /api/tasks/:id/dependents</strong>
+                    - {gettext("Returns all tasks that depend on this task")}
                   </li>
                   <li>{gettext("Supports both numeric IDs and human-readable identifiers")}</li>
-                  <li>{gettext("Recursive dependency tree structure with nested dependencies")}</li>
+                  <li>
+                    {gettext("Recursive dependency tree structure with nested dependencies")}
+                  </li>
                 </ul>
               </div>
 
@@ -244,10 +345,16 @@
                   {gettext("Comprehensive validation to ensure data integrity:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Circular dependency detection using depth-first search with visited tracking")}</li>
+                  <li>
+                    {gettext(
+                      "Circular dependency detection using depth-first search with visited tracking"
+                    )}
+                  </li>
                   <li>{gettext("Prevention of task deletion when other tasks depend on it")}</li>
                   <li>{gettext("Prevention of self-dependencies")}</li>
-                  <li>{gettext("PostgreSQL array operations for efficient dependency queries")}</li>
+                  <li>
+                    {gettext("PostgreSQL array operations for efficient dependency queries")}
+                  </li>
                 </ul>
               </div>
 
@@ -280,9 +387,19 @@
                 {gettext("Fixed issue preventing review status updates on tasks:")}
               </p>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Added automatic population of reviewed_at and reviewed_by_id when review status changes")}</li>
-                <li>{gettext("Added missing handle_info handler for :task_reviewed PubSub events")}</li>
-                <li>{gettext("Form component now properly receives user context for review metadata")}</li>
+                <li>
+                  {gettext(
+                    "Added automatic population of reviewed_at and reviewed_by_id when review status changes"
+                  )}
+                </li>
+                <li>
+                  {gettext("Added missing handle_info handler for :task_reviewed PubSub events")}
+                </li>
+                <li>
+                  {gettext(
+                    "Form component now properly receives user context for review metadata"
+                  )}
+                </li>
               </ul>
             </div>
           </div>
@@ -310,18 +427,46 @@
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>PATCH /api/tasks/:id/complete</strong> - {gettext("Complete a task by moving it from Doing to Review column with completion summary")}
+                    <strong>PATCH /api/tasks/:id/complete</strong>
+                    - {gettext(
+                      "Complete a task by moving it from Doing to Review column with completion summary"
+                    )}
                   </li>
-                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W16\") for task completion")}</li>
-                  <li>{gettext("Status remains \"in_progress\" (final completion to Done column handled by separate endpoint)")}</li>
+                  <li>
+                    {gettext(
+                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W16\") for task completion"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Status remains \"in_progress\" (final completion to Done column handled by separate endpoint)"
+                    )}
+                  </li>
                   <li>{gettext("Stores detailed completion metadata including:")}</li>
                 </ul>
                 <ul class="list-disc list-inside ml-12 space-y-1 text-base-content opacity-70 mt-2">
-                  <li><code class="text-sm">completion_summary</code> - {gettext("JSON string with comprehensive completion details (files changed, verification results, implementation notes)")}</li>
-                  <li><code class="text-sm">actual_complexity</code> - {gettext("Actual complexity experienced (small, medium, large)")}</li>
-                  <li><code class="text-sm">actual_files_changed</code> - {gettext("String count of files modified during implementation")}</li>
-                  <li><code class="text-sm">time_spent_minutes</code> - {gettext("Integer minutes spent on the task")}</li>
-                  <li><code class="text-sm">completed_by_id</code> - {gettext("User ID of the completer")}</li>
+                  <li>
+                    <code class="text-sm">completion_summary</code>
+                    - {gettext(
+                      "JSON string with comprehensive completion details (files changed, verification results, implementation notes)"
+                    )}
+                  </li>
+                  <li>
+                    <code class="text-sm">actual_complexity</code>
+                    - {gettext("Actual complexity experienced (small, medium, large)")}
+                  </li>
+                  <li>
+                    <code class="text-sm">actual_files_changed</code>
+                    - {gettext("String count of files modified during implementation")}
+                  </li>
+                  <li>
+                    <code class="text-sm">time_spent_minutes</code>
+                    - {gettext("Integer minutes spent on the task")}
+                  </li>
+                  <li>
+                    <code class="text-sm">completed_by_id</code>
+                    - {gettext("User ID of the completer")}
+                  </li>
                 </ul>
               </div>
 
@@ -333,14 +478,38 @@
                   {gettext("Supports rich completion data in JSON format:")}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li><code class="text-sm">files_changed</code> - {gettext("Array of file paths and what changed in each")}</li>
-                  <li><code class="text-sm">tests_added</code> - {gettext("Array of test files created")}</li>
-                  <li><code class="text-sm">verification_results</code> - {gettext("Commands run, status (passed/failed), and output")}</li>
-                  <li><code class="text-sm">implementation_notes</code> - {gettext("Deviations, discoveries, and edge cases encountered")}</li>
-                  <li><code class="text-sm">estimation_feedback</code> - {gettext("Comparison of estimated vs actual complexity, files, and time")}</li>
-                  <li><code class="text-sm">telemetry_added</code> - {gettext("Array of telemetry events added")}</li>
-                  <li><code class="text-sm">follow_up_tasks</code> - {gettext("Array of follow-up work identified")}</li>
-                  <li><code class="text-sm">known_limitations</code> - {gettext("Array of limitations or constraints")}</li>
+                  <li>
+                    <code class="text-sm">files_changed</code>
+                    - {gettext("Array of file paths and what changed in each")}
+                  </li>
+                  <li>
+                    <code class="text-sm">tests_added</code>
+                    - {gettext("Array of test files created")}
+                  </li>
+                  <li>
+                    <code class="text-sm">verification_results</code>
+                    - {gettext("Commands run, status (passed/failed), and output")}
+                  </li>
+                  <li>
+                    <code class="text-sm">implementation_notes</code>
+                    - {gettext("Deviations, discoveries, and edge cases encountered")}
+                  </li>
+                  <li>
+                    <code class="text-sm">estimation_feedback</code>
+                    - {gettext("Comparison of estimated vs actual complexity, files, and time")}
+                  </li>
+                  <li>
+                    <code class="text-sm">telemetry_added</code>
+                    - {gettext("Array of telemetry events added")}
+                  </li>
+                  <li>
+                    <code class="text-sm">follow_up_tasks</code>
+                    - {gettext("Array of follow-up work identified")}
+                  </li>
+                  <li>
+                    <code class="text-sm">known_limitations</code>
+                    - {gettext("Array of limitations or constraints")}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -355,18 +524,39 @@
                   {gettext("Final Task Completion")}
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("AI agents can now mark reviewed tasks as done and move them to Done column:")}
+                  {gettext(
+                    "AI agents can now mark reviewed tasks as done and move them to Done column:"
+                  )}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>PATCH /api/tasks/:id/mark_done</strong> - {gettext("Mark a task as done by moving it from Review to Done column")}
+                    <strong>PATCH /api/tasks/:id/mark_done</strong>
+                    - {gettext("Mark a task as done by moving it from Review to Done column")}
                   </li>
-                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W24\") for marking done")}</li>
-                  <li>{gettext("Sets status to :completed and completed_at timestamp automatically")}</li>
-                  <li>{gettext("Only tasks in Review column can be marked as done (validation enforced)")}</li>
+                  <li>
+                    {gettext(
+                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W24\") for marking done"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Sets status to :completed and completed_at timestamp automatically")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Only tasks in Review column can be marked as done (validation enforced)"
+                    )}
+                  </li>
                   <li>{gettext("Final step in the task workflow after review is complete")}</li>
-                  <li>{gettext("Broadcasts {:task_completed, task} PubSub event for real-time UI updates")}</li>
-                  <li>{gettext("Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]")}</li>
+                  <li>
+                    {gettext(
+                      "Broadcasts {:task_completed, task} PubSub event for real-time UI updates"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]"
+                    )}
+                  </li>
                   <li>{gettext("Returns 422 error if task is not in Review column")}</li>
                   <li>{gettext("Returns 403 error if task belongs to different board")}</li>
                 </ul>
@@ -397,16 +587,31 @@
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>GET /api/tasks/next</strong> - {gettext("Retrieve the next available task from the Ready column matching agent capabilities")}
+                    <strong>GET /api/tasks/next</strong>
+                    - {gettext(
+                      "Retrieve the next available task from the Ready column matching agent capabilities"
+                    )}
                   </li>
                   <li>
-                    <strong>POST /api/tasks/claim</strong> - {gettext("Atomically claim the next available task and move it to Doing column")}
+                    <strong>POST /api/tasks/claim</strong>
+                    - {gettext(
+                      "Atomically claim the next available task and move it to Doing column"
+                    )}
                   </li>
                   <li>
-                    <strong>POST /api/tasks/:id/unclaim</strong> - {gettext("Release a claimed task back to Ready column with optional reason")}
+                    <strong>POST /api/tasks/:id/unclaim</strong>
+                    - {gettext("Release a claimed task back to Ready column with optional reason")}
                   </li>
-                  <li>{gettext("Supports both numeric IDs and human-readable identifiers (e.g., \"W14\") for task unclaiming")}</li>
-                  <li>{gettext("Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed")}</li>
+                  <li>
+                    {gettext(
+                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\") for task unclaiming"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -415,10 +620,26 @@
                   {gettext("Capability-Based Task Filtering")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens")}</li>
-                  <li>{gettext("Tasks can specify required_capabilities to restrict which agents can work on them")}</li>
-                  <li>{gettext("PostgreSQL array containment operations ensure efficient capability matching")}</li>
-                  <li>{gettext("Agents without specific capabilities see all tasks without requirements")}</li>
+                  <li>
+                    {gettext(
+                      "Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Tasks can specify required_capabilities to restrict which agents can work on them"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "PostgreSQL array containment operations ensure efficient capability matching"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Agents without specific capabilities see all tasks without requirements"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -428,8 +649,16 @@
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>{gettext("Automatically skips tasks with incomplete dependencies")}</li>
-                  <li>{gettext("Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks")}</li>
-                  <li>{gettext("Ensures agents always receive tasks that are truly ready to be worked on")}</li>
+                  <li>
+                    {gettext(
+                      "Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Ensures agents always receive tasks that are truly ready to be worked on"
+                    )}
+                  </li>
                   <li>{gettext("Prevents blocked tasks from being claimed")}</li>
                 </ul>
               </div>
@@ -439,9 +668,19 @@
                   {gettext("Key File Conflict Detection")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Prevents concurrent work on the same files by different agents")}</li>
-                  <li>{gettext("Tasks with overlapping key_files are automatically excluded from next/claim operations")}</li>
-                  <li>{gettext("JSONB operations efficiently compare file paths across in-progress tasks")}</li>
+                  <li>
+                    {gettext("Prevents concurrent work on the same files by different agents")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Tasks with overlapping key_files are automatically excluded from next/claim operations"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "JSONB operations efficiently compare file paths across in-progress tasks"
+                    )}
+                  </li>
                   <li>{gettext("Reduces merge conflicts and ensures safe parallel work")}</li>
                 </ul>
               </div>
@@ -451,10 +690,24 @@
                   {gettext("Automatic Task State Management")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Tasks claimed via /api/tasks/claim are automatically moved to Doing column")}</li>
-                  <li>{gettext("Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields")}</li>
-                  <li>{gettext("Calculates correct position in Doing column to maintain sort order")}</li>
-                  <li>{gettext("Unclaimed tasks return to Ready column with all claim metadata cleared")}</li>
+                  <li>
+                    {gettext(
+                      "Tasks claimed via /api/tasks/claim are automatically moved to Doing column"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Calculates correct position in Doing column to maintain sort order")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Unclaimed tasks return to Ready column with all claim metadata cleared"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -464,10 +717,13 @@
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("New telemetry events:")} <code class="text-sm">[:kanban, :api, :next_task_fetched]</code>, <code class="text-sm">[:kanban, :api, :task_claimed]</code>, <code class="text-sm">[:kanban, :api, :task_unclaimed]</code>
+                    {gettext("New telemetry events:")} <code class="text-sm">[:kanban, :api, :next_task_fetched]</code>, <code class="text-sm">[:kanban, :api, :task_claimed]</code>,
+                    <code class="text-sm">[:kanban, :api, :task_unclaimed]</code>
                   </li>
                   <li>{gettext("Tracks task priority, API token usage, and unclaim reasons")}</li>
-                  <li>{gettext("Provides insights into agent behavior and task workflow efficiency")}</li>
+                  <li>
+                    {gettext("Provides insights into agent behavior and task workflow efficiency")}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -496,23 +752,54 @@
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>POST /api/tasks</strong> - {gettext("Create tasks with all fields including nested associations (key_files, verification_steps)")}
+                    <strong>POST /api/tasks</strong>
+                    - {gettext(
+                      "Create tasks with all fields including nested associations (key_files, verification_steps)"
+                    )}
                   </li>
                   <li>
-                    <strong>GET /api/tasks</strong> - {gettext("List all tasks for the authenticated board with optional column filtering")}
+                    <strong>GET /api/tasks</strong>
+                    - {gettext(
+                      "List all tasks for the authenticated board with optional column filtering"
+                    )}
                   </li>
                   <li>
-                    <strong>GET /api/tasks/:id</strong> - {gettext("Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like \"W14\")")}
+                    <strong>GET /api/tasks/:id</strong>
+                    - {gettext(
+                      "Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like \"W14\")"
+                    )}
                   </li>
                   <li>
-                    <strong>PATCH /api/tasks/:id</strong> - {gettext("Update task fields including nested associations (supports both database IDs and identifiers)")}
+                    <strong>PATCH /api/tasks/:id</strong>
+                    - {gettext(
+                      "Update task fields including nested associations (supports both database IDs and identifiers)"
+                    )}
                   </li>
-                  <li>{gettext("Board-scoped access control - tokens can only access tasks from their associated board")}</li>
-                  <li>{gettext("Automatic default column selection (Backlog > Ready > first column) when column_id not specified")}</li>
-                  <li>{gettext("Full field support for all 60+ task fields including metadata, observability, and AI context fields")}</li>
-                  <li>{gettext("Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)")}</li>
                   <li>
-                    <strong>{gettext("Flexible Task Identification")}</strong> - {gettext("API endpoints accept both numeric database IDs (e.g., \"73\") and human-readable identifiers (e.g., \"W14\") for improved developer experience")}
+                    {gettext(
+                      "Board-scoped access control - tokens can only access tasks from their associated board"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Automatic default column selection (Backlog > Ready > first column) when column_id not specified"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Full field support for all 60+ task fields including metadata, observability, and AI context fields"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)"
+                    )}
+                  </li>
+                  <li>
+                    <strong>{gettext("Flexible Task Identification")}</strong>
+                    - {gettext(
+                      "API endpoints accept both numeric database IDs (e.g., \"73\") and human-readable identifiers (e.g., \"W14\") for improved developer experience"
+                    )}
                   </li>
                 </ul>
               </div>
@@ -522,8 +809,14 @@
                   {gettext("Real-Time Integration")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("All API mutations automatically broadcast via Phoenix PubSub")}</li>
-                  <li>{gettext("LiveView clients receive instant updates when tasks are created or modified via API")}</li>
+                  <li>
+                    {gettext("All API mutations automatically broadcast via Phoenix PubSub")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "LiveView clients receive instant updates when tasks are created or modified via API"
+                    )}
+                  </li>
                   <li>{gettext("Seamless integration between UI and API workflows")}</li>
                 </ul>
               </div>
@@ -536,8 +829,14 @@
                   <li>
                     {gettext("Emits telemetry events for all API operations")} (<code class="text-sm">[:kanban, :api, :task_created]</code>, <code class="text-sm">[:kanban, :api, :task_updated]</code>, <code class="text-sm">[:kanban, :api, :task_listed]</code>)
                   </li>
-                  <li>{gettext("Tracks API usage including board_id, user_id, request path, and HTTP method")}</li>
-                  <li>{gettext("Provides metrics for monitoring API performance and usage patterns")}</li>
+                  <li>
+                    {gettext(
+                      "Tracks API usage including board_id, user_id, request path, and HTTP method"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Provides metrics for monitoring API performance and usage patterns")}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -562,14 +861,28 @@
                   {gettext("Bearer Token Authentication")}
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Enable AI agents and automation tools to interact with your boards programmatically:")}
+                  {gettext(
+                    "Enable AI agents and automation tools to interact with your boards programmatically:"
+                  )}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Generate API tokens for AI Optimized Boards from the board's API Tokens page")}</li>
+                  <li>
+                    {gettext(
+                      "Generate API tokens for AI Optimized Boards from the board's API Tokens page"
+                    )}
+                  </li>
                   <li>{gettext("Simple Bearer token authentication via HTTP headers")}</li>
                   <li>{gettext("Each token is scoped to a specific board for security")}</li>
-                  <li>{gettext("One-time token display after creation with easy copy-to-clipboard functionality")}</li>
-                  <li>{gettext("Token name and optional metadata tracking (AI model, version, purpose)")}</li>
+                  <li>
+                    {gettext(
+                      "One-time token display after creation with easy copy-to-clipboard functionality"
+                    )}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Token name and optional metadata tracking (AI model, version, purpose)"
+                    )}
+                  </li>
                 </ul>
               </div>
 
@@ -578,7 +891,9 @@
                   {gettext("Secure Token Management")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Tokens are cryptographically hashed (SHA-256) before storage")}</li>
+                  <li>
+                    {gettext("Tokens are cryptographically hashed (SHA-256) before storage")}
+                  </li>
                   <li>{gettext("Never stored in plaintext - shown only once at creation")}</li>
                   <li>{gettext("Easy token revocation without affecting your login session")}</li>
                   <li>{gettext("Usage tracking shows when each token was last used")}</li>
@@ -591,9 +906,17 @@
                   {gettext("AI Optimized Board Integration")}
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("API Tokens feature available exclusively for AI Optimized Boards")}</li>
-                  <li>{gettext("Provides AI agents with programmatic access to the standardized 5-column workflow")}</li>
-                  <li>{gettext("Perfect for Claude Code, MCP servers, and other automation tools")}</li>
+                  <li>
+                    {gettext("API Tokens feature available exclusively for AI Optimized Boards")}
+                  </li>
+                  <li>
+                    {gettext(
+                      "Provides AI agents with programmatic access to the standardized 5-column workflow"
+                    )}
+                  </li>
+                  <li>
+                    {gettext("Perfect for Claude Code, MCP servers, and other automation tools")}
+                  </li>
                   <li>{gettext("Works with any HTTP client or programming language")}</li>
                 </ul>
               </div>
@@ -626,7 +949,9 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Three New Task Fields")}</strong>
-                  {gettext(" - Added specialized fields to capture AI-relevant context for task execution:")}
+                  {gettext(
+                    " - Added specialized fields to capture AI-relevant context for task execution:"
+                  )}
                 </li>
               </ul>
 
@@ -636,8 +961,16 @@
                     {gettext("Security Considerations")} (<code class="text-sm">security_considerations</code>)
                   </h5>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
-                    <li>{gettext("Array field for documenting security-related requirements and notes")}</li>
-                    <li>{gettext("Examples: token hashing requirements, validation rules, security headers")}</li>
+                    <li>
+                      {gettext(
+                        "Array field for documenting security-related requirements and notes"
+                      )}
+                    </li>
+                    <li>
+                      {gettext(
+                        "Examples: token hashing requirements, validation rules, security headers"
+                      )}
+                    </li>
                     <li>{gettext("Purple background color in UI for high visibility")}</li>
                     <li>{gettext("Dynamic add/remove interface in task forms")}</li>
                     <li>{gettext("Defaults to empty array when not provided")}</li>
@@ -651,11 +984,18 @@
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
                     <li>
                       {gettext("Map field with three standardized categories: ")}
-                      <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>, <code class="text-sm">manual_tests</code>
+                      <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>,
+                      <code class="text-sm">manual_tests</code>
                     </li>
                     <li>{gettext("Each category contains an array of test descriptions")}</li>
-                    <li>{gettext("Cyan background color in UI to distinguish from security considerations")}</li>
-                    <li>{gettext("Dynamic add/remove interface with category-specific sections")}</li>
+                    <li>
+                      {gettext(
+                        "Cyan background color in UI to distinguish from security considerations"
+                      )}
+                    </li>
+                    <li>
+                      {gettext("Dynamic add/remove interface with category-specific sections")}
+                    </li>
                     <li>{gettext("Defaults to empty map when not provided")}</li>
                   </ul>
                 </div>
@@ -669,22 +1009,38 @@
                   </ul>
                   <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                     <li>
-                      <code class="text-sm">telemetry_events</code>: {gettext("Phoenix telemetry events to emit")}
+                      <code class="text-sm">telemetry_events</code>: {gettext(
+                        "Phoenix telemetry events to emit"
+                      )}
                     </li>
                     <li>
-                      <code class="text-sm">pubsub_broadcasts</code>: {gettext("PubSub topics to broadcast to")}
+                      <code class="text-sm">pubsub_broadcasts</code>: {gettext(
+                        "PubSub topics to broadcast to"
+                      )}
                     </li>
                     <li>
-                      <code class="text-sm">phoenix_channels</code>: {gettext("Phoenix channels to update")}
+                      <code class="text-sm">phoenix_channels</code>: {gettext(
+                        "Phoenix channels to update"
+                      )}
                     </li>
                     <li>
-                      <code class="text-sm">external_apis</code>: {gettext("External API integrations")}
+                      <code class="text-sm">external_apis</code>: {gettext(
+                        "External API integrations"
+                      )}
                     </li>
                   </ul>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70 mt-1">
-                    <li>{gettext("Each category contains an array of integration descriptions")}</li>
-                    <li>{gettext("Indigo background color in UI to distinguish from other AI fields")}</li>
-                    <li>{gettext("Dynamic add/remove interface with category-specific sections")}</li>
+                    <li>
+                      {gettext("Each category contains an array of integration descriptions")}
+                    </li>
+                    <li>
+                      {gettext(
+                        "Indigo background color in UI to distinguish from other AI fields"
+                      )}
+                    </li>
+                    <li>
+                      {gettext("Dynamic add/remove interface with category-specific sections")}
+                    </li>
                     <li>{gettext("Defaults to empty map when not provided")}</li>
                   </ul>
                 </div>
@@ -708,15 +1064,37 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("New Board Type")}</strong>
-                  {gettext(" - Introduced AI Optimized Boards with predefined, immutable structure:")}
+                  {gettext(
+                    " - Introduced AI Optimized Boards with predefined, immutable structure:"
+                  )}
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done")}</li>
-                <li>{gettext("Columns are locked and cannot be added, edited, deleted, or reordered")}</li>
-                <li>{gettext("Designed for AI-driven workflows with consistent, predictable structure")}</li>
-                <li>{gettext("Board owners retain full control over tasks, but column structure is fixed")}</li>
-                <li>{gettext("Clear visual distinction from regular boards throughout the interface")}</li>
+                <li>
+                  {gettext(
+                    "Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done"
+                  )}
+                </li>
+                <li>
+                  {gettext(
+                    "Columns are locked and cannot be added, edited, deleted, or reordered"
+                  )}
+                </li>
+                <li>
+                  {gettext(
+                    "Designed for AI-driven workflows with consistent, predictable structure"
+                  )}
+                </li>
+                <li>
+                  {gettext(
+                    "Board owners retain full control over tasks, but column structure is fixed"
+                  )}
+                </li>
+                <li>
+                  {gettext(
+                    "Clear visual distinction from regular boards throughout the interface"
+                  )}
+                </li>
               </ul>
             </div>
           </div>
@@ -743,11 +1121,15 @@
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Planning & Context:")}</strong>
-                  {gettext(" complexity (small/medium/large), estimated_files, why, what, where_context")}
+                  {gettext(
+                    " complexity (small/medium/large), estimated_files, why, what, where_context"
+                  )}
                 </li>
                 <li>
                   <strong>{gettext("Implementation Guidance:")}</strong>
-                  {gettext(" patterns_to_follow, database_changes, validation_rules, required_capabilities")}
+                  {gettext(
+                    " patterns_to_follow, database_changes, validation_rules, required_capabilities"
+                  )}
                 </li>
                 <li>
                   <strong>{gettext("Observability:")}</strong>
@@ -759,11 +1141,15 @@
                 </li>
                 <li>
                   <strong>{gettext("Collections:")}</strong>
-                  {gettext(" key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)")}
+                  {gettext(
+                    " key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)"
+                  )}
                 </li>
                 <li>
                   <strong>{gettext("Metadata Tracking:")}</strong>
-                  {gettext(" created_by, creator_name, completed_at, completed_by, completer_name, completion_summary")}
+                  {gettext(
+                    " created_by, creator_name, completed_at, completed_by, completer_name, completion_summary"
+                  )}
                 </li>
                 <li>
                   <strong>{gettext("Assignment Tracking:")}</strong>
@@ -771,7 +1157,9 @@
                 </li>
                 <li>
                   <strong>{gettext("Review System:")}</strong>
-                  {gettext(" needs_review (boolean), review_status (pending/approved/changes_requested), review_notes")}
+                  {gettext(
+                    " needs_review (boolean), review_status (pending/approved/changes_requested), review_notes"
+                  )}
                 </li>
                 <li>
                   <strong>{gettext("Dependencies:")}</strong>
@@ -787,20 +1175,36 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Field Visibility Toggles")}</strong>
-                  {gettext(" - Board owners can control which task fields are visible to all users:")}
+                  {gettext(
+                    " - Board owners can control which task fields are visible to all users:"
+                  )}
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  {gettext("12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities")}
+                  {gettext(
+                    "12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities"
+                  )}
                 </li>
                 <li>{gettext("Stored in boards table as JSONB (field_visibility column)")}</li>
                 <li>
-                  {gettext("Real-time PubSub broadcasts synchronize visibility changes across all connected clients")}
+                  {gettext(
+                    "Real-time PubSub broadcasts synchronize visibility changes across all connected clients"
+                  )}
                 </li>
-                <li>{gettext("Owner-only access control - only board owners can modify field visibility settings")}</li>
-                <li>{gettext("Default visibility: acceptance_criteria shown, all others hidden")}</li>
-                <li>{gettext("Settings persist in database and apply to all users viewing the board")}</li>
+                <li>
+                  {gettext(
+                    "Owner-only access control - only board owners can modify field visibility settings"
+                  )}
+                </li>
+                <li>
+                  {gettext("Default visibility: acceptance_criteria shown, all others hidden")}
+                </li>
+                <li>
+                  {gettext(
+                    "Settings persist in database and apply to all users viewing the board"
+                  )}
+                </li>
               </ul>
             </div>
 
@@ -816,11 +1220,21 @@
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>{gettext("Dynamic key files editor with add/remove functionality")}</li>
-                <li>{gettext("Dynamic verification steps editor with add/remove functionality")}</li>
+                <li>
+                  {gettext("Dynamic verification steps editor with add/remove functionality")}
+                </li>
                 <li>{gettext("Embedded schema support for structured JSONB data")}</li>
                 <li>{gettext("Validation for all new fields with proper error handling")}</li>
-                <li>{gettext("Field visibility awareness - form fields show/hide based on board settings")}</li>
-                <li>{gettext("Reduced code complexity (Credo compliant) through helper function extraction")}</li>
+                <li>
+                  {gettext(
+                    "Field visibility awareness - form fields show/hide based on board settings"
+                  )}
+                </li>
+                <li>
+                  {gettext(
+                    "Reduced code complexity (Credo compliant) through helper function extraction"
+                  )}
+                </li>
               </ul>
             </div>
 
@@ -831,7 +1245,9 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>{gettext("Rich Task Display")}</strong>
-                  {gettext(" - All 18 TASK.md categories displayed in organized, scannable format:")}
+                  {gettext(
+                    " - All 18 TASK.md categories displayed in organized, scannable format:"
+                  )}
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
@@ -862,7 +1278,11 @@
               </h4>
               <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
                 <li>{gettext("PubSub broadcasts for field visibility changes")}</li>
-                <li>{gettext("Instant synchronization of board settings across all connected clients")}</li>
+                <li>
+                  {gettext(
+                    "Instant synchronization of board settings across all connected clients"
+                  )}
+                </li>
               </ul>
             </div>
           </div>

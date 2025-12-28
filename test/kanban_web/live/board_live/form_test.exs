@@ -19,7 +19,9 @@ defmodule KanbanWeb.BoardLive.FormTest do
     test "creates new board with valid data", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/boards/new")
 
-      form = form(lv, "#board-form", board: %{name: "Test Board", description: "Test description"})
+      form =
+        form(lv, "#board-form", board: %{name: "Test Board", description: "Test description"})
+
       assert {:ok, _, html} = form |> render_submit() |> follow_redirect(conn)
 
       assert html =~ "Board created successfully"
@@ -63,14 +65,20 @@ defmodule KanbanWeb.BoardLive.FormTest do
       conn = log_in_user(conn, other_user)
 
       # Try to access the edit page - should redirect
-      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => error}}}} = live(conn, ~p"/boards/#{board}/edit")
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/edit")
+
       assert error =~ "Only the board owner can edit this board"
     end
 
     test "updates board with valid data", %{conn: conn, board: board} do
       {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
 
-      form = form(lv, "#board-form", board: %{name: "Updated Name", description: "Updated description"})
+      form =
+        form(lv, "#board-form",
+          board: %{name: "Updated Name", description: "Updated description"}
+        )
+
       assert {:ok, _, html} = form |> render_submit() |> follow_redirect(conn)
 
       assert html =~ "Board updated successfully"

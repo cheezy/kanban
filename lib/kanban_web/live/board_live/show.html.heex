@@ -4,10 +4,16 @@
       {@board.name}
       <:subtitle>{@board.description}</:subtitle>
       <:actions>
-        <.link :if={@user_access == :owner and not @board.ai_optimized_board} patch={~p"/boards/#{@board}/columns/new"}>
+        <.link
+          :if={@user_access == :owner and not @board.ai_optimized_board}
+          patch={~p"/boards/#{@board}/columns/new"}
+        >
           <.button>{gettext("New Column")}</.button>
         </.link>
-        <.link :if={@can_modify and @board.ai_optimized_board} patch={~p"/boards/#{@board}/api_tokens"}>
+        <.link
+          :if={@can_modify and @board.ai_optimized_board}
+          patch={~p"/boards/#{@board}/api_tokens"}
+        >
           <.button>{gettext("API Tokens")}</.button>
         </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
@@ -62,7 +68,9 @@
               <% end %>
               <div class="flex-1">
                 <div class="flex items-center gap-2">
-                  <h2 class="font-bold text-base-content text-base">{translate_column_name(column.name)}</h2>
+                  <h2 class="font-bold text-base-content text-base">
+                    {translate_column_name(column.name)}
+                  </h2>
                   <%= if over_limit do %>
                     <span
                       title={gettext("WIP limit exceeded")}
@@ -172,15 +180,25 @@
               </div>
 
               <%= for task <- Map.get(@tasks_by_column, column.id, []) do %>
+                <% is_goal = task.identifier && String.starts_with?(task.identifier, "G") %>
                 <div
                   id={"task-#{task.id}"}
-                  class={[
-                    "group task-card p-3 bg-gradient-to-br from-base-100 to-base-200/50 rounded-lg shadow-md hover:shadow-xl border border-base-300/60 hover:border-blue-300/50 transition-all duration-200 transform hover:-translate-y-0.5 relative overflow-hidden",
-                    @can_modify && "cursor-move",
-                    task.assigned_to_id == @current_scope.user.id &&
-                      "border-l-4 border-l-green-500",
-                    is_nil(task.assigned_to_id) && "border-l-4 border-l-yellow-500"
-                  ]}
+                  class={
+                    [
+                      "group task-card relative overflow-hidden rounded-lg shadow-md hover:shadow-xl border transition-all duration-200",
+                      if is_goal do
+                        # Goal card styling (compact height, yellow background, non-draggable)
+                        "p-1.5 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300/60 hover:border-yellow-400/50 min-h-[45px]"
+                      else
+                        # Regular task card styling
+                        "p-3 bg-gradient-to-br from-base-100 to-base-200/50 border-base-300/60 hover:border-blue-300/50 transform hover:-translate-y-0.5"
+                      end,
+                      @can_modify && !is_goal && "cursor-move",
+                      task.assigned_to_id == @current_scope.user.id &&
+                        "border-l-4 border-l-green-500",
+                      is_nil(task.assigned_to_id) && !is_goal && "border-l-4 border-l-yellow-500"
+                    ]
+                  }
                   data-id={task.id}
                 >
                   <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-50/40 to-purple-50/40 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full blur-xl -z-10 group-hover:from-blue-100/50 group-hover:to-purple-100/50 dark:group-hover:from-blue-800/30 dark:group-hover:to-purple-800/30 transition-all duration-200">
@@ -188,14 +206,17 @@
                   <%= if task.status == :blocked do %>
                     <div class="absolute top-2 right-2 z-10" title={gettext("Task is blocked")}>
                       <div class="p-1 bg-red-100 dark:bg-red-900/50 rounded shadow-sm border border-red-300 dark:border-red-700">
-                        <.icon name="hero-lock-closed-solid" class="h-3 w-3 text-red-600 dark:text-red-400" />
+                        <.icon
+                          name="hero-lock-closed-solid"
+                          class="h-3 w-3 text-red-600 dark:text-red-400"
+                        />
                       </div>
                     </div>
                   <% end %>
                   <%= if @can_modify do %>
                     <div class={[
                       "absolute top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-                      task.status == :blocked && "right-12" || "right-2"
+                      (task.status == :blocked && "right-12") || "right-2"
                     ]}>
                       <.link
                         patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
@@ -221,7 +242,7 @@
                     </div>
                   <% end %>
                   <div class="flex items-start gap-2">
-                    <%= if @can_modify do %>
+                    <%= if @can_modify && !is_goal do %>
                       <div class="drag-handle cursor-grab active:cursor-grabbing pt-1 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         <.icon name="hero-bars-3" class="h-4 w-4 text-base-content" />
                       </div>
@@ -232,33 +253,67 @@
                       class="flex-1 cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/20 rounded-md -m-1 p-1.5 transition-colors duration-150 min-w-0"
                     >
                       <div>
-                        <h3 class="font-semibold text-base-content text-sm leading-snug group-hover:text-blue-600 transition-colors pr-16">
-                          {task.title}
-                        </h3>
-                        <%= if task.description && task.description != "" do %>
-                          <p class="mt-1.5 text-xs text-base-content opacity-70 line-clamp-2 leading-relaxed">
-                            {task.description}
-                          </p>
+                        <div class="flex items-center gap-2">
+                          <h3 class={[
+                            "font-semibold text-base-content leading-snug group-hover:text-blue-600 transition-colors flex-1 pr-16",
+                            (is_goal && "text-sm") || "text-sm"
+                          ]}>
+                            {task.title}
+                          </h3>
+                        </div>
+                        <%= if is_goal do %>
+                          <% progress =
+                            Map.get(@goal_progress, task.id, %{
+                              total: 0,
+                              completed: 0,
+                              percentage: 0
+                            }) %>
+                          <div class="mt-1">
+                            <div class="flex items-center gap-2">
+                              <div class="flex-1 h-1.5 bg-yellow-200 rounded-full overflow-hidden">
+                                <div
+                                  class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-300"
+                                  style={"width: #{progress.percentage}%"}
+                                >
+                                </div>
+                              </div>
+                              <span class="text-xs font-medium text-yellow-700">
+                                {progress.completed}/{progress.total}
+                              </span>
+                            </div>
+                          </div>
+                        <% else %>
+                          <%= if task.description && task.description != "" do %>
+                            <p class="mt-1.5 text-xs text-base-content opacity-70 line-clamp-2 leading-relaxed">
+                              {task.description}
+                            </p>
+                          <% end %>
                         <% end %>
-                        <div class="mt-3 flex items-center gap-1 flex-nowrap overflow-x-auto">
+                        <div class="mt-1.5 flex items-center gap-1 flex-nowrap overflow-x-auto">
+                          <% task_type_prefix = task.identifier && String.first(task.identifier) %>
                           <span
                             class={[
-                              "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shadow-sm transition-transform hover:scale-105 flex-shrink-0",
-                              (task.type == :defect &&
-                                 "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-200/50") ||
-                                "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200/50"
+                              "inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-transform hover:scale-105 flex-shrink-0 border",
+                              cond do
+                                task_type_prefix == "D" ->
+                                  "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
+
+                                task_type_prefix == "G" ->
+                                  "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200/50"
+
+                                true ->
+                                  "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200/50"
+                              end
                             ]}
                             title={
-                              if task.type == :defect,
-                                do: gettext("Defect"),
-                                else: gettext("Work")
+                              cond do
+                                task_type_prefix == "D" -> gettext("Defect")
+                                task_type_prefix == "G" -> gettext("Goal")
+                                true -> gettext("Work")
+                              end
                             }
                           >
-                            <%= if task.type == :defect do %>
-                              <.icon name="hero-bug-ant" class="h-3 w-3" />
-                            <% else %>
-                              <.icon name="hero-wrench-screwdriver" class="h-3 w-3" />
-                            <% end %>
+                            {task_type_prefix || "W"}
                           </span>
                           <span class={[
                             "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shadow-sm transition-transform hover:scale-105 border flex-shrink-0",
@@ -305,7 +360,7 @@
                               />
                             </span>
                           <% end %>
-                          <span class="text-xs font-bold text-base-content opacity-60 bg-base-200/80 px-1.5 py-0.5 rounded-full flex-shrink-0 ml-auto">
+                          <span class="text-xs font-mono font-bold text-base-content opacity-60 bg-base-200/80 px-2 py-0.5 rounded flex-shrink-0 ml-auto">
                             {task.identifier}
                           </span>
                         </div>
@@ -376,46 +431,48 @@
 
   <%!-- API Tokens Modal --%>
   <.modal
-      :if={@live_action == :api_tokens}
-      id="api-tokens-modal"
-      show
-      on_cancel={JS.patch(~p"/boards/#{@board}")}
-    >
-      <h2 class="text-2xl font-bold mb-6">{gettext("API Tokens for %{board_name}", board_name: @board.name)}</h2>
+    :if={@live_action == :api_tokens}
+    id="api-tokens-modal"
+    show
+    on_cancel={JS.patch(~p"/boards/#{@board}")}
+  >
+    <h2 class="text-2xl font-bold mb-6">
+      {gettext("API Tokens for %{board_name}", board_name: @board.name)}
+    </h2>
 
-      <div class="space-y-6">
-        <%= if @new_token do %>
-          <div class="alert alert-success">
+    <div class="space-y-6">
+      <%= if @new_token do %>
+        <div class="alert alert-success">
+          <div class="flex-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current flex-shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             <div class="flex-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="stroke-current flex-shrink-0 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div class="flex-1">
-                <h3 class="font-bold">{gettext("Token created successfully!")}</h3>
-                <div class="text-sm">
-                  {gettext("Copy this token now - you won't be able to see it again:")}
-                </div>
-                <div class="mt-2 flex gap-2">
-                  <code
-                    id="new-token-value"
-                    class="bg-base-300 px-3 py-2 rounded font-mono text-sm flex-1 break-all"
-                  >
-                    <%= @new_token %>
-                  </code>
-                  <button
-                    type="button"
-                    class="btn btn-sm"
-                    onclick="
+              <h3 class="font-bold">{gettext("Token created successfully!")}</h3>
+              <div class="text-sm">
+                {gettext("Copy this token now - you won't be able to see it again:")}
+              </div>
+              <div class="mt-2 flex gap-2">
+                <code
+                  id="new-token-value"
+                  class="bg-base-300 px-3 py-2 rounded font-mono text-sm flex-1 break-all"
+                >
+                  {@new_token}
+                </code>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  onclick="
                       const text = this.getAttribute('data-token-value');
                       const copiedText = this.getAttribute('data-copied-text');
                       const copyText = this.getAttribute('data-copy-text');
@@ -436,117 +493,119 @@
                         document.body.removeChild(textarea);
                       }
                     "
-                    data-token-value={@new_token}
-                    data-copy-text={gettext("Copy")}
-                    data-copied-text={"✓ " <> gettext("Copied!")}
-                  >{gettext("Copy")}</button>
-                </div>
+                  data-token-value={@new_token}
+                  data-copy-text={gettext("Copy")}
+                  data-copied-text={"✓ " <> gettext("Copied!")}
+                >
+                  {gettext("Copy")}
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              class="btn btn-sm btn-ghost"
-              phx-click="dismiss_token"
-              title={gettext("Dismiss")}
-            >
-              ×
-            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost"
+            phx-click="dismiss_token"
+            title={gettext("Dismiss")}
+          >
+            ×
+          </button>
+        </div>
+      <% end %>
+
+      <.form for={@token_form} phx-submit="create_token">
+        <.input
+          field={@token_form[:name]}
+          type="text"
+          label={gettext("Token Name")}
+          placeholder={gettext("My AI Agent")}
+          required
+        />
+
+        <.input
+          field={@token_form[:agent_model]}
+          type="text"
+          label={gettext("Agent Model (Optional)")}
+          placeholder="claude-3-opus"
+        />
+
+        <.input
+          field={@token_form[:agent_purpose]}
+          type="text"
+          label={gettext("Purpose (Optional)")}
+          placeholder="Task automation"
+        />
+
+        <div class="mt-4">
+          <.button phx-disable-with={gettext("Creating...")}>
+            {gettext("Generate Token")}
+          </.button>
+        </div>
+      </.form>
+
+      <div class="divider"></div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-base-content mb-3">
+          {gettext("Active Tokens")}
+        </h3>
+        <%= if Enum.empty?(@api_tokens) do %>
+          <p class="text-base-content opacity-60 italic">
+            {gettext("No API tokens yet. Generate one above to get started.")}
+          </p>
+        <% else %>
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full table-sm">
+              <thead>
+                <tr>
+                  <th>{gettext("Name")}</th>
+                  <th>{gettext("User")}</th>
+                  <th>{gettext("Last Used")}</th>
+                  <th>{gettext("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for token <- @api_tokens do %>
+                  <tr>
+                    <td>
+                      {token.name}
+                      <%= if token.agent_model do %>
+                        <br />
+                        <span class="text-xs opacity-60">
+                          {token.agent_model}
+                        </span>
+                      <% end %>
+                    </td>
+                    <td>{token.user.email}</td>
+                    <td>
+                      <%= if token.last_used_at do %>
+                        {Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M")}
+                      <% else %>
+                        <span class="opacity-60">{gettext("Never")}</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <%= if is_nil(token.revoked_at) do %>
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-error"
+                          phx-click="revoke_token"
+                          phx-value-id={token.id}
+                          data-confirm={gettext("Are you sure you want to revoke this token?")}
+                        >
+                          {gettext("Revoke")}
+                        </button>
+                      <% else %>
+                        <span class="badge badge-error">{gettext("Revoked")}</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         <% end %>
-
-        <.form for={@token_form} phx-submit="create_token">
-          <.input
-            field={@token_form[:name]}
-            type="text"
-            label={gettext("Token Name")}
-            placeholder={gettext("My AI Agent")}
-            required
-          />
-
-          <.input
-            field={@token_form[:agent_model]}
-            type="text"
-            label={gettext("Agent Model (Optional)")}
-            placeholder="claude-3-opus"
-          />
-
-          <.input
-            field={@token_form[:agent_purpose]}
-            type="text"
-            label={gettext("Purpose (Optional)")}
-            placeholder="Task automation"
-          />
-
-          <div class="mt-4">
-            <.button phx-disable-with={gettext("Creating...")}>
-              {gettext("Generate Token")}
-            </.button>
-          </div>
-        </.form>
-
-        <div class="divider"></div>
-
-        <div>
-          <h3 class="text-lg font-semibold text-base-content mb-3">
-            {gettext("Active Tokens")}
-          </h3>
-          <%= if Enum.empty?(@api_tokens) do %>
-            <p class="text-base-content opacity-60 italic">
-              {gettext("No API tokens yet. Generate one above to get started.")}
-            </p>
-          <% else %>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra w-full table-sm">
-                <thead>
-                  <tr>
-                    <th>{gettext("Name")}</th>
-                    <th>{gettext("User")}</th>
-                    <th>{gettext("Last Used")}</th>
-                    <th>{gettext("Actions")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <%= for token <- @api_tokens do %>
-                    <tr>
-                      <td>
-                        <%= token.name %>
-                        <%= if token.agent_model do %>
-                          <br />
-                          <span class="text-xs opacity-60">
-                            <%= token.agent_model %>
-                          </span>
-                        <% end %>
-                      </td>
-                      <td><%= token.user.email %></td>
-                      <td>
-                        <%= if token.last_used_at do %>
-                          <%= Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M") %>
-                        <% else %>
-                          <span class="opacity-60">{gettext("Never")}</span>
-                        <% end %>
-                      </td>
-                      <td>
-                        <%= if is_nil(token.revoked_at) do %>
-                          <button
-                            type="button"
-                            class="btn btn-xs btn-error"
-                            phx-click="revoke_token"
-                            phx-value-id={token.id}
-                            data-confirm={gettext("Are you sure you want to revoke this token?")}
-                          >
-                            {gettext("Revoke")}
-                          </button>
-                        <% else %>
-                          <span class="badge badge-error">{gettext("Revoked")}</span>
-                        <% end %>
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% end %>
-        </div>
       </div>
-    </.modal>
+    </div>
+  </.modal>
 </Layouts.app>

@@ -18,9 +18,11 @@ defmodule Kanban.TasksFixtures do
         # Create actual dependency tasks for each placeholder
         dep_tasks =
           Enum.map(dependencies, fn _placeholder ->
-            {:ok, dep} = Tasks.create_task(column, %{
-              "title" => "Dependency Task #{System.unique_integer([:positive])}"
-            })
+            {:ok, dep} =
+              Tasks.create_task(column, %{
+                "title" => "Dependency Task #{System.unique_integer([:positive])}"
+              })
+
             dep.identifier
           end)
 

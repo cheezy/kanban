@@ -19,6 +19,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(:column_options, task_data.column_options)
      |> assign(:assignable_users, task_data.assignable_users)
      |> assign(:comment_form, task_data.comment_form)
+     |> assign(:goal_options, task_data.goal_options)
      |> assign(:field_visibility, board.field_visibility || %{})
      |> assign_form(task_data.changeset)}
   end
@@ -32,6 +33,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     board_users = Kanban.Boards.list_board_users(board)
     assignable_users = build_assignable_users_options(board_users)
 
+    goal_options = build_goal_options(board, task)
+
     task_with_associations = load_task_associations(task, action)
     comment_form = to_form(TaskComment.changeset(%TaskComment{}, %{}))
 
@@ -40,6 +43,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       column_options: column_options,
       assignable_users: assignable_users,
       comment_form: comment_form,
+      goal_options: goal_options,
       changeset: changeset
     }
   end
@@ -460,5 +464,23 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       end)
 
     [{gettext("Unassigned"), nil} | users_list]
+  end
+
+  defp build_goal_options(board, task) do
+    goals =
+      from(t in Tasks.Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board.id,
+        where: t.type == :goal,
+        where: t.id != ^(task.id || 0),
+        order_by: [asc: t.identifier],
+        select: {t.identifier, t.title, t.id}
+      )
+      |> Repo.all()
+      |> Enum.map(fn {identifier, title, id} ->
+        {"#{identifier} - #{title}", id}
+      end)
+
+    [{gettext("No parent goal"), nil} | goals]
   end
 end

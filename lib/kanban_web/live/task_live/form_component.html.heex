@@ -40,8 +40,15 @@
       field={f[:type]}
       type="select"
       label={gettext("Type")}
-      options={[{gettext("Work"), :work}, {gettext("Defect"), :defect}]}
+      options={[{gettext("Work"), :work}, {gettext("Defect"), :defect}, {gettext("Goal"), :goal}]}
       required
+    />
+
+    <.input
+      field={f[:parent_id]}
+      type="select"
+      label={gettext("Parent Goal")}
+      options={@goal_options}
     />
 
     <.input
@@ -109,8 +116,18 @@
       <%!-- Context Section --%>
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Context")}</h3>
-        <.input field={f[:why]} type="textarea" label={gettext("Why (Problem/Rationale)")} rows="2" />
-        <.input field={f[:what]} type="textarea" label={gettext("What (Implementation)")} rows="2" />
+        <.input
+          field={f[:why]}
+          type="textarea"
+          label={gettext("Why (Problem/Rationale)")}
+          rows="2"
+        />
+        <.input
+          field={f[:what]}
+          type="textarea"
+          label={gettext("What (Implementation)")}
+          rows="2"
+        />
         <.input
           field={f[:where_context]}
           type="textarea"

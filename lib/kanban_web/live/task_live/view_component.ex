@@ -74,11 +74,13 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               case @task.type do
                 :work -> "bg-blue-100 text-blue-800"
                 :defect -> "bg-red-100 text-red-800"
+                :goal -> "bg-yellow-100 text-yellow-800"
               end
             ]}>
               {case @task.type do
                 :work -> gettext("Work")
                 :defect -> gettext("Defect")
+                :goal -> gettext("Goal")
               end}
             </span>
             <%= if @task.complexity && field_visible?(@field_visibility, "complexity") do %>
@@ -704,6 +706,77 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                 <p class="text-green-900 whitespace-pre-wrap">{@task.completion_summary}</p>
               </div>
             <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%= if @task.type == :goal && length(@task.children || []) > 0 do %>
+        <div>
+          <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+            {gettext("Child Tasks")}
+          </h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-base-300">
+              <thead class="bg-base-200">
+                <tr>
+                  <th
+                    scope="col"
+                    class="px-4 py-2 text-left text-xs font-semibold text-base-content uppercase tracking-wider"
+                  >
+                    {gettext("ID")}
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-4 py-2 text-left text-xs font-semibold text-base-content uppercase tracking-wider"
+                  >
+                    {gettext("Title")}
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-4 py-2 text-left text-xs font-semibold text-base-content uppercase tracking-wider"
+                  >
+                    {gettext("Type")}
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-4 py-2 text-left text-xs font-semibold text-base-content uppercase tracking-wider"
+                  >
+                    {gettext("Column")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-base-100 divide-y divide-base-300">
+                <%= for child <- @task.children do %>
+                  <tr class="hover:bg-base-200">
+                    <td class="px-4 py-2 whitespace-nowrap text-sm font-mono font-bold text-base-content">
+                      {child.identifier}
+                    </td>
+                    <td class="px-4 py-2 text-sm text-base-content">
+                      {child.title}
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">
+                      <span class={[
+                        "px-2 py-1 text-xs font-semibold rounded-full",
+                        case child.type do
+                          :work -> "bg-blue-100 text-blue-800"
+                          :defect -> "bg-red-100 text-red-800"
+                          :goal -> "bg-yellow-100 text-yellow-800"
+                        end
+                      ]}>
+                        {case child.type do
+                          :work -> gettext("Work")
+                          :defect -> gettext("Defect")
+                          :goal -> gettext("Goal")
+                        end}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-base-content">
+                      {child.column.name}
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         </div>
       <% end %>

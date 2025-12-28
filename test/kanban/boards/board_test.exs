@@ -40,19 +40,19 @@ defmodule Kanban.Boards.BoardTest do
       board = %Board{}
 
       assert board.field_visibility == %{
-        "acceptance_criteria" => true,
-        "complexity" => false,
-        "context" => false,
-        "key_files" => false,
-        "verification_steps" => false,
-        "technical_notes" => false,
-        "observability" => false,
-        "error_handling" => false,
-        "technology_requirements" => false,
-        "pitfalls" => false,
-        "out_of_scope" => false,
-        "required_capabilities" => false
-      }
+               "acceptance_criteria" => true,
+               "complexity" => false,
+               "context" => false,
+               "key_files" => false,
+               "verification_steps" => false,
+               "technical_notes" => false,
+               "observability" => false,
+               "error_handling" => false,
+               "technology_requirements" => false,
+               "pitfalls" => false,
+               "out_of_scope" => false,
+               "required_capabilities" => false
+             }
     end
 
     test "validates field_visibility is a map" do
@@ -66,8 +66,11 @@ defmodule Kanban.Boards.BoardTest do
         "complexity" => false
       }
 
-      changeset = Board.changeset(%Board{}, %{name: "Test", field_visibility: incomplete_visibility})
-      assert %{field_visibility: ["missing required field visibility keys"]} = errors_on(changeset)
+      changeset =
+        Board.changeset(%Board{}, %{name: "Test", field_visibility: incomplete_visibility})
+
+      assert %{field_visibility: ["missing required field visibility keys"]} =
+               errors_on(changeset)
     end
 
     test "accepts complete field_visibility map" do
@@ -86,7 +89,9 @@ defmodule Kanban.Boards.BoardTest do
         "required_capabilities" => true
       }
 
-      changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: complete_visibility})
+      changeset =
+        Board.changeset(%Board{}, %{name: "Test Board", field_visibility: complete_visibility})
+
       assert changeset.valid?
     end
 
@@ -106,7 +111,9 @@ defmodule Kanban.Boards.BoardTest do
         "required_capabilities" => false
       }
 
-      changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: updated_visibility})
+      changeset =
+        Board.changeset(%Board{}, %{name: "Test Board", field_visibility: updated_visibility})
+
       assert changeset.valid?
       assert get_change(changeset, :field_visibility) == updated_visibility
     end
