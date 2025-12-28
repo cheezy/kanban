@@ -9,12 +9,19 @@ Should I be able to create subtasks automatically, or just flat tasks?
 The system uses a **2-level hierarchy** with **two task types**:
 
 **Levels:**
-1. **Goal** - Large initiatives (25+ hours, multiple tasks)
+1. **Goal** (G prefix) - Large initiatives (25+ hours, multiple tasks)
+   - Type field: `:goal` in database
+   - Identifier: G1, G2, G3, etc.
+   - Has `parent_id` of `nil` (top-level)
+   - Can have child tasks via their `parent_id` field
 2. **Task** - Individual work items (1-3 hours each)
+   - Has `parent_id` pointing to a goal (or `nil` for standalone tasks)
+   - Identifier: W1-W999 or D1-D999
 
-**Task Types:**
-1. **Work** (W prefix) - New functionality, enhancements
-2. **Defect** (D prefix) - Bug fixes, corrections
+**Task Types (for non-goal tasks):**
+1. **Work** (W prefix, `:work` enum) - New functionality, enhancements
+2. **Defect** (D prefix, `:defect` enum) - Bug fixes, corrections
+3. **Goal** (G prefix, `:goal` type) - Container for related tasks
 
 ```json
 {
@@ -135,21 +142,33 @@ POST /api/tasks
 ### Kanban Board View
 
 **Goal Cards:**
-- Shorter height than task cards (40% of task height)
-- Light yellow background (#FFF9C4) for visual distinction
-- Top row: Title + identifier badge (G1, G2, etc.)
-- Progress bar below showing "55% (6/11)" format
-- Non-draggable - moves automatically based on child task status
-- Automatically moves to "Doing" when first task starts
-- Automatically moves to "Done" when last task completes
-- Real-time progress updates via PubSub
+- **Compact height** - `min-h-[45px]` with `p-1.5` padding (vs regular tasks with `p-3`)
+- **Reduced spacing** - `mt-1` between title and progress bar, `mt-1.5` between progress bar and badges
+- **Yellow gradient background** - `from-yellow-50 to-yellow-100` with `border-yellow-300/60`
+- **Three-line layout:**
+  - Line 1: Title (text-sm, leading-snug)
+  - Line 2: Progress bar with completion count (e.g., "6/11")
+  - Line 3: Badge row (type badge, priority, identifier)
+- **Non-draggable** - No drag handle displayed, moves automatically based on child tasks
+- **Automatic movement:**
+  - Moves to target column when ALL child tasks are in the same column
+  - Positions itself BEFORE the first child task in the target column
+  - Special handling for "Done" column - positions at end if all children complete
+  - Updates triggered by `update_parent_goal_position/3` in Tasks context
+- **Real-time progress updates** via PubSub broadcasts
+- **Type badge** - Yellow "G" badge with gradient background
+- **Visual identification** - Determined by `String.starts_with?(task.identifier, "G")`
 
 **Task Cards:**
-- Standard height and appearance
-- Display task type icons (W for work, D for defect)
-- Draggable between columns
-- Color coding: Work tasks vs Defect tasks
-- Shows standard task metadata
+- Standard height with `p-3` padding and `min-h-[60px]` (before we reduced goals)
+- Display task type icons (W for work, D for defect) with color-coded badges
+- **Draggable** between columns with visible drag handle (hero-bars-3 icon)
+- Color coding:
+  - Work tasks (W): Blue gradient badges
+  - Defect tasks (D): Red gradient badges
+- Shows standard task metadata (description, assigned user, etc.)
+- **Can be assigned to goals** via `parent_id` field
+- Moving a task triggers parent goal repositioning if applicable
 
 ### List View
 

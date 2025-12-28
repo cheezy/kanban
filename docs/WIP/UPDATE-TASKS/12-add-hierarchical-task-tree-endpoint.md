@@ -6,21 +6,23 @@
 
 **WHY:** AI agents need to see the complete structure of work - which tasks belong to which goal. This provides context for planning and understanding dependencies across the entire project.
 
-**WHAT:** Create GET /api/tasks/:id/tree endpoint that returns a nested JSON structure showing the complete hierarchy. If ID is a goal, return all its tasks. If ID is a task, return just that task. Include metadata about parent/child relationships.
+**WHAT:** Create GET /api/tasks/:id/tree endpoint that returns a nested JSON structure showing the complete hierarchy. If ID is a goal, return all its children. If ID is a task, return just that task. Include metadata about parent/child relationships and goal progress.
 
 **WHERE:** API controller, Tasks context
 
+**CURRENT STATUS:** ✅ **IMPLEMENTED** - Endpoint exists and returns hierarchical data. This document now serves as reference documentation.
+
 ## Acceptance Criteria
 
-- [ ] GET /api/tasks/:id/tree returns hierarchical JSON structure
-- [ ] For goal: Returns goal → tasks (2 levels)
-- [ ] For task: Returns task only (1 level)
-- [ ] Each item includes all rich fields (complexity, dependencies, etc.)
-- [ ] Response includes counts (total tasks, completed, blocked)
-- [ ] Respects tasks:read scope
-- [ ] Returns 401 if no/invalid token
-- [ ] Returns 404 if task ID not found
-- [ ] Filters by task_type (goal, work, defect) automatically
+- [x] GET /api/tasks/:id/tree returns hierarchical JSON structure
+- [x] For goal: Returns goal → children tasks (2 levels)
+- [x] For task: Returns task only (1 level)
+- [x] Each item includes all rich fields (complexity, dependencies, etc.)
+- [x] Response includes counts (total children, completed)
+- [x] Respects tasks:read scope
+- [x] Returns 401 if no/invalid token
+- [x] Returns 404 if task ID not found
+- [x] Filters by type (goal, work, defect) automatically
 
 ## Key Files to Read First
 
@@ -32,21 +34,44 @@
 
 ## Technical Notes
 
-**Patterns to Follow:**
-- Use recursive query or multiple queries to build tree
-- Preload all associations (key_files, verification_steps, etc.)
-- Include parent_id and task_type in response
-- Calculate statistics (total count, completed count, blocked count)
-- Return depth indicator (goal=0, task=1)
-- Order children by position or created_at
+**Implementation Details:**
+- Endpoint: `GET /api/tasks/:id/tree` in `KanbanWeb.API.TaskController`
+- Context function: `Kanban.Tasks.get_task_tree/1`
+- JSON view: `KanbanWeb.API.TaskJSON.tree/1`
+- Returns different structure based on task type (`:goal` vs `:work`/`:defect`)
+
+**Patterns Followed:**
+- Uses single query to fetch children for goals (not recursive - only 2 levels)
+- Preloads all associations via `Repo.preload`
+- Includes parent_id and type in response
+- Calculates statistics using `calculate_goal_progress/1` helper
+- Orders children by position ascending
+- For goals: Returns goal data + array of children + counts
+- For tasks: Returns just the task data (no children)
 
 **Database/Schema:**
 - Tables: tasks (with parent_id self-reference)
-- Migrations needed: No (assuming parent_id and task_type already exist)
+- Fields: `parent_id` (integer, nullable), `type` (enum: :work, :defect, :goal)
+- Migrations needed: ✅ Already exist
 - Query logic:
   - Start with root task (by ID)
-  - If task_type = "goal", find all children with parent_id = goal.id and task_type IN ("work", "defect")
-  - If task_type = "work" or "defect", return just that task
+  - If type = `:goal`, find all children with `parent_id = goal.id`
+  - If type = `:work` or `:defect`, return just that task
+
+**UI Behavior (Board View):**
+- **Goal Cards:**
+  - Compact yellow cards with progress bars
+  - Show completion percentage and count (e.g., "6/11")
+  - **Non-draggable** - no drag handle shown
+  - **Automatic movement** triggered when child tasks move:
+    - When ALL children are in same column, goal moves to that column
+    - Goal positions BEFORE first child in target column
+    - "Done" column: Goal goes to end when all children complete
+    - Movement handled by `update_parent_goal_position/3` in Tasks context
+- **Task Cards:**
+  - Regular cards with drag handles
+  - Can be assigned to goals via `parent_id` selector
+  - Moving a task triggers parent goal repositioning check
 
 **Integration Points:**
 - [ ] PubSub broadcasts: None (read-only)
