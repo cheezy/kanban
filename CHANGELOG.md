@@ -36,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   }
   ```
 
+#### Automatic Goal Deletion
+
+- **Smart goal cleanup** - Goals are automatically deleted when all their child tasks are removed:
+  - **Cascade deletion** - When the last child task of a goal is deleted, the parent goal is automatically deleted as well
+  - **Real-time updates** - Goal deletion broadcasts via PubSub for immediate UI updates
+  - **Prevents orphaned goals** - Ensures goals without children don't remain on the board
+  - **Proper reordering** - Tasks are reordered after goal deletion to maintain proper positioning
+
 ## [1.10.0] - 2025-12-28
 
 ### Added

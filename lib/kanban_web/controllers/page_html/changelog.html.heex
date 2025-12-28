@@ -98,6 +98,39 @@
                 </ul>
               </div>
             </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Automatic Goal Deletion")}
+              </h4>
+
+              <div class="mb-4">
+                <h5 class="font-semibold text-base-content mb-2">
+                  {gettext("Smart goal cleanup")}
+                </h5>
+                <p class="text-base-content opacity-70 mb-2">
+                  {gettext("Goals are automatically deleted when all their child tasks are removed:")}
+                </p>
+                <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
+                  <li>
+                    <strong>{gettext("Cascade deletion")}</strong>
+                    {gettext(" - When the last child task of a goal is deleted, the parent goal is automatically deleted as well")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Real-time updates")}</strong>
+                    {gettext(" - Goal deletion broadcasts via PubSub for immediate UI updates")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Prevents orphaned goals")}</strong>
+                    {gettext(" - Ensures goals without children don't remain on the board")}
+                  </li>
+                  <li>
+                    <strong>{gettext("Proper reordering")}</strong>
+                    {gettext(" - Tasks are reordered after goal deletion to maintain proper positioning")}
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 
