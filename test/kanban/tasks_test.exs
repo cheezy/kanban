@@ -3980,5 +3980,44 @@ defmodule Kanban.TasksTest do
       assert step.step_type == "command"
       assert step.step_text == "mix test"
     end
+
+    test "deleting all child tasks also deletes the parent goal" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        "title" => "Goal to be deleted",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Child Task 1", "type" => "work"},
+        %{"title" => "Child Task 2", "type" => "work"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: [task1, task2]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      goal_id = goal.id
+
+      # Verify goal exists
+      assert Tasks.get_task!(goal_id)
+
+      # Delete first child task
+      assert {:ok, _} = Tasks.delete_task(task1)
+
+      # Goal should still exist
+      assert Tasks.get_task!(goal_id)
+
+      # Delete second child task
+      assert {:ok, _} = Tasks.delete_task(task2)
+
+      # Goal should be automatically deleted
+      assert_raise Ecto.NoResultsError, fn ->
+        Tasks.get_task!(goal_id)
+      end
+    end
   end
 end

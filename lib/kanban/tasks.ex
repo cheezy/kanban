@@ -434,16 +434,42 @@ defmodule Kanban.Tasks do
     if dependent_tasks != [] do
       {:error, :has_dependents}
     else
+      parent_id = task.parent_id
       result = Repo.delete(task)
 
       case result do
         {:ok, deleted_task} ->
           reorder_after_deletion(deleted_task)
           broadcast_task_change(deleted_task, :task_deleted)
+
+          # If this task had a parent goal, check if the goal has any remaining children
+          # If not, delete the goal as well
+          if parent_id do
+            delete_goal_if_no_children(parent_id)
+          end
+
           {:ok, deleted_task}
 
         error ->
           error
+      end
+    end
+  end
+
+  defp delete_goal_if_no_children(goal_id) do
+    remaining_children_count =
+      Task
+      |> where([t], t.parent_id == ^goal_id)
+      |> Repo.aggregate(:count)
+
+    if remaining_children_count == 0 do
+      goal = Repo.get(Task, goal_id)
+
+      if goal do
+        # Delete the goal since it has no children
+        Repo.delete(goal)
+        reorder_after_deletion(goal)
+        broadcast_task_change(goal, :task_deleted)
       end
     end
   end
