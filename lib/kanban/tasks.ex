@@ -922,7 +922,7 @@ defmodule Kanban.Tasks do
       from(t in query,
         where:
           fragment("cardinality(?)", t.required_capabilities) == 0 or
-            fragment("? <@ ?", t.required_capabilities, ^agent_capabilities)
+            fragment("?::varchar[] @> ?", ^agent_capabilities, t.required_capabilities)
       )
 
     # Apply dependency filter
@@ -1013,10 +1013,10 @@ defmodule Kanban.Tasks do
   defp get_specific_task_for_claim(identifier, agent_capabilities, board_id) do
     now = DateTime.utc_now()
 
-    completed_task_ids =
+    completed_task_identifiers =
       from(t in Task,
         where: t.status == :completed,
-        select: fragment("?::text", t.id)
+        select: t.identifier
       )
 
     query =
@@ -1033,7 +1033,7 @@ defmodule Kanban.Tasks do
       from(t in query,
         where:
           fragment("cardinality(?)", t.required_capabilities) == 0 or
-            fragment("? <@ ?", t.required_capabilities, ^agent_capabilities)
+            fragment("?::varchar[] @> ?", ^agent_capabilities, t.required_capabilities)
       )
 
     query =
@@ -1047,7 +1047,7 @@ defmodule Kanban.Tasks do
                 WHERE dep_id NOT IN (?)
               )",
               t.dependencies,
-              subquery(completed_task_ids)
+              subquery(completed_task_identifiers)
             )
       )
 
