@@ -25,7 +25,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
    curl -X POST -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"agent_name": "Claude Sonnet 4.5"}' \
-     http://localhost:4000/api/tasks/claim
+     https://www.stridelikeaboss.com/api/tasks/claim
 
    # Execute before_doing hook
    # ... do your work ...
@@ -34,7 +34,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
    curl -X PATCH -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"agent_name": "Claude Sonnet 4.5", "time_spent_minutes": 45}' \
-     http://localhost:4000/api/tasks/W21/complete
+     https://www.stridelikeaboss.com/api/tasks/W21/complete
 
    # Execute after_doing and before_review hooks
    ```
@@ -52,7 +52,7 @@ Store your token securely in `.stride_auth.md`:
 ```markdown
 # Stride API Authentication
 
-- **API URL:** `http://localhost:4000`
+- **API URL:** `https://www.stridelikeaboss.com`
 - **API Token:** `stride_dev_abc123...`
 - **User Email:** `your-email@example.com`
 ```
@@ -188,7 +188,7 @@ Store authentication credentials (DO NOT commit to version control):
 
 ## API Configuration
 
-- **API URL:** `http://localhost:4000`
+- **API URL:** `https://www.stridelikeaboss.com`
 - **API Token:** `stride_dev_abc123...`
 - **User Email:** `your-email@example.com`
 - **Token Name:** Development Agent
@@ -199,7 +199,7 @@ Store authentication credentials (DO NOT commit to version control):
 
 ```bash
 export STRIDE_API_TOKEN="stride_dev_abc123..."
-export STRIDE_API_URL="http://localhost:4000"
+export STRIDE_API_URL="https://www.stridelikeaboss.com"
 
 curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   $STRIDE_API_URL/api/tasks/next

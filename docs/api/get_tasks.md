@@ -92,7 +92,7 @@ Column doesn't belong to the current board:
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks
+  https://www.stridelikeaboss.com/api/tasks
 ```
 
 ### Get tasks in a specific column
@@ -100,7 +100,7 @@ curl -X GET \
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks?column_id=5
+  https://www.stridelikeaboss.com/api/tasks?column_id=5
 ```
 
 ## Use Cases

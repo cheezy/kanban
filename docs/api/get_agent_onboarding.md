@@ -21,7 +21,7 @@ Returns comprehensive onboarding information:
 ```json
 {
   "version": "1.0",
-  "api_base_url": "http://localhost:4000",
+  "api_base_url": "https://www.stridelikeaboss.com",
   "overview": {
     "description": "Stride is a kanban-based task management system...",
     "workflow_summary": "Ready → Doing → Review → Done",
@@ -38,7 +38,7 @@ Returns comprehensive onboarding information:
   },
   "workflow": {
     "claim_task": {
-      "endpoint": "POST http://localhost:4000/api/tasks/claim",
+      "endpoint": "POST https://www.stridelikeaboss.com/api/tasks/claim",
       "description": "Claim next available task",
       "returns": "Task data + before_doing hook metadata",
       "documentation_url": "docs/api/post_tasks_claim.md"
@@ -61,7 +61,7 @@ Returns comprehensive onboarding information:
     "execution_flow": [...]
   },
   "api_reference": {
-    "base_url": "http://localhost:4000",
+    "base_url": "https://www.stridelikeaboss.com",
     "authentication": "Bearer token in Authorization header",
     "endpoints": {
       "discovery": [...],
@@ -70,9 +70,9 @@ Returns comprehensive onboarding information:
     }
   },
   "resources": {
-    "documentation_url": "http://localhost:4000/docs/api/README.md",
-    "api_workflow_guide": "http://localhost:4000/docs/WIP/AI-WORKFLOW.md",
-    "changelog_url": "http://localhost:4000/changelog"
+    "documentation_url": "https://www.stridelikeaboss.com/docs/api/README.md",
+    "api_workflow_guide": "https://www.stridelikeaboss.com/docs/WIP/AI-WORKFLOW.md",
+    "changelog_url": "https://www.stridelikeaboss.com/changelog"
   }
 }
 ```
@@ -130,40 +130,40 @@ Links to additional documentation and resources.
 ### Get onboarding info
 
 ```bash
-curl http://localhost:4000/api/agent/onboarding | jq '.'
+curl https://www.stridelikeaboss.com/api/agent/onboarding | jq '.'
 ```
 
 ### Extract quick start steps
 
 ```bash
-curl -s http://localhost:4000/api/agent/onboarding | jq -r '.quick_start[]'
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | jq -r '.quick_start[]'
 ```
 
 ### Get .stride_auth.md template
 
 ```bash
-curl -s http://localhost:4000/api/agent/onboarding | \
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq -r '.file_templates.stride_auth_md' > .stride_auth.md
 ```
 
 ### Get .stride.md template
 
 ```bash
-curl -s http://localhost:4000/api/agent/onboarding | \
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq -r '.file_templates.stride_md' > .stride.md
 ```
 
 ### List all available hooks
 
 ```bash
-curl -s http://localhost:4000/api/agent/onboarding | \
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq '.hooks.available_hooks'
 ```
 
 ### Get workflow steps
 
 ```bash
-curl -s http://localhost:4000/api/agent/onboarding | \
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq '.hooks.execution_flow'
 ```
 

@@ -74,7 +74,7 @@ No tasks available that match your capabilities:
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks/next
+  https://www.stridelikeaboss.com/api/tasks/next
 ```
 
 ## Notes

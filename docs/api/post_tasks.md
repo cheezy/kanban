@@ -234,7 +234,7 @@ curl -X POST \
       "complexity": "low"
     }
   }' \
-  http://localhost:4000/api/tasks
+  https://www.stridelikeaboss.com/api/tasks
 ```
 
 ### Create a goal with child tasks
@@ -255,7 +255,7 @@ curl -X POST \
       ]
     }
   }' \
-  http://localhost:4000/api/tasks
+  https://www.stridelikeaboss.com/api/tasks
 ```
 
 ## See Also

@@ -122,7 +122,7 @@ Task not found:
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks/123
+  https://www.stridelikeaboss.com/api/tasks/123
 ```
 
 ### Get task by identifier
@@ -130,7 +130,7 @@ curl -X GET \
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks/W21
+  https://www.stridelikeaboss.com/api/tasks/W21
 ```
 
 ## Use Cases

@@ -96,7 +96,7 @@ curl -X POST \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "Missing dependencies"}' \
-  http://localhost:4000/api/tasks/123/unclaim
+  https://www.stridelikeaboss.com/api/tasks/123/unclaim
 ```
 
 ### Unclaim by task identifier
@@ -106,7 +106,7 @@ curl -X POST \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "Not enough context to complete"}' \
-  http://localhost:4000/api/tasks/W21/unclaim
+  https://www.stridelikeaboss.com/api/tasks/W21/unclaim
 ```
 
 ## When to Use

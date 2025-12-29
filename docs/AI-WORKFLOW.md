@@ -202,7 +202,7 @@ The hook system enables agents to execute custom workflows at key points in the 
 ```markdown
 # Stride API Authentication
 
-- **API URL:** `http://localhost:4000`
+- **API URL:** `https://www.stridelikeaboss.com`
 - **API Token:** `stride_dev_abc123...`
 - **User Email:** `your-email@example.com`
 ```

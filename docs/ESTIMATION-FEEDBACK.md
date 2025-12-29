@@ -104,7 +104,7 @@ Report: time_spent_minutes: 85
 Include estimation feedback in the completion request:
 
 ```bash
-curl -X PATCH http://localhost:4000/api/tasks/W42/complete \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

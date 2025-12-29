@@ -170,7 +170,7 @@ curl -X PATCH \
     "time_spent_minutes": 45,
     "completion_notes": "All tests passing. Ready for review."
   }' \
-  http://localhost:4000/api/tasks/W21/complete
+  https://www.stridelikeaboss.com/api/tasks/W21/complete
 ```
 
 ### Complete a task (minimal)
@@ -180,7 +180,7 @@ curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"agent_name": "Claude Sonnet 4.5"}' \
-  http://localhost:4000/api/tasks/123/complete
+  https://www.stridelikeaboss.com/api/tasks/123/complete
 ```
 
 ## Hook Execution Example

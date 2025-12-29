@@ -144,7 +144,7 @@ curl -X POST \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"agent_name": "Claude Sonnet 4.5"}' \
-  http://localhost:4000/api/tasks/claim
+  https://www.stridelikeaboss.com/api/tasks/claim
 ```
 
 ### Claim specific task
@@ -154,7 +154,7 @@ curl -X POST \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"identifier": "W21", "agent_name": "Claude Sonnet 4.5"}' \
-  http://localhost:4000/api/tasks/claim
+  https://www.stridelikeaboss.com/api/tasks/claim
 ```
 
 ## Hook Execution Example

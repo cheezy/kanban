@@ -155,7 +155,7 @@ Invalid review status:
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
-  http://localhost:4000/api/tasks/W21/mark_reviewed
+  https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed
 ```
 
 ### With numeric ID
@@ -164,7 +164,7 @@ curl -X PATCH \
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
-  http://localhost:4000/api/tasks/123/mark_reviewed
+  https://www.stridelikeaboss.com/api/tasks/123/mark_reviewed
 ```
 
 ## Hook Execution Example

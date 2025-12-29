@@ -137,7 +137,7 @@ Task not found:
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks/125/tree
+  https://www.stridelikeaboss.com/api/tasks/125/tree
 ```
 
 ### Get goal tree by identifier
@@ -145,7 +145,7 @@ curl -X GET \
 ```bash
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  http://localhost:4000/api/tasks/G10/tree
+  https://www.stridelikeaboss.com/api/tasks/G10/tree
 ```
 
 ## Use Cases

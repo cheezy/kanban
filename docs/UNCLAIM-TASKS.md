@@ -112,7 +112,7 @@ Instead of waiting for the 60-minute claim timeout, you can **unclaim** the task
 ### Basic Example
 
 ```bash
-curl -X POST http://localhost:4000/api/tasks/W42/unclaim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/W42/unclaim \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -157,7 +157,7 @@ curl -X POST http://localhost:4000/api/tasks/W42/unclaim \
 
 ```bash
 # 1. Claim task
-curl -X POST http://localhost:4000/api/tasks/claim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"agent_name": "Claude Sonnet 4.5"}'
 
@@ -179,7 +179,7 @@ curl -X POST http://localhost:4000/api/tasks/claim \
 # Discover: jsonwebtoken library not in package.json
 
 # 4. Unclaim immediately with reason
-curl -X POST http://localhost:4000/api/tasks/W42/unclaim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/W42/unclaim \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "reason": "Missing jsonwebtoken dependency - needs to be added to package.json first"
@@ -205,7 +205,7 @@ curl -X POST http://localhost:4000/api/tasks/W42/unclaim \
 # Problem: "Make it better" is too vague - no specific requirements
 
 # 3. Unclaim with detailed feedback
-curl -X POST http://localhost:4000/api/tasks/W43/unclaim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/W43/unclaim \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "reason": "Task description unclear. Please provide: 1) Specific UI changes needed, 2) Mockups or wireframes, 3) Acceptance criteria. Currently just says \"Make it better\" without specifics."
@@ -230,7 +230,7 @@ curl -X POST http://localhost:4000/api/tasks/W43/unclaim \
 # Response: 503 Service Unavailable
 
 # 3. Unclaim with specific blocker
-curl -X POST http://localhost:4000/api/tasks/W44/unclaim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/W44/unclaim \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "reason": "External CRM API is down (https://api.crm.example.com returning 503). Task should be rescheduled when API is back online."
@@ -254,7 +254,7 @@ curl -X POST http://localhost:4000/api/tasks/W44/unclaim \
 # Discover: Requires database migration from W40 to be applied first
 
 # 3. Unclaim and reference blocker
-curl -X POST http://localhost:4000/api/tasks/W45/unclaim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/W45/unclaim \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "reason": "Blocked by Task W40 (database migration). Redis caching schema requires columns added in W40 migration. Should add W40 as dependency and wait for it to complete."

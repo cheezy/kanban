@@ -101,7 +101,7 @@ These are the recommended capability types. Your API token can declare any combi
 ### No Tasks Available
 
 ```bash
-curl -X POST http://localhost:4000/api/tasks/claim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN"
 ```
 

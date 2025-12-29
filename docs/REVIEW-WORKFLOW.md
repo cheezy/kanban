@@ -118,7 +118,7 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 When you claim a task, the response includes the `needs_review` field:
 
 ```bash
-curl -X POST http://localhost:4000/api/tasks/claim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"agent_name": "Claude Sonnet 4.5"}'
@@ -150,7 +150,7 @@ Response:
 When completing, check the response to determine next action:
 
 ```bash
-curl -X PATCH http://localhost:4000/api/tasks/W42/complete \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
