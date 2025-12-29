@@ -40,6 +40,269 @@ This guide helps create clear, actionable tasks that AI agents (and human develo
 - Task 1: `W1 - Add search schema`
 - Task 2: `W2 - Build search UI`
 
+## Understanding the 2-Level Task Hierarchy
+
+Stride uses a **2-level hierarchy** to organize work effectively:
+
+### The Two Levels
+
+1. **Goals (G prefix)** - Large initiatives requiring 25+ hours
+   - Container for multiple related tasks
+   - Identifier: G1, G2, G3, etc.
+   - Has `parent_id` of `nil` (top-level)
+   - Progress tracked automatically (e.g., "7/13 tasks complete")
+   - Moves through workflow automatically based on child task states
+
+2. **Tasks (W/D prefix)** - Individual work items (1-3 hours each)
+   - **Work tasks (W prefix)** - New functionality, enhancements
+   - **Defects (D prefix)** - Bug fixes, corrections
+   - Can belong to a goal (via `parent_id`) or be standalone
+   - Moved manually through workflow columns
+
+### When to Create a Goal
+
+**Create a Goal when:**
+- Planning large initiatives (25+ hours total)
+- Breaking down complex features into multiple work items
+- Grouping related tasks for a release or milestone
+- You need to track progress across multiple related tasks
+
+**Example:**
+```json
+POST /api/tasks
+{
+  "goal": {
+    "title": "Implement user authentication system",
+    "description": "Add comprehensive authentication with JWT tokens, password reset, and session management",
+    "estimated_hours": 40,
+    "tasks": [
+      {
+        "title": "Add JWT library and configuration",
+        "type": "work",
+        "complexity": "small",
+        "estimated_hours": 2
+      },
+      {
+        "title": "Create auth controller and endpoints",
+        "type": "work",
+        "complexity": "medium",
+        "estimated_hours": 4,
+        "dependencies": ["W1"]
+      },
+      {
+        "title": "Add password reset flow",
+        "type": "work",
+        "complexity": "medium",
+        "estimated_hours": 3,
+        "dependencies": ["W2"]
+      },
+      {
+        "title": "Fix password validation bug",
+        "type": "defect",
+        "complexity": "small",
+        "estimated_hours": 1
+      }
+    ]
+  }
+}
+```
+
+### When to Use Flat Tasks
+
+**Create flat tasks when:**
+- Quick fixes or bugs (use `type: "defect"`)
+- Independent features (use `type: "work"`)
+- Simple requests that don't belong to a larger initiative
+- The work takes less than 8 hours total
+
+**Example:**
+```json
+POST /api/tasks
+{
+  "title": "Fix typo in welcome email",
+  "type": "defect",
+  "complexity": "small",
+  "estimated_hours": 0.5,
+  "description": "The welcome email has 'recieve' instead of 'receive'"
+}
+```
+
+### Why This Structure Works for Agents
+
+1. **Natural planning structure** - Matches how you break down work mentally
+2. **Progress visibility** - Goals show "7/13 tasks complete" automatically
+3. **Context preservation** - If interrupted, goal shows full context and related tasks
+4. **Scope management** - Easy to see what's part of a larger initiative
+5. **Simpler than 3+ levels** - Only 2 levels means less overhead and complexity
+
+### How Goals Move Through Workflow
+
+**Automatic movement:**
+- Goals are **not draggable** - they move automatically
+- When ALL child tasks are in the same column, the goal moves to that column
+- Goal positions itself BEFORE the first child task in the target column
+- Special case: When all tasks complete, goal moves to "Done" at the end
+
+**Example workflow:**
+```
+Initial state:
+- G1 (Ready) - "Implement auth"
+  - W1 (Ready) - "Add JWT library"
+  - W2 (Ready) - "Create controller"
+
+After W1 moves to Doing:
+- G1 (Ready) - "Implement auth"  # Stays in Ready (not all tasks in same column)
+  - W1 (Doing) - "Add JWT library"
+  - W2 (Ready) - "Create controller"
+
+After W2 moves to Doing:
+- G1 (Doing) - "Implement auth"  # Moves to Doing automatically
+  - W1 (Doing) - "Add JWT library"
+  - W2 (Doing) - "Create controller"
+
+After both complete:
+- G1 (Done) - "Implement auth"  # Moves to Done automatically
+  - W1 (Done) - "Add JWT library"
+  - W2 (Done) - "Create controller"
+```
+
+### Adding Tasks to Existing Goals
+
+You can attach tasks to existing goals by providing the goal's identifier:
+
+```json
+POST /api/tasks
+{
+  "title": "Add session timeout feature",
+  "type": "work",
+  "parent_goal": "G1",
+  "complexity": "small",
+  "estimated_hours": 2
+}
+```
+
+This task will become part of goal G1 and update its progress count.
+
+## Why Structured JSON Format Matters for Agents
+
+When creating tasks, use **structured JSON** instead of free-form markdown for technical details. Here's why:
+
+### Structured JSON is Significantly Better
+
+**✅ Advantages for agents:**
+
+1. **Parseable & Actionable** - Agents can extract specific fields directly
+   - See `files_to_modify` → Read those files first
+   - See `migration_needed: true` → Generate a migration
+   - See `test_scenarios` → Know exactly what to test
+
+2. **Reduces Ambiguity** - Clear structure means clear expectations
+   - "Modify these 3 files" vs "You'll probably need to change some files"
+   - "Add these specific tests" vs "Make sure to test it"
+
+3. **Saves Time** - No need to parse natural language or guess intent
+   - Agent can jump directly to the right files
+   - Clear test scenarios mean no exploration needed
+   - Explicit constraints prevent wrong approaches
+
+4. **Consistent** - Same structure across all tasks
+   - Agents learn the pattern once
+   - Easier to validate and query
+   - Reduces miscommunication
+
+### Example Comparison
+
+**❌ Markdown (Harder for agents):**
+```markdown
+You'll need to modify the board LiveView and probably the Boards context.
+Look at how the status filter works and do something similar. Make sure to
+add tests. Oh and don't change the card layout.
+```
+
+**Problems:**
+- "probably" → uncertainty
+- "something similar" → vague
+- Which files exactly? → agent must guess
+- What tests specifically? → undefined
+
+**✅ Structured JSON (Better for agents):**
+```json
+{
+  "title": "Add priority filter to board view",
+  "type": "work",
+  "complexity": "medium",
+  "key_files": [
+    {
+      "path": "lib/kanban_web/live/board_live.ex",
+      "reason": "Add filter UI and handle_event"
+    },
+    {
+      "path": "lib/kanban/boards.ex",
+      "reason": "Add filter query logic"
+    }
+  ],
+  "reference_files": [
+    "lib/kanban_web/live/board_live/status_filter_component.ex"
+  ],
+  "patterns_to_follow": [
+    "Use handle_event for filter changes (see status filter)",
+    "Put query logic in context module, not LiveView"
+  ],
+  "constraints": [
+    "Must not modify task card layout or styling"
+  ],
+  "test_scenarios": [
+    "Filter by each priority level (0-4)",
+    "Clear filter shows all tasks",
+    "Filter state persists in URL"
+  ]
+}
+```
+
+**Benefits:**
+- Agent knows exactly which files to modify
+- Clear reference file to learn from
+- Explicit patterns to follow
+- Specific constraints
+- Defined test scenarios
+
+### Hybrid Approach (Recommended)
+
+Use structured fields for machine-readable data, plus optional markdown for nuance:
+
+```json
+{
+  "title": "Implement password reset flow",
+  "type": "work",
+  "key_files": [
+    {"path": "lib/kanban_web/controllers/auth_controller.ex"}
+  ],
+  "constraints": ["Use PHX.Token for reset tokens"],
+  "notes": "## Additional Context\n\nThe reset token should expire after 1 hour. Priority scale is 0-4 where 0 is highest (might be counterintuitive)."
+}
+```
+
+This gives you:
+- Precision where it matters (files, tests, patterns)
+- Flexibility for additional context
+- Agent efficiency
+- Human readability
+
+### What to Make Structured
+
+**Always structure these fields:**
+- `key_files` - File paths to modify
+- `test_scenarios` - What to test
+- `constraints` - What NOT to do
+- `patterns_to_follow` - Code patterns to replicate
+- `acceptance_criteria` - Definition of done
+
+**Optional markdown for:**
+- Additional context or nuance
+- Examples that don't fit the structure
+- Background information
+- Historical context
+
 ## Essential Information for Easy Implementation
 
 1. Clear Acceptance Criteria
