@@ -53,7 +53,6 @@ defmodule KanbanWeb.API.AgentJSON do
         - **API Token:** `{{YOUR_TOKEN_HERE}}`
         - **User Email:** `{{YOUR_EMAIL}}`
         - **Token Name:** Development Agent
-        - **Scopes:** tasks:read, tasks:write
         - **Capabilities:** code_generation, testing
 
         ## Usage
@@ -255,6 +254,7 @@ defmodule KanbanWeb.API.AgentJSON do
       },
       resources: %{
         documentation_url: "#{@docs_base_url}/docs/api/README.md",
+        authentication_guide: "#{@docs_base_url}/docs/AUTHENTICATION.md",
         api_workflow_guide: "#{@docs_base_url}/docs/AI-WORKFLOW.md",
         task_writing_guide: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
         hook_execution_guide: "#{@docs_base_url}/docs/AGENT-HOOK-EXECUTION-GUIDE.md",

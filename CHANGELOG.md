@@ -5,6 +5,32 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2025-12-29
+
+### Added
+
+#### Agent Onboarding Endpoint
+
+- **GET /api/agent/onboarding** - Comprehensive onboarding endpoint for AI agents starting work with Stride:
+  - **Critical first steps** - Immediate guidance on creating `.stride_auth.md` and `.stride.md` configuration files
+  - **File templates** - Complete templates for both configuration files included in response
+  - **Workflow overview** - Clear explanation of the Ready → Doing → Review → Done workflow
+  - **Hook execution guide** - Complete documentation of all four hook points with environment variables
+  - **API reference** - Full endpoint listing with categorization (discovery, management, creation)
+  - **Documentation links** - Direct URLs to all agent-facing documentation guides
+  - **Quick start guide** - Step-by-step instructions for getting started immediately
+  - Returns all information needed for an agent to begin working without external documentation lookup
+
+- **Comprehensive Agent Documentation** - Created complete documentation set for AI agents:
+  - `AUTHENTICATION.md` - Bearer token authentication with `.stride_auth.md` format
+  - `AGENT-CAPABILITIES.md` - Capability matching system with 12 standard capabilities
+  - `AGENT-HOOK-EXECUTION-GUIDE.md` - Client-side hook execution with complete examples
+  - `TASK-WRITING-GUIDE.md` - Task creation guide with structured JSON format rationale
+  - `REVIEW-WORKFLOW.md` - Review workflow patterns and continuous work loop
+  - `ESTIMATION-FEEDBACK.md` - Providing estimation feedback on task completion
+  - `UNCLAIM-TASKS.md` - When and how to release tasks agents can't complete
+  - `AI-WORKFLOW.md` - Complete agent workflow from authentication to task completion
+
 ## [1.11.0] - 2025-12-28
 
 ### Added
