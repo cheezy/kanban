@@ -36,6 +36,59 @@
 
         <section class="mb-10">
           <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("AI-Human Collaboration Platform")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Key collaboration features include:"
+            )}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("Capability Matching")}</strong>
+              {gettext(
+                " - Tasks specify required capabilities, and agents only see tasks matching their skills"
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Atomic Task Claiming")}</strong>
+              {gettext(
+                " - Optimistic locking prevents multiple agents from claiming the same task"
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Client-Side Workflow Hooks")}</strong>
+              {gettext(
+                " - Execute custom code at key moments: before_doing, after_doing, before_review, after_review"
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Human Review Workflow")}</strong>
+              {gettext(
+                " - Optional human approval before tasks move to Done, with request for changes capability"
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Comprehensive API Documentation")}</strong>
+              {gettext(
+                " - Complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding"
+              )}
+            </li>
+          </ul>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Version History")}
           </h2>
           <p class="text-base-content opacity-70 leading-relaxed mb-4">

@@ -31,6 +31,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `UNCLAIM-TASKS.md` - When and how to release tasks agents can't complete
   - `AI-WORKFLOW.md` - Complete agent workflow from authentication to task completion
 
+### Changed
+
+#### Homepage Redesign
+
+- **AI-Human Collaboration Focus** - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform:
+  - **Hero section** - Updated badge to "AI-Human Collaboration Platform" and headline to emphasize AI agents working alongside humans
+  - **Value proposition** - Rewritten to highlight workflow hooks, task delegation to AI, and human review control
+  - **Feature cards** - Replaced generic kanban features with collaboration-focused features:
+    - **AI Agent Integration** - REST API with capability matching and workflow hooks
+    - **Automated Task Claiming** - Atomic claiming with optimistic locking and dependency handling
+    - **Human Review Workflow** - Optional human review and approval process
+    - **Client-Side Workflow Hooks** - Custom code execution at four key workflow moments
+
+#### About Page Enhancement
+
+- **AI-Human Collaboration Platform Section** - Added new section explaining Stride's collaborative features:
+  - **Overview** - Describes how AI agents and humans work together through REST API and review workflows
+  - **Five key features** - Capability matching, atomic task claiming, client-side hooks, human review, and API documentation
+  - **Use case description** - Explains how teams delegate repetitive tasks to AI while humans focus on architecture and review
+
 ## [1.11.0] - 2025-12-28
 
 ### Added

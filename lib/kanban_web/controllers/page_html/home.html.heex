@@ -13,19 +13,19 @@
                 clip-rule="evenodd"
               />
             </svg>
-            {gettext("Professional Task Management")}
+            {gettext("AI-Human Collaboration Platform")}
           </.hero_badge>
 
           <.hero_title>
             {gettext("Stride")}
             <.hero_title_gradient>
-              {gettext("Organize Your Work")}
+              {gettext("Where AI Agents and Humans Work Together")}
             </.hero_title_gradient>
           </.hero_title>
 
           <p class="text-lg sm:text-xl text-base-content opacity-70 leading-relaxed">
             {gettext(
-              "Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive."
+              "The kanban board designed for seamless collaboration between humans and AI agents. Define workflows with hooks, delegate tasks to AI, and maintain full control through human review."
             )}
           </p>
 
@@ -80,18 +80,18 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl sm:text-4xl font-bold text-base-content mb-4">
-          {gettext("Everything You Need to Stay Organized")}
+          {gettext("Built for AI-Human Collaboration")}
         </h2>
         <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
-          {gettext("Simple, powerful features designed for modern teams")}
+          {gettext("Powerful features that enable humans and AI agents to work together seamlessly")}
         </p>
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
         <.feature_card
           icon_color="blue"
-          title={gettext("Multiple Boards")}
-          description={gettext("Create unlimited boards for different projects and teams.")}
+          title={gettext("AI Agent Integration")}
+          description={gettext("AI agents can claim and complete tasks using comprehensive REST API with capability matching and workflow hooks.")}
         >
           <:icon>
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
               />
             </svg>
           </:icon>
@@ -107,9 +107,9 @@
 
         <.feature_card
           icon_color="orange"
-          title={gettext("Custom Columns")}
+          title={gettext("Automated Task Claiming")}
           description={
-            gettext("Organize tasks with customizable columns that fit your workflow.")
+            gettext("Atomic task claiming with optimistic locking prevents conflicts. Agents match tasks by capability and dependencies.")
           }
         >
           <:icon>
@@ -118,7 +118,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
               />
             </svg>
           </:icon>
@@ -126,8 +126,8 @@
 
         <.feature_card
           icon_color="blue-alt"
-          title={gettext("Drag & Drop")}
-          description={gettext("Effortlessly move tasks between columns with drag and drop.")}
+          title={gettext("Human Review Workflow")}
+          description={gettext("Optional human review on task completion. Humans can approve or request changes before tasks move to Done.")}
         >
           <:icon>
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +135,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           </:icon>
@@ -143,8 +143,8 @@
 
         <.feature_card
           icon_color="orange"
-          title={gettext("Manage Users")}
-          description={gettext("Assign proper access to team members.")}
+          title={gettext("Client-Side Workflow Hooks")}
+          description={gettext("Execute custom client-side code at key workflow moments: before_doing, after_doing, before_review, after_review.")}
         >
           <:icon>
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +152,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
               />
             </svg>
           </:icon>
