@@ -1,4 +1,44 @@
-# TASKS - what is needed to implement a task efficiently - from Claude Code
+# Task Writing Guide for AI Agents
+
+This guide helps create clear, actionable tasks that AI agents (and human developers) can implement efficiently. Well-written tasks reduce back-and-forth, minimize exploration time, and lead to better implementations.
+
+## Important: Task Identifiers Are Auto-Generated
+
+**DO NOT specify identifiers when creating tasks.** The system automatically generates human-readable identifiers for all tasks:
+
+- **G1, G2, G3...** - Goals (large initiatives, 25+ hours, contain multiple tasks)
+- **W1, W2, W3...** - Work tasks (individual work items, 1-3 hours)
+- **D1, D2, D3...** - Defects (bug fixes and defect corrections)
+
+**What this means for you:**
+- When creating tasks via `POST /api/tasks`, **never** include an `identifier` field
+- The system will automatically assign the next available identifier (e.g., W42, G5, D12)
+- Identifiers are globally unique and sequential
+- You can reference tasks by identifier after they're created (e.g., "W42 depends on W15")
+
+**Example - Creating a Goal with Tasks:**
+```json
+{
+  "goal": {
+    "title": "Implement search feature",
+    "tasks": [
+      {
+        "title": "Add search schema",
+        "type": "work"
+      },
+      {
+        "title": "Build search UI",
+        "type": "work"
+      }
+    ]
+  }
+}
+```
+
+**System generates:**
+- Goal: `G1 - Implement search feature`
+- Task 1: `W1 - Add search schema`
+- Task 2: `W2 - Build search UI`
 
 ## Essential Information for Easy Implementation
 
@@ -192,8 +232,8 @@ mix precommit
 
 ### Dependencies
 
-**Requires:** [bead-id or "none"]
-**Blocks:** [bead-id or "none"]
+**Requires:** [task-id or "none"]
+**Blocks:** [task-id or "none"]
 
 ### Out of Scope
 
@@ -361,17 +401,19 @@ from t in Task,
     - Assumptions I'm making
     - Questions for the user
 
-### What I Use to Track This
+### Task Tracking in Stride
 
-In this project, I should be using Beads (bd) to track tasks instead of my TodoWrite tool. The Beads system is better because:
-    - It persists across sessions
-    - It's git-synced
-    - It handles dependencies
-    - It's visible to you and other developers
+In this project, tasks are tracked in the Stride kanban system with the following benefits:
+- Persists across sessions
+- API accessible for AI agents
+- Handles dependencies between tasks and goals
+- Visible to all team members and agents
+- Hook-based workflow for automation
 
-However, internally during a single session, I also benefit from having a working memory of:
-    - The current task breakdown
-    - What step I'm on
-    - What's blocked/waiting
+When creating tasks in Stride, include enough detail from this guide so that any agent (or developer) can:
+- Understand the context immediately
+- Start implementing without extensive exploration
+- Know exactly what success looks like
+- Verify their work is complete
 
-So ideally, a Beads issue would contain enough detail that I can rebuild this mental model quickly when I start working on it! Is this the kind of information you're thinking about storing in Beads tasks to make implementation smoother?
+Well-written tasks with clear acceptance criteria, code locations, and verification steps make the difference between a 30-minute implementation and a 3-hour exploration session.

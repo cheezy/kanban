@@ -114,7 +114,8 @@ defmodule KanbanWeb.API.AgentJSON do
       workflow: %{
         claim_task: %{
           endpoint: "POST #{base_url}/api/tasks/claim",
-          description: "Claim next available task matching your capabilities",
+          description:
+            "Claim next available task matching your capabilities. Claims automatically expire after 60 minutes if not completed, releasing the task for other agents.",
           returns: "Task data + before_doing hook metadata",
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks_claim.md"
         },
@@ -255,6 +256,12 @@ defmodule KanbanWeb.API.AgentJSON do
       resources: %{
         documentation_url: "#{@docs_base_url}/docs/api/README.md",
         api_workflow_guide: "#{@docs_base_url}/docs/AI-WORKFLOW.md",
+        task_writing_guide: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
+        hook_execution_guide: "#{@docs_base_url}/docs/AGENT-HOOK-EXECUTION-GUIDE.md",
+        review_workflow_guide: "#{@docs_base_url}/docs/REVIEW-WORKFLOW.md",
+        estimation_feedback_guide: "#{@docs_base_url}/docs/ESTIMATION-FEEDBACK.md",
+        unclaim_guide: "#{@docs_base_url}/docs/UNCLAIM-TASKS.md",
+        capabilities_guide: "#{@docs_base_url}/docs/AGENT-CAPABILITIES.md",
         changelog_url: "#{@docs_base_url}/CHANGELOG.md"
       }
     }
