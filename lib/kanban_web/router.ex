@@ -26,6 +26,10 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.AuthenticateApiToken
   end
 
+  pipeline :api_public do
+    plug :accepts, ["json"]
+  end
+
   scope "/", KanbanWeb do
     pipe_through :browser
 
@@ -34,6 +38,13 @@ defmodule KanbanWeb.Router do
     get "/tango", PageController, :tango
     get "/changelog", PageController, :changelog
     post "/locale/:locale", PageController, :set_locale
+  end
+
+  # Public API routes (no authentication required)
+  scope "/api", KanbanWeb.API, as: :api do
+    pipe_through :api_public
+
+    get "/agent/onboarding", AgentController, :onboarding
   end
 
   # API routes with token authentication
