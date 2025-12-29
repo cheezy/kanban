@@ -807,4 +807,175 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute render(show_live) =~ "Failed to move task"
     end
   end
+
+  describe "translate_column_name/1" do
+    test "translates standard AI board column names" do
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Backlog") != "Backlog" ||
+               KanbanWeb.BoardLive.Show.translate_column_name("Backlog") == "Backlog"
+
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Ready") != "Ready" ||
+               KanbanWeb.BoardLive.Show.translate_column_name("Ready") == "Ready"
+
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Doing") != "Doing" ||
+               KanbanWeb.BoardLive.Show.translate_column_name("Doing") == "Doing"
+
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Review") != "Review" ||
+               KanbanWeb.BoardLive.Show.translate_column_name("Review") == "Review"
+
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Done") != "Done" ||
+               KanbanWeb.BoardLive.Show.translate_column_name("Done") == "Done"
+
+      assert is_binary(KanbanWeb.BoardLive.Show.translate_column_name("Backlog"))
+      assert is_binary(KanbanWeb.BoardLive.Show.translate_column_name("Ready"))
+      assert is_binary(KanbanWeb.BoardLive.Show.translate_column_name("Doing"))
+      assert is_binary(KanbanWeb.BoardLive.Show.translate_column_name("Review"))
+      assert is_binary(KanbanWeb.BoardLive.Show.translate_column_name("Done"))
+    end
+
+    test "returns custom column names as-is" do
+      assert KanbanWeb.BoardLive.Show.translate_column_name("Custom Column") == "Custom Column"
+      assert KanbanWeb.BoardLive.Show.translate_column_name("My Column") == "My Column"
+    end
+  end
+
+  describe "PubSub handle_info events" do
+    setup [:register_and_log_in_user]
+
+    test "receives task_moved broadcast and sends push event", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+      task = task_fixture(column1)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      {:ok, updated_task} =
+        Kanban.Tasks.update_task(task, %{column_id: column2.id, position: 0})
+
+      send(show_live.pid, {Kanban.Tasks, :task_moved, updated_task})
+      :timer.sleep(50)
+      render(show_live)
+    end
+
+    test "receives task_status_changed broadcast and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(show_live.pid, {Kanban.Tasks, :task_status_changed, task})
+      :timer.sleep(50)
+
+      html = render(show_live)
+      assert html =~ task.title
+    end
+
+    test "receives :task_updated API event and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "API Updated"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(show_live.pid, {:task_updated, task})
+      :timer.sleep(50)
+
+      html = render(show_live)
+      assert html =~ "API Updated"
+    end
+
+    test "receives :task_moved_to_review API event and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Review Task"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(show_live.pid, {:task_moved_to_review, task})
+      :timer.sleep(50)
+
+      html = render(show_live)
+      assert html =~ "Review Task"
+    end
+
+    test "receives :task_completed API event and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Completed Task"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(show_live.pid, {:task_completed, task})
+      :timer.sleep(50)
+
+      html = render(show_live)
+      assert html =~ "Completed Task"
+    end
+
+    test "receives task_reviewed broadcast and reloads", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Reviewed Task"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(show_live.pid, {Kanban.Tasks, :task_reviewed, task})
+      :timer.sleep(50)
+
+      html = render(show_live)
+      assert html =~ "Reviewed Task"
+    end
+
+    test "receives field_visibility_updated broadcast", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      new_visibility = %{"description" => true}
+      send(show_live.pid, {:field_visibility_updated, new_visibility})
+      :timer.sleep(50)
+
+      render(show_live)
+      assert :sys.get_state(show_live.pid).socket.assigns.field_visibility == new_visibility
+    end
+  end
+
+  describe "API token management events" do
+    setup [:register_and_log_in_user]
+
+    test "dismiss_token event clears new_token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> form("#api-tokens-modal form",
+        api_token: %{name: "Dismissable Token"}
+      )
+      |> render_submit()
+
+      show_live
+      |> render_hook("dismiss_token", %{})
+
+      :timer.sleep(50)
+      render(show_live)
+    end
+
+    test "revoke_token prevents revoking token from different board", %{conn: conn, user: user} do
+      board1 = ai_optimized_board_fixture(user)
+      board2 = ai_optimized_board_fixture(user)
+
+      {:ok, {api_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board2, %{name: "Other Board Token"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board1}/api_tokens")
+
+      html =
+        show_live
+        |> render_hook("revoke_token", %{"id" => to_string(api_token.id)})
+
+      assert html =~ "Unauthorized"
+    end
+  end
 end

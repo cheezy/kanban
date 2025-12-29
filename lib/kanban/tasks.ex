@@ -233,10 +233,8 @@ defmodule Kanban.Tasks do
     child_tasks_attrs
     |> Enum.with_index()
     |> Enum.reduce(multi, fn {child_attrs, index}, multi_acc ->
-      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
-      task_key = String.to_atom("child_task_#{index}")
-      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
-      history_key = String.to_atom("child_task_#{index}_history")
+      task_key = {:child_task, index}
+      history_key = {:child_task_history, index}
 
       multi_acc
       |> Ecto.Multi.insert(task_key, fn %{goal: goal} ->
@@ -286,9 +284,9 @@ defmodule Kanban.Tasks do
 
   defp extract_child_tasks(changes) do
     changes
-    |> Enum.filter(fn {key, _value} ->
-      key_string = Atom.to_string(key)
-      String.starts_with?(key_string, "child_task_") and not String.ends_with?(key_string, "_history")
+    |> Enum.filter(fn
+      {{:child_task, _index}, _value} -> true
+      _ -> false
     end)
     |> Enum.map(fn {_key, task} -> task end)
   end
