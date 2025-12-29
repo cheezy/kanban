@@ -1537,5 +1537,137 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Integration Points"
       assert result =~ "[:app, :auth, :success]"
     end
+
+    test "displays assigned user email when name is not present", %{board: board} do
+      user = user_fixture(%{name: nil, email: "testuser@example.com"})
+      column = column_fixture(board)
+      task = task_fixture(column, %{assigned_to_id: user.id})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Assigned To"
+      assert result =~ "testuser@example.com"
+    end
+
+    test "displays child tasks table for goal type with children", %{board: board} do
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Parent Goal"},
+          [
+            %{"title" => "Child Task 1", "type" => "work"},
+            %{"title" => "Child Task 2", "type" => "defect"}
+          ]
+        )
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: goal.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Child Tasks"
+      assert result =~ "Child Task 1"
+      assert result =~ "Child Task 2"
+    end
+
+    test "displays review status with pending styling", %{board: board} do
+      reviewer = user_fixture(%{name: "Pending Reviewer"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          needs_review: true,
+          review_status: :pending,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z],
+          review_notes: "Waiting for review"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Review Status"
+      assert result =~ "bg-yellow-50"
+      assert result =~ "Pending"
+      assert result =~ "Waiting for review"
+    end
+
+    test "displays review status with rejected styling", %{board: board} do
+      reviewer = user_fixture(%{name: "Rejecting Reviewer"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          needs_review: true,
+          review_status: :rejected,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z],
+          review_notes: "Not acceptable"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Review Status"
+      assert result =~ "bg-red-50"
+      assert result =~ "Rejected"
+      assert result =~ "Not acceptable"
+    end
+
+    test "displays acceptance criteria when visible and present", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          acceptance_criteria: "User can log in successfully\nPassword is validated"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Acceptance Criteria"
+      assert result =~ "User can log in successfully"
+      assert result =~ "Password is validated"
+    end
+
+    test "does not display acceptance criteria when field_visibility is false", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          acceptance_criteria: "Some criteria"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: %{"acceptance_criteria" => false}
+        )
+
+      refute result =~ "Acceptance Criteria"
+      refute result =~ "Some criteria"
+    end
   end
 end
