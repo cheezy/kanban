@@ -38,7 +38,7 @@ Authorization: Bearer stride_dev_abc123def456...
 
 ## API Configuration
 
-- **API URL:** `http://stridelikeaboss.com`
+- **API URL:** `http://www.stridelikeaboss.com`
 - **API Token:** `stride_dev_abc123...
 - **User Email:** `user@example.com`
 - **Token Name:** Development Agent
@@ -48,7 +48,7 @@ Authorization: Bearer stride_dev_abc123def456...
 
 ```bash
 export STRIDE_API_TOKEN="stride_dev_abc123..."
-export STRIDE_API_URL="https://stridelikeaboss.com"
+export STRIDE_API_URL="https://www.stridelikeaboss.com"
 
 curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \\
   $STRIDE_API_URL/api/tasks/next
@@ -95,7 +95,7 @@ The prefix and environment help you identify:
 ### Example: Claim a Task
 
 ```bash
-curl -X POST https://stridelikeaboss.com/api/tasks/claim \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json"
 ```
@@ -103,14 +103,14 @@ curl -X POST https://stridelikeaboss.com/api/tasks/claim \
 ### Example: Get Onboarding Info
 
 ```bash
-curl https://stridelikeaboss.com/api/agent/onboarding \
+curl https://www.stridelikeaboss.com/api/agent/onboarding \
   -H "Authorization: Bearer stride_dev_abc123..."
 ```
 
 ### Example: Complete a Task
 
 ```bash
-curl -X PATCH https://stridelikeaboss.com/api/tasks/42/complete \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/42/complete \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{

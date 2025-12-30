@@ -11,9 +11,9 @@ defmodule KanbanWeb.API.AgentJSON do
         action: "CREATE_FILES_NOW",
         instructions: [
           "Before claiming any tasks, you MUST create two configuration files:",
-          "1. Create .stride_auth.md from file_templates.stride_auth_md below",
+          "1. Create .stride_auth.md from file_templates.stride_auth_md in the file_templates section",
           "2. Add .stride_auth.md to .gitignore (NEVER commit this file - it contains secrets)",
-          "3. Create .stride.md from file_templates.stride_md below",
+          "3. Create .stride.md from file_templates.stride_md in the file_templates section",
           "4. Verify both files exist before proceeding"
         ],
         why_critical:
@@ -34,9 +34,9 @@ defmodule KanbanWeb.API.AgentJSON do
           "Agents should work continuously: claim task → complete → IF needs_review=false THEN claim next task, ELSE stop and wait for review. Continue this loop until encountering a task that needs review or running out of available tasks."
       },
       quick_start: [
-        "1. IMMEDIATELY create .stride_auth.md file using the template below and add your API token",
+        "1. IMMEDIATELY create .stride_auth.md file using the template in the file_templates section and add your API token",
         "2. IMMEDIATELY add .stride_auth.md to your .gitignore file (CRITICAL - contains secrets)",
-        "3. IMMEDIATELY create .stride.md file using the template below with your hook configurations",
+        "3. IMMEDIATELY create .stride.md file using the template in the file_templates section with your hook configurations",
         "4. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled)",
         "5. Call POST #{base_url}/api/tasks/claim to get your first task",
         "6. Execute hooks and complete your work following the workflow"
@@ -110,15 +110,17 @@ defmodule KanbanWeb.API.AgentJSON do
         ```
         """
       },
-      workflow: %{
-        claim_task: %{
+      workflow: [
+        %{
+          name: "claim_task",
           endpoint: "POST #{base_url}/api/tasks/claim",
           description:
             "Claim next available task matching your capabilities. Claims automatically expire after 60 minutes if not completed, releasing the task for other agents.",
           returns: "Task data + before_doing hook metadata",
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks_claim.md"
         },
-        complete_task: %{
+        %{
+          name: "complete_task",
           endpoint: "PATCH #{base_url}/api/tasks/:id/complete",
           description:
             "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review).",
@@ -126,19 +128,21 @@ defmodule KanbanWeb.API.AgentJSON do
             "Task data + array of hook metadata (after_doing, before_review, after_review)",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
         },
-        mark_reviewed: %{
+        %{
+          name: "mark_reviewed",
           endpoint: "PATCH #{base_url}/api/tasks/:id/mark_reviewed",
           description: "Finalize review after human reviewer sets status",
           returns: "Task data + after_review hook (if approved)",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_mark_reviewed.md"
         },
-        unclaim_task: %{
+        %{
+          name: "unclaim_task",
           endpoint: "POST #{base_url}/api/tasks/:id/unclaim",
           description: "Release a claimed task if unable to complete",
           returns: "Task data",
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks_id_unclaim.md"
         }
-      },
+      ],
       hooks: %{
         description:
           "Hooks execute on YOUR machine, not the server. Server provides metadata only.",
