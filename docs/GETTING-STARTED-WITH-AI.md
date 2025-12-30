@@ -252,13 +252,21 @@ For complex features that need to be broken down into multiple tasks, you can wo
 
 Give your AI agent this prompt to break down and upload a goal:
 
-> "I need to implement [describe your goal here]. Please break this down into a goal with tasks and upload it to Stride. Create a goal with:
-> - A clear title and description of the overall objective
-> - Appropriate complexity level and required capabilities
-> - Small tasks that break down the work into manageable pieces
-> - Each task should have its own title, description, complexity, required capabilities, and other information that will help you complete the task
+> "I need to implement [describe your goal here]. Please break this down into a goal with tasks and upload it to Stride.
 >
-> Upload this to Stride using the API at the base URL and token from .stride_auth.md. The endpoint is POST /api/tasks and you'll need to create a JSON structure with type: 'goal' and a child_tasks array."
+> **Important**: First read the [Task Writing Guide](./TASK-WRITING-GUIDE.md) to understand how to create complete, well-structured tasks. Each task should include all relevant fields such as:
+>
+> - Title and description
+> - Complexity and estimated hours
+> - Required capabilities
+> - Key files to modify
+> - Test scenarios and acceptance criteria
+> - Dependencies (if any)
+> - Any other fields from the Task Writing Guide that apply
+>
+> Create a goal with multiple complete child tasks, then upload to Stride using the API at the base URL and token from .stride_auth.md. The endpoint is POST /api/tasks and you'll need to create a JSON structure with type: 'goal' and a tasks array.
+>
+> **Important**: The API only supports uploading ONE goal per request. If you need to create multiple goals, you must make separate API calls for each goal."
 
 **Example: If you ask your agent to implement user authentication, it would:**
 
@@ -273,7 +281,7 @@ Give your AI agent this prompt to break down and upload a goal:
     "type": "goal",
     "complexity": "high",
     "required_capabilities": ["code_generation", "testing", "security"],
-    "child_tasks": [
+    "tasks": [
       {
         "title": "Create user database schema",
         "description": "Design and implement user table with proper indexes and constraints",
@@ -299,6 +307,12 @@ Give your AI agent this prompt to break down and upload a goal:
 
 3. Upload it to Stride using curl or API client
 4. Confirm the goal and tasks appear in your board
+
+**Important API Limitation:**
+
+- Each API call to POST /api/tasks creates **ONE goal** with its child tasks
+- To create multiple goals, make **separate API requests** for each goal
+- You cannot upload multiple goals in a single request
 
 **Benefits of This Approach:**
 - Your AI agent helps decompose complex work into actionable tasks
