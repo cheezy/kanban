@@ -31,12 +31,11 @@ AI-optimized boards come pre-configured with the standard workflow columns that 
 
 2. **Navigate to Boards** by clicking "Boards" in the navigation
 
-3. **Click "New Board"**
+3. **Click the "New Board" button** and select **"New AI Optimized Board"** from the dropdown options
 
 4. **Fill in the board details:**
    - **Name**: Give your board a descriptive name (e.g., "My Project - AI Development")
    - **Description**: Optional description of what this board is for
-   - **AI Optimized Board**: ✅ **Check this box** - This is critical!
 
 5. **Click "Create Board"**
 
@@ -66,16 +65,14 @@ AI agents need an API token to authenticate with your Stride instance.
 
 2. **Click "API Tokens"** in the board header
 
-3. **Click "Generate Token"**
-
-4. **Configure the token:**
+3. **Configure the token:**
    - **Name**: Descriptive name for this token (e.g., "Claude Development Agent")
    - **Agent Model**: Optional - helps track which AI model is being used
-   - **Capabilities**: Select what this agent can do (see [AGENT-CAPABILITIES.md](./AGENT-CAPABILITIES.md))
+   - **Capabilities**: Select what this agent can do (see [AGENT-CAPABILITIES](./AGENT-CAPABILITIES.md))
 
-5. **Click "Create Token"**
+4. **Click "Create Token"**
 
-6. **CRITICAL: Copy the token immediately!**
+5. **CRITICAL: Copy the token immediately!**
    - The full token is only shown **once** for security reasons
    - You'll need this token for the `.stride_auth.md` file
    - It starts with `stride_` followed by a long random string
@@ -83,7 +80,7 @@ AI agents need an API token to authenticate with your Stride instance.
 
 ### Understanding Capabilities
 
-Capabilities determine which tasks an agent can see and claim. Only assign capabilities that match what your agent can actually do:
+Capabilities determine which tasks an agent can see and claim. Stride will only assign capabilities that match what your agent can actually do:
 
 **Standard Capabilities:**
 - `code_generation` - Writing new code
@@ -110,7 +107,7 @@ AI agents need two configuration files in their working directory to operate wit
 Before configuring files, have your AI agent call the onboarding endpoint to understand the full system:
 
 ```bash
-curl https://your-stride-instance.com/api/agent/onboarding
+curl https://www.stridelikeaboss.com/api/agent/onboarding
 ```
 
 This endpoint returns everything the agent needs to know:
@@ -121,13 +118,15 @@ This endpoint returns everything the agent needs to know:
 - Environment variables available in hooks
 
 **If you're using Claude Code or another AI coding assistant**, just tell it:
-> "Please read the Stride onboarding documentation at https://your-stride-instance.com/api/agent/onboarding"
+> "Please read the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding"
 
 ### Creating `.stride_auth.md`
 
 This file contains your API credentials and **must never be committed to version control**.
 
 **1. Create the file in your project root:**
+
+Create a file named `.stride_auth.md` with the following content:
 
 ```markdown
 # Stride API Authentication
@@ -136,7 +135,7 @@ This file contains your API credentials and **must never be committed to version
 
 ## API Configuration
 
-- **API URL:** `https://your-stride-instance.com`
+- **API URL:** `https://www.stridelikeaboss.com`
 - **API Token:** `stride_abc123def456...` (your actual token)
 - **User Email:** `your-email@example.com`
 - **Token Name:** Development Agent
@@ -144,13 +143,13 @@ This file contains your API credentials and **must never be committed to version
 
 ## Usage
 
-```bash
-export STRIDE_API_TOKEN="stride_abc123def456..."
-export STRIDE_API_URL="https://your-stride-instance.com"
+Replace `{{YOUR_TOKEN_HERE}}` with your actual token, then run:
 
-curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  $STRIDE_API_URL/api/tasks/next
-```
+    export STRIDE_API_TOKEN="stride_abc123def456..."
+    export STRIDE_API_URL="https://www.stridelikeaboss.com"
+
+    curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+      $STRIDE_API_URL/api/tasks/next
 ```
 
 **2. Add it to `.gitignore` IMMEDIATELY:**
@@ -167,10 +166,9 @@ This file defines the hooks that execute at key points in the workflow. Unlike `
 
 **Create the file in your project root:**
 
-```markdown
-# Stride Configuration
+Create a file named `.stride.md` with the following content. Each section defines a hook with its bash commands:
 
-## before_doing
+#### before_doing
 
 Executes before starting work on a task (blocking, 60s timeout).
 
@@ -180,10 +178,9 @@ git pull origin main
 # Ensure we have latest code before starting
 ```
 
-## after_doing
+#### after_doing
 
-Executes after completing work (blocking, 120s timeout).
-If this fails, task completion should fail.
+Executes after completing work (blocking, 120s timeout). If this fails, task completion should fail.
 
 ```bash
 echo "Running tests for $TASK_IDENTIFIER"
@@ -192,7 +189,7 @@ mix test
 echo "All tests passed for $TASK_IDENTIFIER"
 ```
 
-## before_review
+#### before_review
 
 Executes when task enters review (non-blocking, 60s timeout).
 
@@ -203,14 +200,13 @@ gh pr create --title "$TASK_TITLE" --body "Resolves $TASK_IDENTIFIER
 This task was completed by an AI agent and is ready for human review."
 ```
 
-## after_review
+#### after_review
 
 Executes after review approval (non-blocking, 60s timeout).
 
 ```bash
 echo "Task $TASK_IDENTIFIER approved and completed"
 # Optional: Trigger deployment, update docs, etc.
-```
 ```
 
 **Customize the hooks for your project:**
@@ -235,7 +231,7 @@ echo "Task $TASK_IDENTIFIER approved and completed"
 
 Once your board and agent are configured, here's how the collaboration works:
 
-### 1. Creating Tasks (Human)
+### 1. Creating Tasks (Human & Agent)
 
 **For Simple Tasks:**
 1. Open your AI-optimized board
@@ -248,48 +244,107 @@ Once your board and agent are configured, here's how the collaboration works:
    - **Required Capabilities**: What skills are needed? (e.g., `code_generation`)
    - **Needs Review**: ✅ Check this for AI work that needs human approval
 
-**For Goals with Subtasks:**
+**For Larger Tasks or Goals:**
 
-Goals are larger features broken into smaller tasks. Create them via API or have your agent create them:
+For complex features that need to be broken down into multiple tasks, you can work with your AI agent to decompose the goal and upload it to Stride. This collaborative approach ensures that large projects are properly structured.
 
-```bash
-curl -X POST https://your-stride-instance.com/api/tasks \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "task": {
-      "title": "Implement User Authentication",
-      "description": "Add complete user auth system",
-      "type": "goal",
-      "complexity": "high",
-      "required_capabilities": ["code_generation", "testing", "security"],
-      "child_tasks": [
-        {
-          "title": "Create user database schema",
-          "description": "Design and implement user table with proper indexes",
-          "complexity": "low",
-          "required_capabilities": ["code_generation", "database"]
-        },
-        {
-          "title": "Implement signup endpoint",
-          "description": "POST /api/users with validation and password hashing",
-          "complexity": "medium",
-          "required_capabilities": ["code_generation", "backend", "security"]
-        },
-        {
-          "title": "Add login endpoint",
-          "description": "POST /api/login with JWT token generation",
-          "complexity": "medium",
-          "required_capabilities": ["code_generation", "backend", "security"]
-        }
-      ]
-    }
-  }'
+**Working with Your AI Agent:**
+
+Give your AI agent this prompt to break down and upload a goal:
+
+> "I need to implement [describe your goal here]. Please break this down into a goal with tasks and upload it to Stride. Create a goal with:
+> - A clear title and description of the overall objective
+> - Appropriate complexity level and required capabilities
+> - Small tasks that break down the work into manageable pieces
+> - Each task should have its own title, description, complexity, required capabilities, and other information that will help you complete the task
+>
+> Upload this to Stride using the API at the base URL and token from .stride_auth.md. The endpoint is POST /api/tasks and you'll need to create a JSON structure with type: 'goal' and a child_tasks array."
+
+**Example: If you ask your agent to implement user authentication, it would:**
+
+1. Analyze the requirement and break it into logical tasks
+2. Create a JSON structure like this:
+
+```json
+{
+  "task": {
+    "title": "Implement User Authentication",
+    "description": "Add complete user auth system with signup, login, and session management",
+    "type": "goal",
+    "complexity": "high",
+    "required_capabilities": ["code_generation", "testing", "security"],
+    "child_tasks": [
+      {
+        "title": "Create user database schema",
+        "description": "Design and implement user table with proper indexes and constraints",
+        "complexity": "low",
+        "required_capabilities": ["code_generation", "database"]
+      },
+      {
+        "title": "Implement signup endpoint",
+        "description": "POST /api/users with validation, password hashing, and error handling",
+        "complexity": "medium",
+        "required_capabilities": ["code_generation", "backend", "security"]
+      },
+      {
+        "title": "Add login endpoint",
+        "description": "POST /api/login with JWT token generation and secure session handling",
+        "complexity": "medium",
+        "required_capabilities": ["code_generation", "backend", "security"]
+      }
+    ]
+  }
+}
 ```
 
-See [TASK-WRITING-GUIDE.md](./TASK-WRITING-GUIDE.md) for more details on creating effective tasks.
+3. Upload it to Stride using curl or API client
+4. Confirm the goal and tasks appear in your board
 
-### 2. Agent Claims Task
+**Benefits of This Approach:**
+- Your AI agent helps decompose complex work into actionable tasks
+- Tasks are automatically linked as parent-child relationships
+- The agent can then claim and work through tasks sequentially
+- You maintain visibility of overall progress through the goal structure
+
+See [TASK-WRITING-GUIDE](./TASK-WRITING-GUIDE.md) for more details on creating effective tasks.
+
+### 2. Human Reviews and Prepares Tasks (Human)
+
+Once tasks are created (either manually or by an AI agent), humans should review them before making them available for agents to claim.
+
+**Review Process:**
+
+1. **Review tasks in the Backlog column**
+   - Check that task descriptions are clear and complete
+   - Read the acceptance criteria and make sure you agree with it
+   - Verify required capabilities are appropriate
+   - Ensure complexity estimates are reasonable
+   - Confirm dependencies are set correctly
+
+2. **Decide on review requirements**
+   - **Check "Needs Review"** if:
+     - Task affects production code or critical functionality
+     - Task involves security, authentication, or data handling
+     - You want to review the AI's work before it's considered done
+     - Task is complex or has potential for significant impact
+   - **Leave "Needs Review" unchecked** if:
+     - Task is routine or low-risk (e.g., documentation updates, simple bug fixes)
+     - You trust the agent to handle it autonomously
+     - Tests and hooks provide sufficient quality control
+
+3. **Move tasks to the Ready column**
+   - Drag tasks from **Backlog** to **Ready** when they're ready for agents to claim
+   - Agents can only see and claim tasks in the **Ready** column
+   - Prioritize tasks by position (agents claim highest priority tasks first)
+
+**Best Practices:**
+
+- Keep the Ready column populated so agents always have work available
+- Start with `needs_review=true` for most tasks until you build trust with your agent
+- Gradually shift to `needs_review=false` for routine tasks as confidence grows
+- Review and prioritize the Ready column frequently as the Agent will complete the task quickly
+
+### 3. Agent Claims Task
 
 **From the agent's perspective:**
 
@@ -300,15 +355,33 @@ curl -X POST https://your-stride-instance.com/api/tasks/claim \
 ```
 
 **What happens:**
-1. ✅ Agent receives the highest priority task matching its capabilities
+1. ✅ Stride selects the highest priority task that matches:
+   - Agent's capabilities
+   - All dependencies are completed
+   - No file conflicts with tasks currently in Doing or Review
 2. 📝 Task moves to **Doing** column
 3. 🔧 Agent receives `before_doing` hook metadata
 4. ⚡ Agent executes `before_doing` hook (pulls latest code, etc.)
 5. 💻 Agent begins work
 
-**Important**: Agents can only see tasks with `required_capabilities` that match their configured capabilities.
+**Important Selection Criteria:**
 
-### 3. Agent Completes Work
+Agents can only claim tasks that meet ALL of these requirements:
+- **Capabilities match**: Task's `required_capabilities` must be a subset of the agent's capabilities
+- **Dependencies satisfied**: All tasks listed in the task's `dependencies` field must be completed
+- **No file conflicts**: If the task has `key_files` specified, none of those files can overlap with files in tasks currently in Doing or Review columns
+
+**Key Files and Conflict Prevention:**
+
+Tasks can specify `key_files` - a list of file paths that will be modified. This prevents merge conflicts by ensuring only one task modifies a given file at a time:
+
+- If a task specifies `key_files: ["lib/auth.ex", "lib/user.ex"]`
+- And another task in Doing or Review also lists `"lib/auth.ex"` in its `key_files`
+- The second task will NOT be claimable until the first task is completed
+
+This automatic conflict prevention ensures agents don't create competing changes to the same files.
+
+### 4. Agent Completes Work
 
 **From the agent's perspective:**
 
@@ -325,7 +398,7 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/complete \
 4. 📋 **If `needs_review=true`**: Task moves to **Review** column → STOP and wait for human
 5. 📋 **If `needs_review=false`**: Agent executes `after_review` hook, task moves to **Done** → Agent claims next task
 
-### 4. Human Reviews Work (For Tasks Requiring Review)
+### 5. Human Reviews Work (For Tasks Requiring Review)
 
 **As a human reviewer:**
 
@@ -343,16 +416,41 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/complete \
 
    **Option A: Approve**
    - Click "Approve" in the task
-   - Task moves to **Done**
-   - Agent can merge the PR (or you merge it manually)
+   - Task status changes to "approved"
+   - Inform your AI agent that the review is complete
 
    **Option B: Request Changes**
    - Click "Request Changes"
    - Add detailed feedback in the comment
    - Task moves back to **Ready**
+   - Inform your AI agent that changes are needed
    - Agent can claim it again and address feedback
 
-### 5. Continuous Agent Work Loop
+5. **Notify the agent that review is complete**
+
+Once you've approved or requested changes in Stride, tell your AI agent:
+
+> "The review for task [task identifier] is complete. Please finalize it."
+
+**From the agent's perspective:**
+
+```bash
+# Agent calls the mark_reviewed endpoint
+curl -X PATCH https://your-stride-instance.com/api/tasks/123/mark_reviewed \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN"
+```
+
+**What happens:**
+- **If approved**:
+  - ✅ Agent receives `after_review` hook metadata
+  - ⚡ Agent executes `after_review` hook (merge PR, deploy, etc.)
+  - 📋 Task moves to **Done**
+  - 🔄 Agent claims next task from Ready
+- **If changes requested**:
+  - 📋 Task is already back in **Ready** column
+  - 🔄 Agent can claim it again to address feedback
+
+### 6. Continuous Agent Work Loop
 
 **The ideal agent workflow:**
 
@@ -373,7 +471,7 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/complete \
 
 **Key Point**: Agents should work continuously, claiming and completing tasks until they hit a task that requires review. This maximizes productivity.
 
-See [REVIEW-WORKFLOW.md](./REVIEW-WORKFLOW.md) for more details.
+See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
 
 ## Best Practices
 
@@ -384,7 +482,7 @@ See [REVIEW-WORKFLOW.md](./REVIEW-WORKFLOW.md) for more details.
 - ✅ Include acceptance criteria
 - ✅ Set appropriate complexity levels
 - ✅ Use `needs_review=true` for anything that could impact production
-- ✅ Group related work into Goals with subtasks
+- ✅ Group related work into Goals with tasks
 
 **Review Process:**
 - ✅ Review promptly - don't let agents sit idle
@@ -460,7 +558,7 @@ See [REVIEW-WORKFLOW.md](./REVIEW-WORKFLOW.md) for more details.
 
 **Solution**:
 - Agent should complete tasks within 60 minutes
-- For long-running tasks, break them into smaller subtasks
+- For long-running tasks, break them into smaller tasks
 - Agent can re-claim if needed
 
 ### Hooks Keep Failing
