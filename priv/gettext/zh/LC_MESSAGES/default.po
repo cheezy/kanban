@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: lib/kanban_web/components/core_components.ex:409
-#: lib/kanban_web/live/board_live/show.html.heex:487
+#: lib/kanban_web/live/board_live/show.html.heex:564
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "操作"
@@ -44,35 +44,10 @@ msgstr "关闭"
 msgid " · Task Management"
 msgstr " · 任务管理"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:94
-#, elixir-autogen, elixir-format
-msgid "Create unlimited boards for different projects and teams."
-msgstr "为不同的项目和团队创建无限的看板。"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:110
-#, elixir-autogen, elixir-format
-msgid "Custom Columns"
-msgstr "自定义列"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:72
+#: lib/kanban_web/controllers/page_html/home.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "完成"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:129
-#, elixir-autogen, elixir-format
-msgid "Drag & Drop"
-msgstr "拖放"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:130
-#, elixir-autogen, elixir-format
-msgid "Effortlessly move tasks between columns with drag and drop."
-msgstr "通过拖放轻松在列之间移动任务。"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:83
-#, elixir-autogen, elixir-format
-msgid "Everything You Need to Stay Organized"
-msgstr "保持井然有序所需的一切"
 
 #: lib/kanban_web/components/layouts/root.html.heex:79
 #, elixir-autogen, elixir-format
@@ -84,8 +59,8 @@ msgstr "开始使用"
 msgid "Get Started Free"
 msgstr "免费开始"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:71
-#: lib/kanban_web/live/task_live/form_component.html.heex:712
+#: lib/kanban_web/controllers/page_html/home.html.heex:98
+#: lib/kanban_web/live/task_live/form_component.html.heex:731
 #: lib/kanban_web/live/task_live/view_component.ex:30
 #, elixir-autogen, elixir-format
 msgid "In Progress"
@@ -103,22 +78,7 @@ msgstr "登录"
 msgid "Log out"
 msgstr "退出"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:93
-#, elixir-autogen, elixir-format
-msgid "Multiple Boards"
-msgstr "多个看板"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:112
-#, elixir-autogen, elixir-format
-msgid "Organize tasks with customizable columns that fit your workflow."
-msgstr "使用可自定义的列来组织任务，适应您的工作流程。"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:16
-#, elixir-autogen, elixir-format
-msgid "Professional Task Management"
-msgstr "专业任务管理"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:69
+#: lib/kanban_web/controllers/page_html/home.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Project Board"
 msgstr "项目看板"
@@ -133,17 +93,7 @@ msgstr "设置"
 msgid "Sign In"
 msgstr "登录"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:86
-#, elixir-autogen, elixir-format
-msgid "Simple, powerful features designed for modern teams"
-msgstr "为现代团队设计的简单而强大的功能"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:27
-#, elixir-autogen, elixir-format
-msgid "Streamline your workflow with intuitive boards, columns, and tasks. Perfect for teams and individuals who want to stay organized and productive."
-msgstr "使用直观的看板、列和任务简化您的工作流程。非常适合希望保持井然有序和高效的团队和个人。"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:70
+#: lib/kanban_web/controllers/page_html/home.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "To Do"
 msgstr "待办"
@@ -232,7 +182,7 @@ msgstr "保存密码"
 
 #: lib/kanban_web/live/board_live/form.html.heex:33
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/task_live/form_component.html.heex:812
+#: lib/kanban_web/live/task_live/form_component.html.heex:830
 #: lib/kanban_web/live/user_live/settings.ex:38
 #: lib/kanban_web/live/user_live/settings.ex:74
 #, elixir-autogen, elixir-format
@@ -264,13 +214,13 @@ msgstr "免费。"
 msgid "to your account."
 msgstr "到您的账户。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:94
+#: lib/kanban_web/live/board_live/index.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "您确定要删除此看板吗？"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
-#: lib/kanban_web/live/board_live/show.html.heex:17
+#: lib/kanban_web/live/board_live/show.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "返回看板"
@@ -298,7 +248,7 @@ msgstr "取消"
 #: lib/kanban_web/live/board_live/form.html.heex:31
 #: lib/kanban_web/live/issue_live/form_component.ex:100
 #: lib/kanban_web/live/task_live/form_component.html.heex:26
-#: lib/kanban_web/live/task_live/view_component.ex:257
+#: lib/kanban_web/live/task_live/view_component.ex:259
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "描述"
@@ -308,12 +258,12 @@ msgstr "描述"
 msgid "Edit Board"
 msgstr "编辑看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:14
+#: lib/kanban_web/live/board_live/show.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "编辑看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:31
+#: lib/kanban_web/live/board_live/show.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Get started by creating columns for your board."
 msgstr "通过为看板创建列来开始。"
@@ -324,7 +274,7 @@ msgid "Listing Boards"
 msgstr "看板列表"
 
 #: lib/kanban_web/live/board_live/form.html.heex:30
-#: lib/kanban_web/live/board_live/show.html.heex:484
+#: lib/kanban_web/live/board_live/show.html.heex:561
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/user_live/registration.ex:45
 #: lib/kanban_web/live/user_live/settings.ex:28
@@ -338,7 +288,7 @@ msgstr "名称"
 msgid "New Board"
 msgstr "新建看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:29
+#: lib/kanban_web/live/board_live/show.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "No columns yet"
 msgstr "尚无列"
@@ -353,7 +303,7 @@ msgstr "保存看板"
 msgid "Use this form to manage board records in your database."
 msgstr "使用此表单管理数据库中的看板记录。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:114
+#: lib/kanban_web/live/board_live/index.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "View Board"
 msgstr "查看看板"
@@ -378,7 +328,7 @@ msgstr "列更新成功"
 msgid "Create a new column for your board"
 msgstr "为看板创建新列"
 
-#: lib/kanban_web/live/board_live/show.html.heex:35
+#: lib/kanban_web/live/board_live/show.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Create your first column"
 msgstr "创建您的第一列"
@@ -388,7 +338,7 @@ msgstr "创建您的第一列"
 msgid "Failed to delete column"
 msgstr "删除列失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:8
+#: lib/kanban_web/live/board_live/show.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "New Column"
 msgstr "新建列"
@@ -398,7 +348,7 @@ msgstr "新建列"
 msgid "Save Column"
 msgstr "保存列"
 
-#: lib/kanban_web/live/board_live/show.html.heex:102
+#: lib/kanban_web/live/board_live/show.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Tasks"
 msgstr "任务"
@@ -418,18 +368,19 @@ msgstr "在制品限制"
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "在制品限制。设置为0表示无限制。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:88
+#: lib/kanban_web/live/board_live/show.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Add task"
 msgstr "添加任务"
 
-#: lib/kanban_web/live/board_live/show.html.heex:202
+#: lib/kanban_web/live/board_live/show.html.heex:233
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr "您确定要删除此任务吗？"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:72
-#: lib/kanban_web/live/task_live/view_component.ex:124
+#: lib/kanban_web/live/task_live/form_component.html.heex:81
+#: lib/kanban_web/live/task_live/view_component.ex:126
+#: lib/kanban_web/live/task_live/view_component.ex:744
 #, elixir-autogen, elixir-format
 msgid "Column"
 msgstr "列"
@@ -444,17 +395,17 @@ msgstr "创建新任务"
 msgid "Failed to delete task"
 msgstr "删除任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:167
+#: lib/kanban_web/live/board_live/show.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "No tasks yet"
 msgstr "尚无任务"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:812
+#: lib/kanban_web/live/task_live/form_component.html.heex:830
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr "保存任务"
 
-#: lib/kanban_web/live/task_live/form_component.ex:309
+#: lib/kanban_web/live/task_live/form_component.ex:321
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "任务创建成功"
@@ -464,13 +415,14 @@ msgstr "任务创建成功"
 msgid "Task deleted successfully"
 msgstr "任务删除成功"
 
-#: lib/kanban_web/live/task_live/form_component.ex:290
+#: lib/kanban_web/live/task_live/form_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Task updated successfully"
 msgstr "任务更新成功"
 
 #: lib/kanban_web/live/issue_live/form_component.ex:59
 #: lib/kanban_web/live/task_live/form_component.html.heex:21
+#: lib/kanban_web/live/task_live/view_component.ex:732
 #, elixir-autogen, elixir-format
 msgid "Title"
 msgstr "标题"
@@ -480,12 +432,12 @@ msgstr "标题"
 msgid "Update task details"
 msgstr "更新任务详情"
 
-#: lib/kanban_web/live/board_live/show.html.heex:77
+#: lib/kanban_web/live/board_live/show.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr "已达到在制品限制"
 
-#: lib/kanban_web/live/task_live/form_component.ex:316
+#: lib/kanban_web/live/task_live/form_component.ex:328
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
@@ -497,70 +449,66 @@ msgstr "此列已达到在制品限制"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:22
-#, elixir-autogen, elixir-format
-msgid "Organize Your Work"
-msgstr "组织您的工作"
-
-#: lib/kanban_web/live/board_live/show.ex:560
+#: lib/kanban_web/live/board_live/show.ex:584
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "无法移动任务：列已达到在制品限制"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:838
-#: lib/kanban_web/live/task_live/view_component.ex:735
+#: lib/kanban_web/live/task_live/form_component.html.heex:856
+#: lib/kanban_web/live/task_live/view_component.ex:808
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/board_live/show.html.heex:271
-#: lib/kanban_web/live/task_live/form_component.html.heex:55
-#: lib/kanban_web/live/task_live/view_component.ex:145
+#: lib/kanban_web/live/board_live/show.html.heex:335
+#: lib/kanban_web/live/task_live/form_component.html.heex:62
+#: lib/kanban_web/live/task_live/view_component.ex:147
 #, elixir-autogen, elixir-format
 msgid "Critical"
 msgstr "紧急"
 
-#: lib/kanban_web/live/board_live/show.html.heex:244
+#: lib/kanban_web/live/board_live/show.html.heex:310
 #: lib/kanban_web/live/issue_live/form_component.ex:252
 #: lib/kanban_web/live/task_live/form_component.html.heex:43
-#: lib/kanban_web/live/task_live/view_component.ex:81
+#: lib/kanban_web/live/task_live/view_component.ex:82
+#: lib/kanban_web/live/task_live/view_component.ex:768
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr "缺陷"
 
-#: lib/kanban_web/live/board_live/show.ex:569
+#: lib/kanban_web/live/board_live/show.ex:593
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:272
-#: lib/kanban_web/live/task_live/form_component.html.heex:54
-#: lib/kanban_web/live/task_live/view_component.ex:144
+#: lib/kanban_web/live/board_live/show.html.heex:336
+#: lib/kanban_web/live/task_live/form_component.html.heex:61
+#: lib/kanban_web/live/task_live/view_component.ex:146
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "高"
 
-#: lib/kanban_web/live/board_live/show.html.heex:274
-#: lib/kanban_web/live/task_live/form_component.html.heex:52
-#: lib/kanban_web/live/task_live/view_component.ex:142
+#: lib/kanban_web/live/board_live/show.html.heex:338
+#: lib/kanban_web/live/task_live/form_component.html.heex:59
+#: lib/kanban_web/live/task_live/view_component.ex:144
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "低"
 
-#: lib/kanban_web/live/board_live/show.html.heex:273
-#: lib/kanban_web/live/task_live/form_component.html.heex:53
-#: lib/kanban_web/live/task_live/form_component.html.heex:91
-#: lib/kanban_web/live/task_live/form_component.html.heex:774
-#: lib/kanban_web/live/task_live/view_component.ex:95
-#: lib/kanban_web/live/task_live/view_component.ex:143
-#: lib/kanban_web/live/task_live/view_component.ex:607
-#: lib/kanban_web/live/task_live/view_component.ex:614
+#: lib/kanban_web/live/board_live/show.html.heex:337
+#: lib/kanban_web/live/task_live/form_component.html.heex:60
+#: lib/kanban_web/live/task_live/form_component.html.heex:100
+#: lib/kanban_web/live/task_live/form_component.html.heex:793
+#: lib/kanban_web/live/task_live/view_component.ex:97
+#: lib/kanban_web/live/task_live/view_component.ex:145
+#: lib/kanban_web/live/task_live/view_component.ex:609
+#: lib/kanban_web/live/task_live/view_component.ex:616
 #, elixir-autogen, elixir-format
 msgid "Medium"
 msgstr "中"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:871
-#: lib/kanban_web/live/task_live/view_component.ex:737
+#: lib/kanban_web/live/task_live/form_component.html.heex:889
+#: lib/kanban_web/live/task_live/view_component.ex:810
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "已移动"
@@ -570,120 +518,122 @@ msgstr "已移动"
 msgid "My Boards"
 msgstr "我的看板"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:50
-#: lib/kanban_web/live/task_live/view_component.ex:130
+#: lib/kanban_web/live/task_live/form_component.html.heex:57
+#: lib/kanban_web/live/task_live/view_component.ex:132
 #, elixir-autogen, elixir-format
 msgid "Priority"
 msgstr "优先级"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:818
+#: lib/kanban_web/live/task_live/form_component.html.heex:836
 #, elixir-autogen, elixir-format
 msgid "Task History"
 msgstr "任务历史"
 
 #: lib/kanban_web/live/issue_live/form_component.ex:80
 #: lib/kanban_web/live/task_live/form_component.html.heex:42
+#: lib/kanban_web/live/task_live/view_component.ex:738
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr "类型"
 
-#: lib/kanban_web/live/board_live/show.html.heex:68
+#: lib/kanban_web/live/board_live/show.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "WIP limit exceeded"
 msgstr "超出在制品限制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:245
+#: lib/kanban_web/live/board_live/show.html.heex:312
 #: lib/kanban_web/live/task_live/form_component.html.heex:43
-#: lib/kanban_web/live/task_live/view_component.ex:80
+#: lib/kanban_web/live/task_live/view_component.ex:81
+#: lib/kanban_web/live/task_live/view_component.ex:767
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr "工作"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:843
-#: lib/kanban_web/live/task_live/form_component.html.heex:863
-#: lib/kanban_web/live/task_live/form_component.html.heex:872
-#: lib/kanban_web/live/task_live/view_component.ex:738
-#: lib/kanban_web/live/task_live/view_component.ex:743
-#: lib/kanban_web/live/task_live/view_component.ex:758
+#: lib/kanban_web/live/task_live/form_component.html.heex:861
+#: lib/kanban_web/live/task_live/form_component.html.heex:881
+#: lib/kanban_web/live/task_live/form_component.html.heex:890
+#: lib/kanban_web/live/task_live/view_component.ex:811
+#: lib/kanban_web/live/task_live/view_component.ex:816
+#: lib/kanban_web/live/task_live/view_component.ex:831
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "从"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:847
 #: lib/kanban_web/live/task_live/form_component.html.heex:865
-#: lib/kanban_web/live/task_live/form_component.html.heex:874
-#: lib/kanban_web/live/task_live/view_component.ex:739
-#: lib/kanban_web/live/task_live/view_component.ex:744
-#: lib/kanban_web/live/task_live/view_component.ex:762
+#: lib/kanban_web/live/task_live/form_component.html.heex:883
+#: lib/kanban_web/live/task_live/form_component.html.heex:892
+#: lib/kanban_web/live/task_live/view_component.ex:812
+#: lib/kanban_web/live/task_live/view_component.ex:817
+#: lib/kanban_web/live/task_live/view_component.ex:835
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "到"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:910
+#: lib/kanban_web/live/task_live/form_component.html.heex:928
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:903
+#: lib/kanban_web/live/task_live/form_component.html.heex:921
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:909
+#: lib/kanban_web/live/task_live/form_component.html.heex:927
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "正在添加..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:90
+#: lib/kanban_web/live/task_live/form_component.ex:95
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "评论添加成功"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:890
-#: lib/kanban_web/live/task_live/view_component.ex:778
+#: lib/kanban_web/live/task_live/form_component.html.heex:908
+#: lib/kanban_web/live/task_live/view_component.ex:851
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:928
+#: lib/kanban_web/live/task_live/form_component.html.heex:946
 #, elixir-autogen, elixir-format
 msgid "No comments yet. Be the first to comment!"
 msgstr "尚无评论。成为第一个评论的人！"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:905
+#: lib/kanban_web/live/task_live/form_component.html.heex:923
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "在此处写下您的评论..."
 
-#: lib/kanban_web/live/board_live/form.html.heex:221
+#: lib/kanban_web/live/board_live/form.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "Add User by Email"
 msgstr "通过邮箱添加用户"
 
-#: lib/kanban_web/live/board_live/form.html.heex:253
+#: lib/kanban_web/live/board_live/form.html.heex:252
 #, elixir-autogen, elixir-format
 msgid "Add as Read Only"
 msgstr "添加为只读"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:63
-#: lib/kanban_web/live/task_live/view_component.ex:152
+#: lib/kanban_web/live/task_live/form_component.html.heex:70
+#: lib/kanban_web/live/task_live/view_component.ex:154
 #, elixir-autogen, elixir-format
 msgid "Assigned To"
 msgstr "分配给"
 
-#: lib/kanban_web/live/board_live/form.html.heex:285
-#: lib/kanban_web/live/board_live/index.html.heex:132
-#: lib/kanban_web/live/board_live/index.html.heex:135
+#: lib/kanban_web/live/board_live/form.html.heex:284
+#: lib/kanban_web/live/board_live/index.html.heex:140
+#: lib/kanban_web/live/board_live/index.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "可编辑"
 
-#: lib/kanban_web/live/board_live/form.html.heex:265
+#: lib/kanban_web/live/board_live/form.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Current Users"
 msgstr "当前用户"
 
-#: lib/kanban_web/live/board_live/form.html.heex:229
+#: lib/kanban_web/live/board_live/form.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Enter user email"
 msgstr "输入用户邮箱"
@@ -698,8 +648,7 @@ msgstr "添加用户到看板失败"
 msgid "Failed to remove user from board"
 msgstr "从看板移除用户失败"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:146
-#: lib/kanban_web/live/board_live/form.html.heex:210
+#: lib/kanban_web/live/board_live/form.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr "管理用户"
@@ -714,52 +663,52 @@ msgstr "只有看板所有者可以删除此看板"
 msgid "Only the board owner can edit this board"
 msgstr "只有看板所有者可以编辑此看板"
 
-#: lib/kanban_web/live/board_live/form.html.heex:283
-#: lib/kanban_web/live/board_live/index.html.heex:124
-#: lib/kanban_web/live/board_live/index.html.heex:127
+#: lib/kanban_web/live/board_live/form.html.heex:282
+#: lib/kanban_web/live/board_live/index.html.heex:132
+#: lib/kanban_web/live/board_live/index.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "所有者"
 
-#: lib/kanban_web/live/board_live/form.html.heex:287
-#: lib/kanban_web/live/board_live/index.html.heex:140
-#: lib/kanban_web/live/board_live/index.html.heex:143
+#: lib/kanban_web/live/board_live/form.html.heex:286
+#: lib/kanban_web/live/board_live/index.html.heex:148
+#: lib/kanban_web/live/board_live/index.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "只读"
 
-#: lib/kanban_web/live/board_live/form.html.heex:297
-#: lib/kanban_web/live/task_live/form_component.html.heex:143
-#: lib/kanban_web/live/task_live/form_component.html.heex:187
-#: lib/kanban_web/live/task_live/form_component.html.heex:249
-#: lib/kanban_web/live/task_live/form_component.html.heex:323
-#: lib/kanban_web/live/task_live/form_component.html.heex:358
-#: lib/kanban_web/live/task_live/form_component.html.heex:395
-#: lib/kanban_web/live/task_live/form_component.html.heex:438
-#: lib/kanban_web/live/task_live/form_component.html.heex:472
-#: lib/kanban_web/live/task_live/form_component.html.heex:506
-#: lib/kanban_web/live/task_live/form_component.html.heex:550
-#: lib/kanban_web/live/task_live/form_component.html.heex:584
-#: lib/kanban_web/live/task_live/form_component.html.heex:618
-#: lib/kanban_web/live/task_live/form_component.html.heex:652
-#: lib/kanban_web/live/task_live/form_component.html.heex:687
-#: lib/kanban_web/live/task_live/form_component.html.heex:749
+#: lib/kanban_web/live/board_live/form.html.heex:296
+#: lib/kanban_web/live/task_live/form_component.html.heex:162
+#: lib/kanban_web/live/task_live/form_component.html.heex:206
+#: lib/kanban_web/live/task_live/form_component.html.heex:268
+#: lib/kanban_web/live/task_live/form_component.html.heex:342
+#: lib/kanban_web/live/task_live/form_component.html.heex:377
+#: lib/kanban_web/live/task_live/form_component.html.heex:414
+#: lib/kanban_web/live/task_live/form_component.html.heex:457
+#: lib/kanban_web/live/task_live/form_component.html.heex:491
+#: lib/kanban_web/live/task_live/form_component.html.heex:525
+#: lib/kanban_web/live/task_live/form_component.html.heex:569
+#: lib/kanban_web/live/task_live/form_component.html.heex:603
+#: lib/kanban_web/live/task_live/form_component.html.heex:637
+#: lib/kanban_web/live/task_live/form_component.html.heex:671
+#: lib/kanban_web/live/task_live/form_component.html.heex:706
+#: lib/kanban_web/live/task_live/form_component.html.heex:768
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr "移除"
 
-#: lib/kanban_web/live/board_live/form.html.heex:233
+#: lib/kanban_web/live/board_live/form.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr "搜索"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:65
+#: lib/kanban_web/live/task_live/form_component.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "Select a user"
 msgstr "选择用户"
 
-#: lib/kanban_web/live/task_live/form_component.ex:373
-#: lib/kanban_web/live/task_live/view_component.ex:158
+#: lib/kanban_web/live/task_live/form_component.ex:466
+#: lib/kanban_web/live/task_live/view_component.ex:160
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "未分配"
@@ -794,7 +743,7 @@ msgstr "未找到邮箱为 %{email} 的用户"
 msgid "User removed successfully"
 msgstr "用户移除成功"
 
-#: lib/kanban_web/live/board_live/form.html.heex:213
+#: lib/kanban_web/live/board_live/form.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "用户必须已在系统中注册才能添加到看板"
@@ -809,12 +758,12 @@ msgstr "您不能将自己添加到看板"
 msgid "Only the board owner can delete columns"
 msgstr "只有看板所有者可以删除列"
 
-#: lib/kanban_web/live/board_live/show.ex:436
+#: lib/kanban_web/live/board_live/show.ex:460
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "只有看板所有者可以管理列"
 
-#: lib/kanban_web/live/board_live/show.ex:454
+#: lib/kanban_web/live/board_live/show.ex:478
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "只有看板所有者可以创建列"
@@ -829,23 +778,23 @@ msgstr "只有看板所有者可以重新排序列"
 msgid "Back to board"
 msgstr "返回看板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:712
+#: lib/kanban_web/live/task_live/view_component.ex:785
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr "历史"
 
-#: lib/kanban_web/live/task_live/view_component.ex:780
+#: lib/kanban_web/live/task_live/view_component.ex:853
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr "尚无评论"
 
-#: lib/kanban_web/live/task_live/view_component.ex:714
+#: lib/kanban_web/live/task_live/view_component.ex:787
 #, elixir-autogen, elixir-format
 msgid "No history available"
 msgstr "无可用历史"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:709
-#: lib/kanban_web/live/task_live/view_component.ex:652
+#: lib/kanban_web/live/task_live/form_component.html.heex:728
+#: lib/kanban_web/live/task_live/view_component.ex:654
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr "状态"
@@ -875,7 +824,7 @@ msgstr "正在确认您的账户..."
 msgid "Dashboard"
 msgstr "仪表板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:115
+#: lib/kanban_web/live/task_live/view_component.ex:117
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr "编辑"
@@ -911,7 +860,7 @@ msgstr "关于"
 msgid "About Stride"
 msgstr "关于 Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:231
+#: lib/kanban_web/controllers/page_html/about.html.heex:293
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "返回首页"
@@ -926,77 +875,77 @@ msgstr "由 AI 构建"
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr "Stride 是一款现代任务管理应用程序，完全使用 AI 辅助开发构建。该项目展示了人机协作在软件开发中的力量。"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:59
+#: lib/kanban_web/controllers/page_html/about.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr "AI 并不完美，我相信这个应用程序中隐藏着一些问题。请报告问题或请求新功能，以便此应用程序可以改进。"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:140
+#: lib/kanban_web/controllers/page_html/about.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Adding Columns to the Boards"
 msgstr "向看板添加列"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:149
+#: lib/kanban_web/controllers/page_html/about.html.heex:202
 #, elixir-autogen, elixir-format
 msgid "Adding Tasks to Columns"
 msgstr "向列添加任务"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:176
+#: lib/kanban_web/controllers/page_html/about.html.heex:229
 #, elixir-autogen, elixir-format
 msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
 msgstr "向任务添加类型、优先级、标识符、评论和历史"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:185
+#: lib/kanban_web/controllers/page_html/about.html.heex:238
 #, elixir-autogen, elixir-format
 msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
 msgstr "向看板和任务添加用户以及列的拖放功能"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:167
+#: lib/kanban_web/controllers/page_html/about.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "Adding drag-and-drop for Tasks"
 msgstr "为任务添加拖放功能"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:194
+#: lib/kanban_web/controllers/page_html/about.html.heex:247
 #, elixir-autogen, elixir-format
 msgid "Authorization and user permissions"
 msgstr "授权和用户权限"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:104
+#: lib/kanban_web/controllers/page_html/about.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Building the authentication system"
 msgstr "构建认证系统"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:203
+#: lib/kanban_web/controllers/page_html/about.html.heex:256
 #, elixir-autogen, elixir-format
 msgid "Cleanup and simplification of Authentication"
 msgstr "认证的清理和简化"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:158
+#: lib/kanban_web/controllers/page_html/about.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
 msgstr "清理任务界面和自动关闭闪现消息"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:95
+#: lib/kanban_web/controllers/page_html/about.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Creating the plan"
 msgstr "创建计划"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:131
+#: lib/kanban_web/controllers/page_html/about.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Finishing the UI for Boards"
 msgstr "完成看板界面"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#: lib/kanban_web/controllers/page_html/about.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
 msgstr "我在博客中写了关于这个应用程序的 AI 驱动开发。在帖子中，我包含了很多视频和图片，您可以看到它是如何完成的。帖子在这里："
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:122
+#: lib/kanban_web/controllers/page_html/about.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Moving the design to function components and starting on Boards"
 msgstr "将设计移至功能组件并开始看板"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:56
+#: lib/kanban_web/controllers/page_html/about.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr "报告问题或请求功能"
@@ -1006,18 +955,18 @@ msgstr "报告问题或请求功能"
 msgid "See the entire process for yourself in the "
 msgstr "在以下位置查看整个过程 "
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:86
+#: lib/kanban_web/controllers/page_html/about.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Setup, configuration, and tools"
 msgstr "设置、配置和工具"
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:25
-#: lib/kanban_web/controllers/page_html/about.html.heex:73
+#: lib/kanban_web/controllers/page_html/about.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "The Blog"
 msgstr "博客"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:113
+#: lib/kanban_web/controllers/page_html/about.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Updating the Visual Design and adding French Translations"
 msgstr "更新视觉设计并添加法语翻译"
@@ -1098,45 +1047,40 @@ msgstr "不能为空"
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "从数据库设计到用户界面，整个应用程序都是通过与 Claude Code 和 TideWave 的对话开发的。这包括架构、实时更新、拖放功能和国际化支持。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:132
+#: lib/kanban_web/live/board_live/show.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
 msgstr "您确定要删除此列吗？此列中的所有任务也将被删除。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:60
+#: lib/kanban_web/live/board_live/index.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "创建您的第一个看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:170
+#: lib/kanban_web/live/board_live/show.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Drag tasks here or click + to add"
 msgstr "将任务拖到此处或点击 + 添加"
 
-#: lib/kanban_web/live/board_live/index.html.heex:55
+#: lib/kanban_web/live/board_live/index.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Get started by creating your first board to organize your tasks and projects."
 msgstr "通过创建您的第一个看板来组织您的任务和项目。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:53
+#: lib/kanban_web/live/board_live/index.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "尚无看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:112
+#: lib/kanban_web/live/board_live/show.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "WIP"
 msgstr "在制品"
 
-#: lib/kanban_web/live/board_live/form.html.heex:256
+#: lib/kanban_web/live/board_live/form.html.heex:255
 #, elixir-autogen, elixir-format
 msgid "Add with Edit Access"
 msgstr "添加并具有编辑权限"
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:147
-#, elixir-autogen, elixir-format
-msgid "Assign proper access to team members."
-msgstr "为团队成员分配适当的访问权限。"
 
 #: lib/kanban_web/controllers/page_html/home.html.heex:35
 #, elixir-autogen, elixir-format
@@ -1148,31 +1092,31 @@ msgstr "前往我的看板"
 msgid "Error Tracker"
 msgstr "错误跟踪器"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:212
+#: lib/kanban_web/controllers/page_html/about.html.heex:265
 #, elixir-autogen, elixir-format
 msgid "Polish and enhancements - make it beautiful and professional"
 msgstr "完善和增强 - 使其美观和专业"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:842
-#: lib/kanban_web/live/task_live/view_component.ex:742
+#: lib/kanban_web/live/task_live/form_component.html.heex:860
+#: lib/kanban_web/live/task_live/view_component.ex:815
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority changed"
 msgstr "优先级已更改"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:856
-#: lib/kanban_web/live/task_live/view_component.ex:749
+#: lib/kanban_web/live/task_live/form_component.html.heex:874
+#: lib/kanban_web/live/task_live/view_component.ex:822
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assigned to"
 msgstr "分配给"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:862
-#: lib/kanban_web/live/task_live/view_component.ex:757
+#: lib/kanban_web/live/task_live/form_component.html.heex:880
+#: lib/kanban_web/live/task_live/view_component.ex:830
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:859
-#: lib/kanban_web/live/task_live/view_component.ex:752
+#: lib/kanban_web/live/task_live/form_component.html.heex:877
+#: lib/kanban_web/live/task_live/view_component.ex:825
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "未分配"
@@ -1188,7 +1132,7 @@ msgid "About Tango"
 msgstr "关于Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:17
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:703
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2191
 #: lib/kanban_web/controllers/page_html/tango.html.heex:17
 #: lib/kanban_web/controllers/page_html/tango.html.heex:101
 #, elixir-autogen, elixir-format
@@ -1217,22 +1161,22 @@ msgstr "返回看板"
 
 #: lib/kanban_web/live/board_live/form.html.heex:60
 #: lib/kanban_web/live/task_live/form_component.html.heex:34
-#: lib/kanban_web/live/task_live/view_component.ex:266
+#: lib/kanban_web/live/task_live/view_component.ex:268
 #, elixir-autogen, elixir-format
 msgid "Acceptance Criteria"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:536
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2024
 #, elixir-autogen, elixir-format
 msgid "Acceptance Criteria:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:621
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2109
 #, elixir-autogen, elixir-format
 msgid "Accessibility improvements throughout the application"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:568
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2056
 #, elixir-autogen, elixir-format
 msgid "Add comments to tasks for collaboration"
 msgstr ""
@@ -1242,67 +1186,67 @@ msgstr ""
 msgid "All notable changes to the Kanban Board application will be documented in this file."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:548
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2036
 #, elixir-autogen, elixir-format
 msgid "Assign tasks to specific users"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:547
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2035
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assigned To:"
 msgstr "分配给"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:552
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2040
 #, elixir-autogen, elixir-format
 msgid "Auto-generated unique identifier (e.g., W1, W2, D1)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:598
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2086
 #, elixir-autogen, elixir-format
 msgid "Automatic board refresh when changes occur"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:633
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2121
 #, elixir-autogen, elixir-format
 msgid "Automatic error capture and reporting"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:576
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2064
 #, elixir-autogen, elixir-format
 msgid "Automatic tracking of task lifecycle events"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:493
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1981
 #, elixir-autogen, elixir-format
 msgid "Beautiful board cards with responsive design"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:471
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1959
 #, elixir-autogen, elixir-format
 msgid "Board Management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:494
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1982
 #, elixir-autogen, elixir-format
 msgid "Board listing with quick access to all user boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:476
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1964
 #, elixir-autogen, elixir-format
 msgid "Board-level access control with three permission levels:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:631
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2119
 #, elixir-autogen, elixir-format
 msgid "Built-in error tracking with ErrorTracker"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:485
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1973
 #, elixir-autogen, elixir-format
 msgid "Can edit and move tasks, but cannot modify board structure"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:488
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1976
 #, elixir-autogen, elixir-format
 msgid "Can only view the board"
 msgstr ""
@@ -1312,368 +1256,368 @@ msgstr ""
 msgid "Changelog"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:500
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1988
 #, elixir-autogen, elixir-format
 msgid "Column Management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:515
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2003
 #, elixir-autogen, elixir-format
 msgid "Column deletion with cascade (removes all tasks in column)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:505
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1993
 #, elixir-autogen, elixir-format
 msgid "Configurable Work-In-Progress (WIP) limits per column:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:619
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2107
 #, elixir-autogen, elixir-format
 msgid "Confirmation dialogs for destructive actions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:652
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2140
 #, elixir-autogen, elixir-format
 msgid "Context-aware translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:450
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1938
 #, elixir-autogen, elixir-format
 msgid "Core Features"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:503
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1991
 #, elixir-autogen, elixir-format
 msgid "Create, edit, and delete columns within boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:524
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2012
 #, elixir-autogen, elixir-format
 msgid "Create, edit, and delete tasks within columns"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:474
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1962
 #, elixir-autogen, elixir-format
 msgid "Create, view, edit, and delete kanban boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:680
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2168
 #, elixir-autogen, elixir-format
 msgid "Credits"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:136
+#: lib/kanban_web/live/board_live/show.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Delete column"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:203
+#: lib/kanban_web/live/board_live/show.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "Delete task"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:532
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2020
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Description:"
 msgstr "描述"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:582
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2070
 #, elixir-autogen, elixir-format
 msgid "Display full history with timestamps"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:504
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1992
 #, elixir-autogen, elixir-format
 msgid "Drag-and-drop column reordering"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:616
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2104
 #, elixir-autogen, elixir-format
 msgid "Drag-and-drop interfaces for intuitive task management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:556
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2044
 #, elixir-autogen, elixir-format
 msgid "Drag-and-drop task movement:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:475
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1963
 #, elixir-autogen, elixir-format
 msgid "Each board has a name and description"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:651
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2139
 #, elixir-autogen, elixir-format
 msgid "Easy addition of new languages"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:121
+#: lib/kanban_web/live/board_live/show.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Edit column"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:192
+#: lib/kanban_web/live/board_live/show.html.heex:223
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit task"
 msgstr "编辑"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:620
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2108
 #, elixir-autogen, elixir-format
 msgid "Empty states with helpful guidance"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:644
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2132
 #, elixir-autogen, elixir-format
 msgid "English translations (default)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:628
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2116
 #, elixir-autogen, elixir-format
 msgid "Error Tracking & Monitoring"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:632
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2120
 #, elixir-autogen, elixir-format
 msgid "Error dashboard for administrators"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:618
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2106
 #, elixir-autogen, elixir-format
 msgid "Flash messages for user feedback"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:645
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2133
 #, elixir-autogen, elixir-format
 msgid "French translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:643
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2131
 #, elixir-autogen, elixir-format
 msgid "Full Gettext integration"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:481
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1969
 #, elixir-autogen, elixir-format
 msgid "Full control over board, columns, and tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:647
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2135
 #, elixir-autogen, elixir-format
 msgid "German translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:551
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2039
 #, elixir-autogen, elixir-format
 msgid "Identifier:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:640
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2128
 #, elixir-autogen, elixir-format
 msgid "Internationalization"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:649
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2137
 #, elixir-autogen, elixir-format
 msgid "Japanese translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:670
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2158
 #, elixir-autogen, elixir-format
 msgid "Known Limitations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:593
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2081
 #, elixir-autogen, elixir-format
 msgid "Live synchronization across all connected browsers:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:617
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2105
 #, elixir-autogen, elixir-format
 msgid "Loading states for asynchronous operations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:544
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2032
 #, elixir-autogen, elixir-format
 msgid "Low, Medium, High, or Critical"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:650
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2138
 #, elixir-autogen, elixir-format
 msgid "Mandarin Chinese translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:622
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2110
 #, elixir-autogen, elixir-format
 msgid "Mobile-responsive layout"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:614
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2102
 #, elixir-autogen, elixir-format
 msgid "Modern, responsive design using TailwindCSS"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:484
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1972
 #, elixir-autogen, elixir-format
 msgid "Modify:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:560
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2048
 #, elixir-autogen, elixir-format
 msgid "Move tasks between columns"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:559
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2047
 #, elixir-autogen, elixir-format
 msgid "Move tasks within the same column (reorder)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:464
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1952
 #, elixir-autogen, elixir-format
 msgid "Multi-language support with language switcher (English and French)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:602
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2090
 #, elixir-autogen, elixir-format
 msgid "Multiple users can view and interact with the same board simultaneously"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:673
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2161
 #, elixir-autogen, elixir-format
 msgid "None identified. Please report any issues via the project's issue tracker. A form is available on the About page for easy submission."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:537
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2025
 #, elixir-autogen, elixir-format
 msgid "Optional criteria for task completion"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:533
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2021
 #, elixir-autogen, elixir-format
 msgid "Optional detailed description"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:480
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1968
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Owner:"
 msgstr "所有者"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:460
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1948
 #, elixir-autogen, elixir-format
 msgid "Password hashing and security using bcrypt"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:592
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2080
 #, elixir-autogen, elixir-format
 msgid "Phoenix PubSub integration for real-time updates"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:648
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2136
 #, elixir-autogen, elixir-format
 msgid "Portugese translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:511
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1999
 #, elixir-autogen, elixir-format
 msgid "Prevents task creation/movement when limit is reached"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:543
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2031
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority:"
 msgstr "优先级"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:461
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1949
 #, elixir-autogen, elixir-format
 msgid "Protected routes requiring authentication"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:488
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1976
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Read-only:"
 msgstr "只读"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:351
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:589
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1835
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2077
 #, elixir-autogen, elixir-format
 msgid "Real-Time Collaboration"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:659
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2147
 #, elixir-autogen, elixir-format
 msgid "Release Notes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:529
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2017
 #, elixir-autogen, elixir-format
 msgid "Required task name"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:561
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2049
 #, elixir-autogen, elixir-format
 msgid "Respects WIP limits when moving"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:525
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2013
 #, elixir-autogen, elixir-format
 msgid "Rich task properties:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:459
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1947
 #, elixir-autogen, elixir-format
 msgid "Secure user login and logout with session management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:508
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1996
 #, elixir-autogen, elixir-format
 msgid "Set to 0 for unlimited tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:509
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1997
 #, elixir-autogen, elixir-format
 msgid "Set to positive integer to enforce maximum tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:492
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1980
 #, elixir-autogen, elixir-format
 msgid "Share boards with other users with granular permissions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:615
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2103
 #, elixir-autogen, elixir-format
 msgid "Smooth animations and transitions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:646
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2134
 #, elixir-autogen, elixir-format
 msgid "Spanish translations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:634
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2122
 #, elixir-autogen, elixir-format
 msgid "Stack trace and context information for debugging"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:521
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2009
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Task Management"
 msgstr " · 任务管理"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:565
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2053
 #, elixir-autogen, elixir-format
 msgid "Task comments:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:596
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2084
 #, elixir-autogen, elixir-format
 msgid "Task creation, updates, and deletion"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:573
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2061
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Task history tracking:"
 msgstr "任务历史"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:597
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2085
 #, elixir-autogen, elixir-format
 msgid "Task movement between columns"
 msgstr ""
@@ -1683,97 +1627,97 @@ msgstr ""
 msgid "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:682
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2170
 #, elixir-autogen, elixir-format
 msgid "This application was completely Vibecoded by Jeff \"Cheezy\" Morgan with the help of Claude Code and TideWave."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:662
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2150
 #, elixir-autogen, elixir-format
 msgid "This is the initial stable release of the Kanban Board application. All core features have been implemented, tested, and documented. The application is production-ready with comprehensive test coverage, security measures, and a polished user interface."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:569
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2057
 #, elixir-autogen, elixir-format
 msgid "Timestamp and display for all comments"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:529
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2017
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Title:"
 msgstr "标题"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:578
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2066
 #, elixir-autogen, elixir-format
 msgid "Track creation, moves between columns, priority changes, and assignments"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:540
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2028
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Type:"
 msgstr "类型"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:455
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1943
 #, elixir-autogen, elixir-format
 msgid "User Authentication & Management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:611
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2099
 #, elixir-autogen, elixir-format
 msgid "User Experience"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:462
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1950
 #, elixir-autogen, elixir-format
 msgid "User profiles with customizable display names"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:458
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1946
 #, elixir-autogen, elixir-format
 msgid "User registration with email and password"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/about.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Version History"
 msgstr "版本历史"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:49
+#: lib/kanban_web/controllers/page_html/about.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "View Changelog"
 msgstr "查看更改日志"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:570
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2058
 #, elixir-autogen, elixir-format
 msgid "View comment history"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:42
+#: lib/kanban_web/controllers/page_html/about.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "View the complete version history and feature list for this application."
 msgstr "查看此应用程序的完整版本历史和功能列表。"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:562
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2050
 #, elixir-autogen, elixir-format
 msgid "Visual feedback during drag operations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:583
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2071
 #, elixir-autogen, elixir-format
 msgid "Visual icons for different event types"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:510
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1998
 #, elixir-autogen, elixir-format
 msgid "Visual indicators when approaching or exceeding WIP limits"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:514
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2002
 #, elixir-autogen, elixir-format
 msgid "Visual task count display (e.g., \"3/5\" when limit is 5)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:540
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2028
 #, elixir-autogen, elixir-format
 msgid "Work or Defect"
 msgstr ""
@@ -1852,201 +1796,210 @@ msgstr ""
 msgid "We'll send you an email with instructions to reset your password."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:230
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1676
 #, elixir-autogen, elixir-format
 msgid " - Added 18+ new fields to support AI-optimized task management:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:324
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1806
 #, elixir-autogen, elixir-format
 msgid " - All 18 TASK.md categories displayed in organized, scannable format:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:280
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1736
 #, elixir-autogen, elixir-format
 msgid " - Board owners can control which task fields are visible to all users:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:304
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1776
 #, elixir-autogen, elixir-format
 msgid " - Support for all rich task fields with dynamic sections:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:260
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1714
 #, elixir-autogen, elixir-format
 msgid " claimed_at, claimed_by, claimer_name"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:236
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1682
 #, elixir-autogen, elixir-format
 msgid " complexity (small/medium/large), estimated_files, why, what, where_context"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:256
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1708
 #, elixir-autogen, elixir-format
 msgid " created_by, creator_name, completed_at, completed_by, completer_name, completion_summary"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:268
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1724
 #, elixir-autogen, elixir-format
 msgid " dependencies (JSONB array) to track task relationships"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:248
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1698
 #, elixir-autogen, elixir-format
 msgid " error_user_message, error_on_failure"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:252
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1702
 #, elixir-autogen, elixir-format
 msgid " key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:264
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1718
 #, elixir-autogen, elixir-format
 msgid " needs_review (boolean), review_status (pending/approved/changes_requested), review_notes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:240
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1688
 #, elixir-autogen, elixir-format
 msgid " patterns_to_follow, database_changes, validation_rules, required_capabilities"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:244
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1694
 #, elixir-autogen, elixir-format
 msgid " telemetry_event, metrics_to_track, logging_requirements"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:285
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1743
 #, elixir-autogen, elixir-format
 msgid "12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:367
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1855
 #, elixir-autogen, elixir-format
 msgid "AI-Optimized Task Structure"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:771
-#: lib/kanban_web/live/task_live/view_component.ex:602
+#: lib/kanban_web/live/task_live/form_component.html.heex:790
+#: lib/kanban_web/live/task_live/view_component.ex:604
 #, elixir-autogen, elixir-format
 msgid "Actual Complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:782
-#: lib/kanban_web/live/task_live/view_component.ex:625
+#: lib/kanban_web/live/task_live/form_component.html.heex:801
+#: lib/kanban_web/live/task_live/view_component.ex:627
 #, elixir-autogen, elixir-format
 msgid "Actual Files Changed"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:766
+#: lib/kanban_web/live/task_live/form_component.html.heex:785
 #, elixir-autogen, elixir-format
 msgid "Actual Metrics"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:597
+#: lib/kanban_web/live/task_live/view_component.ex:599
 #, elixir-autogen, elixir-format
 msgid "Actual vs Estimated"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:697
+#: lib/kanban_web/live/task_live/form_component.html.heex:716
 #, elixir-autogen, elixir-format
 msgid "Add Dependency"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:153
+#: lib/kanban_web/live/task_live/form_component.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Add Key File"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:368
+#: lib/kanban_web/live/task_live/form_component.html.heex:387
 #, elixir-autogen, elixir-format
 msgid "Add Out of Scope Item"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:333
+#: lib/kanban_web/live/task_live/form_component.html.heex:352
 #, elixir-autogen, elixir-format
 msgid "Add Pitfall"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:759
+#: lib/kanban_web/live/task_live/form_component.html.heex:778
 #, elixir-autogen, elixir-format
 msgid "Add Required Capability"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:259
+#: lib/kanban_web/live/task_live/form_component.html.heex:278
 #, elixir-autogen, elixir-format
 msgid "Add Technology"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:197
+#: lib/kanban_web/live/task_live/form_component.html.heex:216
 #, elixir-autogen, elixir-format
 msgid "Add Verification Step"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:42
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:109
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:191
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:220
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:242
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:291
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:391
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:600
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:811
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:971
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1131
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1296
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1409
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1500
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1615
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1666
 #, elixir-autogen, elixir-format
 msgid "Added"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:393
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1881
 #, elixir-autogen, elixir-format
 msgid "Adjusting visibility as workflow needs evolve"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:200
-#: lib/kanban_web/live/task_live/view_component.ex:697
+#: lib/kanban_web/live/task_live/view_component.ex:202
+#: lib/kanban_web/live/task_live/view_component.ex:699
 #, elixir-autogen, elixir-format
 msgid "Agent"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:437
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1925
 #, elixir-autogen, elixir-format
 msgid "All components now properly adapt to both light and dark themes using OKLCH color space"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:802
+#: lib/kanban_web/live/task_live/form_component.html.heex:820
 #: lib/kanban_web/live/task_live/view_component.ex:50
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:259
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1713
 #, elixir-autogen, elixir-format
 msgid "Assignment Tracking:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:339
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1823
 #, elixir-autogen, elixir-format
 msgid "Assignment and completion tracking"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:427
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1915
 #, elixir-autogen, elixir-format
 msgid "Authentication pages"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:714
+#: lib/kanban_web/live/task_live/form_component.html.heex:733
 #: lib/kanban_web/live/task_live/view_component.ex:32
 #, elixir-autogen, elixir-format
 msgid "Blocked"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:423
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1911
 #, elixir-autogen, elixir-format
 msgid "Board list, show, and form views"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:275
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1731
 #, elixir-autogen, elixir-format
 msgid "Board-Level Field Visibility System"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:439
-#: lib/kanban_web/live/board_live/show.ex:457
+#: lib/kanban_web/live/board_live/show.ex:463
+#: lib/kanban_web/live/board_live/show.ex:481
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
@@ -2056,7 +2009,7 @@ msgstr ""
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:442
+#: lib/kanban_web/live/board_live/show.ex:466
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
@@ -2066,89 +2019,89 @@ msgstr ""
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:803
+#: lib/kanban_web/live/task_live/form_component.html.heex:821
 #: lib/kanban_web/live/task_live/view_component.ex:51
 #, elixir-autogen, elixir-format
 msgid "Changes Requested"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:731
+#: lib/kanban_web/live/task_live/form_component.html.heex:750
 #, elixir-autogen, elixir-format
 msgid "Claim Tracking & Required Capabilities"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:211
+#: lib/kanban_web/live/task_live/view_component.ex:213
 #, elixir-autogen, elixir-format
 msgid "Claim expires"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:206
+#: lib/kanban_web/live/task_live/view_component.ex:208
 #, elixir-autogen, elixir-format
 msgid "Claimed at"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:251
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1701
 #, elixir-autogen, elixir-format
 msgid "Collections:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:425
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1913
 #, elixir-autogen, elixir-format
 msgid "Column form component"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:170
+#: lib/kanban_web/live/task_live/form_component.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Command"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:306
+#: lib/kanban_web/live/task_live/form_component.html.heex:325
 #, elixir-autogen, elixir-format
 msgid "Common Pitfalls"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:313
+#: lib/kanban_web/live/task_live/form_component.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "Common pitfall to avoid"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:713
+#: lib/kanban_web/live/task_live/form_component.html.heex:732
 #: lib/kanban_web/live/task_live/view_component.ex:31
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:718
+#: lib/kanban_web/live/task_live/form_component.html.heex:737
 #, elixir-autogen, elixir-format
 msgid "Completed By Agent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:685
+#: lib/kanban_web/live/task_live/view_component.ex:687
 #, elixir-autogen, elixir-format
 msgid "Completed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:691
+#: lib/kanban_web/live/task_live/view_component.ex:693
 #, elixir-autogen, elixir-format
 msgid "Completed by"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:681
+#: lib/kanban_web/live/task_live/view_component.ex:683
 #, elixir-autogen, elixir-format
 msgid "Completion"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:722
+#: lib/kanban_web/live/task_live/form_component.html.heex:741
 #, elixir-autogen, elixir-format
 msgid "Completion Summary"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:88
+#: lib/kanban_web/live/task_live/form_component.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:82
+#: lib/kanban_web/live/task_live/form_component.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Complexity & Planning"
 msgstr ""
@@ -2158,13 +2111,13 @@ msgstr ""
 msgid "Complexity & Scope"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:303
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1775
 #, elixir-autogen, elixir-format
 msgid "Comprehensive Task Creation/Edit Form"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:109
-#: lib/kanban_web/live/task_live/view_component.ex:223
+#: lib/kanban_web/live/task_live/form_component.html.heex:118
+#: lib/kanban_web/live/task_live/view_component.ex:225
 #, elixir-autogen, elixir-format
 msgid "Context"
 msgstr ""
@@ -2179,122 +2132,122 @@ msgstr ""
 msgid "Control which task fields are visible on the board"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:717
+#: lib/kanban_web/live/task_live/form_component.html.heex:736
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Created By Agent"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/task_live/view_component.ex:194
+#: lib/kanban_web/live/task_live/view_component.ex:196
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Created by"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/task_live/view_component.ex:189
+#: lib/kanban_web/live/task_live/view_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Creator Info"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:344
+#: lib/kanban_web/live/task_live/view_component.ex:346
 #, elixir-autogen, elixir-format
 msgid "Database Changes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:215
+#: lib/kanban_web/live/task_live/form_component.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "Database/Schema Changes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:292
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1759
 #, elixir-autogen, elixir-format
 msgid "Default visibility: acceptance_criteria shown, all others hidden"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:670
-#: lib/kanban_web/live/task_live/view_component.ex:450
+#: lib/kanban_web/live/task_live/form_component.html.heex:689
+#: lib/kanban_web/live/task_live/view_component.ex:452
 #, elixir-autogen, elixir-format
 msgid "Dependencies"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:337
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1821
 #, elixir-autogen, elixir-format
 msgid "Dependencies visualization"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:267
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1723
 #, elixir-autogen, elixir-format
 msgid "Dependencies:"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:453
+#: lib/kanban_web/live/task_live/view_component.ex:455
 #, elixir-autogen, elixir-format
 msgid "Depends on tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:362
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1850
 #, elixir-autogen, elixir-format
 msgid "Developer Experience"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:308
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1780
 #, elixir-autogen, elixir-format
 msgid "Dynamic key files editor with add/remove functionality"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:309
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1782
 #, elixir-autogen, elixir-format
 msgid "Dynamic verification steps editor with add/remove functionality"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:310
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1784
 #, elixir-autogen, elixir-format
 msgid "Embedded schema support for structured JSONB data"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:299
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1771
 #, elixir-autogen, elixir-format
 msgid "Enhanced Task Forms"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:130
-#: lib/kanban_web/live/task_live/form_component.html.heex:292
-#: lib/kanban_web/live/task_live/view_component.ex:398
+#: lib/kanban_web/live/task_live/form_component.html.heex:311
+#: lib/kanban_web/live/task_live/view_component.ex:400
 #, elixir-autogen, elixir-format
 msgid "Error Handling"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:247
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1697
 #, elixir-autogen, elixir-format
 msgid "Error Handling:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:333
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1817
 #, elixir-autogen, elixir-format
 msgid "Error handling guidelines"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:428
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1916
 #, elixir-autogen, elixir-format
 msgid "Error pages (404, 500)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:612
-#: lib/kanban_web/live/task_live/view_component.ex:631
+#: lib/kanban_web/live/task_live/view_component.ex:614
+#: lib/kanban_web/live/task_live/view_component.ex:633
 #, elixir-autogen, elixir-format
 msgid "Est"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:99
-#: lib/kanban_web/live/task_live/view_component.ex:179
+#: lib/kanban_web/live/task_live/form_component.html.heex:108
+#: lib/kanban_web/live/task_live/view_component.ex:181
 #, elixir-autogen, elixir-format
 msgid "Estimated Files"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:318
+#: lib/kanban_web/live/task_live/view_component.ex:320
 #, elixir-autogen, elixir-format
 msgid "Expected"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:229
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1675
 #, elixir-autogen, elixir-format
 msgid "Extended Task Schema"
 msgstr ""
@@ -2310,172 +2263,173 @@ msgstr ""
 msgid "Field Visibility Settings"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:279
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1735
 #, elixir-autogen, elixir-format
 msgid "Field Visibility Toggles"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:312
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1787
 #, elixir-autogen, elixir-format
 msgid "Field visibility awareness - form fields show/hide based on board settings"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:404
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:937
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1892
 #, elixir-autogen, elixir-format
 msgid "Fixed"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:419
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1907
 #, elixir-autogen, elixir-format
 msgid "Fixed text visibility issues in dark mode across all pages including:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:384
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1872
 #, elixir-autogen, elixir-format
 msgid "Flexible Board Configuration"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:374
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1862
 #, elixir-autogen, elixir-format
 msgid "Follow project patterns and conventions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:377
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1865
 #, elixir-autogen, elixir-format
 msgid "Handle errors appropriately"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:426
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1914
 #, elixir-autogen, elixir-format
 msgid "Home, About, Changelog, and Tango pages"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:330
+#: lib/kanban_web/live/task_live/view_component.ex:332
 #, elixir-autogen, elixir-format
 msgid "Implementation Guidance"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:239
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1687
 #, elixir-autogen, elixir-format
 msgid "Implementation Guidance:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:329
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1813
 #, elixir-autogen, elixir-format
 msgid "Implementation guidance section"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:355
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1840
 #, elixir-autogen, elixir-format
 msgid "Instant synchronization of board settings across all connected clients"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:90
-#: lib/kanban_web/live/task_live/view_component.ex:275
+#: lib/kanban_web/live/task_live/view_component.ex:277
 #, elixir-autogen, elixir-format
 msgid "Key Files"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:125
+#: lib/kanban_web/live/task_live/form_component.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Key Files to Read First"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:330
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1814
 #, elixir-autogen, elixir-format
 msgid "Key files to read (with file paths and descriptions)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:335
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1819
 #, elixir-autogen, elixir-format
 msgid "Known pitfalls"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:92
-#: lib/kanban_web/live/task_live/form_component.html.heex:775
-#: lib/kanban_web/live/task_live/view_component.ex:96
-#: lib/kanban_web/live/task_live/view_component.ex:608
-#: lib/kanban_web/live/task_live/view_component.ex:615
+#: lib/kanban_web/live/task_live/form_component.html.heex:101
+#: lib/kanban_web/live/task_live/form_component.html.heex:794
+#: lib/kanban_web/live/task_live/view_component.ex:98
+#: lib/kanban_web/live/task_live/view_component.ex:610
+#: lib/kanban_web/live/task_live/view_component.ex:617
 #, elixir-autogen, elixir-format
 msgid "Large"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:375
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1863
 #, elixir-autogen, elixir-format
 msgid "Locate relevant code files"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:283
-#: lib/kanban_web/live/task_live/view_component.ex:386
+#: lib/kanban_web/live/task_live/form_component.html.heex:302
+#: lib/kanban_web/live/task_live/view_component.ex:388
 #, elixir-autogen, elixir-format
 msgid "Logging Requirements"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:392
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1880
 #, elixir-autogen, elixir-format
 msgid "Maintaining consistent views across all team members"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:170
+#: lib/kanban_web/live/task_live/form_component.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Manual"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:255
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1707
 #, elixir-autogen, elixir-format
 msgid "Metadata Tracking:"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:277
-#: lib/kanban_web/live/task_live/view_component.ex:378
+#: lib/kanban_web/live/task_live/form_component.html.heex:296
+#: lib/kanban_web/live/task_live/view_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Metrics to Track"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:795
-#: lib/kanban_web/live/task_live/view_component.ex:165
+#: lib/kanban_web/live/task_live/form_component.html.heex:75
+#: lib/kanban_web/live/task_live/view_component.ex:167
 #, elixir-autogen, elixir-format
 msgid "Needs Review"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:36
+#: lib/kanban_web/live/board_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "New AI Optimized Board"
 msgstr "新建AI优化看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:27
+#: lib/kanban_web/live/board_live/index.html.heex:32
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Empty Board"
 msgstr "新建空白看板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:171
+#: lib/kanban_web/live/task_live/view_component.ex:173
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:120
-#: lib/kanban_web/live/task_live/form_component.html.heex:267
-#: lib/kanban_web/live/task_live/view_component.ex:364
+#: lib/kanban_web/live/task_live/form_component.html.heex:286
+#: lib/kanban_web/live/task_live/view_component.ex:366
 #, elixir-autogen, elixir-format
 msgid "Observability"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:332
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1816
 #, elixir-autogen, elixir-format
 msgid "Observability requirements"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:243
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1693
 #, elixir-autogen, elixir-format
 msgid "Observability:"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:412
+#: lib/kanban_web/live/task_live/view_component.ex:414
 #, elixir-autogen, elixir-format
 msgid "On Failure"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:297
+#: lib/kanban_web/live/task_live/form_component.html.heex:316
 #, elixir-autogen, elixir-format
 msgid "On Failure (What Happens)"
 msgstr ""
@@ -2487,41 +2441,41 @@ msgstr ""
 msgid "Only board owners can change field visibility"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:711
+#: lib/kanban_web/live/task_live/form_component.html.heex:730
 #: lib/kanban_web/live/task_live/view_component.ex:29
 #, elixir-autogen, elixir-format
 msgid "Open"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:160
-#: lib/kanban_web/live/task_live/form_component.html.heex:341
-#: lib/kanban_web/live/task_live/view_component.ex:471
+#: lib/kanban_web/live/task_live/form_component.html.heex:360
+#: lib/kanban_web/live/task_live/view_component.ex:473
 #, elixir-autogen, elixir-format
 msgid "Out of Scope"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:336
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1820
 #, elixir-autogen, elixir-format
 msgid "Out of scope clarifications"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:348
+#: lib/kanban_web/live/task_live/form_component.html.heex:367
 #, elixir-autogen, elixir-format
 msgid "Out of scope item"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:291
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1754
 #, elixir-autogen, elixir-format
 msgid "Owner-only access control - only board owners can modify field visibility settings"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:209
-#: lib/kanban_web/live/task_live/view_component.ex:336
+#: lib/kanban_web/live/task_live/form_component.html.heex:228
+#: lib/kanban_web/live/task_live/view_component.ex:338
 #, elixir-autogen, elixir-format
 msgid "Patterns to Follow"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:801
+#: lib/kanban_web/live/task_live/form_component.html.heex:819
 #: lib/kanban_web/live/task_live/view_component.ex:49
 #, elixir-autogen, elixir-format
 msgid "Pending"
@@ -2532,244 +2486,244 @@ msgstr ""
 msgid "Pitfalls"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:460
+#: lib/kanban_web/live/task_live/view_component.ex:462
 #, elixir-autogen, elixir-format
 msgid "Pitfalls to Avoid"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:235
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1681
 #, elixir-autogen, elixir-format
 msgid "Planning & Context:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:328
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1812
 #, elixir-autogen, elixir-format
 msgid "Planning context (Why/What/Where)"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:38
+#: lib/kanban_web/live/board_live/index.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Pre-configured for AI workflow"
 msgstr "为AI工作流预配置"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:354
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1838
 #, elixir-autogen, elixir-format
 msgid "PubSub broadcasts for field visibility changes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:289
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1749
 #, elixir-autogen, elixir-format
 msgid "Real-time PubSub broadcasts synchronize visibility changes across all connected clients"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:313
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1792
 #, elixir-autogen, elixir-format
 msgid "Reduced code complexity (Credo compliant) through helper function extraction"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:391
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1879
 #, elixir-autogen, elixir-format
 msgid "Reducing information overload on task cards"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:804
+#: lib/kanban_web/live/task_live/form_component.html.heex:822
 #: lib/kanban_web/live/task_live/view_component.ex:52
 #, elixir-autogen, elixir-format
 msgid "Rejected"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:414
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1902
 #, elixir-autogen, elixir-format
 msgid "Replaced hardcoded Tailwind gray colors with daisyUI semantic colors (base-100, base-200, base-300, base-content)"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:170
-#: lib/kanban_web/live/task_live/view_component.ex:437
+#: lib/kanban_web/live/task_live/view_component.ex:439
 #, elixir-autogen, elixir-format
 msgid "Required Agent Capabilities"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:739
+#: lib/kanban_web/live/task_live/form_component.html.heex:758
 #, elixir-autogen, elixir-format
 msgid "Required capability"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:808
-#: lib/kanban_web/live/task_live/view_component.ex:671
+#: lib/kanban_web/live/task_live/form_component.html.heex:826
+#: lib/kanban_web/live/task_live/view_component.ex:673
 #, elixir-autogen, elixir-format
 msgid "Review Notes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:794
+#: lib/kanban_web/live/task_live/form_component.html.heex:813
 #, elixir-autogen, elixir-format
 msgid "Review Queue"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:799
-#: lib/kanban_web/live/task_live/view_component.ex:649
+#: lib/kanban_web/live/task_live/form_component.html.heex:817
+#: lib/kanban_web/live/task_live/view_component.ex:651
 #, elixir-autogen, elixir-format
 msgid "Review Status"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:263
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1717
 #, elixir-autogen, elixir-format
 msgid "Review System:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:338
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1822
 #, elixir-autogen, elixir-format
 msgid "Review status indicators"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:665
+#: lib/kanban_web/live/task_live/view_component.ex:667
 #, elixir-autogen, elixir-format
 msgid "Reviewed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:659
+#: lib/kanban_web/live/task_live/view_component.ex:661
 #, elixir-autogen, elixir-format
 msgid "Reviewed by"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:323
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1805
 #, elixir-autogen, elixir-format
 msgid "Rich Task Display"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:225
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1671
 #, elixir-autogen, elixir-format
 msgid "Rich Task Metadata System"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:777
+#: lib/kanban_web/live/task_live/form_component.html.heex:796
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Select"
 msgstr "选择用户"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/form_component.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Select complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:806
+#: lib/kanban_web/live/task_live/form_component.html.heex:824
 #, elixir-autogen, elixir-format
 msgid "Select status"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:293
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1762
 #, elixir-autogen, elixir-format
 msgid "Settings persist in database and apply to all users viewing the board"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:390
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1878
 #, elixir-autogen, elixir-format
 msgid "Showing only relevant fields for their process"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:90
-#: lib/kanban_web/live/task_live/form_component.html.heex:773
-#: lib/kanban_web/live/task_live/view_component.ex:94
-#: lib/kanban_web/live/task_live/view_component.ex:606
-#: lib/kanban_web/live/task_live/view_component.ex:613
+#: lib/kanban_web/live/task_live/form_component.html.heex:99
+#: lib/kanban_web/live/task_live/form_component.html.heex:792
+#: lib/kanban_web/live/task_live/view_component.ex:96
+#: lib/kanban_web/live/task_live/view_component.ex:608
+#: lib/kanban_web/live/task_live/view_component.ex:615
 #, elixir-autogen, elixir-format
 msgid "Small"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:28
+#: lib/kanban_web/live/board_live/index.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Start with a blank board"
 msgstr "从空白看板开始"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:704
+#: lib/kanban_web/live/task_live/form_component.html.heex:723
 #, elixir-autogen, elixir-format
 msgid "Status & Agent Tracking"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:287
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1747
 #, elixir-autogen, elixir-format
 msgid "Stored in boards table as JSONB (field_visibility column)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:703
+#: lib/kanban_web/live/task_live/view_component.ex:705
 #, elixir-autogen, elixir-format
 msgid "Summary"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:319
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1801
 #, elixir-autogen, elixir-format
 msgid "Task Detail View Enhancements"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:677
+#: lib/kanban_web/live/task_live/form_component.html.heex:696
 #, elixir-autogen, elixir-format
 msgid "Task identifier (e.g., W01A)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:424
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1912
 #, elixir-autogen, elixir-format
 msgid "Task view and form components"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:370
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1858
 #, elixir-autogen, elixir-format
 msgid "Tasks now contain comprehensive information for AI agents to:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:387
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1875
 #, elixir-autogen, elixir-format
 msgid "Teams can customize their workflow by:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:346
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1830
 #, elixir-autogen, elixir-format
 msgid "Technical Improvements"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:110
-#: lib/kanban_web/live/task_live/form_component.html.heex:205
+#: lib/kanban_web/live/task_live/form_component.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "Technical Notes"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:140
-#: lib/kanban_web/live/task_live/form_component.html.heex:231
-#: lib/kanban_web/live/task_live/view_component.ex:424
+#: lib/kanban_web/live/task_live/form_component.html.heex:250
+#: lib/kanban_web/live/task_live/view_component.ex:426
 #, elixir-autogen, elixir-format
 msgid "Technology Requirements"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:334
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1818
 #, elixir-autogen, elixir-format
 msgid "Technology requirements"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:239
+#: lib/kanban_web/live/task_live/form_component.html.heex:258
 #, elixir-autogen, elixir-format
 msgid "Technology/library name"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:271
-#: lib/kanban_web/live/task_live/view_component.ex:370
+#: lib/kanban_web/live/task_live/form_component.html.heex:290
+#: lib/kanban_web/live/task_live/view_component.ex:372
 #, elixir-autogen, elixir-format
 msgid "Telemetry Event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:639
+#: lib/kanban_web/live/task_live/view_component.ex:641
 #, elixir-autogen, elixir-format
 msgid "Time Spent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:787
+#: lib/kanban_web/live/task_live/form_component.html.heex:806
 #, elixir-autogen, elixir-format
 msgid "Time Spent (minutes)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:378
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1866
 #, elixir-autogen, elixir-format
 msgid "Track dependencies and review status"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:373
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1861
 #, elixir-autogen, elixir-format
 msgid "Understand context and rationale (why/what/where)"
 msgstr ""
@@ -2780,126 +2734,126 @@ msgstr ""
 msgid "Unknown"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:409
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1897
 #, elixir-autogen, elixir-format
 msgid "Updated all UI components to use theme-aware daisyUI color tokens for proper dark mode support"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:432
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1920
 #, elixir-autogen, elixir-format
 msgid "Updated test expectations to match new dark mode compatible CSS classes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:293
+#: lib/kanban_web/live/task_live/form_component.html.heex:312
 #, elixir-autogen, elixir-format
 msgid "User Error Message"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:404
+#: lib/kanban_web/live/task_live/view_component.ex:406
 #, elixir-autogen, elixir-format
 msgid "User Message"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:221
-#: lib/kanban_web/live/task_live/view_component.ex:352
+#: lib/kanban_web/live/task_live/form_component.html.heex:240
+#: lib/kanban_web/live/task_live/view_component.ex:354
 #, elixir-autogen, elixir-format
 msgid "Validation Rules"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:311
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1785
 #, elixir-autogen, elixir-format
 msgid "Validation for all new fields with proper error handling"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:100
-#: lib/kanban_web/live/task_live/form_component.html.heex:162
-#: lib/kanban_web/live/task_live/view_component.ex:293
+#: lib/kanban_web/live/task_live/form_component.html.heex:181
+#: lib/kanban_web/live/task_live/view_component.ex:295
 #, elixir-autogen, elixir-format
 msgid "Verification Steps"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:331
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1815
 #, elixir-autogen, elixir-format
 msgid "Verification steps checklist"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:376
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1864
 #, elixir-autogen, elixir-format
 msgid "Verify implementation success"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:237
+#: lib/kanban_web/live/task_live/view_component.ex:239
 #, elixir-autogen, elixir-format
 msgid "What"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:111
+#: lib/kanban_web/live/task_live/form_component.html.heex:128
 #, elixir-autogen, elixir-format
 msgid "What (Implementation)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:245
+#: lib/kanban_web/live/task_live/view_component.ex:247
 #, elixir-autogen, elixir-format
 msgid "Where"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:115
+#: lib/kanban_web/live/task_live/form_component.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Where (Code Location)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:229
+#: lib/kanban_web/live/task_live/view_component.ex:231
 #, elixir-autogen, elixir-format
 msgid "Why"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:110
+#: lib/kanban_web/live/task_live/form_component.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Why (Problem/Rationale)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:169
+#: lib/kanban_web/live/task_live/view_component.ex:171
 #, elixir-autogen, elixir-format
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:640
+#: lib/kanban_web/live/task_live/view_component.ex:642
 #, elixir-autogen, elixir-format
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:119
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1510
 #, elixir-autogen, elixir-format
 msgid " - Added specialized fields to capture AI-relevant context for task execution:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:201
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1625
 #, elixir-autogen, elixir-format
 msgid " - Introduced AI Optimized Boards with predefined, immutable structure:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:114
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1505
 #, elixir-autogen, elixir-format
 msgid "AI Context Fields for Enhanced Task Intelligence"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:196
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1620
 #, elixir-autogen, elixir-format, fuzzy
 msgid "AI Optimized Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:491
-#: lib/kanban_web/live/board_live/show.html.heex:11
+#: lib/kanban_web/live/board_live/show.ex:515
+#: lib/kanban_web/live/board_live/show.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
 msgstr "API令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:366
+#: lib/kanban_web/live/board_live/show.html.heex:440
 #, elixir-autogen, elixir-format
 msgid "API Tokens for %{board_name}"
 msgstr "%{board_name}的API令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:642
+#: lib/kanban_web/live/task_live/form_component.html.heex:661
 #, elixir-autogen, elixir-format
 msgid "API endpoint or service"
 msgstr ""
@@ -2909,156 +2863,156 @@ msgstr ""
 msgid "API token revoked successfully"
 msgstr "API令牌吊销成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:473
+#: lib/kanban_web/live/board_live/show.html.heex:550
 #, elixir-autogen, elixir-format
 msgid "Active Tokens"
 msgstr "活动令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:662
+#: lib/kanban_web/live/task_live/form_component.html.heex:681
 #, elixir-autogen, elixir-format
 msgid "Add External API"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:482
+#: lib/kanban_web/live/task_live/form_component.html.heex:501
 #, elixir-autogen, elixir-format
 msgid "Add Integration Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:516
+#: lib/kanban_web/live/task_live/form_component.html.heex:535
 #, elixir-autogen, elixir-format
 msgid "Add Manual Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:628
+#: lib/kanban_web/live/task_live/form_component.html.heex:647
 #, elixir-autogen, elixir-format
 msgid "Add Phoenix Channel"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:594
+#: lib/kanban_web/live/task_live/form_component.html.heex:613
 #, elixir-autogen, elixir-format
 msgid "Add PubSub Broadcast"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:405
+#: lib/kanban_web/live/task_live/form_component.html.heex:424
 #, elixir-autogen, elixir-format
 msgid "Add Security Consideration"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:560
+#: lib/kanban_web/live/task_live/form_component.html.heex:579
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Telemetry Event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:448
+#: lib/kanban_web/live/task_live/form_component.html.heex:467
 #, elixir-autogen, elixir-format
 msgid "Add Unit Test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:451
+#: lib/kanban_web/live/board_live/show.html.heex:528
 #, elixir-autogen, elixir-format
 msgid "Agent Model (Optional)"
 msgstr "代理模型（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:517
+#: lib/kanban_web/live/board_live/show.html.heex:594
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to revoke this token?"
 msgstr "您确定要删除此看板吗？"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:129
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1523
 #, elixir-autogen, elixir-format
 msgid "Array field for documenting security-related requirements and notes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:205
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1632
 #, elixir-autogen, elixir-format
 msgid "Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:208
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1647
 #, elixir-autogen, elixir-format
 msgid "Board owners retain full control over tasks, but column structure is fixed"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:209
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1652
 #, elixir-autogen, elixir-format
 msgid "Clear visual distinction from regular boards throughout the interface"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:206
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1637
 #, elixir-autogen, elixir-format
 msgid "Columns are locked and cannot be added, edited, deleted, or reordered"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:422
-#: lib/kanban_web/live/board_live/show.html.heex:424
+#: lib/kanban_web/live/board_live/show.html.heex:497
+#: lib/kanban_web/live/board_live/show.html.heex:500
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:388
+#: lib/kanban_web/live/board_live/show.html.heex:463
 #, elixir-autogen, elixir-format
 msgid "Copy this token now - you won't be able to see it again:"
 msgstr "立即复制此令牌 - 您将无法再次查看："
 
-#: lib/kanban_web/live/board_live/show.html.heex:463
+#: lib/kanban_web/live/board_live/show.html.heex:540
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Creating..."
 msgstr "正在创建账户..."
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:147
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1550
 #, elixir-autogen, elixir-format
 msgid "Cyan background color in UI to distinguish from security considerations"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:133
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1534
 #, elixir-autogen, elixir-format
 msgid "Defaults to empty array when not provided"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:149
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:178
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1557
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1602
 #, elixir-autogen, elixir-format
 msgid "Defaults to empty map when not provided"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:207
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1642
 #, elixir-autogen, elixir-format
 msgid "Designed for AI-driven workflows with consistent, predictable structure"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:132
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1533
 #, elixir-autogen, elixir-format
 msgid "Dynamic add/remove interface in task forms"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:148
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:177
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1555
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1600
 #, elixir-autogen, elixir-format
 msgid "Dynamic add/remove interface with category-specific sections"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:175
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1592
 #, elixir-autogen, elixir-format
 msgid "Each category contains an array of integration descriptions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:146
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1548
 #, elixir-autogen, elixir-format
 msgid "Each category contains an array of test descriptions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:130
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1528
 #, elixir-autogen, elixir-format
 msgid "Examples: token hashing requirements, validation rules, security headers"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:171
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1585
 #, elixir-autogen, elixir-format
 msgid "External API integrations"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:634
-#: lib/kanban_web/live/task_live/view_component.ex:582
+#: lib/kanban_web/live/task_live/form_component.html.heex:653
+#: lib/kanban_web/live/task_live/view_component.ex:584
 #, elixir-autogen, elixir-format
 msgid "External APIs"
 msgstr ""
@@ -3068,166 +3022,166 @@ msgstr ""
 msgid "Failed to revoke token"
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:464
+#: lib/kanban_web/live/board_live/show.html.heex:541
 #, elixir-autogen, elixir-format
 msgid "Generate Token"
 msgstr "生成令牌"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:176
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1595
 #, elixir-autogen, elixir-format
 msgid "Indigo background color in UI to distinguish from other AI fields"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:155
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1563
 #: lib/kanban_web/live/board_live/form.html.heex:200
-#: lib/kanban_web/live/task_live/form_component.html.heex:526
-#: lib/kanban_web/live/task_live/view_component.ex:540
+#: lib/kanban_web/live/task_live/form_component.html.heex:545
+#: lib/kanban_web/live/task_live/view_component.ex:542
 #, elixir-autogen, elixir-format
 msgid "Integration Points"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:454
-#: lib/kanban_web/live/task_live/view_component.ex:512
+#: lib/kanban_web/live/task_live/form_component.html.heex:473
+#: lib/kanban_web/live/task_live/view_component.ex:514
 #, elixir-autogen, elixir-format
 msgid "Integration Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:462
+#: lib/kanban_web/live/task_live/form_component.html.heex:481
 #, elixir-autogen, elixir-format
 msgid "Integration test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:486
+#: lib/kanban_web/live/board_live/show.html.heex:563
 #, elixir-autogen, elixir-format
 msgid "Last Used"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:488
-#: lib/kanban_web/live/task_live/view_component.ex:524
+#: lib/kanban_web/live/task_live/form_component.html.heex:507
+#: lib/kanban_web/live/task_live/view_component.ex:526
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:496
+#: lib/kanban_web/live/task_live/form_component.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Manual test description"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:158
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1566
 #, elixir-autogen, elixir-format
 msgid "Map field with four standardized categories:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:143
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1544
 #, elixir-autogen, elixir-format
 msgid "Map field with three standardized categories: "
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:444
+#: lib/kanban_web/live/board_live/show.html.heex:521
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "我的AI代理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:507
+#: lib/kanban_web/live/board_live/show.html.heex:584
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "从未"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:200
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1624
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Board Type"
 msgstr "新建看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:477
+#: lib/kanban_web/live/board_live/show.html.heex:554
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "还没有API令牌。请在上方生成一个以开始。"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:600
-#: lib/kanban_web/live/task_live/view_component.ex:570
+#: lib/kanban_web/live/task_live/form_component.html.heex:619
+#: lib/kanban_web/live/task_live/view_component.ex:572
 #, elixir-autogen, elixir-format
 msgid "Phoenix Channels"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:168
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1580
 #, elixir-autogen, elixir-format
 msgid "Phoenix channels to update"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:162
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1570
 #, elixir-autogen, elixir-format
 msgid "Phoenix telemetry events to emit"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:566
-#: lib/kanban_web/live/task_live/view_component.ex:558
+#: lib/kanban_web/live/task_live/form_component.html.heex:585
+#: lib/kanban_web/live/task_live/view_component.ex:560
 #, elixir-autogen, elixir-format
 msgid "PubSub Broadcasts"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:165
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1575
 #, elixir-autogen, elixir-format
 msgid "PubSub topics to broadcast to"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:131
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1532
 #, elixir-autogen, elixir-format
 msgid "Purple background color in UI for high visibility"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:458
+#: lib/kanban_web/live/board_live/show.html.heex:535
 #, elixir-autogen, elixir-format
 msgid "Purpose (Optional)"
 msgstr "用途（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:519
+#: lib/kanban_web/live/board_live/show.html.heex:596
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Revoke"
 msgstr "移除"
 
-#: lib/kanban_web/live/board_live/show.html.heex:522
+#: lib/kanban_web/live/board_live/show.html.heex:599
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "已吊销"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:126
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1519
 #: lib/kanban_web/live/board_live/form.html.heex:180
-#: lib/kanban_web/live/task_live/form_component.html.heex:377
-#: lib/kanban_web/live/task_live/view_component.ex:483
+#: lib/kanban_web/live/task_live/form_component.html.heex:396
+#: lib/kanban_web/live/task_live/view_component.ex:485
 #, elixir-autogen, elixir-format
 msgid "Security Considerations"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:385
+#: lib/kanban_web/live/task_live/form_component.html.heex:404
 #, elixir-autogen, elixir-format
 msgid "Security consideration or requirement"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:532
-#: lib/kanban_web/live/task_live/view_component.ex:546
+#: lib/kanban_web/live/task_live/form_component.html.heex:551
+#: lib/kanban_web/live/task_live/view_component.ex:548
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Telemetry Events"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:139
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1540
 #: lib/kanban_web/live/board_live/form.html.heex:190
-#: lib/kanban_web/live/task_live/form_component.html.heex:414
-#: lib/kanban_web/live/task_live/view_component.ex:495
+#: lib/kanban_web/live/task_live/form_component.html.heex:433
+#: lib/kanban_web/live/task_live/view_component.ex:497
 #, elixir-autogen, elixir-format
 msgid "Testing Strategy"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:118
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1509
 #, elixir-autogen, elixir-format
 msgid "Three New Task Fields"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:443
+#: lib/kanban_web/live/board_live/show.html.heex:520
 #, elixir-autogen, elixir-format
 msgid "Token Name"
 msgstr "令牌名称"
 
-#: lib/kanban_web/live/board_live/show.html.heex:386
+#: lib/kanban_web/live/board_live/show.html.heex:461
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Token created successfully!"
 msgstr "列创建成功"
@@ -3237,18 +3191,18 @@ msgstr "列创建成功"
 msgid "Unauthorized"
 msgstr "未授权"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:420
-#: lib/kanban_web/live/task_live/view_component.ex:500
+#: lib/kanban_web/live/task_live/form_component.html.heex:439
+#: lib/kanban_web/live/task_live/view_component.ex:502
 #, elixir-autogen, elixir-format
 msgid "Unit Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:428
+#: lib/kanban_web/live/task_live/form_component.html.heex:447
 #, elixir-autogen, elixir-format
 msgid "Unit test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:485
+#: lib/kanban_web/live/board_live/show.html.heex:562
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr ""
@@ -3258,27 +3212,27 @@ msgstr ""
 msgid "You don't have permission to manage API tokens"
 msgstr "您没有权限管理API令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:540
+#: lib/kanban_web/live/task_live/form_component.html.heex:559
 #, elixir-autogen, elixir-format
 msgid "[:kanban, :domain, :action]"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:608
+#: lib/kanban_web/live/task_live/form_component.html.heex:627
 #, elixir-autogen, elixir-format
 msgid "channel:event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:574
+#: lib/kanban_web/live/task_live/form_component.html.heex:593
 #, elixir-autogen, elixir-format
 msgid "topic:event"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:432
+#: lib/kanban_web/live/board_live/show.html.heex:509
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "关闭"
 
-#: lib/kanban_web/live/board_live/show.html.heex:423
+#: lib/kanban_web/live/board_live/show.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -3288,107 +3242,1897 @@ msgstr "已复制！"
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "API令牌仅适用于AI优化看板"
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:81
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1464
 #, elixir-autogen, elixir-format, fuzzy
 msgid "AI Optimized Board Integration"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:47
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1414
 #, elixir-autogen, elixir-format
 msgid "API Token Authentication for AI Agents"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:99
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1490
 #, elixir-autogen, elixir-format
 msgid "API Tokens button now only appears on AI Optimized Boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:84
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1468
 #, elixir-autogen, elixir-format
 msgid "API Tokens feature available exclusively for AI Optimized Boards"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:52
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1419
 #, elixir-autogen, elixir-format
 msgid "Bearer Token Authentication"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:95
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:154
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1486
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Changed"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:75
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1458
 #, elixir-autogen, elixir-format
 msgid "Create multiple tokens for different AI agents or purposes"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:60
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1433
 #, elixir-autogen, elixir-format
 msgid "Each token is scoped to a specific board for security"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:73
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1456
 #, elixir-autogen, elixir-format
 msgid "Easy token revocation without affecting your login session"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:55
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1422
 #, elixir-autogen, elixir-format
 msgid "Enable AI agents and automation tools to interact with your boards programmatically:"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:58
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1428
 #, elixir-autogen, elixir-format
 msgid "Generate API tokens for AI Optimized Boards from the board's API Tokens page"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:72
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1455
 #, elixir-autogen, elixir-format
 msgid "Never stored in plaintext - shown only once at creation"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:61
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1435
 #, elixir-autogen, elixir-format
 msgid "One-time token display after creation with easy copy-to-clipboard functionality"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:86
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1476
 #, elixir-autogen, elixir-format
 msgid "Perfect for Claude Code, MCP servers, and other automation tools"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:85
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1471
 #, elixir-autogen, elixir-format
 msgid "Provides AI agents with programmatic access to the standardized 5-column workflow"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:68
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1449
 #, elixir-autogen, elixir-format
 msgid "Secure Token Management"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:59
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1432
 #, elixir-autogen, elixir-format
 msgid "Simple Bearer token authentication via HTTP headers"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:62
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1440
 #, elixir-autogen, elixir-format
 msgid "Token name and optional metadata tracking (AI model, version, purpose)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:71
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1453
 #, elixir-autogen, elixir-format
 msgid "Tokens are cryptographically hashed (SHA-256) before storage"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:74
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1457
 #, elixir-autogen, elixir-format
 msgid "Usage tracking shows when each token was last used"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:87
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1478
 #, elixir-autogen, elixir-format
 msgid "Works with any HTTP client or programming language"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:587
+#, elixir-autogen, elixir-format
+msgid " - Accepts both numeric IDs and identifiers (e.g., \"G1\", \"W14\")"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:213
+#, elixir-autogen, elixir-format
+msgid " - Added new section explaining Stride's collaborative features"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:106
+#, elixir-autogen, elixir-format
+msgid " - Bearer token authentication with .stride_auth.md format"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:112
+#, elixir-autogen, elixir-format
+msgid " - Capability matching system with 12 standard capabilities"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:313
+#, elixir-autogen, elixir-format
+msgid " - Child tasks automatically linked to parent goal"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:579
+#, elixir-autogen, elixir-format
+msgid " - Child tasks ordered by position ascending"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:118
+#, elixir-autogen, elixir-format
+msgid " - Client-side hook execution with complete examples"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:144
+#, elixir-autogen, elixir-format
+msgid " - Complete agent workflow from authentication to task completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:78
+#, elixir-autogen, elixir-format
+msgid " - Complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:165
+#, elixir-autogen, elixir-format
+msgid " - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:53
+#, elixir-autogen, elixir-format
+msgid " - Comprehensive onboarding endpoint for AI agents starting work with Stride"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:503
+#, elixir-autogen, elixir-format
+msgid " - Computed via calculate_goal_progress/1 helper"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:511
+#, elixir-autogen, elixir-format
+msgid " - Counts completed vs total children for accurate progress"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:102
+#, elixir-autogen, elixir-format
+msgid " - Created complete documentation set for AI agents"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:325
+#, elixir-autogen, elixir-format
+msgid " - Creation history entries created for goal and all child tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:374
+#, elixir-autogen, elixir-format
+msgid " - Ensures goals without children don't remain on the board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:66
+#, elixir-autogen, elixir-format
+msgid " - Execute custom code at key moments: before_doing, after_doing, before_review, after_review"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:370
+#, elixir-autogen, elixir-format
+msgid " - Goal deletion broadcasts via PubSub for immediate UI updates"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:321
+#, elixir-autogen, elixir-format
+msgid " - Goal positioned first, child tasks positioned sequentially after"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:468
+#, elixir-autogen, elixir-format
+msgid " - Goal positions BEFORE first child in target column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:472
+#, elixir-autogen, elixir-format
+msgid " - Goal positions at END when all children complete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:538
+#, elixir-autogen, elixir-format
+msgid " - Goals cannot be their own parent (prevents circular references)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:317
+#, elixir-autogen, elixir-format
+msgid " - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:542
+#, elixir-autogen, elixir-format
+msgid " - Goals sorted by identifier (G1, G2, G3, etc.)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:495
+#, elixir-autogen, elixir-format
+msgid " - Green gradient bar (from-green-500 to-emerald-500) on yellow background"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:571
+#, elixir-autogen, elixir-format
+msgid " - Includes all rich task fields (complexity, dependencies, etc.)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:575
+#, elixir-autogen, elixir-format
+msgid " - Includes total children and completed count for goals"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:413
+#, elixir-autogen, elixir-format
+msgid " - Individual work items that can belong to a goal via parent_id field"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:409
+#, elixir-autogen, elixir-format
+msgid " - Large initiatives (25+ hours) that contain multiple related tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:476
+#, elixir-autogen, elixir-format
+msgid " - Movement triggers immediately when last child task moves"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:526
+#, elixir-autogen, elixir-format
+msgid " - New \"Parent Goal\" field in task form"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:445
+#, elixir-autogen, elixir-format
+msgid " - No drag handle displayed (goals move automatically)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:534
+#, elixir-autogen, elixir-format
+msgid " - Only shows goals from current board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:60
+#, elixir-autogen, elixir-format
+msgid " - Optimistic locking prevents multiple agents from claiming the same task"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:72
+#, elixir-autogen, elixir-format
+msgid " - Optional human approval before tasks move to Done, with request for changes capability"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:480
+#, elixir-autogen, elixir-format
+msgid " - Other tasks shift to maintain proper ordering"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:341
+#, elixir-autogen, elixir-format
+msgid " - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:507
+#, elixir-autogen, elixir-format
+msgid " - Progress updates broadcast in real-time as child tasks complete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:136
+#, elixir-autogen, elixir-format
+msgid " - Providing estimation feedback on task completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:329
+#, elixir-autogen, elixir-format
+msgid " - Real-time updates broadcast for goal and all children"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:337
+#, elixir-autogen, elixir-format
+msgid " - Respects column WIP limits before creating goal"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:583
+#, elixir-autogen, elixir-format
+msgid " - Respects tasks:read scope, returns 401/404 appropriately"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:345
+#, elixir-autogen, elixir-format
+msgid " - Returns {goal: ..., child_tasks: [...]} with complete task data"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:130
+#, elixir-autogen, elixir-format
+msgid " - Review workflow patterns and continuous work loop"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:499
+#, elixir-autogen, elixir-format
+msgid " - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:530
+#, elixir-autogen, elixir-format
+msgid " - Shows all goals in format \"G1 - Goal Title\""
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:124
+#, elixir-autogen, elixir-format
+msgid " - Task creation guide with structured JSON format rationale"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:378
+#, elixir-autogen, elixir-format
+msgid " - Tasks are reordered after goal deletion to maintain proper positioning"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:54
+#, elixir-autogen, elixir-format
+msgid " - Tasks specify required capabilities, and agents only see tasks matching their skills"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:309
+#, elixir-autogen, elixir-format
+msgid " - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:464
+#, elixir-autogen, elixir-format
+msgid " - When ALL child tasks are in same column, goal moves to that column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:140
+#, elixir-autogen, elixir-format
+msgid " - When and how to release tasks agents can't complete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:366
+#, elixir-autogen, elixir-format
+msgid " - When the last child task of a goal is deleted, the parent goal is automatically deleted as well"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:449
+#, elixir-autogen, elixir-format
+msgid " - Yellow \"G\" badge with gradient background matching card style"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:333
+#, elixir-autogen, elixir-format
+msgid " - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:429
+#, elixir-autogen, elixir-format
+msgid " - from-yellow-50 to-yellow-100 background with border-yellow-300/60"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:433
+#, elixir-autogen, elixir-format
+msgid " - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:437
+#, elixir-autogen, elixir-format
+msgid " - mt-1 between title and progress bar, mt-1.5 between progress bar and badges"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:262
+#, elixir-autogen, elixir-format
+msgid " Agents read .stride.md configuration and execute hooks on their local machine"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:441
+#, elixir-autogen, elixir-format
+msgid " Line 1: Goal title, Line 2: Progress bar showing completion (e.g., \"6/11\"), Line 3: Badge row (G badge, priority, identifier)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:274
+#, elixir-autogen, elixir-format
+msgid " POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:563
+#, elixir-autogen, elixir-format
+msgid " Returns goal data + array of child tasks + progress counts"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:567
+#, elixir-autogen, elixir-format
+msgid " Returns just the task data (no children)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:270
+#, elixir-autogen, elixir-format
+msgid " Server returns name, environment variables, timeout, and blocking status"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:278
+#, elixir-autogen, elixir-format
+msgid " Tasks with needs_review=false automatically move to Done after executing all hooks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:266
+#, elixir-autogen, elixir-format
+msgid " Works with any programming language (Elixir, Java, Python, etc.)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:258
+#, elixir-autogen, elixir-format
+msgid " before_doing, after_doing, before_review, after_review"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:401
+#, elixir-autogen, elixir-format
+msgid "2-Level Task Hierarchy"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "AI Agent Integration"
+msgstr "AI代理集成"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:181
+#, elixir-autogen, elixir-format
+msgid "AI Agent Integration - REST API with capability matching and workflow hooks"
+msgstr "AI代理集成"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:712
+#, elixir-autogen, elixir-format
+msgid "AI Agent Metadata Tracking"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "AI agents can claim and complete tasks using comprehensive REST API with capability matching and workflow hooks."
+msgstr "AI代理可以使用全面的REST API通过能力匹配和工作流钩子来认领和完成任务。"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:984
+#, elixir-autogen, elixir-format
+msgid "AI agents can now complete tasks and move them to Review column:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1144
+#, elixir-autogen, elixir-format
+msgid "AI agents can now discover and claim tasks with advanced filtering:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1085
+#, elixir-autogen, elixir-format
+msgid "AI agents can now mark reviewed tasks as done and move them to Done column:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1309
+#, elixir-autogen, elixir-format
+msgid "AI agents can now programmatically create, read, and update tasks:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:659
+#, elixir-autogen, elixir-format
+msgid "AI calls /mark_reviewed to automatically route task based on review outcome"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:164
+#, elixir-autogen, elixir-format
+msgid "AI-Human Collaboration Focus"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/home.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "AI-Human Collaboration Platform"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:212
+#, elixir-autogen, elixir-format
+msgid "AI-Human Collaboration Platform Section"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:781
+#, elixir-autogen, elixir-format
+msgid "API Token Schema Updates"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1358
+#, elixir-autogen, elixir-format
+msgid "API endpoints accept both numeric database IDs (e.g., \"73\") and human-readable identifiers (e.g., \"W14\") for improved developer experience"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:273
+#, elixir-autogen, elixir-format
+msgid "API integration:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "API reference - Full endpoint listing with categorization (discovery, management, creation)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:207
+#, elixir-autogen, elixir-format
+msgid "About Page Enhancement"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1014
+#, elixir-autogen, elixir-format
+msgid "Actual complexity experienced (small, medium, large)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:949
+#, elixir-autogen, elixir-format
+msgid "Added automatic population of reviewed_at and reviewed_by_id when review status changes"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:751
+#, elixir-autogen, elixir-format
+msgid "Added completed_by_agent field to store agent information in format \"ai_agent:model_name\""
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:724
+#, elixir-autogen, elixir-format
+msgid "Added created_by_agent field to store agent information in format \"ai_agent:model_name\""
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:954
+#, elixir-autogen, elixir-format
+msgid "Added missing handle_info handler for :task_reviewed PubSub events"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Agent Onboarding Endpoint"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:744
+#, elixir-autogen, elixir-format
+msgid "Agent Tracking on Task Completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:717
+#, elixir-autogen, elixir-format
+msgid "Agent Tracking on Task Creation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:667
+#, elixir-autogen, elixir-format
+msgid "Agent can read review_notes to understand what needs to be fixed"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1182
+#, elixir-autogen, elixir-format
+msgid "Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1197
+#, elixir-autogen, elixir-format
+msgid "Agents without specific capabilities see all tasks without requirements"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1371
+#, elixir-autogen, elixir-format
+msgid "All API mutations automatically broadcast via Phoenix PubSub"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:274
+#, elixir-autogen, elixir-format
+msgid "All of the small things necessary to get it ready for release"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1041
+#, elixir-autogen, elixir-format
+msgid "Array of file paths and what changed in each"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1065
+#, elixir-autogen, elixir-format
+msgid "Array of follow-up work identified"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1069
+#, elixir-autogen, elixir-format
+msgid "Array of limitations or constraints"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1061
+#, elixir-autogen, elixir-format
+msgid "Array of telemetry events added"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1045
+#, elixir-autogen, elixir-format
+msgid "Array of test files created"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "Atomic Task Claiming"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "Atomic task claiming with optimistic locking prevents conflicts. Agents match tasks by capability and dependencies."
+msgstr "带乐观锁的原子任务认领防止冲突。代理根据能力和依赖关系匹配任务。"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:308
+#, elixir-autogen, elixir-format
+msgid "Atomic transactions"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1155
+#, elixir-autogen, elixir-format
+msgid "Atomically claim the next available task and move it to Doing column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:137
+#, elixir-autogen, elixir-format
+msgid "Automated Task Claiming"
+msgstr "自动任务认领"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:186
+#, elixir-autogen, elixir-format
+msgid "Automated Task Claiming - Atomic claiming with optimistic locking and dependency handling"
+msgstr "自动任务认领"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:850
+#, elixir-autogen, elixir-format
+msgid "Automatic Blocking/Unblocking"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:353
+#, elixir-autogen, elixir-format
+msgid "Automatic Goal Deletion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:456
+#, elixir-autogen, elixir-format
+msgid "Automatic Goal Movement"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1248
+#, elixir-autogen, elixir-format
+msgid "Automatic Task State Management"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:277
+#, elixir-autogen, elixir-format
+msgid "Automatic completion:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1342
+#, elixir-autogen, elixir-format
+msgid "Automatic default column selection (Backlog > Ready > first column) when column_id not specified"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:316
+#, elixir-autogen, elixir-format
+msgid "Automatic identifier generation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:312
+#, elixir-autogen, elixir-format
+msgid "Automatic parent_id assignment"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:838
+#, elixir-autogen, elixir-format
+msgid "Automatic task status management based on dependency completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:729
+#, elixir-autogen, elixir-format
+msgid "Automatically populated when API token has agent_model configured"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:756
+#, elixir-autogen, elixir-format
+msgid "Automatically populated when API token has agent_model configured during task completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1209
+#, elixir-autogen, elixir-format
+msgid "Automatically skips tasks with incomplete dependencies"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:695
+#, elixir-autogen, elixir-format
+msgid "Backwards Compatibility"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:467
+#, elixir-autogen, elixir-format
+msgid "Before-child positioning"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:927
+#, elixir-autogen, elixir-format
+msgid "Blocked icon displayed in upper right of task cards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:865
+#, elixir-autogen, elixir-format
+msgid "Blocking status checked on task creation, update, and dependency completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1337
+#, elixir-autogen, elixir-format
+msgid "Board-scoped access control - tokens can only access tasks from their associated board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:704
+#, elixir-autogen, elixir-format
+msgid "Both endpoints coexist for gradual migration"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1109
+#, elixir-autogen, elixir-format
+msgid "Broadcasts {:task_completed, task} PubSub event for real-time UI updates"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:110
+#, elixir-autogen, elixir-format
+msgid "Built for AI-Human Collaboration"
+msgstr "为AI-人类协作而构建"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:296
+#, elixir-autogen, elixir-format
+msgid "Bulk Task Creation with Nested Goals"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1262
+#, elixir-autogen, elixir-format
+msgid "Calculates correct position in Doing column to maintain sort order"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Capability Matching"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1178
+#, elixir-autogen, elixir-format
+msgid "Capability-Based Task Filtering"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:365
+#, elixir-autogen, elixir-format
+msgid "Cascade deletion"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/view_component.ex:716
+#, elixir-autogen, elixir-format
+msgid "Child Tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:833
+#, elixir-autogen, elixir-format
+msgid "Circular dependency detection prevents invalid dependency relationships"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:907
+#, elixir-autogen, elixir-format
+msgid "Circular dependency detection using depth-first search with visited tracking"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:928
+#, elixir-autogen, elixir-format
+msgid "Clear visual distinction for tasks that cannot be started"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:65
+#: lib/kanban_web/controllers/page_html/home.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "Client-Side Workflow Hooks"
+msgstr "客户端工作流钩子"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:194
+#, elixir-autogen, elixir-format
+msgid "Client-Side Workflow Hooks - Custom code execution at four key workflow moments"
+msgstr "客户端工作流钩子"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:261
+#, elixir-autogen, elixir-format
+msgid "Client-side execution:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1049
+#, elixir-autogen, elixir-format
+msgid "Commands run, status (passed/failed), and output"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:432
+#, elixir-autogen, elixir-format
+msgid "Compact dimensions"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:424
+#, elixir-autogen, elixir-format
+msgid "Compact, visually distinct cards for goals:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1057
+#, elixir-autogen, elixir-format
+msgid "Comparison of estimated vs actual complexity, files, and time"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:989
+#, elixir-autogen, elixir-format
+msgid "Complete a task by moving it from Doing to Review column with completion summary"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1033
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Completion Summary Structure"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:498
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Completion count"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Comprehensive API Documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:101
+#, elixir-autogen, elixir-format
+msgid "Comprehensive Agent Documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:677
+#, elixir-autogen, elixir-format
+msgid "Comprehensive tracking of review outcomes:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:903
+#, elixir-autogen, elixir-format
+msgid "Comprehensive validation to ensure data integrity:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:304
+#, elixir-autogen, elixir-format
+msgid "Create a goal with multiple child tasks in a single atomic API call:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1314
+#, elixir-autogen, elixir-format
+msgid "Create tasks with all fields including nested associations (key_files, verification_steps)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Critical first steps - Immediate guidance on creating .stride_auth.md and .stride.md configuration files"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:877
+#, elixir-autogen, elixir-format
+msgid "Dependency API Endpoints"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:821
+#, elixir-autogen, elixir-format
+msgid "Dependency Graph System"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1206
+#, elixir-autogen, elixir-format
+msgid "Dependency-Aware Task Selection"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:870
+#, elixir-autogen, elixir-format
+msgid "Dependent tasks automatically unblocked when a task is marked done"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1053
+#, elixir-autogen, elixir-format
+msgid "Deviations, discoveries, and edge cases encountered"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:81
+#, elixir-autogen, elixir-format
+msgid "Documentation links - Direct URLs to all agent-facing documentation guides"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:471
+#, elixir-autogen, elixir-format
+msgid "Done column special handling"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:664
+#, elixir-autogen, elixir-format
+msgid "Eliminates need for polling - explicit notification-based workflow"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:681
+#, elixir-autogen, elixir-format
+msgid "Emits [:kanban, :task, :completed] when task approved and moved to Done"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:686
+#, elixir-autogen, elixir-format
+msgid "Emits [:kanban, :task, :returned_to_doing] when task needs changes"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1388
+#, elixir-autogen, elixir-format
+msgid "Emits telemetry events for all API operations"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1114
+#, elixir-autogen, elixir-format
+msgid "Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:784
+#, elixir-autogen, elixir-format
+msgid "Enhanced API token model to support agent metadata:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:647
+#, elixir-autogen, elixir-format
+msgid "Enhanced Review Workflow"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1274
+#, elixir-autogen, elixir-format
+msgid "Enhanced Telemetry"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1216
+#, elixir-autogen, elixir-format
+msgid "Ensures agents always receive tasks that are truly ready to be worked on"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:174
+#, elixir-autogen, elixir-format
+msgid "Execute custom client-side code at key workflow moments: before_doing, after_doing, before_review, after_review."
+msgstr "在关键工作流时刻执行自定义客户端代码：before_doing、after_doing、before_review、after_review。"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:178
+#, elixir-autogen, elixir-format
+msgid "Feature cards - Replaced generic kanban features with collaboration-focused features"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:61
+#, elixir-autogen, elixir-format
+msgid "File templates - Complete templates for both configuration files included in response"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:533
+#, elixir-autogen, elixir-format
+msgid "Filtered by board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1082
+#, elixir-autogen, elixir-format
+msgid "Final Task Completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1107
+#, elixir-autogen, elixir-format
+msgid "Final step in the task workflow after review is complete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:221
+#, elixir-autogen, elixir-format
+msgid "Five key features - Capability matching, atomic task claiming, client-side hooks, human review, and API documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:945
+#, elixir-autogen, elixir-format
+msgid "Fixed issue preventing review status updates on tasks:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1357
+#, elixir-autogen, elixir-format
+msgid "Flexible Task Identification"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:562
+#, elixir-autogen, elixir-format
+msgid "For goals:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:566
+#, elixir-autogen, elixir-format
+msgid "For tasks:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:957
+#, elixir-autogen, elixir-format
+msgid "Form component now properly receives user context for review metadata"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:257
+#, elixir-autogen, elixir-format
+msgid "Four fixed hook points:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:340
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:570
+#, elixir-autogen, elixir-format
+msgid "Full field support"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1347
+#, elixir-autogen, elixir-format
+msgid "Full field support for all 60+ task fields including metadata, observability, and AI context fields"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Getting Started with AI Agents Guide"
+msgstr "AI代理入门指南"
+
+#: lib/kanban_web/live/board_live/show.html.heex:311
+#: lib/kanban_web/live/task_live/form_component.html.heex:43
+#: lib/kanban_web/live/task_live/view_component.ex:83
+#: lib/kanban_web/live/task_live/view_component.ex:769
+#, elixir-autogen, elixir-format
+msgid "Goal"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:421
+#, elixir-autogen, elixir-format
+msgid "Goal Card UI"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:487
+#, elixir-autogen, elixir-format
+msgid "Goal Progress Tracking"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:525
+#, elixir-autogen, elixir-format
+msgid "Goal dropdown"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:529
+#, elixir-autogen, elixir-format
+msgid "Goal options"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:396
+#, elixir-autogen, elixir-format
+msgid "Goal → Task Hierarchy System"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:408
+#, elixir-autogen, elixir-format
+msgid "Goals (G prefix)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:361
+#, elixir-autogen, elixir-format
+msgid "Goals are automatically deleted when all their child tasks are removed:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:459
+#, elixir-autogen, elixir-format
+msgid "Goals reposition based on child task status:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:737
+#, elixir-autogen, elixir-format
+msgid "Helps track which tasks were created by AI agents vs. human users"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:168
+#, elixir-autogen, elixir-format
+msgid "Hero section - Updated badge to \"AI-Human Collaboration Platform\" and headline to emphasize AI agents working alongside humans"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:550
+#, elixir-autogen, elixir-format
+msgid "Hierarchical Task Tree API Endpoint"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "Homepage Redesign"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:71
+#, elixir-autogen, elixir-format
+msgid "Hook execution guide - Complete documentation of all four hook points with environment variables"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:269
+#, elixir-autogen, elixir-format
+msgid "Hook metadata:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:775
+#, elixir-autogen, elixir-format
+msgid "Hover tooltip shows full agent identifier"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:71
+#: lib/kanban_web/controllers/page_html/home.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "Human Review Workflow"
+msgstr "人工审查工作流"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:191
+#, elixir-autogen, elixir-format
+msgid "Human Review Workflow - Optional human review and approval process"
+msgstr "人工审查工作流"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:656
+#, elixir-autogen, elixir-format
+msgid "Human adds review_notes to guide AI on required changes"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:657
+#, elixir-autogen, elixir-format
+msgid "Human notifies AI that review is complete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:654
+#, elixir-autogen, elixir-format
+msgid "Human reviews task in Review column and sets review_status field"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/view_component.ex:726
+#, elixir-autogen, elixir-format
+msgid "ID"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:623
+#, elixir-autogen, elixir-format
+msgid "If review_status == \"approved\": Moves task from Review to Done column, sets status to :completed"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:628
+#, elixir-autogen, elixir-format
+msgid "If review_status in [\"changes_requested\", \"rejected\"]: Moves task back to Doing column, keeps status as :in_progress"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:650
+#, elixir-autogen, elixir-format
+msgid "Improved human-AI collaboration on task review:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1022
+#, elixir-autogen, elixir-format
+msgid "Integer minutes spent on the task"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:605
+#, elixir-autogen, elixir-format
+msgid "Intelligent Review Workflow with mark_reviewed Endpoint"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1141
+#, elixir-autogen, elixir-format
+msgid "Intelligent Task Discovery & Claiming"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:404
+#, elixir-autogen, elixir-format
+msgid "Introduced goal-based task organization:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1008
+#, elixir-autogen, elixir-format
+msgid "JSON string with comprehensive completion details (files changed, verification results, implementation notes)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1238
+#, elixir-autogen, elixir-format
+msgid "JSONB operations efficiently compare file paths across in-progress tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1226
+#, elixir-autogen, elixir-format
+msgid "Key File Conflict Detection"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Key collaboration features include:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "Language-agnostic:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1320
+#, elixir-autogen, elixir-format
+msgid "List all tasks for the authenticated board with optional column filtering"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1374
+#, elixir-autogen, elixir-format
+msgid "LiveView clients receive instant updates when tasks are created or modified via API"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:689
+#, elixir-autogen, elixir-format
+msgid "Logs reviewer information with reviewed_by_id field"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1092
+#, elixir-autogen, elixir-format
+msgid "Mark a task as done by moving it from Review to Done column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:880
+#, elixir-autogen, elixir-format
+msgid "New endpoints for querying task relationships:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:613
+#, elixir-autogen, elixir-format
+msgid "New mark_reviewed endpoint that intelligently routes tasks based on review status:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1278
+#, elixir-autogen, elixir-format
+msgid "New telemetry events:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:705
+#, elixir-autogen, elixir-format
+msgid "New workflow recommended for all new integrations"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.ex:484
+#, elixir-autogen, elixir-format
+msgid "No parent goal"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:444
+#, elixir-autogen, elixir-format
+msgid "Non-draggable"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:798
+#, elixir-autogen, elixir-format
+msgid "Only adds metadata when agent_model is present on the token"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1103
+#, elixir-autogen, elixir-format
+msgid "Only tasks in Review column can be marked as done (validation enforced)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Optional human review on task completion. Humans can approve or request changes before tasks move to Done."
+msgstr "任务完成时可选的人工审查。人类可以在任务移至完成前批准或请求更改。"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:578
+#, elixir-autogen, elixir-format
+msgid "Ordered children"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:541
+#, elixir-autogen, elixir-format
+msgid "Ordered display"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:216
+#, elixir-autogen, elixir-format
+msgid "Overview - Describes how AI agents and humans work together through REST API and review workflows"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form_component.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Parent Goal"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:518
+#, elixir-autogen, elixir-format
+msgid "Parent Goal Selection"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:502
+#, elixir-autogen, elixir-format
+msgid "Percentage calculation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:320
+#, elixir-autogen, elixir-format
+msgid "Position management"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:479
+#, elixir-autogen, elixir-format
+msgid "Position shifting"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1192
+#, elixir-autogen, elixir-format
+msgid "PostgreSQL array containment operations ensure efficient capability matching"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:914
+#, elixir-autogen, elixir-format
+msgid "PostgreSQL array operations for efficient dependency queries"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Powerful features that enable humans and AI agents to work together seamlessly"
+msgstr "强大的功能，使人类和AI代理能够无缝协作"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:698
+#, elixir-autogen, elixir-format
+msgid "Preserved existing endpoints:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:912
+#, elixir-autogen, elixir-format
+msgid "Prevention of self-dependencies"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:911
+#, elixir-autogen, elixir-format
+msgid "Prevention of task deletion when other tasks depend on it"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1220
+#, elixir-autogen, elixir-format
+msgid "Prevents blocked tasks from being claimed"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1230
+#, elixir-autogen, elixir-format
+msgid "Prevents concurrent work on the same files by different agents"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:373
+#, elixir-autogen, elixir-format
+msgid "Prevents orphaned goals"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:620
+#, elixir-autogen, elixir-format
+msgid "Process reviewed tasks with automatic routing"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:494
+#, elixir-autogen, elixir-format
+msgid "Progress bar"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:574
+#, elixir-autogen, elixir-format
+msgid "Progress statistics"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1352
+#, elixir-autogen, elixir-format
+msgid "Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:377
+#, elixir-autogen, elixir-format
+msgid "Proper reordering"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:761
+#, elixir-autogen, elixir-format
+msgid "Provides audit trail of which AI agent completed specific tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1283
+#, elixir-autogen, elixir-format
+msgid "Provides insights into agent behavior and task workflow efficiency"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1396
+#, elixir-autogen, elixir-format
+msgid "Provides metrics for monitoring API performance and usage patterns"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:328
+#, elixir-autogen, elixir-format, fuzzy
+msgid "PubSub broadcasting"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:506
+#, elixir-autogen, elixir-format
+msgid "PubSub updates"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:774
+#, elixir-autogen, elixir-format
+msgid "Purple gradient CPU chip icon displayed on task cards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Quick start guide - Step-by-step instructions for getting started immediately"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1306
+#, elixir-autogen, elixir-format
+msgid "RESTful JSON API for Tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1169
+#, elixir-autogen, elixir-format
+msgid "Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1367
+#, elixir-autogen, elixir-format
+msgid "Real-Time Integration"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:490
+#, elixir-autogen, elixir-format
+msgid "Real-time progress calculation and display:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:369
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:475
+#, elixir-autogen, elixir-format
+msgid "Real-time updates"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:929
+#, elixir-autogen, elixir-format
+msgid "Real-time updates when blocking status changes"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:893
+#, elixir-autogen, elixir-format
+msgid "Recursive dependency tree structure with nested dependencies"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:436
+#, elixir-autogen, elixir-format
+msgid "Reduced spacing"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1242
+#, elixir-autogen, elixir-format
+msgid "Reduces merge conflicts and ensures safe parallel work"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1161
+#, elixir-autogen, elixir-format
+msgid "Release a claimed task back to Ready column with optional reason"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:344
+#, elixir-autogen, elixir-format
+msgid "Response format"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1326
+#, elixir-autogen, elixir-format
+msgid "Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like \"W14\")"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1149
+#, elixir-autogen, elixir-format
+msgid "Retrieve the next available task from the Ready column matching agent capabilities"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1119
+#, elixir-autogen, elixir-format
+msgid "Returns 403 error if task belongs to different board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1118
+#, elixir-autogen, elixir-format
+msgid "Returns 422 error if task is not in Review column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:633
+#, elixir-autogen, elixir-format
+msgid "Returns 422 error if task not in Review column or review_status not set"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Returns all information needed for an agent to begin working without external documentation lookup"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:889
+#, elixir-autogen, elixir-format
+msgid "Returns all tasks that depend on this task"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:885
+#, elixir-autogen, elixir-format
+msgid "Returns full dependency tree for a task"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:558
+#, elixir-autogen, elixir-format
+msgid "Returns nested JSON structure showing task hierarchy:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:942
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Review Status Update"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:582
+#, elixir-autogen, elixir-format
+msgid "Scope enforcement"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1378
+#, elixir-autogen, elixir-format
+msgid "Seamless integration between UI and API workflows"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:537
+#, elixir-autogen, elixir-format
+msgid "Self-exclusion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1257
+#, elixir-autogen, elixir-format
+msgid "Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1100
+#, elixir-autogen, elixir-format
+msgid "Sets status to :completed and completed_at timestamp automatically"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:610
+#, elixir-autogen, elixir-format
+msgid "Smart Review Processing"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:463
+#, elixir-autogen, elixir-format
+msgid "Smart column detection"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:358
+#, elixir-autogen, elixir-format
+msgid "Smart goal cleanup"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:415
+#, elixir-autogen, elixir-format
+msgid "Standalone tasks (no parent) remain fully supported"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:999
+#, elixir-autogen, elixir-format
+msgid "Status remains \"in_progress\" (final completion to Done column handled by separate endpoint)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:510
+#, elixir-autogen, elixir-format
+msgid "Status tracking"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1003
+#, elixir-autogen, elixir-format
+msgid "Stores detailed completion metadata including:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1018
+#, elixir-autogen, elixir-format
+msgid "String count of files modified during implementation"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:891
+#, elixir-autogen, elixir-format
+msgid "Supports both numeric IDs and human-readable identifiers"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:638
+#, elixir-autogen, elixir-format
+msgid "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\")"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1164
+#, elixir-autogen, elixir-format
+msgid "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\") for task unclaiming"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:994
+#, elixir-autogen, elixir-format
+msgid "Supports both numeric IDs and human-readable identifiers (e.g., \"W16\") for task completion"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1095
+#, elixir-autogen, elixir-format
+msgid "Supports both numeric IDs and human-readable identifiers (e.g., \"W24\") for marking done"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:586
+#, elixir-autogen, elixir-format
+msgid "Supports identifiers"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1036
+#, elixir-autogen, elixir-format
+msgid "Supports rich completion data in JSON format:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1301
+#, elixir-autogen, elixir-format
+msgid "Task CRU API Endpoints"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1136
+#, elixir-autogen, elixir-format
+msgid "Task Claiming API Endpoints"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:976
+#, elixir-autogen, elixir-format
+msgid "Task Completion API Endpoint"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:981
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Task Completion Workflow"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:816
+#, elixir-autogen, elixir-format
+msgid "Task Dependencies and Blocking Logic"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1077
+#, elixir-autogen, elixir-format
+msgid "Task Mark Done API Endpoint"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:324
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Task history tracking"
+msgstr "任务历史"
+
+#: lib/kanban_web/live/board_live/show.html.heex:207
+#, elixir-autogen, elixir-format
+msgid "Task is blocked"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:853
+#, elixir-autogen, elixir-format
+msgid "Task status automatically updates based on dependencies:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:412
+#, elixir-autogen, elixir-format
+msgid "Tasks (W/D prefix)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:521
+#, elixir-autogen, elixir-format
+msgid "Tasks can be assigned to goals during creation/edit:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:824
+#, elixir-autogen, elixir-format
+msgid "Tasks can now have dependencies on other tasks with full validation:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:828
+#, elixir-autogen, elixir-format
+msgid "Tasks can specify dependencies using task identifiers (e.g., \"W14\", \"W15\")"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1187
+#, elixir-autogen, elixir-format
+msgid "Tasks can specify required_capabilities to restrict which agents can work on them"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1252
+#, elixir-autogen, elixir-format
+msgid "Tasks claimed via /api/tasks/claim are automatically moved to Doing column"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:747
+#, elixir-autogen, elixir-format
+msgid "Tasks completed via API now track the AI agent model:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:720
+#, elixir-autogen, elixir-format
+msgid "Tasks created via API now track the AI agent model:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1233
+#, elixir-autogen, elixir-format
+msgid "Tasks with overlapping key_files are automatically excluded from next/claim operations"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1384
+#, elixir-autogen, elixir-format
+msgid "Telemetry & Observability"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:674
+#, elixir-autogen, elixir-format
+msgid "Telemetry and Observability"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:332
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Telemetry events"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "The kanban board designed for seamless collaboration between humans and AI agents. Define workflows with hooks, delegate tasks to AI, and maintain full control through human review."
+msgstr "专为人类和AI代理无缝协作而设计的看板。通过钩子定义工作流，将任务委托给AI，并通过人工审查保持完全控制。"
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:84
+#, elixir-autogen, elixir-format
+msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:440
+#, elixir-autogen, elixir-format
+msgid "Three-line layout:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1391
+#, elixir-autogen, elixir-format
+msgid "Tracks API usage including board_id, user_id, request path, and HTTP method"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:688
+#, elixir-autogen, elixir-format
+msgid "Tracks review status in telemetry metadata"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1281
+#, elixir-autogen, elixir-format
+msgid "Tracks task priority, API token usage, and unclaim reasons"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:448
+#, elixir-autogen, elixir-format
+msgid "Type badge"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:768
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:921
+#, elixir-autogen, elixir-format
+msgid "UI Enhancements"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1265
+#, elixir-autogen, elixir-format
+msgid "Unclaimed tasks return to Ready column with all claim metadata cleared"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1332
+#, elixir-autogen, elixir-format
+msgid "Update task fields including nested associations (supports both database IDs and identifiers)"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:226
+#, elixir-autogen, elixir-format
+msgid "Use case description - Explains how teams delegate repetitive tasks to AI while humans focus on architecture and review"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:793
+#, elixir-autogen, elixir-format
+msgid "Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1026
+#, elixir-autogen, elixir-format
+msgid "User ID of the completer"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:1211
+#, elixir-autogen, elixir-format
+msgid "Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:900
+#, elixir-autogen, elixir-format
+msgid "Validation and Safety"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "Value proposition - Rewritten to highlight workflow hooks, task delegation to AI, and human review control"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:732
+#, elixir-autogen, elixir-format
+msgid "Visible indicator (purple CPU chip icon) on task cards for AI-created tasks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:841
+#, elixir-autogen, elixir-format
+msgid "Visual blocked indicator on task cards when dependencies are incomplete"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:771
+#, elixir-autogen, elixir-format
+msgid "Visual indicators for AI-created tasks:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:924
+#, elixir-autogen, elixir-format
+msgid "Visual indicators for blocked tasks:"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:336
+#, elixir-autogen, elixir-format, fuzzy
+msgid "WIP limit enforcement"
+msgstr "超出在制品限制"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:857
+#, elixir-autogen, elixir-format
+msgid "When a task has incomplete dependencies, status changes to :blocked"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:862
+#, elixir-autogen, elixir-format
+msgid "When all dependencies are completed, task automatically unblocks"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Where AI Agents and Humans Work Together"
+msgstr "AI代理与人类共同工作"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:247
+#, elixir-autogen, elixir-format
+msgid "Workflow Hooks System for AI Agent Integration"
+msgstr "AI代理集成"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Workflow overview - Clear explanation of the Ready → Doing → Review → Done workflow"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:428
+#, elixir-autogen, elixir-format
+msgid "Yellow gradient styling"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:788
+#, elixir-autogen, elixir-format
+msgid "agent_model field stores the model identifier (e.g., \"claude-sonnet-4\")"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:702
+#, elixir-autogen, elixir-format
+msgid "mark_done endpoint still available but marked as deprecated"
 msgstr ""
