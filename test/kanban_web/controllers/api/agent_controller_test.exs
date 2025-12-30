@@ -22,7 +22,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(response["overview"])
       assert is_list(response["quick_start"])
       assert is_map(response["file_templates"])
-      assert is_map(response["workflow"])
+      assert is_list(response["workflow"])
       assert is_map(response["hooks"])
       assert is_map(response["api_reference"])
       assert is_map(response["resources"])
@@ -207,16 +207,21 @@ defmodule KanbanWeb.API.AgentControllerTest do
       response = json_response(conn, 200)
 
       workflow = response["workflow"]
-      assert is_map(workflow)
-      assert is_map(workflow["claim_task"])
-      assert is_map(workflow["complete_task"])
-      assert is_map(workflow["mark_reviewed"])
-      assert is_map(workflow["unclaim_task"])
+      assert is_list(workflow)
+      assert length(workflow) == 4
+
+      # Verify workflow is in correct order
+      assert Enum.at(workflow, 0)["name"] == "claim_task"
+      assert Enum.at(workflow, 1)["name"] == "complete_task"
+      assert Enum.at(workflow, 2)["name"] == "mark_reviewed"
+      assert Enum.at(workflow, 3)["name"] == "unclaim_task"
 
       # Verify each workflow step has proper structure
-      assert is_binary(workflow["claim_task"]["endpoint"])
-      assert is_binary(workflow["claim_task"]["description"])
-      assert is_binary(workflow["claim_task"]["returns"])
+      claim_task = Enum.at(workflow, 0)
+      assert is_binary(claim_task["endpoint"])
+      assert is_binary(claim_task["description"])
+      assert is_binary(claim_task["returns"])
+      assert is_binary(claim_task["name"])
     end
 
     test "includes environment variables documentation", %{conn: conn} do
