@@ -65,19 +65,25 @@ defmodule Kanban.HooksTest do
   end
 
   describe "Hooks.list_hooks/0" do
-    test "returns all hook configurations" do
+    test "returns all hook configurations in execution order" do
       hooks = Hooks.list_hooks()
 
-      assert is_map(hooks)
-      assert Map.has_key?(hooks, "before_doing")
-      assert Map.has_key?(hooks, "after_doing")
-      assert Map.has_key?(hooks, "before_review")
-      assert Map.has_key?(hooks, "after_review")
+      # Should return a list of tuples in execution order
+      assert is_list(hooks)
+      assert length(hooks) == 4
 
-      assert hooks["before_doing"].blocking == true
-      assert hooks["after_doing"].blocking == true
-      assert hooks["before_review"].blocking == false
-      assert hooks["after_review"].blocking == false
+      # Verify order: before_doing, after_doing, before_review, after_review
+      assert Enum.at(hooks, 0) |> elem(0) == "before_doing"
+      assert Enum.at(hooks, 1) |> elem(0) == "after_doing"
+      assert Enum.at(hooks, 2) |> elem(0) == "before_review"
+      assert Enum.at(hooks, 3) |> elem(0) == "after_review"
+
+      # Verify configurations
+      hooks_map = Map.new(hooks)
+      assert hooks_map["before_doing"].blocking == true
+      assert hooks_map["after_doing"].blocking == true
+      assert hooks_map["before_review"].blocking == false
+      assert hooks_map["after_review"].blocking == false
     end
   end
 end
