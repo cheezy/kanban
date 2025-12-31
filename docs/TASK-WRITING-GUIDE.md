@@ -233,12 +233,14 @@ add tests. Oh and don't change the card layout.
   "complexity": "medium",
   "key_files": [
     {
-      "path": "lib/kanban_web/live/board_live.ex",
-      "reason": "Add filter UI and handle_event"
+      "file_path": "lib/kanban_web/live/board_live.ex",
+      "note": "Add filter UI and handle_event",
+      "position": 0
     },
     {
-      "path": "lib/kanban/boards.ex",
-      "reason": "Add filter query logic"
+      "file_path": "lib/kanban/boards.ex",
+      "note": "Add filter query logic",
+      "position": 1
     }
   ],
   "reference_files": [
@@ -275,7 +277,7 @@ Use structured fields for machine-readable data, plus optional markdown for nuan
   "title": "Implement password reset flow",
   "type": "work",
   "key_files": [
-    {"path": "lib/kanban_web/controllers/auth_controller.ex"}
+    {"file_path": "lib/kanban_web/controllers/auth_controller.ex", "position": 0}
   ],
   "constraints": ["Use PHX.Token for reset tokens"],
   "notes": "## Additional Context\n\nThe reset token should expire after 1 hour. Priority scale is 0-4 where 0 is highest (might be counterintuitive)."
@@ -290,14 +292,63 @@ This gives you:
 
 ### What to Make Structured
 
-**Always structure these fields:**
-- `key_files` - File paths to modify
+**CRITICAL - Always specify these fields (they control task availability):**
+
+#### `key_files` - Files that will be modified
+
+**Why critical:** Prevents merge conflicts by ensuring only one task modifies a file at a time.
+
+- Tasks with overlapping `key_files` CANNOT be claimed simultaneously
+- If Task A is modifying `lib/auth.ex` and is in Doing or Review, Task B that also lists `lib/auth.ex` will NOT be claimable until Task A completes
+- **Specify key_files whenever possible**, even if it's an educated guess based on the task description
+- Better to specify approximately than to omit entirely
+
+**Format:**
+
+```json
+"key_files": [
+  {"file_path": "lib/kanban_web/controllers/auth_controller.ex", "note": "Add authentication endpoints", "position": 0},
+  {"file_path": "lib/kanban/accounts.ex", "note": "User account logic", "position": 1},
+  {"file_path": "test/kanban/accounts_test.exs", "note": "Test coverage", "position": 2}
+]
+```
+
+**Note:** Each key_file is an object with:
+
+- `file_path` (required) - Relative path from project root
+- `note` (optional) - Why this file is being modified
+- `position` (required) - Order in which files should be reviewed/modified (starts at 0)
+
+#### `dependencies` - Tasks that must complete first
+
+**Why critical:** Controls the order of work execution.
+
+- Tasks with unmet dependencies are NOT claimable, even if in the Ready column
+- Ensures work happens in correct order (e.g., schema before endpoints)
+- **Always specify dependencies** when one task builds on another's work
+- Don't rely on agents to infer order - be explicit
+
+**Format:**
+
+```json
+"dependencies": ["W1", "W2"]  // This task requires W1 and W2 to complete first
+```
+
+**Best Practice for Goals:**
+
+1. Identify which tasks must happen sequentially
+2. Specify dependencies explicitly (don't assume agents will infer order)
+3. Only add dependencies when truly required (don't over-constrain parallelization)
+
+**Always structure these other fields:**
+
 - `test_scenarios` - What to test
 - `constraints` - What NOT to do
 - `patterns_to_follow` - Code patterns to replicate
 - `acceptance_criteria` - Definition of done
 
 **Optional markdown for:**
+
 - Additional context or nuance
 - Examples that don't fit the structure
 - Background information
