@@ -6,13 +6,16 @@ defmodule KanbanWeb.API.AgentController do
   end
 
   defp get_base_url(conn) do
-    scheme = if conn.scheme == :https, do: "https", else: "http"
-    host = conn.host
-    port = conn.port
+    # Use the configured URL scheme from endpoint config, not the connection scheme
+    # This handles cases where SSL is terminated at a proxy/load balancer
+    url_config = Application.get_env(:kanban, KanbanWeb.Endpoint)[:url] || []
+    scheme = Keyword.get(url_config, :scheme, "https")
+    host = Keyword.get(url_config, :host, conn.host)
+    port = Keyword.get(url_config, :port)
 
     default_port? = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
 
-    if default_port? do
+    if default_port? || is_nil(port) do
       "#{scheme}://#{host}"
     else
       "#{scheme}://#{host}:#{port}"

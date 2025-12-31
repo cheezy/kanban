@@ -57,9 +57,16 @@ defmodule Kanban.Hooks do
   end
 
   @doc """
-  List all available hooks and their configurations.
+  List all available hooks and their configurations in execution order.
+  Returns a list of {name, config} tuples in the order hooks would execute.
   """
   def list_hooks do
-    @hook_config
+    # Return hooks in execution order: before_doing, after_doing, before_review, after_review
+    [
+      {"before_doing", @hook_config["before_doing"]},
+      {"after_doing", @hook_config["after_doing"]},
+      {"before_review", @hook_config["before_review"]},
+      {"after_review", @hook_config["after_review"]}
+    ]
   end
 end
