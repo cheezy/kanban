@@ -36,6 +36,17 @@
       />
     <% end %>
 
+    <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 my-4">
+      <.input
+        field={f[:needs_review]}
+        type="checkbox"
+        label={gettext("Needs Review")}
+      />
+      <p class="text-sm text-blue-700 dark:text-blue-300 mt-1 ml-6">
+        {gettext("Check this box if this task requires review before completion")}
+      </p>
+    </div>
+
     <.input
       field={f[:type]}
       type="select"
@@ -71,8 +82,6 @@
       options={@assignable_users}
       prompt={gettext("Select a user")}
     />
-
-    <.input field={f[:needs_review]} type="checkbox" label={gettext("Needs Review")} />
 
     <%= if @action == :new_task do %>
       <.input
