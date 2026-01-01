@@ -35,7 +35,7 @@ Returns an array of tasks:
       "identifier": "W21",
       "title": "Implement authentication",
       "description": "Add JWT authentication to the API",
-      "acceptance_criteria": ["Users can log in with email/password", "JWT tokens are generated correctly"],
+      "acceptance_criteria": "Users can log in with email/password\nJWT tokens are generated correctly",
       "status": "in_progress",
       "priority": "high",
       "complexity": "medium",
@@ -48,7 +48,7 @@ Returns an array of tasks:
       "why": "Users need secure authentication",
       "what": "JWT-based login system",
       "where_context": "Authentication module",
-      "patterns_to_follow": ["Follow existing controller patterns"],
+      "patterns_to_follow": "Follow existing controller patterns",
       "database_changes": null,
       "validation_rules": null,
       "telemetry_event": null,
@@ -102,7 +102,7 @@ Returns an array of tasks:
       "identifier": "W22",
       "title": "Fix login bug",
       "description": "Users can't log in with special characters",
-      "acceptance_criteria": [],
+      "acceptance_criteria": null,
       "status": "open",
       "priority": "medium",
       "complexity": "low",
@@ -144,7 +144,7 @@ Column doesn't belong to the current board:
 | `identifier` | string | Human-readable identifier (W21, G10, etc.) |
 | `title` | string | Task title |
 | `description` | string | Detailed description of the task |
-| `acceptance_criteria` | array | Specific, testable conditions for completion |
+| `acceptance_criteria` | string | Specific, testable conditions for completion (newline-separated) |
 | `status` | string | Current status: `open`, `in_progress`, `blocked`, `review`, `completed` |
 | `priority` | string | Priority level: `low`, `medium`, `high`, `critical` |
 | `complexity` | string | Estimated complexity: `trivial`, `low`, `medium`, `high`, `very_high` |
@@ -162,12 +162,12 @@ Column doesn't belong to the current board:
 | `why` | string | Why this task matters - business justification |
 | `what` | string | What needs to be done - concise summary |
 | `where_context` | string | Where in the codebase this work happens |
-| `patterns_to_follow` | array | Specific coding patterns to replicate |
+| `patterns_to_follow` | string | Specific coding patterns to replicate (newline-separated) |
 | `database_changes` | string | Database schema changes required |
 | `validation_rules` | string | Input validation requirements |
-| `technology_requirements` | string | Specific libraries or technologies to use |
-| `pitfalls` | string | Common mistakes to avoid |
-| `out_of_scope` | string | What NOT to include in this task |
+| `technology_requirements` | array | Specific libraries or technologies to use (array of strings) |
+| `pitfalls` | array | Common mistakes to avoid (array of strings) |
+| `out_of_scope` | array | What NOT to include in this task (array of strings) |
 
 ### Implementation Guidance Fields
 
@@ -175,9 +175,9 @@ Column doesn't belong to the current board:
 |-------|------|-------------|
 | `key_files` | array | Files that will be modified (prevents conflicts) - see structure below |
 | `verification_steps` | array | Commands to run to verify success - see structure below |
-| `security_considerations` | string | Security concerns or requirements |
-| `testing_strategy` | string | Overall testing approach |
-| `integration_points` | string | Systems or APIs this touches |
+| `security_considerations` | array | Security concerns or requirements (array of strings) |
+| `testing_strategy` | object | Overall testing approach (JSON object) |
+| `integration_points` | object | Systems or APIs this touches (JSON object) |
 
 ### Observability Fields
 

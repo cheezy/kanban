@@ -42,12 +42,9 @@ Authorization: Bearer <your_api_token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `task.acceptance_criteria` | array | **Strongly Recommended** | Specific, testable conditions for "done" |
-| `task.test_scenarios` | array | **Strongly Recommended** | Exact tests to write |
-| `task.verification_steps` | array | **Strongly Recommended** | Commands to run to verify success |
-| `task.reference_files` | array | No | Existing code files to learn patterns from |
-| `task.patterns_to_follow` | array | No | Specific coding patterns to replicate |
-| `task.constraints` | array | No | What NOT to do or change |
+| `task.acceptance_criteria` | string | **Strongly Recommended** | Specific, testable conditions for "done" (newline-separated) |
+| `task.verification_steps` | array | **Strongly Recommended** | Array of step objects with `command` and optional `description` (see format below) |
+| `task.patterns_to_follow` | string | No | Specific coding patterns to replicate (newline-separated) |
 
 #### Technical Details
 
@@ -57,11 +54,12 @@ Authorization: Bearer <your_api_token>
 | `task.observability` | string | No | Logging, metrics, telemetry requirements |
 | `task.error_handling` | string | No | How to handle failures |
 | `task.context` | string | No | Additional background information |
-| `task.security_considerations` | string | No | Security concerns or requirements |
-| `task.testing_strategy` | string | No | Overall testing approach |
-| `task.integration_points` | string | No | Systems or APIs this touches |
-| `task.pitfalls` | string | No | Common mistakes to avoid |
-| `task.out_of_scope` | string | No | What NOT to include in this task |
+| `task.security_considerations` | array | No | Security concerns or requirements (array of strings) |
+| `task.testing_strategy` | object | No | Overall testing approach (JSON object) |
+| `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
+| `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
+| `task.out_of_scope` | array | No | What NOT to include in this task (array of strings) |
+| `task.technology_requirements` | array | No | Required technologies or libraries (array of strings) |
 
 #### Agent & System Fields
 
@@ -91,6 +89,27 @@ The `key_files` array should contain objects with the following structure:
 - Tasks with overlapping key_files cannot be claimed simultaneously
 - If Task A is working on `lib/auth.ex`, Task B listing the same file will be blocked until Task A completes
 
+#### Verification Steps Format
+
+The `verification_steps` array should contain objects with the following structure:
+
+```json
+"verification_steps": [
+  {
+    "step_type": "command",                    // Required: "command" or "manual"
+    "step_text": "mix test test/auth_test.exs", // Required: command or instruction
+    "expected_result": "All tests pass",       // Optional: what success looks like
+    "position": 0                              // Required: execution order (0-indexed)
+  },
+  {
+    "step_type": "manual",
+    "step_text": "Navigate to /login and verify special characters work in password field",
+    "expected_result": "Can login with password containing &, %, #",
+    "position": 1
+  }
+]
+```
+
 ### Request Body Examples
 
 #### Create a detailed task (recommended approach)
@@ -117,20 +136,20 @@ The `key_files` array should contain objects with the following structure:
         "position": 1
       }
     ],
-    "acceptance_criteria": [
-      "Users can log in with passwords containing &, %, #, and @ characters",
-      "Password validation works correctly with special chars",
-      "No regression in normal password login"
-    ],
-    "test_scenarios": [
-      "Login with password containing &",
-      "Login with password containing %",
-      "Login with password containing multiple special chars",
-      "Verify failed login still returns proper error"
-    ],
+    "acceptance_criteria": "Users can log in with passwords containing &, %, #, and @ characters\nPassword validation works correctly with special chars\nNo regression in normal password login",
     "verification_steps": [
-      "mix test test/kanban_web/controllers/auth_controller_test.exs",
-      "Manual test: create user with password 'Test&Pass%123' and login"
+      {
+        "step_type": "command",
+        "step_text": "mix test test/kanban_web/controllers/auth_controller_test.exs",
+        "expected_result": "All tests pass",
+        "position": 0
+      },
+      {
+        "step_type": "manual",
+        "step_text": "Create user with password 'Test&Pass%123' and login",
+        "expected_result": "Login succeeds with special characters in password",
+        "position": 1
+      }
     ],
     "technical_notes": "Issue is likely URL encoding - passwords need to be properly encoded before sending to server",
     "required_capabilities": ["code_generation", "testing"]
@@ -184,20 +203,20 @@ The `key_files` array should contain objects with the following structure:
             "position": 1
           }
         ],
-        "acceptance_criteria": [
-          "Migration creates users table with email, password_hash, inserted_at, updated_at",
-          "Email has unique constraint",
-          "Schema validates email format and password length"
-        ],
-        "test_scenarios": [
-          "Valid user changeset",
-          "Invalid email format rejected",
-          "Duplicate email rejected",
-          "Password less than 8 chars rejected"
-        ],
+        "acceptance_criteria": "Migration creates users table with email, password_hash, inserted_at, updated_at\nEmail has unique constraint\nSchema validates email format and password length",
         "verification_steps": [
-          "mix ecto.migrate",
-          "mix test test/kanban/accounts/user_test.exs"
+          {
+            "step_type": "command",
+            "step_text": "mix ecto.migrate",
+            "expected_result": "Migration runs successfully",
+            "position": 0
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/user_test.exs",
+            "expected_result": "All tests pass",
+            "position": 1
+          }
         ],
         "required_capabilities": ["code_generation"]
       },
@@ -221,20 +240,14 @@ The `key_files` array should contain objects with the following structure:
             "position": 1
           }
         ],
-        "acceptance_criteria": [
-          "generate_token/1 creates valid JWT with user_id claim",
-          "verify_token/1 validates token signature and expiry",
-          "Tokens expire after 24 hours",
-          "Invalid tokens return error tuple"
-        ],
-        "test_scenarios": [
-          "Generate token for valid user",
-          "Verify valid token returns user_id",
-          "Expired token returns error",
-          "Invalid signature returns error"
-        ],
+        "acceptance_criteria": "generate_token/1 creates valid JWT with user_id claim\nverify_token/1 validates token signature and expiry\nTokens expire after 24 hours\nInvalid tokens return error tuple",
         "verification_steps": [
-          "mix test test/kanban/accounts/auth_test.exs"
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/auth_test.exs",
+            "expected_result": "All tests pass",
+            "position": 0
+          }
         ],
         "technical_notes": "Use Joken library with HS256 algorithm. Store secret in environment variable.",
         "required_capabilities": ["code_generation"]
@@ -259,23 +272,26 @@ The `key_files` array should contain objects with the following structure:
             "position": 1
           }
         ],
-        "acceptance_criteria": [
-          "100% code coverage for auth module",
-          "All happy path scenarios tested",
-          "All error cases tested",
-          "Tests run in < 1 second"
-        ],
-        "test_scenarios": [
-          "User registration with valid data",
-          "User registration with invalid data",
-          "Login with correct credentials",
-          "Login with incorrect credentials",
-          "Token validation success and failure cases"
-        ],
+        "acceptance_criteria": "100% code coverage for auth module\nAll happy path scenarios tested\nAll error cases tested\nTests run in < 1 second",
         "verification_steps": [
-          "mix test test/kanban/accounts/",
-          "mix test --cover --export-coverage default",
-          "mix test.coverage"
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/",
+            "expected_result": "All tests pass",
+            "position": 0
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test --cover --export-coverage default",
+            "expected_result": "Coverage report generated",
+            "position": 1
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test.coverage",
+            "expected_result": "100% coverage for auth module",
+            "position": 2
+          }
         ],
         "required_capabilities": ["testing"]
       }

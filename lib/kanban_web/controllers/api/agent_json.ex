@@ -278,19 +278,20 @@ defmodule KanbanWeb.API.AgentJSON do
           "description - WHY this matters and WHAT needs to be done",
           "complexity - Realistic estimate: trivial, low, medium, high, very_high",
           "estimated_hours - Honest time estimate",
-          "key_files - ALWAYS specify files that will be modified (prevents conflicts)",
-          "acceptance_criteria - Specific, testable conditions for 'done'",
-          "test_scenarios - Exact tests to write",
-          "verification_steps - Commands to run to verify success"
+          "key_files - ALWAYS specify files that will be modified (array of objects with file_path, note, position)",
+          "acceptance_criteria - Specific, testable conditions for 'done' (newline-separated string)",
+          "verification_steps - Commands and manual steps to verify success (array of objects with step_type, step_text, expected_result, position)"
         ],
         highly_recommended_fields: [
-          "dependencies - Tasks that must complete first (controls execution order)",
-          "reference_files - Existing code to learn patterns from",
-          "patterns_to_follow - Specific coding patterns to replicate",
-          "constraints - What NOT to do or change",
-          "technical_notes - Database changes, integrations, gotchas",
-          "observability - Logging, metrics, telemetry requirements",
-          "error_handling - How to handle failures"
+          "dependencies - Tasks that must complete first (controls execution order, array of identifiers)",
+          "patterns_to_follow - Specific coding patterns to replicate (newline-separated string)",
+          "pitfalls - Common mistakes to avoid (array of strings)",
+          "out_of_scope - What NOT to include in this task (array of strings)",
+          "technology_requirements - Required technologies or libraries (array of strings)",
+          "database_changes - Database schema or query changes (string)",
+          "validation_rules - Data validation requirements (string)",
+          "logging_requirements - What to log and at what level (string)",
+          "security_considerations - Security concerns or requirements (array of strings)"
         ],
         bad_example: %{
           title: "Add search feature",
@@ -316,31 +317,35 @@ defmodule KanbanWeb.API.AgentJSON do
               position: 1
             }
           ],
-          reference_files: ["lib/kanban_web/live/board_live/filter_component.ex"],
-          patterns_to_follow: [
-            "Use LiveView handle_event for input changes (see filter component)",
-            "Debounce search input to avoid excessive queries"
-          ],
-          acceptance_criteria: [
-            "Search input appears in board header",
-            "Typing filters tasks in real-time",
-            "Search is case-insensitive",
-            "Searches both title and description fields",
-            "Empty search shows all tasks"
-          ],
-          test_scenarios: [
-            "Search for partial title match",
-            "Search for description text",
-            "Case-insensitive search works",
-            "Empty search returns all tasks"
-          ],
+          patterns_to_follow:
+            "Use LiveView handle_event for input changes (see filter component in lib/kanban_web/live/board_live/filter_component.ex)\nDebounce search input to avoid excessive queries",
+          acceptance_criteria:
+            "Search input appears in board header\nTyping filters tasks in real-time\nSearch is case-insensitive\nSearches both title and description fields\nEmpty search shows all tasks",
           verification_steps: [
-            "mix test test/kanban/tasks_test.exs",
-            "mix test test/kanban_web/live/board_live_test.exs",
-            "Navigate to board and type in search - tasks filter in real-time"
+            %{
+              step_type: "command",
+              step_text: "mix test test/kanban/tasks_test.exs",
+              expected_result: "All tests pass",
+              position: 0
+            },
+            %{
+              step_type: "command",
+              step_text: "mix test test/kanban_web/live/board_live_test.exs",
+              expected_result: "All tests pass",
+              position: 1
+            },
+            %{
+              step_type: "manual",
+              step_text: "Navigate to board and type in search - tasks filter in real-time",
+              expected_result: "Tasks filter as you type",
+              position: 2
+            }
           ],
-          constraints: ["Do not modify task card layout", "Do not add sorting yet"],
-          technical_notes:
+          pitfalls: [
+            "Don't modify task card layout",
+            "Don't add sorting yet - that's a separate task"
+          ],
+          database_changes:
             "Use ILIKE for PostgreSQL case-insensitive search. Consider adding search index later for performance."
         },
         first_time_instructions: [
@@ -348,7 +353,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "2. Study the good_example above - this is the level of detail required",
           "3. When creating your first tasks, include ALL minimum_required_fields",
           "4. Add highly_recommended_fields whenever possible",
-          "5. Use structured JSON for key_files, test_scenarios, acceptance_criteria",
+          "5. Use proper formats: key_files and verification_steps are arrays of objects, acceptance_criteria and patterns_to_follow are newline-separated strings",
           "6. Never create minimal tasks - they waste time and cause failure"
         ]
       },

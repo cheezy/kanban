@@ -192,9 +192,9 @@ When creating tasks, use **structured JSON** instead of free-form markdown for t
 **✅ Advantages for agents:**
 
 1. **Parseable & Actionable** - Agents can extract specific fields directly
-   - See `files_to_modify` → Read those files first
-   - See `migration_needed: true` → Generate a migration
-   - See `test_scenarios` → Know exactly what to test
+   - See `key_files` → Read those files first
+   - See `database_changes` → Generate migrations if needed
+   - See `verification_steps` → Know exactly what to test
 
 2. **Reduces Ambiguity** - Clear structure means clear expectations
    - "Modify these 3 files" vs "You'll probably need to change some files"
@@ -202,8 +202,8 @@ When creating tasks, use **structured JSON** instead of free-form markdown for t
 
 3. **Saves Time** - No need to parse natural language or guess intent
    - Agent can jump directly to the right files
-   - Clear test scenarios mean no exploration needed
-   - Explicit constraints prevent wrong approaches
+   - Clear verification steps mean no exploration needed
+   - Explicit pitfalls and out_of_scope prevent wrong approaches
 
 4. **Consistent** - Same structure across all tasks
    - Agents learn the pattern once
@@ -243,30 +243,32 @@ add tests. Oh and don't change the card layout.
       "position": 1
     }
   ],
-  "reference_files": [
-    "lib/kanban_web/live/board_live/status_filter_component.ex"
+  "patterns_to_follow": "Use handle_event for filter changes (see status filter in lib/kanban_web/live/board_live/status_filter_component.ex)\nPut query logic in context module, not LiveView",
+  "pitfalls": [
+    "Don't modify task card layout or styling"
   ],
-  "patterns_to_follow": [
-    "Use handle_event for filter changes (see status filter)",
-    "Put query logic in context module, not LiveView"
-  ],
-  "constraints": [
-    "Must not modify task card layout or styling"
-  ],
-  "test_scenarios": [
-    "Filter by each priority level (0-4)",
-    "Clear filter shows all tasks",
-    "Filter state persists in URL"
+  "verification_steps": [
+    {
+      "step_type": "command",
+      "step_text": "mix test test/kanban_web/live/board_live_test.exs",
+      "expected_result": "All tests pass including new filter tests",
+      "position": 0
+    },
+    {
+      "step_type": "manual",
+      "step_text": "Test filter by each priority level (0-4), clear filter shows all tasks, filter state persists in URL",
+      "expected_result": "Filtering works correctly and state persists",
+      "position": 1
+    }
   ]
 }
 ```
 
 **Benefits:**
 - Agent knows exactly which files to modify
-- Clear reference file to learn from
-- Explicit patterns to follow
-- Specific constraints
-- Defined test scenarios
+- Clear patterns to follow with file references
+- Explicit pitfalls to avoid
+- Defined verification steps (both automated and manual)
 
 ### Hybrid Approach (Recommended)
 
@@ -279,7 +281,7 @@ Use structured fields for machine-readable data, plus optional markdown for nuan
   "key_files": [
     {"file_path": "lib/kanban_web/controllers/auth_controller.ex", "position": 0}
   ],
-  "constraints": ["Use PHX.Token for reset tokens"],
+  "patterns_to_follow": "Use PHX.Token for reset tokens",
   "notes": "## Additional Context\n\nThe reset token should expire after 1 hour. Priority scale is 0-4 where 0 is highest (might be counterintuitive)."
 }
 ```
@@ -342,10 +344,10 @@ This gives you:
 
 **Always structure these other fields:**
 
-- `test_scenarios` - What to test
-- `constraints` - What NOT to do
-- `patterns_to_follow` - Code patterns to replicate
-- `acceptance_criteria` - Definition of done
+- `verification_steps` - What to test (array of objects with step_type, step_text, expected_result)
+- `pitfalls` - What NOT to do (array of strings)
+- `patterns_to_follow` - Code patterns to replicate (newline-separated string)
+- `acceptance_criteria` - Definition of done (newline-separated string)
 
 **Optional markdown for:**
 
