@@ -262,6 +262,96 @@ defmodule KanbanWeb.API.AgentJSON do
           ]
         }
       },
+      task_creation_requirements: %{
+        critical_importance:
+          "CRITICAL: Always create DETAILED, RICH tasks following the Task Writing Guide. Agents that create minimal tasks with only title/description struggle and fail. Success requires comprehensive task specifications.",
+        required_reading: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
+        why_detailed_tasks_matter: [
+          "Minimal tasks = 3+ hours of exploration and uncertainty",
+          "Detailed tasks = 30 minutes of focused implementation",
+          "Rich context prevents wrong approaches and wasted work",
+          "Specific file paths and test scenarios eliminate guesswork"
+        ],
+        minimum_required_fields: [
+          "title - Clear, specific description of the work",
+          "type - 'work' or 'defect'",
+          "description - WHY this matters and WHAT needs to be done",
+          "complexity - Realistic estimate: trivial, low, medium, high, very_high",
+          "estimated_hours - Honest time estimate",
+          "key_files - ALWAYS specify files that will be modified (prevents conflicts)",
+          "acceptance_criteria - Specific, testable conditions for 'done'",
+          "test_scenarios - Exact tests to write",
+          "verification_steps - Commands to run to verify success"
+        ],
+        highly_recommended_fields: [
+          "dependencies - Tasks that must complete first (controls execution order)",
+          "reference_files - Existing code to learn patterns from",
+          "patterns_to_follow - Specific coding patterns to replicate",
+          "constraints - What NOT to do or change",
+          "technical_notes - Database changes, integrations, gotchas",
+          "observability - Logging, metrics, telemetry requirements",
+          "error_handling - How to handle failures"
+        ],
+        bad_example: %{
+          title: "Add search feature",
+          description: "Users need search",
+          note: "This task will fail! Too vague, no context, no file paths, no tests specified"
+        },
+        good_example: %{
+          title: "Add task search by title and description",
+          type: "work",
+          complexity: "medium",
+          estimated_hours: 2.5,
+          description:
+            "WHY: Users need to find tasks quickly without scrolling. WHAT: Add search input that filters tasks in real-time. WHERE: Board view header.",
+          key_files: [
+            %{
+              file_path: "lib/kanban_web/live/board_live.ex",
+              note: "Add search input and handle_event",
+              position: 0
+            },
+            %{
+              file_path: "lib/kanban/tasks.ex",
+              note: "Add search_tasks/2 query function",
+              position: 1
+            }
+          ],
+          reference_files: ["lib/kanban_web/live/board_live/filter_component.ex"],
+          patterns_to_follow: [
+            "Use LiveView handle_event for input changes (see filter component)",
+            "Debounce search input to avoid excessive queries"
+          ],
+          acceptance_criteria: [
+            "Search input appears in board header",
+            "Typing filters tasks in real-time",
+            "Search is case-insensitive",
+            "Searches both title and description fields",
+            "Empty search shows all tasks"
+          ],
+          test_scenarios: [
+            "Search for partial title match",
+            "Search for description text",
+            "Case-insensitive search works",
+            "Empty search returns all tasks"
+          ],
+          verification_steps: [
+            "mix test test/kanban/tasks_test.exs",
+            "mix test test/kanban_web/live/board_live_test.exs",
+            "Navigate to board and type in search - tasks filter in real-time"
+          ],
+          constraints: ["Do not modify task card layout", "Do not add sorting yet"],
+          technical_notes:
+            "Use ILIKE for PostgreSQL case-insensitive search. Consider adding search index later for performance."
+        },
+        first_time_instructions: [
+          "1. READ the Task Writing Guide completely: #{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
+          "2. Study the good_example above - this is the level of detail required",
+          "3. When creating your first tasks, include ALL minimum_required_fields",
+          "4. Add highly_recommended_fields whenever possible",
+          "5. Use structured JSON for key_files, test_scenarios, acceptance_criteria",
+          "6. Never create minimal tasks - they waste time and cause failure"
+        ]
+      },
       resources: %{
         documentation_url: "#{@docs_base_url}/docs/api/README.md",
         authentication_guide: "#{@docs_base_url}/docs/AUTHENTICATION.md",
