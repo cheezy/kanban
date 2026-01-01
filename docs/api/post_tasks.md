@@ -55,7 +55,7 @@ Authorization: Bearer <your_api_token>
 | `task.error_handling` | string | No | How to handle failures |
 | `task.context` | string | No | Additional background information |
 | `task.security_considerations` | array | No | Security concerns or requirements (array of strings) |
-| `task.testing_strategy` | object | No | Overall testing approach (JSON object) |
+| `task.testing_strategy` | object | **Strongly Recommended** | Overall testing approach (JSON object - see format below) |
 | `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
 | `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
 | `task.out_of_scope` | array | No | What NOT to include in this task (array of strings) |
@@ -110,6 +110,54 @@ The `verification_steps` array should contain objects with the following structu
 ]
 ```
 
+#### Testing Strategy Format
+
+The `testing_strategy` object describes the overall testing approach for the task. This is a flexible JSON object that can contain any relevant testing information. Common fields include:
+
+```json
+"testing_strategy": {
+  "unit_tests": "Test each function in isolation with ExUnit",
+  "integration_tests": "Test auth flow end-to-end in controller tests",
+  "property_tests": "Use StreamData to verify password encoding with random special characters",
+  "coverage_target": "100% for auth module",
+  "test_data": "Create fixtures for valid/invalid passwords",
+  "mocking": "Mock external email service for password reset tests",
+  "edge_cases": [
+    "Empty password",
+    "Password with unicode characters",
+    "Password exceeding max length"
+  ],
+  "performance_tests": "Login should complete in <100ms for 95th percentile"
+}
+```
+
+**Common fields (all optional):**
+
+- `unit_tests` (string) - Approach for unit testing individual functions
+- `integration_tests` (string) - How to test component interactions
+- `property_tests` (string) - Property-based testing strategy (e.g., StreamData)
+- `coverage_target` (string) - Target code coverage percentage or scope
+- `test_data` (string) - Test fixtures or data setup approach
+- `mocking` (string) - What external dependencies to mock and how
+- `edge_cases` (array) - Specific edge cases that must be tested
+- `performance_tests` (string) - Performance criteria or benchmarks
+- `manual_tests` (string) - Manual testing procedures beyond automated tests
+
+**Why testing_strategy is valuable:**
+
+- Provides clear testing expectations beyond verification steps
+- Helps agents understand the testing philosophy for this task
+- Specifies coverage targets and edge cases upfront
+- Documents mocking/stubbing requirements
+- Can be more comprehensive than `verification_steps` which focuses on commands
+
+**When to use testing_strategy vs verification_steps:**
+
+- `testing_strategy` - Overall testing approach, coverage goals, edge cases to consider
+- `verification_steps` - Specific commands to run and manual steps to verify completion
+
+Use both for comprehensive guidance: `testing_strategy` tells the agent *how to think about testing*, while `verification_steps` tells them *what commands to run*.
+
 ### Request Body Examples
 
 #### Create a detailed task (recommended approach)
@@ -152,6 +200,17 @@ The `verification_steps` array should contain objects with the following structu
       }
     ],
     "technical_notes": "Issue is likely URL encoding - passwords need to be properly encoded before sending to server",
+    "testing_strategy": {
+      "unit_tests": "Test password encoding function with various special characters",
+      "integration_tests": "Test full login flow with passwords containing &, %, #, @",
+      "edge_cases": [
+        "Password with only special characters",
+        "Password with unicode characters",
+        "Empty password",
+        "Very long password with special chars"
+      ],
+      "coverage_target": "100% for modified auth functions"
+    },
     "required_capabilities": ["code_generation", "testing"]
   }
 }
@@ -250,6 +309,17 @@ The `verification_steps` array should contain objects with the following structu
           }
         ],
         "technical_notes": "Use Joken library with HS256 algorithm. Store secret in environment variable.",
+        "testing_strategy": {
+          "unit_tests": "Test token generation and validation functions independently",
+          "integration_tests": "Not needed - covered by auth controller tests",
+          "edge_cases": [
+            "Expired token",
+            "Invalid signature",
+            "Missing user_id claim",
+            "Malformed token string"
+          ],
+          "coverage_target": "100% for token module"
+        },
         "required_capabilities": ["code_generation"]
       },
       {

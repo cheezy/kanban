@@ -342,9 +342,97 @@ This gives you:
 2. Specify dependencies explicitly (don't assume agents will infer order)
 3. Only add dependencies when truly required (don't over-constrain parallelization)
 
+#### `testing_strategy` - Overall Testing Approach
+
+**Why critical:** Provides comprehensive testing guidance beyond simple verification commands.
+
+The `testing_strategy` field is a flexible JSON object that describes how to think about testing this task. Unlike `verification_steps` which focuses on *what commands to run*, `testing_strategy` explains *how to approach testing*.
+
+**Format:**
+
+```json
+"testing_strategy": {
+  "unit_tests": "Test each function in isolation with ExUnit",
+  "integration_tests": "Test auth flow end-to-end in controller tests",
+  "property_tests": "Use StreamData to verify password encoding with random special characters",
+  "coverage_target": "100% for auth module, 80% overall",
+  "test_data": "Create fixtures for valid/invalid passwords, use Factory pattern",
+  "mocking": "Mock external email service for password reset tests using Mox",
+  "edge_cases": [
+    "Empty password",
+    "Password with unicode characters",
+    "Password exceeding max length",
+    "Concurrent login attempts"
+  ],
+  "performance_tests": "Login should complete in <100ms for 95th percentile",
+  "manual_tests": "Test password reset email in staging environment"
+}
+```
+
+**Common fields (all optional):**
+
+- `unit_tests` (string) - Strategy for testing individual functions in isolation
+- `integration_tests` (string) - How to test component interactions and full flows
+- `property_tests` (string) - Property-based testing approach (e.g., StreamData, PropCheck)
+- `coverage_target` (string) - Target code coverage percentage or scope
+- `test_data` (string) - How to set up test fixtures, factories, or seed data
+- `mocking` (string) - What external dependencies to mock/stub and how
+- `edge_cases` (array of strings) - Specific edge cases that must be tested
+- `performance_tests` (string) - Performance criteria, benchmarks, or load tests
+- `manual_tests` (string) - Manual testing procedures beyond automated tests
+- `regression_tests` (string) - What existing functionality to verify still works
+- `security_tests` (string) - Security-specific test scenarios
+
+**When to use testing_strategy vs verification_steps:**
+
+- `testing_strategy` - **How to think about testing**: coverage goals, edge cases, testing philosophy
+- `verification_steps` - **What commands to run**: specific test commands and manual verification steps
+
+**Best Practice:** Use both fields together:
+
+- `testing_strategy` provides the comprehensive testing approach and edge cases to consider
+- `verification_steps` provides the concrete commands to run to verify completion
+
+**Example showing the difference:**
+
+```json
+{
+  "testing_strategy": {
+    "unit_tests": "Test priority filter logic in Boards context with each priority level",
+    "integration_tests": "Test filter UI in LiveView tests with live rendering",
+    "edge_cases": [
+      "Tasks with null priority",
+      "Filter combined with status filter",
+      "Filter state persists after page refresh"
+    ],
+    "coverage_target": "100% for new filter functions"
+  },
+  "verification_steps": [
+    {
+      "step_type": "command",
+      "step_text": "mix test test/kanban/boards_test.exs",
+      "expected_result": "All tests pass",
+      "position": 0
+    },
+    {
+      "step_type": "manual",
+      "step_text": "Test filter by each priority level, verify URL updates",
+      "expected_result": "Filtering works and state persists",
+      "position": 1
+    }
+  ]
+}
+```
+
+In this example:
+
+- `testing_strategy` tells the agent to consider null priorities, combined filters, and persistence
+- `verification_steps` tells the agent exactly which test commands to run
+
 **Always structure these other fields:**
 
 - `verification_steps` - What to test (array of objects with step_type, step_text, expected_result)
+- `testing_strategy` - Overall testing approach (JSON object - see detailed format above)
 - `pitfalls` - What NOT to do (array of strings)
 - `patterns_to_follow` - Code patterns to replicate (newline-separated string)
 - `acceptance_criteria` - Definition of done (newline-separated string)
