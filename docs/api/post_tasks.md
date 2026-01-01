@@ -37,6 +37,15 @@ Authorization: Bearer <your_api_token>
 | `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`) |
 | `task.parent_goal` | string | No | Identifier of parent goal (e.g., `"G1"`) if this task belongs to a goal |
 
+#### Planning & Context
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.why` | string | **Strongly Recommended** | Why this task matters - business justification |
+| `task.what` | string | **Strongly Recommended** | What needs to be done - concise summary |
+| `task.where_context` | string | **Strongly Recommended** | Where in the codebase this work happens |
+| `task.estimated_files` | string | **Strongly Recommended** | Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') |
+
 #### Implementation Guidance
 
 | Parameter | Type | Required | Description |
@@ -44,22 +53,29 @@ Authorization: Bearer <your_api_token>
 | `task.acceptance_criteria` | string | **Strongly Recommended** | Specific, testable conditions for "done" (newline-separated) |
 | `task.verification_steps` | array | **Strongly Recommended** | Array of step objects with `command` and optional `description` (see format below) |
 | `task.patterns_to_follow` | string | No | Specific coding patterns to replicate (newline-separated) |
+| `task.database_changes` | string | No | Database schema changes required (migrations, tables, columns) |
+| `task.validation_rules` | string | No | Input validation requirements (constraints, formats, rules) |
+| `task.technology_requirements` | array | No | Required technologies or libraries (array of strings) |
+| `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
+| `task.out_of_scope` | array | No | What NOT to include in this task (array of strings) |
 
-#### Technical Details
+#### Observability & Error Handling
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `task.estimated_files` | string | **Strongly Recommended** | Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') |
-| `task.technical_notes` | string | No | Database changes, integrations, gotchas |
-| `task.observability` | string | No | Logging, metrics, telemetry requirements |
-| `task.error_handling` | string | No | How to handle failures |
-| `task.context` | string | No | Additional background information |
+| `task.telemetry_event` | string | No | Telemetry events to emit (event names and metadata) |
+| `task.metrics_to_track` | string | No | Metrics to instrument (counters, gauges, histograms) |
+| `task.logging_requirements` | string | No | What to log for debugging (log levels, context data) |
+| `task.error_user_message` | string | No | User-facing error messages to display |
+| `task.error_on_failure` | string | No | How to handle failures (retry logic, fallbacks, cleanup) |
+
+#### Quality & Security
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
 | `task.security_considerations` | array | **Strongly Recommended** | Security concerns, vulnerabilities to avoid, or security requirements (array of strings - see format below) |
 | `task.testing_strategy` | object | **Strongly Recommended** | Overall testing approach (JSON object - see format below) |
 | `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
-| `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
-| `task.out_of_scope` | array | No | What NOT to include in this task (array of strings) |
-| `task.technology_requirements` | array | No | Required technologies or libraries (array of strings) |
 
 #### Agent & System Fields
 
@@ -242,7 +258,10 @@ The `security_considerations` array specifies security concerns, potential vulne
   "task": {
     "title": "Fix login bug with special characters in password",
     "type": "defect",
-    "description": "WHY: Users cannot log in when their password contains special characters like & or %. WHAT: Fix password encoding in login form. WHERE: Authentication controller and login form.",
+    "description": "Users cannot log in when their password contains special characters like & or %.",
+    "why": "Users cannot authenticate when using strong passwords with special characters, blocking access to their accounts",
+    "what": "Fix password encoding in login form to properly handle special characters",
+    "where_context": "Authentication controller and login form validation",
     "priority": "high",
     "complexity": "small",
     "estimated_files": "2",
@@ -274,7 +293,8 @@ The `security_considerations` array specifies security concerns, potential vulne
         "position": 1
       }
     ],
-    "technical_notes": "Issue is likely URL encoding - passwords need to be properly encoded before sending to server",
+    "database_changes": null,
+    "validation_rules": "Password must be URL-encoded before transmission to server",
     "testing_strategy": {
       "unit_tests": "Test password encoding function with various special characters",
       "integration_tests": "Test full login flow with passwords containing &, %, #, @",
@@ -312,7 +332,10 @@ The `security_considerations` array specifies security concerns, potential vulne
 {
   "task": {
     "title": "Implement user authentication system",
-    "description": "WHY: Application needs secure user authentication. WHAT: Complete authentication system with JWT tokens, password hashing, and session management. WHERE: New auth module and controllers.",
+    "description": "Complete authentication system with JWT tokens, password hashing, and session management.",
+    "why": "Application needs secure user authentication to protect user data and restrict access",
+    "what": "Complete authentication system with JWT tokens, password hashing, and session management",
+    "where_context": "New auth module and controllers",
     "type": "goal",
     "priority": "critical",
     "complexity": "large",
@@ -321,7 +344,10 @@ The `security_considerations` array specifies security concerns, potential vulne
       {
         "title": "Create database schema for users",
         "type": "work",
-        "description": "WHY: Need secure storage for user credentials. WHAT: Add users table with email, password_hash, and metadata fields. WHERE: New migration and schema.",
+        "description": "Add users table with email, password_hash, and metadata fields.",
+        "why": "Need secure storage for user credentials and authentication data",
+        "what": "Add users table with email, password_hash, and metadata fields",
+        "where_context": "New migration and User schema module",
         "priority": "critical",
         "complexity": "medium",
         "estimated_files": "2",
@@ -357,7 +383,10 @@ The `security_considerations` array specifies security concerns, potential vulne
       {
         "title": "Implement JWT token generation and validation",
         "type": "work",
-        "description": "WHY: Need secure token-based authentication. WHAT: Add JWT library, create token generation and validation functions. WHERE: Auth context module.",
+        "description": "Add JWT library, create token generation and validation functions.",
+        "why": "Need secure token-based authentication for stateless API access",
+        "what": "Add JWT library, create token generation and validation functions",
+        "where_context": "Auth context module",
         "priority": "critical",
         "complexity": "medium",
         "estimated_files": "2-3",
@@ -383,7 +412,14 @@ The `security_considerations` array specifies security concerns, potential vulne
             "position": 0
           }
         ],
-        "technical_notes": "Use Joken library with HS256 algorithm. Store secret in environment variable.",
+        "technology_requirements": ["Joken library"],
+        "database_changes": null,
+        "validation_rules": "Tokens must use HS256 algorithm and expire after 24 hours",
+        "security_considerations": [
+          "Store JWT secret in environment variable, never in code",
+          "Use HS256 algorithm for token signing",
+          "Ensure tokens expire after 24 hours"
+        ],
         "testing_strategy": {
           "unit_tests": "Test token generation and validation functions independently",
           "integration_tests": "Not needed - covered by auth controller tests",
@@ -400,7 +436,10 @@ The `security_considerations` array specifies security concerns, potential vulne
       {
         "title": "Write comprehensive authentication tests",
         "type": "work",
-        "description": "WHY: Ensure auth system is secure and reliable. WHAT: Test suite covering all auth flows and edge cases. WHERE: Test files for auth modules.",
+        "description": "Test suite covering all auth flows and edge cases.",
+        "why": "Ensure auth system is secure and reliable before deploying to production",
+        "what": "Test suite covering all auth flows and edge cases",
+        "where_context": "Test files for auth modules",
         "priority": "high",
         "complexity": "medium",
         "estimated_files": "3-4",

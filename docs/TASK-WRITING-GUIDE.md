@@ -508,8 +508,8 @@ In this example:
     - Anti-patterns specific to this codebase
 
 12. Task Size/Complexity Indicator
-    - Small (< 30 min), Medium (1-2 hours), Large (> 2 hours)
-    - Number of files expected to change
+    - Small (< 1 hour), Medium (1-2 hours), Large (> 2 hours)
+    - Number of files expected to change (use estimated_files field)
     - Whether this needs careful planning vs. can start coding immediately
 
 13. Success Indicators Beyond Tests
@@ -551,12 +551,31 @@ In this example:
 
 ### Task Template (Copy-Paste Ready)
 
+When creating tasks via the API, use this JSON structure:
+
+```json
+{
+  "task": {
+    "title": "[Verb] [What] [Where/Context]",
+    "type": "work",
+    "complexity": "small",
+    "estimated_files": "2-3",
+    "why": "[Problem being solved / Value provided]",
+    "what": "[Specific feature/change]",
+    "where_context": "[UI location / code area]",
+    "description": "[Optional detailed description]"
+  }
+}
+```
+
+For documentation/planning purposes, you can also use this markdown template:
+
 ```markdown
 ## [Verb] [What] [Where/Context]
 
-**Complexity:** [Small/Medium/Large] | **Est. Files:** [1-2 / 3-5 / 5+]
+**Complexity:** [small/medium/large] | **Est. Files:** [1-2 / 3-5 / 5+]
 
-### Description
+### Why, What, Where
 
 **WHY:** [Problem being solved / Value provided]
 **WHAT:** [Specific feature/change]
@@ -647,12 +666,29 @@ mix precommit
 
 ### Example Task (Filled Out)
 
+```json
+{
+  "task": {
+    "title": "Add priority filter to board list view",
+    "type": "work",
+    "complexity": "medium",
+    "estimated_files": "2-3",
+    "why": "Users need to focus on high-priority tasks without manually scanning",
+    "what": "Add a dropdown filter for task priority in board header",
+    "where_context": "Board list view header, next to existing status filter",
+    "description": "Add dropdown filter for task priority (0-4) in board header next to status filter"
+  }
+}
+```
+
+Or in markdown format:
+
 ```markdown
 ## Add priority filter to board list view
 
-**Complexity:** Medium | **Est. Files:** 2-3
+**Complexity:** medium | **Est. Files:** 2-3
 
-### Description
+### Why, What, Where
 
 **WHY:** Users need to focus on high-priority tasks without manually scanning
 **WHAT:** Add a dropdown filter for task priority (0-4) in board header

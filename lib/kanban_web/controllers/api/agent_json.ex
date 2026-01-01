@@ -159,7 +159,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "TASK_TITLE - Task title",
           "TASK_DESCRIPTION - Task description",
           "TASK_STATUS - Current status (open, in_progress, review, completed)",
-          "TASK_COMPLEXITY - Complexity level (trivial, low, medium, high, very_high)",
+          "TASK_COMPLEXITY - Complexity level (small, medium, large)",
           "TASK_PRIORITY - Priority level (low, medium, high, critical)",
           "TASK_NEEDS_REVIEW - Whether review is required (true/false)",
           "BOARD_ID - Board ID",
@@ -282,6 +282,9 @@ defmodule KanbanWeb.API.AgentJSON do
           "verification_steps - Commands and manual steps to verify success (array of objects with step_type, step_text, expected_result, position)"
         ],
         highly_recommended_fields: [
+          "why - Why this task matters - business justification (string)",
+          "what - What needs to be done - concise summary (string)",
+          "where_context - Where in the codebase this work happens (string)",
           "dependencies - Tasks that must complete first (controls execution order, array of identifiers)",
           "estimated_files - Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') (string)",
           "patterns_to_follow - Specific coding patterns to replicate (newline-separated string)",
@@ -291,8 +294,13 @@ defmodule KanbanWeb.API.AgentJSON do
           "technology_requirements - Required technologies or libraries (array of strings)",
           "database_changes - Database schema or query changes (string)",
           "validation_rules - Data validation requirements (string)",
+          "telemetry_event - Telemetry events to emit (string)",
+          "metrics_to_track - Metrics to instrument (string)",
           "logging_requirements - What to log and at what level (string)",
-          "security_considerations - Security concerns or requirements (array of strings)"
+          "error_user_message - User-facing error messages (string)",
+          "error_on_failure - How to handle failures (string)",
+          "security_considerations - Security concerns or requirements (array of strings)",
+          "integration_points - Systems or APIs this touches (JSON object)"
         ],
         bad_example: %{
           title: "Add search feature",
@@ -304,8 +312,10 @@ defmodule KanbanWeb.API.AgentJSON do
           type: "work",
           complexity: "medium",
           estimated_files: "2-3",
-          description:
-            "WHY: Users need to find tasks quickly without scrolling. WHAT: Add search input that filters tasks in real-time. WHERE: Board view header.",
+          description: "Add search input that filters tasks in real-time in the board view header.",
+          why: "Users need to find tasks quickly without scrolling through long lists",
+          what: "Add search input that filters tasks in real-time by title and description",
+          where_context: "Board view header component",
           key_files: [
             %{
               file_path: "lib/kanban_web/live/board_live.ex",

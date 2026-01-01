@@ -147,7 +147,7 @@ Column doesn't belong to the current board:
 | `acceptance_criteria` | string | Specific, testable conditions for completion (newline-separated) |
 | `status` | string | Current status: `open`, `in_progress`, `blocked`, `review`, `completed` |
 | `priority` | string | Priority level: `low`, `medium`, `high`, `critical` |
-| `complexity` | string | Estimated complexity: `trivial`, `low`, `medium`, `high`, `very_high` |
+| `complexity` | string | Estimated complexity: `small`, `medium`, `large` |
 | `needs_review` | boolean | Whether task requires human review before completion |
 | `type` | string | Type: `task` or `goal` |
 | `column_id` | integer | Current column ID |
