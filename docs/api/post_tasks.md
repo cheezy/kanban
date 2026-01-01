@@ -26,8 +26,7 @@ Authorization: Bearer <your_api_token>
 | `task.description` | string | **Strongly Recommended** | Detailed description with WHY, WHAT, and WHERE |
 | `task.type` | string | **Strongly Recommended** | Type: `work` (new features) or `defect` (bug fixes) |
 | `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
-| `task.complexity` | string | **Strongly Recommended** | Complexity: `trivial`, `low`, `medium`, `high`, `very_high` (default: `medium`) |
-| `task.estimated_hours` | number | **Strongly Recommended** | Realistic time estimate in hours |
+| `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
 | `task.needs_review` | boolean | No | Whether task requires human review (default: `true`) |
 
 #### Task Scheduling & Dependencies
@@ -50,6 +49,7 @@ Authorization: Bearer <your_api_token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| `task.estimated_files` | string | **Strongly Recommended** | Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') |
 | `task.technical_notes` | string | No | Database changes, integrations, gotchas |
 | `task.observability` | string | No | Logging, metrics, telemetry requirements |
 | `task.error_handling` | string | No | How to handle failures |
@@ -169,8 +169,8 @@ Use both for comprehensive guidance: `testing_strategy` tells the agent *how to 
     "type": "defect",
     "description": "WHY: Users cannot log in when their password contains special characters like & or %. WHAT: Fix password encoding in login form. WHERE: Authentication controller and login form.",
     "priority": "high",
-    "complexity": "low",
-    "estimated_hours": 1.5,
+    "complexity": "small",
+    "estimated_files": "2",
     "needs_review": true,
     "key_files": [
       {
@@ -240,8 +240,8 @@ Use both for comprehensive guidance: `testing_strategy` tells the agent *how to 
     "description": "WHY: Application needs secure user authentication. WHAT: Complete authentication system with JWT tokens, password hashing, and session management. WHERE: New auth module and controllers.",
     "type": "goal",
     "priority": "critical",
-    "complexity": "very_high",
-    "estimated_hours": 12,
+    "complexity": "large",
+    "estimated_files": "10+",
     "tasks": [
       {
         "title": "Create database schema for users",
@@ -249,7 +249,7 @@ Use both for comprehensive guidance: `testing_strategy` tells the agent *how to 
         "description": "WHY: Need secure storage for user credentials. WHAT: Add users table with email, password_hash, and metadata fields. WHERE: New migration and schema.",
         "priority": "critical",
         "complexity": "medium",
-        "estimated_hours": 2,
+        "estimated_files": "2",
         "key_files": [
           {
             "file_path": "priv/repo/migrations/*_create_users.exs",
@@ -285,7 +285,7 @@ Use both for comprehensive guidance: `testing_strategy` tells the agent *how to 
         "description": "WHY: Need secure token-based authentication. WHAT: Add JWT library, create token generation and validation functions. WHERE: Auth context module.",
         "priority": "critical",
         "complexity": "medium",
-        "estimated_hours": 3,
+        "estimated_files": "2-3",
         "dependencies": ["W1"],
         "key_files": [
           {
@@ -328,7 +328,7 @@ Use both for comprehensive guidance: `testing_strategy` tells the agent *how to 
         "description": "WHY: Ensure auth system is secure and reliable. WHAT: Test suite covering all auth flows and edge cases. WHERE: Test files for auth modules.",
         "priority": "high",
         "complexity": "medium",
-        "estimated_hours": 2.5,
+        "estimated_files": "3-4",
         "dependencies": ["W2"],
         "key_files": [
           {
@@ -502,11 +502,9 @@ WIP limit reached:
 
 ### Complexity Values
 
-- `trivial` - Less than 15 minutes
-- `low` - 15-30 minutes
-- `medium` - 30-60 minutes (default)
-- `high` - 1-2 hours
-- `very_high` - More than 2 hours
+- `small` - Less than 1 hour (default)
+- `medium` - 1-2 hours
+- `large` - More than 2 hours
 
 ## Example Usage
 

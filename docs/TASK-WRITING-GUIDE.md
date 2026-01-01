@@ -74,33 +74,33 @@ POST /api/tasks
   "goal": {
     "title": "Implement user authentication system",
     "description": "Add comprehensive authentication with JWT tokens, password reset, and session management",
-    "estimated_hours": 40,
+    "estimated_files": "10+",
     "tasks": [
       {
         "title": "Add JWT library and configuration",
         "type": "work",
         "complexity": "small",
-        "estimated_hours": 2
+        "estimated_files": "2"
       },
       {
         "title": "Create auth controller and endpoints",
         "type": "work",
         "complexity": "medium",
-        "estimated_hours": 4,
+        "estimated_files": "3-4",
         "dependencies": ["W1"]
       },
       {
         "title": "Add password reset flow",
         "type": "work",
         "complexity": "medium",
-        "estimated_hours": 3,
+        "estimated_files": "2-3",
         "dependencies": ["W2"]
       },
       {
         "title": "Fix password validation bug",
         "type": "defect",
         "complexity": "small",
-        "estimated_hours": 1
+        "estimated_files": "1"
       }
     ]
   }
@@ -122,7 +122,7 @@ POST /api/tasks
   "title": "Fix typo in welcome email",
   "type": "defect",
   "complexity": "small",
-  "estimated_hours": 0.5,
+  "estimated_files": "1",
   "description": "The welcome email has 'recieve' instead of 'receive'"
 }
 ```
@@ -177,7 +177,7 @@ POST /api/tasks
   "type": "work",
   "parent_goal": "G1",
   "complexity": "small",
-  "estimated_hours": 2
+  "estimated_files": "2-3"
 }
 ```
 

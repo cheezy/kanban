@@ -276,15 +276,16 @@ defmodule KanbanWeb.API.AgentJSON do
           "title - Clear, specific description of the work",
           "type - 'work' or 'defect'",
           "description - WHY this matters and WHAT needs to be done",
-          "complexity - Realistic estimate: trivial, low, medium, high, very_high",
-          "estimated_hours - Honest time estimate",
+          "complexity - Realistic estimate: small, medium, large",
           "key_files - ALWAYS specify files that will be modified (array of objects with file_path, note, position)",
           "acceptance_criteria - Specific, testable conditions for 'done' (newline-separated string)",
           "verification_steps - Commands and manual steps to verify success (array of objects with step_type, step_text, expected_result, position)"
         ],
         highly_recommended_fields: [
           "dependencies - Tasks that must complete first (controls execution order, array of identifiers)",
+          "estimated_files - Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') (string)",
           "patterns_to_follow - Specific coding patterns to replicate (newline-separated string)",
+          "testing_strategy - Overall testing approach with edge cases, coverage goals, mocking strategy (JSON object)",
           "pitfalls - Common mistakes to avoid (array of strings)",
           "out_of_scope - What NOT to include in this task (array of strings)",
           "technology_requirements - Required technologies or libraries (array of strings)",
@@ -302,7 +303,7 @@ defmodule KanbanWeb.API.AgentJSON do
           title: "Add task search by title and description",
           type: "work",
           complexity: "medium",
-          estimated_hours: 2.5,
+          estimated_files: "2-3",
           description:
             "WHY: Users need to find tasks quickly without scrolling. WHAT: Add search input that filters tasks in real-time. WHERE: Board view header.",
           key_files: [
@@ -345,6 +346,17 @@ defmodule KanbanWeb.API.AgentJSON do
             "Don't modify task card layout",
             "Don't add sorting yet - that's a separate task"
           ],
+          testing_strategy: %{
+            unit_tests: "Test search_tasks/2 query function with various search terms",
+            integration_tests: "Test LiveView search with live rendering and real-time updates",
+            edge_cases: [
+              "Empty search string shows all tasks",
+              "Search with special characters",
+              "Case sensitivity (should be case-insensitive)",
+              "Partial matches in title and description"
+            ],
+            coverage_target: "100% for new search functions"
+          },
           database_changes:
             "Use ILIKE for PostgreSQL case-insensitive search. Consider adding search index later for performance."
         },
@@ -352,8 +364,8 @@ defmodule KanbanWeb.API.AgentJSON do
           "1. READ the Task Writing Guide completely: #{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
           "2. Study the good_example above - this is the level of detail required",
           "3. When creating your first tasks, include ALL minimum_required_fields",
-          "4. Add highly_recommended_fields whenever possible",
-          "5. Use proper formats: key_files and verification_steps are arrays of objects, acceptance_criteria and patterns_to_follow are newline-separated strings",
+          "4. Add highly_recommended_fields whenever possible - especially testing_strategy for comprehensive testing guidance",
+          "5. Use proper formats: key_files and verification_steps are arrays of objects, testing_strategy is a JSON object, acceptance_criteria and patterns_to_follow are newline-separated strings",
           "6. Never create minimal tasks - they waste time and cause failure"
         ]
       },
