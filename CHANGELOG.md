@@ -5,6 +5,30 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-01-01
+
+### Added
+
+#### Enhanced New User Experience
+
+- **Automatic Login After Registration** - New users are now automatically logged in after creating their account:
+  - Eliminates the redundant step of requiring users to log in immediately after registration
+  - Improved onboarding flow reduces friction for new users
+
+- **AI Optimized Board Quick Start** - Added prominent call-to-action for new users without boards:
+  - Displays helpful message: "You don't have any boards yet. Create your first board to get started!"
+  - Large, centered "Create AI Optimized Board" button with orange gradient styling
+
+### Changed
+
+#### UI/UX Improvements
+
+- **Enhanced Task Review Checkbox Visibility** - Made the "Needs Review" checkbox more obvious in task forms:
+  - Changed from subtle gray label to prominent blue gradient styling
+  - Added blue checkmark icon when enabled for better visual feedback
+  - Increased text size and weight for better readability
+  - Improved accessibility with clearer visual distinction
+
 ## [1.12.0] - 2025-12-29
 
 ### Added
