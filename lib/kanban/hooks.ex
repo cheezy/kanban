@@ -48,12 +48,13 @@ defmodule Kanban.Hooks do
 
     env = Environment.build(task, board, hook_name: hook_name, agent_name: agent_name)
 
-    {:ok, %{
-      name: hook_name,
-      env: env,
-      timeout: config.timeout,
-      blocking: config.blocking
-    }}
+    {:ok,
+     %{
+       name: hook_name,
+       env: env,
+       timeout: config.timeout,
+       blocking: config.blocking
+     }}
   end
 
   @doc """

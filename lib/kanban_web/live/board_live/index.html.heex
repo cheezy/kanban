@@ -64,9 +64,20 @@
             "Get started by creating your first board to organize your tasks and projects."
           )}
         </p>
-        <.link navigate={~p"/boards/new"}>
-          <.button>{gettext("Create your first board")}</.button>
-        </.link>
+        <div class="flex justify-center gap-4">
+          <.link navigate={~p"/boards/new"}>
+            <.button class="btn-outline gap-2">
+              <.icon name="hero-document" class="h-5 w-5" />
+              {gettext("Empty Board")}
+            </.button>
+          </.link>
+          <.link navigate={~p"/boards/new?ai_optimized=true"}>
+            <.button class="gap-2">
+              <.icon name="hero-sparkles" class="h-5 w-5" />
+              {gettext("AI Optimized Board")}
+            </.button>
+          </.link>
+        </div>
       </div>
     <% else %>
       <div

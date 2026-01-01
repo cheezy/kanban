@@ -221,7 +221,9 @@ defmodule Kanban.Tasks do
 
     prepared_attrs = prepare_task_attrs(attrs, next_position)
 
-    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+    identifier_key =
+      if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+
     type_key = if is_map_key(prepared_attrs, "position"), do: "type", else: :type
 
     prepared_attrs
@@ -243,6 +245,7 @@ defmodule Kanban.Tasks do
       end)
       |> Ecto.Multi.insert(history_key, fn changes ->
         child_task = Map.get(changes, task_key)
+
         TaskHistory.changeset(%TaskHistory{}, %{
           task_id: child_task.id,
           type: :creation
@@ -258,7 +261,9 @@ defmodule Kanban.Tasks do
 
     prepared_attrs = prepare_task_attrs(attrs, next_position)
 
-    identifier_key = if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+    identifier_key =
+      if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
+
     parent_id_key = if is_map_key(prepared_attrs, "position"), do: "parent_id", else: :parent_id
 
     prepared_attrs
@@ -1191,7 +1196,13 @@ defmodule Kanban.Tasks do
       {:error, :no_tasks_available}
 
   """
-  def claim_next_task(agent_capabilities \\ [], user, board_id, task_identifier \\ nil, agent_name \\ "Unknown") do
+  def claim_next_task(
+        agent_capabilities \\ [],
+        user,
+        board_id,
+        task_identifier \\ nil,
+        agent_name \\ "Unknown"
+      ) do
     task =
       if task_identifier do
         get_specific_task_for_claim(task_identifier, agent_capabilities, board_id)
@@ -1254,6 +1265,7 @@ defmodule Kanban.Tasks do
 
   defp perform_claim(task, user, board_id, agent_name) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
+
     doing_column =
       from(c in Column,
         where: c.board_id == ^board_id and c.name == "Doing"
@@ -1463,8 +1475,11 @@ defmodule Kanban.Tasks do
               {:task_moved_to_review, updated_task}
             )
 
-            {:ok, after_doing_hook} = Hooks.get_hook_info(updated_task, board, "after_doing", agent_name)
-            {:ok, before_review_hook} = Hooks.get_hook_info(updated_task, board, "before_review", agent_name)
+            {:ok, after_doing_hook} =
+              Hooks.get_hook_info(updated_task, board, "after_doing", agent_name)
+
+            {:ok, before_review_hook} =
+              Hooks.get_hook_info(updated_task, board, "before_review", agent_name)
 
             if updated_task.needs_review do
               hooks = [after_doing_hook, before_review_hook]
@@ -1510,7 +1525,9 @@ defmodule Kanban.Tasks do
 
                   unblock_dependent_tasks(final_task.identifier)
 
-                  {:ok, after_review_hook} = Hooks.get_hook_info(final_task, board, "after_review", agent_name)
+                  {:ok, after_review_hook} =
+                    Hooks.get_hook_info(final_task, board, "after_review", agent_name)
+
                   hooks = [after_doing_hook, before_review_hook, after_review_hook]
 
                   {:ok, final_task, hooks}
@@ -1616,7 +1633,9 @@ defmodule Kanban.Tasks do
 
         unblock_dependent_tasks(updated_task.identifier)
 
-        {:ok, after_review_hook} = Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
+        {:ok, after_review_hook} =
+          Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
+
         {:ok, updated_task, after_review_hook}
 
       {:error, changeset} ->

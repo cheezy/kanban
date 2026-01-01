@@ -50,7 +50,9 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>GET /api/agent/onboarding</strong>
-                  {gettext(" - Comprehensive onboarding endpoint for AI agents starting work with Stride")}
+                  {gettext(
+                    " - Comprehensive onboarding endpoint for AI agents starting work with Stride"
+                  )}
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       {gettext(
@@ -102,7 +104,9 @@
                   {gettext(" - Created complete documentation set for AI agents")}
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      <code class="text-sm bg-base-200 px-1 py-0.5 rounded">AUTHENTICATION.md</code>
+                      <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
+                        AUTHENTICATION.md
+                      </code>
                       {gettext(" - Bearer token authentication with .stride_auth.md format")}
                     </li>
                     <li>
@@ -136,12 +140,16 @@
                       {gettext(" - Providing estimation feedback on task completion")}
                     </li>
                     <li>
-                      <code class="text-sm bg-base-200 px-1 py-0.5 rounded">UNCLAIM-TASKS.md</code>
+                      <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
+                        UNCLAIM-TASKS.md
+                      </code>
                       {gettext(" - When and how to release tasks agents can't complete")}
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">AI-WORKFLOW.md</code>
-                      {gettext(" - Complete agent workflow from authentication to task completion")}
+                      {gettext(
+                        " - Complete agent workflow from authentication to task completion"
+                      )}
                     </li>
                   </ul>
                 </li>
@@ -162,7 +170,9 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>{gettext("AI-Human Collaboration Focus")}</strong>
-                  {gettext(" - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform")}
+                  {gettext(
+                    " - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform"
+                  )}
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       {gettext(
@@ -175,7 +185,9 @@
                       )}
                     </li>
                     <li>
-                      {gettext("Feature cards - Replaced generic kanban features with collaboration-focused features")}
+                      {gettext(
+                        "Feature cards - Replaced generic kanban features with collaboration-focused features"
+                      )}
                       <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
                         <li>
                           {gettext(
@@ -188,7 +200,9 @@
                           )}
                         </li>
                         <li>
-                          {gettext("Human Review Workflow - Optional human review and approval process")}
+                          {gettext(
+                            "Human Review Workflow - Optional human review and approval process"
+                          )}
                         </li>
                         <li>
                           {gettext(
@@ -249,7 +263,9 @@
 
               <div class="mb-4">
                 <p class="text-base-content opacity-70 mb-4">
-                  {gettext("Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines.")}
+                  {gettext(
+                    "Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines."
+                  )}
                 </p>
 
                 <ul class="list-disc list-inside ml-6 space-y-2 text-base-content opacity-70">
@@ -259,7 +275,9 @@
                   </li>
                   <li>
                     <strong>{gettext("Client-side execution:")}</strong>
-                    {gettext(" Agents read .stride.md configuration and execute hooks on their local machine")}
+                    {gettext(
+                      " Agents read .stride.md configuration and execute hooks on their local machine"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Language-agnostic:")}</strong>
@@ -267,15 +285,21 @@
                   </li>
                   <li>
                     <strong>{gettext("Hook metadata:")}</strong>
-                    {gettext(" Server returns name, environment variables, timeout, and blocking status")}
+                    {gettext(
+                      " Server returns name, environment variables, timeout, and blocking status"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("API integration:")}</strong>
-                    {gettext(" POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata")}
+                    {gettext(
+                      " POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Automatic completion:")}</strong>
-                    {gettext(" Tasks with needs_review=false automatically move to Done after executing all hooks")}
+                    {gettext(
+                      " Tasks with needs_review=false automatically move to Done after executing all hooks"
+                    )}
                   </li>
                 </ul>
               </div>
@@ -306,7 +330,9 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Atomic transactions")}</strong>
-                    {gettext(" - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)")}
+                    {gettext(
+                      " - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Automatic parent_id assignment")}</strong>
@@ -314,11 +340,15 @@
                   </li>
                   <li>
                     <strong>{gettext("Automatic identifier generation")}</strong>
-                    {gettext(" - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type")}
+                    {gettext(
+                      " - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Position management")}</strong>
-                    {gettext(" - Goal positioned first, child tasks positioned sequentially after")}
+                    {gettext(
+                      " - Goal positioned first, child tasks positioned sequentially after"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Task history tracking")}</strong>
@@ -330,7 +360,9 @@
                   </li>
                   <li>
                     <strong>{gettext("Telemetry events")}</strong>
-                    {gettext(" - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts")}
+                    {gettext(
+                      " - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("WIP limit enforcement")}</strong>
@@ -338,7 +370,9 @@
                   </li>
                   <li>
                     <strong>{gettext("Full field support")}</strong>
-                    {gettext(" - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)")}
+                    {gettext(
+                      " - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Response format")}</strong>
@@ -358,12 +392,16 @@
                   {gettext("Smart goal cleanup")}
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Goals are automatically deleted when all their child tasks are removed:")}
+                  {gettext(
+                    "Goals are automatically deleted when all their child tasks are removed:"
+                  )}
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Cascade deletion")}</strong>
-                    {gettext(" - When the last child task of a goal is deleted, the parent goal is automatically deleted as well")}
+                    {gettext(
+                      " - When the last child task of a goal is deleted, the parent goal is automatically deleted as well"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Real-time updates")}</strong>
@@ -375,7 +413,9 @@
                   </li>
                   <li>
                     <strong>{gettext("Proper reordering")}</strong>
-                    {gettext(" - Tasks are reordered after goal deletion to maintain proper positioning")}
+                    {gettext(
+                      " - Tasks are reordered after goal deletion to maintain proper positioning"
+                    )}
                   </li>
                 </ul>
               </div>
@@ -406,11 +446,15 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Goals (G prefix)")}</strong>
-                    {gettext(" - Large initiatives (25+ hours) that contain multiple related tasks")}
+                    {gettext(
+                      " - Large initiatives (25+ hours) that contain multiple related tasks"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Tasks (W/D prefix)")}</strong>
-                    {gettext(" - Individual work items that can belong to a goal via parent_id field")}
+                    {gettext(
+                      " - Individual work items that can belong to a goal via parent_id field"
+                    )}
                   </li>
                   <li>{gettext("Standalone tasks (no parent) remain fully supported")}</li>
                 </ul>
@@ -426,19 +470,27 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Yellow gradient styling")}</strong>
-                    {gettext(" - from-yellow-50 to-yellow-100 background with border-yellow-300/60")}
+                    {gettext(
+                      " - from-yellow-50 to-yellow-100 background with border-yellow-300/60"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Compact dimensions")}</strong>
-                    {gettext(" - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)")}
+                    {gettext(
+                      " - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Reduced spacing")}</strong>
-                    {gettext(" - mt-1 between title and progress bar, mt-1.5 between progress bar and badges")}
+                    {gettext(
+                      " - mt-1 between title and progress bar, mt-1.5 between progress bar and badges"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Three-line layout:")}</strong>
-                    {gettext(" Line 1: Goal title, Line 2: Progress bar showing completion (e.g., \"6/11\"), Line 3: Badge row (G badge, priority, identifier)")}
+                    {gettext(
+                      " Line 1: Goal title, Line 2: Progress bar showing completion (e.g., \"6/11\"), Line 3: Badge row (G badge, priority, identifier)"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Non-draggable")}</strong>
@@ -461,7 +513,9 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Smart column detection")}</strong>
-                    {gettext(" - When ALL child tasks are in same column, goal moves to that column")}
+                    {gettext(
+                      " - When ALL child tasks are in same column, goal moves to that column"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Before-child positioning")}</strong>
@@ -492,7 +546,9 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>{gettext("Progress bar")}</strong>
-                    {gettext(" - Green gradient bar (from-green-500 to-emerald-500) on yellow background")}
+                    {gettext(
+                      " - Green gradient bar (from-green-500 to-emerald-500) on yellow background"
+                    )}
                   </li>
                   <li>
                     <strong>{gettext("Completion count")}</strong>
@@ -584,7 +640,9 @@
                   </li>
                   <li>
                     <strong>{gettext("Supports identifiers")}</strong>
-                    {gettext(" - Accepts both numeric IDs and identifiers (e.g., \"G1\", \"W14\")")}
+                    {gettext(
+                      " - Accepts both numeric IDs and identifiers (e.g., \"G1\", \"W14\")"
+                    )}
                   </li>
                 </ul>
               </div>

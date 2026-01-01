@@ -14,12 +14,14 @@ defmodule Kanban.HooksTest do
       user = user_fixture()
       board = board_fixture(user, %{name: "Test Board"})
       column = column_fixture(board, %{name: "Ready"})
-      task = task_fixture(column, %{
-        title: "Test Task",
-        description: "Test Description",
-        complexity: :medium,
-        priority: :high
-      })
+
+      task =
+        task_fixture(column, %{
+          title: "Test Task",
+          description: "Test Description",
+          complexity: :medium,
+          priority: :high
+        })
 
       env = Environment.build(task, board, agent_name: "Claude", hook_name: "before_doing")
 
