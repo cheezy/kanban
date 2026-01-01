@@ -112,6 +112,7 @@ curl -X POST \
 ## When to Use
 
 Unclaim a task when you:
+
 - Realize you don't have the required capabilities or knowledge
 - Discover missing dependencies that need to be completed first
 - Encounter blocking issues that prevent you from completing the task

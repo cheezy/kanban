@@ -176,6 +176,7 @@ The response has a recursive structure:
 ```
 
 Each level has:
+
 - `task` - The task object with all its fields
 - `children` - Array of child task objects (empty array if no children)
 

@@ -35,20 +35,65 @@ Returns an array of tasks:
       "identifier": "W21",
       "title": "Implement authentication",
       "description": "Add JWT authentication to the API",
+      "acceptance_criteria": ["Users can log in with email/password", "JWT tokens are generated correctly"],
       "status": "in_progress",
       "priority": "high",
       "complexity": "medium",
       "needs_review": true,
       "type": "task",
       "column_id": 6,
-      "column_name": "Doing",
-      "board_id": 1,
-      "board_name": "Main Board",
       "assigned_to_id": 5,
-      "assigned_to_name": "Agent User",
-      "parent_goal_id": null,
-      "parent_goal_identifier": null,
+      "parent_id": null,
+      "estimated_files": 3,
+      "why": "Users need secure authentication",
+      "what": "JWT-based login system",
+      "where_context": "Authentication module",
+      "patterns_to_follow": ["Follow existing controller patterns"],
+      "database_changes": null,
+      "validation_rules": null,
+      "telemetry_event": null,
+      "metrics_to_track": null,
+      "logging_requirements": null,
+      "error_user_message": null,
+      "error_on_failure": null,
+      "key_files": [
+        {
+          "file_path": "lib/kanban_web/controllers/auth_controller.ex",
+          "note": "Main authentication logic",
+          "position": 0
+        }
+      ],
+      "verification_steps": [
+        {
+          "step_type": "command",
+          "step_text": "mix test test/kanban_web/controllers/auth_controller_test.exs",
+          "expected_result": "All tests pass",
+          "position": 0
+        }
+      ],
+      "technology_requirements": null,
+      "pitfalls": null,
+      "out_of_scope": null,
+      "security_considerations": "Hash passwords with bcrypt",
+      "testing_strategy": null,
+      "integration_points": null,
+      "created_by_id": 1,
+      "created_by_agent": null,
+      "completed_at": null,
+      "completed_by_id": null,
+      "completed_by_agent": null,
+      "completion_summary": null,
       "dependencies": [],
+      "claimed_at": "2025-12-28T10:30:00Z",
+      "claim_expires_at": "2025-12-28T11:30:00Z",
+      "required_capabilities": ["code_generation"],
+      "actual_complexity": null,
+      "actual_files_changed": null,
+      "time_spent_minutes": null,
+      "review_status": null,
+      "review_notes": null,
+      "reviewed_at": null,
+      "reviewed_by_id": null,
       "inserted_at": "2025-12-28T10:00:00Z",
       "updated_at": "2025-12-28T11:00:00Z"
     },
@@ -57,17 +102,21 @@ Returns an array of tasks:
       "identifier": "W22",
       "title": "Fix login bug",
       "description": "Users can't log in with special characters",
+      "acceptance_criteria": [],
       "status": "open",
       "priority": "medium",
       "complexity": "low",
       "needs_review": true,
       "type": "task",
       "column_id": 5,
-      "column_name": "Ready",
-      "board_id": 1,
       "assigned_to_id": null,
-      "assigned_to_name": null,
+      "parent_id": null,
+      "key_files": [],
+      "verification_steps": [],
       "dependencies": [],
+      "required_capabilities": [],
+      "claimed_at": null,
+      "claim_expires_at": null,
       "inserted_at": "2025-12-28T12:00:00Z",
       "updated_at": "2025-12-28T12:00:00Z"
     }
@@ -82,6 +131,127 @@ Column doesn't belong to the current board:
 ```json
 {
   "error": "Column does not belong to this board"
+}
+```
+
+## Response Field Descriptions
+
+### Core Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique numeric task ID |
+| `identifier` | string | Human-readable identifier (W21, G10, etc.) |
+| `title` | string | Task title |
+| `description` | string | Detailed description of the task |
+| `acceptance_criteria` | array | Specific, testable conditions for completion |
+| `status` | string | Current status: `open`, `in_progress`, `blocked`, `review`, `completed` |
+| `priority` | string | Priority level: `low`, `medium`, `high`, `critical` |
+| `complexity` | string | Estimated complexity: `trivial`, `low`, `medium`, `high`, `very_high` |
+| `needs_review` | boolean | Whether task requires human review before completion |
+| `type` | string | Type: `task` or `goal` |
+| `column_id` | integer | Current column ID |
+| `assigned_to_id` | integer | User ID assigned to task (null if unclaimed) |
+| `parent_id` | integer | ID of parent goal (null if no parent) |
+
+### Planning & Context Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `estimated_files` | integer | Estimated number of files to modify |
+| `why` | string | Why this task matters - business justification |
+| `what` | string | What needs to be done - concise summary |
+| `where_context` | string | Where in the codebase this work happens |
+| `patterns_to_follow` | array | Specific coding patterns to replicate |
+| `database_changes` | string | Database schema changes required |
+| `validation_rules` | string | Input validation requirements |
+| `technology_requirements` | string | Specific libraries or technologies to use |
+| `pitfalls` | string | Common mistakes to avoid |
+| `out_of_scope` | string | What NOT to include in this task |
+
+### Implementation Guidance Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `key_files` | array | Files that will be modified (prevents conflicts) - see structure below |
+| `verification_steps` | array | Commands to run to verify success - see structure below |
+| `security_considerations` | string | Security concerns or requirements |
+| `testing_strategy` | string | Overall testing approach |
+| `integration_points` | string | Systems or APIs this touches |
+
+### Observability Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `telemetry_event` | string | Telemetry events to emit |
+| `metrics_to_track` | string | Metrics to instrument |
+| `logging_requirements` | string | What to log for debugging |
+| `error_user_message` | string | User-facing error messages |
+| `error_on_failure` | string | How to handle failures |
+
+### Tracking & Metadata Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `created_by_id` | integer | User ID who created the task |
+| `created_by_agent` | string | Agent that created the task (e.g., `ai_agent:claude-sonnet-4-5`) |
+| `completed_at` | string | When task was completed (ISO 8601, null if not completed) |
+| `completed_by_id` | integer | User ID who completed the task |
+| `completed_by_agent` | string | Agent that completed the task |
+| `completion_summary` | string | Summary of work done upon completion |
+| `dependencies` | array | Array of task IDs that must be completed first |
+| `claimed_at` | string | When task was claimed (ISO 8601, null if unclaimed) |
+| `claim_expires_at` | string | When claim expires (ISO 8601, null if unclaimed) |
+| `required_capabilities` | array | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
+
+### Estimation & Actuals Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `actual_complexity` | string | Actual complexity after completion |
+| `actual_files_changed` | integer | Actual number of files modified |
+| `time_spent_minutes` | integer | Time spent on task in minutes |
+
+### Review Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
+| `review_notes` | string | Reviewer's notes and feedback |
+| `reviewed_at` | string | When review was completed (ISO 8601) |
+| `reviewed_by_id` | integer | User ID who reviewed the task |
+
+### Timestamp Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `inserted_at` | string | When task was created (ISO 8601) |
+| `updated_at` | string | When task was last updated (ISO 8601) |
+
+### Nested Object Structures
+
+#### `key_files` Array
+
+Each item in the `key_files` array has:
+
+```json
+{
+  "file_path": "lib/path/to/file.ex",  // Relative path from project root
+  "note": "Why this file is modified",  // Context for the change
+  "position": 0                          // Order of modification (0-indexed)
+}
+```
+
+#### `verification_steps` Array
+
+Each item in the `verification_steps` array has:
+
+```json
+{
+  "step_type": "command",                     // Type: "command", "manual", "test"
+  "step_text": "mix test path/to/test.exs",  // The command or instruction
+  "expected_result": "All tests pass",        // What success looks like
+  "position": 0                               // Order of execution (0-indexed)
 }
 ```
 
@@ -114,6 +284,7 @@ curl -X GET \
 ## Typical Column IDs
 
 Column IDs vary by board, but typical columns are:
+
 - Backlog - Unprioritized tasks
 - Ready - Prioritized and ready to claim
 - Doing - Currently being worked on

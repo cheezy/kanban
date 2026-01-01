@@ -47,9 +47,11 @@ Authorization: Bearer <your_api_token>
 Returns the completed task and hook metadata. The number of hooks depends on the task's `needs_review` setting:
 
 **If `needs_review=true`** (task goes to Review column):
+
 - Returns `after_doing` and `before_review` hooks
 
 **If `needs_review=false`** (task goes directly to Done):
+
 - Returns `after_doing`, `before_review`, and `after_review` hooks
 
 ```json

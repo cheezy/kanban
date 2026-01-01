@@ -80,42 +80,54 @@ Returns comprehensive onboarding information:
 ## Response Structure
 
 ### `overview`
+
 High-level description of Stride and its key features for agents.
 
 ### `quick_start`
+
 Step-by-step instructions to get started (5 steps).
 
 ### `file_templates`
+
 Complete templates for:
+
 - `.stride_auth.md` - Authentication configuration (DO NOT commit)
 - `.stride.md` - Hook configuration (version controlled)
 
 Both templates include:
+
 - Correct base URL for the current environment
 - Placeholder values marked with `{{...}}`
 - Usage examples
 
 ### `workflow`
+
 Details for each workflow step with:
+
 - Endpoint URL
 - Description
 - What it returns
 - Link to detailed documentation
 
 ### `hooks`
+
 Complete hook system information:
+
 - Description of client-side execution
 - All four hook points with metadata
 - Environment variables available to hooks
 - Execution flow explanation
 
 ### `api_reference`
+
 Organized list of all API endpoints:
+
 - Discovery endpoints (browse tasks)
 - Management endpoints (claim, complete, review)
 - Creation endpoints (create tasks/goals)
 
 Each endpoint includes:
+
 - HTTP method
 - Full path
 - Description
@@ -123,6 +135,7 @@ Each endpoint includes:
 - Link to detailed documentation
 
 ### `resources`
+
 Links to additional documentation and resources.
 
 ## Example Usage
@@ -180,6 +193,7 @@ curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
 ### Agent Development
 
 Use this endpoint to:
+
 - Understand the complete API structure
 - See all available hooks and their metadata
 - Get correct endpoint URLs for current environment
@@ -188,6 +202,7 @@ Use this endpoint to:
 ### Automated Onboarding
 
 Agents can programmatically:
+
 - Fetch configuration templates
 - Validate their setup
 - Discover available endpoints

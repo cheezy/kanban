@@ -26,6 +26,7 @@ Authorization: Bearer <your_api_token>
 ### Request Body Examples
 
 Claim next available task:
+
 ```json
 {
   "agent_name": "Claude Sonnet 4.5"
@@ -33,6 +34,7 @@ Claim next available task:
 ```
 
 Claim specific task:
+
 ```json
 {
   "identifier": "W21",

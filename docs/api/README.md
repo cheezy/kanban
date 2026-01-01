@@ -20,6 +20,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 2. **Create `.stride_auth.md`** file with authentication details
 3. **Create `.stride.md`** file with hook configurations
 4. **Start working:**
+
    ```bash
    # Claim a task
    curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -204,6 +205,7 @@ export STRIDE_API_URL="https://www.stridelikeaboss.com"
 curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   $STRIDE_API_URL/api/tasks/next
 ```
+
 ```
 
 ### `.stride.md`
@@ -243,6 +245,7 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 echo "Deploying $TASK_IDENTIFIER to production"
 ./scripts/deploy.sh
 ```
+
 ```
 
 ## Examples
@@ -392,6 +395,7 @@ done
 ## Support
 
 For issues or questions:
+
 - Check the individual endpoint documentation
 - Review the changelog for recent changes
 - Contact your project manager or system administrator
