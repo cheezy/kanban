@@ -47,11 +47,11 @@ defmodule KanbanWeb.BoardLiveTest do
              |> form("#board-form", board: @invalid_attrs)
              |> render_change() =~ "can&#39;t be blank"
 
-      {:ok, _index_live, html} =
+      {:ok, _show_live, html} =
         form_live
         |> form("#board-form", board: @update_attrs)
         |> render_submit()
-        |> follow_redirect(conn, ~p"/boards")
+        |> follow_redirect(conn, ~p"/boards/#{board}")
 
       assert html =~ "some updated name"
     end

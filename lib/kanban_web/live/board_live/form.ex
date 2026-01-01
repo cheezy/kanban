@@ -198,11 +198,11 @@ defmodule KanbanWeb.BoardLive.Form do
 
   defp save_board(socket, :edit, board_params) do
     case Boards.update_board(socket.assigns.board, board_params) do
-      {:ok, _board} ->
+      {:ok, board} ->
         {:noreply,
          socket
          |> put_flash(:info, gettext("Board updated successfully"))
-         |> push_navigate(to: ~p"/boards")}
+         |> push_navigate(to: ~p"/boards/#{board}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
