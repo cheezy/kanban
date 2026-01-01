@@ -54,7 +54,7 @@ Authorization: Bearer <your_api_token>
 | `task.observability` | string | No | Logging, metrics, telemetry requirements |
 | `task.error_handling` | string | No | How to handle failures |
 | `task.context` | string | No | Additional background information |
-| `task.security_considerations` | array | No | Security concerns or requirements (array of strings) |
+| `task.security_considerations` | array | **Strongly Recommended** | Security concerns, vulnerabilities to avoid, or security requirements (array of strings - see format below) |
 | `task.testing_strategy` | object | **Strongly Recommended** | Overall testing approach (JSON object - see format below) |
 | `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
 | `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
@@ -157,6 +157,81 @@ The `testing_strategy` object describes the overall testing approach for the tas
 - `verification_steps` - Specific commands to run and manual steps to verify completion
 
 Use both for comprehensive guidance: `testing_strategy` tells the agent *how to think about testing*, while `verification_steps` tells them *what commands to run*.
+
+#### Security Considerations Format
+
+The `security_considerations` array specifies security concerns, potential vulnerabilities, and security requirements for the task. This is an array of strings, each describing a specific security aspect to address.
+
+```json
+"security_considerations": [
+  "Validate and sanitize all user input to prevent XSS attacks",
+  "Use parameterized queries to prevent SQL injection",
+  "Hash passwords with bcrypt (cost factor 12+)",
+  "Implement rate limiting on login endpoint (max 5 attempts per minute)",
+  "Ensure authentication tokens expire after 24 hours",
+  "Never log sensitive data (passwords, tokens, credit cards)",
+  "Use HTTPS only for all authentication endpoints",
+  "Implement CSRF protection for state-changing operations"
+]
+```
+
+**Common security considerations by category:**
+
+**Input Validation & Sanitization:**
+- "Validate and sanitize user input to prevent XSS"
+- "Escape HTML in user-generated content"
+- "Validate file uploads (type, size, content)"
+- "Reject invalid email formats and special characters"
+
+**Authentication & Authorization:**
+- "Hash passwords with bcrypt (cost factor 12+)"
+- "Implement secure password reset flow with time-limited tokens"
+- "Verify user authorization before allowing access"
+- "Use secure session management"
+- "Implement multi-factor authentication"
+
+**Data Protection:**
+- "Never log passwords, tokens, or sensitive data"
+- "Encrypt sensitive data at rest"
+- "Use HTTPS/TLS for all data transmission"
+- "Implement proper access controls on sensitive resources"
+
+**Injection Prevention:**
+- "Use parameterized queries to prevent SQL injection"
+- "Validate and sanitize all database inputs"
+- "Prevent command injection in system calls"
+- "Escape user input in dynamic queries"
+
+**Rate Limiting & DoS Prevention:**
+- "Implement rate limiting (5 requests per minute per IP)"
+- "Add CAPTCHA after failed login attempts"
+- "Limit file upload sizes"
+- "Implement request throttling"
+
+**CSRF & Session Security:**
+- "Implement CSRF token validation"
+- "Set secure cookie flags (HttpOnly, Secure, SameSite)"
+- "Invalidate sessions on logout"
+- "Rotate session tokens after privilege changes"
+
+**Why security_considerations is valuable:**
+
+- **Prevents vulnerabilities** - Explicitly reminds agents of security risks
+- **OWASP awareness** - Addresses common security issues (SQL injection, XSS, CSRF, etc.)
+- **Compliance** - Ensures security best practices are followed
+- **Code review** - Provides security checklist for reviewers
+- **Reduces risk** - Makes security a first-class concern, not an afterthought
+
+**When to include security_considerations:**
+
+- **Always** for tasks involving:
+  - User authentication or authorization
+  - User input or file uploads
+  - Database operations with user data
+  - API endpoints accepting external data
+  - Payment or financial transactions
+  - Personal or sensitive data handling
+  - Session or token management
 
 ### Request Body Examples
 
