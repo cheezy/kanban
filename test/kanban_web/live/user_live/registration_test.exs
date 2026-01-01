@@ -36,17 +36,24 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
   end
 
   describe "register user" do
-    test "creates account but does not log in", %{conn: conn} do
+    test "creates account and logs in automatically", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/register")
 
       email = unique_user_email()
-      form = form(lv, "#registration_form", user: valid_user_attributes(email: email))
 
-      {:ok, _lv, html} =
-        render_submit(form)
-        |> follow_redirect(conn, ~p"/users/log-in")
+      form =
+        form(lv, "#registration_form",
+          user: valid_user_attributes(email: email, name: "Test User")
+        )
 
-      assert html =~ "Please check your email to confirm your account"
+      conn = submit_form(form, conn)
+
+      assert redirected_to(conn) == ~p"/boards"
+
+      # Follow the redirect to verify the flash message
+      conn = get(conn, ~p"/boards")
+      assert html_response(conn, 200) =~ "Account created successfully"
+      assert html_response(conn, 200) =~ "Please check your email to confirm your account"
     end
 
     test "renders errors for duplicated email", %{conn: conn} do

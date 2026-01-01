@@ -139,6 +139,7 @@ defmodule KanbanWeb.Router do
       live "/issue", IssueLive.Form, :new
     end
 
+    post "/users/register", UserSessionController, :register
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

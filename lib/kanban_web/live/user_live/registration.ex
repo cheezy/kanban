@@ -38,7 +38,14 @@ defmodule KanbanWeb.UserLive.Registration do
             </.header>
           </div>
 
-          <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
+          <.form
+            for={@form}
+            id="registration_form"
+            action={~p"/users/register"}
+            phx-submit="save"
+            phx-change="validate"
+            phx-trigger-action={@trigger_submit}
+          >
             <.input
               field={@form[:name]}
               type="text"
@@ -85,32 +92,26 @@ defmodule KanbanWeb.UserLive.Registration do
   def mount(_params, _session, socket) do
     changeset = Accounts.change_user_registration(%User{}, %{}, validate_unique: false)
 
-    {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
+    socket =
+      socket
+      |> assign_form(changeset)
+      |> assign(:trigger_submit, false)
+
+    {:ok, socket, temporary_assigns: [form: nil]}
   end
 
   @impl true
   def handle_event("save", %{"user" => user_params}, socket) do
-    case Accounts.register_user(user_params) do
-      {:ok, user} ->
-        {:ok, _} =
-          Accounts.deliver_user_confirmation_instructions(
-            user,
-            &url(~p"/users/confirm/#{&1}")
-          )
+    # Validate the user params without actually creating the user
+    changeset =
+      Accounts.change_user_registration(%User{}, user_params, validate_unique: true, hash_password: false)
 
-        {:noreply,
-         socket
-         |> put_flash(
-           :info,
-           gettext(
-             "An email was sent to %{email}. Please check your email to confirm your account.",
-             email: user.email
-           )
-         )
-         |> push_navigate(to: ~p"/users/log-in")}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+    if changeset.valid? do
+      # Validation passed, trigger form submission to controller which will create user and log in
+      {:noreply, assign(socket, :trigger_submit, true)}
+    else
+      # Validation failed, show errors
+      {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
     end
   end
 
