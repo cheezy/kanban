@@ -11,13 +11,19 @@ defmodule KanbanWeb.API.AgentJSON do
         action: "CREATE_FILES_NOW",
         instructions: [
           "Before claiming any tasks, you MUST create two configuration files:",
-          "1. Create .stride_auth.md from file_templates.stride_auth_md in the file_templates section",
+          "1. Create .stride_auth.md by copying the COMPLETE contents from file_templates.stride_auth_md EXACTLY as shown - do not summarize or omit any lines",
           "2. Add .stride_auth.md to .gitignore (NEVER commit this file - it contains secrets)",
-          "3. Create .stride.md from file_templates.stride_md in the file_templates section",
+          "3. Create .stride.md by copying the COMPLETE contents from file_templates.stride_md EXACTLY as shown - do not summarize or omit any lines",
           "4. Verify both files exist before proceeding"
         ],
         why_critical:
-          "Without these files, you cannot execute hooks or authenticate with the API. The .stride_auth.md file contains your API token and MUST be gitignored to prevent exposing secrets."
+          "Without these files, you cannot execute hooks or authenticate with the API. The .stride_auth.md file contains your API token and MUST be gitignored to prevent exposing secrets.",
+        file_creation_requirements: [
+          "CRITICAL: Copy the ENTIRE template content character-for-character",
+          "CRITICAL: Do NOT summarize, truncate, or omit any sections",
+          "CRITICAL: Do NOT modify the structure or remove placeholder text like {{YOUR_TOKEN_HERE}}",
+          "The templates contain important documentation and examples that must be preserved in full"
+        ]
       },
       overview: %{
         description:
@@ -34,9 +40,9 @@ defmodule KanbanWeb.API.AgentJSON do
           "Agents should work continuously: claim task → complete → IF needs_review=false THEN claim next task, ELSE stop and wait for review. Continue this loop until encountering a task that needs review or running out of available tasks."
       },
       quick_start: [
-        "1. IMMEDIATELY create .stride_auth.md file using the template in the file_templates section and add your API token",
+        "1. IMMEDIATELY create .stride_auth.md by copying the ENTIRE file_templates.stride_auth_md content exactly - do not omit any lines",
         "2. IMMEDIATELY add .stride_auth.md to your .gitignore file (CRITICAL - contains secrets)",
-        "3. IMMEDIATELY create .stride.md file using the template in the file_templates section with your hook configurations",
+        "3. IMMEDIATELY create .stride.md by copying the ENTIRE file_templates.stride_md content exactly - do not omit any lines",
         "4. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled)",
         "5. Call POST #{base_url}/api/tasks/claim to get your first task",
         "6. Execute hooks and complete your work following the workflow"
