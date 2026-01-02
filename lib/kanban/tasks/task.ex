@@ -162,16 +162,30 @@ defmodule Kanban.Tasks.Task do
       :reviewed_by_id,
       :reviewed_at
     ])
-    |> cast_embed(:key_files)
-    |> cast_embed(:verification_steps)
+    |> validate_embed_type(:key_files, attrs)
+    |> validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority, :status])
-    |> validate_inclusion(:type, [:work, :defect, :goal])
-    |> validate_inclusion(:priority, [:low, :medium, :high, :critical])
-    |> validate_inclusion(:complexity, [:small, :medium, :large])
-    |> validate_inclusion(:status, [:open, :in_progress, :completed, :blocked])
-    |> validate_inclusion(:actual_complexity, [:small, :medium, :large])
-    |> validate_inclusion(:review_status, [:pending, :approved, :changes_requested, :rejected])
+    |> validate_inclusion(:type, [:work, :defect, :goal],
+      message: "must be 'work', 'defect', or 'goal'"
+    )
+    |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
+      message: "must be 'low', 'medium', 'high', or 'critical'"
+    )
+    |> validate_inclusion(:complexity, [:small, :medium, :large],
+      message: "must be 'small', 'medium', or 'large'"
+    )
+    |> validate_inclusion(:status, [:open, :in_progress, :completed, :blocked],
+      message: "must be 'open', 'in_progress', 'completed', or 'blocked'"
+    )
+    |> validate_inclusion(:actual_complexity, [:small, :medium, :large],
+      message: "must be 'small', 'medium', or 'large'"
+    )
+    |> validate_inclusion(:review_status, [:pending, :approved, :changes_requested, :rejected],
+      message: "must be 'pending', 'approved', 'changes_requested', or 'rejected'"
+    )
     |> validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> validate_technology_requirements()
     |> validate_required_capabilities()
@@ -189,6 +203,90 @@ defmodule Kanban.Tasks.Task do
     |> foreign_key_constraint(:reviewed_by_id)
     |> unique_constraint([:column_id, :position])
     |> unique_constraint(:identifier)
+  end
+
+  # Validate that embed fields are arrays before casting
+  defp validate_embed_type(changeset, field, attrs) do
+    field_str = to_string(field)
+
+    case Map.get(attrs, field_str) || Map.get(attrs, field) do
+      nil ->
+        changeset
+
+      value when is_list(value) ->
+        changeset
+
+      _non_list_value ->
+        error_message =
+          case field do
+            :key_files ->
+              "must be an array of objects with file_path, note, and position fields"
+
+            :verification_steps ->
+              "must be an array of objects with step_type, step_text, expected_result, and position fields"
+
+            _ ->
+              "must be an array"
+          end
+
+        add_error(changeset, field, error_message)
+    end
+  end
+
+  # Custom embed validation with better error messages
+  defp validate_key_file_embed(key_file, attrs) do
+    KeyFile.changeset(key_file, attrs)
+    |> improve_embed_errors(:key_files)
+  end
+
+  defp validate_verification_step_embed(step, attrs) do
+    VerificationStep.changeset(step, attrs)
+    |> improve_embed_errors(:verification_steps)
+  end
+
+  defp improve_embed_errors(changeset, field_name) do
+    # If the changeset is valid, return it as-is
+    if changeset.valid? do
+      changeset
+    else
+      # Otherwise, enhance error messages for better clarity
+      case field_name do
+        :key_files ->
+          enhance_key_file_errors(changeset)
+
+        :verification_steps ->
+          enhance_verification_step_errors(changeset)
+
+        _ ->
+          changeset
+      end
+    end
+  end
+
+  defp enhance_key_file_errors(changeset) do
+    changeset
+    |> update_error_message(:file_path, "can't be blank", "is required (relative path from project root)")
+    |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
+  end
+
+  defp enhance_verification_step_errors(changeset) do
+    changeset
+    |> update_error_message(:step_type, "can't be blank", "is required ('command' or 'manual')")
+    |> update_error_message(:step_text, "can't be blank", "is required (command or instruction)")
+    |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
+    |> update_error_message(:step_type, "is invalid", "must be 'command' or 'manual'")
+  end
+
+  defp update_error_message(changeset, field, old_msg, new_msg) do
+    errors = changeset.errors
+
+    updated_errors =
+      Enum.map(errors, fn
+        {^field, {^old_msg, opts}} -> {field, {new_msg, opts}}
+        error -> error
+      end)
+
+    %{changeset | errors: updated_errors}
   end
 
   defp normalize_ai_context_fields(changeset) do

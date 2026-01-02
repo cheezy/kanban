@@ -262,10 +262,34 @@ defmodule KanbanWeb.API.AgentJSON do
           ]
         }
       },
+      required_reading: %{
+        action: "READ_BEFORE_CREATING_TASKS",
+        instructions:
+          "Before creating any tasks, you MUST read these guides to understand field schemas, workflows, and best practices:",
+        guides: [
+          %{
+            name: "Task Writing Guide",
+            url: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
+            purpose: "Required field schemas, examples, and task writing best practices"
+          },
+          %{
+            name: "API Workflow Guide",
+            url: "#{@docs_base_url}/docs/AI-WORKFLOW.md",
+            purpose: "Complete workflow from claim to review with code examples"
+          },
+          %{
+            name: "Agent Capabilities",
+            url: "#{@docs_base_url}/docs/AGENT-CAPABILITIES.md",
+            purpose: "Understanding capability matching and task routing"
+          }
+        ],
+        why_critical:
+          "These guides contain critical information about field schemas, workflow patterns, and best practices. Creating tasks without reading them will result in poorly structured tasks that agents struggle to complete."
+      },
       task_creation_requirements: %{
         critical_importance:
           "CRITICAL: Always create DETAILED, RICH tasks following the Task Writing Guide. Agents that create minimal tasks with only title/description struggle and fail. Success requires comprehensive task specifications.",
-        required_reading: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
+        task_writing_guide_url: "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md",
         why_detailed_tasks_matter: [
           "Minimal tasks = 3+ hours of exploration and uncertainty",
           "Detailed tasks = 30 minutes of focused implementation",

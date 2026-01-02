@@ -3,6 +3,7 @@ defmodule KanbanWeb.API.TaskController do
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.ErrorDocs
 
   action_fallback KanbanWeb.API.FallbackController
 
@@ -140,9 +141,16 @@ defmodule KanbanWeb.API.TaskController do
             "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
           end
 
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{error: error_message},
+            if(task_identifier, do: :task_not_claimable, else: :no_tasks_available),
+            identifier: task_identifier
+          )
+
         conn
         |> put_status(:conflict)
-        |> json(%{error: error_message})
+        |> json(error_response)
 
       {:error, reason} ->
         conn
@@ -176,14 +184,26 @@ defmodule KanbanWeb.API.TaskController do
           render(conn, :show, task: task, hooks: hooks)
 
         {:error, :invalid_status} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "Task must be in progress or blocked to complete"},
+              :invalid_status_for_complete
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{error: "Task must be in progress or blocked to complete"})
+          |> json(error_response)
 
         {:error, :not_authorized} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "You can only complete tasks that you are assigned to"},
+              :not_authorized_to_complete
+            )
+
           conn
           |> put_status(:forbidden)
-          |> json(%{error: "You can only complete tasks that you are assigned to"})
+          |> json(error_response)
 
         {:error, changeset} ->
           conn
@@ -210,14 +230,26 @@ defmodule KanbanWeb.API.TaskController do
           render(conn, :show, task: task)
 
         {:error, :not_authorized} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "You can only unclaim tasks that you claimed"},
+              :not_authorized_to_unclaim
+            )
+
           conn
           |> put_status(:forbidden)
-          |> json(%{error: "You can only unclaim tasks that you claimed"})
+          |> json(error_response)
 
         {:error, :not_claimed} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "Task is not currently claimed"},
+              :task_not_claimed
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{error: "Task is not currently claimed"})
+          |> json(error_response)
 
         {:error, changeset} ->
           conn
@@ -262,21 +294,40 @@ defmodule KanbanWeb.API.TaskController do
           render(conn, :show, task: task)
 
         {:error, :invalid_column} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "Task must be in Review column to mark as reviewed"},
+              :invalid_column_for_review
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{error: "Task must be in Review column to mark as reviewed"})
+          |> json(error_response)
 
         {:error, :review_not_performed} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "Task must have a review status before being marked as reviewed"},
+              :review_not_performed
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{error: "Task must have a review status before being marked as reviewed"})
+          |> json(error_response)
 
         {:error, :invalid_review_status} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{
+                error:
+                  "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
+              },
+              :invalid_review_status
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{
-            error: "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
-          })
+          |> json(error_response)
 
         {:error, changeset} ->
           conn
@@ -302,9 +353,15 @@ defmodule KanbanWeb.API.TaskController do
           render(conn, :show, task: task)
 
         {:error, :invalid_column} ->
+          error_response =
+            ErrorDocs.add_docs_to_error(
+              %{error: "Task must be in Review column to mark as done"},
+              :invalid_column_for_mark_done
+            )
+
           conn
           |> put_status(:unprocessable_entity)
-          |> json(%{error: "Task must be in Review column to mark as done"})
+          |> json(error_response)
 
         {:error, changeset} ->
           conn

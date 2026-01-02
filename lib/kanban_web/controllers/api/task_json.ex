@@ -1,5 +1,6 @@
 defmodule KanbanWeb.API.TaskJSON do
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.ErrorDocs
 
   def index(%{tasks: tasks}) do
     %{data: for(task <- tasks, do: data(task))}
@@ -112,20 +113,26 @@ defmodule KanbanWeb.API.TaskJSON do
   defp render_verification_steps(_), do: []
 
   def error(%{changeset: changeset}) do
-    %{
-      errors:
-        Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-          Enum.reduce(opts, msg, fn {key, value}, acc ->
-            string_value =
-              if is_binary(value) or is_number(value) or is_atom(value) do
-                to_string(value)
-              else
-                inspect(value)
-              end
+    errors =
+      Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+        Enum.reduce(opts, msg, fn {key, value}, acc ->
+          string_value =
+            if is_binary(value) or is_number(value) or is_atom(value) do
+              to_string(value)
+            else
+              inspect(value)
+            end
 
-            String.replace(acc, "%{#{key}}", string_value)
-          end)
+          String.replace(acc, "%{#{key}}", string_value)
         end)
+      end)
+
+    # Add documentation links for fields with errors
+    documentation = ErrorDocs.get_docs(:validation_error, fields: Map.keys(errors))
+
+    %{
+      errors: errors,
+      documentation: documentation
     }
   end
 end
