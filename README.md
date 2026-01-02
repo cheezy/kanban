@@ -4,41 +4,24 @@
 
 ---
 
+## 🚀 Quick Start
+
+**New to Stride?** → **[Get Started with AI Agents](docs/GETTING-STARTED-WITH-AI.md)**
+
+This comprehensive guide walks you through:
+
+- Creating your first AI-optimized board
+- Setting up API access for AI agents
+- Configuring workflow hooks
+- Understanding the human-AI collaboration workflow
+
+---
+
 ## What is Stride?
 
-At its core, Stride is a Kanban board application—but it's designed from the ground up to work seamlessly with AI agents. While it provides a beautiful visual interface for humans to manage tasks and projects, its real power lies in its API-first architecture that allows AI and team members to plan, create, and manage work programmatically in an AI driven workflow.
+Stride is a kanban board application designed from the ground up for seamless human-AI collaboration. While it provides a beautiful visual interface for humans to manage tasks and projects, its real power lies in its API-first architecture that enables AI agents to autonomously claim, complete, and manage work.
 
-During development, we asked AI what would help them do their work more effectively. The roadmap for this application is based on the AI's suggestions.
-
-## Vision: AI-First Workflow Management
-
-Traditional project management tools treat AI integration as an afterthought. Stride flips this model:
-
-- **AI agents can push planning results** directly into the app as structured tasks
-- **Query for ready work** (like `GET /api/tasks/ready`) to find unblocked tasks
-- **Track dependencies** automatically to prevent duplicate or blocked work
-- **Rich technical context** embedded in tasks using structured JSON schemas
-- **Seamless handoff** between AI and human work without friction
-
-### The AI Workflow
-
-```text
-1. AI with the guidance of Product Owners or Technical Leads creates a structured plan with dependencies
-2. AI POSTs the plan to Stride as a set of interconnected tasks in a Backlog column
-3. Product Owners or Technical Leads reviews in the Kanban UI, refines as needed
-4. Human moves the tasks or a feature into the Ready column
-5. AI queries /api/tasks/next to find the next logical tasks
-6. AI claims a task (POST /claim) and moves it to the Doing column
-7. AI implements the task
-8. AI marks it complete (PATCH /complete) and moves it to the Review column
-9. Human reviews the work and sets review_status (approved/changes_requested/rejected)
-10. Human notifies AI that review is complete
-11. AI calls PATCH /mark_reviewed endpoint:
-    - If review_status = "approved": Task moves to Done column
-    - If review_status = "changes_requested" or "rejected": Task moves back to Doing column
-12. For tasks needing changes, AI reads review_notes and addresses feedback (returns to step 7)
-13. Dependencies automatically unblock downstream work when tasks are marked done
-```
+**The Vision**: AI agents handle repetitive implementation work while humans focus on architecture, design decisions, and quality oversight. Together, you achieve more than either could alone.
 
 ## Key Features
 
@@ -46,202 +29,195 @@ Traditional project management tools treat AI integration as an afterthought. St
 
 - **Beautiful Kanban board UI** built with Phoenix LiveView
 - **Real-time updates** across all connected clients
-- **Task dependencies** with visual blocking indicators
-- **Hierarchical tasks** (epics → features → tasks)
-- **Priority management** (0-4 scale, 0 = highest)
-- **Mobile responsive** with modern Tailwind CSS design
+- **AI-Optimized Boards** with standardized workflow columns
+- **Review workflow** to approve or request changes on AI work
+- **Task dependencies** with automatic blocking
+- **Hierarchical tasks** (Goals → Tasks)
+- **Mobile responsive** with modern Tailwind CSS v4 design
 
 ### For AI Agents
 
-- **JSON API** for programmatic task management
-- **Bearer token authentication** with scoped permissions
-- **Structured technical context** (files to modify, patterns to follow, test scenarios)
-- **Acceptance criteria** as machine-readable checkboxes
+- **RESTful JSON API** for programmatic task management
+- **Bearer token authentication** with capability-based permissions
+- **Atomic task claiming** with automatic conflict prevention
+- **Rich task metadata** for effective implementation:
+  - `why`, `what`, `where_context` - Planning & Context
+  - `key_files` - Files to modify (prevents merge conflicts)
+  - `verification_steps` - Commands to verify completion
+  - `testing_strategy` - Overall testing approach
+  - `security_considerations` - Security requirements
+  - `acceptance_criteria` - Definition of "done"
+  - `patterns_to_follow` - Code patterns to replicate
+  - `database_changes`, `validation_rules` - Implementation guidance
+  - `telemetry_event`, `metrics_to_track`, `logging_requirements` - Observability
+  - And more...
+- **Client-side workflow hooks** for automation:
+  - `before_doing` - Pull latest code, setup
+  - `after_doing` - Run tests (blocking - must pass)
+  - `before_review` - Create PR, generate docs
+  - `after_review` - Merge PR, deploy
 - **Dependency resolution** to find ready work
-- **Rich metadata** for effective implementation
+- **Continuous work loop** - agents claim and complete tasks until hitting review
+
+## The AI Workflow
+
+```text
+1. Human or AI creates structured tasks in Backlog column
+2. Human reviews and moves tasks to Ready column
+3. AI queries /api/tasks/claim to get next available task
+4. AI executes before_doing hook (pull latest code)
+5. AI implements the task
+6. AI executes after_doing hook (tests must pass)
+7. AI marks complete - task moves to Review or Done:
+   - IF needs_review=true → Review column (wait for human)
+   - IF needs_review=false → Done column (claim next task immediately)
+8. For reviewed tasks:
+   - Human reviews in Stride UI and sets review_status
+   - AI calls /api/tasks/:id/mark_reviewed to finalize
+   - If approved → Done column, execute after_review hook
+   - If changes requested → Back to Ready column for fixes
+9. Dependencies automatically unblock when tasks complete
+10. AI continues claiming tasks until hitting needs_review=true
+```
 
 ## Task Schema: AI-Optimized
 
-Tasks in Stride aren't just titles and descriptions—they contain everything an AI needs to implement effectively:
+Tasks in Stride contain everything an AI needs to implement effectively:
 
 ### Core Fields
 
-- `title` - Clear, actionable name
-- `description` - The "what" and "why"
-- `status` - open, in_progress, completed, blocked
-- `priority` - 0-4 (0 = highest/critical)
-- `task_type` - feature, bug, task, research, refactor
+- `title` - Clear, actionable task name
+- `description` - Detailed description
+- `type` - `work`, `defect`, or `goal`
+- `status` - `open`, `in_progress`, `completed`, `blocked`
+- `priority` - `low`, `medium`, `high`, `critical`
+- `complexity` - `small` (<1 hour), `medium` (1-2 hours), `large` (>2 hours)
+- `needs_review` - Whether task requires human review before completion
 
-### AI-Specific Fields
+### Planning & Context
 
-- `acceptance_criteria` - Checkboxes defining "done"
-- `technical_context` - Structured JSON including:
-  - Files to modify/create/reference
-  - Modules and dependencies
-  - Database migrations needed
-  - Patterns to follow/avoid
-  - Testing strategy
-  - Constraints and scope
-  - UI/UX requirements
-  - Performance considerations
-  - Security concerns
-- `scope` - Explicit in-scope and out-of-scope items
-- `examples` - Input/output examples, test cases
-- `dependencies` - Blocks/blocked-by relationships
-- `created_by` - Tracks human vs AI origin (for analytics)
+- `why` - Why this task matters (business justification)
+- `what` - What needs to be done (concise summary)
+- `where_context` - Where in the codebase this work happens
+- `estimated_files` - Estimated number of files to modify
+- `patterns_to_follow` - Specific coding patterns to replicate
+- `database_changes` - Database schema changes required
+- `validation_rules` - Input validation requirements
 
-### Example Task JSON
+### Implementation Guidance
 
-```json
-{
-  "title": "Add priority filter to board view",
-  "description": "Allow users to filter tasks by priority level",
-  "type": "feature",
-  "priority": 0,
-  "status": "open",
-  "acceptance_criteria": [
-    "Filter by priority 0 shows only highest priority tasks",
-    "Filter state persists in URL params",
-    "Shows 'All' option to clear filter"
-  ],
-  "technical_context": {
-    "files": {
-      "to_modify": ["lib/kanban_web/live/board_live.ex"],
-      "reference_files": ["lib/kanban_web/live/board_live/status_filter_component.ex"]
-    },
-    "patterns": {
-      "to_follow": [
-        {
-          "pattern": "Use handle_event for filter changes",
-          "location": "lib/kanban_web/live/board_live.ex:95"
-        }
-      ]
-    },
-    "testing": {
-      "test_files": ["test/kanban_web/live/board_live_test.exs"],
-      "key_scenarios": ["No tasks match filter", "All tasks same priority"]
-    },
-    "constraints": [
-      {
-        "type": "must_not",
-        "constraint": "Don't modify task card layout"
-      }
-    ]
-  }
-}
-```
+- `acceptance_criteria` - Specific, testable conditions for "done"
+- `key_files` - Files that will be modified (prevents conflicts)
+- `verification_steps` - Commands and manual steps to verify success
+- `technology_requirements` - Required technologies or libraries
+- `pitfalls` - Common mistakes to avoid
+- `out_of_scope` - What NOT to include
+
+### Quality & Observability
+
+- `testing_strategy` - Overall testing approach (JSON object)
+- `security_considerations` - Security concerns and requirements
+- `integration_points` - Systems or APIs this touches
+- `telemetry_event` - Telemetry events to emit
+- `metrics_to_track` - Metrics to instrument
+- `logging_requirements` - What to log for debugging
+- `error_user_message` - User-facing error messages
+- `error_on_failure` - How to handle failures
+
+### Tracking & Metadata
+
+- `dependencies` - Task identifiers that must complete first
+- `parent_id` - Parent goal (for hierarchical tasks)
+- `required_capabilities` - Required agent capabilities
+- `created_by_agent` - Tracks AI vs human creation
+- `completed_by_agent` - Tracks AI vs human completion
+- `review_status` - `approved`, `changes_requested`, `rejected`
+- `review_notes` - Reviewer feedback
+
+See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating effective tasks.
 
 ## API Endpoints
 
-### Authentication
+### Task Discovery & Management
 
-- `POST /settings/api-tokens` - Generate API token with scopes
-
-### Task Management
-
+- `GET /api/agent/onboarding` - Complete onboarding guide for AI agents
 - `GET /api/tasks/next` - Get next available task ready to work
-- `GET /api/tasks/:id` - Full task details with context (supports identifiers like "W14")
-- `POST /api/tasks` - Create task(s) with dependencies
-- `PATCH /api/tasks/:id` - Update task fields
-- `POST /api/tasks/claim` - Claim next available task (or specific task by identifier)
-- `POST /api/tasks/:id/unclaim` - Release claimed task back to Ready
-- `PATCH /api/tasks/:id/complete` - Complete task and move to Review
-- `PATCH /api/tasks/:id/mark_reviewed` - Process reviewed task based on review_status
-- `PATCH /api/tasks/:id/mark_done` - Mark task as done (deprecated, use mark_reviewed)
+- `GET /api/tasks` - List all tasks (optionally filtered by column)
+- `GET /api/tasks/:id` - Get task details (supports identifiers like "W14")
+- `GET /api/tasks/:id/tree` - Get task tree (goals with children)
 - `GET /api/tasks/:id/dependencies` - Get full dependency tree
 - `GET /api/tasks/:id/dependents` - Get tasks that depend on this task
+- `POST /api/tasks` - Create task(s) or goal with nested tasks
+- `PATCH /api/tasks/:id` - Update task fields
 
-### Authentication Model
+### Workflow Operations
 
-Bearer token with scoped permissions:
+- `POST /api/tasks/claim` - Claim next available task (with before_doing hook)
+- `POST /api/tasks/:id/unclaim` - Release claimed task back to Ready
+- `PATCH /api/tasks/:id/complete` - Complete task (with after_doing, before_review hooks)
+- `PATCH /api/tasks/:id/mark_reviewed` - Finalize reviewed task (with after_review hook)
 
-```text
-Authorization: Bearer kan_live_abc123def456...
+### Authentication
 
-Scopes:
-- tasks:read      # Read tasks
-- tasks:write     # Create/update tasks
-- tasks:delete    # Delete tasks
-- boards:read     # Read board structure
+Bearer token with capability-based permissions:
+
+```bash
+Authorization: Bearer stride_abc123def456...
 ```
-
-## Technology Stack
-
-- **Phoenix Framework** - Robust Elixir web framework
-- **Phoenix LiveView** - Real-time server-rendered UI
-- **PostgreSQL** - Relational database with JSONB support
-- **Tailwind CSS v4** - Modern utility-first styling
-- **Ecto** - Database wrapper and query generator
 
 ## Design Principles
 
 ### 1. AI-Native, Not AI-Bolted-On
 
-Every feature considers "how will an AI agent use this?" first.
+Every feature considers "how will an AI agent use this?" first. The API is the primary interface, and the UI is built on top of it.
 
 ### 2. Structured Context Over Free-Form
 
-JSON schemas for technical context make tasks machine-readable and actionable.
+JSON schemas for technical context make tasks machine-readable and actionable. No guessing, no assumptions.
 
-### 3. Visual Equality
+### 3. Conflict Prevention via Key Files
 
-AI-created and human-created tasks look identical—because they are equal in value.
+Tasks specify which files they'll modify. Only one task can modify a file at a time, preventing merge conflicts automatically.
 
-### 4. Dependency-Aware
+### 4. Client-Side Hook Execution
 
-Tasks know what blocks them and what they block. This enables intelligent work querying.
+Hooks execute on the agent's machine, not the server. Agents maintain full control over their execution environment.
 
-### 5. Progressive Enhancement
+### 5. Capability-Based Permissions
 
-Start simple (flat tasks with dependencies), evolve to complex (hierarchical epics with rich context).
+Agents specify their capabilities (`code_generation`, `testing`, etc.) and only see tasks matching their skills.
 
-## Getting Started
+### 6. Human-in-the-Loop Review
 
-### Prerequisites
-
-- Elixir 1.19+
-- PostgreSQL
-- Node.js (for asset compilation)
-
-### Setup
-
-```bash
-# Install dependencies
-mix deps.get
-npm install --prefix assets
-
-# Setup database
-mix ecto.create
-mix ecto.migrate
-
-# Start the server
-mix phx.server
-```
-
-Visit [http://localhost:4000](http://localhost:4000)
-
-### Development Workflow
-
-```bash
-# Run tests
-mix test
-
-# Run precommit checks (tests, credo, sobelow, coverage)
-mix precommit
-
-# Format code
-mix format
-```
+Humans maintain control through the review workflow. AI handles implementation, humans approve quality.
 
 ## Documentation
 
-- [AI Workflow Guide](docs/AI-WORKFLOW.md) - How AI agents integrate with Stride
-- [API Format](docs/API-FORMAT.md) - JSON API design decisions
-- [AI Authentication](docs/AI-AUTHENTICATION.md) - Bearer token approach
-- [Task Breakdown](docs/TASK-BREAKDOWN.md) - Flat vs hierarchical tasks
-- [Rich Content Schema](docs/RICH-CONTENT.md) - Technical context JSON schema
-- [UI Integration](docs/UI-INTEGRATION.md) - Displaying AI vs human tasks
-- [Task Requirements](docs/TASKS.md) - What makes a good task for AI implementation
+### Getting Started
+
+- **[Getting Started with AI Agents](docs/GETTING-STARTED-WITH-AI.md)** ⭐ Start here!
+- [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) - How to write effective tasks for AI
+
+### Workflow & Integration
+
+- [AI Workflow Guide](docs/AI-WORKFLOW.md) - Complete API workflow for agents
+- [Agent Hook Execution Guide](docs/AGENT-HOOK-EXECUTION-GUIDE.md) - Deep dive into hooks
+- [Review Workflow](docs/REVIEW-WORKFLOW.md) - Mastering the review process
+- [Unclaim Tasks Guide](docs/UNCLAIM-TASKS.md) - When and how to unclaim tasks
+
+### Configuration & Management
+
+- [Authentication Guide](docs/AUTHENTICATION.md) - API token setup and management
+- [Agent Capabilities](docs/AGENT-CAPABILITIES.md) - Understanding capabilities
+- [Estimation & Feedback](docs/ESTIMATION-FEEDBACK.md) - Improving task estimates
+
+### API Reference
+
+- [API Documentation](docs/api/README.md) - Complete API reference
+- [GET /api/tasks](docs/api/get_tasks.md) - List tasks
+- [POST /api/tasks](docs/api/post_tasks.md) - Create tasks
+- [POST /api/tasks/claim](docs/api/post_tasks_claim.md) - Claim tasks
+- [PATCH /api/tasks/:id/complete](docs/api/patch_tasks_id_complete.md) - Complete tasks
 
 ## Project Guidelines
 
@@ -261,22 +237,25 @@ See [AGENTS.md](AGENTS.md) for detailed development guidelines including:
 
 **Structure enables autonomy.** By embedding rich, structured context in tasks, we enable AI to work more autonomously while maintaining quality and alignment.
 
-## What's Next?
+**Humans focus on what matters.** Instead of writing every line of code, humans focus on architecture, design decisions, code review, and quality oversight. AI handles the repetitive implementation work.
 
-Stride is evolving from a Kanban board into a full AI workflow platform. Planned features:
+## What Makes Stride Different?
 
-- API token generation and management UI
-- RESTful API for task CRUD operations
-- Dependency visualization and resolution
-- Advanced filtering (by assignee, creator type, technical context)
-- Task templates for common patterns
-- Webhook integration for CI/CD workflows
-- Real-time collaboration features
-- Analytics dashboard (AI vs human task completion, velocity, bottlenecks)
+Traditional project management tools were built for humans first, with AI integration as an afterthought. Stride flips this model:
+
+- **Atomic Task Claiming** - Agents claim tasks atomically with automatic conflict prevention
+- **Client-Side Hooks** - Full control over execution environment (tests, builds, PRs)
+- **Rich Task Metadata** - 20+ fields of structured context for effective implementation
+- **Capability Matching** - Agents only see tasks they're qualified to handle
+- **Continuous Work Loop** - Agents work continuously until hitting review
+- **File Conflict Prevention** - `key_files` ensures only one task modifies a file at a time
+- **Dependency-Aware** - Tasks know what blocks them and what they block
 
 ## Contributing
 
 Stride welcomes contributions! Whether you're human or AI, if you're improving the codebase, you're contributing.
+
+See [AGENTS.md](AGENTS.md) for development guidelines.
 
 ## License
 
