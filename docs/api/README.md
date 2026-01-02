@@ -148,12 +148,16 @@ Every hook receives these environment variables:
 - [GET /api/tasks](get_tasks.md) - List all tasks (optionally filter by column)
 - [GET /api/tasks/:id](get_tasks_id.md) - Get specific task details
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get task with all children (for goals)
+- [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) - Get tasks this task depends on
+- [GET /api/tasks/:id/dependents](get_tasks_id_dependents.md) - Get tasks that depend on this task
 
 ### Task Management
 
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task and receive `before_doing` hook
 - [POST /api/tasks/:id/unclaim](post_tasks_id_unclaim.md) - Unclaim a task you can't complete
+- [PATCH /api/tasks/:id](patch_tasks_id.md) - Update task fields (title, description, etc.)
 - [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) - Complete a task and receive hooks
+- [PATCH /api/tasks/:id/mark_done](patch_tasks_id_mark_done.md) - Bypass review and mark task as done
 - [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md) - Finalize review and receive `after_review` hook
 
 ### Task Creation
@@ -164,15 +168,20 @@ Every hook receives these environment variables:
 
 | Method | Endpoint | Purpose | Returns Hooks |
 |--------|----------|---------|---------------|
+| GET | `/api/agent/onboarding` | Get onboarding info | No |
 | GET | `/api/tasks/next` | Get next available task | No |
 | GET | `/api/tasks` | List all tasks | No |
 | GET | `/api/tasks/:id` | Get task details | No |
 | GET | `/api/tasks/:id/tree` | Get task tree | No |
+| GET | `/api/tasks/:id/dependencies` | Get task dependencies | No |
+| GET | `/api/tasks/:id/dependents` | Get dependent tasks | No |
+| POST | `/api/tasks` | Create a task | No |
 | POST | `/api/tasks/claim` | Claim a task | `before_doing` |
 | POST | `/api/tasks/:id/unclaim` | Unclaim a task | No |
+| PATCH | `/api/tasks/:id` | Update task fields | No |
 | PATCH | `/api/tasks/:id/complete` | Complete a task | `after_doing`, `before_review`, `after_review`* |
+| PATCH | `/api/tasks/:id/mark_done` | Bypass review, mark done | No |
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
-| POST | `/api/tasks` | Create a task | No |
 
 *`after_review` hook is only returned when task is automatically moved to Done (needs_review=false or review approved)
 
