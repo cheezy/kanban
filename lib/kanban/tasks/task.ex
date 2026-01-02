@@ -539,34 +539,34 @@ defmodule Kanban.Tasks.Task do
         changeset
 
       %{} = strategy ->
-        valid_keys = ["unit_tests", "integration_tests", "manual_tests"]
-        invalid_keys = Map.keys(strategy) -- valid_keys
-
-        if Enum.empty?(invalid_keys) do
-          validate_testing_strategy_values(changeset, strategy)
-        else
-          add_error(
-            changeset,
-            :testing_strategy,
-            "contains invalid keys: #{Enum.join(invalid_keys, ", ")}. Valid keys: #{Enum.join(valid_keys, ", ")}"
-          )
-        end
+        # Validate that all values are strings (as documented)
+        validate_testing_strategy_values(changeset, strategy)
 
       _ ->
-        add_error(changeset, :testing_strategy, "must be a map")
+        add_error(
+          changeset,
+          :testing_strategy,
+          "must be a JSON object with string values describing testing approach (e.g., {\"unit_tests\": \"Test each function in isolation\", \"coverage_target\": \"80%\"})"
+        )
     end
   end
 
   defp validate_testing_strategy_values(changeset, strategy) do
     invalid_values =
       Enum.reject(strategy, fn {_key, value} ->
-        is_list(value) and Enum.all?(value, &is_binary/1)
+        is_binary(value)
       end)
 
     if Enum.empty?(invalid_values) do
       changeset
     else
-      add_error(changeset, :testing_strategy, "all values must be arrays of strings")
+      invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
+
+      add_error(
+        changeset,
+        :testing_strategy,
+        "all values must be strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
+      )
     end
   end
 
@@ -579,40 +579,34 @@ defmodule Kanban.Tasks.Task do
         changeset
 
       %{} = points ->
-        valid_keys = [
-          "telemetry_events",
-          "pubsub_broadcasts",
-          "phoenix_channels",
-          "external_apis"
-        ]
-
-        invalid_keys = Map.keys(points) -- valid_keys
-
-        if Enum.empty?(invalid_keys) do
-          validate_integration_points_values(changeset, points)
-        else
-          add_error(
-            changeset,
-            :integration_points,
-            "contains invalid keys: #{Enum.join(invalid_keys, ", ")}. Valid keys: #{Enum.join(valid_keys, ", ")}"
-          )
-        end
+        # Validate that all values are strings
+        validate_integration_points_values(changeset, points)
 
       _ ->
-        add_error(changeset, :integration_points, "must be a map")
+        add_error(
+          changeset,
+          :integration_points,
+          "must be a JSON object with string values describing integration points (e.g., {\"external_api\": \"Stripe API for payments\", \"pubsub\": \"TaskUpdated events\"})"
+        )
     end
   end
 
   defp validate_integration_points_values(changeset, points) do
     invalid_values =
       Enum.reject(points, fn {_key, value} ->
-        is_list(value) and Enum.all?(value, &is_binary/1)
+        is_binary(value)
       end)
 
     if Enum.empty?(invalid_values) do
       changeset
     else
-      add_error(changeset, :integration_points, "all values must be arrays of strings")
+      invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
+
+      add_error(
+        changeset,
+        :integration_points,
+        "all values must be strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
+      )
     end
   end
 end
