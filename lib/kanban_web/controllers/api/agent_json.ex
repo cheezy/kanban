@@ -336,7 +336,8 @@ defmodule KanbanWeb.API.AgentJSON do
           type: "work",
           complexity: "medium",
           estimated_files: "2-3",
-          description: "Add search input that filters tasks in real-time in the board view header.",
+          description:
+            "Add search input that filters tasks in real-time in the board view header.",
           why: "Users need to find tasks quickly without scrolling through long lists",
           what: "Add search input that filters tasks in real-time by title and description",
           where_context: "Board view header component",

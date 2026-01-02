@@ -134,23 +134,7 @@ defmodule KanbanWeb.API.TaskController do
         render(conn, :show, task: task, hook: hook_info)
 
       {:error, :no_tasks_available} ->
-        error_message =
-          if task_identifier do
-            "Task '#{task_identifier}' is not available to claim. It may be blocked by dependencies, already claimed, require capabilities you don't have, or not exist on this board."
-          else
-            "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
-          end
-
-        error_response =
-          ErrorDocs.add_docs_to_error(
-            %{error: error_message},
-            if(task_identifier, do: :task_not_claimable, else: :no_tasks_available),
-            identifier: task_identifier
-          )
-
-        conn
-        |> put_status(:conflict)
-        |> json(error_response)
+        handle_no_tasks_available(conn, task_identifier)
 
       {:error, reason} ->
         conn
@@ -573,5 +557,25 @@ defmodule KanbanWeb.API.TaskController do
       nil -> task_params
       agent_model -> Map.put(task_params, "completed_by_agent", "ai_agent:#{agent_model}")
     end
+  end
+
+  defp handle_no_tasks_available(conn, task_identifier) do
+    error_message =
+      if task_identifier do
+        "Task '#{task_identifier}' is not available to claim. It may be blocked by dependencies, already claimed, require capabilities you don't have, or not exist on this board."
+      else
+        "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
+      end
+
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{error: error_message},
+        if(task_identifier, do: :task_not_claimable, else: :no_tasks_available),
+        identifier: task_identifier
+      )
+
+    conn
+    |> put_status(:conflict)
+    |> json(error_response)
   end
 end

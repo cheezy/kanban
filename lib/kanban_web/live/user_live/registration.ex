@@ -104,7 +104,10 @@ defmodule KanbanWeb.UserLive.Registration do
   def handle_event("save", %{"user" => user_params}, socket) do
     # Validate the user params without actually creating the user
     changeset =
-      Accounts.change_user_registration(%User{}, user_params, validate_unique: true, hash_password: false)
+      Accounts.change_user_registration(%User{}, user_params,
+        validate_unique: true,
+        hash_password: false
+      )
 
     if changeset.valid? do
       # Validation passed, trigger form submission to controller which will create user and log in

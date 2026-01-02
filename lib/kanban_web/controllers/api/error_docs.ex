@@ -147,8 +147,7 @@ defmodule KanbanWeb.API.ErrorDocs do
     field_docs = %{
       "key_files" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#key-files",
       "verification_steps" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#verification-steps",
-      "acceptance_criteria" =>
-        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#acceptance-criteria",
+      "acceptance_criteria" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#acceptance-criteria",
       "dependencies" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#dependencies",
       "required_capabilities" => "#{@docs_base_url}/AGENT-CAPABILITIES.md",
       "complexity" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#complexity-estimation",

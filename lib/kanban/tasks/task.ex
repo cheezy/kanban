@@ -95,6 +95,7 @@ defmodule Kanban.Tasks.Task do
   end
 
   @doc false
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def changeset(task, attrs) do
     task
     |> cast(attrs, [
@@ -265,7 +266,11 @@ defmodule Kanban.Tasks.Task do
 
   defp enhance_key_file_errors(changeset) do
     changeset
-    |> update_error_message(:file_path, "can't be blank", "is required (relative path from project root)")
+    |> update_error_message(
+      :file_path,
+      "can't be blank",
+      "is required (relative path from project root)"
+    )
     |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
   end
 
@@ -539,14 +544,14 @@ defmodule Kanban.Tasks.Task do
         changeset
 
       %{} = strategy ->
-        # Validate that all values are strings (as documented)
+        # Validate that all values are strings or arrays of strings
         validate_testing_strategy_values(changeset, strategy)
 
       _ ->
         add_error(
           changeset,
           :testing_strategy,
-          "must be a JSON object with string values describing testing approach (e.g., {\"unit_tests\": \"Test each function in isolation\", \"coverage_target\": \"80%\"})"
+          "must be a JSON object with string or array values describing testing approach (e.g., {\"unit_tests\": \"Test each function\", \"edge_cases\": [\"Empty input\", \"Invalid data\"]})"
         )
     end
   end
@@ -554,7 +559,7 @@ defmodule Kanban.Tasks.Task do
   defp validate_testing_strategy_values(changeset, strategy) do
     invalid_values =
       Enum.reject(strategy, fn {_key, value} ->
-        is_binary(value)
+        is_binary(value) or (is_list(value) and Enum.all?(value, &is_binary/1))
       end)
 
     if Enum.empty?(invalid_values) do
@@ -565,7 +570,7 @@ defmodule Kanban.Tasks.Task do
       add_error(
         changeset,
         :testing_strategy,
-        "all values must be strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
+        "all values must be strings or arrays of strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
       )
     end
   end
@@ -579,14 +584,14 @@ defmodule Kanban.Tasks.Task do
         changeset
 
       %{} = points ->
-        # Validate that all values are strings
+        # Validate that all values are strings or arrays of strings
         validate_integration_points_values(changeset, points)
 
       _ ->
         add_error(
           changeset,
           :integration_points,
-          "must be a JSON object with string values describing integration points (e.g., {\"external_api\": \"Stripe API for payments\", \"pubsub\": \"TaskUpdated events\"})"
+          "must be a JSON object with string or array values describing integration points (e.g., {\"external_api\": \"Stripe API\", \"pubsub\": [\"TaskUpdated\", \"BoardUpdated\"]})"
         )
     end
   end
@@ -594,7 +599,7 @@ defmodule Kanban.Tasks.Task do
   defp validate_integration_points_values(changeset, points) do
     invalid_values =
       Enum.reject(points, fn {_key, value} ->
-        is_binary(value)
+        is_binary(value) or (is_list(value) and Enum.all?(value, &is_binary/1))
       end)
 
     if Enum.empty?(invalid_values) do
@@ -605,7 +610,7 @@ defmodule Kanban.Tasks.Task do
       add_error(
         changeset,
         :integration_points,
-        "all values must be strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
+        "all values must be strings or arrays of strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
       )
     end
   end

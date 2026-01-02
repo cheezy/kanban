@@ -114,34 +114,32 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
       attrs = %{
         title: "Test task",
         testing_strategy: %{
-          "unit_tests" => ["Test token generation", "Test token validation"],
-          "integration_tests" => ["Test API auth plug"],
-          "manual_tests" => ["Create token in UI"]
+          "unit_tests" => "Test token generation and validation with ExUnit",
+          "integration_tests" => "Test API auth plug end-to-end",
+          "manual_tests" => "Create token in UI and verify"
         }
       }
 
       {:ok, task} = Tasks.create_task(column, attrs)
 
-      assert task.testing_strategy["unit_tests"] == [
-               "Test token generation",
-               "Test token validation"
-             ]
+      assert task.testing_strategy["unit_tests"] ==
+               "Test token generation and validation with ExUnit"
 
-      assert task.testing_strategy["integration_tests"] == ["Test API auth plug"]
-      assert task.testing_strategy["manual_tests"] == ["Create token in UI"]
+      assert task.testing_strategy["integration_tests"] == "Test API auth plug end-to-end"
+      assert task.testing_strategy["manual_tests"] == "Create token in UI and verify"
     end
 
     test "accepts testing_strategy with subset of keys", %{column: column} do
       attrs = %{
         title: "Test task",
         testing_strategy: %{
-          "unit_tests" => ["Unit test 1", "Unit test 2"]
+          "unit_tests" => "Unit test with mocks"
         }
       }
 
       {:ok, task} = Tasks.create_task(column, attrs)
 
-      assert task.testing_strategy["unit_tests"] == ["Unit test 1", "Unit test 2"]
+      assert task.testing_strategy["unit_tests"] == "Unit test with mocks"
       refute Map.has_key?(task.testing_strategy, "integration_tests")
     end
 
@@ -163,42 +161,32 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
       assert task.testing_strategy == %{}
     end
 
-    test "rejects testing_strategy with invalid keys", %{column: _column} do
-      task = %Task{
+    test "accepts testing_strategy with any keys (flexible validation)", %{column: column} do
+      attrs = %{
         title: "Test task",
-        position: 0,
-        type: :work,
-        priority: :medium,
-        status: :open,
         testing_strategy: %{
           "unit_tests" => ["Valid"],
-          "invalid_key" => ["Should fail"]
+          "custom_key" => ["Custom test strategy"]
         }
       }
 
-      changeset = Task.changeset(task, %{})
-      refute changeset.valid?
-
-      assert "contains invalid keys: invalid_key. Valid keys: unit_tests, integration_tests, manual_tests" in errors_on(
-               changeset
-             ).testing_strategy
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.testing_strategy["unit_tests"] == ["Valid"]
+      assert task.testing_strategy["custom_key"] == ["Custom test strategy"]
     end
 
-    test "rejects testing_strategy with non-array values", %{column: _column} do
-      task = %Task{
+    test "accepts testing_strategy with string values (flexible validation)", %{column: column} do
+      attrs = %{
         title: "Test task",
-        position: 0,
-        type: :work,
-        priority: :medium,
-        status: :open,
         testing_strategy: %{
-          "unit_tests" => "not an array"
+          "unit_tests" => "Test with ExUnit framework",
+          "integration_tests" => "Test end-to-end flows"
         }
       }
 
-      changeset = Task.changeset(task, %{})
-      refute changeset.valid?
-      assert "all values must be arrays of strings" in errors_on(changeset).testing_strategy
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.testing_strategy["unit_tests"] == "Test with ExUnit framework"
+      assert task.testing_strategy["integration_tests"] == "Test end-to-end flows"
     end
 
     test "rejects testing_strategy with array containing non-strings", %{column: _column} do
@@ -215,7 +203,10 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
 
       changeset = Task.changeset(task, %{})
       refute changeset.valid?
-      assert "all values must be arrays of strings" in errors_on(changeset).testing_strategy
+
+      assert "all values must be strings or arrays of strings. Invalid keys: unit_tests" in errors_on(
+               changeset
+             ).testing_strategy
     end
 
     test "rejects non-map testing_strategy", %{column: _column} do
@@ -230,7 +221,11 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
 
       changeset = Task.changeset(task, %{})
       refute changeset.valid?
-      assert "must be a map" in errors_on(changeset).testing_strategy
+
+      expected_error =
+        ~s<must be a JSON object with string or array values describing testing approach (e.g., {"unit_tests": "Test each function", "edge_cases": ["Empty input", "Invalid data"]})>
+
+      assert expected_error in errors_on(changeset).testing_strategy
     end
 
     test "updates testing_strategy", %{column: column} do
@@ -314,42 +309,32 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
       assert task.integration_points == %{}
     end
 
-    test "rejects integration_points with invalid keys", %{column: _column} do
-      task = %Task{
+    test "accepts integration_points with any keys (flexible validation)", %{column: column} do
+      attrs = %{
         title: "Test task",
-        position: 0,
-        type: :work,
-        priority: :medium,
-        status: :open,
         integration_points: %{
           "telemetry_events" => ["Valid"],
-          "invalid_key" => ["Should fail"]
+          "custom_integration" => ["Custom integration point"]
         }
       }
 
-      changeset = Task.changeset(task, %{})
-      refute changeset.valid?
-
-      assert "contains invalid keys: invalid_key. Valid keys: telemetry_events, pubsub_broadcasts, phoenix_channels, external_apis" in errors_on(
-               changeset
-             ).integration_points
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.integration_points["telemetry_events"] == ["Valid"]
+      assert task.integration_points["custom_integration"] == ["Custom integration point"]
     end
 
-    test "rejects integration_points with non-array values", %{column: _column} do
-      task = %Task{
+    test "accepts integration_points with string values (flexible validation)", %{column: column} do
+      attrs = %{
         title: "Test task",
-        position: 0,
-        type: :work,
-        priority: :medium,
-        status: :open,
         integration_points: %{
-          "telemetry_events" => "not an array"
+          "telemetry_events" => "[:app, :event, :fired]",
+          "pubsub_broadcasts" => "broadcast to topic"
         }
       }
 
-      changeset = Task.changeset(task, %{})
-      refute changeset.valid?
-      assert "all values must be arrays of strings" in errors_on(changeset).integration_points
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.integration_points["telemetry_events"] == "[:app, :event, :fired]"
+      assert task.integration_points["pubsub_broadcasts"] == "broadcast to topic"
     end
 
     test "rejects integration_points with array containing non-strings", %{column: _column} do
@@ -366,7 +351,10 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
 
       changeset = Task.changeset(task, %{})
       refute changeset.valid?
-      assert "all values must be arrays of strings" in errors_on(changeset).integration_points
+
+      assert "all values must be strings or arrays of strings. Invalid keys: telemetry_events" in errors_on(
+               changeset
+             ).integration_points
     end
 
     test "rejects non-map integration_points", %{column: _column} do
@@ -381,7 +369,11 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
 
       changeset = Task.changeset(task, %{})
       refute changeset.valid?
-      assert "must be a map" in errors_on(changeset).integration_points
+
+      expected_error =
+        ~s<must be a JSON object with string or array values describing integration points (e.g., {"external_api": "Stripe API", "pubsub": ["TaskUpdated", "BoardUpdated"]})>
+
+      assert expected_error in errors_on(changeset).integration_points
     end
 
     test "updates integration_points", %{column: column} do

@@ -1126,7 +1126,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{verification_steps: [%{step_type: ["is invalid"]}]} = errors_on(changeset)
+
+      assert %{verification_steps: [%{step_type: ["must be 'command' or 'manual'"]}]} =
+               errors_on(changeset)
     end
   end
 
@@ -1471,7 +1473,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{key_files: [%{file_path: ["can't be blank"]}]} = errors_on(changeset)
+
+      assert %{key_files: [%{file_path: ["is required (relative path from project root)"]}]} =
+               errors_on(changeset)
     end
 
     test "requires position in key_files" do
@@ -1485,7 +1489,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{key_files: [%{position: ["can't be blank"]}]} = errors_on(changeset)
+
+      assert %{key_files: [%{position: ["is required (integer starting from 0)"]}]} =
+               errors_on(changeset)
     end
 
     test "validates position is non-negative" do
@@ -1517,7 +1523,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{verification_steps: [%{step_type: ["can't be blank"]}]} = errors_on(changeset)
+
+      assert %{verification_steps: [%{step_type: ["is required ('command' or 'manual')"]}]} =
+               errors_on(changeset)
     end
 
     test "requires step_text in verification_steps" do
@@ -1531,7 +1539,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{verification_steps: [%{step_text: ["can't be blank"]}]} = errors_on(changeset)
+
+      assert %{verification_steps: [%{step_text: ["is required (command or instruction)"]}]} =
+               errors_on(changeset)
     end
 
     test "requires position in verification_steps" do
@@ -1545,7 +1555,9 @@ defmodule Kanban.TasksTest do
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
-      assert %{verification_steps: [%{position: ["can't be blank"]}]} = errors_on(changeset)
+
+      assert %{verification_steps: [%{position: ["is required (integer starting from 0)"]}]} =
+               errors_on(changeset)
     end
 
     test "validates position is non-negative in verification_steps" do
