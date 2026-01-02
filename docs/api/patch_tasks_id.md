@@ -96,8 +96,8 @@ All parameters are optional. Only include the fields you want to update.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `testing_strategy` | object | Testing strategy with `unit_tests`, `integration_tests`, and `manual_tests` arrays |
-| `integration_points` | object | Integration points with `telemetry_events`, `pubsub_broadcasts`, `phoenix_channels`, and `external_apis` arrays |
+| `testing_strategy` | object | Testing strategy (JSON object) with optional keys: `unit_tests`, `integration_tests`, `property_tests`, `coverage_target`, `test_data`, `mocking`, `edge_cases`, `performance_tests`, `manual_tests`, `regression_tests`, `security_tests`. See [POST /api/tasks](post_tasks.md#testing-strategy-format) for format details. |
+| `integration_points` | object | Integration points (JSON object) with optional keys: `telemetry_events`, `pubsub_broadcasts`, `phoenix_channels`, `external_apis`. Each value should be an array of strings. |
 
 #### Completion Tracking
 
