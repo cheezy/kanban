@@ -884,6 +884,7 @@ defmodule Kanban.Tasks do
   defp normalize_task_type("work"), do: :work
   defp normalize_task_type("defect"), do: :defect
   defp normalize_task_type("goal"), do: :goal
+  defp normalize_task_type(_invalid), do: :work
 
   defp get_task_type_prefix(:work), do: "W"
   defp get_task_type_prefix(:defect), do: "D"

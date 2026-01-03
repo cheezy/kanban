@@ -652,6 +652,17 @@ When creating tasks via the API, use this JSON structure:
 }
 ```
 
+**⚠️ CRITICAL: Valid Field Values**
+
+- **`type`**: MUST be one of: `"work"`, `"defect"`, or `"goal"` (strings, not atoms)
+  - `"work"` - New features, enhancements, improvements
+  - `"defect"` - Bug fixes, error corrections
+  - `"goal"` - Container for multiple related tasks (25+ hours)
+  - ❌ Invalid: `"task"`, `"bug"`, `"feature"`, `null`, or any other value
+
+- **`complexity`**: `"small"`, `"medium"`, or `"large"`
+- **`priority`**: `"low"`, `"medium"`, `"high"`, or `"critical"`
+
 For documentation/planning purposes, you can also use this markdown template:
 
 ```markdown
