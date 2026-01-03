@@ -84,15 +84,13 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
       "why": "Users need to manage their personal information",
       "what": "Profile viewing and editing with avatar upload",
       "where_context": "lib/kanban_web/live/profile_live/",
-      "dependencies": ["G1"],
       "tasks": [
         {
           "title": "Create profile schema",
           "description": "Add profile fields to users table",
           "type": "work",
           "priority": "medium",
-          "complexity": "small",
-          "dependencies": []
+          "complexity": "small"
         },
         {
           "title": "Build profile view page",
@@ -306,11 +304,41 @@ WIP limit reached:
 
 ### Dependency Handling
 
-- Dependencies can reference tasks within the same goal or previous goals
-- Task identifiers are not known before creation, so use relative references:
-  - Dependencies within the same goal's tasks work automatically
-  - Cross-goal dependencies should use task identifiers from previously created goals
-- Tasks with incomplete dependencies are automatically marked as `blocked`
+**⚠️ CRITICAL FOR AGENTS: You CANNOT specify cross-goal dependencies in a batch request!**
+
+**Why?** Task identifiers (W1, W2, G1, G2, etc.) are **auto-generated** by the system and **cannot be predicted before creation**.
+
+**What works:**
+- ✅ **Dependencies within a single goal's tasks**: Use identifiers like `["W1"]`, `["W2"]`
+  - The system assigns identifiers sequentially as tasks are created
+  - First task in first goal → W1, second task → W2, etc.
+  - Dependencies within the same goal resolve automatically
+
+**What DOES NOT work:**
+- ❌ **Cross-goal dependencies**: `"dependencies": ["G1"]` in a batch request
+  - You don't know if the first goal will be G1, G5, or G20
+  - The system determines identifiers based on existing tasks in the database
+  - **Do not guess or assume identifier values**
+
+**Solutions for cross-goal dependencies:**
+1. **Create goals in separate API calls** - Create the first goal, get its identifier from the response, then create the second goal with the correct dependency
+2. **Add dependencies after creation** - Use `PATCH /api/tasks/:id` to add dependencies after all goals are created
+3. **Don't use dependencies** - If goals are independent, don't specify dependencies
+
+**Example - Valid dependencies within a goal:**
+```json
+{
+  "title": "User Authentication",
+  "tasks": [
+    {"title": "Create schema", "type": "work"},
+    {"title": "Add endpoints", "type": "work", "dependencies": ["W1"]},
+    {"title": "Add tests", "type": "work", "dependencies": ["W1", "W2"]}
+  ]
+}
+```
+This works because W1, W2, W3 are assigned in order as tasks are created.
+
+**Tasks with incomplete dependencies are automatically marked as `blocked`**
 
 ### Default Values
 
@@ -359,7 +387,6 @@ curl -X POST \
         "title": "User Profile",
         "type": "goal",
         "priority": "medium",
-        "dependencies": ["G1"],
         "tasks": [
           {"title": "Profile view", "type": "work"},
           {"title": "Profile edit", "type": "work"}

@@ -483,4 +483,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
     [{gettext("No parent goal"), nil} | goals]
   end
+
+  defp ensure_list(nil), do: []
+  defp ensure_list(value) when is_list(value), do: value
+  defp ensure_list(value) when is_binary(value), do: [value]
+  defp ensure_list(_value), do: []
 end

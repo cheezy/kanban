@@ -447,7 +447,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Unit Tests")}</span>
           </label>
-          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "unit_tests", [])) do %>
+          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "unit_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -481,7 +481,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Integration Tests")}</span>
           </label>
-          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "integration_tests", [])) do %>
+          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "integration_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -515,7 +515,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Manual Tests")}</span>
           </label>
-          <%= for {test, index} <- Enum.with_index(Map.get(testing_strategy, "manual_tests", [])) do %>
+          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "manual_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -559,7 +559,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Telemetry Events")}</span>
           </label>
-          <%= for {event, index} <- Enum.with_index(Map.get(integration_points, "telemetry_events", [])) do %>
+          <%= for {event, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "telemetry_events", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -593,7 +593,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("PubSub Broadcasts")}</span>
           </label>
-          <%= for {broadcast, index} <- Enum.with_index(Map.get(integration_points, "pubsub_broadcasts", [])) do %>
+          <%= for {broadcast, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "pubsub_broadcasts", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -627,7 +627,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Phoenix Channels")}</span>
           </label>
-          <%= for {channel, index} <- Enum.with_index(Map.get(integration_points, "phoenix_channels", [])) do %>
+          <%= for {channel, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "phoenix_channels", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -661,7 +661,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("External APIs")}</span>
           </label>
-          <%= for {api, index} <- Enum.with_index(Map.get(integration_points, "external_apis", [])) do %>
+          <%= for {api, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "external_apis", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"

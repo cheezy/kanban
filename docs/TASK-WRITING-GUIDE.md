@@ -141,7 +141,6 @@ POST /api/tasks/batch
       "type": "goal",
       "priority": "medium",
       "complexity": "medium",
-      "dependencies": ["G1"],
       "tasks": [
         {
           "title": "Create profile schema",
@@ -160,11 +159,23 @@ POST /api/tasks/batch
 }
 ```
 
+**⚠️ CRITICAL: Cross-Goal Dependencies**
+
+**DO NOT** specify dependencies between goals in a batch request like `"dependencies": ["G1"]`. This will NOT work because:
+- Identifiers (G1, G2, W1, W2) are auto-generated and cannot be predicted
+- The system determines identifiers based on existing tasks in the database
+- You cannot know if the first goal will be G1, G5, or G20
+
+**Solutions for dependent goals:**
+1. Create goals in **separate API calls** - Create the first goal, get its identifier from response, then create the second goal with the correct dependency
+2. Add dependencies **after creation** using `PATCH /api/tasks/:id`
+3. Keep goals **independent** if possible
+
 **Benefits of batch creation:**
 - Reduced API calls (1 request instead of N)
 - Faster project setup when planning multiple goals
 - Clear visibility of related work structure
-- Dependencies can reference tasks across goals in the batch
+- Dependencies work within a goal's tasks (but NOT across goals)
 
 See [POST /api/tasks/batch](api/post_tasks_batch.md) for complete documentation.
 
@@ -413,8 +424,9 @@ The `testing_strategy` field is a flexible JSON object that describes how to thi
 
 ```json
 "testing_strategy": {
-  "unit_tests": "Test each function in isolation with ExUnit",
-  "integration_tests": "Test auth flow end-to-end in controller tests",
+  "unit_tests": ["Test user changeset validations", "Test password hashing functions", "Test authentication token generation"],
+  "integration_tests": ["Test complete login flow end-to-end", "Test password reset flow with email"],
+  "manual_tests": ["Test password reset email in staging environment", "Verify session timeout behavior"],
   "property_tests": "Use StreamData to verify password encoding with random special characters",
   "coverage_target": "100% for auth module, 80% overall",
   "test_data": "Create fixtures for valid/invalid passwords, use Factory pattern",
@@ -426,21 +438,31 @@ The `testing_strategy` field is a flexible JSON object that describes how to thi
     "Concurrent login attempts"
   ],
   "performance_tests": "Login should complete in <100ms for 95th percentile",
-  "manual_tests": "Test password reset email in staging environment"
+  "regression_tests": "Verify existing user sessions remain valid",
+  "security_tests": "Test SQL injection, XSS, CSRF protections"
 }
 ```
 
+**⚠️ CRITICAL: Field Types**
+
+The following fields **MUST be arrays of strings** (not single strings):
+- `unit_tests` - **array** of unit test descriptions
+- `integration_tests` - **array** of integration test descriptions
+- `manual_tests` - **array** of manual testing steps
+
+All other fields can be strings or arrays as appropriate.
+
 **Common fields (all optional):**
 
-- `unit_tests` (string) - Strategy for testing individual functions in isolation
-- `integration_tests` (string) - How to test component interactions and full flows
+- `unit_tests` (**array of strings**) - List of specific unit tests to write
+- `integration_tests` (**array of strings**) - List of integration/end-to-end tests
+- `manual_tests` (**array of strings**) - List of manual testing procedures
 - `property_tests` (string) - Property-based testing approach (e.g., StreamData, PropCheck)
 - `coverage_target` (string) - Target code coverage percentage or scope
 - `test_data` (string) - How to set up test fixtures, factories, or seed data
 - `mocking` (string) - What external dependencies to mock/stub and how
 - `edge_cases` (array of strings) - Specific edge cases that must be tested
 - `performance_tests` (string) - Performance criteria, benchmarks, or load tests
-- `manual_tests` (string) - Manual testing procedures beyond automated tests
 - `regression_tests` (string) - What existing functionality to verify still works
 - `security_tests` (string) - Security-specific test scenarios
 
@@ -459,8 +481,9 @@ The `testing_strategy` field is a flexible JSON object that describes how to thi
 ```json
 {
   "testing_strategy": {
-    "unit_tests": "Test priority filter logic in Boards context with each priority level",
-    "integration_tests": "Test filter UI in LiveView tests with live rendering",
+    "unit_tests": ["Test priority filter logic with priority=0", "Test with priority=4", "Test with null priority"],
+    "integration_tests": ["Test filter UI in LiveView with live rendering", "Test combined with status filter"],
+    "manual_tests": ["Verify filter state persists after page refresh"],
     "edge_cases": [
       "Tasks with null priority",
       "Filter combined with status filter",
