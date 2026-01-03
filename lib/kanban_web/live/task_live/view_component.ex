@@ -496,37 +496,37 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
           <h4 class="text-sm font-semibold text-cyan-900 mb-2">{gettext("Testing Strategy")}</h4>
           <div class="space-y-3">
-            <%= if Map.has_key?(@task.testing_strategy, "unit_tests") && !Enum.empty?(@task.testing_strategy["unit_tests"]) do %>
+            <%= if Map.has_key?(@task.testing_strategy, "unit_tests") && has_test_items?(@task.testing_strategy["unit_tests"]) do %>
               <div>
                 <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
                   {gettext("Unit Tests")}
                 </p>
                 <ul class="list-disc list-inside space-y-1">
-                  <%= for test <- @task.testing_strategy["unit_tests"] do %>
+                  <%= for test <- ensure_test_list(@task.testing_strategy["unit_tests"]) do %>
                     <li class="text-cyan-900">{test}</li>
                   <% end %>
                 </ul>
               </div>
             <% end %>
-            <%= if Map.has_key?(@task.testing_strategy, "integration_tests") && !Enum.empty?(@task.testing_strategy["integration_tests"]) do %>
+            <%= if Map.has_key?(@task.testing_strategy, "integration_tests") && has_test_items?(@task.testing_strategy["integration_tests"]) do %>
               <div>
                 <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
                   {gettext("Integration Tests")}
                 </p>
                 <ul class="list-disc list-inside space-y-1">
-                  <%= for test <- @task.testing_strategy["integration_tests"] do %>
+                  <%= for test <- ensure_test_list(@task.testing_strategy["integration_tests"]) do %>
                     <li class="text-cyan-900">{test}</li>
                   <% end %>
                 </ul>
               </div>
             <% end %>
-            <%= if Map.has_key?(@task.testing_strategy, "manual_tests") && !Enum.empty?(@task.testing_strategy["manual_tests"]) do %>
+            <%= if Map.has_key?(@task.testing_strategy, "manual_tests") && has_test_items?(@task.testing_strategy["manual_tests"]) do %>
               <div>
                 <p class="text-xs font-semibold text-cyan-900 opacity-70 mb-1">
                   {gettext("Manual Tests")}
                 </p>
                 <ul class="list-disc list-inside space-y-1">
-                  <%= for test <- @task.testing_strategy["manual_tests"] do %>
+                  <%= for test <- ensure_test_list(@task.testing_strategy["manual_tests"]) do %>
                     <li class="text-cyan-900">{test}</li>
                   <% end %>
                 </ul>
@@ -872,4 +872,12 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     </div>
     """
   end
+
+  defp has_test_items?(value) when is_list(value), do: value != []
+  defp has_test_items?(value) when is_binary(value), do: String.trim(value) != ""
+  defp has_test_items?(_), do: false
+
+  defp ensure_test_list(value) when is_list(value), do: value
+  defp ensure_test_list(value) when is_binary(value), do: [value]
+  defp ensure_test_list(_), do: []
 end
