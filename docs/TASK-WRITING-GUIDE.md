@@ -87,14 +87,14 @@ POST /api/tasks
         "type": "work",
         "complexity": "medium",
         "estimated_files": "3-4",
-        "dependencies": ["W1"]
+        "dependencies": [0]
       },
       {
         "title": "Add password reset flow",
         "type": "work",
         "complexity": "medium",
         "estimated_files": "2-3",
-        "dependencies": ["W2"]
+        "dependencies": [1]
       },
       {
         "title": "Fix password validation bug",
@@ -131,7 +131,7 @@ POST /api/tasks/batch
           "title": "Create auth controller and endpoints",
           "type": "work",
           "complexity": "medium",
-          "dependencies": ["W1"]
+          "dependencies": [0]
         }
       ]
     },
@@ -151,7 +151,7 @@ POST /api/tasks/batch
           "title": "Build profile view page",
           "type": "work",
           "complexity": "medium",
-          "dependencies": ["W3"]
+          "dependencies": [0]
         }
       ]
     }
@@ -402,17 +402,68 @@ This gives you:
 - **Always specify dependencies** when one task builds on another's work
 - Don't rely on agents to infer order - be explicit
 
-**Format:**
+**Format depends on context:**
+
+**When creating a goal with child tasks (initial upload):**
+
+Use **0-based array indices** to reference tasks within the same goal:
 
 ```json
-"dependencies": ["W1", "W2"]  // This task requires W1 and W2 to complete first
+{
+  "title": "Implement authentication",
+  "type": "goal",
+  "tasks": [
+    {"title": "Create schema", "type": "work"},                      // index 0
+    {"title": "Add endpoints", "type": "work", "dependencies": [0]}, // depends on first task
+    {"title": "Write tests", "type": "work", "dependencies": [0, 1]} // depends on first and second
+  ]
+}
+```
+
+The system automatically converts indices to actual identifiers (W47, W48, etc.) during creation.
+
+**When creating standalone tasks or adding tasks to existing goals:**
+
+Use actual task identifiers:
+
+```json
+{
+  "title": "Add new feature",
+  "type": "work",
+  "dependencies": ["W47", "W48"]  // This task requires W47 and W48 to complete first
+}
+```
+
+**When updating existing tasks:**
+
+Use actual task identifiers:
+
+```json
+PATCH /api/tasks/123
+{
+  "dependencies": ["W47", "W48", "W52"]
+}
+```
+
+**You can also mix indices with existing identifiers (when creating goals):**
+
+```json
+{
+  "title": "Extend feature",
+  "type": "goal",
+  "tasks": [
+    {"title": "New component", "type": "work"},
+    {"title": "Integration", "type": "work", "dependencies": [0, "W23"]}  // index 0 + existing task
+  ]
+}
 ```
 
 **Best Practice for Goals:**
 
 1. Identify which tasks must happen sequentially
-2. Specify dependencies explicitly (don't assume agents will infer order)
-3. Only add dependencies when truly required (don't over-constrain parallelization)
+2. Use index-based dependencies (0, 1, 2) when creating the goal initially
+3. Use identifier-based dependencies (W47, W48) when updating or referencing existing tasks
+4. Only add dependencies when truly required (don't over-constrain parallelization)
 
 #### `testing_strategy` - Overall Testing Approach
 

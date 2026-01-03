@@ -34,7 +34,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.key_files` | array | **CRITICAL** | Files that will be modified - prevents conflicts (see format below) |
-| `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`) |
+| `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`), or use 0-based indices for tasks within the same goal (e.g., `[0, 1]` - see Dependency Handling below) |
 | `task.parent_goal` | string | No | Identifier of parent goal (e.g., `"G1"`) if this task belongs to a goal |
 
 #### Planning & Context
@@ -400,7 +400,7 @@ The `security_considerations` array specifies security concerns, potential vulne
         "priority": "critical",
         "complexity": "medium",
         "estimated_files": "2-3",
-        "dependencies": ["W1"],
+        "dependencies": [0],
         "key_files": [
           {
             "file_path": "lib/kanban/accounts/auth.ex",
@@ -453,7 +453,7 @@ The `security_considerations` array specifies security concerns, potential vulne
         "priority": "high",
         "complexity": "medium",
         "estimated_files": "3-4",
-        "dependencies": ["W2"],
+        "dependencies": [1],
         "key_files": [
           {
             "file_path": "test/kanban/accounts/auth_test.exs",
@@ -553,19 +553,19 @@ The `security_considerations` array specifies security concerns, potential vulne
       "id": 127,
       "identifier": "W24",
       "title": "Implement JWT token generation",
-      "status": "open",
+      "status": "blocked",
       "priority": "critical",
       "complexity": "medium",
-      "dependencies": [126]
+      "dependencies": ["W23"]
     },
     {
       "id": 128,
       "identifier": "W25",
       "title": "Write authentication tests",
-      "status": "open",
+      "status": "blocked",
       "priority": "high",
       "complexity": "medium",
-      "dependencies": [127]
+      "dependencies": ["W24"]
     }
   ]
 }
@@ -607,8 +607,79 @@ WIP limit reached:
 - Include a `tasks` array to create child tasks atomically
 - All tasks are created in a single database transaction (all-or-nothing)
 - Child tasks are automatically linked to the parent goal via `parent_goal_id`
-- Child tasks can have dependencies on each other (by position in array)
+- Child tasks can have dependencies on each other using index-based references
 - Goals have identifiers starting with "G", tasks with "W"
+
+### Dependency Handling for Child Tasks
+
+**⚠️ CRITICAL: Use INDEX-BASED dependencies for tasks within a goal!**
+
+When creating a goal with child tasks, you cannot use task identifiers like `"W1"` in dependencies because those identifiers haven't been assigned yet. Instead, use **0-based array indices**:
+
+**How it works:**
+
+- Use **0-based array indices** to reference tasks within the same goal
+- Index 0 = first task, index 1 = second task, etc.
+- The system automatically converts indices to actual task identifiers during creation
+- Result stored in database has human-readable identifiers
+
+**Example:**
+
+```json
+{
+  "task": {
+    "title": "User Authentication",
+    "type": "goal",
+    "tasks": [
+      {"title": "Create schema", "type": "work"},                        // index 0
+      {"title": "Add endpoints", "type": "work", "dependencies": [0]},   // depends on index 0
+      {"title": "Add tests", "type": "work", "dependencies": [0, 1]}     // depends on indices 0 and 1
+    ]
+  }
+}
+```
+
+**After creation, stored in database as:**
+
+```json
+{
+  "goal": {"identifier": "G1", "title": "User Authentication"},
+  "child_tasks": [
+    {"identifier": "W47", "title": "Create schema", "dependencies": []},
+    {"identifier": "W48", "title": "Add endpoints", "dependencies": ["W47"]},
+    {"identifier": "W49", "title": "Add tests", "dependencies": ["W47", "W48"]}
+  ]
+}
+```
+
+**You can also mix indices with existing task identifiers:**
+
+```json
+{
+  "task": {
+    "title": "Feature Extension",
+    "type": "goal",
+    "tasks": [
+      {"title": "New component", "type": "work"},
+      {"title": "Integration", "type": "work", "dependencies": [0, "W23"]}  // index 0 + existing task W23
+    ]
+  }
+}
+```
+
+**For standalone tasks (not in a goal):**
+
+Use existing task identifiers directly:
+
+```json
+{
+  "task": {
+    "title": "Standalone task",
+    "type": "work",
+    "dependencies": ["W23", "W24"]  // Use actual identifiers for existing tasks
+  }
+}
+```
 
 ### Capabilities
 

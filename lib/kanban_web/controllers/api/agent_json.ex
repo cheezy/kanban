@@ -258,6 +258,14 @@ defmodule KanbanWeb.API.AgentJSON do
               description: "Create task or goal with nested tasks",
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/post_tasks.md"
+            },
+            %{
+              method: "POST",
+              path: "/api/tasks/batch",
+              description:
+                "Create multiple goals with nested tasks in one request (efficient for project planning)",
+              auth_required: true,
+              documentation_url: "#{@docs_base_url}/docs/api/post_tasks_batch.md"
             }
           ]
         }
@@ -309,7 +317,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "why - Why this task matters - business justification (string)",
           "what - What needs to be done - concise summary (string)",
           "where_context - Where in the codebase this work happens (string)",
-          "dependencies - Tasks that must complete first (controls execution order, array of identifiers)",
+          "dependencies - Tasks that must complete first (controls execution order). Use 0-based indices [0, 1] when creating goals with child tasks, or task identifiers ['W47', 'W48'] for existing tasks",
           "estimated_files - Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') (string)",
           "patterns_to_follow - Specific coding patterns to replicate (newline-separated string)",
           "testing_strategy - Overall testing approach with edge cases, coverage goals, mocking strategy (JSON object)",

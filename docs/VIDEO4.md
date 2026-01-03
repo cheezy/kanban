@@ -58,13 +58,13 @@ $ cat create-goal.json
       {
         "title": "Build user CRUD API endpoints",
         "complexity": "medium",
-        "dependencies": ["W1"],
+        "dependencies": [0],
         "key_files": [{"file_path": "lib/kanban_web/controllers/user_controller.ex"}]
       },
       {
         "title": "Add user management UI",
         "complexity": "medium",
-        "dependencies": ["W2"],
+        "dependencies": [1],
         "key_files": [{"file_path": "lib/kanban_web/live/user_live.ex"}]
       }
     ]
@@ -632,7 +632,7 @@ sleep 5
         "title": "Build user CRUD API endpoints",
         "type": "work",
         "complexity": "medium",
-        "dependencies": ["W1"],
+        "dependencies": [0],
         "key_files": [
           {
             "file_path": "lib/kanban_web/controllers/user_controller.ex",
@@ -644,7 +644,7 @@ sleep 5
         "title": "Add user management UI",
         "type": "work",
         "complexity": "medium",
-        "dependencies": ["W2"],
+        "dependencies": [1],
         "key_files": [
           {
             "file_path": "lib/kanban_web/live/user_live.ex",

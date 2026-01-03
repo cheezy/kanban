@@ -4077,5 +4077,116 @@ defmodule Kanban.TasksTest do
         Tasks.get_task!(goal_id)
       end
     end
+
+    test "converts index-based dependencies to task identifiers" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        "title" => "Test Goal with Dependencies",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "First Task", "type" => "work"},
+        %{"title" => "Second Task", "type" => "work", "dependencies" => [0]},
+        %{"title" => "Third Task", "type" => "work", "dependencies" => [0, 1]}
+      ]
+
+      assert {:ok, %{goal: _goal, child_tasks: [task1, task2, task3]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # First task has no dependencies
+      assert task1.dependencies == []
+
+      # Second task depends on first task (index 0 converted to task1's identifier)
+      assert task2.dependencies == [task1.identifier]
+
+      # Third task depends on first and second tasks
+      assert task3.dependencies == [task1.identifier, task2.identifier]
+    end
+
+    test "allows mixing index-based and string identifier dependencies" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create a separate task first to reference by identifier
+      existing_task = task_fixture(column, %{title: "Existing Task", type: :work})
+
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "First Task", "type" => "work"},
+        %{
+          "title" => "Second Task",
+          "type" => "work",
+          "dependencies" => [0, existing_task.identifier]
+        }
+      ]
+
+      assert {:ok, %{goal: _goal, child_tasks: [task1, task2]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # Second task has dependencies on both the first child task (by index) and the existing task (by identifier)
+      assert Enum.sort(task2.dependencies) == Enum.sort([task1.identifier, existing_task.identifier])
+    end
+
+    test "handles different task types with index-based dependencies" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        "title" => "Mixed Type Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Work Task", "type" => "work"},
+        %{"title" => "Defect Task", "type" => "defect"},
+        %{"title" => "Another Work Task", "type" => "work", "dependencies" => [0, 1]}
+      ]
+
+      assert {:ok, %{goal: _goal, child_tasks: [task1, task2, task3]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # Verify types are different (W1, D1, W2)
+      assert task1.type == :work
+      assert task2.type == :defect
+      assert task3.type == :work
+
+      # Third task correctly depends on both
+      assert task3.dependencies == [task1.identifier, task2.identifier]
+    end
+
+    test "handles invalid index gracefully" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      # Index 99 doesn't exist (only indices 0-1 valid)
+      child_tasks = [
+        %{"title" => "First Task", "type" => "work"},
+        %{"title" => "Second Task", "type" => "work", "dependencies" => [99]}
+      ]
+
+      # Should fail validation because dependency 99 won't resolve to a valid identifier
+      assert {:error, _operation, _changeset} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+    end
   end
 end

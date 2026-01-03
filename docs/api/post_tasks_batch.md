@@ -54,8 +54,7 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
           "description": "Add users table with email, password_hash, and timestamps",
           "type": "work",
           "priority": "high",
-          "complexity": "small",
-          "dependencies": []
+          "complexity": "small"
         },
         {
           "title": "Implement JWT token generation",
@@ -63,7 +62,7 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
           "type": "work",
           "priority": "high",
           "complexity": "medium",
-          "dependencies": ["W1"]
+          "dependencies": [0]
         },
         {
           "title": "Create login endpoint",
@@ -71,7 +70,7 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
           "type": "work",
           "priority": "high",
           "complexity": "medium",
-          "dependencies": ["W1", "W2"]
+          "dependencies": [0, 1]
         }
       ]
     },
@@ -98,7 +97,7 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
           "type": "work",
           "priority": "medium",
           "complexity": "medium",
-          "dependencies": ["W4"]
+          "dependencies": [0]
         },
         {
           "title": "Add profile edit form",
@@ -106,7 +105,7 @@ See the [POST /api/tasks documentation](post_tasks.md) for complete field descri
           "type": "work",
           "priority": "medium",
           "complexity": "medium",
-          "dependencies": ["W4", "W5"]
+          "dependencies": [0, 1]
         }
       ]
     }
@@ -304,39 +303,63 @@ WIP limit reached:
 
 ### Dependency Handling
 
-**⚠️ CRITICAL FOR AGENTS: You CANNOT specify cross-goal dependencies in a batch request!**
+**⚠️ CRITICAL: Use INDEX-BASED dependencies for tasks within a goal!**
 
-**Why?** Task identifiers (W1, W2, G1, G2, etc.) are **auto-generated** by the system and **cannot be predicted before creation**.
+**How it works:**
 
-**What works:**
-- ✅ **Dependencies within a single goal's tasks**: Use identifiers like `["W1"]`, `["W2"]`
-  - The system assigns identifiers sequentially as tasks are created
-  - First task in first goal → W1, second task → W2, etc.
-  - Dependencies within the same goal resolve automatically
+- Use **0-based array indices** to reference tasks within the same goal
+- Index 0 = first task, index 1 = second task, etc.
+- The system automatically converts indices to actual task identifiers (W47, W48, etc.) during creation
+- Result stored in database has human-readable identifiers
 
-**What DOES NOT work:**
-- ❌ **Cross-goal dependencies**: `"dependencies": ["G1"]` in a batch request
-  - You don't know if the first goal will be G1, G5, or G20
-  - The system determines identifiers based on existing tasks in the database
-  - **Do not guess or assume identifier values**
+**Example - Index-based dependencies:**
 
-**Solutions for cross-goal dependencies:**
-1. **Create goals in separate API calls** - Create the first goal, get its identifier from the response, then create the second goal with the correct dependency
-2. **Add dependencies after creation** - Use `PATCH /api/tasks/:id` to add dependencies after all goals are created
-3. **Don't use dependencies** - If goals are independent, don't specify dependencies
-
-**Example - Valid dependencies within a goal:**
 ```json
 {
   "title": "User Authentication",
   "tasks": [
-    {"title": "Create schema", "type": "work"},
-    {"title": "Add endpoints", "type": "work", "dependencies": ["W1"]},
-    {"title": "Add tests", "type": "work", "dependencies": ["W1", "W2"]}
+    {"title": "Create schema", "type": "work"},                        // index 0
+    {"title": "Add endpoints", "type": "work", "dependencies": [0]},   // depends on index 0
+    {"title": "Add tests", "type": "work", "dependencies": [0, 1]}     // depends on indices 0 and 1
   ]
 }
 ```
-This works because W1, W2, W3 are assigned in order as tasks are created.
+
+**After creation, stored as:**
+
+```json
+{
+  "tasks": [
+    {"identifier": "W47", "title": "Create schema", "dependencies": []},
+    {"identifier": "W48", "title": "Add endpoints", "dependencies": ["W47"]},
+    {"identifier": "W49", "title": "Add tests", "dependencies": ["W47", "W48"]}
+  ]
+}
+```
+
+**You can also mix indices with existing task identifiers:**
+
+```json
+{
+  "title": "Feature Extension",
+  "tasks": [
+    {"title": "New component", "type": "work"},
+    {"title": "Integration", "type": "work", "dependencies": [0, "W23"]}  // index 0 + existing task W23
+  ]
+}
+```
+
+**What DOES NOT work:**
+
+- ❌ **Cross-goal dependencies in batch**: Cannot reference tasks from other goals in the same batch
+  - Identifiers are assigned during creation, so you can't predict them
+  - Solution: Create goals separately or add dependencies after creation
+
+**For cross-goal dependencies:**
+
+1. **Create goals separately** - Create first goal, get identifiers, then create second goal with correct dependencies
+2. **Add after creation** - Create all goals, then use `PATCH /api/tasks/:id` to add cross-goal dependencies
+3. **Don't use dependencies** - If goals are independent
 
 **Tasks with incomplete dependencies are automatically marked as `blocked`**
 
@@ -380,7 +403,7 @@ curl -X POST \
         "priority": "high",
         "tasks": [
           {"title": "Create user schema", "type": "work"},
-          {"title": "Add login endpoint", "type": "work", "dependencies": ["W1"]}
+          {"title": "Add login endpoint", "type": "work", "dependencies": [0]}
         ]
       },
       {

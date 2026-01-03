@@ -1793,6 +1793,316 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "goal options" do
+    test "builds goal options from board" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      # Create some goals
+      {:ok, goal1} = Tasks.create_task(column, %{"title" => "Goal 1", "type" => "goal"})
+      {:ok, goal2} = Tasks.create_task(column, %{"title" => "Goal 2", "type" => "goal"})
+
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      goal_options = socket.assigns.goal_options
+      # Should have "No parent goal" plus 2 goals
+      assert length(goal_options) == 3
+      assert {"No parent goal", nil} in goal_options
+
+      # Should show identifier and title
+      goal1_option = Enum.find(goal_options, fn {label, _id} ->
+        label == "#{goal1.identifier} - Goal 1"
+      end)
+      assert goal1_option
+
+      goal2_option = Enum.find(goal_options, fn {label, _id} ->
+        label == "#{goal2.identifier} - Goal 2"
+      end)
+      assert goal2_option
+    end
+
+    test "excludes current task from goal options when editing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, goal1} = Tasks.create_task(column, %{"title" => "Goal 1", "type" => "goal"})
+      {:ok, goal2} = Tasks.create_task(column, %{"title" => "Goal 2", "type" => "goal"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: goal1,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      goal_options = socket.assigns.goal_options
+      # Should not include goal1 itself
+      goal1_option = Enum.find(goal_options, fn {_label, id} -> id == goal1.id end)
+      refute goal1_option
+
+      # Should include goal2
+      goal2_option = Enum.find(goal_options, fn {_label, id} -> id == goal2.id end)
+      assert goal2_option
+    end
+  end
+
+  describe "field visibility" do
+    test "sets field_visibility from board" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      # Update board with field visibility
+      board
+      |> Ecto.Changeset.change(%{
+        field_visibility: %{"why" => true, "what" => true, "where_context" => false}
+      })
+      |> Kanban.Repo.update!()
+
+      board = Kanban.Repo.get!(Kanban.Boards.Board, board.id)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      assert socket.assigns.field_visibility == %{"why" => true, "what" => true, "where_context" => false}
+    end
+
+    test "uses default field_visibility from board schema" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Board has default field_visibility from schema
+      assert is_map(socket.assigns.field_visibility)
+      assert Map.has_key?(socket.assigns.field_visibility, "acceptance_criteria")
+      assert socket.assigns.field_visibility["acceptance_criteria"] == true
+    end
+  end
+
+  describe "normalize_array_params" do
+    test "filters empty strings from array fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      # Create actual dependency tasks
+      dep1 = task_fixture(column, %{title: "Dependency 1"})
+      dep2 = task_fixture(column, %{title: "Dependency 2"})
+
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task With Arrays",
+        "pitfalls" => ["Real pitfall", "", "Another pitfall", ""],
+        "dependencies" => [dep1.identifier, "", dep2.identifier, ""]
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Reload task from database with all fields
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task With Arrays")
+
+      assert created_task.pitfalls == ["Real pitfall", "Another pitfall"]
+      assert created_task.dependencies == [dep1.identifier, dep2.identifier]
+    end
+
+    test "defaults missing array fields to empty list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      # Don't include array fields - they should default to empty
+      task_params = %{
+        "title" => "Test Task"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task.dependencies == []
+      assert created_task.pitfalls == []
+      assert created_task.out_of_scope == []
+    end
+  end
+
+  describe "save with WIP limit" do
+    test "shows error when creating task exceeds WIP limit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do", wip_limit: 1})
+      _existing_task = task_fixture(column, %{title: "Existing"})
+
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "New Task"
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Should have error in changeset
+      assert updated_socket.assigns.form.source.errors[:column_id]
+      assert updated_socket.assigns.error_message == "Cannot add task: WIP limit reached for this column"
+    end
+  end
+
+  describe "maybe_add_review_metadata" do
+    test "adds reviewed_at and reviewed_by_id when review_status changes" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test"})
+
+      # Add user to current_scope for review metadata
+      scope = %{user: user}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}",
+            current_scope: scope
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test",
+        "review_status" => "approved"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert updated_task.review_status == :approved
+      assert updated_task.reviewed_by_id == user.id
+      assert updated_task.reviewed_at
+    end
+
+    test "does not add review metadata when review_status is pending" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test"})
+
+      scope = %{user: user}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}",
+            current_scope: scope
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test",
+        "review_status" => "pending"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      refute updated_task.reviewed_by_id
+      refute updated_task.reviewed_at
+    end
+  end
+
   describe "AI context fields integration" do
     test "creates task with all AI context fields" do
       user = user_fixture()

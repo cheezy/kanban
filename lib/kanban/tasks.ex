@@ -232,6 +232,9 @@ defmodule Kanban.Tasks do
   end
 
   defp insert_child_tasks(multi, column, child_tasks_attrs) do
+    # First pass: pre-generate identifiers for all child tasks
+    task_identifiers = pregenerate_task_identifiers(column, child_tasks_attrs)
+
     child_tasks_attrs
     |> Enum.with_index()
     |> Enum.reduce(multi, fn {child_attrs, index}, multi_acc ->
@@ -240,7 +243,9 @@ defmodule Kanban.Tasks do
 
       multi_acc
       |> Ecto.Multi.insert(task_key, fn %{goal: goal} ->
-        child_attrs_with_parent = prepare_child_task_attrs(column, child_attrs, goal.id, index)
+        child_attrs_with_parent =
+          prepare_child_task_attrs(column, child_attrs, goal.id, index, task_identifiers)
+
         Task.changeset(%Task{column_id: column.id}, child_attrs_with_parent)
       end)
       |> Ecto.Multi.insert(history_key, fn changes ->
@@ -254,12 +259,14 @@ defmodule Kanban.Tasks do
     end)
   end
 
-  defp prepare_child_task_attrs(column, attrs, parent_id, index) do
+  defp prepare_child_task_attrs(column, attrs, parent_id, index, task_identifiers) do
     next_position = get_next_position(column) + index + 1
-    task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
-    identifier = generate_identifier(column, task_type)
+    identifier = Enum.at(task_identifiers, index)
 
     prepared_attrs = prepare_task_attrs(attrs, next_position)
+
+    # Convert index-based dependencies to actual identifiers
+    prepared_attrs = convert_index_based_dependencies(prepared_attrs, task_identifiers)
 
     identifier_key =
       if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
@@ -308,6 +315,62 @@ defmodule Kanban.Tasks do
       %{goal_id: goal.id, column_id: column.id}
     )
   end
+
+  # Pre-generate all task identifiers so we can resolve index-based dependencies
+  # We track counters in memory since database hasn't been updated yet
+  defp pregenerate_task_identifiers(_column, child_tasks_attrs) do
+    # Get initial max values from database for each type
+    initial_counters = %{
+      work: get_max_identifier_number(:work, "W"),
+      defect: get_max_identifier_number(:defect, "D"),
+      goal: get_max_identifier_number(:goal, "G")
+    }
+
+    {identifiers, _final_counters} =
+      Enum.map_reduce(child_tasks_attrs, initial_counters, fn attrs, counters ->
+        task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
+        task_type = normalize_task_type(task_type)
+        prefix = get_task_type_prefix(task_type)
+
+        # Get and increment the counter for this type
+        current_count = Map.get(counters, task_type)
+        new_count = current_count + 1
+        identifier = "#{prefix}#{new_count}"
+
+        # Update counters for next iteration
+        updated_counters = Map.put(counters, task_type, new_count)
+
+        {identifier, updated_counters}
+      end)
+
+    identifiers
+  end
+
+  # Convert integer-based dependencies (indices) to actual task identifiers
+  defp convert_index_based_dependencies(attrs, task_identifiers) do
+    deps = Map.get(attrs, "dependencies", Map.get(attrs, :dependencies))
+
+    if should_convert_dependencies?(deps) do
+      converted_deps = convert_dependency_list(deps, task_identifiers)
+      deps_key = if is_map_key(attrs, "dependencies"), do: "dependencies", else: :dependencies
+      Map.put(attrs, deps_key, converted_deps)
+    else
+      attrs
+    end
+  end
+
+  defp should_convert_dependencies?(deps) when is_list(deps) and deps != [], do: true
+  defp should_convert_dependencies?(_), do: false
+
+  defp convert_dependency_list(deps, task_identifiers) do
+    Enum.map(deps, fn dep -> convert_single_dependency(dep, task_identifiers) end)
+  end
+
+  defp convert_single_dependency(idx, task_identifiers) when is_integer(idx) do
+    Enum.at(task_identifiers, idx) || idx
+  end
+
+  defp convert_single_dependency(dep, _task_identifiers), do: dep
 
   defp prepare_task_creation_attrs(column, attrs) do
     next_position = get_next_position(column)
