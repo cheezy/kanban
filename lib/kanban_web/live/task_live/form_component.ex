@@ -303,7 +303,10 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Please fix the errors below"))
+         |> assign_form(changeset)}
     end
   end
 
@@ -327,10 +330,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
           |> Tasks.Task.changeset(task_params)
           |> Ecto.Changeset.add_error(:column_id, gettext("WIP limit reached for this column"))
 
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Cannot add task: WIP limit reached for this column"))
+         |> assign_form(changeset)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Please fix the errors below"))
+         |> assign_form(changeset)}
     end
   end
 
