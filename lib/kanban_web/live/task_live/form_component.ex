@@ -393,6 +393,34 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     params
     |> normalize_testing_strategy()
     |> normalize_integration_points()
+    |> normalize_embedded_fields()
+  end
+
+  defp normalize_embedded_fields(params) do
+    params
+    |> normalize_embedded_field("key_files")
+    |> normalize_embedded_field("verification_steps")
+  end
+
+  defp normalize_embedded_field(params, field_name) do
+    case Map.get(params, field_name) do
+      # If it's already a list, leave it as is
+      value when is_list(value) ->
+        params
+
+      # If it's a map with numeric string keys (from inputs_for), convert to list
+      value when is_map(value) ->
+        list =
+          value
+          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+          |> Enum.map(fn {_k, v} -> Map.delete(v, "_persistent_id") end)
+
+        Map.put(params, field_name, list)
+
+      # If it's nil or missing, set to empty list
+      _ ->
+        Map.put(params, field_name, [])
+    end
   end
 
   defp normalize_testing_strategy(params) do
