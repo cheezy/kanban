@@ -67,7 +67,7 @@ Stride uses a **2-level hierarchy** to organize work effectively:
 - Grouping related tasks for a release or milestone
 - You need to track progress across multiple related tasks
 
-**Example:**
+**Example - Single Goal:**
 ```json
 POST /api/tasks
 {
@@ -106,6 +106,67 @@ POST /api/tasks
   }
 }
 ```
+
+**Example - Multiple Goals at Once:**
+
+When you need to create several related goals (e.g., planning a sprint or project phase), use the batch endpoint to create them all in one API call:
+
+```json
+POST /api/tasks/batch
+{
+  "goals": [
+    {
+      "title": "Implement user authentication system",
+      "description": "Add comprehensive authentication with JWT tokens",
+      "type": "goal",
+      "priority": "high",
+      "complexity": "large",
+      "tasks": [
+        {
+          "title": "Add JWT library and configuration",
+          "type": "work",
+          "complexity": "small"
+        },
+        {
+          "title": "Create auth controller and endpoints",
+          "type": "work",
+          "complexity": "medium",
+          "dependencies": ["W1"]
+        }
+      ]
+    },
+    {
+      "title": "User profile management",
+      "description": "Allow users to view and edit profiles",
+      "type": "goal",
+      "priority": "medium",
+      "complexity": "medium",
+      "dependencies": ["G1"],
+      "tasks": [
+        {
+          "title": "Create profile schema",
+          "type": "work",
+          "complexity": "small"
+        },
+        {
+          "title": "Build profile view page",
+          "type": "work",
+          "complexity": "medium",
+          "dependencies": ["W3"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Benefits of batch creation:**
+- Reduced API calls (1 request instead of N)
+- Faster project setup when planning multiple goals
+- Clear visibility of related work structure
+- Dependencies can reference tasks across goals in the batch
+
+See [POST /api/tasks/batch](api/post_tasks_batch.md) for complete documentation.
 
 ### When to Use Flat Tasks
 

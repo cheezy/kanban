@@ -208,6 +208,54 @@ Agents can programmatically:
 - Discover available endpoints
 - Learn the workflow without manual documentation
 
+### Planning and Uploading Multiple Goals
+
+A common onboarding workflow is to analyze a project and upload a comprehensive plan with multiple goals. Use the batch endpoint for this:
+
+```bash
+# 1. Get onboarding info and understand the system
+curl https://www.stridelikeaboss.com/api/agent/onboarding
+
+# 2. Analyze the project and create a plan with multiple goals
+
+# 3. Upload all goals in one request
+curl -X POST \
+  -H "Authorization: Bearer $API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "goals": [
+      {
+        "title": "Setup authentication system",
+        "type": "goal",
+        "priority": "high",
+        "tasks": [
+          {"title": "Add JWT library", "type": "work"},
+          {"title": "Create auth endpoints", "type": "work"}
+        ]
+      },
+      {
+        "title": "User profile management",
+        "type": "goal",
+        "priority": "medium",
+        "tasks": [
+          {"title": "Profile schema", "type": "work"},
+          {"title": "Profile UI", "type": "work"}
+        ]
+      }
+    ]
+  }' \
+  https://www.stridelikeaboss.com/api/tasks/batch
+```
+
+**Benefits:**
+
+- Upload entire project plan in one API call
+- Establish work structure before claiming individual tasks
+- Clear visibility of all planned work
+- Dependencies automatically enforced across goals
+
+See [POST /api/tasks/batch](post_tasks_batch.md) for complete documentation on batch uploads.
+
 ## Notes
 
 - **No authentication required** - Accessible without API token

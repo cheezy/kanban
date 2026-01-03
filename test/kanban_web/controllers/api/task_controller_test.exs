@@ -205,6 +205,201 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "POST /api/tasks/batch" do
+    test "creates multiple goals with child tasks", %{conn: conn} do
+      goals_params = [
+        %{
+          "title" => "Goal 1",
+          "description" => "First goal",
+          "type" => "goal",
+          "priority" => "high",
+          "tasks" => [
+            %{"title" => "Task 1-1", "type" => "work", "complexity" => "small"},
+            %{"title" => "Task 1-2", "type" => "work", "complexity" => "medium"}
+          ]
+        },
+        %{
+          "title" => "Goal 2",
+          "description" => "Second goal",
+          "type" => "goal",
+          "priority" => "medium",
+          "tasks" => [
+            %{"title" => "Task 2-1", "type" => "work", "complexity" => "large"}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"success" => true, "total" => 2, "goals" => goals} = response
+      assert length(goals) == 2
+
+      first_goal = Enum.at(goals, 0)
+      assert first_goal["goal"]["title"] == "Goal 1"
+      assert first_goal["goal"]["type"] == "goal"
+      assert length(first_goal["child_tasks"]) == 2
+
+      second_goal = Enum.at(goals, 1)
+      assert second_goal["goal"]["title"] == "Goal 2"
+      assert length(second_goal["child_tasks"]) == 1
+    end
+
+    test "creates single goal in batch", %{conn: conn} do
+      goals_params = [
+        %{
+          "title" => "Single Goal",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "Single Task", "type" => "work"}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"success" => true, "total" => 1, "goals" => goals} = response
+      assert length(goals) == 1
+    end
+
+    test "returns error when goal at specific index fails validation", %{conn: conn} do
+      goals_params = [
+        %{
+          "title" => "Valid Goal",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Task 1", "type" => "work"}]
+        },
+        %{
+          "title" => "",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Task 2", "type" => "work"}]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 422)
+
+      assert %{"error" => error, "index" => 1, "details" => details} = response
+      assert error =~ "Failed to create goal at index 1"
+      assert is_map(details)
+    end
+
+    test "stops processing on first error (partial success)", %{conn: conn} do
+      goals_params = [
+        %{
+          "title" => "Goal 1",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Task 1", "type" => "work"}]
+        },
+        %{
+          "title" => "",
+          "type" => "goal",
+          "tasks" => []
+        },
+        %{
+          "title" => "Goal 3",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Task 3", "type" => "work"}]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 422)
+
+      assert %{"index" => 1} = response
+
+      conn = get(conn, ~p"/api/tasks")
+      tasks_response = json_response(conn, 200)
+      titles = Enum.map(tasks_response["data"], & &1["title"])
+
+      assert "Goal 1" in titles
+      refute "Goal 3" in titles
+    end
+
+    test "creates empty batch successfully", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks/batch", goals: [])
+      response = json_response(conn, 201)
+
+      assert %{"success" => true, "total" => 0, "goals" => []} = response
+    end
+
+    test "tracks AI agent when creating batch with agent_model", %{
+      conn: _conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "AI Agent Token",
+          "agent_model" => "claude-sonnet-4-5"
+        })
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      goals_params = [
+        %{
+          "title" => "Agent Goal",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Agent Task", "type" => "work"}]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"goals" => goals} = response
+      goal = Enum.at(goals, 0)["goal"]
+      assert goal["created_by_agent"] == "ai_agent:claude-sonnet-4-5"
+    end
+
+    test "returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: [])
+      assert json_response(conn, 401)
+    end
+
+    test "handles goals with complex fields", %{conn: conn} do
+      goals_params = [
+        %{
+          "title" => "Complex Goal",
+          "description" => "Goal with many fields",
+          "type" => "goal",
+          "priority" => "critical",
+          "complexity" => "large",
+          "why" => "Business need",
+          "what" => "Feature implementation",
+          "where_context" => "lib/kanban",
+          "technology_requirements" => ["elixir", "phoenix"],
+          "pitfalls" => ["Don't forget validation"],
+          "tasks" => [
+            %{
+              "title" => "Complex Task",
+              "type" => "work",
+              "complexity" => "medium",
+              "key_files" => [
+                %{"file_path" => "lib/test.ex", "note" => "Main file", "position" => 0}
+              ]
+            }
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"success" => true, "total" => 1} = response
+      goal = Enum.at(response["goals"], 0)["goal"]
+      assert goal["title"] == "Complex Goal"
+      assert goal["priority"] == "critical"
+    end
+  end
+
   describe "GET /api/tasks" do
     setup %{column: column, user: user} do
       {:ok, task1} =

@@ -74,6 +74,25 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def batch_create(conn, %{"goals" => goals}) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
+
+    column_id = get_default_column_id(board)
+    column = Columns.get_column!(column_id)
+
+    if column.board_id != board.id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Column does not belong to this board"})
+    else
+      goals
+      |> process_batch_goals(column, user, api_token, conn)
+      |> handle_batch_result(conn)
+    end
+  end
+
   def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do
     board = conn.assigns.current_board
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
@@ -577,5 +596,89 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:conflict)
     |> json(error_response)
+  end
+
+  defp translate_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+  end
+
+  defp process_batch_goals(goals, column, user, api_token, conn) do
+    goals
+    |> Enum.with_index()
+    |> Enum.reduce_while({:ok, []}, fn {goal_params, index}, {:ok, acc} ->
+      create_single_goal_in_batch(goal_params, index, column, user, api_token, conn, acc)
+    end)
+  end
+
+  defp create_single_goal_in_batch(goal_params, index, column, user, api_token, conn, acc) do
+    task_params_with_creator = build_task_params_with_creator(goal_params, user, api_token)
+    child_tasks = Map.get(goal_params, "tasks", [])
+
+    case Tasks.create_goal_with_tasks(column, task_params_with_creator, child_tasks) do
+      {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
+        handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc)
+
+      {:error, :wip_limit_reached} ->
+        {:halt, {:error, index, :wip_limit_reached}}
+
+      {:error, _operation, changeset} ->
+        {:halt, {:error, index, changeset}}
+    end
+  end
+
+  defp handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc) do
+    goal = Tasks.get_task_for_view!(goal.id)
+
+    emit_telemetry(conn, :goal_created, %{
+      goal_id: goal.id,
+      child_task_count: length(created_child_tasks),
+      batch: true,
+      batch_index: index
+    })
+
+    result = %{
+      goal: render_goal_with_children(goal),
+      child_tasks: Enum.map(created_child_tasks, &render_task_summary/1)
+    }
+
+    {:cont, {:ok, [result | acc]}}
+  end
+
+  defp handle_batch_result({:ok, created_goals}, conn) do
+    emit_telemetry(conn, :batch_goals_created, %{
+      total_goals: length(created_goals)
+    })
+
+    conn
+    |> put_status(:created)
+    |> json(%{
+      success: true,
+      goals: Enum.reverse(created_goals),
+      total: length(created_goals)
+    })
+  end
+
+  defp handle_batch_result({:error, index, changeset}, conn)
+       when is_struct(changeset, Ecto.Changeset) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{
+      error: "Failed to create goal at index #{index}",
+      index: index,
+      details: translate_changeset_errors(changeset)
+    })
+  end
+
+  defp handle_batch_result({:error, index, :wip_limit_reached}, conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{
+      error: "WIP limit reached while creating goal at index #{index}",
+      index: index
+    })
   end
 end

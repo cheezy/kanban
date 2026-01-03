@@ -63,6 +63,7 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 **Task Creation:**
 - [POST /api/tasks](../api/post_tasks.md) - Create a task or goal with nested child tasks
+- [POST /api/tasks/batch](../api/post_tasks_batch.md) - Create multiple goals with nested tasks in one request
 
 **Authentication:**
 - Bearer token authentication

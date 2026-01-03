@@ -163,6 +163,7 @@ Every hook receives these environment variables:
 ### Task Creation
 
 - [POST /api/tasks](post_tasks.md) - Create a task or goal with nested child tasks
+- [POST /api/tasks/batch](post_tasks_batch.md) - Create multiple goals with nested tasks in one request
 
 ### Endpoint Summary
 
@@ -176,6 +177,7 @@ Every hook receives these environment variables:
 | GET | `/api/tasks/:id/dependencies` | Get task dependencies | No |
 | GET | `/api/tasks/:id/dependents` | Get dependent tasks | No |
 | POST | `/api/tasks` | Create a task | No |
+| POST | `/api/tasks/batch` | Create multiple goals | No |
 | POST | `/api/tasks/claim` | Claim a task | `before_doing` |
 | POST | `/api/tasks/:id/unclaim` | Unclaim a task | No |
 | PATCH | `/api/tasks/:id` | Update task fields | No |

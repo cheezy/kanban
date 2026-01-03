@@ -308,11 +308,22 @@ Give your AI agent this prompt to break down and upload a goal:
 3. Upload it to Stride using curl or API client
 4. Confirm the goal and tasks appear in your board
 
-**Important API Limitation:**
+#### Creating Multiple Goals
 
-- Each API call to POST /api/tasks creates **ONE goal** with its child tasks
-- To create multiple goals, make **separate API requests** for each goal
-- You cannot upload multiple goals in a single request
+When you need to upload several related goals (such as planning a sprint or project phase), you have two options:
+
+##### Option 1: Batch Upload (Recommended)
+
+- Use `POST /api/tasks/batch` to create multiple goals in a single API call
+- More efficient than making separate requests
+- Ideal for project planning and sprint setup
+- See [POST /api/tasks/batch](./api/post_tasks_batch.md) for complete documentation
+
+##### Option 2: Individual Uploads
+
+- Use `POST /api/tasks` for each goal separately
+- Useful when goals are created individually or over time
+- Each API call creates ONE goal with its child tasks
 
 **Benefits of This Approach:**
 - Your AI agent helps decompose complex work into actionable tasks
