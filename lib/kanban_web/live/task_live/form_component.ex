@@ -21,6 +21,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(:comment_form, task_data.comment_form)
      |> assign(:goal_options, task_data.goal_options)
      |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign(:error_message, nil)
      |> assign_form(task_data.changeset)}
   end
 
@@ -66,7 +67,10 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       |> Tasks.Task.changeset(task_params)
       |> Map.put(:action, :validate)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:noreply,
+     socket
+     |> assign(:error_message, nil)
+     |> assign_form(changeset)}
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
@@ -305,7 +309,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
          socket
-         |> put_flash(:error, gettext("Please fix the errors below"))
+         |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
   end
@@ -332,19 +336,20 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:error, gettext("Cannot add task: WIP limit reached for this column"))
+         |> assign(:error_message, gettext("Cannot add task: WIP limit reached for this column"))
          |> assign_form(changeset)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
          socket
-         |> put_flash(:error, gettext("Please fix the errors below"))
+         |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
+    socket
+    |> assign(:form, to_form(changeset))
   end
 
   defp maybe_add_review_metadata(task_params, current_user) do

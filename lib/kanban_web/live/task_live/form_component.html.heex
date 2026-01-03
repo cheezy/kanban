@@ -10,7 +10,14 @@
     </:subtitle>
   </.header>
 
-  <.flash kind={:error} flash={@flash} />
+  <%= if @error_message do %>
+    <div class="alert alert-error mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{@error_message}</span>
+    </div>
+  <% end %>
 
   <.form
     :let={f}
@@ -154,6 +161,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Key Files to Read First")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:key_files].errors, &translate_error/1)}>{msg}</.error>
         <.inputs_for :let={kf} field={f[:key_files]}>
           <div class="flex gap-2 items-start mb-2">
             <div class="flex-1">
@@ -191,6 +199,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Verification Steps")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:verification_steps].errors, &translate_error/1)}>{msg}</.error>
         <.inputs_for :let={vs} field={f[:verification_steps]}>
           <div class="flex gap-2 items-start mb-2">
             <div class="w-32">
@@ -260,6 +269,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Technology Requirements")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>{msg}</.error>
         <%= for {tech, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :technology_requirements) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -334,6 +344,7 @@
       <%!-- Pitfalls Section --%>
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Common Pitfalls")}</h3>
+        <.error :for={msg <- Enum.map(f[:pitfalls].errors, &translate_error/1)}>{msg}</.error>
         <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :pitfalls) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -369,6 +380,7 @@
       <%!-- Out of Scope Section --%>
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Out of Scope")}</h3>
+        <.error :for={msg <- Enum.map(f[:out_of_scope].errors, &translate_error/1)}>{msg}</.error>
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :out_of_scope) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -406,6 +418,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Security Considerations")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>{msg}</.error>
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :security_considerations) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -443,6 +456,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Testing Strategy")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:testing_strategy].errors, &translate_error/1)}>{msg}</.error>
         <% testing_strategy = Ecto.Changeset.get_field(@form.source, :testing_strategy) || %{} %>
 
         <div class="mb-4">
@@ -555,6 +569,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Integration Points")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:integration_points].errors, &translate_error/1)}>{msg}</.error>
         <% integration_points = Ecto.Changeset.get_field(@form.source, :integration_points) || %{} %>
 
         <div class="mb-4">
@@ -698,6 +713,7 @@
     <%!-- Dependencies Section --%>
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Dependencies")}</h3>
+      <.error :for={msg <- Enum.map(f[:dependencies].errors, &translate_error/1)}>{msg}</.error>
       <%= for {dep, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :dependencies) || []) do %>
         <div class="flex gap-2 mb-2">
           <input
@@ -760,6 +776,7 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Claim Tracking & Required Capabilities")}
         </h3>
+        <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>{msg}</.error>
         <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
