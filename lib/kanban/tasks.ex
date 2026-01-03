@@ -244,7 +244,7 @@ defmodule Kanban.Tasks do
       multi_acc
       |> Ecto.Multi.insert(task_key, fn %{goal: goal} ->
         child_attrs_with_parent =
-          prepare_child_task_attrs(column, child_attrs, goal.id, index, task_identifiers)
+          prepare_child_task_attrs(column, child_attrs, goal, index, task_identifiers)
 
         Task.changeset(%Task{column_id: column.id}, child_attrs_with_parent)
       end)
@@ -259,7 +259,7 @@ defmodule Kanban.Tasks do
     end)
   end
 
-  defp prepare_child_task_attrs(column, attrs, parent_id, index, task_identifiers) do
+  defp prepare_child_task_attrs(column, attrs, goal, index, task_identifiers) do
     next_position = get_next_position(column) + index + 1
     identifier = Enum.at(task_identifiers, index)
 
@@ -273,9 +273,28 @@ defmodule Kanban.Tasks do
 
     parent_id_key = if is_map_key(prepared_attrs, "position"), do: "parent_id", else: :parent_id
 
+    # Inherit creator information from parent goal if not already set in child attrs
+    prepared_attrs = inherit_creator_info(prepared_attrs, goal)
+
     prepared_attrs
     |> Map.put(identifier_key, identifier)
-    |> Map.put(parent_id_key, parent_id)
+    |> Map.put(parent_id_key, goal.id)
+  end
+
+  defp inherit_creator_info(attrs, goal) do
+    has_string_keys? = Map.keys(attrs) |> Enum.any?(&is_binary/1)
+
+    created_by_id_key = if has_string_keys?, do: "created_by_id", else: :created_by_id
+    created_by_agent_key = if has_string_keys?, do: "created_by_agent", else: :created_by_agent
+
+    attrs
+    |> Map.put_new(created_by_id_key, goal.created_by_id)
+    |> maybe_put_created_by_agent(created_by_agent_key, goal.created_by_agent)
+  end
+
+  defp maybe_put_created_by_agent(attrs, _key, nil), do: attrs
+  defp maybe_put_created_by_agent(attrs, key, agent_name) do
+    Map.put_new(attrs, key, agent_name)
   end
 
   defp handle_goal_creation_result(transaction_result, column) do
