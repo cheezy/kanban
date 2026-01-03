@@ -107,7 +107,7 @@ The `key_files` array should contain objects with the following structure:
 
 #### Verification Steps Format
 
-The `verification_steps` array should contain objects with the following structure:
+The `verification_steps` array MUST contain **objects** with the following structure:
 
 ```json
 "verification_steps": [
@@ -125,6 +125,16 @@ The `verification_steps` array should contain objects with the following structu
   }
 ]
 ```
+
+**⚠️ CRITICAL**: Each element in the `verification_steps` array MUST be an **object** (not a string, not an empty array).
+
+**Valid:**
+- `"verification_steps": [{"step_type": "command", "step_text": "mix test", "position": 0}]`
+- `"verification_steps": []` (empty array is valid but not useful)
+
+**Invalid (will cause error):**
+- `"verification_steps": ["mix test"]` (array of strings)
+- `"verification_steps": "mix test"` (string instead of array)
 
 #### Testing Strategy Format
 

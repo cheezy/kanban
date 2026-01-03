@@ -663,6 +663,46 @@ When creating tasks via the API, use this JSON structure:
 - **`complexity`**: `"small"`, `"medium"`, or `"large"`
 - **`priority`**: `"low"`, `"medium"`, `"high"`, or `"critical"`
 
+**⚠️ CRITICAL: verification_steps Format**
+
+The `verification_steps` field MUST be an **array of objects** (not an empty array, not an array of strings):
+
+```json
+"verification_steps": [
+  {
+    "step_type": "command",
+    "step_text": "mix test test/kanban/accounts_test.exs",
+    "expected_result": "All tests pass",
+    "position": 0
+  },
+  {
+    "step_type": "manual",
+    "step_text": "Navigate to /login and verify password validation",
+    "expected_result": "Invalid passwords show error message",
+    "position": 1
+  }
+]
+```
+
+**Each object MUST have:**
+- `step_type` (required): Either `"command"` or `"manual"`
+- `step_text` (required): The command to run or manual instruction
+- `position` (required): Integer >= 0 for ordering
+- `expected_result` (optional): What should happen when successful
+
+**❌ Invalid formats:**
+```json
+"verification_steps": []  // Empty array - system will accept but provides no value
+"verification_steps": ["mix test"]  // Array of strings - will cause crash
+"verification_steps": "mix test"  // String - will cause crash
+```
+
+**✅ Valid formats:**
+```json
+"verification_steps": [{"step_type": "command", "step_text": "mix test", "position": 0}]  // Array of objects
+"verification_steps": []  // Empty array is technically valid but not useful
+```
+
 For documentation/planning purposes, you can also use this markdown template:
 
 ```markdown

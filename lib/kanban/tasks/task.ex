@@ -214,23 +214,45 @@ defmodule Kanban.Tasks.Task do
       nil ->
         changeset
 
-      value when is_list(value) ->
+      [] ->
+        # Empty arrays are valid - just means no embedded records
         changeset
 
+      value when is_list(value) ->
+        validate_embed_array_items(changeset, field, value)
+
       _non_list_value ->
-        error_message =
-          case field do
-            :key_files ->
-              "must be an array of objects with file_path, note, and position fields"
+        add_error(changeset, field, embed_type_error_message(field, :not_array))
+    end
+  end
 
-            :verification_steps ->
-              "must be an array of objects with step_type, step_text, expected_result, and position fields"
+  defp validate_embed_array_items(changeset, field, value) do
+    if Enum.all?(value, &is_map/1) do
+      changeset
+    else
+      add_error(changeset, field, embed_type_error_message(field, :not_objects))
+    end
+  end
 
-            _ ->
-              "must be an array"
-          end
+  defp embed_type_error_message(field, error_type) do
+    case {field, error_type} do
+      {:key_files, :not_objects} ->
+        "must be an array of objects with file_path, note, and position fields"
 
-        add_error(changeset, field, error_message)
+      {:verification_steps, :not_objects} ->
+        "must be an array of objects with step_type, step_text, expected_result, and position fields"
+
+      {_, :not_objects} ->
+        "must be an array of objects"
+
+      {:key_files, :not_array} ->
+        "must be an array of objects with file_path, note, and position fields"
+
+      {:verification_steps, :not_array} ->
+        "must be an array of objects with step_type, step_text, expected_result, and position fields"
+
+      {_, :not_array} ->
+        "must be an array"
     end
   end
 

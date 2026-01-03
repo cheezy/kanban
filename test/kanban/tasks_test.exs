@@ -1590,6 +1590,52 @@ defmodule Kanban.TasksTest do
       assert length(task.verification_steps) == 1
       assert hd(task.verification_steps).expected_result == nil
     end
+
+    test "rejects verification_steps as array of strings" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: ["mix test", "mix credo"]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert %{verification_steps: error_messages} = errors_on(changeset)
+      assert Enum.any?(error_messages, &(&1 =~ "must be an array of objects"))
+    end
+
+    test "rejects verification_steps as string" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: "mix test"
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert %{verification_steps: error_messages} = errors_on(changeset)
+      assert Enum.any?(error_messages, &(&1 =~ "must be an array of objects"))
+    end
+
+    test "allows empty verification_steps array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        verification_steps: []
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.verification_steps == []
+    end
   end
 
   describe "Task.changeset/2 unique constraints" do
