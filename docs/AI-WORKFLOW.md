@@ -72,31 +72,83 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 ### AI Workflow Integration
 
+⚠️ **CRITICAL: Hook Execution Order**
+
+Hooks MUST be executed in the exact order specified below. The most common mistake is calling `/complete` before executing `after_doing`, which breaks the workflow.
+
 **Complete AI Workflow with Hooks (Claim → Execute → Complete → Review):**
 
 1. **Discover tasks** - Call [GET /api/tasks/next](../api/get_tasks_next.md) to find available tasks
+
 2. **Claim a task** - Call [POST /api/tasks/claim](../api/post_tasks_claim.md)
    - Receives `before_doing` hook metadata
    - Task moves to Doing column
+
 3. **Execute `before_doing` hook** (blocking, 60s timeout)
    - Example: Pull latest code, setup workspace
+   - **Execute this BEFORE starting work**
+
 4. **Work on the task** - Implement changes, write code, run tests
-5. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
-   - Receives `after_doing`, `before_review`, and optionally `after_review` hooks
-   - Task moves to Review column (or Done if `needs_review=false`)
-6. **Execute `after_doing` hook** (blocking, 120s timeout)
+   - Do the actual implementation work
+   - Write tests, fix bugs, add features
+
+5. **⚠️ CRITICAL: Execute `after_doing` hook FIRST** (blocking, 120s timeout)
    - Example: Run tests, build project, lint code
-   - If this fails, task completion should be rolled back
+   - **YOU MUST EXECUTE THIS BEFORE CALLING `/complete`**
+   - If this fails, DO NOT call `/complete` - fix the issues first
+   - This validates your work is ready for completion
+
+6. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
+   - **Only call this AFTER `after_doing` hook succeeds**
+   - Receives `after_doing`, `before_review`, and optionally `after_review` hooks in response
+   - The `after_doing` hook in the response should already be completed (see step 5)
+   - Task moves to Review column (or Done if `needs_review=false`)
+
 7. **Execute `before_review` hook** (non-blocking, 60s timeout)
    - Example: Create PR, generate documentation
+   - Execute this after `/complete` succeeds
+
 8. **Wait for review** (if `needs_review=true`)
    - Human reviewer sets review_status
+   - Or automatically approved if `needs_review=false`
+
 9. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md)
    - If approved: receives `after_review` hook, task moves to Done
    - If changes requested: task returns to Doing
+
 10. **Execute `after_review` hook** (if approved, non-blocking, 60s timeout)
     - Example: Deploy to production, notify stakeholders
+    - Execute after task is approved
+
 11. **Dependencies automatically unblock** - Next tasks become available
+
+---
+
+**⚠️ COMMON MISTAKE TO AVOID:**
+
+**❌ WRONG ORDER:**
+```
+1. Claim task → receive before_doing hook
+2. Execute before_doing hook
+3. Do work
+4. Call /complete endpoint ← TOO EARLY!
+5. Receive after_doing hook
+6. Try to execute after_doing hook ← Tests fail, but task already completed!
+```
+
+**✅ CORRECT ORDER:**
+```
+1. Claim task → receive before_doing hook
+2. Execute before_doing hook
+3. Do work
+4. Execute after_doing hook (tests, format, lint) ← DO THIS FIRST!
+5. Call /complete endpoint ← Only after step 4 succeeds
+6. Receive after_doing, before_review, after_review hooks
+7. Execute before_review hook
+8. Execute after_review hook (if needs_review=false)
+```
+
+The `/complete` endpoint returns the `after_doing` hook in its response, but you should have **already executed it** before calling `/complete`. Think of the response as a confirmation, not an instruction.
 
 **Hook System:**
 - Server provides hook **metadata only** (name, env vars, timeout, blocking status)

@@ -53,9 +53,43 @@ defmodule Kanban.Hooks do
        name: hook_name,
        env: env,
        timeout: config.timeout,
-       blocking: config.blocking
+       blocking: config.blocking,
+       execute_before: execution_timing(hook_name, :before),
+       execute_after: execution_timing(hook_name, :after),
+       description: hook_description(hook_name)
      }}
   end
+
+  defp hook_description("before_doing"),
+    do: "Setup and preparation before starting work on the task"
+
+  defp hook_description("after_doing"),
+    do:
+      "Quality checks and validation after completing work (tests, linting, formatting, security)"
+
+  defp hook_description("before_review"),
+    do: "Prepare task for review (create PR, generate documentation)"
+
+  defp hook_description("after_review"),
+    do: "Finalize task after approval (deploy, merge, notify stakeholders)"
+
+  defp execution_timing("before_doing", :before), do: "Claiming the task"
+  defp execution_timing("before_doing", :after), do: "Executing the before_doing hook"
+
+  defp execution_timing("after_doing", :before),
+    do: "Calling the /complete endpoint - EXECUTE THIS FIRST!"
+
+  defp execution_timing("after_doing", :after), do: "Executing the after_doing hook successfully"
+
+  defp execution_timing("before_review", :before),
+    do: "Executing the after_doing hook successfully"
+
+  defp execution_timing("before_review", :after), do: "Executing the before_review hook"
+
+  defp execution_timing("after_review", :before),
+    do: "Review approval (or immediately if needs_review=false)"
+
+  defp execution_timing("after_review", :after), do: "Task marked as done"
 
   @doc """
   List all available hooks and their configurations in execution order.
