@@ -108,19 +108,53 @@ Hooks MUST be executed in the exact order specified below. The most common mista
    - Example: Create PR, generate documentation
    - Execute this after `/complete` succeeds
 
-8. **Wait for review** (if `needs_review=true`)
-   - Human reviewer sets review_status
-   - Or automatically approved if `needs_review=false`
+8. **⚠️ STOP HERE if `needs_review=true`**
+   - **DO NOT execute `after_review` hook yet!**
+   - Wait for human reviewer to approve/reject the task
+   - Human reviewer sets review_status through the UI or API
+   - Proceed to step 9 only when notified of approval
 
 9. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md)
+   - **Only call this after receiving human approval** (if `needs_review=true`)
+   - Or call immediately after step 7 (if `needs_review=false`)
    - If approved: receives `after_review` hook, task moves to Done
-   - If changes requested: task returns to Doing
+   - If changes requested: task returns to Doing, repeat from step 4
 
-10. **Execute `after_review` hook** (if approved, non-blocking, 60s timeout)
+10. **Execute `after_review` hook** (non-blocking, 60s timeout)
     - Example: Deploy to production, notify stakeholders
-    - Execute after task is approved
+    - **Execute ONLY after `/mark_reviewed` returns approved status**
+    - Or execute immediately after step 7 if `needs_review=false`
 
 11. **Dependencies automatically unblock** - Next tasks become available
+
+---
+
+**⚠️ CRITICAL: after_review Hook Timing - Two Different Paths**
+
+The `after_review` hook execution depends on whether the task requires human review:
+
+**Path 1: needs_review=true (Human Review Required)**
+```
+1. Execute before_review hook
+2. STOP and WAIT for human reviewer
+3. Human reviews and decides: approve/changes_requested/reject
+4. Call /mark_reviewed endpoint with review decision
+5. IF approved: Execute after_review hook ← ONLY AFTER APPROVAL!
+6. Task moves to Done column
+```
+
+**Path 2: needs_review=false (Auto-Approved)**
+```
+1. Execute before_review hook
+2. Execute after_review hook immediately ← No waiting required
+3. Task moves to Done column
+```
+
+**Common Mistake:**
+```
+❌ WRONG: Execute after_review immediately after before_review when needs_review=true
+✅ CORRECT: Wait for /mark_reviewed approval before executing after_review
+```
 
 ---
 
@@ -145,10 +179,32 @@ Hooks MUST be executed in the exact order specified below. The most common mista
 5. Call /complete endpoint ← Only after step 4 succeeds
 6. Receive after_doing, before_review, after_review hooks
 7. Execute before_review hook
-8. Execute after_review hook (if needs_review=false)
+8. IF needs_review=false: Execute after_review hook immediately
+   IF needs_review=true: STOP and wait for human approval
+9. IF needs_review=true: Wait for approval notification
+10. Call /mark_reviewed (when approved)
+11. Execute after_review hook (after approval received)
 ```
 
 The `/complete` endpoint returns the `after_doing` hook in its response, but you should have **already executed it** before calling `/complete`. Think of the response as a confirmation, not an instruction.
+
+**⚠️ WRONG: Premature after_review Execution**
+```
+❌ INCORRECT for needs_review=true:
+7. Execute before_review hook (create PR)
+8. Execute after_review hook (git commit) ← TOO EARLY!
+   Problem: Task not approved yet, changes committed prematurely
+```
+
+**✅ CORRECT: Wait for Approval**
+```
+✅ CORRECT for needs_review=true:
+7. Execute before_review hook (create PR)
+8. STOP and wait for human reviewer
+9. Receive approval notification
+10. Call /mark_reviewed endpoint
+11. Execute after_review hook (git commit) ← Only after approval
+```
 
 **Hook System:**
 - Server provides hook **metadata only** (name, env vars, timeout, blocking status)

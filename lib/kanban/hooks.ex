@@ -87,7 +87,8 @@ defmodule Kanban.Hooks do
   defp execution_timing("before_review", :after), do: "Executing the before_review hook"
 
   defp execution_timing("after_review", :before),
-    do: "Review approval (or immediately if needs_review=false)"
+    do:
+      "AFTER calling /mark_reviewed endpoint with approved status (or immediately after executing before_review if needs_review=false)"
 
   defp execution_timing("after_review", :after), do: "Task marked as done"
 
