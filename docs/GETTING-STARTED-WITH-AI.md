@@ -55,6 +55,8 @@ An AI-optimized board is automatically created with five standard columns:
 - ✅ API token management is available
 - ✅ Workflow hooks are fully supported
 
+**Windows Users:** See [WINDOWS-SETUP.md](WINDOWS-SETUP.md) for Windows-specific installation instructions including WSL2, PowerShell, and Git Bash setup options.
+
 ## Setting Up API Access
 
 AI agents need an API token to authenticate with your Stride instance.
@@ -143,13 +145,35 @@ Create a file named `.stride_auth.md` with the following content:
 
 ## Usage
 
-Replace `{{YOUR_TOKEN_HERE}}` with your actual token, then run:
+Replace `{{YOUR_TOKEN_HERE}}` with your actual token, then set environment variables:
 
-    export STRIDE_API_TOKEN="stride_abc123def456..."
-    export STRIDE_API_URL="https://www.stridelikeaboss.com"
+**Unix/Linux/macOS:**
 
-    curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-      $STRIDE_API_URL/api/tasks/next
+```bash
+export STRIDE_API_TOKEN="stride_abc123def456..."
+export STRIDE_API_URL="https://www.stridelikeaboss.com"
+
+curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  $STRIDE_API_URL/api/tasks/next
+```
+
+**Windows PowerShell:**
+
+```powershell
+$env:STRIDE_API_TOKEN = "stride_abc123def456..."
+$env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
+
+curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+  $env:STRIDE_API_URL/api/tasks/next
+```
+
+**Windows Command Prompt:**
+
+```cmd
+set STRIDE_API_TOKEN=stride_abc123def456...
+set STRIDE_API_URL=https://www.stridelikeaboss.com
+
+curl -H "Authorization: Bearer %STRIDE_API_TOKEN%" %STRIDE_API_URL%/api/tasks/next
 ```
 
 **2. Add it to `.gitignore` IMMEDIATELY:**

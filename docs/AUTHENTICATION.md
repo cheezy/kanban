@@ -46,12 +46,24 @@ Authorization: Bearer stride_dev_abc123def456...
 
 ## Environment Variables
 
+**Unix/Linux/macOS:**
+
 ```bash
 export STRIDE_API_TOKEN="stride_dev_abc123..."
 export STRIDE_API_URL="https://www.stridelikeaboss.com"
 
-curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \\
+curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   $STRIDE_API_URL/api/tasks/next
+```
+
+**Windows PowerShell:**
+
+```powershell
+$env:STRIDE_API_TOKEN = "stride_dev_abc123..."
+$env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
+
+curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+  $env:STRIDE_API_URL/api/tasks/next
 ```
 
 ### What To Do

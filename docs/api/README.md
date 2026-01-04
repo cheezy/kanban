@@ -16,6 +16,8 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 
 **New agents:** Start by calling [GET /api/agent/onboarding](get_agent_onboarding.md) to get complete onboarding information including file templates and step-by-step instructions.
 
+**Windows Users:** See [../WINDOWS-SETUP.md](../WINDOWS-SETUP.md) for Windows-specific setup before proceeding.
+
 1. **Get your API token** from your user or project manager
 2. **Create `.stride_auth.md`** file with authentication details
 3. **Create `.stride.md`** file with hook configurations
@@ -209,6 +211,8 @@ Store authentication credentials (DO NOT commit to version control):
 
 ## Usage
 
+**Unix/Linux/macOS:**
+
 ```bash
 export STRIDE_API_TOKEN="stride_dev_abc123..."
 export STRIDE_API_URL="https://www.stridelikeaboss.com"
@@ -217,6 +221,14 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   $STRIDE_API_URL/api/tasks/next
 ```
 
+**Windows PowerShell:**
+
+```powershell
+$env:STRIDE_API_TOKEN = "stride_dev_abc123..."
+$env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
+
+curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+  $env:STRIDE_API_URL/api/tasks/next
 ```
 
 ### `.stride.md`

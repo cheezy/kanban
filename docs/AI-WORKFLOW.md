@@ -209,6 +209,7 @@ The `/complete` endpoint returns the `after_doing` hook in its response, but you
 - Server provides hook **metadata only** (name, env vars, timeout, blocking status)
 - Agent reads `.stride.md` and executes hooks **locally on their machine**
 - Hooks are language-agnostic - work with any environment
+- **Windows users:** See [WINDOWS-SETUP.md](WINDOWS-SETUP.md) for PowerShell hook examples
 - See [Hook System](#hook-system) section below for details
 
 ### Task Creation Patterns

@@ -11,11 +11,24 @@ Stride uses a **client-side hook execution** architecture where:
 
 This design allows agents to integrate with git workflows, run quality checks, and perform setup/cleanup tasks automatically.
 
+## Platform Support
+
+This guide provides examples for multiple platforms:
+
+- **Unix/Linux/macOS**: Bash shell (default examples shown first)
+- **Windows WSL2**: Bash shell (use Unix/Linux examples)
+- **Windows PowerShell**: PowerShell scripts (alternatives provided)
+- **Windows Git Bash**: Bash shell with Windows paths (use Unix/Linux examples with some limitations)
+
+Each hook example shows both Unix/Linux and Windows PowerShell versions where they differ. For complete Windows setup instructions, see [WINDOWS-SETUP.md](WINDOWS-SETUP.md).
+
 ## Quick Start
 
 ### 1. Create `.stride.md` Configuration File
 
-Create a `.stride.md` file at the root of your repository with hook implementations:
+Create a `.stride.md` file at the root of your repository with hook implementations.
+
+**Note:** Examples below use Unix/Linux/macOS bash syntax. For Windows PowerShell equivalents, see [WINDOWS-SETUP.md](WINDOWS-SETUP.md#powershell-hook-examples).
 
 ```markdown
 # Stride Configuration
@@ -170,12 +183,14 @@ All hooks receive these environment variables:
 - `AGENT_NAME` - Your agent name (e.g., `Claude Sonnet 4.5`)
 - `HOOK_NAME` - Current hook name (`before_doing`, `after_doing`, etc.)
 
+**Platform Note:** In bash, access variables with `$VARIABLE_NAME`. In PowerShell, use `$env:VARIABLE_NAME`.
+
 ## Example Hook Implementations
 
 ### Git Workflow Integration
 
-```markdown
-## before_doing
+**Unix/Linux/macOS/WSL2 (bash):**
+
 ```bash
 # Pull latest code and create feature branch
 git fetch origin main
@@ -183,7 +198,19 @@ git checkout -b "task-$TASK_IDENTIFIER-$(echo $TASK_TITLE | tr '[:upper:]' '[:lo
 echo "Created branch for $TASK_IDENTIFIER"
 ```
 
-## after_doing
+**Windows PowerShell:**
+
+```powershell
+# Pull latest code and create feature branch
+git fetch origin main
+$branchName = "task-$env:TASK_IDENTIFIER-$($env:TASK_TITLE.ToLower() -replace ' ', '-' -replace '[^a-z0-9\-]', '')"
+git checkout -b $branchName origin/main
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host "Created branch for $env:TASK_IDENTIFIER"
+```
+
+**Unix/Linux/macOS/WSL2 (after_doing):**
+
 ```bash
 # Run quality checks before completion
 mix format --check-formatted || exit 1
@@ -193,7 +220,8 @@ mix dialyzer || exit 1
 echo "All quality checks passed ✓"
 ```
 
-## before_review
+**Unix/Linux/macOS/WSL2 (before_review):**
+
 ```bash
 # Commit and push changes, create PR
 git add .
@@ -296,6 +324,8 @@ Closes $TASK_IDENTIFIER"
 
 ### Handling Blocking Hook Failures
 
+**Unix/Linux/macOS/WSL2:**
+
 ```bash
 # Execute after_doing hook (blocking)
 timeout 120 bash -c 'mix test'
@@ -309,7 +339,35 @@ if [ $HOOK_EXIT_CODE -ne 0 ]; then
 fi
 ```
 
+**Windows PowerShell:**
+
+```powershell
+# Execute after_doing hook (blocking) with timeout
+$job = Start-Job -ScriptBlock { mix test }
+$completed = Wait-Job $job -Timeout 120
+
+if (-not $completed) {
+    Stop-Job $job
+    Remove-Job $job
+    Write-Error "ERROR: Tests timed out after 120 seconds"
+    Write-Error "Task remains in 'in_progress' status"
+    exit 1
+}
+
+$result = Receive-Job $job
+Remove-Job $job
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "ERROR: Tests failed - cannot complete task"
+    Write-Error "Task remains in 'in_progress' status"
+    Write-Error "Fix failing tests and try again"
+    exit 1
+}
+```
+
 ### Handling Non-Blocking Hook Failures
+
+**Unix/Linux/macOS/WSL2:**
 
 ```bash
 # Execute before_review hook (non-blocking)
@@ -320,6 +378,29 @@ timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' || {
 
 # Continue with workflow even if hook failed
 echo "Task moved to Review column"
+```
+
+**Windows PowerShell:**
+
+```powershell
+# Execute before_review hook (non-blocking) with timeout
+$job = Start-Job -ScriptBlock { gh pr create --title "$env:TASK_TITLE" }
+$completed = Wait-Job $job -Timeout 60
+
+if (-not $completed) {
+    Stop-Job $job
+    Remove-Job $job
+    Write-Warning "WARNING: PR creation timed out, but task moved to review"
+    Write-Warning "Create PR manually"
+} elseif ($LASTEXITCODE -ne 0) {
+    Write-Warning "WARNING: PR creation failed, but task moved to review"
+    Write-Warning "Create PR manually"
+}
+
+if ($job) { Remove-Job $job -ErrorAction SilentlyContinue }
+
+# Continue with workflow even if hook failed
+Write-Host "Task moved to Review column"
 ```
 
 ### Timeout Handling

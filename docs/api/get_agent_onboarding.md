@@ -154,23 +154,63 @@ curl -s https://www.stridelikeaboss.com/api/agent/onboarding | jq -r '.quick_sta
 
 ### Get .stride_auth.md template
 
+**Unix/Linux/macOS:**
+
 ```bash
 curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq -r '.file_templates.stride_auth_md' > .stride_auth.md
 ```
 
+**Windows PowerShell:**
+
+```powershell
+(Invoke-WebRequest -Uri "https://www.stridelikeaboss.com/api/agent/onboarding").Content | `
+  ConvertFrom-Json | Select -ExpandProperty file_templates | `
+  Select -ExpandProperty stride_auth_md | `
+  Out-File -FilePath .stride_auth.md -Encoding utf8
+```
+
+**Alternative (with jq installed via chocolatey):**
+
+```powershell
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | `
+  jq -r '.file_templates.stride_auth_md' | `
+  Out-File -FilePath .stride_auth.md -Encoding utf8
+```
+
 ### Get .stride.md template
+
+**Unix/Linux/macOS:**
 
 ```bash
 curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq -r '.file_templates.stride_md' > .stride.md
 ```
 
+**Windows PowerShell:**
+
+```powershell
+(Invoke-WebRequest -Uri "https://www.stridelikeaboss.com/api/agent/onboarding").Content | `
+  ConvertFrom-Json | Select -ExpandProperty file_templates | `
+  Select -ExpandProperty stride_md | `
+  Out-File -FilePath .stride.md -Encoding utf8
+```
+
 ### List all available hooks
+
+**Unix/Linux/macOS:**
 
 ```bash
 curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
   jq '.hooks.available_hooks'
+```
+
+**Windows PowerShell:**
+
+```powershell
+(Invoke-WebRequest -Uri "https://www.stridelikeaboss.com/api/agent/onboarding").Content | `
+  ConvertFrom-Json | Select -ExpandProperty hooks | `
+  Select -ExpandProperty available_hooks | ConvertTo-Json
 ```
 
 ### Get workflow steps
