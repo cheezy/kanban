@@ -5,6 +5,19 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1] - 2026-01-04
+
+### Fixed
+
+#### Drag and Drop Improvements
+
+- **Smoother Animation** - Enhanced drag and drop feel with improved visual feedback:
+- **More Precise Positioning** - Improved accuracy when dropping tasks:
+- **Better Scroll Behavior** - Enhanced dragging near column edges:
+- **Prevented Premature DOM Updates** - Fixed jarring updates during drag operations:
+- **Enhanced Touch Support** - Better mobile drag experience:
+- **Position Index Bug Fix** - Resolved issue where tasks would return to wrong position:
+
 ## [1.13.0] - 2026-01-01
 
 ### Added

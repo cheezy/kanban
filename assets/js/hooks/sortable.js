@@ -3,6 +3,7 @@ import Sortable from "sortablejs"
 const SortableHook = {
   mounted() {
     this.isDragging = false
+    this.pendingMoveComplete = false
     this.highlightTimeout = null
     this.initSortable()
     this.updateWipHighlight()
@@ -10,10 +11,20 @@ const SortableHook = {
     // Listen for move success/failure events from server
     this.handleEvent("move_success", () => {
       console.log("Move succeeded on server")
+      // Delay clearing flags to allow DOM updates to settle
+      setTimeout(() => {
+        this.pendingMoveComplete = false
+        this.isDragging = false
+      }, 100)
     })
 
     this.handleEvent("move_failed", () => {
       console.log("Move failed on server - will reload")
+      // Delay clearing flags to allow DOM updates to settle
+      setTimeout(() => {
+        this.pendingMoveComplete = false
+        this.isDragging = false
+      }, 100)
     })
 
     this.handleEvent("wip_limit_violation", ({column_id}) => {
@@ -33,10 +44,9 @@ const SortableHook = {
   },
 
   beforeUpdate() {
-    // Only prevent updates while actively dragging
-    // Allow updates from other clients even if we have a pending move
-    if (this.isDragging) {
-      console.log("Prevented LiveView update - actively dragging")
+    // Prevent updates while actively dragging or waiting for move to complete
+    if (this.isDragging || this.pendingMoveComplete) {
+      console.log("Prevented LiveView update - dragging or pending move completion")
       return false
     }
 
@@ -47,11 +57,11 @@ const SortableHook = {
   updated() {
     const columnId = this.el.dataset.columnId
     const taskCount = this.el.children.length
-    console.log(`[Sortable] updated() for column ${columnId} - isDragging: ${this.isDragging}, task count: ${taskCount}`)
+    console.log(`[Sortable] updated() for column ${columnId} - isDragging: ${this.isDragging}, pendingMove: ${this.pendingMoveComplete}, task count: ${taskCount}`)
 
-    // Don't reinitialize if we're dragging
-    if (this.isDragging) {
-      console.log("Skipping sortable reinit during drag")
+    // Don't reinitialize if we're dragging or waiting for move completion
+    if (this.isDragging || this.pendingMoveComplete) {
+      console.log("Skipping sortable reinit during drag or pending move")
       return
     }
 
@@ -98,16 +108,25 @@ const SortableHook = {
 
     this.sortable = Sortable.create(this.el, {
       group: group,
-      animation: 150,
+      animation: 200,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
       handle: handle || null,
       dragClass: "sortable-drag",
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
       forceFallback: false,
       fallbackOnBody: true,
-      swapThreshold: 0.65,
-      filter: ".empty-state",  // Don't allow dragging the empty state
-      preventOnFilter: false,   // Still allow clicks on empty state
+      swapThreshold: 0.5,
+      invertSwap: true,
+      emptyInsertThreshold: 10,
+      scrollSensitivity: 60,
+      scrollSpeed: 15,
+      bubbleScroll: true,
+      filter: ".empty-state",
+      preventOnFilter: false,
+      delay: 0,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 3,
 
       onStart: function(evt) {
         // Mark that we're starting a drag
@@ -116,8 +135,6 @@ const SortableHook = {
       },
 
       onEnd: function(evt) {
-        hook.isDragging = false
-
         console.log("Drag ended", {
           taskId: evt.item.dataset.id,
           oldColumn: evt.from.dataset.columnId,
@@ -135,21 +152,39 @@ const SortableHook = {
         // Get the old column ID from the source list
         const oldColumnId = evt.from.dataset.columnId
 
-        // Get new position (index in the list)
-        const newPosition = evt.newIndex
+        // Calculate the actual position, accounting for the empty-state div
+        // The empty-state div is always the first child, so we need to subtract 1
+        // from the index if there's an empty-state in the target column
+        let newPosition = evt.newIndex
+        const targetColumn = evt.to
+        const hasEmptyState = targetColumn.querySelector('.empty-state') !== null
+        if (hasEmptyState && newPosition > 0) {
+          newPosition = newPosition - 1
+        }
+
+        console.log("Adjusted position:", {
+          rawIndex: evt.newIndex,
+          adjustedPosition: newPosition,
+          hasEmptyState: hasEmptyState
+        })
 
         // Only send if actually moved
         if (oldColumnId !== newColumnId || evt.oldIndex !== evt.newIndex) {
           console.log("Sending move_task event to server")
 
+          // Mark that we're waiting for the move to complete
+          hook.pendingMoveComplete = true
+
           // Send the move event to the LiveView
-          // phx-update="replace" will handle updating the DOM with the correct state
           hook.pushEvent("move_task", {
             task_id: taskId,
             old_column_id: oldColumnId,
             new_column_id: newColumnId,
             new_position: newPosition
           })
+        } else {
+          // No actual move, safe to clear dragging flag immediately
+          hook.isDragging = false
         }
       }
     })
