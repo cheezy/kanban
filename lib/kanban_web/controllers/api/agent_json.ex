@@ -40,6 +40,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Agents should work continuously: claim task → complete → IF needs_review=false THEN claim next task, ELSE stop and wait for review. Continue this loop until encountering a task that needs review or running out of available tasks."
       },
       quick_start: [
+        "Windows users: See #{base_url}/docs/WINDOWS-SETUP.md for platform-specific setup (WSL2/PowerShell/Git Bash) before proceeding",
         "1. IMMEDIATELY create .stride_auth.md by copying the ENTIRE file_templates.stride_auth_md content exactly - do not omit any lines",
         "2. IMMEDIATELY add .stride_auth.md to your .gitignore file (CRITICAL - contains secrets)",
         "3. IMMEDIATELY create .stride.md by copying the ENTIRE file_templates.stride_md content exactly - do not omit any lines",
@@ -63,6 +64,8 @@ defmodule KanbanWeb.API.AgentJSON do
 
         ## Usage
 
+        **Unix/Linux/macOS:**
+
         ```bash
         export STRIDE_API_TOKEN="{{YOUR_TOKEN_HERE}}"
         export STRIDE_API_URL="#{base_url}"
@@ -70,9 +73,23 @@ defmodule KanbanWeb.API.AgentJSON do
         curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \\
           $STRIDE_API_URL/api/tasks/next
         ```
+
+        **Windows PowerShell:**
+
+        ```powershell
+        $env:STRIDE_API_TOKEN = "{{YOUR_TOKEN_HERE}}"
+        $env:STRIDE_API_URL = "#{base_url}"
+
+        curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+          $env:STRIDE_API_URL/api/tasks/next
+        ```
+
+        **Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see #{base_url}/docs/WINDOWS-SETUP.md
         """,
         stride_md: """
         # Stride Configuration
+
+        **Note:** Examples below use Unix/Linux/macOS bash syntax. Windows users should see #{base_url}/docs/WINDOWS-SETUP.md for PowerShell equivalents.
 
         ## before_doing
 
