@@ -6,9 +6,8 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 **Hierarchy:**
 - **Goal** (G prefix) - Large initiatives containing multiple related tasks
-- **Task** (W prefix) - Individual work items
-
-**Note:** The system previously had separate Work/Defect types, but now uses a single unified "task" type for simplicity.
+- **Work** (W prefix) - Individual work items (features, enhancements)
+- **Defect** (D prefix) - Bug fixes and defect corrections
 
 ### Core Schema Fields
 
@@ -16,9 +15,9 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 - description (text) - Detailed description
 - status (enum: open, in_progress, blocked, review, completed)
 - priority (enum: low, medium, high, critical)
-- complexity (enum: trivial, low, medium, high, very_high)
-- type (enum: task, goal) - Hierarchy level (task vs goal)
-- identifier (string) - Human-readable ID (G1, W42, etc.)
+- complexity (enum: small, medium, large)
+- type (enum: work, defect, goal) - Type of task (work, defect, or goal)
+- identifier (string) - Human-readable ID (G1, W42, D5, etc.)
 - needs_review (boolean) - Whether task requires human review before completion
 
 ### Additional Fields
@@ -221,22 +220,25 @@ POST /api/tasks
   "task": {
     "title": "Implement search feature",
     "type": "goal",
-    "complexity": "very_high",
+    "complexity": "large",
     "priority": "high",
     "tasks": [
       {
         "title": "Add search schema",
+        "type": "work",
         "complexity": "medium",
         "required_capabilities": ["code_generation"]
       },
       {
         "title": "Build search UI",
-        "complexity": "high",
+        "type": "work",
+        "complexity": "medium",
         "required_capabilities": ["code_generation"]
       },
       {
         "title": "Write search tests",
-        "complexity": "medium",
+        "type": "work",
+        "complexity": "small",
         "required_capabilities": ["testing"]
       }
     ]
@@ -251,8 +253,8 @@ POST /api/tasks
   "task": {
     "title": "Fix login bug",
     "description": "Users can't log in with special characters",
-    "type": "task",
-    "complexity": "low",
+    "type": "defect",
+    "complexity": "small",
     "priority": "high",
     "needs_review": true
   }

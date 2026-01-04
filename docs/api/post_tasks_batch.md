@@ -370,7 +370,7 @@ WIP limit reached:
 - `type` defaults to `goal` for goals and `work` for child tasks
 - `priority` defaults to `medium`
 - `complexity` defaults to `small`
-- `needs_review` defaults to `true`
+- `needs_review` defaults to `false` (auto-complete without human review)
 - Agent model from API token is automatically recorded as `created_by_agent`
 
 ### Telemetry

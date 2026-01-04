@@ -76,8 +76,8 @@ Ready → Doing → Review → Done
 2. **Claim a task** - `POST /api/tasks/claim`
 3. **Execute `before_doing` hook** (blocking, 60s timeout)
 4. **Work on the task** - Implement changes, write code, run tests
-5. **Complete the task** - `PATCH /api/tasks/:id/complete`
-6. **Execute `after_doing` hook** (blocking, 120s timeout) - Run tests, build
+5. **⚠️ Execute `after_doing` hook FIRST** (blocking, 120s timeout) - Run tests, build, lint
+6. **Complete the task** - `PATCH /api/tasks/:id/complete` (only after step 5 succeeds)
 7. **Execute `before_review` hook** (non-blocking, 60s timeout) - Create PR, notify reviewers
 8. **Wait for review** (if `needs_review=true`)
 9. **Finalize review** - `PATCH /api/tasks/:id/mark_reviewed`
