@@ -18,14 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`first_session_vs_returning` section** - Different workflows for experience levels:
   - **`common_mistakes_agents_make` section** - Learning from collective experience:
   - **`quick_reference_card` section** - Ultra-condensed essentials for experienced agents:
-  - **`quick_reference_card` section** - Ultra-condensed 
+  - **`quick_reference_card` section** - Ultra-condensed
 
 - **Enhanced Documentation**:
   - `docs/AGENT-MEMORY-SOLUTION.md` - Detailed explanation of the multi-layered memory strategy
 
-### Why This Matters
+#### Why This Matters
 
 This release solves the "agent memory problem" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride.
+
+### Changed
+
+#### Goal Movement Behavior Enhancement
+
+- **Improved Goal Auto-Positioning** - When a task triggers its parent goal to move to a new column, the goal now positions itself **directly above the task that caused the movement** (instead of above the earliest child in the target column):
+
 
 ## [1.13.2] - 2026-01-05
 
