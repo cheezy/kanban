@@ -31,12 +31,21 @@
         <.input field={f[:description]} type="textarea" label={gettext("Description")} />
         <div class="mt-6 flex items-center gap-4">
           <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Board")}</.button>
-          <.link
-            navigate={~p"/boards"}
-            class="text-sm text-base-content opacity-70 hover:opacity-100"
-          >
-            {gettext("Cancel")}
-          </.link>
+          <%= if @live_action == :edit do %>
+            <.link
+              navigate={~p"/boards/#{@board}"}
+              class="text-sm text-base-content opacity-70 hover:opacity-100"
+            >
+              {gettext("Cancel")}
+            </.link>
+          <% else %>
+            <.link
+              navigate={~p"/boards"}
+              class="text-sm text-base-content opacity-70 hover:opacity-100"
+            >
+              {gettext("Cancel")}
+            </.link>
+          <% end %>
         </div>
       </.form>
 
