@@ -2074,7 +2074,7 @@ defmodule Kanban.Tasks do
     with {:ok, parent_goal} <- get_parent_goal(moving_task),
          {:ok, goal_context} <- build_goal_context(parent_goal),
          {:ok, target_column} <- determine_target_column(goal_context),
-         {:ok, _} <- move_goal_if_needed(parent_goal, target_column, goal_context) do
+         {:ok, _} <- move_goal_if_needed(parent_goal, target_column, goal_context, moving_task.id) do
       :ok
     else
       _ -> :ok
@@ -2145,21 +2145,22 @@ defmodule Kanban.Tasks do
     Enum.find(columns, fn col -> String.downcase(col.name) == "done" end)
   end
 
-  defp move_goal_if_needed(parent_goal, target_column, goal_context) do
-    children_positions =
-      get_children_positions_in_column(goal_context.child_ids, target_column.id)
+  defp move_goal_if_needed(parent_goal, target_column, goal_context, moving_task_id) do
+    children_in_column =
+      get_children_in_target_column(goal_context.child_ids, target_column.id)
 
-    if children_positions == [] do
+    if children_in_column == [] do
       move_goal_to_end_of_column(parent_goal, target_column)
     else
-      move_goal_before_children(parent_goal, target_column, children_positions)
+      move_goal_above_trigger_task(parent_goal, target_column, children_in_column, moving_task_id)
     end
   end
 
-  defp get_children_positions_in_column(child_ids, column_id) do
+  defp get_children_in_target_column(child_ids, column_id) do
     from(t in Task,
       where: t.id in ^child_ids and t.column_id == ^column_id,
-      select: t.position
+      select: {t.id, t.position},
+      order_by: [asc: t.position]
     )
     |> Repo.all()
   end
@@ -2185,15 +2186,21 @@ defmodule Kanban.Tasks do
     end
   end
 
-  defp move_goal_before_children(parent_goal, target_column, children_positions) do
-    min_child_position = Enum.min(children_positions)
+  defp move_goal_above_trigger_task(parent_goal, target_column, children_in_column, moving_task_id) do
+    # Find the position of the task that triggered the move
+    trigger_task_position =
+      children_in_column
+      |> Enum.find_value(fn {id, pos} -> if id == moving_task_id, do: pos end)
+
+    # If trigger task is in this column, use its position; otherwise use minimum
+    target_position = trigger_task_position || elem(hd(children_in_column), 1)
 
     goal_needs_move =
       target_column.id != parent_goal.column_id or
-        parent_goal.position > min_child_position
+        parent_goal.position > target_position
 
     if goal_needs_move do
-      shift_tasks_and_position_goal(parent_goal, target_column, min_child_position)
+      shift_tasks_and_position_goal(parent_goal, target_column, target_position)
       {:ok, :moved}
     else
       {:ok, :no_change}
