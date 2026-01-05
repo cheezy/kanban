@@ -48,9 +48,29 @@ These fields appear on every task form, regardless of board settings:
 ### Always-Visible Management Fields
 - **Dependencies** - Task identifiers that must complete first
 - **Actual Metrics** - Actual complexity, files changed, time spent
-- **Review Queue** - Review status and review notes
 
-## Conditionally Visible: Status & Agent Tracking
+## Conditionally Visible Fields
+
+### Review Queue
+
+The **Review Queue** section only appears when a task has a review status set.
+
+**When It Appears:**
+- The task has a value in `review_status` (pending, approved, changes_requested, or rejected)
+
+**When It's Hidden:**
+- For tasks that have not yet been reviewed, this section is hidden to reduce form clutter
+
+**Fields in This Section:**
+- **Review Status** - Pending, Approved, Changes Requested, or Rejected
+- **Review Notes** - Notes from the reviewer about the task
+
+**Why This Design?**
+- Reduces clutter for tasks that haven't entered the review workflow yet
+- Review fields are only relevant once a task is being reviewed
+- Preserves review data when it exists
+
+### Status & Agent Tracking
 
 The **Status & Agent Tracking** section is special - it only appears when a task has been interacted with by an AI agent.
 

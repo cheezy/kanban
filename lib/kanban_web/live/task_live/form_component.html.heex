@@ -838,23 +838,25 @@
       </div>
     </div>
 
-    <%!-- Review Queue Section --%>
-    <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>
-      <.input
-        field={f[:review_status]}
-        type="select"
-        label={gettext("Review Status")}
-        options={[
-          {gettext("Pending"), :pending},
-          {gettext("Approved"), :approved},
-          {gettext("Changes Requested"), :changes_requested},
-          {gettext("Rejected"), :rejected}
-        ]}
-        prompt={gettext("Select status")}
-      />
-      <.input field={f[:review_notes]} type="textarea" label={gettext("Review Notes")} rows="2" />
-    </div>
+    <%= if Ecto.Changeset.get_field(@form.source, :review_status) do %>
+      <%!-- Review Queue Section --%>
+      <div class="mt-6 pt-6 border-t border-base-300">
+        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>
+        <.input
+          field={f[:review_status]}
+          type="select"
+          label={gettext("Review Status")}
+          options={[
+            {gettext("Pending"), :pending},
+            {gettext("Approved"), :approved},
+            {gettext("Changes Requested"), :changes_requested},
+            {gettext("Rejected"), :rejected}
+          ]}
+          prompt={gettext("Select status")}
+        />
+        <.input field={f[:review_notes]} type="textarea" label={gettext("Review Notes")} rows="2" />
+      </div>
+    <% end %>
 
     <div class="mt-6 flex items-center gap-4">
       <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
