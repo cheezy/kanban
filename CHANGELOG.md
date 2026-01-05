@@ -5,6 +5,31 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.2] - 2026-01-05
+
+### Changed
+
+#### UI Improvements for Status & Agent Tracking
+
+- **Conditional Visibility for Status & Agent Tracking Section** - The "Status & Agent Tracking" section in task forms now intelligently shows/hides based on agent interaction:
+- **Fields in Status & Agent Tracking Section**:
+  - **Status** - Task status (Open, In Progress, Completed, Blocked)
+  - **Created By Agent** - Name of AI agent that created the task
+  - **Completed By Agent** - Name of AI agent that completed the task
+  - **Completion Summary** - Summary provided by agent upon completion
+
+### Added
+
+#### Documentation
+
+- **TASK-FORM-FIELD-VISIBILITY.md** - New comprehensive guide explaining task form field visibility:
+  - Board-level field visibility settings and configurable fields
+  - Always-visible fields vs. conditionally visible fields
+  - Detailed explanation of Status & Agent Tracking conditional visibility
+  - API behavior vs. UI form behavior
+  - Best practices for board owners, AI agents, and human users
+  - Examples and scenarios demonstrating visibility logic
+
 ## [1.13.1] - 2026-01-04
 
 ### Fixed

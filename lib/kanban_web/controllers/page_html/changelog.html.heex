@@ -35,6 +35,83 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.2] - 2026-01-05</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Changed")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("UI Improvements for Status & Agent Tracking")}
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>{gettext("Conditional Visibility for Status & Agent Tracking Section")}</strong>
+                  {gettext(
+                    " - The \"Status & Agent Tracking\" section in task forms now intelligently shows/hides based on agent interaction"
+                  )}
+                </li>
+                <li>
+                  <strong>{gettext("Fields in Status & Agent Tracking Section:")}</strong>
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>{gettext("Status")}</strong>
+                      {gettext(" - Task status (Open, In Progress, Completed, Blocked)")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Created By Agent")}</strong>
+                      {gettext(" - Name of AI agent that created the task")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Completed By Agent")}</strong>
+                      {gettext(" - Name of AI agent that completed the task")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Completion Summary")}</strong>
+                      {gettext(" - Summary provided by agent upon completion")}
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Documentation")}
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>{gettext("TASK-FORM-FIELD-VISIBILITY.md")}</strong>
+                  {gettext(
+                    " - New comprehensive guide explaining task form field visibility"
+                  )}
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>{gettext("Board-level field visibility settings and configurable fields")}</li>
+                    <li>{gettext("Always-visible fields vs. conditionally visible fields")}</li>
+                    <li>
+                      {gettext("Detailed explanation of Status & Agent Tracking conditional visibility")}
+                    </li>
+                    <li>{gettext("API behavior vs. UI form behavior")}</li>
+                    <li>{gettext("Best practices for board owners, AI agents, and human users")}</li>
+                    <li>{gettext("Examples and scenarios demonstrating visibility logic")}</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.1] - 2026-01-04</h2>
 
           <div class="mb-8">
