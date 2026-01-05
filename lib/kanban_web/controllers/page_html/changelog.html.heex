@@ -44,18 +44,15 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("UI Improvements for Status & Agent Tracking")}
+                {gettext("UI Improvements - Conditional Field Visibility")}
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>{gettext("Conditional Visibility for Status & Agent Tracking Section")}</strong>
                   {gettext(
-                    " - The \"Status & Agent Tracking\" section in task forms now intelligently shows/hides based on agent interaction"
+                    " - The \"Status & Agent Tracking\" section in task forms now intelligently shows/hides based on agent interaction:"
                   )}
-                </li>
-                <li>
-                  <strong>{gettext("Fields in Status & Agent Tracking Section:")}</strong>
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <strong>{gettext("Status")}</strong>
@@ -72,6 +69,44 @@
                     <li>
                       <strong>{gettext("Completion Summary")}</strong>
                       {gettext(" - Summary provided by agent upon completion")}
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>{gettext("Conditional Visibility for Review Queue Section")}</strong>
+                  {gettext(
+                    " - The \"Review Queue\" section in task forms now only appears when a task has a review status:"
+                  )}
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>{gettext("Review Status")}</strong>
+                      {gettext(" - Pending, Approved, Changes Requested, or Rejected")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Review Notes")}</strong>
+                      {gettext(" - Notes from the reviewer about the task")}
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>{gettext("Conditional Visibility for Actual Metrics Section")}</strong>
+                  {gettext(
+                    " - The \"Actual Metrics\" section in task forms now only appears when actual metrics data exists:"
+                  )}
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>{gettext("Actual Complexity")}</strong>
+                      {gettext(" - Actual complexity level (Small, Medium, Large)")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Actual Files Changed")}</strong>
+                      {gettext(" - Number of files actually modified")}
+                    </li>
+                    <li>
+                      <strong>{gettext("Time Spent (minutes)")}</strong>
+                      {gettext(" - Actual time spent on the task")}
                     </li>
                   </ul>
                 </li>
@@ -99,7 +134,9 @@
                     <li>{gettext("Board-level field visibility settings and configurable fields")}</li>
                     <li>{gettext("Always-visible fields vs. conditionally visible fields")}</li>
                     <li>
-                      {gettext("Detailed explanation of Status & Agent Tracking conditional visibility")}
+                      {gettext(
+                        "Detailed explanation of conditional visibility for Status & Agent Tracking, Review Queue, and Actual Metrics"
+                      )}
                     </li>
                     <li>{gettext("API behavior vs. UI form behavior")}</li>
                     <li>{gettext("Best practices for board owners, AI agents, and human users")}</li>

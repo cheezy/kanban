@@ -9,14 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-#### UI Improvements for Status & Agent Tracking
+#### UI Improvements - Conditional Field Visibility
 
 - **Conditional Visibility for Status & Agent Tracking Section** - The "Status & Agent Tracking" section in task forms now intelligently shows/hides based on agent interaction:
-- **Fields in Status & Agent Tracking Section**:
-  - **Status** - Task status (Open, In Progress, Completed, Blocked)
-  - **Created By Agent** - Name of AI agent that created the task
-  - **Completed By Agent** - Name of AI agent that completed the task
-  - **Completion Summary** - Summary provided by agent upon completion
+  - **Fields in Status & Agent Tracking Section**:
+    - **Status** - Task status (Open, In Progress, Completed, Blocked)
+    - **Created By Agent** - Name of AI agent that created the task
+    - **Completed By Agent** - Name of AI agent that completed the task
+    - **Completion Summary** - Summary provided by agent upon completion
+
+- **Conditional Visibility for Review Queue Section** - The "Review Queue" section in task forms now only appears when a task has a review status:
+  - **Fields in Review Queue Section**:
+    - **Review Status** - Pending, Approved, Changes Requested, or Rejected
+    - **Review Notes** - Notes from the reviewer about the task
+
+- **Conditional Visibility for Actual Metrics Section** - The "Actual Metrics" section in task forms now only appears when actual metrics data exists:
+  - **Fields in Actual Metrics Section**:
+    - **Actual Complexity** - Actual complexity level (Small, Medium, Large)
+    - **Actual Files Changed** - Number of files actually modified
+    - **Time Spent (minutes)** - Actual time spent on the task
 
 ### Added
 
@@ -25,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TASK-FORM-FIELD-VISIBILITY.md** - New comprehensive guide explaining task form field visibility:
   - Board-level field visibility settings and configurable fields
   - Always-visible fields vs. conditionally visible fields
-  - Detailed explanation of Status & Agent Tracking conditional visibility
+  - Detailed explanation of conditional visibility for Status & Agent Tracking, Review Queue, and Actual Metrics
   - API behavior vs. UI form behavior
   - Best practices for board owners, AI agents, and human users
   - Examples and scenarios demonstrating visibility logic
