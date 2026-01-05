@@ -30,13 +30,14 @@ defmodule KanbanWeb.BoardLiveTest do
              |> form("#board-form", board: @invalid_attrs)
              |> render_change() =~ "can&#39;t be blank"
 
-      {:ok, _index_live, html} =
+      {:ok, show_live, html} =
         form_live
         |> form("#board-form", board: @create_attrs)
         |> render_submit()
-        |> follow_redirect(conn, ~p"/boards")
+        |> follow_redirect(conn)
 
       assert html =~ "some name"
+      assert show_live.module == KanbanWeb.BoardLive.Show
     end
 
     test "updates board in listing", %{conn: conn, user: user} do

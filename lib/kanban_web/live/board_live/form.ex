@@ -221,11 +221,11 @@ defmodule KanbanWeb.BoardLive.Form do
       end
 
     case result do
-      {:ok, _board} ->
+      {:ok, board} ->
         {:noreply,
          socket
          |> put_flash(:info, gettext("Board created successfully"))
-         |> push_navigate(to: ~p"/boards")}
+         |> push_navigate(to: ~p"/boards/#{board}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
