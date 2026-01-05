@@ -440,6 +440,240 @@ defmodule KanbanWeb.API.AgentJSON do
         unclaim_guide: "#{@docs_base_url}/docs/UNCLAIM-TASKS.md",
         capabilities_guide: "#{@docs_base_url}/docs/AGENT-CAPABILITIES.md",
         changelog_url: "#{@docs_base_url}/CHANGELOG.md"
+      },
+      memory_strategy: %{
+        description:
+          "How to ensure you remember this Stride context in future sessions across all AI coding platforms",
+        universal_approach:
+          "All agents should fetch this onboarding endpoint (#{base_url}/api/agent/onboarding) at the START of every new session before claiming any tasks",
+        recommended_actions: [
+          "1. Save this onboarding JSON response to a local file (e.g., .stride_onboarding.json) for quick reference during the session",
+          "2. Create .stride_auth.md and .stride.md files from the templates if they don't exist",
+          "3. Bookmark or save the documentation URLs for quick access",
+          "4. If your agent platform supports project configuration, add Stride context to it (see agent_specific_instructions)"
+        ],
+        agent_specific_instructions: %{
+          claude_code: %{
+            description: "For Claude Code users working in their own projects",
+            steps: [
+              "1. Add to .claudeproject file in 'contextFiles' array: [\".stride.md\", \".stride_auth.md\"]",
+              "2. Optionally create a custom slash command /stride that fetches this onboarding endpoint",
+              "3. Add a Stride section to your project's AGENTS.md or README.md with the essential workflow"
+            ],
+            example_agents_md_section: """
+            ## STRIDE TASK MANAGEMENT
+
+            This project uses Stride for AI task management.
+
+            **Setup:** Fetch onboarding at #{base_url}/api/agent/onboarding
+
+            **Workflow:** claim → before_doing hook → work → after_doing hook → complete → [if needs_review=false: claim next, else: stop]
+
+            **Files:** .stride.md (hooks), .stride_auth.md (token, gitignored)
+
+            **Docs:** #{@docs_base_url}/docs/AI-WORKFLOW.md
+            """
+          },
+          cursor: %{
+            description: "For Cursor AI users",
+            steps: [
+              "1. Add .stride.md and .stride_auth.md references to your .cursorrules file",
+              "2. Create a .cursor/prompts/stride.md file with the essential workflow from this response",
+              "3. Reference the onboarding endpoint (#{base_url}/api/agent/onboarding) in your project documentation"
+            ]
+          },
+          windsurf: %{
+            description: "For Windsurf users",
+            steps: [
+              "1. Add Stride workflow documentation to your project's cascade.md or .windsurfrules",
+              "2. Create .stride.md and .stride_auth.md files in your project root",
+              "3. Add the onboarding endpoint URL to your project setup documentation"
+            ]
+          },
+          aider: %{
+            description: "For Aider users",
+            steps: [
+              "1. Add .stride.md to your .aider.conf.yml read_files list",
+              "2. Create .stride_auth.md with your API token",
+              "3. Set environment variables STRIDE_API_URL=#{base_url} and STRIDE_API_TOKEN=<your_token>"
+            ]
+          },
+          cline: %{
+            description: "For Cline users",
+            steps: [
+              "1. Add .stride.md to your custom instructions or project documentation",
+              "2. Create .stride_auth.md with your API token and add to .gitignore",
+              "3. Reference this onboarding URL in your project's README or setup docs"
+            ]
+          },
+          generic: %{
+            description: "For any AI coding agent",
+            steps: [
+              "1. Store this onboarding URL in your project documentation: #{base_url}/api/agent/onboarding",
+              "2. Fetch this endpoint at the start of each session before working with Stride",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Add .stride_auth.md to .gitignore (CRITICAL - contains secrets)"
+            ]
+          }
+        }
+      },
+      session_initialization: %{
+        description:
+          "Complete this checklist at the START of every new session before claiming tasks",
+        checklist: [
+          %{
+            step: 1,
+            action: "Fetch onboarding data",
+            command: "curl #{base_url}/api/agent/onboarding",
+            why: "Get latest workflow instructions and documentation links"
+          },
+          %{
+            step: 2,
+            action: "Verify .stride.md exists",
+            command:
+              "test -f .stride.md || echo 'Missing .stride.md - copy from onboarding file_templates.stride_md'",
+            why: "Ensure hook scripts are available for task lifecycle"
+          },
+          %{
+            step: 3,
+            action: "Verify .stride_auth.md exists and is gitignored",
+            command: "test -f .stride_auth.md && grep -q '.stride_auth.md' .gitignore",
+            why: "Ensure authentication is configured and secrets are protected"
+          },
+          %{
+            step: 4,
+            action: "Read essential documentation (first-time or if rusty)",
+            urls: [
+              "#{@docs_base_url}/docs/AI-WORKFLOW.md",
+              "#{@docs_base_url}/docs/TASK-WRITING-GUIDE.md"
+            ],
+            why: "Understand workflow sequence and task creation requirements"
+          },
+          %{
+            step: 5,
+            action: "Ready to claim tasks",
+            command:
+              "curl -H 'Authorization: Bearer YOUR_TOKEN' #{base_url}/api/tasks/claim",
+            why: "Start working on Stride tasks"
+          }
+        ]
+      },
+      first_session_vs_returning: %{
+        first_time_agent: %{
+          description: "If this is your FIRST time working with Stride",
+          critical_steps: [
+            "1. READ the entire onboarding response - don't skip sections",
+            "2. CREATE .stride_auth.md with your API token (get token from #{base_url} web UI)",
+            "3. ADD .stride_auth.md to .gitignore IMMEDIATELY (critical security step)",
+            "4. CREATE .stride.md from the file_templates.stride_md template above",
+            "5. READ all documentation listed in required_reading section",
+            "6. STUDY the good_example in task_creation_requirements section",
+            "7. UNDERSTAND the workflow: claim → hooks → work → hooks → complete → [continue or stop based on needs_review]",
+            "8. THEN claim your first task"
+          ],
+          time_estimate: "15-20 minutes for initial setup and documentation reading",
+          why_take_time:
+            "Rushing through setup leads to mistakes: skipping hooks, creating bad tasks, exposing secrets. The time investment now saves hours later."
+        },
+        returning_agent: %{
+          description: "If you've worked with Stride before but starting a new session",
+          quick_checklist: [
+            "1. FETCH this onboarding endpoint to refresh your memory",
+            "2. VERIFY .stride.md and .stride_auth.md exist in the project",
+            "3. REVIEW the workflow section if you need a reminder",
+            "4. SKIM task_creation_requirements if you'll be creating tasks this session",
+            "5. CLAIM next task and continue work"
+          ],
+          time_estimate: "2-3 minutes for context refresh",
+          workflow_reminder:
+            "claim → before_doing hook → work → after_doing hook → complete → if needs_review=false then claim next, else stop"
+        }
+      },
+      common_mistakes_agents_make: %{
+        description: "Learn from others' mistakes - avoid these common errors",
+        mistakes: [
+          %{
+            mistake: "Forgetting to execute hooks before/after API calls",
+            consequence: "Task workflow breaks, tests don't run, quality gates are bypassed",
+            fix:
+              "Always read .stride.md and execute the hook scripts at the correct lifecycle points (before_doing, after_doing, before_review, after_review)"
+          },
+          %{
+            mistake: "Creating minimal tasks with only title and description",
+            consequence:
+              "Next agent spends hours exploring codebase instead of implementing in minutes",
+            fix:
+              "Always include key_files, verification_steps, testing_strategy, and acceptance_criteria. See task_creation_requirements.good_example"
+          },
+          %{
+            mistake: "Continuing to work after completing a needs_review=true task",
+            consequence: "Wastes time on blocked work, creates potential merge conflicts",
+            fix:
+              "STOP immediately when needs_review=true is returned from /complete endpoint. Wait for human review before claiming more tasks"
+          },
+          %{
+            mistake: "Manually specifying task identifiers like G1, W42, D5",
+            consequence: "API returns validation errors, task creation fails",
+            fix:
+              "Never specify task identifiers - the system auto-generates them sequentially"
+          },
+          %{
+            mistake: "Committing .stride_auth.md to git",
+            consequence: "API token exposed publicly, major security breach",
+            fix:
+              "Add .stride_auth.md to .gitignore BEFORE first commit. If already committed, revoke token immediately and create new one"
+          },
+          %{
+            mistake: "Not reading documentation before creating tasks",
+            consequence:
+              "Invalid task schema, missing required fields, agents can't complete tasks",
+            fix:
+              "Read #{@docs_base_url}/docs/TASK-WRITING-GUIDE.md completely before creating your first task"
+          },
+          %{
+            mistake: "Running after_doing hook AFTER calling /complete endpoint",
+            consequence: "Hook failures don't prevent task completion, quality gates fail",
+            fix:
+              "Execute after_doing hook BEFORE calling /complete. Only call /complete if hook succeeds"
+          },
+          %{
+            mistake: "Not understanding blocking vs non-blocking hooks",
+            consequence:
+              "Incorrect error handling, tasks marked complete when they should fail",
+            fix:
+              "before_doing and after_doing are BLOCKING (must pass). before_review and after_review are NON-BLOCKING (logged but don't block)"
+          }
+        ]
+      },
+      quick_reference_card: %{
+        description: "Ultra-condensed reference for experienced agents - the essentials only",
+        onboarding_url: "#{base_url}/api/agent/onboarding",
+        workflow:
+          "claim → before_doing hook → work → after_doing hook → complete → [if needs_review=false: claim next, else: stop]",
+        required_files: [".stride.md (hooks)", ".stride_auth.md (token, gitignored)"],
+        task_creation_musts: [
+          "key_files",
+          "verification_steps",
+          "testing_strategy",
+          "acceptance_criteria"
+        ],
+        never_specify: "task identifiers (G1, W42, D5) - auto-generated",
+        api_base: base_url,
+        auth_header: "Authorization: Bearer <token_from_.stride_auth.md>",
+        key_endpoints: %{
+          claim: "POST /api/tasks/claim",
+          complete: "PATCH /api/tasks/:id/complete",
+          mark_reviewed: "PATCH /api/tasks/:id/mark_reviewed",
+          unclaim: "POST /api/tasks/:id/unclaim"
+        },
+        docs_base: @docs_base_url <> "/docs/",
+        hook_execution_order: [
+          "1. before_doing (blocking, 60s)",
+          "2. [do work]",
+          "3. after_doing (blocking, 120s) - MUST PASS BEFORE CALLING /complete",
+          "4. before_review (non-blocking, 60s)",
+          "5. after_review (non-blocking, 60s, only if needs_review=false or review approved)"
+        ]
       }
     }
   end

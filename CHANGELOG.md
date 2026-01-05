@@ -5,6 +5,28 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-01-05
+
+### Added
+
+#### API Enhancements - Agent Onboarding Endpoint
+
+- **Comprehensive Agent Memory System** - The `/api/agent/onboarding` endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:
+
+  - **`memory_strategy` section** - Platform-agnostic and platform-specific instructions for maintaining context across sessions:
+  - **`session_initialization` section** - Step-by-step checklist for starting new sessions:
+  - **`first_session_vs_returning` section** - Different workflows for experience levels:
+  - **`common_mistakes_agents_make` section** - Learning from collective experience:
+  - **`quick_reference_card` section** - Ultra-condensed essentials for experienced agents:
+  - **`quick_reference_card` section** - Ultra-condensed 
+
+- **Enhanced Documentation**:
+  - `docs/AGENT-MEMORY-SOLUTION.md` - Detailed explanation of the multi-layered memory strategy
+
+### Why This Matters
+
+This release solves the "agent memory problem" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride.
+
 ## [1.13.2] - 2026-01-05
 
 ### Changed

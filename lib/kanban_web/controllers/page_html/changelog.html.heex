@@ -35,6 +35,79 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.14.0] - 2026-01-05</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              {gettext("Added")}
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("API Enhancements - Agent Onboarding Endpoint")}
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>{gettext("Comprehensive Agent Memory System")}</strong>
+                  {gettext(
+                    " - The /api/agent/onboarding endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:"
+                  )}
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>{gettext("memory_strategy section")}</strong>
+                      {gettext(
+                        " - Platform-agnostic and platform-specific instructions for maintaining context across sessions"
+                      )}
+                    </li>
+                    <li>
+                      <strong>{gettext("session_initialization section")}</strong>
+                      {gettext(" - Step-by-step checklist for starting new sessions")}
+                    </li>
+                    <li>
+                      <strong>{gettext("first_session_vs_returning section")}</strong>
+                      {gettext(" - Different workflows for experience levels")}
+                    </li>
+                    <li>
+                      <strong>{gettext("common_mistakes_agents_make section")}</strong>
+                      {gettext(" - Learning from collective experience")}
+                    </li>
+                    <li>
+                      <strong>{gettext("quick_reference_card section")}</strong>
+                      {gettext(" - Ultra-condensed essentials for experienced agents")}
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>{gettext("Enhanced Documentation:")}</strong>
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                        docs/AGENT-MEMORY-SOLUTION.md
+                      </code>
+                      {gettext(" - Detailed explanation of the multi-layered memory strategy")}
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                {gettext("Why This Matters")}
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                {gettext(
+                  "This release solves the \"agent memory problem\" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride."
+                )}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.2] - 2026-01-05</h2>
 
           <div class="mb-8">
