@@ -47,9 +47,28 @@ These fields appear on every task form, regardless of board settings:
 
 ### Always-Visible Management Fields
 - **Dependencies** - Task identifiers that must complete first
-- **Actual Metrics** - Actual complexity, files changed, time spent
 
 ## Conditionally Visible Fields
+
+### Actual Metrics
+
+The **Actual Metrics** section only appears when a task has actual metrics data recorded.
+
+**When It Appears:**
+- The task has a value in `actual_complexity`, `actual_files_changed`, or `time_spent_minutes`
+
+**When It's Hidden:**
+- For tasks that have no actual metrics recorded yet, this section is hidden to reduce form clutter
+
+**Fields in This Section:**
+- **Actual Complexity** - Actual complexity level (Small, Medium, Large)
+- **Actual Files Changed** - Number of files actually modified
+- **Time Spent (minutes)** - Actual time spent on the task
+
+**Why This Design?**
+- Reduces clutter for tasks that haven't been worked on yet
+- Actual metrics are only relevant once work has been completed
+- Preserves metrics data when it exists
 
 ### Review Queue
 

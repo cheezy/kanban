@@ -810,33 +810,35 @@
       </div>
     <% end %>
 
-    <%!-- Actual Metrics Section --%>
-    <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Actual Metrics")}</h3>
-      <div class="grid grid-cols-3 gap-4">
-        <.input
-          field={f[:actual_complexity]}
-          type="select"
-          label={gettext("Actual Complexity")}
-          options={[
-            {gettext("Small"), :small},
-            {gettext("Medium"), :medium},
-            {gettext("Large"), :large}
-          ]}
-          prompt={gettext("Select")}
-        />
-        <.input
-          field={f[:actual_files_changed]}
-          type="text"
-          label={gettext("Actual Files Changed")}
-        />
-        <.input
-          field={f[:time_spent_minutes]}
-          type="number"
-          label={gettext("Time Spent (minutes)")}
-        />
+    <%= if Ecto.Changeset.get_field(@form.source, :actual_complexity) || Ecto.Changeset.get_field(@form.source, :actual_files_changed) || Ecto.Changeset.get_field(@form.source, :time_spent_minutes) do %>
+      <%!-- Actual Metrics Section --%>
+      <div class="mt-6 pt-6 border-t border-base-300">
+        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Actual Metrics")}</h3>
+        <div class="grid grid-cols-3 gap-4">
+          <.input
+            field={f[:actual_complexity]}
+            type="select"
+            label={gettext("Actual Complexity")}
+            options={[
+              {gettext("Small"), :small},
+              {gettext("Medium"), :medium},
+              {gettext("Large"), :large}
+            ]}
+            prompt={gettext("Select")}
+          />
+          <.input
+            field={f[:actual_files_changed]}
+            type="text"
+            label={gettext("Actual Files Changed")}
+          />
+          <.input
+            field={f[:time_spent_minutes]}
+            type="number"
+            label={gettext("Time Spent (minutes)")}
+          />
+        </div>
       </div>
-    </div>
+    <% end %>
 
     <%= if Ecto.Changeset.get_field(@form.source, :review_status) do %>
       <%!-- Review Queue Section --%>
