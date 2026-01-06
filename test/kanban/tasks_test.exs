@@ -4188,5 +4188,227 @@ defmodule Kanban.TasksTest do
       assert {:error, _operation, _changeset} =
                Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
     end
+
+    test "sets blocked status for tasks with incomplete dependencies on creation" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        "title" => "Test Goal with Blocking",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "First Task", "type" => "work"},
+        %{"title" => "Second Task", "type" => "work", "dependencies" => [0]},
+        %{"title" => "Third Task", "type" => "work", "dependencies" => [0, 1]}
+      ]
+
+      assert {:ok, %{goal: _goal, child_tasks: [task1, task2, task3]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # First task has no dependencies, should be :open
+      assert task1.status == :open
+
+      # Second task depends on incomplete first task, should be :blocked
+      assert task2.status == :blocked
+      assert task2.dependencies == [task1.identifier]
+
+      # Third task depends on incomplete tasks, should be :blocked
+      assert task3.status == :blocked
+      assert task3.dependencies == [task1.identifier, task2.identifier]
+    end
+
+    test "sets open status for tasks whose dependencies are already complete" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create and complete a task first
+      completed_task = task_fixture(column, %{title: "Completed Task", type: :work})
+      {:ok, completed_task} = Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
+
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{
+          "title" => "Task with completed dependency",
+          "type" => "work",
+          "dependencies" => [completed_task.identifier]
+        }
+      ]
+
+      assert {:ok, %{child_tasks: [task]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # Task depends on a completed task, should be :open
+      assert task.status == :open
+      assert task.dependencies == [completed_task.identifier]
+    end
+
+    test "correctly handles mixed complete and incomplete dependencies" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create one completed and one incomplete task
+      completed_task = task_fixture(column, %{title: "Completed", type: :work})
+      {:ok, completed_task} = Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
+
+      incomplete_task = task_fixture(column, %{title: "Incomplete", type: :work})
+
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{
+          "title" => "Mixed dependencies task",
+          "type" => "work",
+          "dependencies" => [completed_task.identifier, incomplete_task.identifier]
+        }
+      ]
+
+      assert {:ok, %{child_tasks: [task]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # Has at least one incomplete dependency, should be :blocked
+      assert task.status == :blocked
+      assert Enum.sort(task.dependencies) ==
+               Enum.sort([completed_task.identifier, incomplete_task.identifier])
+    end
+
+    test "places goal at top of column when child tasks trigger move" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog", position: 0})
+      ready = column_fixture(board, %{name: "Ready", position: 1})
+
+      # Create a couple of existing tasks in ready column
+      _existing_task1 = task_fixture(ready, %{title: "Existing 1", type: :work})
+      _existing_task2 = task_fixture(ready, %{title: "Existing 2", type: :work})
+
+      # Create a goal with child tasks in backlog
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "Child Task 1", "type" => "work"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: [child_task]}} =
+               Tasks.create_goal_with_tasks(backlog, goal_attrs, child_tasks)
+
+      # Move child task to ready column
+      assert {:ok, moved_child} = Tasks.move_task(child_task, ready, 2)
+
+      # Verify the goal moved to ready
+      updated_goal = Tasks.get_task!(goal.id)
+      assert updated_goal.column_id == ready.id
+
+      # Get all tasks in ready column sorted by position
+      tasks_in_ready = Tasks.list_tasks(ready) |> Enum.sort_by(& &1.position)
+      task_ids = Enum.map(tasks_in_ready, & &1.id)
+
+      # Goal should be at position 0 (top of column)
+      assert hd(task_ids) == updated_goal.id
+      assert updated_goal.position == 0
+
+      # Child task and existing tasks should be below the goal
+      child_task_index = Enum.find_index(task_ids, &(&1 == moved_child.id))
+      assert child_task_index > 0
+    end
+
+    test "places goal after existing goals when multiple goals exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog", position: 0})
+      ready = column_fixture(board, %{name: "Ready", position: 1})
+
+      # Create an existing goal in ready column
+      existing_goal = task_fixture(ready, %{title: "Existing Goal", type: :goal})
+      _existing_goal_child = task_fixture(ready, %{title: "Goal 1 Child", parent_id: existing_goal.id})
+
+      # Create some regular tasks
+      _task1 = task_fixture(ready, %{title: "Task 1", type: :work})
+      _task2 = task_fixture(ready, %{title: "Task 2", type: :work})
+
+      # Create a new goal with child in backlog
+      new_goal_attrs = %{
+        "title" => "New Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "New Goal Child", "type" => "work"}
+      ]
+
+      assert {:ok, %{goal: new_goal, child_tasks: [new_child]}} =
+               Tasks.create_goal_with_tasks(backlog, new_goal_attrs, child_tasks)
+
+      # Move child task to ready column
+      assert {:ok, _moved_child} = Tasks.move_task(new_child, ready, 4)
+
+      # Get all tasks in ready column
+      tasks_in_ready = Tasks.list_tasks(ready) |> Enum.sort_by(& &1.position)
+
+      # Extract goals and non-goals
+      goals = Enum.filter(tasks_in_ready, &(&1.type == :goal))
+      _regular_tasks = Enum.filter(tasks_in_ready, &(&1.type != :goal))
+
+      # Both goals should be at the top
+      assert length(goals) == 2
+      assert hd(tasks_in_ready).type == :goal
+      assert Enum.at(tasks_in_ready, 1).type == :goal
+
+      # All regular tasks should be after all goals
+      first_regular_task_index = Enum.find_index(tasks_in_ready, &(&1.type != :goal))
+      assert first_regular_task_index >= 2
+
+      # Verify new goal is after existing goal
+      updated_new_goal = Tasks.get_task!(new_goal.id)
+      updated_existing_goal = Tasks.get_task!(existing_goal.id)
+      assert updated_new_goal.position > updated_existing_goal.position
+    end
+
+    test "broadcasts task_updated event when blocking status is set on creation" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Subscribe to board updates
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      goal_attrs = %{
+        "title" => "Test Goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      }
+
+      child_tasks = [
+        %{"title" => "First Task", "type" => "work"},
+        %{"title" => "Second Task", "type" => "work", "dependencies" => [0]}
+      ]
+
+      assert {:ok, %{child_tasks: [_task1, task2]}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # Should receive task_updated for the blocked task (blocking status update)
+      assert_receive {:task_updated, updated_task}
+      assert updated_task.id == task2.id
+      assert updated_task.status == :blocked
+    end
   end
 end

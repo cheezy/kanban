@@ -303,14 +303,26 @@ defmodule Kanban.Tasks do
         goal = changes.goal
         child_tasks = extract_child_tasks(changes)
 
-        broadcast_goal_and_children(goal, child_tasks)
-        emit_goal_creation_telemetry(goal, child_tasks, column)
+        # Update blocking status for all child tasks with dependencies
+        updated_child_tasks = update_child_tasks_blocking_status(child_tasks)
 
-        {:ok, %{goal: goal, child_tasks: child_tasks}}
+        broadcast_goal_and_children(goal, updated_child_tasks)
+        emit_goal_creation_telemetry(goal, updated_child_tasks, column)
+
+        {:ok, %{goal: goal, child_tasks: updated_child_tasks}}
 
       {:error, failed_operation, changeset, _changes} ->
         {:error, failed_operation, changeset}
     end
+  end
+
+  defp update_child_tasks_blocking_status(child_tasks) do
+    Enum.map(child_tasks, fn task ->
+      case update_task_blocking_status(task) do
+        {:ok, updated_task} -> updated_task
+        {:error, _} -> task
+      end
+    end)
   end
 
   defp extract_child_tasks(changes) do

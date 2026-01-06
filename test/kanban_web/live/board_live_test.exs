@@ -1175,7 +1175,7 @@ defmodule KanbanWeb.BoardLiveTest do
       assert updated_goal.column_id == ready.id
     end
 
-    test "goal positions itself above the task that triggered the move", %{
+    test "goal positions itself at the top when child tasks move", %{
       conn: conn,
       user: user
     } do
@@ -1189,7 +1189,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      # Move child1 first - goal should position above child1
+      # Move child1 first - goal should position at top of column
       show_live
       |> render_click("move_task", %{
         "task_id" => "#{child1.id}",
@@ -1198,7 +1198,7 @@ defmodule KanbanWeb.BoardLiveTest do
         "new_position" => 0
       })
 
-      # Move child2 second - goal should reposition above child2 (the trigger task)
+      # Move child2 second - goal should remain at top with all tasks below
       show_live
       |> render_click("move_task", %{
         "task_id" => "#{child2.id}",
@@ -1214,10 +1214,11 @@ defmodule KanbanWeb.BoardLiveTest do
       child1_index = Enum.find_index(task_ids, &(&1 == child1.id))
       child2_index = Enum.find_index(task_ids, &(&1 == child2.id))
 
-      # Goal should be directly above child2 (the last task that triggered the move)
-      # Expected order: child1, goal, child2
-      assert child1_index < goal_index
+      # Goals should always be at the top, with all tasks below
+      # Expected order: goal, child1, child2
+      assert goal_index < child1_index
       assert goal_index < child2_index
+      assert child1_index < child2_index
     end
   end
 
