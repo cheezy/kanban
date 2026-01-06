@@ -341,7 +341,7 @@
                           <%= if task.created_by_agent do %>
                             <span
                               class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 border border-purple-200/50 transition-transform hover:scale-110 flex-shrink-0"
-                              title={"Created by #{task.created_by_agent}"}
+                              title={gettext("Created by %{agent}", agent: task.created_by_agent)}
                             >
                               <.icon
                                 name="hero-cpu-chip-solid"
@@ -476,6 +476,7 @@
                       const text = this.getAttribute('data-token-value');
                       const copiedText = this.getAttribute('data-copied-text');
                       const copyText = this.getAttribute('data-copy-text');
+                      const failedMsg = this.getAttribute('data-failed-msg');
                       const textarea = document.createElement('textarea');
                       textarea.value = text;
                       textarea.style.position = 'fixed';
@@ -488,7 +489,7 @@
                         setTimeout(() => { this.innerHTML = copyText; }, 2000);
                       } catch (err) {
                         console.error('Copy failed:', err);
-                        alert('Failed to copy: ' + err.message);
+                        alert(failedMsg + ': ' + err.message);
                       } finally {
                         document.body.removeChild(textarea);
                       }
@@ -496,6 +497,7 @@
                   data-token-value={@new_token}
                   data-copy-text={gettext("Copy")}
                   data-copied-text={"✓ " <> gettext("Copied!")}
+                  data-failed-msg={gettext("Failed to copy")}
                 >
                   {gettext("Copy")}
                 </button>
@@ -526,14 +528,14 @@
           field={@token_form[:agent_model]}
           type="text"
           label={gettext("Agent Model (Optional)")}
-          placeholder="claude-4.5-opus"
+          placeholder={gettext("claude-4.5-opus")}
         />
 
         <.input
           field={@token_form[:agent_purpose]}
           type="text"
           label={gettext("Purpose (Optional)")}
-          placeholder="Task automation"
+          placeholder={gettext("Task automation")}
         />
 
         <div class="mt-4">

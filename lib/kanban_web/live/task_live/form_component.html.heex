@@ -124,7 +124,7 @@
             field={f[:estimated_files]}
             type="text"
             label={gettext("Estimated Files")}
-            placeholder="e.g., 3-5"
+            placeholder={gettext("e.g., 3-5")}
           />
         </div>
       </div>
@@ -165,10 +165,18 @@
         <.inputs_for :let={kf} field={f[:key_files]}>
           <div class="flex gap-2 items-start mb-2">
             <div class="flex-1">
-              <.input field={kf[:file_path]} type="text" placeholder="lib/kanban/tasks.ex" />
+              <.input
+                field={kf[:file_path]}
+                type="text"
+                placeholder={gettext("lib/kanban/tasks.ex")}
+              />
             </div>
             <div class="flex-1">
-              <.input field={kf[:note]} type="text" placeholder="Note about this file" />
+              <.input
+                field={kf[:note]}
+                type="text"
+                placeholder={gettext("Note about this file")}
+              />
             </div>
             <input type="hidden" name={kf[:position].name} value={kf[:position].value} />
             <button
@@ -210,10 +218,14 @@
               />
             </div>
             <div class="flex-1">
-              <.input field={vs[:step_text]} type="text" placeholder="mix test" />
+              <.input field={vs[:step_text]} type="text" placeholder={gettext("mix test")} />
             </div>
             <div class="flex-1">
-              <.input field={vs[:expected_result]} type="text" placeholder="Expected result" />
+              <.input
+                field={vs[:expected_result]}
+                type="text"
+                placeholder={gettext("Expected result")}
+              />
             </div>
             <input type="hidden" name={vs[:position].name} value={vs[:position].value} />
             <button
@@ -309,7 +321,7 @@
           field={f[:telemetry_event]}
           type="text"
           label={gettext("Telemetry Event")}
-          placeholder="[:kanban, :domain, :action]"
+          placeholder={gettext("[:kanban, :domain, :action]")}
         />
         <.input
           field={f[:metrics_to_track]}

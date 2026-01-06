@@ -19,19 +19,15 @@
       </div>
 
       <h1 class="text-4xl font-bold text-base-content mb-8">
-        {gettext("Changelog")}
+        Changelog
       </h1>
 
       <div class="prose prose-lg max-w-none">
         <p class="text-base-content opacity-70 mb-4">
-          {gettext(
-            "All notable changes to the Kanban Board application will be documented in this file."
-          )}
+          All notable changes to the Kanban Board application will be documented in this file.
         </p>
         <p class="text-base-content opacity-70 mb-8">
-          {gettext(
-            "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
-          )}
+          The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
         </p>
 
         <section class="mb-10">
@@ -39,54 +35,50 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("API Enhancements - Agent Onboarding Endpoint")}
+                API Enhancements - Agent Onboarding Endpoint
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Comprehensive Agent Memory System")}</strong>
-                  {gettext(
-                    " - The /api/agent/onboarding endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:"
-                  )}
+                  <strong>Comprehensive Agent Memory System</strong>
+                   - The /api/agent/onboarding endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      <strong>{gettext("memory_strategy section")}</strong>
-                      {gettext(
-                        " - Platform-agnostic and platform-specific instructions for maintaining context across sessions"
-                      )}
+                      <strong>memory_strategy section</strong>
+                       - Platform-agnostic and platform-specific instructions for maintaining context across sessions
                     </li>
                     <li>
-                      <strong>{gettext("session_initialization section")}</strong>
-                      {gettext(" - Step-by-step checklist for starting new sessions")}
+                      <strong>session_initialization section</strong>
+                       - Step-by-step checklist for starting new sessions
                     </li>
                     <li>
-                      <strong>{gettext("first_session_vs_returning section")}</strong>
-                      {gettext(" - Different workflows for experience levels")}
+                      <strong>first_session_vs_returning section</strong>
+                       - Different workflows for experience levels
                     </li>
                     <li>
-                      <strong>{gettext("common_mistakes_agents_make section")}</strong>
-                      {gettext(" - Learning from collective experience")}
+                      <strong>common_mistakes_agents_make section</strong>
+                       - Learning from collective experience
                     </li>
                     <li>
-                      <strong>{gettext("quick_reference_card section")}</strong>
-                      {gettext(" - Ultra-condensed essentials for experienced agents")}
+                      <strong>quick_reference_card section</strong>
+                       - Ultra-condensed essentials for experienced agents
                     </li>
                   </ul>
                 </li>
 
                 <li>
-                  <strong>{gettext("Enhanced Documentation:")}</strong>
+                  <strong>Enhanced Documentation:</strong>
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <code class="text-sm bg-base-200 px-2 py-1 rounded">
                         docs/AGENT-MEMORY-SOLUTION.md
                       </code>
-                      {gettext(" - Detailed explanation of the multi-layered memory strategy")}
+                       - Detailed explanation of the multi-layered memory strategy
                     </li>
                   </ul>
                 </li>
@@ -95,33 +87,29 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Why This Matters")}
+                Why This Matters
               </h4>
 
               <p class="text-base-content opacity-80 mb-4">
-                {gettext(
-                  "This release solves the \"agent memory problem\" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride."
-                )}
+                This release solves the "agent memory problem" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride.
               </p>
             </div>
           </div>
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Changed")}
+              Changed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Goal Movement Behavior Enhancement")}
+                Goal Movement Behavior Enhancement
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Improved Goal Auto-Positioning")}</strong>
-                  {gettext(
-                    " - When a task triggers its parent goal to move to a new column, the goal now positions itself directly above the task that caused the movement (instead of above the earliest child in the target column)"
-                  )}
+                  <strong>Improved Goal Auto-Positioning</strong>
+                   - When a task triggers its parent goal to move to a new column, the goal now positions itself directly above the task that caused the movement (instead of above the earliest child in the target column)
                 </li>
               </ul>
             </div>
@@ -133,74 +121,68 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Changed")}
+              Changed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("UI Improvements - Conditional Field Visibility")}
+                UI Improvements - Conditional Field Visibility
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Conditional Visibility for Status & Agent Tracking Section")}</strong>
-                  {gettext(
-                    " - The \"Status & Agent Tracking\" section in task forms now intelligently shows/hides based on agent interaction:"
-                  )}
+                  <strong>Conditional Visibility for Status & Agent Tracking Section</strong>
+                   - The "Status & Agent Tracking" section in task forms now intelligently shows/hides based on agent interaction:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      <strong>{gettext("Status")}</strong>
-                      {gettext(" - Task status (Open, In Progress, Completed, Blocked)")}
+                      <strong>Status</strong>
+                       - Task status (Open, In Progress, Completed, Blocked)
                     </li>
                     <li>
-                      <strong>{gettext("Created By Agent")}</strong>
-                      {gettext(" - Name of AI agent that created the task")}
+                      <strong>Created By Agent</strong>
+                       - Name of AI agent that created the task
                     </li>
                     <li>
-                      <strong>{gettext("Completed By Agent")}</strong>
-                      {gettext(" - Name of AI agent that completed the task")}
+                      <strong>Completed By Agent</strong>
+                       - Name of AI agent that completed the task
                     </li>
                     <li>
-                      <strong>{gettext("Completion Summary")}</strong>
-                      {gettext(" - Summary provided by agent upon completion")}
+                      <strong>Completion Summary</strong>
+                       - Summary provided by agent upon completion
                     </li>
                   </ul>
                 </li>
 
                 <li>
-                  <strong>{gettext("Conditional Visibility for Review Queue Section")}</strong>
-                  {gettext(
-                    " - The \"Review Queue\" section in task forms now only appears when a task has a review status:"
-                  )}
+                  <strong>Conditional Visibility for Review Queue Section</strong>
+                   - The "Review Queue" section in task forms now only appears when a task has a review status:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      <strong>{gettext("Review Status")}</strong>
-                      {gettext(" - Pending, Approved, Changes Requested, or Rejected")}
+                      <strong>Review Status</strong>
+                       - Pending, Approved, Changes Requested, or Rejected
                     </li>
                     <li>
-                      <strong>{gettext("Review Notes")}</strong>
-                      {gettext(" - Notes from the reviewer about the task")}
+                      <strong>Review Notes</strong>
+                       - Notes from the reviewer about the task
                     </li>
                   </ul>
                 </li>
 
                 <li>
-                  <strong>{gettext("Conditional Visibility for Actual Metrics Section")}</strong>
-                  {gettext(
-                    " - The \"Actual Metrics\" section in task forms now only appears when actual metrics data exists:"
-                  )}
+                  <strong>Conditional Visibility for Actual Metrics Section</strong>
+                   - The "Actual Metrics" section in task forms now only appears when actual metrics data exists:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      <strong>{gettext("Actual Complexity")}</strong>
-                      {gettext(" - Actual complexity level (Small, Medium, Large)")}
+                      <strong>Actual Complexity</strong>
+                       - Actual complexity level (Small, Medium, Large)
                     </li>
                     <li>
-                      <strong>{gettext("Actual Files Changed")}</strong>
-                      {gettext(" - Number of files actually modified")}
+                      <strong>Actual Files Changed</strong>
+                       - Number of files actually modified
                     </li>
                     <li>
-                      <strong>{gettext("Time Spent (minutes)")}</strong>
-                      {gettext(" - Actual time spent on the task")}
+                      <strong>Time Spent (minutes)</strong>
+                       - Actual time spent on the task
                     </li>
                   </ul>
                 </li>
@@ -210,31 +192,27 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Documentation")}
+                Documentation
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("TASK-FORM-FIELD-VISIBILITY.md")}</strong>
-                  {gettext(
-                    " - New comprehensive guide explaining task form field visibility"
-                  )}
+                  <strong>TASK-FORM-FIELD-VISIBILITY.md</strong>
+                   - New comprehensive guide explaining task form field visibility
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
-                    <li>{gettext("Board-level field visibility settings and configurable fields")}</li>
-                    <li>{gettext("Always-visible fields vs. conditionally visible fields")}</li>
+                    <li>Board-level field visibility settings and configurable fields</li>
+                    <li>Always-visible fields vs. conditionally visible fields</li>
                     <li>
-                      {gettext(
-                        "Detailed explanation of conditional visibility for Status & Agent Tracking, Review Queue, and Actual Metrics"
-                      )}
+                      Detailed explanation of conditional visibility for Status & Agent Tracking, Review Queue, and Actual Metrics
                     </li>
-                    <li>{gettext("API behavior vs. UI form behavior")}</li>
-                    <li>{gettext("Best practices for board owners, AI agents, and human users")}</li>
-                    <li>{gettext("Examples and scenarios demonstrating visibility logic")}</li>
+                    <li>API behavior vs. UI form behavior</li>
+                    <li>Best practices for board owners, AI agents, and human users</li>
+                    <li>Examples and scenarios demonstrating visibility logic</li>
                   </ul>
                 </li>
               </ul>
@@ -247,38 +225,38 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Fixed")}
+              Fixed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Drag and Drop Improvements")}
+                Drag and Drop Improvements
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Smoother Animation")}</strong>
-                  {gettext(" - Enhanced drag and drop feel with improved visual feedback")}
+                  <strong>Smoother Animation</strong>
+                   - Enhanced drag and drop feel with improved visual feedback
                 </li>
                 <li>
-                  <strong>{gettext("More Precise Positioning")}</strong>
-                  {gettext(" - Improved accuracy when dropping tasks")}
+                  <strong>More Precise Positioning</strong>
+                   - Improved accuracy when dropping tasks
                 </li>
                 <li>
-                  <strong>{gettext("Better Scroll Behavior")}</strong>
-                  {gettext(" - Enhanced dragging near column edges")}
+                  <strong>Better Scroll Behavior</strong>
+                   - Enhanced dragging near column edges
                 </li>
                 <li>
-                  <strong>{gettext("Prevented Premature DOM Updates")}</strong>
-                  {gettext(" - Fixed jarring updates during drag operations")}
+                  <strong>Prevented Premature DOM Updates</strong>
+                   - Fixed jarring updates during drag operations
                 </li>
                 <li>
-                  <strong>{gettext("Enhanced Touch Support")}</strong>
-                  {gettext(" - Better mobile drag experience")}
+                  <strong>Enhanced Touch Support</strong>
+                   - Better mobile drag experience
                 </li>
                 <li>
-                  <strong>{gettext("Position Index Bug Fix")}</strong>
-                  {gettext(" - Resolved issue where tasks would return to wrong position")}
+                  <strong>Position Index Bug Fix</strong>
+                   - Resolved issue where tasks would return to wrong position
                 </li>
               </ul>
             </div>
@@ -290,28 +268,24 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Enhanced New User Experience")}
+                Enhanced New User Experience
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Automatic Login After Registration")}</strong>
-                  {gettext(
-                    " - New users are now automatically logged in after creating their account"
-                  )}
+                  <strong>Automatic Login After Registration</strong>
+                   - New users are now automatically logged in after creating their account
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Eliminates the redundant step of requiring users to log in immediately after registration"
-                      )}
+                      Eliminates the redundant step of requiring users to log in immediately after registration
                     </li>
                     <li>
-                      {gettext("Improved onboarding flow reduces friction for new users")}
+                      Improved onboarding flow reduces friction for new users
                     </li>
                   </ul>
                 </li>
@@ -319,18 +293,14 @@
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4 mt-4">
                 <li>
-                  <strong>{gettext("AI Optimized Board Quick Start")}</strong>
-                  {gettext(" - Added prominent call-to-action for new users without boards")}
+                  <strong>AI Optimized Board Quick Start</strong>
+                   - Added prominent call-to-action for new users without boards
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Displays helpful message: \"You don't have any boards yet. Create your first board to get started!\""
-                      )}
+                      Displays helpful message: "You don't have any boards yet. Create your first board to get started!"
                     </li>
                     <li>
-                      {gettext(
-                        "Large, centered \"Create AI Optimized Board\" button with orange gradient styling"
-                      )}
+                      Large, centered "Create AI Optimized Board" button with orange gradient styling
                     </li>
                   </ul>
                 </li>
@@ -340,34 +310,30 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Changed")}
+              Changed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("UI/UX Improvements")}
+                UI/UX Improvements
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("Enhanced Task Review Checkbox Visibility")}</strong>
-                  {gettext(" - Made the \"Needs Review\" checkbox more obvious in task forms")}
+                  <strong>Enhanced Task Review Checkbox Visibility</strong>
+                   - Made the \"Needs Review\" checkbox more obvious in task forms
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Changed from subtle gray label to prominent blue gradient styling"
-                      )}
+                      Changed from subtle gray label to prominent blue gradient styling
                     </li>
                     <li>
-                      {gettext(
-                        "Added blue checkmark icon when enabled for better visual feedback"
-                      )}
+                      Added blue checkmark icon when enabled for better visual feedback
                     </li>
                     <li>
-                      {gettext("Increased text size and weight for better readability")}
+                      Increased text size and weight for better readability
                     </li>
                     <li>
-                      {gettext("Improved accessibility with clearer visual distinction")}
+                      Improved accessibility with clearer visual distinction
                     </li>
                   </ul>
                 </li>
@@ -381,60 +347,42 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Agent Onboarding Endpoint")}
+                Agent Onboarding Endpoint
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>GET /api/agent/onboarding</strong>
-                  {gettext(
-                    " - Comprehensive onboarding endpoint for AI agents starting work with Stride"
-                  )}
+                   - Comprehensive onboarding endpoint for AI agents starting work with Stride
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Critical first steps - Immediate guidance on creating .stride_auth.md and .stride.md configuration files"
-                      )}
+                      Critical first steps - Immediate guidance on creating .stride_auth.md and .stride.md configuration files
                     </li>
                     <li>
-                      {gettext(
-                        "File templates - Complete templates for both configuration files included in response"
-                      )}
+                      File templates - Complete templates for both configuration files included in response
                     </li>
                     <li>
-                      {gettext(
-                        "Workflow overview - Clear explanation of the Ready → Doing → Review → Done workflow"
-                      )}
+                      Workflow overview - Clear explanation of the Ready → Doing → Review → Done workflow
                     </li>
                     <li>
-                      {gettext(
-                        "Hook execution guide - Complete documentation of all four hook points with environment variables"
-                      )}
+                      Hook execution guide - Complete documentation of all four hook points with environment variables
                     </li>
                     <li>
-                      {gettext(
-                        "API reference - Full endpoint listing with categorization (discovery, management, creation)"
-                      )}
+                      API reference - Full endpoint listing with categorization (discovery, management, creation)
                     </li>
                     <li>
-                      {gettext(
-                        "Documentation links - Direct URLs to all agent-facing documentation guides"
-                      )}
+                      Documentation links - Direct URLs to all agent-facing documentation guides
                     </li>
                     <li>
-                      {gettext(
-                        "Quick start guide - Step-by-step instructions for getting started immediately"
-                      )}
+                      Quick start guide - Step-by-step instructions for getting started immediately
                     </li>
                     <li>
-                      {gettext(
-                        "Returns all information needed for an agent to begin working without external documentation lookup"
-                      )}
+                      Returns all information needed for an agent to begin working without external documentation lookup
                     </li>
                   </ul>
                 </li>
@@ -442,56 +390,54 @@
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4 mt-4">
                 <li>
-                  <strong>{gettext("Comprehensive Agent Documentation")}</strong>
-                  {gettext(" - Created complete documentation set for AI agents")}
+                  <strong>Comprehensive Agent Documentation</strong>
+                   - Created complete documentation set for AI agents
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AUTHENTICATION.md
                       </code>
-                      {gettext(" - Bearer token authentication with .stride_auth.md format")}
+                       - Bearer token authentication with .stride_auth.md format
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AGENT-CAPABILITIES.md
                       </code>
-                      {gettext(" - Capability matching system with 12 standard capabilities")}
+                       - Capability matching system with 12 standard capabilities
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AGENT-HOOK-EXECUTION-GUIDE.md
                       </code>
-                      {gettext(" - Client-side hook execution with complete examples")}
+                       - Client-side hook execution with complete examples
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         TASK-WRITING-GUIDE.md
                       </code>
-                      {gettext(" - Task creation guide with structured JSON format rationale")}
+                       - Task creation guide with structured JSON format rationale
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         REVIEW-WORKFLOW.md
                       </code>
-                      {gettext(" - Review workflow patterns and continuous work loop")}
+                       - Review workflow patterns and continuous work loop
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         ESTIMATION-FEEDBACK.md
                       </code>
-                      {gettext(" - Providing estimation feedback on task completion")}
+                       - Providing estimation feedback on task completion
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         UNCLAIM-TASKS.md
                       </code>
-                      {gettext(" - When and how to release tasks agents can't complete")}
+                       - When and how to release tasks agents can't complete
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">AI-WORKFLOW.md</code>
-                      {gettext(
-                        " - Complete agent workflow from authentication to task completion"
-                      )}
+                       - Complete agent workflow from authentication to task completion
                     </li>
                   </ul>
                 </li>
@@ -501,55 +447,39 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Changed")}
+              Changed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Homepage Redesign")}
+                Homepage Redesign
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("AI-Human Collaboration Focus")}</strong>
-                  {gettext(
-                    " - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform"
-                  )}
+                  <strong>AI-Human Collaboration Focus</strong>
+                   - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Hero section - Updated badge to \"AI-Human Collaboration Platform\" and headline to emphasize AI agents working alongside humans"
-                      )}
+                      Hero section - Updated badge to "AI-Human Collaboration Platform" and headline to emphasize AI agents working alongside humans
                     </li>
                     <li>
-                      {gettext(
-                        "Value proposition - Rewritten to highlight workflow hooks, task delegation to AI, and human review control"
-                      )}
+                      Value proposition - Rewritten to highlight workflow hooks, task delegation to AI, and human review control
                     </li>
                     <li>
-                      {gettext(
-                        "Feature cards - Replaced generic kanban features with collaboration-focused features"
-                      )}
+                      Feature cards - Replaced generic kanban features with collaboration-focused features
                       <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
                         <li>
-                          {gettext(
-                            "AI Agent Integration - REST API with capability matching and workflow hooks"
-                          )}
+                          AI Agent Integration - REST API with capability matching and workflow hooks
                         </li>
                         <li>
-                          {gettext(
-                            "Automated Task Claiming - Atomic claiming with optimistic locking and dependency handling"
-                          )}
+                          Automated Task Claiming - Atomic claiming with optimistic locking and dependency handling
                         </li>
                         <li>
-                          {gettext(
-                            "Human Review Workflow - Optional human review and approval process"
-                          )}
+                          Human Review Workflow - Optional human review and approval process
                         </li>
                         <li>
-                          {gettext(
-                            "Client-Side Workflow Hooks - Custom code execution at four key workflow moments"
-                          )}
+                          Client-Side Workflow Hooks - Custom code execution at four key workflow moments
                         </li>
                       </ul>
                     </li>
@@ -560,28 +490,22 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("About Page Enhancement")}
+                About Page Enhancement
               </h4>
 
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
-                  <strong>{gettext("AI-Human Collaboration Platform Section")}</strong>
-                  {gettext(" - Added new section explaining Stride's collaborative features")}
+                  <strong>AI-Human Collaboration Platform Section</strong>
+                   - Added new section explaining Stride's collaborative features
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
-                      {gettext(
-                        "Overview - Describes how AI agents and humans work together through REST API and review workflows"
-                      )}
+                      Overview - Describes how AI agents and humans work together through REST API and review workflows
                     </li>
                     <li>
-                      {gettext(
-                        "Five key features - Capability matching, atomic task claiming, client-side hooks, human review, and API documentation"
-                      )}
+                      Five key features - Capability matching, atomic task claiming, client-side hooks, human review, and API documentation
                     </li>
                     <li>
-                      {gettext(
-                        "Use case description - Explains how teams delegate repetitive tasks to AI while humans focus on architecture and review"
-                      )}
+                      Use case description - Explains how teams delegate repetitive tasks to AI while humans focus on architecture and review
                     </li>
                   </ul>
                 </li>
@@ -595,53 +519,43 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Workflow Hooks System for AI Agent Integration")}
+                Workflow Hooks System for AI Agent Integration
               </h4>
 
               <div class="mb-4">
                 <p class="text-base-content opacity-70 mb-4">
-                  {gettext(
-                    "Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines."
-                  )}
+                  Introduced a flexible hook system that enables AI agents to execute custom workflows at key points in the task lifecycle. The server provides hook metadata while agents execute hooks locally on their own machines.
                 </p>
 
                 <ul class="list-disc list-inside ml-6 space-y-2 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Four fixed hook points:")}</strong>
-                    {gettext(" before_doing, after_doing, before_review, after_review")}
+                    <strong>Four fixed hook points:</strong>
+                     before_doing, after_doing, before_review, after_review
                   </li>
                   <li>
-                    <strong>{gettext("Client-side execution:")}</strong>
-                    {gettext(
-                      " Agents read .stride.md configuration and execute hooks on their local machine"
-                    )}
+                    <strong>Client-side execution:</strong>
+                     Agents read .stride.md configuration and execute hooks on their local machine
                   </li>
                   <li>
-                    <strong>{gettext("Language-agnostic:")}</strong>
-                    {gettext(" Works with any programming language (Elixir, Java, Python, etc.)")}
+                    <strong>Language-agnostic:</strong>
+                     Works with any programming language (Elixir, Java, Python, etc.)
                   </li>
                   <li>
-                    <strong>{gettext("Hook metadata:")}</strong>
-                    {gettext(
-                      " Server returns name, environment variables, timeout, and blocking status"
-                    )}
+                    <strong>Hook metadata:</strong>
+                     Server returns name, environment variables, timeout, and blocking status
                   </li>
                   <li>
-                    <strong>{gettext("API integration:")}</strong>
-                    {gettext(
-                      " POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata"
-                    )}
+                    <strong>API integration:</strong>
+                     POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata
                   </li>
                   <li>
-                    <strong>{gettext("Automatic completion:")}</strong>
-                    {gettext(
-                      " Tasks with needs_review=false automatically move to Done after executing all hooks"
-                    )}
+                    <strong>Automatic completion:</strong>
+                     Tasks with needs_review=false automatically move to Done after executing all hooks
                   </li>
                 </ul>
               </div>
@@ -654,12 +568,12 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Bulk Task Creation with Nested Goals")}
+                Bulk Task Creation with Nested Goals
               </h4>
 
               <div class="mb-4">
@@ -667,58 +581,48 @@
                   <strong>POST /api/tasks with nested tasks</strong>
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Create a goal with multiple child tasks in a single atomic API call:")}
+                  Create a goal with multiple child tasks in a single atomic API call:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Atomic transactions")}</strong>
-                    {gettext(
-                      " - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)"
-                    )}
+                    <strong>Atomic transactions</strong>
+                     - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)
                   </li>
                   <li>
-                    <strong>{gettext("Automatic parent_id assignment")}</strong>
-                    {gettext(" - Child tasks automatically linked to parent goal")}
+                    <strong>Automatic parent_id assignment</strong>
+                     - Child tasks automatically linked to parent goal
                   </li>
                   <li>
-                    <strong>{gettext("Automatic identifier generation")}</strong>
-                    {gettext(
-                      " - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type"
-                    )}
+                    <strong>Automatic identifier generation</strong>
+                     - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type
                   </li>
                   <li>
-                    <strong>{gettext("Position management")}</strong>
-                    {gettext(
-                      " - Goal positioned first, child tasks positioned sequentially after"
-                    )}
+                    <strong>Position management</strong>
+                     - Goal positioned first, child tasks positioned sequentially after
                   </li>
                   <li>
-                    <strong>{gettext("Task history tracking")}</strong>
-                    {gettext(" - Creation history entries created for goal and all child tasks")}
+                    <strong>Task history tracking</strong>
+                     - Creation history entries created for goal and all child tasks
                   </li>
                   <li>
-                    <strong>{gettext("PubSub broadcasting")}</strong>
-                    {gettext(" - Real-time updates broadcast for goal and all children")}
+                    <strong>PubSub broadcasting</strong>
+                     - Real-time updates broadcast for goal and all children
                   </li>
                   <li>
-                    <strong>{gettext("Telemetry events")}</strong>
-                    {gettext(
-                      " - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts"
-                    )}
+                    <strong>Telemetry events</strong>
+                     - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts
                   </li>
                   <li>
-                    <strong>{gettext("WIP limit enforcement")}</strong>
-                    {gettext(" - Respects column WIP limits before creating goal")}
+                    <strong>WIP limit enforcement</strong>
+                     - Respects column WIP limits before creating goal
                   </li>
                   <li>
-                    <strong>{gettext("Full field support")}</strong>
-                    {gettext(
-                      " - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)"
-                    )}
+                    <strong>Full field support</strong>
+                     - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)
                   </li>
                   <li>
-                    <strong>{gettext("Response format")}</strong>
-                    {gettext(" - Returns {goal: ..., child_tasks: [...]} with complete task data")}
+                    <strong>Response format</strong>
+                     - Returns &#123;goal: ..., child_tasks: [...]&#125; with complete task data
                   </li>
                 </ul>
               </div>
@@ -726,38 +630,32 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Automatic Goal Deletion")}
+                Automatic Goal Deletion
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Smart goal cleanup")}
+                  Smart goal cleanup
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext(
-                    "Goals are automatically deleted when all their child tasks are removed:"
-                  )}
+                  Goals are automatically deleted when all their child tasks are removed:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Cascade deletion")}</strong>
-                    {gettext(
-                      " - When the last child task of a goal is deleted, the parent goal is automatically deleted as well"
-                    )}
+                    <strong>Cascade deletion</strong>
+                     - When the last child task of a goal is deleted, the parent goal is automatically deleted as well
                   </li>
                   <li>
-                    <strong>{gettext("Real-time updates")}</strong>
-                    {gettext(" - Goal deletion broadcasts via PubSub for immediate UI updates")}
+                    <strong>Real-time updates</strong>
+                     - Goal deletion broadcasts via PubSub for immediate UI updates
                   </li>
                   <li>
-                    <strong>{gettext("Prevents orphaned goals")}</strong>
-                    {gettext(" - Ensures goals without children don't remain on the board")}
+                    <strong>Prevents orphaned goals</strong>
+                     - Ensures goals without children don't remain on the board
                   </li>
                   <li>
-                    <strong>{gettext("Proper reordering")}</strong>
-                    {gettext(
-                      " - Tasks are reordered after goal deletion to maintain proper positioning"
-                    )}
+                    <strong>Proper reordering</strong>
+                     - Tasks are reordered after goal deletion to maintain proper positioning
                   </li>
                 </ul>
               </div>
@@ -770,174 +668,158 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Goal → Task Hierarchy System")}
+                Goal → Task Hierarchy System
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("2-Level Task Hierarchy")}
+                  2-Level Task Hierarchy
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Introduced goal-based task organization:")}
+                  Introduced goal-based task organization:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Goals (G prefix)")}</strong>
-                    {gettext(
-                      " - Large initiatives (25+ hours) that contain multiple related tasks"
-                    )}
+                    <strong>Goals (G prefix)</strong>
+                     - Large initiatives (25+ hours) that contain multiple related tasks
                   </li>
                   <li>
-                    <strong>{gettext("Tasks (W/D prefix)")}</strong>
-                    {gettext(
-                      " - Individual work items that can belong to a goal via parent_id field"
-                    )}
+                    <strong>Tasks (W/D prefix)</strong>
+                     - Individual work items that can belong to a goal via parent_id field
                   </li>
-                  <li>{gettext("Standalone tasks (no parent) remain fully supported")}</li>
+                  <li>Standalone tasks (no parent) remain fully supported</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Goal Card UI")}
+                  Goal Card UI
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Compact, visually distinct cards for goals:")}
+                  Compact, visually distinct cards for goals:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Yellow gradient styling")}</strong>
-                    {gettext(
-                      " - from-yellow-50 to-yellow-100 background with border-yellow-300/60"
-                    )}
+                    <strong>Yellow gradient styling</strong>
+                     - from-yellow-50 to-yellow-100 background with border-yellow-300/60
                   </li>
                   <li>
-                    <strong>{gettext("Compact dimensions")}</strong>
-                    {gettext(
-                      " - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)"
-                    )}
+                    <strong>Compact dimensions</strong>
+                     - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)
                   </li>
                   <li>
-                    <strong>{gettext("Reduced spacing")}</strong>
-                    {gettext(
-                      " - mt-1 between title and progress bar, mt-1.5 between progress bar and badges"
-                    )}
+                    <strong>Reduced spacing</strong>
+                     - mt-1 between title and progress bar, mt-1.5 between progress bar and badges
                   </li>
                   <li>
-                    <strong>{gettext("Three-line layout:")}</strong>
-                    {gettext(
-                      " Line 1: Goal title, Line 2: Progress bar showing completion (e.g., \"6/11\"), Line 3: Badge row (G badge, priority, identifier)"
-                    )}
+                    <strong>Three-line layout:</strong>
+                     Line 1: Goal title, Line 2: Progress bar showing completion (e.g., "6/11"), Line 3: Badge row (G badge, priority, identifier)
                   </li>
                   <li>
-                    <strong>{gettext("Non-draggable")}</strong>
-                    {gettext(" - No drag handle displayed (goals move automatically)")}
+                    <strong>Non-draggable</strong>
+                     - No drag handle displayed (goals move automatically)
                   </li>
                   <li>
-                    <strong>{gettext("Type badge")}</strong>
-                    {gettext(" - Yellow \"G\" badge with gradient background matching card style")}
+                    <strong>Type badge</strong>
+                     - Yellow \"G\" badge with gradient background matching card style
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Automatic Goal Movement")}
+                  Automatic Goal Movement
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Goals reposition based on child task status:")}
+                  Goals reposition based on child task status:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Smart column detection")}</strong>
-                    {gettext(
-                      " - When ALL child tasks are in same column, goal moves to that column"
-                    )}
+                    <strong>Smart column detection</strong>
+                     - When ALL child tasks are in same column, goal moves to that column
                   </li>
                   <li>
-                    <strong>{gettext("Before-child positioning")}</strong>
-                    {gettext(" - Goal positions BEFORE first child in target column")}
+                    <strong>Before-child positioning</strong>
+                     - Goal positions BEFORE first child in target column
                   </li>
                   <li>
-                    <strong>{gettext("Done column special handling")}</strong>
-                    {gettext(" - Goal positions at END when all children complete")}
+                    <strong>Done column special handling</strong>
+                     - Goal positions at END when all children complete
                   </li>
                   <li>
-                    <strong>{gettext("Real-time updates")}</strong>
-                    {gettext(" - Movement triggers immediately when last child task moves")}
+                    <strong>Real-time updates</strong>
+                     - Movement triggers immediately when last child task moves
                   </li>
                   <li>
-                    <strong>{gettext("Position shifting")}</strong>
-                    {gettext(" - Other tasks shift to maintain proper ordering")}
+                    <strong>Position shifting</strong>
+                     - Other tasks shift to maintain proper ordering
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Goal Progress Tracking")}
+                  Goal Progress Tracking
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Real-time progress calculation and display:")}
+                  Real-time progress calculation and display:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Progress bar")}</strong>
-                    {gettext(
-                      " - Green gradient bar (from-green-500 to-emerald-500) on yellow background"
-                    )}
+                    <strong>Progress bar</strong>
+                     - Green gradient bar (from-green-500 to-emerald-500) on yellow background
                   </li>
                   <li>
-                    <strong>{gettext("Completion count")}</strong>
-                    {gettext(" - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar")}
+                    <strong>Completion count</strong>
+                     - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar
                   </li>
                   <li>
-                    <strong>{gettext("Percentage calculation")}</strong>
-                    {gettext(" - Computed via calculate_goal_progress/1 helper")}
+                    <strong>Percentage calculation</strong>
+                     - Computed via calculate_goal_progress/1 helper
                   </li>
                   <li>
-                    <strong>{gettext("PubSub updates")}</strong>
-                    {gettext(" - Progress updates broadcast in real-time as child tasks complete")}
+                    <strong>PubSub updates</strong>
+                     - Progress updates broadcast in real-time as child tasks complete
                   </li>
                   <li>
-                    <strong>{gettext("Status tracking")}</strong>
-                    {gettext(" - Counts completed vs total children for accurate progress")}
+                    <strong>Status tracking</strong>
+                     - Counts completed vs total children for accurate progress
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Parent Goal Selection")}
+                  Parent Goal Selection
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Tasks can be assigned to goals during creation/edit:")}
+                  Tasks can be assigned to goals during creation/edit:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("Goal dropdown")}</strong>
-                    {gettext(" - New \"Parent Goal\" field in task form")}
+                    <strong>Goal dropdown</strong>
+                     - New \"Parent Goal\" field in task form
                   </li>
                   <li>
-                    <strong>{gettext("Goal options")}</strong>
-                    {gettext(" - Shows all goals in format \"G1 - Goal Title\"")}
+                    <strong>Goal options</strong>
+                     - Shows all goals in format \"G1 - Goal Title\"
                   </li>
                   <li>
-                    <strong>{gettext("Filtered by board")}</strong>
-                    {gettext(" - Only shows goals from current board")}
+                    <strong>Filtered by board</strong>
+                     - Only shows goals from current board
                   </li>
                   <li>
-                    <strong>{gettext("Self-exclusion")}</strong>
-                    {gettext(" - Goals cannot be their own parent (prevents circular references)")}
+                    <strong>Self-exclusion</strong>
+                     - Goals cannot be their own parent (prevents circular references)
                   </li>
                   <li>
-                    <strong>{gettext("Ordered display")}</strong>
-                    {gettext(" - Goals sorted by identifier (G1, G2, G3, etc.)")}
+                    <strong>Ordered display</strong>
+                     - Goals sorted by identifier (G1, G2, G3, etc.)
                   </li>
                 </ul>
               </div>
@@ -945,7 +827,7 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Hierarchical Task Tree API Endpoint")}
+                Hierarchical Task Tree API Endpoint
               </h4>
 
               <div class="mb-4">
@@ -953,38 +835,36 @@
                   <strong>GET /api/tasks/:id/tree</strong>
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Returns nested JSON structure showing task hierarchy:")}
+                  Returns nested JSON structure showing task hierarchy:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>{gettext("For goals:")}</strong>
-                    {gettext(" Returns goal data + array of child tasks + progress counts")}
+                    <strong>For goals:</strong>
+                     Returns goal data + array of child tasks + progress counts
                   </li>
                   <li>
-                    <strong>{gettext("For tasks:")}</strong>
-                    {gettext(" Returns just the task data (no children)")}
+                    <strong>For tasks:</strong>
+                     Returns just the task data (no children)
                   </li>
                   <li>
-                    <strong>{gettext("Full field support")}</strong>
-                    {gettext(" - Includes all rich task fields (complexity, dependencies, etc.)")}
+                    <strong>Full field support</strong>
+                     - Includes all rich task fields (complexity, dependencies, etc.)
                   </li>
                   <li>
-                    <strong>{gettext("Progress statistics")}</strong>
-                    {gettext(" - Includes total children and completed count for goals")}
+                    <strong>Progress statistics</strong>
+                     - Includes total children and completed count for goals
                   </li>
                   <li>
-                    <strong>{gettext("Ordered children")}</strong>
-                    {gettext(" - Child tasks ordered by position ascending")}
+                    <strong>Ordered children</strong>
+                     - Child tasks ordered by position ascending
                   </li>
                   <li>
-                    <strong>{gettext("Scope enforcement")}</strong>
-                    {gettext(" - Respects tasks:read scope, returns 401/404 appropriately")}
+                    <strong>Scope enforcement</strong>
+                     - Respects tasks:read scope, returns 401/404 appropriately
                   </li>
                   <li>
-                    <strong>{gettext("Supports identifiers")}</strong>
-                    {gettext(
-                      " - Accepts both numeric IDs and identifiers (e.g., \"G1\", \"W14\")"
-                    )}
+                    <strong>Supports identifiers</strong>
+                     - Accepts both numeric IDs and identifiers (e.g., "G1", "W14")
                   </li>
                 </ul>
               </div>
@@ -997,205 +877,179 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Intelligent Review Workflow with mark_reviewed Endpoint")}
+                Intelligent Review Workflow with mark_reviewed Endpoint
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Smart Review Processing")}
+                  Smart Review Processing
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext(
-                    "New mark_reviewed endpoint that intelligently routes tasks based on review status:"
-                  )}
+                  New mark_reviewed endpoint that intelligently routes tasks based on review status:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>PATCH /api/tasks/:id/mark_reviewed</strong>
-                    - {gettext("Process reviewed tasks with automatic routing")}
+                    - Process reviewed tasks with automatic routing
                   </li>
                   <li>
-                    {gettext(
-                      "If review_status == \"approved\": Moves task from Review to Done column, sets status to :completed"
-                    )}
+                    If review_status == "approved": Moves task from Review to Done column, sets status to :completed
                   </li>
                   <li>
-                    {gettext(
-                      "If review_status in [\"changes_requested\", \"rejected\"]: Moves task back to Doing column, keeps status as :in_progress"
-                    )}
+                    If review_status in ["changes_requested", "rejected"]: Moves task back to Doing column, keeps status as :in_progress
                   </li>
                   <li>
-                    {gettext(
-                      "Returns 422 error if task not in Review column or review_status not set"
-                    )}
+                    Returns 422 error if task not in Review column or review_status not set
                   </li>
                   <li>
-                    {gettext(
-                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\")"
-                    )}
+                    Supports both numeric IDs and human-readable identifiers (e.g., "W14")
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Enhanced Review Workflow")}
+                  Enhanced Review Workflow
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Improved human-AI collaboration on task review:")}
+                  Improved human-AI collaboration on task review:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("Human reviews task in Review column and sets review_status field")}
+                    Human reviews task in Review column and sets review_status field
                   </li>
-                  <li>{gettext("Human adds review_notes to guide AI on required changes")}</li>
-                  <li>{gettext("Human notifies AI that review is complete")}</li>
+                  <li>Human adds review_notes to guide AI on required changes</li>
+                  <li>Human notifies AI that review is complete</li>
                   <li>
-                    {gettext(
-                      "AI calls /mark_reviewed to automatically route task based on review outcome"
-                    )}
+                    AI calls /mark_reviewed to automatically route task based on review outcome
                   </li>
                   <li>
-                    {gettext("Eliminates need for polling - explicit notification-based workflow")}
+                    Eliminates need for polling - explicit notification-based workflow
                   </li>
                   <li>
-                    {gettext("Agent can read review_notes to understand what needs to be fixed")}
+                    Agent can read review_notes to understand what needs to be fixed
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Telemetry and Observability")}
+                  Telemetry and Observability
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Comprehensive tracking of review outcomes:")}
+                  Comprehensive tracking of review outcomes:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Emits [:kanban, :task, :completed] when task approved and moved to Done"
-                    )}
+                    Emits [:kanban, :task, :completed] when task approved and moved to Done
                   </li>
                   <li>
-                    {gettext("Emits [:kanban, :task, :returned_to_doing] when task needs changes")}
+                    Emits [:kanban, :task, :returned_to_doing] when task needs changes
                   </li>
-                  <li>{gettext("Tracks review status in telemetry metadata")}</li>
-                  <li>{gettext("Logs reviewer information with reviewed_by_id field")}</li>
+                  <li>Tracks review status in telemetry metadata</li>
+                  <li>Logs reviewer information with reviewed_by_id field</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Backwards Compatibility")}
+                  Backwards Compatibility
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Preserved existing endpoints:")}
+                  Preserved existing endpoints:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("mark_done endpoint still available but marked as deprecated")}
+                    mark_done endpoint still available but marked as deprecated
                   </li>
-                  <li>{gettext("Both endpoints coexist for gradual migration")}</li>
-                  <li>{gettext("New workflow recommended for all new integrations")}</li>
+                  <li>Both endpoints coexist for gradual migration</li>
+                  <li>New workflow recommended for all new integrations</li>
                 </ul>
               </div>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("AI Agent Metadata Tracking")}
+                AI Agent Metadata Tracking
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Agent Tracking on Task Creation")}
+                  Agent Tracking on Task Creation
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Tasks created via API now track the AI agent model:")}
+                  Tasks created via API now track the AI agent model:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Added created_by_agent field to store agent information in format \"ai_agent:model_name\""
-                    )}
+                    Added created_by_agent field to store agent information in format "ai_agent:model_name"
                   </li>
                   <li>
-                    {gettext("Automatically populated when API token has agent_model configured")}
+                    Automatically populated when API token has agent_model configured
                   </li>
                   <li>
-                    {gettext(
-                      "Visible indicator (purple CPU chip icon) on task cards for AI-created tasks"
-                    )}
+                    Visible indicator (purple CPU chip icon) on task cards for AI-created tasks
                   </li>
                   <li>
-                    {gettext("Helps track which tasks were created by AI agents vs. human users")}
+                    Helps track which tasks were created by AI agents vs. human users
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Agent Tracking on Task Completion")}
+                  Agent Tracking on Task Completion
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Tasks completed via API now track the AI agent model:")}
+                  Tasks completed via API now track the AI agent model:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Added completed_by_agent field to store agent information in format \"ai_agent:model_name\""
-                    )}
+                    Added completed_by_agent field to store agent information in format "ai_agent:model_name"
                   </li>
                   <li>
-                    {gettext(
-                      "Automatically populated when API token has agent_model configured during task completion"
-                    )}
+                    Automatically populated when API token has agent_model configured during task completion
                   </li>
                   <li>
-                    {gettext("Provides audit trail of which AI agent completed specific tasks")}
+                    Provides audit trail of which AI agent completed specific tasks
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("UI Enhancements")}
+                  UI Enhancements
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Visual indicators for AI-created tasks:")}
+                  Visual indicators for AI-created tasks:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Purple gradient CPU chip icon displayed on task cards")}</li>
-                  <li>{gettext("Hover tooltip shows full agent identifier")}</li>
+                  <li>Purple gradient CPU chip icon displayed on task cards</li>
+                  <li>Hover tooltip shows full agent identifier</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("API Token Schema Updates")}
+                  API Token Schema Updates
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Enhanced API token model to support agent metadata:")}
+                  Enhanced API token model to support agent metadata:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "agent_model field stores the model identifier (e.g., \"claude-sonnet-4\")"
-                    )}
+                    agent_model field stores the model identifier (e.g., "claude-sonnet-4")
                   </li>
                   <li>
-                    {gettext(
-                      "Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers"
-                    )}
+                    Used by maybe_add_created_by_agent/2 and maybe_add_completed_by_agent/2 helpers
                   </li>
                   <li>
-                    {gettext("Only adds metadata when agent_model is present on the token")}
+                    Only adds metadata when agent_model is present on the token
                   </li>
                 </ul>
               </div>
@@ -1208,125 +1062,113 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Dependencies and Blocking Logic")}
+                Task Dependencies and Blocking Logic
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Dependency Graph System")}
+                  Dependency Graph System
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Tasks can now have dependencies on other tasks with full validation:")}
+                  Tasks can now have dependencies on other tasks with full validation:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Tasks can specify dependencies using task identifiers (e.g., \"W14\", \"W15\")"
-                    )}
+                    Tasks can specify dependencies using task identifiers (e.g., "W14", "W15")
                   </li>
                   <li>
-                    {gettext(
-                      "Circular dependency detection prevents invalid dependency relationships"
-                    )}
+                    Circular dependency detection prevents invalid dependency relationships
                   </li>
                   <li>
-                    {gettext("Automatic task status management based on dependency completion")}
+                    Automatic task status management based on dependency completion
                   </li>
                   <li>
-                    {gettext(
-                      "Visual blocked indicator on task cards when dependencies are incomplete"
-                    )}
+                    Visual blocked indicator on task cards when dependencies are incomplete
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Automatic Blocking/Unblocking")}
+                  Automatic Blocking/Unblocking
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Task status automatically updates based on dependencies:")}
+                  Task status automatically updates based on dependencies:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "When a task has incomplete dependencies, status changes to :blocked"
-                    )}
+                    When a task has incomplete dependencies, status changes to :blocked
                   </li>
                   <li>
-                    {gettext("When all dependencies are completed, task automatically unblocks")}
+                    When all dependencies are completed, task automatically unblocks
                   </li>
                   <li>
-                    {gettext(
-                      "Blocking status checked on task creation, update, and dependency completion"
-                    )}
+                    Blocking status checked on task creation, update, and dependency completion
                   </li>
                   <li>
-                    {gettext("Dependent tasks automatically unblocked when a task is marked done")}
+                    Dependent tasks automatically unblocked when a task is marked done
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Dependency API Endpoints")}
+                  Dependency API Endpoints
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("New endpoints for querying task relationships:")}
+                  New endpoints for querying task relationships:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>GET /api/tasks/:id/dependencies</strong>
-                    - {gettext("Returns full dependency tree for a task")}
+                    - Returns full dependency tree for a task
                   </li>
                   <li>
                     <strong>GET /api/tasks/:id/dependents</strong>
-                    - {gettext("Returns all tasks that depend on this task")}
+                    - Returns all tasks that depend on this task
                   </li>
-                  <li>{gettext("Supports both numeric IDs and human-readable identifiers")}</li>
+                  <li>Supports both numeric IDs and human-readable identifiers</li>
                   <li>
-                    {gettext("Recursive dependency tree structure with nested dependencies")}
+                    Recursive dependency tree structure with nested dependencies
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Validation and Safety")}
+                  Validation and Safety
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Comprehensive validation to ensure data integrity:")}
+                  Comprehensive validation to ensure data integrity:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Circular dependency detection using depth-first search with visited tracking"
-                    )}
+                    Circular dependency detection using depth-first search with visited tracking
                   </li>
-                  <li>{gettext("Prevention of task deletion when other tasks depend on it")}</li>
-                  <li>{gettext("Prevention of self-dependencies")}</li>
+                  <li>Prevention of task deletion when other tasks depend on it</li>
+                  <li>Prevention of self-dependencies</li>
                   <li>
-                    {gettext("PostgreSQL array operations for efficient dependency queries")}
+                    PostgreSQL array operations for efficient dependency queries
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("UI Enhancements")}
+                  UI Enhancements
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Visual indicators for blocked tasks:")}
+                  Visual indicators for blocked tasks:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Blocked icon displayed in upper right of task cards")}</li>
-                  <li>{gettext("Clear visual distinction for tasks that cannot be started")}</li>
-                  <li>{gettext("Real-time updates when blocking status changes")}</li>
+                  <li>Blocked icon displayed in upper right of task cards</li>
+                  <li>Clear visual distinction for tasks that cannot be started</li>
+                  <li>Real-time updates when blocking status changes</li>
                 </ul>
               </div>
             </div>
@@ -1334,29 +1176,25 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Fixed")}
+              Fixed
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Review Status Update")}
+                Review Status Update
               </h4>
               <p class="text-base-content opacity-70 mb-2">
-                {gettext("Fixed issue preventing review status updates on tasks:")}
+                Fixed issue preventing review status updates on tasks:
               </p>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  {gettext(
-                    "Added automatic population of reviewed_at and reviewed_by_id when review status changes"
-                  )}
+                  Added automatic population of reviewed_at and reviewed_by_id when review status changes
                 </li>
                 <li>
-                  {gettext("Added missing handle_info handler for :task_reviewed PubSub events")}
+                  Added missing handle_info handler for :task_reviewed PubSub events
                 </li>
                 <li>
-                  {gettext(
-                    "Form component now properly receives user context for review metadata"
-                  )}
+                  Form component now properly receives user context for review metadata
                 </li>
               </ul>
             </div>
@@ -1368,105 +1206,97 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Completion API Endpoint")}
+                Task Completion API Endpoint
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Task Completion Workflow")}
+                  Task Completion Workflow
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("AI agents can now complete tasks and move them to Review column:")}
+                  AI agents can now complete tasks and move them to Review column:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>PATCH /api/tasks/:id/complete</strong>
-                    - {gettext(
-                      "Complete a task by moving it from Doing to Review column with completion summary"
-                    )}
+                    Complete a task by moving it from Doing to Review column with completion summary
                   </li>
                   <li>
-                    {gettext(
-                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W16\") for task completion"
-                    )}
+                    Supports both numeric IDs and human-readable identifiers (e.g., "W16") for task completion
                   </li>
                   <li>
-                    {gettext(
-                      "Status remains \"in_progress\" (final completion to Done column handled by separate endpoint)"
-                    )}
+                    Status remains "in_progress" (final completion to Done column handled by separate endpoint)
                   </li>
-                  <li>{gettext("Stores detailed completion metadata including:")}</li>
+                  <li>Stores detailed completion metadata including:</li>
                 </ul>
                 <ul class="list-disc list-inside ml-12 space-y-1 text-base-content opacity-70 mt-2">
                   <li>
                     <code class="text-sm">completion_summary</code>
-                    - {gettext(
-                      "JSON string with comprehensive completion details (files changed, verification results, implementation notes)"
-                    )}
+                    JSON string with comprehensive completion details (files changed, verification results, implementation notes)
                   </li>
                   <li>
                     <code class="text-sm">actual_complexity</code>
-                    - {gettext("Actual complexity experienced (small, medium, large)")}
+                    - Actual complexity experienced (small, medium, large)
                   </li>
                   <li>
                     <code class="text-sm">actual_files_changed</code>
-                    - {gettext("String count of files modified during implementation")}
+                    - String count of files modified during implementation
                   </li>
                   <li>
                     <code class="text-sm">time_spent_minutes</code>
-                    - {gettext("Integer minutes spent on the task")}
+                    - Integer minutes spent on the task
                   </li>
                   <li>
                     <code class="text-sm">completed_by_id</code>
-                    - {gettext("User ID of the completer")}
+                    - User ID of the completer
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Completion Summary Structure")}
+                  Completion Summary Structure
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("Supports rich completion data in JSON format:")}
+                  Supports rich completion data in JSON format:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <code class="text-sm">files_changed</code>
-                    - {gettext("Array of file paths and what changed in each")}
+                    - Array of file paths and what changed in each
                   </li>
                   <li>
                     <code class="text-sm">tests_added</code>
-                    - {gettext("Array of test files created")}
+                    - Array of test files created
                   </li>
                   <li>
                     <code class="text-sm">verification_results</code>
-                    - {gettext("Commands run, status (passed/failed), and output")}
+                    - Commands run, status (passed/failed), and output
                   </li>
                   <li>
                     <code class="text-sm">implementation_notes</code>
-                    - {gettext("Deviations, discoveries, and edge cases encountered")}
+                    - Deviations, discoveries, and edge cases encountered
                   </li>
                   <li>
                     <code class="text-sm">estimation_feedback</code>
-                    - {gettext("Comparison of estimated vs actual complexity, files, and time")}
+                    - Comparison of estimated vs actual complexity, files, and time
                   </li>
                   <li>
                     <code class="text-sm">telemetry_added</code>
-                    - {gettext("Array of telemetry events added")}
+                    - Array of telemetry events added
                   </li>
                   <li>
                     <code class="text-sm">follow_up_tasks</code>
-                    - {gettext("Array of follow-up work identified")}
+                    - Array of follow-up work identified
                   </li>
                   <li>
                     <code class="text-sm">known_limitations</code>
-                    - {gettext("Array of limitations or constraints")}
+                    - Array of limitations or constraints
                   </li>
                 </ul>
               </div>
@@ -1474,49 +1304,39 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Mark Done API Endpoint")}
+                Task Mark Done API Endpoint
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Final Task Completion")}
+                  Final Task Completion
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext(
-                    "AI agents can now mark reviewed tasks as done and move them to Done column:"
-                  )}
+                  AI agents can now mark reviewed tasks as done and move them to Done column:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>PATCH /api/tasks/:id/mark_done</strong>
-                    - {gettext("Mark a task as done by moving it from Review to Done column")}
+                    - Mark a task as done by moving it from Review to Done column
                   </li>
                   <li>
-                    {gettext(
-                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W24\") for marking done"
-                    )}
+                    Supports both numeric IDs and human-readable identifiers (e.g., "W24") for marking done
                   </li>
                   <li>
-                    {gettext("Sets status to :completed and completed_at timestamp automatically")}
+                    Sets status to :completed and completed_at timestamp automatically
                   </li>
                   <li>
-                    {gettext(
-                      "Only tasks in Review column can be marked as done (validation enforced)"
-                    )}
+                    Only tasks in Review column can be marked as done (validation enforced)
                   </li>
-                  <li>{gettext("Final step in the task workflow after review is complete")}</li>
+                  <li>Final step in the task workflow after review is complete</li>
                   <li>
-                    {gettext(
-                      "Broadcasts {:task_completed, task} PubSub event for real-time UI updates"
-                    )}
+                    Broadcasts &#123;:task_completed, task&#125; PubSub event for real-time UI updates
                   </li>
                   <li>
-                    {gettext(
-                      "Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]"
-                    )}
+                    Emits telemetry events: [:kanban, :task, :completed] and [:kanban, :api, :task_marked_done]
                   </li>
-                  <li>{gettext("Returns 422 error if task is not in Review column")}</li>
-                  <li>{gettext("Returns 403 error if task belongs to different board")}</li>
+                  <li>Returns 422 error if task is not in Review column</li>
+                  <li>Returns 403 error if task belongs to different board</li>
                 </ul>
               </div>
             </div>
@@ -1528,159 +1348,129 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Claiming API Endpoints")}
+                Task Claiming API Endpoints
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Intelligent Task Discovery & Claiming")}
+                  Intelligent Task Discovery & Claiming
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("AI agents can now discover and claim tasks with advanced filtering:")}
+                  AI agents can now discover and claim tasks with advanced filtering:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>GET /api/tasks/next</strong>
-                    - {gettext(
-                      "Retrieve the next available task from the Ready column matching agent capabilities"
-                    )}
+                    Retrieve the next available task from the Ready column matching agent capabilities
                   </li>
                   <li>
                     <strong>POST /api/tasks/claim</strong>
-                    - {gettext(
-                      "Atomically claim the next available task and move it to Doing column"
-                    )}
+                    Atomically claim the next available task and move it to Doing column
                   </li>
                   <li>
                     <strong>POST /api/tasks/:id/unclaim</strong>
-                    - {gettext("Release a claimed task back to Ready column with optional reason")}
+                    - Release a claimed task back to Ready column with optional reason
                   </li>
                   <li>
-                    {gettext(
-                      "Supports both numeric IDs and human-readable identifiers (e.g., \"W14\") for task unclaiming"
-                    )}
+                    Supports both numeric IDs and human-readable identifiers (e.g., "W14") for task unclaiming
                   </li>
                   <li>
-                    {gettext(
-                      "Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed"
-                    )}
+                    Race condition prevention through atomic PostgreSQL operations ensuring tasks are never double-claimed
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Capability-Based Task Filtering")}
+                  Capability-Based Task Filtering
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens"
-                    )}
+                    Agents only see tasks matching their declared capabilities via agent_capabilities array on API tokens
                   </li>
                   <li>
-                    {gettext(
-                      "Tasks can specify required_capabilities to restrict which agents can work on them"
-                    )}
+                    Tasks can specify required_capabilities to restrict which agents can work on them
                   </li>
                   <li>
-                    {gettext(
-                      "PostgreSQL array containment operations ensure efficient capability matching"
-                    )}
+                    PostgreSQL array containment operations ensure efficient capability matching
                   </li>
                   <li>
-                    {gettext(
-                      "Agents without specific capabilities see all tasks without requirements"
-                    )}
+                    Agents without specific capabilities see all tasks without requirements
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Dependency-Aware Task Selection")}
+                  Dependency-Aware Task Selection
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                  <li>{gettext("Automatically skips tasks with incomplete dependencies")}</li>
+                  <li>Automatically skips tasks with incomplete dependencies</li>
                   <li>
-                    {gettext(
-                      "Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks"
-                    )}
+                    Uses PostgreSQL subqueries to verify all dependencies are completed before returning tasks
                   </li>
                   <li>
-                    {gettext(
-                      "Ensures agents always receive tasks that are truly ready to be worked on"
-                    )}
+                    Ensures agents always receive tasks that are truly ready to be worked on
                   </li>
-                  <li>{gettext("Prevents blocked tasks from being claimed")}</li>
+                  <li>Prevents blocked tasks from being claimed</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Key File Conflict Detection")}
+                  Key File Conflict Detection
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("Prevents concurrent work on the same files by different agents")}
+                    Prevents concurrent work on the same files by different agents
                   </li>
                   <li>
-                    {gettext(
-                      "Tasks with overlapping key_files are automatically excluded from next/claim operations"
-                    )}
+                    Tasks with overlapping key_files are automatically excluded from next/claim operations
                   </li>
                   <li>
-                    {gettext(
-                      "JSONB operations efficiently compare file paths across in-progress tasks"
-                    )}
+                    JSONB operations efficiently compare file paths across in-progress tasks
                   </li>
-                  <li>{gettext("Reduces merge conflicts and ensures safe parallel work")}</li>
+                  <li>Reduces merge conflicts and ensures safe parallel work</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Automatic Task State Management")}
+                  Automatic Task State Management
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Tasks claimed via /api/tasks/claim are automatically moved to Doing column"
-                    )}
+                    Tasks claimed via /api/tasks/claim are automatically moved to Doing column
                   </li>
                   <li>
-                    {gettext(
-                      "Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields"
-                    )}
+                    Sets claimed_at, claim_expires_at (24 hours), assigned_to_id, and status fields
                   </li>
                   <li>
-                    {gettext("Calculates correct position in Doing column to maintain sort order")}
+                    Calculates correct position in Doing column to maintain sort order
                   </li>
                   <li>
-                    {gettext(
-                      "Unclaimed tasks return to Ready column with all claim metadata cleared"
-                    )}
+                    Unclaimed tasks return to Ready column with all claim metadata cleared
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Enhanced Telemetry")}
+                  Enhanced Telemetry
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("New telemetry events:")} <code class="text-sm">[:kanban, :api, :next_task_fetched]</code>, <code class="text-sm">[:kanban, :api, :task_claimed]</code>,
+                    New telemetry events: <code class="text-sm">[:kanban, :api, :next_task_fetched]</code>, <code class="text-sm">[:kanban, :api, :task_claimed]</code>,
                     <code class="text-sm">[:kanban, :api, :task_unclaimed]</code>
                   </li>
-                  <li>{gettext("Tracks task priority, API token usage, and unclaim reasons")}</li>
+                  <li>Tracks task priority, API token usage, and unclaim reasons</li>
                   <li>
-                    {gettext("Provides insights into agent behavior and task workflow efficiency")}
+                    Provides insights into agent behavior and task workflow efficiency
                   </li>
                 </ul>
               </div>
@@ -1693,107 +1483,85 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task CRU API Endpoints")}
+                Task CRU API Endpoints
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("RESTful JSON API for Tasks")}
+                  RESTful JSON API for Tasks
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext("AI agents can now programmatically create, read, and update tasks:")}
+                  AI agents can now programmatically create, read, and update tasks:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>POST /api/tasks</strong>
-                    - {gettext(
-                      "Create tasks with all fields including nested associations (key_files, verification_steps)"
-                    )}
+                    Create tasks with all fields including nested associations (key_files, verification_steps)
                   </li>
                   <li>
                     <strong>GET /api/tasks</strong>
-                    - {gettext(
-                      "List all tasks for the authenticated board with optional column filtering"
-                    )}
+                    List all tasks for the authenticated board with optional column filtering
                   </li>
                   <li>
                     <strong>GET /api/tasks/:id</strong>
-                    - {gettext(
-                      "Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like \"W14\")"
-                    )}
+                    Retrieve a single task with all associations preloaded (supports both database IDs and human-readable identifiers like "W14")
                   </li>
                   <li>
                     <strong>PATCH /api/tasks/:id</strong>
-                    - {gettext(
-                      "Update task fields including nested associations (supports both database IDs and identifiers)"
-                    )}
+                    Update task fields including nested associations (supports both database IDs and identifiers)
                   </li>
                   <li>
-                    {gettext(
-                      "Board-scoped access control - tokens can only access tasks from their associated board"
-                    )}
+                    Board-scoped access control - tokens can only access tasks from their associated board
                   </li>
                   <li>
-                    {gettext(
-                      "Automatic default column selection (Backlog > Ready > first column) when column_id not specified"
-                    )}
+                    Automatic default column selection (Backlog > Ready > first column) when column_id not specified
                   </li>
                   <li>
-                    {gettext(
-                      "Full field support for all 60+ task fields including metadata, observability, and AI context fields"
-                    )}
+                    Full field support for all 60+ task fields including metadata, observability, and AI context fields
                   </li>
                   <li>
-                    {gettext(
-                      "Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)"
-                    )}
+                    Proper HTTP status codes (201 for create, 200 for update, 422 for validation errors, 403 for forbidden, 401 for unauthorized)
                   </li>
                   <li>
-                    <strong>{gettext("Flexible Task Identification")}</strong>
-                    - {gettext(
-                      "API endpoints accept both numeric database IDs (e.g., \"73\") and human-readable identifiers (e.g., \"W14\") for improved developer experience"
-                    )}
+                    <strong>Flexible Task Identification</strong>
+                    API endpoints accept both numeric database IDs (e.g., "73") and human-readable identifiers (e.g., "W14") for improved developer experience
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Real-Time Integration")}
+                  Real-Time Integration
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("All API mutations automatically broadcast via Phoenix PubSub")}
+                    All API mutations automatically broadcast via Phoenix PubSub
                   </li>
                   <li>
-                    {gettext(
-                      "LiveView clients receive instant updates when tasks are created or modified via API"
-                    )}
+                    LiveView clients receive instant updates when tasks are created or modified via API
                   </li>
-                  <li>{gettext("Seamless integration between UI and API workflows")}</li>
+                  <li>Seamless integration between UI and API workflows</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Telemetry & Observability")}
+                  Telemetry & Observability
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("Emits telemetry events for all API operations")} (<code class="text-sm">[:kanban, :api, :task_created]</code>, <code class="text-sm">[:kanban, :api, :task_updated]</code>, <code class="text-sm">[:kanban, :api, :task_listed]</code>)
+                    Emits telemetry events for all API operations (<code class="text-sm">[:kanban, :api, :task_created]</code>, <code class="text-sm">[:kanban, :api, :task_updated]</code>, <code class="text-sm">[:kanban, :api, :task_listed]</code>)
                   </li>
                   <li>
-                    {gettext(
-                      "Tracks API usage including board_id, user_id, request path, and HTTP method"
-                    )}
+                    Tracks API usage including board_id, user_id, request path, and HTTP method
                   </li>
                   <li>
-                    {gettext("Provides metrics for monitoring API performance and usage patterns")}
+                    Provides metrics for monitoring API performance and usage patterns
                   </li>
                 </ul>
               </div>
@@ -1806,76 +1574,66 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("API Token Authentication for AI Agents")}
+                API Token Authentication for AI Agents
               </h4>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Bearer Token Authentication")}
+                  Bearer Token Authentication
                 </h5>
                 <p class="text-base-content opacity-70 mb-2">
-                  {gettext(
-                    "Enable AI agents and automation tools to interact with your boards programmatically:"
-                  )}
+                  Enable AI agents and automation tools to interact with your boards programmatically:
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext(
-                      "Generate API tokens for AI Optimized Boards from the board's API Tokens page"
-                    )}
+                    Generate API tokens for AI Optimized Boards from the board's API Tokens page
                   </li>
-                  <li>{gettext("Simple Bearer token authentication via HTTP headers")}</li>
-                  <li>{gettext("Each token is scoped to a specific board for security")}</li>
+                  <li>Simple Bearer token authentication via HTTP headers</li>
+                  <li>Each token is scoped to a specific board for security</li>
                   <li>
-                    {gettext(
-                      "One-time token display after creation with easy copy-to-clipboard functionality"
-                    )}
+                    One-time token display after creation with easy copy-to-clipboard functionality
                   </li>
                   <li>
-                    {gettext(
-                      "Token name and optional metadata tracking (AI model, version, purpose)"
-                    )}
+                    Token name and optional metadata tracking (AI model, version, purpose)
                   </li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("Secure Token Management")}
+                  Secure Token Management
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("Tokens are cryptographically hashed (SHA-256) before storage")}
+                    Tokens are cryptographically hashed (SHA-256) before storage
                   </li>
-                  <li>{gettext("Never stored in plaintext - shown only once at creation")}</li>
-                  <li>{gettext("Easy token revocation without affecting your login session")}</li>
-                  <li>{gettext("Usage tracking shows when each token was last used")}</li>
-                  <li>{gettext("Create multiple tokens for different AI agents or purposes")}</li>
+                  <li>Never stored in plaintext - shown only once at creation</li>
+                  <li>Easy token revocation without affecting your login session</li>
+                  <li>Usage tracking shows when each token was last used</li>
+                  <li>Create multiple tokens for different AI agents or purposes</li>
                 </ul>
               </div>
 
               <div class="mb-4">
                 <h5 class="font-semibold text-base-content mb-2">
-                  {gettext("AI Optimized Board Integration")}
+                  AI Optimized Board Integration
                 </h5>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    {gettext("API Tokens feature available exclusively for AI Optimized Boards")}
+                    API Tokens feature available exclusively for AI Optimized Boards
                   </li>
                   <li>
-                    {gettext(
-                      "Provides AI agents with programmatic access to the standardized 5-column workflow"
-                    )}
+                    Provides AI agents with programmatic access to the standardized 5-column workflow
                   </li>
                   <li>
-                    {gettext("Perfect for Claude Code, MCP servers, and other automation tools")}
+                    Perfect for Claude Code, MCP servers, and other automation tools
                   </li>
-                  <li>{gettext("Works with any HTTP client or programming language")}</li>
+                  <li>Works with any HTTP client or programming language</li>
                 </ul>
               </div>
             </div>
@@ -1883,11 +1641,11 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Changed")}
+              Changed
             </h3>
 
             <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-              <li>{gettext("API Tokens button now only appears on AI Optimized Boards")}</li>
+              <li>API Tokens button now only appears on AI Optimized Boards</li>
             </ul>
           </div>
         </section>
@@ -1897,109 +1655,91 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("AI Context Fields for Enhanced Task Intelligence")}
+                AI Context Fields for Enhanced Task Intelligence
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Three New Task Fields")}</strong>
-                  {gettext(
-                    " - Added specialized fields to capture AI-relevant context for task execution:"
-                  )}
+                  <strong>Three New Task Fields</strong>
+                   - Added specialized fields to capture AI-relevant context for task execution:
                 </li>
               </ul>
 
               <div class="ml-6 mt-4 space-y-4">
                 <div>
                   <h5 class="font-semibold text-base-content mb-2">
-                    {gettext("Security Considerations")} (<code class="text-sm">security_considerations</code>)
+                    Security Considerations (<code class="text-sm">security_considerations</code>)
                   </h5>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
                     <li>
-                      {gettext(
-                        "Array field for documenting security-related requirements and notes"
-                      )}
+                      Array field for documenting security-related requirements and notes
                     </li>
                     <li>
-                      {gettext(
-                        "Examples: token hashing requirements, validation rules, security headers"
-                      )}
+                      Examples: token hashing requirements, validation rules, security headers
                     </li>
-                    <li>{gettext("Purple background color in UI for high visibility")}</li>
-                    <li>{gettext("Dynamic add/remove interface in task forms")}</li>
-                    <li>{gettext("Defaults to empty array when not provided")}</li>
+                    <li>Purple background color in UI for high visibility</li>
+                    <li>Dynamic add/remove interface in task forms</li>
+                    <li>Defaults to empty array when not provided</li>
                   </ul>
                 </div>
 
                 <div>
                   <h5 class="font-semibold text-base-content mb-2">
-                    {gettext("Testing Strategy")} (<code class="text-sm">testing_strategy</code>)
+                    Testing Strategy (<code class="text-sm">testing_strategy</code>)
                   </h5>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
                     <li>
-                      {gettext("Map field with three standardized categories: ")}
+                      Map field with three standardized categories: 
                       <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>,
                       <code class="text-sm">manual_tests</code>
                     </li>
-                    <li>{gettext("Each category contains an array of test descriptions")}</li>
+                    <li>Each category contains an array of test descriptions</li>
                     <li>
-                      {gettext(
-                        "Cyan background color in UI to distinguish from security considerations"
-                      )}
+                      Cyan background color in UI to distinguish from security considerations
                     </li>
                     <li>
-                      {gettext("Dynamic add/remove interface with category-specific sections")}
+                      Dynamic add/remove interface with category-specific sections
                     </li>
-                    <li>{gettext("Defaults to empty map when not provided")}</li>
+                    <li>Defaults to empty map when not provided</li>
                   </ul>
                 </div>
 
                 <div>
                   <h5 class="font-semibold text-base-content mb-2">
-                    {gettext("Integration Points")} (<code class="text-sm">integration_points</code>)
+                    Integration Points (<code class="text-sm">integration_points</code>)
                   </h5>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
-                    <li>{gettext("Map field with four standardized categories:")}</li>
+                    <li>Map field with four standardized categories:</li>
                   </ul>
                   <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                     <li>
-                      <code class="text-sm">telemetry_events</code>: {gettext(
-                        "Phoenix telemetry events to emit"
-                      )}
+                      Phoenix telemetry events to emit
                     </li>
                     <li>
-                      <code class="text-sm">pubsub_broadcasts</code>: {gettext(
-                        "PubSub topics to broadcast to"
-                      )}
+                      PubSub topics to broadcast to
                     </li>
                     <li>
-                      <code class="text-sm">phoenix_channels</code>: {gettext(
-                        "Phoenix channels to update"
-                      )}
+                      Phoenix channels to update
                     </li>
                     <li>
-                      <code class="text-sm">external_apis</code>: {gettext(
-                        "External API integrations"
-                      )}
+                      External API integrations
                     </li>
                   </ul>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70 mt-1">
                     <li>
-                      {gettext("Each category contains an array of integration descriptions")}
+                      Each category contains an array of integration descriptions
                     </li>
                     <li>
-                      {gettext(
-                        "Indigo background color in UI to distinguish from other AI fields"
-                      )}
+                      Indigo background color in UI to distinguish from other AI fields
                     </li>
                     <li>
-                      {gettext("Dynamic add/remove interface with category-specific sections")}
+                      Dynamic add/remove interface with category-specific sections
                     </li>
-                    <li>{gettext("Defaults to empty map when not provided")}</li>
+                    <li>Defaults to empty map when not provided</li>
                   </ul>
                 </div>
               </div>
@@ -2012,46 +1752,34 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("AI Optimized Boards")}
+                AI Optimized Boards
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("New Board Type")}</strong>
-                  {gettext(
-                    " - Introduced AI Optimized Boards with predefined, immutable structure:"
-                  )}
+                  <strong>New Board Type</strong>
+                   - Introduced AI Optimized Boards with predefined, immutable structure:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  {gettext(
-                    "Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done"
-                  )}
+                  Automatically creates 5 standard columns: Backlog, Ready, Doing, Review, Done
                 </li>
                 <li>
-                  {gettext(
-                    "Columns are locked and cannot be added, edited, deleted, or reordered"
-                  )}
+                  Columns are locked and cannot be added, edited, deleted, or reordered
                 </li>
                 <li>
-                  {gettext(
-                    "Designed for AI-driven workflows with consistent, predictable structure"
-                  )}
+                  Designed for AI-driven workflows with consistent, predictable structure
                 </li>
                 <li>
-                  {gettext(
-                    "Board owners retain full control over tasks, but column structure is fixed"
-                  )}
+                  Board owners retain full control over tasks, but column structure is fixed
                 </li>
                 <li>
-                  {gettext(
-                    "Clear visual distinction from regular boards throughout the interface"
-                  )}
+                  Clear visual distinction from regular boards throughout the interface
                 </li>
               </ul>
             </div>
@@ -2063,183 +1791,155 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Added")}
+              Added
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Rich Task Metadata System")}
+                Rich Task Metadata System
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Extended Task Schema")}</strong>
-                  {gettext(" - Added 18+ new fields to support AI-optimized task management:")}
+                  <strong>Extended Task Schema</strong>
+                   - Added 18+ new fields to support AI-optimized task management:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Planning & Context:")}</strong>
-                  {gettext(
-                    " complexity (small/medium/large), estimated_files, why, what, where_context"
-                  )}
+                  <strong>Planning & Context:</strong>
+                   complexity (small/medium/large), estimated_files, why, what, where_context
                 </li>
                 <li>
-                  <strong>{gettext("Implementation Guidance:")}</strong>
-                  {gettext(
-                    " patterns_to_follow, database_changes, validation_rules, required_capabilities"
-                  )}
+                  <strong>Implementation Guidance:</strong>
+                   patterns_to_follow, database_changes, validation_rules, required_capabilities
                 </li>
                 <li>
-                  <strong>{gettext("Observability:")}</strong>
-                  {gettext(" telemetry_event, metrics_to_track, logging_requirements")}
+                  <strong>Observability:</strong>
+                   telemetry_event, metrics_to_track, logging_requirements
                 </li>
                 <li>
-                  <strong>{gettext("Error Handling:")}</strong>
-                  {gettext(" error_user_message, error_on_failure")}
+                  <strong>Error Handling:</strong>
+                   error_user_message, error_on_failure
                 </li>
                 <li>
-                  <strong>{gettext("Collections:")}</strong>
-                  {gettext(
-                    " key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)"
-                  )}
+                  <strong>Collections:</strong>
+                   key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)
                 </li>
                 <li>
-                  <strong>{gettext("Metadata Tracking:")}</strong>
-                  {gettext(
-                    " created_by, creator_name, completed_at, completed_by, completer_name, completion_summary"
-                  )}
+                  <strong>Metadata Tracking:</strong>
+                   created_by, creator_name, completed_at, completed_by, completer_name, completion_summary
                 </li>
                 <li>
-                  <strong>{gettext("Assignment Tracking:")}</strong>
-                  {gettext(" claimed_at, claimed_by, claimer_name")}
+                  <strong>Assignment Tracking:</strong>
+                   claimed_at, claimed_by, claimer_name
                 </li>
                 <li>
-                  <strong>{gettext("Review System:")}</strong>
-                  {gettext(
-                    " needs_review (boolean), review_status (pending/approved/changes_requested), review_notes"
-                  )}
+                  <strong>Review System:</strong>
+                   needs_review (boolean), review_status (pending/approved/changes_requested), review_notes
                 </li>
                 <li>
-                  <strong>{gettext("Dependencies:")}</strong>
-                  {gettext(" dependencies (JSONB array) to track task relationships")}
+                  <strong>Dependencies:</strong>
+                   dependencies (JSONB array) to track task relationships
                 </li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Board-Level Field Visibility System")}
+                Board-Level Field Visibility System
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Field Visibility Toggles")}</strong>
-                  {gettext(
-                    " - Board owners can control which task fields are visible to all users:"
-                  )}
+                  <strong>Field Visibility Toggles</strong>
+                   - Board owners can control which task fields are visible to all users:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  {gettext(
-                    "12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities"
-                  )}
+                  12 toggleable fields: acceptance_criteria, complexity, context, key_files, verification_steps, technical_notes, observability, error_handling, technology_requirements, pitfalls, out_of_scope, required_capabilities
                 </li>
-                <li>{gettext("Stored in boards table as JSONB (field_visibility column)")}</li>
+                <li>Stored in boards table as JSONB (field_visibility column)</li>
                 <li>
-                  {gettext(
-                    "Real-time PubSub broadcasts synchronize visibility changes across all connected clients"
-                  )}
+                  Real-time PubSub broadcasts synchronize visibility changes across all connected clients
                 </li>
                 <li>
-                  {gettext(
-                    "Owner-only access control - only board owners can modify field visibility settings"
-                  )}
+                  Owner-only access control - only board owners can modify field visibility settings
                 </li>
                 <li>
-                  {gettext("Default visibility: acceptance_criteria shown, all others hidden")}
+                  Default visibility: acceptance_criteria shown, all others hidden
                 </li>
                 <li>
-                  {gettext(
-                    "Settings persist in database and apply to all users viewing the board"
-                  )}
+                  Settings persist in database and apply to all users viewing the board
                 </li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Enhanced Task Forms")}
+                Enhanced Task Forms
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Comprehensive Task Creation/Edit Form")}</strong>
-                  {gettext(" - Support for all rich task fields with dynamic sections:")}
+                  <strong>Comprehensive Task Creation/Edit Form</strong>
+                   - Support for all rich task fields with dynamic sections:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Dynamic key files editor with add/remove functionality")}</li>
+                <li>Dynamic key files editor with add/remove functionality</li>
                 <li>
-                  {gettext("Dynamic verification steps editor with add/remove functionality")}
+                  Dynamic verification steps editor with add/remove functionality
                 </li>
-                <li>{gettext("Embedded schema support for structured JSONB data")}</li>
-                <li>{gettext("Validation for all new fields with proper error handling")}</li>
+                <li>Embedded schema support for structured JSONB data</li>
+                <li>Validation for all new fields with proper error handling</li>
                 <li>
-                  {gettext(
-                    "Field visibility awareness - form fields show/hide based on board settings"
-                  )}
+                  Field visibility awareness - form fields show/hide based on board settings
                 </li>
                 <li>
-                  {gettext(
-                    "Reduced code complexity (Credo compliant) through helper function extraction"
-                  )}
+                  Reduced code complexity (Credo compliant) through helper function extraction
                 </li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Detail View Enhancements")}
+                Task Detail View Enhancements
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Rich Task Display")}</strong>
-                  {gettext(
-                    " - All 18 TASK.md categories displayed in organized, scannable format:"
-                  )}
+                  <strong>Rich Task Display</strong>
+                   - All 18 TASK.md categories displayed in organized, scannable format:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Planning context (Why/What/Where)")}</li>
-                <li>{gettext("Implementation guidance section")}</li>
-                <li>{gettext("Key files to read (with file paths and descriptions)")}</li>
-                <li>{gettext("Verification steps checklist")}</li>
-                <li>{gettext("Observability requirements")}</li>
-                <li>{gettext("Error handling guidelines")}</li>
-                <li>{gettext("Technology requirements")}</li>
-                <li>{gettext("Known pitfalls")}</li>
-                <li>{gettext("Out of scope clarifications")}</li>
-                <li>{gettext("Dependencies visualization")}</li>
-                <li>{gettext("Review status indicators")}</li>
-                <li>{gettext("Assignment and completion tracking")}</li>
+                <li>Planning context (Why/What/Where)</li>
+                <li>Implementation guidance section</li>
+                <li>Key files to read (with file paths and descriptions)</li>
+                <li>Verification steps checklist</li>
+                <li>Observability requirements</li>
+                <li>Error handling guidelines</li>
+                <li>Technology requirements</li>
+                <li>Known pitfalls</li>
+                <li>Out of scope clarifications</li>
+                <li>Dependencies visualization</li>
+                <li>Review status indicators</li>
+                <li>Assignment and completion tracking</li>
               </ul>
             </div>
           </div>
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Technical Improvements")}
+              Technical Improvements
             </h3>
 
             <div class="mb-4">
               <h4 class="text-lg font-semibold text-base-content mb-2">
-                {gettext("Real-Time Collaboration")}
+                Real-Time Collaboration
               </h4>
               <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
-                <li>{gettext("PubSub broadcasts for field visibility changes")}</li>
+                <li>PubSub broadcasts for field visibility changes</li>
                 <li>
-                  {gettext(
-                    "Instant synchronization of board settings across all connected clients"
-                  )}
+                  Instant synchronization of board settings across all connected clients
                 </li>
               </ul>
             </div>
@@ -2247,38 +1947,38 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Developer Experience")}
+              Developer Experience
             </h3>
 
             <div class="mb-4">
               <h4 class="text-lg font-semibold text-base-content mb-2">
-                {gettext("AI-Optimized Task Structure")}
+                AI-Optimized Task Structure
               </h4>
               <p class="text-base-content opacity-70 mb-2">
-                {gettext("Tasks now contain comprehensive information for AI agents to:")}
+                Tasks now contain comprehensive information for AI agents to:
               </p>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Understand context and rationale (why/what/where)")}</li>
-                <li>{gettext("Follow project patterns and conventions")}</li>
-                <li>{gettext("Locate relevant code files")}</li>
-                <li>{gettext("Verify implementation success")}</li>
-                <li>{gettext("Handle errors appropriately")}</li>
-                <li>{gettext("Track dependencies and review status")}</li>
+                <li>Understand context and rationale (why/what/where)</li>
+                <li>Follow project patterns and conventions</li>
+                <li>Locate relevant code files</li>
+                <li>Verify implementation success</li>
+                <li>Handle errors appropriately</li>
+                <li>Track dependencies and review status</li>
               </ul>
             </div>
 
             <div class="mb-4">
               <h4 class="text-lg font-semibold text-base-content mb-2">
-                {gettext("Flexible Board Configuration")}
+                Flexible Board Configuration
               </h4>
               <p class="text-base-content opacity-70 mb-2">
-                {gettext("Teams can customize their workflow by:")}
+                Teams can customize their workflow by:
               </p>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Showing only relevant fields for their process")}</li>
-                <li>{gettext("Reducing information overload on task cards")}</li>
-                <li>{gettext("Maintaining consistent views across all team members")}</li>
-                <li>{gettext("Adjusting visibility as workflow needs evolve")}</li>
+                <li>Showing only relevant fields for their process</li>
+                <li>Reducing information overload on task cards</li>
+                <li>Maintaining consistent views across all team members</li>
+                <li>Adjusting visibility as workflow needs evolve</li>
               </ul>
             </div>
           </div>
@@ -2289,42 +1989,34 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Fixed")}
+              Fixed
             </h3>
 
             <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
               <li>
-                {gettext(
-                  "Updated all UI components to use theme-aware daisyUI color tokens for proper dark mode support"
-                )}
+                Updated all UI components to use theme-aware daisyUI color tokens for proper dark mode support
               </li>
               <li>
-                {gettext(
-                  "Replaced hardcoded Tailwind gray colors with daisyUI semantic colors (base-100, base-200, base-300, base-content)"
-                )}
+                Replaced hardcoded Tailwind gray colors with daisyUI semantic colors (base-100, base-200, base-300, base-content)
               </li>
               <li>
-                {gettext("Fixed text visibility issues in dark mode across all pages including:")}
+                Fixed text visibility issues in dark mode across all pages including:
               </li>
             </ul>
             <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-              <li>{gettext("Board list, show, and form views")}</li>
-              <li>{gettext("Task view and form components")}</li>
-              <li>{gettext("Column form component")}</li>
-              <li>{gettext("Home, About, Changelog, and Tango pages")}</li>
-              <li>{gettext("Authentication pages")}</li>
-              <li>{gettext("Error pages (404, 500)")}</li>
+              <li>Board list, show, and form views</li>
+              <li>Task view and form components</li>
+              <li>Column form component</li>
+              <li>Home, About, Changelog, and Tango pages</li>
+              <li>Authentication pages</li>
+              <li>Error pages (404, 500)</li>
             </ul>
             <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
               <li>
-                {gettext(
-                  "Updated test expectations to match new dark mode compatible CSS classes"
-                )}
+                Updated test expectations to match new dark mode compatible CSS classes
               </li>
               <li>
-                {gettext(
-                  "All components now properly adapt to both light and dark themes using OKLCH color space"
-                )}
+                All components now properly adapt to both light and dark themes using OKLCH color space
               </li>
             </ul>
           </div>
@@ -2335,241 +2027,231 @@
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Core Features")}
+              Core Features
             </h3>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("User Authentication & Management")}
+                User Authentication & Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("User registration with email and password")}</li>
-                <li>{gettext("Secure user login and logout with session management")}</li>
-                <li>{gettext("Password hashing and security using bcrypt")}</li>
-                <li>{gettext("Protected routes requiring authentication")}</li>
-                <li>{gettext("User profiles with customizable display names")}</li>
+                <li>User registration with email and password</li>
+                <li>Secure user login and logout with session management</li>
+                <li>Password hashing and security using bcrypt</li>
+                <li>Protected routes requiring authentication</li>
+                <li>User profiles with customizable display names</li>
                 <li>
-                  {gettext("Multi-language support with language switcher (English and French)")}
+                  Multi-language support with language switcher (English and French)
                 </li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Board Management")}
+                Board Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Create, view, edit, and delete kanban boards")}</li>
-                <li>{gettext("Each board has a name and description")}</li>
-                <li>{gettext("Board-level access control with three permission levels:")}</li>
+                <li>Create, view, edit, and delete kanban boards</li>
+                <li>Each board has a name and description</li>
+                <li>Board-level access control with three permission levels:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Owner:")}</strong>
-                  {gettext("Full control over board, columns, and tasks")}
+                  <strong>Owner:</strong>
+                  Full control over board, columns, and tasks
                 </li>
                 <li>
-                  <strong>{gettext("Modify:")}</strong>
-                  {gettext("Can edit and move tasks, but cannot modify board structure")}
+                  <strong>Modify:</strong>
+                  Can edit and move tasks, but cannot modify board structure
                 </li>
                 <li>
-                  <strong>{gettext("Read-only:")}</strong> {gettext("Can only view the board")}
+                  <strong>Read-only:</strong> Can only view the board
                 </li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
-                <li>{gettext("Share boards with other users with granular permissions")}</li>
-                <li>{gettext("Beautiful board cards with responsive design")}</li>
-                <li>{gettext("Board listing with quick access to all user boards")}</li>
+                <li>Share boards with other users with granular permissions</li>
+                <li>Beautiful board cards with responsive design</li>
+                <li>Board listing with quick access to all user boards</li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Column Management")}
+                Column Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Create, edit, and delete columns within boards")}</li>
-                <li>{gettext("Drag-and-drop column reordering")}</li>
-                <li>{gettext("Configurable Work-In-Progress (WIP) limits per column:")}</li>
+                <li>Create, edit, and delete columns within boards</li>
+                <li>Drag-and-drop column reordering</li>
+                <li>Configurable Work-In-Progress (WIP) limits per column:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Set to 0 for unlimited tasks")}</li>
-                <li>{gettext("Set to positive integer to enforce maximum tasks")}</li>
-                <li>{gettext("Visual indicators when approaching or exceeding WIP limits")}</li>
-                <li>{gettext("Prevents task creation/movement when limit is reached")}</li>
+                <li>Set to 0 for unlimited tasks</li>
+                <li>Set to positive integer to enforce maximum tasks</li>
+                <li>Visual indicators when approaching or exceeding WIP limits</li>
+                <li>Prevents task creation/movement when limit is reached</li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
-                <li>{gettext("Visual task count display (e.g., \"3/5\" when limit is 5)")}</li>
-                <li>{gettext("Column deletion with cascade (removes all tasks in column)")}</li>
+                <li>Visual task count display (e.g., \"3/5\" when limit is 5)</li>
+                <li>Column deletion with cascade (removes all tasks in column)</li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Task Management")}
+                Task Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Create, edit, and delete tasks within columns")}</li>
-                <li>{gettext("Rich task properties:")}</li>
+                <li>Create, edit, and delete tasks within columns</li>
+                <li>Rich task properties:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  <strong>{gettext("Title:")}</strong> {gettext("Required task name")}
+                  <strong>Title:</strong> Required task name
                 </li>
                 <li>
-                  <strong>{gettext("Description:")}</strong>
-                  {gettext("Optional detailed description")}
+                  <strong>Description:</strong>
+                  Optional detailed description
                 </li>
                 <li>
-                  <strong>{gettext("Acceptance Criteria:")}</strong>
-                  {gettext("Optional criteria for task completion")}
+                  <strong>Acceptance Criteria:</strong>
+                  Optional criteria for task completion
                 </li>
                 <li>
-                  <strong>{gettext("Type:")}</strong> {gettext("Work or Defect")}
+                  <strong>Type:</strong> Work or Defect
                 </li>
                 <li>
-                  <strong>{gettext("Priority:")}</strong>
-                  {gettext("Low, Medium, High, or Critical")}
+                  <strong>Priority:</strong>
+                  Low, Medium, High, or Critical
                 </li>
                 <li>
-                  <strong>{gettext("Assigned To:")}</strong>
-                  {gettext("Assign tasks to specific users")}
+                  <strong>Assigned To:</strong>
+                  Assign tasks to specific users
                 </li>
                 <li>
-                  <strong>{gettext("Identifier:")}</strong>
-                  {gettext("Auto-generated unique identifier (e.g., W1, W2, D1)")}
+                  <strong>Identifier:</strong>
+                  Auto-generated unique identifier (e.g., W1, W2, D1)
                 </li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
-                <li>{gettext("Drag-and-drop task movement:")}</li>
+                <li>Drag-and-drop task movement:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Move tasks within the same column (reorder)")}</li>
-                <li>{gettext("Move tasks between columns")}</li>
-                <li>{gettext("Respects WIP limits when moving")}</li>
-                <li>{gettext("Visual feedback during drag operations")}</li>
+                <li>Move tasks within the same column (reorder)</li>
+                <li>Move tasks between columns</li>
+                <li>Respects WIP limits when moving</li>
+                <li>Visual feedback during drag operations</li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
-                <li>{gettext("Task comments:")}</li>
+                <li>Task comments:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Add comments to tasks for collaboration")}</li>
-                <li>{gettext("Timestamp and display for all comments")}</li>
-                <li>{gettext("View comment history")}</li>
+                <li>Add comments to tasks for collaboration</li>
+                <li>Timestamp and display for all comments</li>
+                <li>View comment history</li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
-                <li>{gettext("Task history tracking:")}</li>
+                <li>Task history tracking:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Automatic tracking of task lifecycle events")}</li>
+                <li>Automatic tracking of task lifecycle events</li>
                 <li>
-                  {gettext(
-                    "Track creation, moves between columns, priority changes, and assignments"
-                  )}
+                  Track creation, moves between columns, priority changes, and assignments
                 </li>
-                <li>{gettext("Display full history with timestamps")}</li>
-                <li>{gettext("Visual icons for different event types")}</li>
+                <li>Display full history with timestamps</li>
+                <li>Visual icons for different event types</li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Real-Time Collaboration")}
+                Real-Time Collaboration
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Phoenix PubSub integration for real-time updates")}</li>
-                <li>{gettext("Live synchronization across all connected browsers:")}</li>
+                <li>Phoenix PubSub integration for real-time updates</li>
+                <li>Live synchronization across all connected browsers:</li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
-                <li>{gettext("Task creation, updates, and deletion")}</li>
-                <li>{gettext("Task movement between columns")}</li>
-                <li>{gettext("Automatic board refresh when changes occur")}</li>
+                <li>Task creation, updates, and deletion</li>
+                <li>Task movement between columns</li>
+                <li>Automatic board refresh when changes occur</li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">
                 <li>
-                  {gettext(
-                    "Multiple users can view and interact with the same board simultaneously"
-                  )}
+                  Multiple users can view and interact with the same board simultaneously
                 </li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("User Experience")}
+                User Experience
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Modern, responsive design using TailwindCSS")}</li>
-                <li>{gettext("Smooth animations and transitions")}</li>
-                <li>{gettext("Drag-and-drop interfaces for intuitive task management")}</li>
-                <li>{gettext("Loading states for asynchronous operations")}</li>
-                <li>{gettext("Flash messages for user feedback")}</li>
-                <li>{gettext("Confirmation dialogs for destructive actions")}</li>
-                <li>{gettext("Empty states with helpful guidance")}</li>
-                <li>{gettext("Accessibility improvements throughout the application")}</li>
-                <li>{gettext("Mobile-responsive layout")}</li>
+                <li>Modern, responsive design using TailwindCSS</li>
+                <li>Smooth animations and transitions</li>
+                <li>Drag-and-drop interfaces for intuitive task management</li>
+                <li>Loading states for asynchronous operations</li>
+                <li>Flash messages for user feedback</li>
+                <li>Confirmation dialogs for destructive actions</li>
+                <li>Empty states with helpful guidance</li>
+                <li>Accessibility improvements throughout the application</li>
+                <li>Mobile-responsive layout</li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Error Tracking & Monitoring")}
+                Error Tracking & Monitoring
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Built-in error tracking with ErrorTracker")}</li>
-                <li>{gettext("Error dashboard for administrators")}</li>
-                <li>{gettext("Automatic error capture and reporting")}</li>
-                <li>{gettext("Stack trace and context information for debugging")}</li>
+                <li>Built-in error tracking with ErrorTracker</li>
+                <li>Error dashboard for administrators</li>
+                <li>Automatic error capture and reporting</li>
+                <li>Stack trace and context information for debugging</li>
               </ul>
             </div>
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                {gettext("Internationalization")}
+                Internationalization
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
-                <li>{gettext("Full Gettext integration")}</li>
-                <li>{gettext("English translations (default)")}</li>
-                <li>{gettext("French translations")}</li>
-                <li>{gettext("Spanish translations")}</li>
-                <li>{gettext("German translations")}</li>
-                <li>{gettext("Portugese translations")}</li>
-                <li>{gettext("Japanese translations")}</li>
-                <li>{gettext("Mandarin Chinese translations")}</li>
-                <li>{gettext("Easy addition of new languages")}</li>
-                <li>{gettext("Context-aware translations")}</li>
+                <li>Full Gettext integration</li>
+                <li>English translations (default)</li>
+                <li>French translations</li>
+                <li>Spanish translations</li>
+                <li>German translations</li>
+                <li>Portugese translations</li>
+                <li>Japanese translations</li>
+                <li>Mandarin Chinese translations</li>
+                <li>Easy addition of new languages</li>
+                <li>Context-aware translations</li>
               </ul>
             </div>
           </div>
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Release Notes")}
+              Release Notes
             </h3>
             <p class="text-base-content opacity-70 leading-relaxed">
-              {gettext(
-                "This is the initial stable release of the Kanban Board application. All core features have been implemented, tested, and documented. The application is production-ready with comprehensive test coverage, security measures, and a polished user interface."
-              )}
+              This is the initial stable release of the Kanban Board application. All core features have been implemented, tested, and documented. The application is production-ready with comprehensive test coverage, security measures, and a polished user interface.
             </p>
           </div>
 
           <div class="mb-8">
             <h3 class="text-2xl font-semibold text-base-content mb-4">
-              {gettext("Known Limitations")}
+              Known Limitations
             </h3>
             <p class="text-base-content opacity-70 leading-relaxed">
-              {gettext(
-                "None identified. Please report any issues via the project's issue tracker. A form is available on the About page for easy submission."
-              )}
+              None identified. Please report any issues via the project's issue tracker. A form is available on the About page for easy submission.
             </p>
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">{gettext("Credits")}</h3>
+            <h3 class="text-2xl font-semibold text-base-content mb-4">Credits</h3>
             <p class="text-base-content opacity-70 leading-relaxed">
-              {gettext(
-                "This application was completely Vibecoded by Jeff \"Cheezy\" Morgan with the help of Claude Code and TideWave."
-              )}
+              This application was completely Vibecoded by Jeff "Cheezy" Morgan with the help of Claude Code and TideWave.
             </p>
           </div>
         </section>
