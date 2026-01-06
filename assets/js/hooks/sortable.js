@@ -11,20 +11,16 @@ const SortableHook = {
     // Listen for move success/failure events from server
     this.handleEvent("move_success", () => {
       console.log("Move succeeded on server")
-      // Delay clearing flags to allow DOM updates to settle
-      setTimeout(() => {
-        this.pendingMoveComplete = false
-        this.isDragging = false
-      }, 100)
+      // Clear flags immediately to allow LiveView update with correct positions
+      this.pendingMoveComplete = false
+      this.isDragging = false
     })
 
     this.handleEvent("move_failed", () => {
       console.log("Move failed on server - will reload")
-      // Delay clearing flags to allow DOM updates to settle
-      setTimeout(() => {
-        this.pendingMoveComplete = false
-        this.isDragging = false
-      }, 100)
+      // Clear flags immediately to allow LiveView update to revert positions
+      this.pendingMoveComplete = false
+      this.isDragging = false
     })
 
     this.handleEvent("wip_limit_violation", ({column_id}) => {
@@ -46,8 +42,13 @@ const SortableHook = {
   beforeUpdate() {
     // Prevent updates while actively dragging or waiting for move to complete
     if (this.isDragging || this.pendingMoveComplete) {
-      console.log("Prevented LiveView update - dragging or pending move completion")
       return false
+    }
+
+    // Destroy sortable instance before LiveView updates to allow proper reordering
+    if (this.sortable) {
+      this.sortable.destroy()
+      this.sortable = null
     }
 
     // Allow all other updates (including broadcasts from other clients)
@@ -55,20 +56,44 @@ const SortableHook = {
   },
 
   updated() {
-    const columnId = this.el.dataset.columnId
-    const taskCount = this.el.children.length
-    console.log(`[Sortable] updated() for column ${columnId} - isDragging: ${this.isDragging}, pendingMove: ${this.pendingMoveComplete}, task count: ${taskCount}`)
-
-    // Don't reinitialize if we're dragging or waiting for move completion
-    if (this.isDragging || this.pendingMoveComplete) {
-      console.log("Skipping sortable reinit during drag or pending move")
+    // Don't reinitialize if we're actively dragging
+    if (this.isDragging) {
       return
     }
 
-    console.log(`[Sortable] Reinitializing sortable for column ${columnId}`)
-    // Reinitialize sortable after LiveView updates
-    this.initSortable()
-    this.updateWipHighlight()
+    // Use requestAnimationFrame to ensure DOM is fully updated before reordering
+    requestAnimationFrame(() => {
+      // Get all task elements (exclude empty state)
+      const taskElements = Array.from(this.el.children).filter(child => child.dataset.id)
+
+      // Sort elements by their data-position attribute
+      const sortedElements = taskElements.slice().sort((a, b) => {
+        const posA = parseInt(a.dataset.position || "0")
+        const posB = parseInt(b.dataset.position || "0")
+        return posA - posB
+      })
+
+      // Check if reordering is needed
+      const needsReorder = sortedElements.some((el, index) => taskElements[index] !== el)
+
+      if (needsReorder) {
+        // Remove all task elements
+        taskElements.forEach(el => el.remove())
+        // Re-insert in correct order
+        const emptyState = this.el.querySelector('.empty-state')
+        sortedElements.forEach(el => {
+          this.el.appendChild(el)
+        })
+        // Move empty state to beginning if it exists
+        if (emptyState) {
+          this.el.insertBefore(emptyState, this.el.firstChild)
+        }
+      }
+
+      // Reinitialize sortable after reordering
+      this.initSortable()
+      this.updateWipHighlight()
+    })
   },
 
   updateWipHighlight() {
@@ -172,6 +197,8 @@ const SortableHook = {
         if (oldColumnId !== newColumnId || evt.oldIndex !== evt.newIndex) {
           console.log("Sending move_task event to server")
 
+          // Clear dragging flag immediately since drag is complete
+          hook.isDragging = false
           // Mark that we're waiting for the move to complete
           hook.pendingMoveComplete = true
 

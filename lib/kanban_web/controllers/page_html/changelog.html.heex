@@ -46,27 +46,27 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Comprehensive Agent Memory System</strong>
-                   - The /api/agent/onboarding endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:
+                  - The /api/agent/onboarding endpoint has been significantly enhanced to help AI agents remember how to work with Stride across sessions and platforms:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <strong>memory_strategy section</strong>
-                       - Platform-agnostic and platform-specific instructions for maintaining context across sessions
+                      - Platform-agnostic and platform-specific instructions for maintaining context across sessions
                     </li>
                     <li>
                       <strong>session_initialization section</strong>
-                       - Step-by-step checklist for starting new sessions
+                      - Step-by-step checklist for starting new sessions
                     </li>
                     <li>
                       <strong>first_session_vs_returning section</strong>
-                       - Different workflows for experience levels
+                      - Different workflows for experience levels
                     </li>
                     <li>
                       <strong>common_mistakes_agents_make section</strong>
-                       - Learning from collective experience
+                      - Learning from collective experience
                     </li>
                     <li>
                       <strong>quick_reference_card section</strong>
-                       - Ultra-condensed essentials for experienced agents
+                      - Ultra-condensed essentials for experienced agents
                     </li>
                   </ul>
                 </li>
@@ -78,7 +78,7 @@
                       <code class="text-sm bg-base-200 px-2 py-1 rounded">
                         docs/AGENT-MEMORY-SOLUTION.md
                       </code>
-                       - Detailed explanation of the multi-layered memory strategy
+                      - Detailed explanation of the multi-layered memory strategy
                     </li>
                   </ul>
                 </li>
@@ -109,7 +109,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Improved Goal Auto-Positioning</strong>
-                   - When a task triggers its parent goal to move to a new column, the goal now positions itself directly above the task that caused the movement (instead of above the earliest child in the target column)
+                  - When a task triggers its parent goal to move to a new column, the goal now positions itself directly above the task that caused the movement (instead of above the earliest child in the target column)
                 </li>
               </ul>
             </div>
@@ -132,57 +132,53 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Conditional Visibility for Status & Agent Tracking Section</strong>
-                   - The "Status & Agent Tracking" section in task forms now intelligently shows/hides based on agent interaction:
+                  - The "Status & Agent Tracking" section in task forms now intelligently shows/hides based on agent interaction:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <strong>Status</strong>
-                       - Task status (Open, In Progress, Completed, Blocked)
+                      - Task status (Open, In Progress, Completed, Blocked)
                     </li>
                     <li>
-                      <strong>Created By Agent</strong>
-                       - Name of AI agent that created the task
+                      <strong>Created By Agent</strong> - Name of AI agent that created the task
                     </li>
                     <li>
                       <strong>Completed By Agent</strong>
-                       - Name of AI agent that completed the task
+                      - Name of AI agent that completed the task
                     </li>
                     <li>
                       <strong>Completion Summary</strong>
-                       - Summary provided by agent upon completion
+                      - Summary provided by agent upon completion
                     </li>
                   </ul>
                 </li>
 
                 <li>
                   <strong>Conditional Visibility for Review Queue Section</strong>
-                   - The "Review Queue" section in task forms now only appears when a task has a review status:
+                  - The "Review Queue" section in task forms now only appears when a task has a review status:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <strong>Review Status</strong>
-                       - Pending, Approved, Changes Requested, or Rejected
+                      - Pending, Approved, Changes Requested, or Rejected
                     </li>
                     <li>
-                      <strong>Review Notes</strong>
-                       - Notes from the reviewer about the task
+                      <strong>Review Notes</strong> - Notes from the reviewer about the task
                     </li>
                   </ul>
                 </li>
 
                 <li>
                   <strong>Conditional Visibility for Actual Metrics Section</strong>
-                   - The "Actual Metrics" section in task forms now only appears when actual metrics data exists:
+                  - The "Actual Metrics" section in task forms now only appears when actual metrics data exists:
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <strong>Actual Complexity</strong>
-                       - Actual complexity level (Small, Medium, Large)
+                      - Actual complexity level (Small, Medium, Large)
                     </li>
                     <li>
-                      <strong>Actual Files Changed</strong>
-                       - Number of files actually modified
+                      <strong>Actual Files Changed</strong> - Number of files actually modified
                     </li>
                     <li>
-                      <strong>Time Spent (minutes)</strong>
-                       - Actual time spent on the task
+                      <strong>Time Spent (minutes)</strong> - Actual time spent on the task
                     </li>
                   </ul>
                 </li>
@@ -203,7 +199,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>TASK-FORM-FIELD-VISIBILITY.md</strong>
-                   - New comprehensive guide explaining task form field visibility
+                  - New comprehensive guide explaining task form field visibility
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>Board-level field visibility settings and configurable fields</li>
                     <li>Always-visible fields vs. conditionally visible fields</li>
@@ -236,27 +232,25 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Smoother Animation</strong>
-                   - Enhanced drag and drop feel with improved visual feedback
+                  - Enhanced drag and drop feel with improved visual feedback
                 </li>
                 <li>
                   <strong>More Precise Positioning</strong>
-                   - Improved accuracy when dropping tasks
+                  - Improved accuracy when dropping tasks
                 </li>
                 <li>
-                  <strong>Better Scroll Behavior</strong>
-                   - Enhanced dragging near column edges
+                  <strong>Better Scroll Behavior</strong> - Enhanced dragging near column edges
                 </li>
                 <li>
                   <strong>Prevented Premature DOM Updates</strong>
-                   - Fixed jarring updates during drag operations
+                  - Fixed jarring updates during drag operations
                 </li>
                 <li>
-                  <strong>Enhanced Touch Support</strong>
-                   - Better mobile drag experience
+                  <strong>Enhanced Touch Support</strong> - Better mobile drag experience
                 </li>
                 <li>
                   <strong>Position Index Bug Fix</strong>
-                   - Resolved issue where tasks would return to wrong position
+                  - Resolved issue where tasks would return to wrong position
                 </li>
               </ul>
             </div>
@@ -279,7 +273,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Automatic Login After Registration</strong>
-                   - New users are now automatically logged in after creating their account
+                  - New users are now automatically logged in after creating their account
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Eliminates the redundant step of requiring users to log in immediately after registration
@@ -294,7 +288,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4 mt-4">
                 <li>
                   <strong>AI Optimized Board Quick Start</strong>
-                   - Added prominent call-to-action for new users without boards
+                  - Added prominent call-to-action for new users without boards
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Displays helpful message: "You don't have any boards yet. Create your first board to get started!"
@@ -321,7 +315,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>Enhanced Task Review Checkbox Visibility</strong>
-                   - Made the \"Needs Review\" checkbox more obvious in task forms
+                  - Made the \"Needs Review\" checkbox more obvious in task forms
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Changed from subtle gray label to prominent blue gradient styling
@@ -358,7 +352,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>GET /api/agent/onboarding</strong>
-                   - Comprehensive onboarding endpoint for AI agents starting work with Stride
+                  - Comprehensive onboarding endpoint for AI agents starting work with Stride
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Critical first steps - Immediate guidance on creating .stride_auth.md and .stride.md configuration files
@@ -391,53 +385,53 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4 mt-4">
                 <li>
                   <strong>Comprehensive Agent Documentation</strong>
-                   - Created complete documentation set for AI agents
+                  - Created complete documentation set for AI agents
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AUTHENTICATION.md
                       </code>
-                       - Bearer token authentication with .stride_auth.md format
+                      - Bearer token authentication with .stride_auth.md format
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AGENT-CAPABILITIES.md
                       </code>
-                       - Capability matching system with 12 standard capabilities
+                      - Capability matching system with 12 standard capabilities
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         AGENT-HOOK-EXECUTION-GUIDE.md
                       </code>
-                       - Client-side hook execution with complete examples
+                      - Client-side hook execution with complete examples
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         TASK-WRITING-GUIDE.md
                       </code>
-                       - Task creation guide with structured JSON format rationale
+                      - Task creation guide with structured JSON format rationale
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         REVIEW-WORKFLOW.md
                       </code>
-                       - Review workflow patterns and continuous work loop
+                      - Review workflow patterns and continuous work loop
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         ESTIMATION-FEEDBACK.md
                       </code>
-                       - Providing estimation feedback on task completion
+                      - Providing estimation feedback on task completion
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">
                         UNCLAIM-TASKS.md
                       </code>
-                       - When and how to release tasks agents can't complete
+                      - When and how to release tasks agents can't complete
                     </li>
                     <li>
                       <code class="text-sm bg-base-200 px-1 py-0.5 rounded">AI-WORKFLOW.md</code>
-                       - Complete agent workflow from authentication to task completion
+                      - Complete agent workflow from authentication to task completion
                     </li>
                   </ul>
                 </li>
@@ -458,7 +452,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>AI-Human Collaboration Focus</strong>
-                   - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform
+                  - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Hero section - Updated badge to "AI-Human Collaboration Platform" and headline to emphasize AI agents working alongside humans
@@ -496,7 +490,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
                 <li>
                   <strong>AI-Human Collaboration Platform Section</strong>
-                   - Added new section explaining Stride's collaborative features
+                  - Added new section explaining Stride's collaborative features
                   <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
                     <li>
                       Overview - Describes how AI agents and humans work together through REST API and review workflows
@@ -535,27 +529,27 @@
                 <ul class="list-disc list-inside ml-6 space-y-2 text-base-content opacity-70">
                   <li>
                     <strong>Four fixed hook points:</strong>
-                     before_doing, after_doing, before_review, after_review
+                    before_doing, after_doing, before_review, after_review
                   </li>
                   <li>
                     <strong>Client-side execution:</strong>
-                     Agents read .stride.md configuration and execute hooks on their local machine
+                    Agents read .stride.md configuration and execute hooks on their local machine
                   </li>
                   <li>
                     <strong>Language-agnostic:</strong>
-                     Works with any programming language (Elixir, Java, Python, etc.)
+                    Works with any programming language (Elixir, Java, Python, etc.)
                   </li>
                   <li>
                     <strong>Hook metadata:</strong>
-                     Server returns name, environment variables, timeout, and blocking status
+                    Server returns name, environment variables, timeout, and blocking status
                   </li>
                   <li>
                     <strong>API integration:</strong>
-                     POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata
+                    POST /api/tasks/claim, PATCH /api/tasks/:id/complete, and PATCH /api/tasks/:id/mark_reviewed return hook metadata
                   </li>
                   <li>
                     <strong>Automatic completion:</strong>
-                     Tasks with needs_review=false automatically move to Done after executing all hooks
+                    Tasks with needs_review=false automatically move to Done after executing all hooks
                   </li>
                 </ul>
               </div>
@@ -586,43 +580,43 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Atomic transactions</strong>
-                     - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)
+                    - Uses Ecto.Multi to ensure all-or-nothing semantics (if any task fails, entire operation rolls back)
                   </li>
                   <li>
                     <strong>Automatic parent_id assignment</strong>
-                     - Child tasks automatically linked to parent goal
+                    - Child tasks automatically linked to parent goal
                   </li>
                   <li>
                     <strong>Automatic identifier generation</strong>
-                     - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type
+                    - Goals get G prefix (G1, G2, etc.), tasks get W/D prefix based on type
                   </li>
                   <li>
                     <strong>Position management</strong>
-                     - Goal positioned first, child tasks positioned sequentially after
+                    - Goal positioned first, child tasks positioned sequentially after
                   </li>
                   <li>
                     <strong>Task history tracking</strong>
-                     - Creation history entries created for goal and all child tasks
+                    - Creation history entries created for goal and all child tasks
                   </li>
                   <li>
                     <strong>PubSub broadcasting</strong>
-                     - Real-time updates broadcast for goal and all children
+                    - Real-time updates broadcast for goal and all children
                   </li>
                   <li>
                     <strong>Telemetry events</strong>
-                     - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts
+                    - [:kanban, :goal, :created_with_tasks] event emitted with goal and task counts
                   </li>
                   <li>
                     <strong>WIP limit enforcement</strong>
-                     - Respects column WIP limits before creating goal
+                    - Respects column WIP limits before creating goal
                   </li>
                   <li>
                     <strong>Full field support</strong>
-                     - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)
+                    - Preserves all AI-optimized fields (complexity, verification_steps, key_files, etc.)
                   </li>
                   <li>
                     <strong>Response format</strong>
-                     - Returns &#123;goal: ..., child_tasks: [...]&#125; with complete task data
+                    - Returns &#123;goal: ..., child_tasks: [...]&#125; with complete task data
                   </li>
                 </ul>
               </div>
@@ -643,19 +637,19 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Cascade deletion</strong>
-                     - When the last child task of a goal is deleted, the parent goal is automatically deleted as well
+                    - When the last child task of a goal is deleted, the parent goal is automatically deleted as well
                   </li>
                   <li>
                     <strong>Real-time updates</strong>
-                     - Goal deletion broadcasts via PubSub for immediate UI updates
+                    - Goal deletion broadcasts via PubSub for immediate UI updates
                   </li>
                   <li>
                     <strong>Prevents orphaned goals</strong>
-                     - Ensures goals without children don't remain on the board
+                    - Ensures goals without children don't remain on the board
                   </li>
                   <li>
                     <strong>Proper reordering</strong>
-                     - Tasks are reordered after goal deletion to maintain proper positioning
+                    - Tasks are reordered after goal deletion to maintain proper positioning
                   </li>
                 </ul>
               </div>
@@ -686,11 +680,11 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Goals (G prefix)</strong>
-                     - Large initiatives (25+ hours) that contain multiple related tasks
+                    - Large initiatives (25+ hours) that contain multiple related tasks
                   </li>
                   <li>
                     <strong>Tasks (W/D prefix)</strong>
-                     - Individual work items that can belong to a goal via parent_id field
+                    - Individual work items that can belong to a goal via parent_id field
                   </li>
                   <li>Standalone tasks (no parent) remain fully supported</li>
                 </ul>
@@ -706,27 +700,27 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Yellow gradient styling</strong>
-                     - from-yellow-50 to-yellow-100 background with border-yellow-300/60
+                    - from-yellow-50 to-yellow-100 background with border-yellow-300/60
                   </li>
                   <li>
                     <strong>Compact dimensions</strong>
-                     - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)
+                    - min-h-[45px] height with p-1.5 padding (vs p-3 for regular tasks)
                   </li>
                   <li>
                     <strong>Reduced spacing</strong>
-                     - mt-1 between title and progress bar, mt-1.5 between progress bar and badges
+                    - mt-1 between title and progress bar, mt-1.5 between progress bar and badges
                   </li>
                   <li>
                     <strong>Three-line layout:</strong>
-                     Line 1: Goal title, Line 2: Progress bar showing completion (e.g., "6/11"), Line 3: Badge row (G badge, priority, identifier)
+                    Line 1: Goal title, Line 2: Progress bar showing completion (e.g., "6/11"), Line 3: Badge row (G badge, priority, identifier)
                   </li>
                   <li>
                     <strong>Non-draggable</strong>
-                     - No drag handle displayed (goals move automatically)
+                    - No drag handle displayed (goals move automatically)
                   </li>
                   <li>
                     <strong>Type badge</strong>
-                     - Yellow \"G\" badge with gradient background matching card style
+                    - Yellow \"G\" badge with gradient background matching card style
                   </li>
                 </ul>
               </div>
@@ -741,23 +735,23 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Smart column detection</strong>
-                     - When ALL child tasks are in same column, goal moves to that column
+                    - When ALL child tasks are in same column, goal moves to that column
                   </li>
                   <li>
                     <strong>Before-child positioning</strong>
-                     - Goal positions BEFORE first child in target column
+                    - Goal positions BEFORE first child in target column
                   </li>
                   <li>
                     <strong>Done column special handling</strong>
-                     - Goal positions at END when all children complete
+                    - Goal positions at END when all children complete
                   </li>
                   <li>
                     <strong>Real-time updates</strong>
-                     - Movement triggers immediately when last child task moves
+                    - Movement triggers immediately when last child task moves
                   </li>
                   <li>
                     <strong>Position shifting</strong>
-                     - Other tasks shift to maintain proper ordering
+                    - Other tasks shift to maintain proper ordering
                   </li>
                 </ul>
               </div>
@@ -772,23 +766,23 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>Progress bar</strong>
-                     - Green gradient bar (from-green-500 to-emerald-500) on yellow background
+                    - Green gradient bar (from-green-500 to-emerald-500) on yellow background
                   </li>
                   <li>
                     <strong>Completion count</strong>
-                     - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar
+                    - Shows \"completed/total\" (e.g., \"6/11\") next to progress bar
                   </li>
                   <li>
                     <strong>Percentage calculation</strong>
-                     - Computed via calculate_goal_progress/1 helper
+                    - Computed via calculate_goal_progress/1 helper
                   </li>
                   <li>
                     <strong>PubSub updates</strong>
-                     - Progress updates broadcast in real-time as child tasks complete
+                    - Progress updates broadcast in real-time as child tasks complete
                   </li>
                   <li>
                     <strong>Status tracking</strong>
-                     - Counts completed vs total children for accurate progress
+                    - Counts completed vs total children for accurate progress
                   </li>
                 </ul>
               </div>
@@ -802,24 +796,21 @@
                 </p>
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
-                    <strong>Goal dropdown</strong>
-                     - New \"Parent Goal\" field in task form
+                    <strong>Goal dropdown</strong> - New \"Parent Goal\" field in task form
                   </li>
                   <li>
-                    <strong>Goal options</strong>
-                     - Shows all goals in format \"G1 - Goal Title\"
+                    <strong>Goal options</strong> - Shows all goals in format \"G1 - Goal Title\"
                   </li>
                   <li>
-                    <strong>Filtered by board</strong>
-                     - Only shows goals from current board
+                    <strong>Filtered by board</strong> - Only shows goals from current board
                   </li>
                   <li>
                     <strong>Self-exclusion</strong>
-                     - Goals cannot be their own parent (prevents circular references)
+                    - Goals cannot be their own parent (prevents circular references)
                   </li>
                   <li>
                     <strong>Ordered display</strong>
-                     - Goals sorted by identifier (G1, G2, G3, etc.)
+                    - Goals sorted by identifier (G1, G2, G3, etc.)
                   </li>
                 </ul>
               </div>
@@ -840,31 +831,29 @@
                 <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                   <li>
                     <strong>For goals:</strong>
-                     Returns goal data + array of child tasks + progress counts
+                    Returns goal data + array of child tasks + progress counts
                   </li>
                   <li>
-                    <strong>For tasks:</strong>
-                     Returns just the task data (no children)
+                    <strong>For tasks:</strong> Returns just the task data (no children)
                   </li>
                   <li>
                     <strong>Full field support</strong>
-                     - Includes all rich task fields (complexity, dependencies, etc.)
+                    - Includes all rich task fields (complexity, dependencies, etc.)
                   </li>
                   <li>
                     <strong>Progress statistics</strong>
-                     - Includes total children and completed count for goals
+                    - Includes total children and completed count for goals
                   </li>
                   <li>
-                    <strong>Ordered children</strong>
-                     - Child tasks ordered by position ascending
+                    <strong>Ordered children</strong> - Child tasks ordered by position ascending
                   </li>
                   <li>
                     <strong>Scope enforcement</strong>
-                     - Respects tasks:read scope, returns 401/404 appropriately
+                    - Respects tasks:read scope, returns 401/404 appropriately
                   </li>
                   <li>
                     <strong>Supports identifiers</strong>
-                     - Accepts both numeric IDs and identifiers (e.g., "G1", "W14")
+                    - Accepts both numeric IDs and identifiers (e.g., "G1", "W14")
                   </li>
                 </ul>
               </div>
@@ -1252,8 +1241,7 @@
                     - Integer minutes spent on the task
                   </li>
                   <li>
-                    <code class="text-sm">completed_by_id</code>
-                    - User ID of the completer
+                    <code class="text-sm">completed_by_id</code> - User ID of the completer
                   </li>
                 </ul>
               </div>
@@ -1271,8 +1259,7 @@
                     - Array of file paths and what changed in each
                   </li>
                   <li>
-                    <code class="text-sm">tests_added</code>
-                    - Array of test files created
+                    <code class="text-sm">tests_added</code> - Array of test files created
                   </li>
                   <li>
                     <code class="text-sm">verification_results</code>
@@ -1287,8 +1274,7 @@
                     - Comparison of estimated vs actual complexity, files, and time
                   </li>
                   <li>
-                    <code class="text-sm">telemetry_added</code>
-                    - Array of telemetry events added
+                    <code class="text-sm">telemetry_added</code> - Array of telemetry events added
                   </li>
                   <li>
                     <code class="text-sm">follow_up_tasks</code>
@@ -1665,7 +1651,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>Three New Task Fields</strong>
-                   - Added specialized fields to capture AI-relevant context for task execution:
+                  - Added specialized fields to capture AI-relevant context for task execution:
                 </li>
               </ul>
 
@@ -1693,8 +1679,7 @@
                   </h5>
                   <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
                     <li>
-                      Map field with three standardized categories: 
-                      <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>,
+                      Map field with three standardized categories: <code class="text-sm">unit_tests</code>, <code class="text-sm">integration_tests</code>,
                       <code class="text-sm">manual_tests</code>
                     </li>
                     <li>Each category contains an array of test descriptions</li>
@@ -1762,7 +1747,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>New Board Type</strong>
-                   - Introduced AI Optimized Boards with predefined, immutable structure:
+                  - Introduced AI Optimized Boards with predefined, immutable structure:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
@@ -1801,45 +1786,43 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>Extended Task Schema</strong>
-                   - Added 18+ new fields to support AI-optimized task management:
+                  - Added 18+ new fields to support AI-optimized task management:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
                   <strong>Planning & Context:</strong>
-                   complexity (small/medium/large), estimated_files, why, what, where_context
+                  complexity (small/medium/large), estimated_files, why, what, where_context
                 </li>
                 <li>
                   <strong>Implementation Guidance:</strong>
-                   patterns_to_follow, database_changes, validation_rules, required_capabilities
+                  patterns_to_follow, database_changes, validation_rules, required_capabilities
                 </li>
                 <li>
                   <strong>Observability:</strong>
-                   telemetry_event, metrics_to_track, logging_requirements
+                  telemetry_event, metrics_to_track, logging_requirements
                 </li>
                 <li>
-                  <strong>Error Handling:</strong>
-                   error_user_message, error_on_failure
+                  <strong>Error Handling:</strong> error_user_message, error_on_failure
                 </li>
                 <li>
                   <strong>Collections:</strong>
-                   key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)
+                  key_files (JSONB), verification_steps (JSONB), technology_requirements (JSONB), pitfalls (JSONB), out_of_scope (JSONB)
                 </li>
                 <li>
                   <strong>Metadata Tracking:</strong>
-                   created_by, creator_name, completed_at, completed_by, completer_name, completion_summary
+                  created_by, creator_name, completed_at, completed_by, completer_name, completion_summary
                 </li>
                 <li>
-                  <strong>Assignment Tracking:</strong>
-                   claimed_at, claimed_by, claimer_name
+                  <strong>Assignment Tracking:</strong> claimed_at, claimed_by, claimer_name
                 </li>
                 <li>
                   <strong>Review System:</strong>
-                   needs_review (boolean), review_status (pending/approved/changes_requested), review_notes
+                  needs_review (boolean), review_status (pending/approved/changes_requested), review_notes
                 </li>
                 <li>
                   <strong>Dependencies:</strong>
-                   dependencies (JSONB array) to track task relationships
+                  dependencies (JSONB array) to track task relationships
                 </li>
               </ul>
             </div>
@@ -1851,7 +1834,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>Field Visibility Toggles</strong>
-                   - Board owners can control which task fields are visible to all users:
+                  - Board owners can control which task fields are visible to all users:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
@@ -1881,7 +1864,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>Comprehensive Task Creation/Edit Form</strong>
-                   - Support for all rich task fields with dynamic sections:
+                  - Support for all rich task fields with dynamic sections:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
@@ -1907,7 +1890,7 @@
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
                 <li>
                   <strong>Rich Task Display</strong>
-                   - All 18 TASK.md categories displayed in organized, scannable format:
+                  - All 18 TASK.md categories displayed in organized, scannable format:
                 </li>
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
@@ -2057,8 +2040,7 @@
               </ul>
               <ul class="list-disc list-inside ml-6 space-y-1 text-base-content opacity-70">
                 <li>
-                  <strong>Owner:</strong>
-                  Full control over board, columns, and tasks
+                  <strong>Owner:</strong> Full control over board, columns, and tasks
                 </li>
                 <li>
                   <strong>Modify:</strong>
@@ -2109,27 +2091,22 @@
                   <strong>Title:</strong> Required task name
                 </li>
                 <li>
-                  <strong>Description:</strong>
-                  Optional detailed description
+                  <strong>Description:</strong> Optional detailed description
                 </li>
                 <li>
-                  <strong>Acceptance Criteria:</strong>
-                  Optional criteria for task completion
+                  <strong>Acceptance Criteria:</strong> Optional criteria for task completion
                 </li>
                 <li>
                   <strong>Type:</strong> Work or Defect
                 </li>
                 <li>
-                  <strong>Priority:</strong>
-                  Low, Medium, High, or Critical
+                  <strong>Priority:</strong> Low, Medium, High, or Critical
                 </li>
                 <li>
-                  <strong>Assigned To:</strong>
-                  Assign tasks to specific users
+                  <strong>Assigned To:</strong> Assign tasks to specific users
                 </li>
                 <li>
-                  <strong>Identifier:</strong>
-                  Auto-generated unique identifier (e.g., W1, W2, D1)
+                  <strong>Identifier:</strong> Auto-generated unique identifier (e.g., W1, W2, D1)
                 </li>
               </ul>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mt-2">

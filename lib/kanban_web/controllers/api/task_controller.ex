@@ -493,12 +493,6 @@ defmodule KanbanWeb.API.TaskController do
     |> render(:error, changeset: changeset)
   end
 
-  defp handle_goal_creation({:error, :wip_limit_reached}, conn) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(%{error: "WIP limit reached for this column"})
-  end
-
   defp render_goal_with_children(goal) do
     %{
       id: goal.id,
@@ -621,9 +615,6 @@ defmodule KanbanWeb.API.TaskController do
     case Tasks.create_goal_with_tasks(column, task_params_with_creator, child_tasks) do
       {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
         handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc)
-
-      {:error, :wip_limit_reached} ->
-        {:halt, {:error, index, :wip_limit_reached}}
 
       {:error, _operation, changeset} ->
         {:halt, {:error, index, changeset}}

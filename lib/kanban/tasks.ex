@@ -164,8 +164,13 @@ defmodule Kanban.Tasks do
 
   """
   def create_task(column, attrs \\ %{}) do
-    # Check WIP limit before creating
-    if can_add_task?(column) do
+    # Goals don't count toward WIP limit, so only check limit for work and defect tasks
+    task_type = get_task_type_from_attrs(attrs)
+
+    should_check_wip = task_type in [:work, :defect]
+
+    # Check WIP limit before creating (skip check for goals)
+    if !should_check_wip || can_add_task?(column) do
       attrs = prepare_task_creation_attrs(column, attrs)
 
       column
@@ -196,23 +201,20 @@ defmodule Kanban.Tasks do
 
   """
   def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []) do
-    if can_add_task?(column) do
-      goal_attrs = prepare_goal_attrs(column, goal_attrs)
+    # Goals don't count toward WIP limit, so skip the check
+    goal_attrs = prepare_goal_attrs(column, goal_attrs)
 
-      Ecto.Multi.new()
-      |> Ecto.Multi.insert(:goal, Task.changeset(%Task{column_id: column.id}, goal_attrs))
-      |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
-        TaskHistory.changeset(%TaskHistory{}, %{
-          task_id: goal.id,
-          type: :creation
-        })
-      end)
-      |> insert_child_tasks(column, child_tasks_attrs)
-      |> Repo.transaction()
-      |> handle_goal_creation_result(column)
-    else
-      {:error, :wip_limit_reached}
-    end
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:goal, Task.changeset(%Task{column_id: column.id}, goal_attrs))
+    |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
+      TaskHistory.changeset(%TaskHistory{}, %{
+        task_id: goal.id,
+        type: :creation
+      })
+    end)
+    |> insert_child_tasks(column, child_tasks_attrs)
+    |> Repo.transaction()
+    |> handle_goal_creation_result(column)
   end
 
   defp prepare_goal_attrs(column, attrs) do
@@ -293,6 +295,7 @@ defmodule Kanban.Tasks do
   end
 
   defp maybe_put_created_by_agent(attrs, _key, nil), do: attrs
+
   defp maybe_put_created_by_agent(attrs, key, agent_name) do
     Map.put_new(attrs, key, agent_name)
   end
@@ -594,19 +597,28 @@ defmodule Kanban.Tasks do
   def move_task(%Task{} = task, %Column{} = new_column, new_position) do
     old_column_id = task.column_id
 
-    # If moving to a different column, check WIP limit
+    # If moving to a different column, check WIP limit (only for work and defect tasks)
     result =
       if new_column.id != old_column_id do
-        # Count current tasks in target column (excluding this task if it's already there)
-        current_count =
-          Task
-          |> where([t], t.column_id == ^new_column.id)
-          |> Repo.aggregate(:count)
+        # Goals don't count toward WIP limit, so skip check for them
+        should_check_wip = task.type in [:work, :defect]
 
-        # Check if we can add to the target column
-        if new_column.wip_limit > 0 and current_count >= new_column.wip_limit do
-          {:error, :wip_limit_reached}
+        if should_check_wip do
+          # Count current work and defect tasks in target column (goals don't count toward WIP limit)
+          current_count =
+            Task
+            |> where([t], t.column_id == ^new_column.id)
+            |> where([t], t.type in [:work, :defect])
+            |> Repo.aggregate(:count)
+
+          # Check if we can add to the target column
+          if new_column.wip_limit > 0 and current_count >= new_column.wip_limit do
+            {:error, :wip_limit_reached}
+          else
+            perform_move(task, new_column, new_position, old_column_id)
+          end
         else
+          # Skip WIP check for goals
           perform_move(task, new_column, new_position, old_column_id)
         end
       else
@@ -676,9 +688,11 @@ defmodule Kanban.Tasks do
     if column.wip_limit == 0 do
       true
     else
+      # Only count work and defect tasks, not goals
       current_count =
         Task
         |> where([t], t.column_id == ^column.id)
+        |> where([t], t.type in [:work, :defect])
         |> Repo.aggregate(:count)
 
       current_count < column.wip_limit
@@ -686,6 +700,25 @@ defmodule Kanban.Tasks do
   end
 
   # Private functions
+
+  defp get_task_type_from_attrs(attrs) do
+    # Check for type in both string and atom keys
+    # Default to :work if not specified
+    cond do
+      Map.has_key?(attrs, :type) ->
+        normalize_type(attrs[:type])
+
+      Map.has_key?(attrs, "type") ->
+        normalize_type(attrs["type"])
+
+      true ->
+        :work
+    end
+  end
+
+  defp normalize_type(type) when is_atom(type), do: type
+  defp normalize_type(type) when is_binary(type), do: String.to_existing_atom(type)
+  defp normalize_type(_), do: :work
 
   defp prepare_task_attrs(attrs, position) do
     # Check if map has string keys by looking for any string key
@@ -2163,49 +2196,65 @@ defmodule Kanban.Tasks do
     Enum.find(columns, fn col -> String.downcase(col.name) == "done" end)
   end
 
-  defp move_goal_if_needed(parent_goal, target_column, _goal_context, _moving_task_id) do
+  defp move_goal_if_needed(parent_goal, target_column, _goal_context, moving_task_id) do
     # Goals should always be placed at the top of the column, after any existing goals
     if target_column.id != parent_goal.column_id do
-      move_goal_to_top_with_other_goals(parent_goal, target_column)
+      move_goal_to_top_with_other_goals(parent_goal, target_column, moving_task_id)
     else
       {:ok, :no_change}
     end
   end
 
-  defp move_goal_to_top_with_other_goals(parent_goal, target_column) do
+  defp move_goal_to_top_with_other_goals(parent_goal, target_column, _moving_task_id) do
+    require Logger
+
     # Find the position after the last goal in the target column
-    # Goals should be at the top, so we find the highest position among existing goals
+    # Goals should be at the top, grouped together, before all work/defect tasks
     last_goal_position =
       from(t in Task,
-        where: t.column_id == ^target_column.id and t.type == :goal,
+        where: t.column_id == ^target_column.id and t.type == :goal and t.id != ^parent_goal.id,
         select: max(t.position)
       )
       |> Repo.one()
 
+    # Determine target position for the goal (after other goals, before work tasks)
     target_position =
       if last_goal_position do
-        # Place after the last goal
+        # Place after the last existing goal
         last_goal_position + 1
       else
-        # No goals exist, place at position 0
+        # No other goals exist, place at position 0
         0
       end
+
+    Logger.info(
+      "Moving goal #{parent_goal.identifier} to column #{target_column.id} at position #{target_position}"
+    )
 
     # First, move the goal to a temporary negative position to avoid conflicts
     Task
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
 
-    # Get all non-goal tasks that need to be shifted, ordered by position descending
+    # Get all non-goal tasks at or after the target position that need to be shifted down
+    # This ensures the goal stays before all work/defect tasks
     tasks_to_shift =
       from(t in Task,
-        where: t.column_id == ^target_column.id and t.position >= ^target_position and t.type != :goal,
+        where:
+          t.column_id == ^target_column.id and
+            t.position >= ^target_position and
+            t.type != :goal and
+            t.id != ^parent_goal.id,
         select: %{id: t.id, position: t.position},
         order_by: [desc: t.position]
       )
       |> Repo.all()
 
-    # Shift each task individually from highest position to lowest to avoid conflicts
+    Logger.info(
+      "Shifting #{length(tasks_to_shift)} non-goal tasks from position #{target_position}"
+    )
+
+    # Shift each task down by 1, from highest position to lowest to avoid conflicts
     Enum.each(tasks_to_shift, fn task ->
       Task
       |> where([t], t.id == ^task.id)
@@ -2217,9 +2266,10 @@ defmodule Kanban.Tasks do
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [position: target_position])
 
+    Logger.info("Goal #{parent_goal.identifier} placed at position #{target_position}")
+
     updated_goal = get_task!(parent_goal.id)
     broadcast_task_change(updated_goal, :task_moved)
     {:ok, :moved}
   end
-
 end

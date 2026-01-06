@@ -12,8 +12,18 @@
 
   <%= if @error_message do %>
     <div class="alert alert-error mb-4">
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
       <span>{@error_message}</span>
     </div>
@@ -220,7 +230,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Verification Steps")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:verification_steps].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:verification_steps].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <.inputs_for :let={vs} field={f[:verification_steps]}>
           <div class="flex gap-2 items-start mb-2">
             <div class="w-32">
@@ -294,7 +306,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Technology Requirements")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <%= for {tech, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :technology_requirements) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -443,7 +457,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Security Considerations")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :security_considerations) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -481,7 +497,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Testing Strategy")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:testing_strategy].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:testing_strategy].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <% testing_strategy = Ecto.Changeset.get_field(@form.source, :testing_strategy) || %{} %>
 
         <div class="mb-4">
@@ -594,7 +612,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Integration Points")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:integration_points].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:integration_points].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <% integration_points = Ecto.Changeset.get_field(@form.source, :integration_points) || %{} %>
 
         <div class="mb-4">
@@ -792,7 +812,9 @@
         <h3 class="text-lg font-semibold text-base-content mb-4">
           {gettext("Claim Tracking & Required Capabilities")}
         </h3>
-        <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>{msg}</.error>
+        <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>
+          {msg}
+        </.error>
         <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
           <div class="flex gap-2 mb-2">
             <input

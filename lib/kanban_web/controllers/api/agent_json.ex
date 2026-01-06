@@ -552,8 +552,7 @@ defmodule KanbanWeb.API.AgentJSON do
           %{
             step: 5,
             action: "Ready to claim tasks",
-            command:
-              "curl -H 'Authorization: Bearer YOUR_TOKEN' #{base_url}/api/tasks/claim",
+            command: "curl -H 'Authorization: Bearer YOUR_TOKEN' #{base_url}/api/tasks/claim",
             why: "Start working on Stride tasks"
           }
         ]
@@ -614,8 +613,7 @@ defmodule KanbanWeb.API.AgentJSON do
           %{
             mistake: "Manually specifying task identifiers like G1, W42, D5",
             consequence: "API returns validation errors, task creation fails",
-            fix:
-              "Never specify task identifiers - the system auto-generates them sequentially"
+            fix: "Never specify task identifiers - the system auto-generates them sequentially"
           },
           %{
             mistake: "Committing .stride_auth.md to git",
@@ -638,8 +636,7 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           %{
             mistake: "Not understanding blocking vs non-blocking hooks",
-            consequence:
-              "Incorrect error handling, tasks marked complete when they should fail",
+            consequence: "Incorrect error handling, tasks marked complete when they should fail",
             fix:
               "before_doing and after_doing are BLOCKING (must pass). before_review and after_review are NON-BLOCKING (logged but don't block)"
           }

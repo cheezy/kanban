@@ -1822,14 +1822,18 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert {"No parent goal", nil} in goal_options
 
       # Should show identifier and title
-      goal1_option = Enum.find(goal_options, fn {label, _id} ->
-        label == "#{goal1.identifier} - Goal 1"
-      end)
+      goal1_option =
+        Enum.find(goal_options, fn {label, _id} ->
+          label == "#{goal1.identifier} - Goal 1"
+        end)
+
       assert goal1_option
 
-      goal2_option = Enum.find(goal_options, fn {label, _id} ->
-        label == "#{goal2.identifier} - Goal 2"
-      end)
+      goal2_option =
+        Enum.find(goal_options, fn {label, _id} ->
+          label == "#{goal2.identifier} - Goal 2"
+        end)
+
       assert goal2_option
     end
 
@@ -1889,7 +1893,11 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
           %Phoenix.LiveView.Socket{}
         )
 
-      assert socket.assigns.field_visibility == %{"why" => true, "what" => true, "where_context" => false}
+      assert socket.assigns.field_visibility == %{
+               "why" => true,
+               "what" => true,
+               "where_context" => false
+             }
     end
 
     test "uses default field_visibility from board schema" do
@@ -2027,7 +2035,9 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       # Should have error in changeset
       assert updated_socket.assigns.form.source.errors[:column_id]
-      assert updated_socket.assigns.error_message == "Cannot add task: WIP limit reached for this column"
+
+      assert updated_socket.assigns.error_message ==
+               "Cannot add task: WIP limit reached for this column"
     end
   end
 

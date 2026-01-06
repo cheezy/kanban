@@ -379,8 +379,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     # (either in params or on the existing task), set it automatically
     should_set_completed_at =
       (status == "completed" || status == :completed) &&
-      !Map.has_key?(task_params, "completed_at") &&
-      is_nil(task.completed_at)
+        !Map.has_key?(task_params, "completed_at") &&
+        is_nil(task.completed_at)
 
     if should_set_completed_at do
       Map.put(task_params, "completed_at", DateTime.utc_now() |> DateTime.truncate(:second))

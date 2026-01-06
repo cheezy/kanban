@@ -614,10 +614,11 @@ defmodule KanbanWeb.BoardLive.Show do
 
   defp load_tasks_for_columns(socket, columns) do
     # Load tasks for each column and store in tasks_by_column assign
-    # The timestamp-based IDs in the template will force full re-renders
+    # Update tasks_version to force full re-renders when task positions change
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
-        {column.id, Tasks.list_tasks(column)}
+        tasks = Tasks.list_tasks(column)
+        {column.id, tasks}
       end)
 
     # Calculate progress for each goal task
@@ -636,6 +637,7 @@ defmodule KanbanWeb.BoardLive.Show do
     socket
     |> assign(:tasks_by_column, tasks_by_column)
     |> assign(:goal_progress, goal_progress)
+    |> assign(:tasks_version, :os.system_time(:millisecond))
   end
 
   defp reload_board_data(socket) do

@@ -3214,7 +3214,8 @@ defmodule Kanban.TasksTest do
       assert Tasks.get_task!(blocked_task.id).status == :blocked
 
       # Update the dependency task's status to completed (simulating UI update)
-      {:ok, _completed_dep} = Tasks.update_task(dep_task, %{status: :completed, completed_at: DateTime.utc_now()})
+      {:ok, _completed_dep} =
+        Tasks.update_task(dep_task, %{status: :completed, completed_at: DateTime.utc_now()})
 
       # Dependent task should now be unblocked
       final_task = Tasks.get_task!(blocked_task.id)
@@ -4008,18 +4009,48 @@ defmodule Kanban.TasksTest do
       assert final_task_count == initial_task_count
     end
 
-    test "respects WIP limit when creating goal" do
+    test "goals do not count toward WIP limit" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{wip_limit: 1})
 
+      # Create a work task that fills the WIP limit
       task_fixture(column)
 
+      # Goals should not count toward WIP limit, so this should succeed
       goal_attrs = %{title: "Goal", created_by_id: user.id}
       child_tasks = [%{"title" => "Task", "type" => "work"}]
 
-      assert {:error, :wip_limit_reached} =
+      assert {:ok, %{goal: goal, child_tasks: _child_tasks}} =
                Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert goal.type == :goal
+    end
+
+    test "work and defect tasks still respect WIP limit even with goals present" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 2})
+
+      # Create a goal (doesn't count toward limit)
+      {:ok, goal} = Tasks.create_task(column, %{title: "Goal", type: "goal"})
+      assert goal.type == :goal
+
+      # Create 2 work tasks (fills the WIP limit)
+      {:ok, _task1} = Tasks.create_task(column, %{title: "Work 1", type: "work"})
+      {:ok, _task2} = Tasks.create_task(column, %{title: "Work 2", type: "work"})
+
+      # Try to create another work task (should fail)
+      assert {:error, :wip_limit_reached} =
+               Tasks.create_task(column, %{title: "Work 3", type: "work"})
+
+      # Try to create a defect (should also fail)
+      assert {:error, :wip_limit_reached} =
+               Tasks.create_task(column, %{title: "Defect 1", type: "defect"})
+
+      # But creating another goal should succeed
+      assert {:ok, goal2} = Tasks.create_task(column, %{title: "Goal 2", type: "goal"})
+      assert goal2.type == :goal
     end
 
     test "sets created_by_agent when provided" do
@@ -4198,7 +4229,8 @@ defmodule Kanban.TasksTest do
                Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
 
       # Second task has dependencies on both the first child task (by index) and the existing task (by identifier)
-      assert Enum.sort(task2.dependencies) == Enum.sort([task1.identifier, existing_task.identifier])
+      assert Enum.sort(task2.dependencies) ==
+               Enum.sort([task1.identifier, existing_task.identifier])
     end
 
     test "handles different task types with index-based dependencies" do
@@ -4291,7 +4323,9 @@ defmodule Kanban.TasksTest do
 
       # Create and complete a task first
       completed_task = task_fixture(column, %{title: "Completed Task", type: :work})
-      {:ok, completed_task} = Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
+
+      {:ok, completed_task} =
+        Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
 
       goal_attrs = %{
         "title" => "Test Goal",
@@ -4322,7 +4356,9 @@ defmodule Kanban.TasksTest do
 
       # Create one completed and one incomplete task
       completed_task = task_fixture(column, %{title: "Completed", type: :work})
-      {:ok, completed_task} = Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
+
+      {:ok, completed_task} =
+        Tasks.update_task(completed_task, %{status: :completed, completed_at: DateTime.utc_now()})
 
       incomplete_task = task_fixture(column, %{title: "Incomplete", type: :work})
 
@@ -4345,6 +4381,7 @@ defmodule Kanban.TasksTest do
 
       # Has at least one incomplete dependency, should be :blocked
       assert task.status == :blocked
+
       assert Enum.sort(task.dependencies) ==
                Enum.sort([completed_task.identifier, incomplete_task.identifier])
     end
@@ -4401,7 +4438,9 @@ defmodule Kanban.TasksTest do
 
       # Create an existing goal in ready column
       existing_goal = task_fixture(ready, %{title: "Existing Goal", type: :goal})
-      _existing_goal_child = task_fixture(ready, %{title: "Goal 1 Child", parent_id: existing_goal.id})
+
+      _existing_goal_child =
+        task_fixture(ready, %{title: "Goal 1 Child", parent_id: existing_goal.id})
 
       # Create some regular tasks
       _task1 = task_fixture(ready, %{title: "Task 1", type: :work})
