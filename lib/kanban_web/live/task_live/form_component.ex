@@ -62,6 +62,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   @impl true
   def handle_event("validate", %{"task" => task_params}, socket) do
+    # Normalize params before validation to avoid false validation errors
+    task_params = normalize_array_params(task_params)
+
     changeset =
       socket.assigns.task
       |> Tasks.Task.changeset(task_params)
