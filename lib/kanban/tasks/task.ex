@@ -442,31 +442,31 @@ defmodule Kanban.Tasks.Task do
   defp check_circular_dependency(_current_identifier, [], _visited), do: false
 
   defp check_circular_dependency(current_identifier, dependency_identifiers, visited) do
-    if current_identifier in visited do
-      true
-    else
-      alias Kanban.Repo
-      import Ecto.Query
+    alias Kanban.Repo
+    import Ecto.Query
 
-      visited = MapSet.put(visited, current_identifier)
+    tasks =
+      from(t in __MODULE__,
+        where: t.identifier in ^dependency_identifiers,
+        select: {t.identifier, t.dependencies}
+      )
+      |> Repo.all()
 
-      tasks =
-        from(t in __MODULE__,
-          where: t.identifier in ^dependency_identifiers,
-          select: {t.identifier, t.dependencies}
-        )
-        |> Repo.all()
+    Enum.any?(tasks, fn {identifier, deps} ->
+      deps = deps || []
 
-      Enum.any?(tasks, fn {_identifier, deps} ->
-        deps = deps || []
-
-        if current_identifier in deps do
+      cond do
+        current_identifier in deps ->
           true
-        else
+
+        identifier in visited ->
+          false
+
+        true ->
+          visited = MapSet.put(visited, identifier)
           check_circular_dependency(current_identifier, deps, visited)
-        end
-      end)
-    end
+      end
+    end)
   end
 
   defp validate_claim_expiration(changeset) do

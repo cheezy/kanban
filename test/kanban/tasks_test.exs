@@ -2883,6 +2883,44 @@ defmodule Kanban.TasksTest do
       assert task3.dependencies == [task2.identifier]
       assert task2.dependencies == [task1.identifier]
     end
+
+    test "allows task to depend on task that has no dependencies", %{column: column} do
+      {:ok, task1} =
+        Tasks.create_task(column, %{
+          "title" => "Task W26"
+        })
+
+      result =
+        Tasks.create_task(column, %{
+          "title" => "Task W27",
+          "dependencies" => [task1.identifier]
+        })
+
+      assert {:ok, task2} = result
+      assert task2.dependencies == [task1.identifier]
+    end
+
+    test "allows task to depend on task that itself has dependencies", %{column: column} do
+      {:ok, task_w25} =
+        Tasks.create_task(column, %{
+          "title" => "Task W25"
+        })
+
+      {:ok, task_w26} =
+        Tasks.create_task(column, %{
+          "title" => "Task W26",
+          "dependencies" => [task_w25.identifier]
+        })
+
+      result =
+        Tasks.create_task(column, %{
+          "title" => "Task W27",
+          "dependencies" => [task_w26.identifier]
+        })
+
+      assert {:ok, task_w27} = result
+      assert task_w27.dependencies == [task_w26.identifier]
+    end
   end
 
   describe "auto-blocking on task creation" do
