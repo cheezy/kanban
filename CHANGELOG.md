@@ -5,6 +5,22 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-01-06
+
+### Fixed
+
+#### WIP Limit Calculation - Goals Exclusion
+
+- **Goals No Longer Count Toward WIP Limits** - Work In Progress (WIP) limits now correctly exclude goal tasks and only count work and defect tasks:
+
+#### Goal Positioning During Drag Operations
+
+- **Fixed Goal Display Order in LiveView** - Goals now consistently appear above their child tasks during live drag-and-drop operations:
+
+#### Dependency Blocking Status in Bulk Upload
+
+- **Dependencies Now Properly Block Tasks in Bulk Upload** - Tasks with dependencies are now correctly marked as blocked when created via bulk upload API endpoint (POST /api/tasks/batch):
+
 ## [1.14.0] - 2026-01-05
 
 ### Added

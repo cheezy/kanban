@@ -31,6 +31,55 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.14.1] - 2026-01-06</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Fixed
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                WIP Limit Calculation - Goals Exclusion
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>Goals No Longer Count Toward WIP Limits</strong>
+                  - Work In Progress (WIP) limits now correctly exclude goal tasks and only count work and defect tasks
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Goal Positioning During Drag Operations
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>Fixed Goal Display Order in LiveView</strong>
+                  - Goals now consistently appear above their child tasks during live drag-and-drop operations
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Dependency Blocking Status in Bulk Upload
+              </h4>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>Dependencies Now Properly Block Tasks in Bulk Upload</strong>
+                  - Tasks with dependencies are now correctly marked as blocked when created via bulk upload API endpoint (POST /api/tasks/batch)
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.14.0] - 2026-01-05</h2>
 
           <div class="mb-8">
