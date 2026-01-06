@@ -406,9 +406,13 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp normalize_array_fields(params, fields) do
     Enum.reduce(fields, params, fn field, acc ->
-      acc
-      |> Map.put_new(field, [])
-      |> Map.update(field, [], &filter_empty_strings/1)
+      # Only normalize if the field is actually present in params
+      # Don't add missing fields - that would incorrectly trigger change detection
+      if Map.has_key?(acc, field) do
+        Map.update(acc, field, [], &filter_empty_strings/1)
+      else
+        acc
+      end
     end)
   end
 

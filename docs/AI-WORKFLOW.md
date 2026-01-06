@@ -59,6 +59,7 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 - [POST /api/tasks/:id/unclaim](../api/post_tasks_id_unclaim.md) - Unclaim a task you can't complete
 - [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) - Complete a task and receive hooks
 - [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) - Finalize review
+- [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) - Bypass review and mark as done (⚠️ limited functionality)
 
 **Task Creation:**
 - [POST /api/tasks](../api/post_tasks.md) - Create a task or goal with nested child tasks
@@ -288,6 +289,52 @@ PATCH /api/tasks/:id/complete
 5. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize
 
 See [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) for complete documentation.
+
+### ⚠️ CRITICAL: mark_done Endpoint Limitations
+
+The [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) endpoint exists as a bypass mechanism for administrative or emergency situations, but **agents should NOT use it** in normal workflows due to critical limitations:
+
+**What mark_done Does:**
+- Moves task from Review column directly to Done column
+- Sets `status` to `completed`
+- Sets `completed_at` timestamp
+
+**What mark_done Does NOT Do:**
+- ❌ **Does NOT execute any workflow hooks** (no `after_review`, etc.)
+- ❌ **Does NOT set completion metadata** (`completed_by_agent`, `completion_summary`, `time_spent_minutes`)
+- ❌ **Does NOT automatically unblock dependent tasks** (this is critical!)
+- ❌ **Does NOT track who completed the task**
+
+**Why This Matters:**
+
+If you use `mark_done` instead of the proper workflow, dependent tasks will remain blocked indefinitely because the system won't trigger the automatic unblocking logic. This breaks the dependency chain.
+
+**Correct Approach:**
+```
+✅ Use PATCH /api/tasks/:id/mark_reviewed with status "approved"
+   - Executes after_review hook
+   - Sets completion metadata
+   - Automatically unblocks dependent tasks
+   - Tracks completion properly
+```
+
+**Incorrect Approach:**
+```
+❌ Use PATCH /api/tasks/:id/mark_done
+   - Skips hooks
+   - No completion metadata
+   - Dependent tasks stay blocked forever
+   - No audit trail
+```
+
+**When mark_done is Appropriate:**
+- Emergency administrative override by humans
+- Cleaning up old stuck tasks
+- External review that happened outside the system
+
+**Agents should use the complete workflow** (claim → work → complete → mark_reviewed) to ensure proper hook execution, completion tracking, and dependency management.
+
+See [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) for complete documentation.
 
 ### Hook System
 
