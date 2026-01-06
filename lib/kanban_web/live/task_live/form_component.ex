@@ -301,7 +301,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       end
 
     # Auto-populate completed_at when status is set to completed
-    task_params = maybe_add_completed_at(task_params)
+    task_params = maybe_add_completed_at(task_params, socket.assigns.task)
 
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
@@ -372,13 +372,18 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
-  defp maybe_add_completed_at(task_params) do
+  defp maybe_add_completed_at(task_params, task) do
     status = task_params["status"]
 
-    # If status is being set to completed and completed_at is not already set,
-    # set it automatically
-    if status == "completed" || status == :completed do
-      Map.put_new(task_params, "completed_at", DateTime.utc_now() |> DateTime.truncate(:second))
+    # If status is being set to completed and completed_at is not already set
+    # (either in params or on the existing task), set it automatically
+    should_set_completed_at =
+      (status == "completed" || status == :completed) &&
+      !Map.has_key?(task_params, "completed_at") &&
+      is_nil(task.completed_at)
+
+    if should_set_completed_at do
+      Map.put(task_params, "completed_at", DateTime.utc_now() |> DateTime.truncate(:second))
     else
       task_params
     end

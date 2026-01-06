@@ -2157,4 +2157,402 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
              ]
     end
   end
+
+  describe "maybe_add_completed_at" do
+    test "adds completed_at timestamp when status is set to completed" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test Task", status: :open})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "status" => "completed"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert updated_task.status == :completed
+      assert updated_task.completed_at
+    end
+
+    test "does not modify completed_at when status is not completed" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test Task", status: :open})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "status" => "in_progress"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert updated_task.status == :in_progress
+      refute updated_task.completed_at
+    end
+
+    test "preserves existing completed_at if already set" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      original_completed_at = ~U[2025-01-01 12:00:00Z]
+
+      task =
+        task_fixture(column, %{
+          title: "Test Task",
+          status: :completed,
+          completed_at: original_completed_at
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Updated Title",
+        "status" => "completed"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert updated_task.status == :completed
+      # Should preserve original completed_at
+      assert DateTime.compare(updated_task.completed_at, original_completed_at) == :eq
+    end
+  end
+
+  describe "status change unblocks dependent tasks" do
+    test "unblocks dependent task when status changed to completed" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Ready"})
+
+      {:ok, dep_task} = Tasks.create_task(column, %{"title" => "Dependency", "status" => "open"})
+
+      {:ok, blocked_task} =
+        Tasks.create_task(column, %{
+          "title" => "Blocked Task",
+          "dependencies" => [dep_task.identifier]
+        })
+
+      # Verify blocked task is initially blocked
+      refreshed_blocked = Tasks.get_task!(blocked_task.id)
+      assert refreshed_blocked.status == :blocked
+
+      # Update dependency task to completed via form
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: dep_task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"status" => "completed"}}, socket)
+
+      # Verify dependent task is now unblocked
+      final_blocked = Tasks.get_task!(blocked_task.id)
+      assert final_blocked.status == :open
+    end
+
+    test "unblocks multiple dependent tasks when status changed to completed" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Ready"})
+
+      {:ok, dep_task} = Tasks.create_task(column, %{"title" => "Dependency"})
+
+      {:ok, blocked1} =
+        Tasks.create_task(column, %{
+          "title" => "Blocked 1",
+          "dependencies" => [dep_task.identifier]
+        })
+
+      {:ok, blocked2} =
+        Tasks.create_task(column, %{
+          "title" => "Blocked 2",
+          "dependencies" => [dep_task.identifier]
+        })
+
+      assert Tasks.get_task!(blocked1.id).status == :blocked
+      assert Tasks.get_task!(blocked2.id).status == :blocked
+
+      # Complete dependency via form
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: dep_task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"status" => "completed"}}, socket)
+
+      # Both should be unblocked
+      assert Tasks.get_task!(blocked1.id).status == :open
+      assert Tasks.get_task!(blocked2.id).status == :open
+    end
+
+    test "does not unblock task with multiple dependencies if only one completed" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Ready"})
+
+      {:ok, dep1} = Tasks.create_task(column, %{"title" => "Dep 1"})
+      {:ok, dep2} = Tasks.create_task(column, %{"title" => "Dep 2"})
+
+      {:ok, blocked_task} =
+        Tasks.create_task(column, %{
+          "title" => "Blocked Task",
+          "dependencies" => [dep1.identifier, dep2.identifier]
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      # Complete only first dependency
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: dep1,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"status" => "completed"}}, socket)
+
+      # Should still be blocked because dep2 is not complete
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+    end
+  end
+
+  describe "validate with embedded fields" do
+    test "validates without errors when key_files exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "Main file", position: 0}
+          ]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Validate with status change
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"status" => "in_progress"}},
+          socket
+        )
+
+      # Should not have validation errors for key_files
+      refute updated_socket.assigns.form.source.errors[:key_files]
+      assert updated_socket.assigns.form.source.changes.status == :in_progress
+    end
+
+    test "validates without errors when verification_steps exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "All pass",
+              position: 0
+            }
+          ]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Validate with status change
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"status" => "blocked"}},
+          socket
+        )
+
+      # Should not have validation errors for verification_steps
+      refute updated_socket.assigns.form.source.errors[:verification_steps]
+      assert updated_socket.assigns.form.source.changes.status == :blocked
+    end
+
+    test "normalizes params during validation to prevent false errors" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "Main file", position: 0}
+          ],
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "Pass",
+              position: 0
+            }
+          ]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # Validate with params that might have empty strings in arrays
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{
+            "task" => %{
+              "title" => "Updated",
+              "status" => "completed",
+              "pitfalls" => ["Real pitfall", "", "Another", ""]
+            }
+          },
+          socket
+        )
+
+      # Should not have any validation errors
+      refute updated_socket.assigns.form.source.errors[:key_files]
+      refute updated_socket.assigns.form.source.errors[:verification_steps]
+      refute updated_socket.assigns.form.source.errors[:pitfalls]
+    end
+
+    test "allows changing status field without embedded field errors" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Task with embeds",
+          status: :open,
+          key_files: [
+            %{file_path: "lib/tasks.ex", note: "File 1", position: 0}
+          ]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      # Change status - this should work without validation errors
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"status" => "completed"}},
+          socket
+        )
+
+      # Verify status was updated
+      updated_task = Tasks.get_task!(task.id)
+      assert updated_task.status == :completed
+    end
+  end
 end
