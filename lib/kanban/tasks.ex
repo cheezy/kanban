@@ -2145,94 +2145,63 @@ defmodule Kanban.Tasks do
     Enum.find(columns, fn col -> String.downcase(col.name) == "done" end)
   end
 
-  defp move_goal_if_needed(parent_goal, target_column, goal_context, moving_task_id) do
-    children_in_column =
-      get_children_in_target_column(goal_context.child_ids, target_column.id)
-
-    if children_in_column == [] do
-      move_goal_to_end_of_column(parent_goal, target_column)
-    else
-      move_goal_above_trigger_task(parent_goal, target_column, children_in_column, moving_task_id)
-    end
-  end
-
-  defp get_children_in_target_column(child_ids, column_id) do
-    from(t in Task,
-      where: t.id in ^child_ids and t.column_id == ^column_id,
-      select: {t.id, t.position},
-      order_by: [asc: t.position]
-    )
-    |> Repo.all()
-  end
-
-  defp move_goal_to_end_of_column(parent_goal, target_column) do
+  defp move_goal_if_needed(parent_goal, target_column, _goal_context, _moving_task_id) do
+    # Goals should always be placed at the top of the column, after any existing goals
     if target_column.id != parent_goal.column_id do
-      last_position =
-        from(t in Task,
-          where: t.column_id == ^target_column.id,
-          select: max(t.position)
-        )
-        |> Repo.one() || -1
-
-      Task
-      |> where([t], t.id == ^parent_goal.id)
-      |> Repo.update_all(set: [column_id: target_column.id, position: last_position + 1])
-
-      updated_goal = get_task!(parent_goal.id)
-      broadcast_task_change(updated_goal, :task_moved)
-      {:ok, :moved}
+      move_goal_to_top_with_other_goals(parent_goal, target_column)
     else
       {:ok, :no_change}
     end
   end
 
-  defp move_goal_above_trigger_task(parent_goal, target_column, children_in_column, moving_task_id) do
-    # Find the position of the task that triggered the move
-    trigger_task_position =
-      children_in_column
-      |> Enum.find_value(fn {id, pos} -> if id == moving_task_id, do: pos end)
+  defp move_goal_to_top_with_other_goals(parent_goal, target_column) do
+    # Find the position after the last goal in the target column
+    # Goals should be at the top, so we find the highest position among existing goals
+    last_goal_position =
+      from(t in Task,
+        where: t.column_id == ^target_column.id and t.type == :goal,
+        select: max(t.position)
+      )
+      |> Repo.one()
 
-    # If trigger task is in this column, use its position; otherwise use minimum
-    target_position = trigger_task_position || elem(hd(children_in_column), 1)
+    target_position =
+      if last_goal_position do
+        # Place after the last goal
+        last_goal_position + 1
+      else
+        # No goals exist, place at position 0
+        0
+      end
 
-    goal_needs_move =
-      target_column.id != parent_goal.column_id or
-        parent_goal.position > target_position
-
-    if goal_needs_move do
-      shift_tasks_and_position_goal(parent_goal, target_column, target_position)
-      {:ok, :moved}
-    else
-      {:ok, :no_change}
-    end
-  end
-
-  defp shift_tasks_and_position_goal(parent_goal, target_column, min_child_position) do
+    # First, move the goal to a temporary negative position to avoid conflicts
     Task
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
 
+    # Get all non-goal tasks that need to be shifted, ordered by position descending
     tasks_to_shift =
       from(t in Task,
-        where:
-          t.column_id == ^target_column.id and t.position >= ^min_child_position and
-            t.id != ^parent_goal.id,
-        select: {t.id, t.position},
+        where: t.column_id == ^target_column.id and t.position >= ^target_position and t.type != :goal,
+        select: %{id: t.id, position: t.position},
         order_by: [desc: t.position]
       )
       |> Repo.all()
 
-    Enum.each(tasks_to_shift, fn {task_id, current_pos} ->
+    # Shift each task individually from highest position to lowest to avoid conflicts
+    Enum.each(tasks_to_shift, fn task ->
       Task
-      |> where([t], t.id == ^task_id)
-      |> Repo.update_all(set: [position: current_pos + 1])
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: task.position + 1])
     end)
 
+    # Place the goal at the target position
     Task
     |> where([t], t.id == ^parent_goal.id)
-    |> Repo.update_all(set: [position: min_child_position])
+    |> Repo.update_all(set: [position: target_position])
 
     updated_goal = get_task!(parent_goal.id)
     broadcast_task_change(updated_goal, :task_moved)
+    {:ok, :moved}
   end
+
 end
