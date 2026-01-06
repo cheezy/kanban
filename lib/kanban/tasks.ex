@@ -483,6 +483,7 @@ defmodule Kanban.Tasks do
     priority_changed? = Map.has_key?(changeset.changes, :priority)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
     dependencies_changed? = Map.has_key?(changeset.changes, :dependencies)
+    status_changed? = Map.has_key?(changeset.changes, :status)
 
     case Repo.update(changeset) do
       {:ok, updated_task} ->
@@ -500,6 +501,11 @@ defmodule Kanban.Tasks do
 
         if dependencies_changed? do
           update_task_blocking_status(updated_task)
+        end
+
+        # If task was completed, unblock any dependent tasks
+        if status_changed? && updated_task.status == :completed do
+          unblock_dependent_tasks(updated_task.identifier)
         end
 
         # Broadcast specific event based on what changed

@@ -41,6 +41,9 @@ These fields appear on every task form, regardless of board settings:
 - **Type** - Work, Defect, or Goal (required)
 - **Parent Goal** - Link to parent goal (if applicable)
 - **Priority** - Low, Medium, High, or Critical (required)
+- **Status** - Open, In Progress, Blocked, or Completed (required)
+  - When set to "Completed", automatically sets `completed_at` timestamp
+  - Automatically unblocks any tasks that depend on this task
 - **Assigned To** - User assigned to task
 - **Column** - Which column to place the task in (new tasks only)
 - **Needs Review** - Whether task requires human review before completion
@@ -89,9 +92,9 @@ The **Review Queue** section only appears when a task has a review status set.
 - Review fields are only relevant once a task is being reviewed
 - Preserves review data when it exists
 
-### Status & Agent Tracking
+### Agent Tracking
 
-The **Status & Agent Tracking** section is special - it only appears when a task has been interacted with by an AI agent.
+The **Agent Tracking** section is special - it only appears when a task has been interacted with by an AI agent.
 
 ### When It Appears
 
@@ -105,8 +108,7 @@ For human-created tasks that haven't been completed by an agent, this section is
 
 ### Fields in This Section
 
-When visible, the Status & Agent Tracking section includes:
-- **Status** - Open, In Progress, Completed, or Blocked
+When visible, the Agent Tracking section includes:
 - **Created By Agent** - Name of the AI agent that created the task
 - **Completed By Agent** - Name of the AI agent that completed the task
 - **Completion Summary** - Summary provided by the agent upon completion
@@ -125,7 +127,7 @@ When visible, the Status & Agent Tracking section includes:
 
 **Example scenarios:**
 
-1. **Human creates task** → Status & Agent Tracking section is hidden
+1. **Human creates task** → Agent Tracking section is hidden
 2. **Agent creates task via API** → Section visible (shows `created_by_agent`)
 3. **Human edits agent-created task** → Section remains visible
 4. **Agent completes human-created task** → Section becomes visible (shows `completed_by_agent`)

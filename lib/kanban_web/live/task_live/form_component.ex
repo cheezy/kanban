@@ -297,6 +297,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
         _ -> task_params
       end
 
+    # Auto-populate completed_at when status is set to completed
+    task_params = maybe_add_completed_at(task_params)
+
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
         notify_parent({:saved, task})
@@ -361,6 +364,18 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       task_params
       |> Map.put_new("reviewed_at", DateTime.utc_now() |> DateTime.truncate(:second))
       |> Map.put_new("reviewed_by_id", current_user.id)
+    else
+      task_params
+    end
+  end
+
+  defp maybe_add_completed_at(task_params) do
+    status = task_params["status"]
+
+    # If status is being set to completed and completed_at is not already set,
+    # set it automatically
+    if status == "completed" || status == :completed do
+      Map.put_new(task_params, "completed_at", DateTime.utc_now() |> DateTime.truncate(:second))
     else
       task_params
     end

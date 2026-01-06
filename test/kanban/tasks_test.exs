@@ -3157,6 +3157,31 @@ defmodule Kanban.TasksTest do
       final_task = Tasks.get_task!(blocked_task.id)
       assert final_task.status == :blocked
     end
+
+    test "unblocks dependent task when status updated to completed via update_task", %{
+      ready_column: ready_column
+    } do
+      {:ok, dep_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Dependency Task",
+          "status" => "open"
+        })
+
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "dependencies" => [dep_task.identifier]
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      # Update the dependency task's status to completed (simulating UI update)
+      {:ok, _completed_dep} = Tasks.update_task(dep_task, %{status: :completed, completed_at: DateTime.utc_now()})
+
+      # Dependent task should now be unblocked
+      final_task = Tasks.get_task!(blocked_task.id)
+      assert final_task.status == :open
+    end
   end
 
   describe "get_dependency_tree/1" do

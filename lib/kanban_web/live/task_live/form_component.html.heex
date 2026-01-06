@@ -85,6 +85,19 @@
     />
 
     <.input
+      field={f[:status]}
+      type="select"
+      label={gettext("Status")}
+      options={[
+        {gettext("Open"), :open},
+        {gettext("In Progress"), :in_progress},
+        {gettext("Blocked"), :blocked},
+        {gettext("Completed"), :completed}
+      ]}
+      required
+    />
+
+    <.input
       field={f[:assigned_to_id]}
       type="select"
       label={gettext("Assigned To")}
