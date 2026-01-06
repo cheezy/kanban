@@ -770,22 +770,11 @@
     </div>
 
     <%= if Ecto.Changeset.get_field(@form.source, :created_by_agent) || Ecto.Changeset.get_field(@form.source, :completed_by_agent) do %>
-      <%!-- Status & Agent Tracking Section --%>
+      <%!-- Agent Tracking Section --%>
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">
-          {gettext("Status & Agent Tracking")}
+          {gettext("Agent Tracking")}
         </h3>
-        <.input
-          field={f[:status]}
-          type="select"
-          label={gettext("Status")}
-          options={[
-            {gettext("Open"), :open},
-            {gettext("In Progress"), :in_progress},
-            {gettext("Completed"), :completed},
-            {gettext("Blocked"), :blocked}
-          ]}
-        />
         <.input field={f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
         <.input field={f[:completed_by_agent]} type="text" label={gettext("Completed By Agent")} />
         <.input

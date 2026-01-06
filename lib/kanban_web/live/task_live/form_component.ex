@@ -444,9 +444,11 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
         Map.put(params, field_name, list)
 
-      # If it's nil or missing, set to empty list
+      # If it's nil or missing, don't add it to params
+      # Schema defaults will handle nil values appropriately
+      # Adding empty arrays here would incorrectly trigger change detection
       _ ->
-        Map.put(params, field_name, [])
+        params
     end
   end
 
@@ -469,14 +471,14 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp normalize_map_with_arrays(params, field_name, array_keys) do
     case Map.get(params, field_name) do
-      nil ->
-        default_map = Map.new(array_keys, fn key -> {key, []} end)
-        Map.put(params, field_name, default_map)
-
+      # If field is present and is a map, normalize its array fields
       field_map when is_map(field_map) ->
         normalized_map = normalize_array_fields(field_map, array_keys)
         Map.put(params, field_name, normalized_map)
 
+      # If it's nil or missing, don't add it to params
+      # Schema defaults will handle nil values appropriately
+      # Adding default maps here would incorrectly trigger change detection
       _ ->
         params
     end
