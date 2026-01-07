@@ -284,7 +284,18 @@ defmodule KanbanWeb.API.TaskController do
     agent_capabilities = api_token.agent_capabilities || []
     task_identifier = params["identifier"]
     agent_name = params["agent_name"] || "Unknown"
+    before_doing_result = params["before_doing_result"]
 
+    case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing", blocking: true) do
+      :ok ->
+        proceed_with_claim(conn, agent_capabilities, user, board, task_identifier, agent_name, api_token)
+
+      {:error, reason} ->
+        handle_hook_validation_error(conn, "before_doing", reason)
+    end
+  end
+
+  defp proceed_with_claim(conn, agent_capabilities, user, board, task_identifier, agent_name, api_token) do
     case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier, agent_name) do
       {:ok, task, hook_info} ->
         emit_telemetry(conn, :task_claimed, %{
@@ -313,50 +324,61 @@ defmodule KanbanWeb.API.TaskController do
     api_token = conn.assigns.api_token
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
     agent_name = params["agent_name"] || "Unknown"
+    after_doing_result = params["after_doing_result"]
 
     if task.column.board_id != board.id do
       conn
       |> put_status(:forbidden)
       |> json(%{error: "Task does not belong to this board"})
     else
-      params_with_agent = maybe_add_completed_by_agent(params, api_token)
+      case Kanban.Hooks.Validator.validate_hook_execution(after_doing_result, "after_doing", blocking: true) do
+        :ok ->
+          proceed_with_complete(conn, task, user, params, api_token, agent_name)
 
-      case Tasks.complete_task(task, user, params_with_agent, agent_name) do
-        {:ok, task, hooks} ->
-          emit_telemetry(conn, :task_completed, %{
-            task_id: task.id,
-            time_spent_minutes: task.time_spent_minutes
-          })
-
-          render(conn, :show, task: task, hooks: hooks)
-
-        {:error, :invalid_status} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "Task must be in progress or blocked to complete"},
-              :invalid_status_for_complete
-            )
-
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
-
-        {:error, :not_authorized} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "You can only complete tasks that you are assigned to"},
-              :not_authorized_to_complete
-            )
-
-          conn
-          |> put_status(:forbidden)
-          |> json(error_response)
-
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
+        {:error, reason} ->
+          handle_hook_validation_error(conn, "after_doing", reason)
       end
+    end
+  end
+
+  defp proceed_with_complete(conn, task, user, params, api_token, agent_name) do
+    params_with_agent = maybe_add_completed_by_agent(params, api_token)
+
+    case Tasks.complete_task(task, user, params_with_agent, agent_name) do
+      {:ok, task, hooks} ->
+        emit_telemetry(conn, :task_completed, %{
+          task_id: task.id,
+          time_spent_minutes: task.time_spent_minutes
+        })
+
+        render(conn, :show, task: task, hooks: hooks)
+
+      {:error, :invalid_status} ->
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{error: "Task must be in progress or blocked to complete"},
+            :invalid_status_for_complete
+          )
+
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(error_response)
+
+      {:error, :not_authorized} ->
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{error: "You can only complete tasks that you are assigned to"},
+            :not_authorized_to_complete
+          )
+
+        conn
+        |> put_status(:forbidden)
+        |> json(error_response)
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
     end
   end
 
@@ -815,5 +837,27 @@ defmodule KanbanWeb.API.TaskController do
       error: "WIP limit reached while creating goal at index #{index}",
       index: index
     })
+  end
+
+  defp handle_hook_validation_error(conn, hook_name, reason) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error: reason,
+          hook: hook_name,
+          required_format: %{
+            "#{hook_name}_result" => %{
+              exit_code: 0,
+              output: "Hook execution output",
+              duration_ms: 1234
+            }
+          }
+        },
+        :hook_validation_failed
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
   end
 end

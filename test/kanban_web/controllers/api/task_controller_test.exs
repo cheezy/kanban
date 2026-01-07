@@ -28,6 +28,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
     %{conn: conn, user: user, board: board, column: column, token: plain_token}
   end
 
+  defp valid_before_doing_result do
+    %{
+      "exit_code" => 0,
+      "output" => "Starting task",
+      "duration_ms" => 100
+    }
+  end
+
+  defp valid_after_doing_result do
+    %{
+      "exit_code" => 0,
+      "output" => "All tests passed",
+      "duration_ms" => 5000
+    }
+  end
+
   describe "POST /api/tasks" do
     test "creates task with all fields", %{conn: conn, column: column} do
       task_params = %{
@@ -838,7 +854,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 200)["data"]
 
       assert response["id"] == task.id
@@ -850,7 +866,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns 409 when no tasks available", %{conn: conn} do
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       assert json_response(conn, 409)["error"] =~ "No tasks available"
     end
 
@@ -880,10 +896,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
         |> put_req_header("accept", "application/json")
         |> put_req_header("authorization", "Bearer #{plain_token2}")
 
-      conn1_response = post(conn, ~p"/api/tasks/claim")
+      conn1_response = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       assert json_response(conn1_response, 200)
 
-      conn2_response = post(conn2, ~p"/api/tasks/claim")
+      conn2_response = post(conn2, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       assert json_response(conn2_response, 409)
     end
 
@@ -896,7 +912,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       assert json_response(conn, 409)["error"] =~ "No tasks available"
     end
 
@@ -904,7 +920,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
 
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       assert json_response(conn, 401)
     end
 
@@ -928,7 +944,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => task2.identifier})
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => task2.identifier, "before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 200)["data"]
 
       assert response["id"] == task2.id
@@ -958,7 +974,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => blocked_task.identifier})
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => blocked_task.identifier, "before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 409)
 
       assert response["error"] =~ blocked_task.identifier
@@ -966,7 +982,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns error when claiming non-existent task", %{conn: conn} do
-      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => "W99999"})
+      conn = post(conn, ~p"/api/tasks/claim", %{"identifier" => "W99999", "before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 409)
 
       assert response["error"] =~ "W99999"
@@ -1112,7 +1128,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1140,7 +1157,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "small",
         "actual_files_changed" => "1",
-        "time_spent_minutes" => 10
+        "time_spent_minutes" => 10,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.identifier}/complete", completion_params)
@@ -1154,7 +1172,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
       completion_params = %{
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1172,7 +1191,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "invalid",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1201,7 +1221,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1229,7 +1250,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{open_task.id}/complete", completion_params)
@@ -1261,7 +1283,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1292,7 +1315,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }),
         "actual_complexity" => "medium",
         "actual_files_changed" => "2",
-        "time_spent_minutes" => 15
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result()
       }
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
@@ -1405,7 +1429,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 200)["data"]
 
       assert response["title"] == "Available Task for Claim"
@@ -1495,7 +1519,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => user.id
         })
 
-      conn = post(conn, ~p"/api/tasks/claim")
+      conn = post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
       response = json_response(conn, 200)["data"]
 
       assert response["title"] == "Safe Task for Claim"

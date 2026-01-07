@@ -96,6 +96,34 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # Hook execution errors
+  def get_docs(:hook_validation_failed, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md",
+      related_docs: [
+        "#{@docs_base_url}/AI-WORKFLOW.md#hook-execution"
+      ],
+      common_causes: [
+        "Hook result not provided in request (required parameter missing)",
+        "Hook result missing required fields (exit_code, output, duration_ms)",
+        "Blocking hook failed with non-zero exit code",
+        "Hook result is not a properly formatted map"
+      ],
+      correct_format: %{
+        before_doing_result: %{
+          exit_code: 0,
+          output: "Hook execution output",
+          duration_ms: 1234
+        },
+        after_doing_result: %{
+          exit_code: 0,
+          output: "All tests passed\nmix format --check-formatted\nmix credo --strict",
+          duration_ms: 45_678
+        }
+      }
+    }
+  end
+
   # Review workflow errors
   def get_docs(:invalid_column_for_review, _opts) do
     %{
