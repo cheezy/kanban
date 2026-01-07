@@ -2826,6 +2826,38 @@ defmodule Kanban.TasksTest do
 
       assert result == {:error, :no_tasks_available}
     end
+
+    test "cannot claim a goal by identifier", %{ready_column: column, board: board, user: user} do
+      {:ok, goal} =
+        Tasks.create_task(column, %{
+          "title" => "Test Goal",
+          "type" => "goal",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.claim_next_task([], user, board.id, goal.identifier)
+
+      assert result == {:error, :no_tasks_available}
+    end
+
+    test "cannot claim a goal without specifying identifier", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, _goal} =
+        Tasks.create_task(column, %{
+          "title" => "Test Goal",
+          "type" => "goal",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.claim_next_task([], user, board.id)
+
+      assert result == {:error, :no_tasks_available}
+    end
   end
 
   describe "unclaim_task/3" do
