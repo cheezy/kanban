@@ -74,6 +74,34 @@ defmodule Kanban.BoardsTest do
         Boards.get_board!(board.id, user2)
       end
     end
+
+    test "accepts string ID and converts to integer" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      # Pass ID as string
+      fetched_board = Integer.to_string(board.id) |> Boards.get_board!(user)
+
+      assert fetched_board.id == board.id
+      assert fetched_board.name == board.name
+    end
+
+    test "raises when string ID is not a valid integer" do
+      user = user_fixture()
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Boards.get_board!("not_a_number", user)
+      end
+    end
+
+    test "raises when string ID has trailing characters" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Boards.get_board!("#{board.id}abc", user)
+      end
+    end
   end
 
   describe "create_board/2" do

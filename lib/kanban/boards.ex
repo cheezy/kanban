@@ -65,11 +65,18 @@ defmodule Kanban.Boards do
       ** (Ecto.NoResultsError)
 
   """
-  def get_board!(id, user) do
+  def get_board!(id, user) when is_integer(id) do
     Board
     |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
     |> where([b, bu], b.id == ^id and bu.user_id == ^user.id)
     |> Repo.one!()
+  end
+
+  def get_board!(id, user) when is_binary(id) do
+    case Integer.parse(id) do
+      {int_id, ""} -> get_board!(int_id, user)
+      _ -> raise Ecto.NoResultsError, queryable: Board
+    end
   end
 
   @doc """
