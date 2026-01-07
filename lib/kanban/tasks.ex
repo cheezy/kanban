@@ -749,7 +749,9 @@ defmodule Kanban.Tasks do
     if task.parent_id do
       parent = Repo.get!(Task, task.parent_id)
 
-      if parent.column_id != new_column_id do
+      should_move = should_move_parent_goal?(parent, task.id, new_column_id)
+
+      if should_move && parent.column_id != new_column_id do
         new_column = Repo.get!(Column, new_column_id)
         next_position = get_next_position(new_column)
 
@@ -772,6 +774,41 @@ defmodule Kanban.Tasks do
     end
 
     :ok
+  end
+
+  defp should_move_parent_goal?(parent, moving_task_id, new_column_id) do
+    # Get the parent's column and board
+    parent_column = Repo.get!(Column, parent.column_id)
+
+    # Get all columns for this board, ordered by position
+    all_columns =
+      from(c in Column,
+        where: c.board_id == ^parent_column.board_id,
+        order_by: [asc: c.position]
+      )
+      |> Repo.all()
+
+    column_positions = Map.new(all_columns, fn col -> {col.id, col.position} end)
+    new_column_position = column_positions[new_column_id]
+
+    # Get all other children of this parent (excluding the moving task)
+    other_children_columns =
+      from(t in Task,
+        where: t.parent_id == ^parent.id and t.id != ^moving_task_id,
+        select: t.column_id
+      )
+      |> Repo.all()
+      |> Enum.map(fn col_id -> column_positions[col_id] end)
+      |> Enum.reject(&is_nil/1)
+
+    # If there are no other children, move the parent
+    if Enum.empty?(other_children_columns) do
+      true
+    else
+      # Only move if no other children are in columns to the left of the new column
+      leftmost_other_child_position = Enum.min(other_children_columns)
+      new_column_position <= leftmost_other_child_position
+    end
   end
 
   defp reorder_after_deletion(deleted_task) do
