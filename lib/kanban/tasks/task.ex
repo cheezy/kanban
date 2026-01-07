@@ -79,6 +79,9 @@ defmodule Kanban.Tasks.Task do
     field :review_notes, :string
     field :reviewed_at, :utc_datetime
 
+    # Archive tracking
+    field :archived_at, :utc_datetime
+
     # Hierarchy
     belongs_to :parent, __MODULE__, foreign_key: :parent_id
     has_many :children, __MODULE__, foreign_key: :parent_id
@@ -161,7 +164,9 @@ defmodule Kanban.Tasks.Task do
       :review_status,
       :review_notes,
       :reviewed_by_id,
-      :reviewed_at
+      :reviewed_at,
+      # Archive tracking
+      :archived_at
     ])
     |> validate_embed_type(:key_files, attrs)
     |> validate_embed_type(:verification_steps, attrs)
