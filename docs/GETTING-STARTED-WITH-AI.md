@@ -398,19 +398,39 @@ Once tasks are created (either manually or by an AI agent), humans should review
 **From the agent's perspective:**
 
 ```bash
-# Agent calls the claim endpoint
+# CRITICAL: Execute before_doing hook FIRST and capture result
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c 'git pull origin main' 2>&1)
+EXIT_CODE=$?
+DURATION=$(($(date +%s%3N) - START_TIME))
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "before_doing hook failed - cannot claim task"
+  exit 1
+fi
+
+# Agent calls the claim endpoint WITH hook result (required)
 curl -X POST https://your-stride-instance.com/api/tasks/claim \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN"
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"agent_name\": \"Claude Sonnet 4.5\",
+    \"before_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }"
 ```
 
 **What happens:**
-1. ✅ Stride selects the highest priority task that matches:
+1. ⚡ **Agent executes `before_doing` hook FIRST** (pulls latest code, etc.) and captures result
+2. ✅ Stride validates hook was executed successfully (exit_code 0)
+3. ✅ Stride selects the highest priority task that matches:
    - Agent's capabilities
    - All dependencies are completed
    - No file conflicts with tasks currently in Doing or Review
-2. 📝 Task moves to **Doing** column
-3. 🔧 Agent receives `before_doing` hook metadata
-4. ⚡ Agent executes `before_doing` hook (pulls latest code, etc.)
+4. 📝 Task moves to **Doing** column
 5. 💻 Agent begins work
 
 **Important Selection Criteria:**
@@ -435,17 +455,40 @@ This automatic conflict prevention ensures agents don't create competing changes
 **From the agent's perspective:**
 
 ```bash
-# Agent completes the task
+# CRITICAL: Execute after_doing hook FIRST and capture result
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 120 bash -c 'mix test' 2>&1)
+EXIT_CODE=$?
+DURATION=$(($(date +%s%3N) - START_TIME))
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "after_doing hook failed - tests did not pass, cannot complete task"
+  exit 1
+fi
+
+# Agent completes the task WITH hook result (required)
 curl -X PATCH https://your-stride-instance.com/api/tasks/123/complete \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN"
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"agent_name\": \"Claude Sonnet 4.5\",
+    \"time_spent_minutes\": 45,
+    \"completion_notes\": \"All tests passing\",
+    \"after_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }"
 ```
 
 **What happens:**
-1. 🔧 Agent receives hook metadata: `after_doing`, `before_review`, and conditionally `after_review`
-2. ⚡ Agent executes `after_doing` hook (runs tests - **must pass**)
-3. ⚡ Agent executes `before_review` hook (creates PR)
-4. 📋 **If `needs_review=true`**: Task moves to **Review** column → STOP and wait for human
-5. 📋 **If `needs_review=false`**: Agent executes `after_review` hook, task moves to **Done** → Agent claims next task
+1. ⚡ **Agent executes `after_doing` hook FIRST** (runs tests - **must pass**) and captures result
+2. ✅ Stride validates hook was executed successfully (exit_code 0)
+3. 🔧 Agent receives remaining hook metadata: `before_review`, and conditionally `after_review`
+4. ⚡ Agent executes `before_review` hook (creates PR)
+5. 📋 **If `needs_review=true`**: Task moves to **Review** column → STOP and wait for human
+6. 📋 **If `needs_review=false`**: Agent executes `after_review` hook, task moves to **Done** → Agent claims next task
 
 ### 5. Human Reviews Work (For Tasks Requiring Review)
 
@@ -504,16 +547,17 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/mark_reviewed \
 **The ideal agent workflow:**
 
 ```
-1. Claim task from Ready
-2. Execute before_doing hook
+1. Execute before_doing hook (capture exit_code, output, duration_ms)
+2. Claim task from Ready with before_doing_result
 3. Do the work
-4. Execute after_doing hook (tests must pass)
-5. Execute before_review hook (create PR)
-6. IF needs_review = false:
+4. Execute after_doing hook (tests must pass - capture exit_code, output, duration_ms)
+5. Complete task with after_doing_result
+6. Execute before_review hook (create PR)
+7. IF needs_review = false:
    → Execute after_review hook
    → Task to Done
    → GOTO step 1 (claim next task)
-7. IF needs_review = true:
+8. IF needs_review = true:
    → Task to Review
    → STOP and wait for human
 ```
@@ -558,9 +602,12 @@ See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
 - ✅ Document non-obvious decisions
 
 **Hook Execution:**
+- ✅ Execute hooks BEFORE calling API endpoints (mandatory)
+- ✅ Include hook results in API requests (exit_code, output, duration_ms)
 - ✅ Handle hook failures gracefully
 - ✅ Read hook output for error messages
-- ✅ Don't proceed if `after_doing` fails
+- ✅ Don't call claim endpoint if `before_doing` fails
+- ✅ Don't call complete endpoint if `after_doing` fails
 
 **Continuous Work:**
 - ✅ Keep claiming tasks until you hit `needs_review=true`

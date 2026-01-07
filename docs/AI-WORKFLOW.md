@@ -72,21 +72,37 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 ### AI Workflow Integration
 
+⚠️ **CRITICAL: Mandatory Hook Validation**
+
+Hook execution is enforced at the API level. You MUST execute hooks and include the execution results in your API requests. The server will reject requests without valid hook results.
+
+**Required Hook Result Format:**
+```json
+{
+  "exit_code": 0,
+  "output": "Hook execution output (stdout/stderr combined)",
+  "duration_ms": 1234
+}
+```
+
 ⚠️ **CRITICAL: Hook Execution Order**
 
-Hooks MUST be executed in the exact order specified below. The most common mistake is calling `/complete` before executing `after_doing`, which breaks the workflow.
+Hooks MUST be executed in the exact order specified below. The API validates hook execution results and rejects requests that don't include them.
 
 **Complete AI Workflow with Hooks (Claim → Execute → Complete → Review):**
 
 1. **Discover tasks** - Call [GET /api/tasks/next](../api/get_tasks_next.md) to find available tasks
 
-2. **Claim a task** - Call [POST /api/tasks/claim](../api/post_tasks_claim.md)
-   - Receives `before_doing` hook metadata
-   - Task moves to Doing column
-
-3. **Execute `before_doing` hook** (blocking, 60s timeout)
+2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout)
    - Example: Pull latest code, setup workspace
-   - **Execute this BEFORE starting work**
+   - Capture exit_code, output, and duration_ms
+   - **Hook must succeed (exit_code 0) to proceed**
+
+3. **Claim a task** - Call [POST /api/tasks/claim](../api/post_tasks_claim.md)
+   - **REQUIRED:** Include `before_doing_result` parameter with hook execution result
+   - API validates hook was executed and succeeded
+   - Receives `before_doing` hook metadata (for reference)
+   - Task moves to Doing column
 
 4. **Work on the task** - Implement changes, write code, run tests
    - Do the actual implementation work
@@ -94,14 +110,16 @@ Hooks MUST be executed in the exact order specified below. The most common mista
 
 5. **⚠️ CRITICAL: Execute `after_doing` hook FIRST** (blocking, 120s timeout)
    - Example: Run tests, build project, lint code
-   - **YOU MUST EXECUTE THIS BEFORE CALLING `/complete`**
+   - Capture exit_code, output, and duration_ms
+   - **Hook must succeed (exit_code 0) to proceed**
    - If this fails, DO NOT call `/complete` - fix the issues first
    - This validates your work is ready for completion
 
 6. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
+   - **REQUIRED:** Include `after_doing_result` parameter with hook execution result
    - **Only call this AFTER `after_doing` hook succeeds**
+   - API validates hook was executed and succeeded
    - Receives `after_doing`, `before_review`, and optionally `after_review` hooks in response
-   - The `after_doing` hook in the response should already be completed (see step 5)
    - Task moves to Review column (or Done if `needs_review=false`)
 
 7. **Execute `before_review` hook** (non-blocking, 60s timeout)
@@ -158,26 +176,14 @@ The `after_review` hook execution depends on whether the task requires human rev
 
 ---
 
-**⚠️ COMMON MISTAKE TO AVOID:**
-
-**❌ WRONG ORDER:**
+**✅ CORRECT WORKFLOW:**
 ```
-1. Claim task → receive before_doing hook
-2. Execute before_doing hook
+1. Execute before_doing hook ← FIRST! Capture exit_code, output, duration_ms
+2. Claim task WITH before_doing_result parameter ← API validates hook succeeded
 3. Do work
-4. Call /complete endpoint ← TOO EARLY!
-5. Receive after_doing hook
-6. Try to execute after_doing hook ← Tests fail, but task already completed!
-```
-
-**✅ CORRECT ORDER:**
-```
-1. Claim task → receive before_doing hook
-2. Execute before_doing hook
-3. Do work
-4. Execute after_doing hook (tests, format, lint) ← DO THIS FIRST!
-5. Call /complete endpoint ← Only after step 4 succeeds
-6. Receive after_doing, before_review, after_review hooks
+4. Execute after_doing hook ← FIRST! Capture exit_code, output, duration_ms
+5. Call /complete WITH after_doing_result parameter ← API validates hook succeeded
+6. Receive before_review, after_review hooks
 7. Execute before_review hook
 8. IF needs_review=false: Execute after_review hook immediately
    IF needs_review=true: STOP and wait for human approval
@@ -186,7 +192,11 @@ The `after_review` hook execution depends on whether the task requires human rev
 11. Execute after_review hook (after approval received)
 ```
 
-The `/complete` endpoint returns the `after_doing` hook in its response, but you should have **already executed it** before calling `/complete`. Think of the response as a confirmation, not an instruction.
+**Important Requirements:**
+- `before_doing_result` is a **REQUIRED** parameter for POST /api/tasks/claim
+- `after_doing_result` is a **REQUIRED** parameter for PATCH /api/tasks/:id/complete
+- API validates hook was executed and succeeded (exit_code 0)
+- API returns 422 error if hook result is missing or hook failed
 
 **⚠️ WRONG: Premature after_review Execution**
 ```
@@ -267,6 +277,8 @@ See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
 ### Task Completion
 
+**⚠️ CRITICAL:** You MUST execute the `after_doing` hook BEFORE calling the complete endpoint and include the result in your request.
+
 When completing a task, use [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md):
 
 ```json
@@ -274,19 +286,27 @@ PATCH /api/tasks/:id/complete
 {
   "agent_name": "Claude Sonnet 4.5",
   "time_spent_minutes": 45,
-  "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing."
+  "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing.",
+  "after_doing_result": {
+    "exit_code": 0,
+    "output": "Running tests...\n230 tests, 0 failures\nmix format --check-formatted\nAll files formatted correctly",
+    "duration_ms": 45678
+  }
 }
 ```
 
 **What happens:**
-1. Task moves to Review column (or Done if `needs_review=false`)
-2. Server returns hook metadata for:
-   - `after_doing` (blocking) - Run tests, build
+1. API validates that `after_doing_result` is present and hook succeeded (exit_code 0)
+2. Task moves to Review column (or Done if `needs_review=false`)
+3. Server returns hook metadata for:
+   - `after_doing` (blocking) - Already executed (for reference)
    - `before_review` (non-blocking) - Create PR
    - `after_review` (non-blocking, only if `needs_review=false`)
-3. Agent executes hooks in order
-4. If `needs_review=true`, wait for human review
-5. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize
+4. Agent executes remaining hooks in order
+5. If `needs_review=true`, wait for human review
+6. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize
+
+**Important:** If the `after_doing` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hook and try again.
 
 See [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) for complete documentation.
 

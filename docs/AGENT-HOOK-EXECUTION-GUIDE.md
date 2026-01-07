@@ -101,62 +101,78 @@ Stride defines exactly four hook points in the task lifecycle:
 
 ## Hook Execution Workflow
 
+⚠️ **CRITICAL: Hook validation is mandatory!** You MUST execute hooks BEFORE calling API endpoints and include the execution results.
+
 ### Example: Claiming and Completing a Task
 
 ```bash
-# 1. Claim a task
+# 1. Execute before_doing hook FIRST
+# Read hook command from .stride.md
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+# Check if hook succeeded
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "Hook execution failed - cannot claim task"
+  exit 1
+fi
+
+# 2. Claim task with hook result
 RESPONSE=$(curl -s -X POST \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"agent_name": "Claude Sonnet 4.5"}' \
+  -d "{
+    \"agent_name\": \"Claude Sonnet 4.5\",
+    \"before_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }" \
   $STRIDE_API_URL/api/tasks/claim)
 
-# 2. Extract task details and hook metadata
+# 3. Extract task details
 TASK_ID=$(echo $RESPONSE | jq -r '.data.id')
 TASK_IDENTIFIER=$(echo $RESPONSE | jq -r '.data.identifier')
 TASK_TITLE=$(echo $RESPONSE | jq -r '.data.title')
 
-# 3. Check if before_doing hook is provided
-HOOK=$(echo $RESPONSE | jq -r '.hook')
-if [ "$HOOK" != "null" ]; then
-  HOOK_NAME=$(echo $HOOK | jq -r '.name')
-  HOOK_TIMEOUT=$(echo $HOOK | jq -r '.timeout')
-
-  # 4. Set environment variables from hook metadata
-  export TASK_ID=$TASK_ID
-  export TASK_IDENTIFIER=$TASK_IDENTIFIER
-  export TASK_TITLE="$TASK_TITLE"
-  # ... set other variables from hook.env
-
-  # 5. Execute hook from .stride.md
-  timeout $((HOOK_TIMEOUT/1000)) bash -c '
-    git pull origin main
-  '
-
-  # 6. Check hook execution result
-  if [ $? -ne 0 ]; then
-    echo "Hook execution failed"
-    exit 1
-  fi
-fi
-
-# 7. Do your work on the task
+# 4. Do your work on the task
 # ... implement changes ...
 
-# 8. Complete the task
+# 5. Execute after_doing hook FIRST (before completing)
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+# Check if tests passed
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "Tests failed - cannot complete task"
+  exit 1
+fi
+
+# 6. Complete the task with hook result
 COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "Claude Sonnet 4.5",
-    "time_spent_minutes": 45,
-    "completion_notes": "All tests passing"
-  }' \
+  -d "{
+    \"agent_name\": \"Claude Sonnet 4.5\",
+    \"time_spent_minutes\": 45,
+    \"completion_notes\": \"All tests passing\",
+    \"after_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }" \
   $STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete)
 
-# 9. Execute hooks returned from completion
-HOOKS=$(echo $COMPLETE_RESPONSE | jq -r '.hooks[]')
-# Execute after_doing (blocking), before_review (non-blocking), after_review (if provided)
+# 7. Execute remaining hooks (before_review, after_review if needs_review=false)
+# These are returned in the response for reference
 ```
 
 ## Environment Variables
@@ -575,19 +591,33 @@ execute_hook() {
   fi
 }
 
-# 1. Claim task
+# 1. Execute before_doing hook FIRST
+echo "Executing before_doing hook..."
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Hook execution failed - cannot claim task"
+  exit 1
+fi
+
+# 2. Claim task with hook result
 echo "Claiming next task..."
 CLAIM_RESPONSE=$(curl -s -X POST \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"agent_name\": \"$AGENT_NAME\"}" \
+  -d "{
+    \"agent_name\": \"$AGENT_NAME\",
+    \"before_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }" \
   "$STRIDE_API_URL/api/tasks/claim")
-
-# 2. Execute before_doing hook
-HOOK=$(echo "$CLAIM_RESPONSE" | jq -r '.hook')
-if [ "$HOOK" != "null" ]; then
-  execute_hook "$HOOK"
-fi
 
 # 3. Get task identifier
 TASK_IDENTIFIER=$(echo "$CLAIM_RESPONSE" | jq -r '.data.identifier')
@@ -596,7 +626,20 @@ echo "Working on task: $TASK_IDENTIFIER"
 # 4. Do the work
 # ... your task implementation here ...
 
-# 5. Complete the task
+# 5. Execute after_doing hook FIRST
+echo "Executing after_doing hook..."
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Tests failed - cannot complete task"
+  exit 1
+fi
+
+# 6. Complete the task with hook result
 echo "Completing task..."
 COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
@@ -604,17 +647,19 @@ COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -d "{
     \"agent_name\": \"$AGENT_NAME\",
     \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing\"
+    \"completion_notes\": \"All tests passing\",
+    \"after_doing_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
   }" \
   "$STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete")
 
-# 6. Execute hooks from completion response
-HOOKS=$(echo "$COMPLETE_RESPONSE" | jq -c '.hooks[]')
-while IFS= read -r hook; do
-  execute_hook "$hook"
-done <<< "$HOOKS"
+# 7. Execute remaining hooks (before_review, after_review if needs_review=false)
+# Note: Hooks are returned in response but before_doing and after_doing already executed
 
-# 7. Check if task needs review
+# 8. Check if task needs review
 NEEDS_REVIEW=$(echo "$COMPLETE_RESPONSE" | jq -r '.data.needs_review')
 if [ "$NEEDS_REVIEW" = "false" ]; then
   echo "✓ Task completed and moved to Done"
