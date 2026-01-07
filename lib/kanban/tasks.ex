@@ -1023,9 +1023,12 @@ defmodule Kanban.Tasks do
   defp get_task_type_prefix(:defect), do: "D"
   defp get_task_type_prefix(:goal), do: "G"
 
-  defp get_max_identifier_number(task_type, prefix) do
+  defp get_max_identifier_number(_task_type, prefix) do
+    # Query by prefix pattern instead of type to handle cases where
+    # a task's type was changed but identifier remained the same
+    # (e.g., W28 that was changed from work to defect)
     Task
-    |> where([t], t.type == ^task_type)
+    |> where([t], like(t.identifier, ^"#{prefix}%"))
     |> select([t], t.identifier)
     |> Repo.all()
     |> Enum.map(&extract_identifier_number(&1, prefix))

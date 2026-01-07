@@ -1689,6 +1689,57 @@ defmodule Kanban.TasksTest do
       assert changeset1.valid?
       assert changeset2.valid?
     end
+
+    test "handles tasks with mismatched type and identifier prefix" do
+      # Regression test: When a task's type is changed (e.g., work -> defect),
+      # the identifier remains unchanged. New task creation should skip
+      # identifiers that exist with mismatched prefixes.
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create a work task
+      {:ok, work_task} = Tasks.create_task(column, %{title: "Work Task", type: :work})
+      original_identifier = work_task.identifier
+
+      # Manually change its type to defect (simulating a user changing the type)
+      # This leaves the work identifier on a defect task, which is a mismatch
+      {:ok, task_as_defect} = Tasks.update_task(work_task, %{type: :defect})
+
+      # Verify the identifier didn't change when type changed
+      assert task_as_defect.identifier == original_identifier
+      assert task_as_defect.type == :defect
+      assert original_identifier =~ ~r/^W\d+$/
+
+      # Create a goal with child tasks - this should generate identifiers
+      # that skip the mismatched identifier
+      goal_attrs = %{title: "Test Goal", type: :goal}
+      child_tasks = [%{title: "Child Task", type: :work}]
+
+      {:ok, %{goal: goal, child_tasks: [child_task]}} =
+        Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      # The goal should get an identifier
+      assert goal.identifier =~ ~r/^G\d+$/
+
+      # The child task should NOT reuse the identifier of the mismatched task
+      refute child_task.identifier == original_identifier
+      assert child_task.identifier =~ ~r/^W\d+$/
+
+      # Extract the numbers to verify the child task got a higher number
+      original_number =
+        original_identifier
+        |> String.replace("W", "")
+        |> String.to_integer()
+
+      child_number =
+        child_task.identifier
+        |> String.replace("W", "")
+        |> String.to_integer()
+
+      # The child task should have a higher number than the mismatched task
+      assert child_number > original_number
+    end
   end
 
   describe "Task.changeset/2 pitfalls and out_of_scope arrays" do
