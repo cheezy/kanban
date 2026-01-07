@@ -38,10 +38,10 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 1. Agent claims task from Ready column
 2. Execute `before_doing` hook (blocking, 60s)
 3. Agent completes work
-4. Agent calls `/api/tasks/:id/complete`
-5. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
-6. Execute `before_review` hook (non-blocking, 60s) - still runs for automation
-7. Execute `after_review` hook (non-blocking, 60s) - still runs for automation
+4. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
+5. Execute `before_review` hook (blocking, 60s) - still runs for automation
+6. Agent calls `/api/tasks/:id/complete`
+7. Execute `after_review` hook (blocking, 60s) - still runs for automation
 8. **Task moves directly to Done** - skips Review column
 9. **Agent IMMEDIATELY claims next task** - continue working
 
@@ -75,14 +75,14 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 1. Agent claims task from Ready column
 2. Execute `before_doing` hook (blocking, 60s)
 3. Agent completes work
-4. Agent calls `/api/tasks/:id/complete`
-5. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
-6. Execute `before_review` hook (non-blocking, 60s) - create PR, notify reviewers
+4. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
+5. Execute `before_review` hook (blocking, 60s) - create PR, notify reviewers
+6. Agent calls `/api/tasks/:id/complete`
 7. **Task moves to Review column**
 8. **Task waits for human review** - agent STOPS and does not claim next task
 9. Human reviews and sets `review_status` (approved/changes_requested/rejected)
-10. If approved: Agent calls `/api/tasks/:id/mark_reviewed`
-11. Execute `after_review` hook (non-blocking, 60s) - merge PR, deploy
+10. If approved: Execute `after_review` hook (blocking, 60s) - merge PR, deploy
+11. If approved: Agent calls `/api/tasks/:id/mark_reviewed`
 12. Task moves to Done
 13. If changes_requested: Task returns to Doing for agent to address feedback
 

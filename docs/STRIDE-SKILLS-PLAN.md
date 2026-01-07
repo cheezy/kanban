@@ -106,10 +106,12 @@ Calling PATCH /api/tasks/:id/complete before running after_doing causes:
 2. Read .stride.md after_doing section
 3. Execute after_doing hook (120s timeout, blocking)
 4. If hook fails: FIX ISSUES, do not proceed
-5. If hook succeeds: Call PATCH /api/tasks/:id/complete
-6. Execute before_review hook (60s, non-blocking)
-7. If needs_review=true: STOP and wait
-8. If needs_review=false: Execute after_review hook
+5. Read .stride.md before_review section
+6. Execute before_review hook (60s timeout, blocking)
+7. If hook fails: FIX ISSUES, do not proceed
+8. If both hooks succeed: Call PATCH /api/tasks/:id/complete with BOTH hook results
+9. If needs_review=true: STOP and wait
+10. If needs_review=false: Execute after_review hook (60s timeout, blocking)
 
 ## Review Decision Flowchart
 [Flowchart showing needs_review true/false paths]
@@ -336,10 +338,8 @@ The Stride API returns hook metadata including environment variables:
    - after_doing: 120s
    - before_review: 60s
    - after_review: 60s
-3. For blocking hooks (before_doing, after_doing):
-   - If exit code ≠ 0: STOP, fix issues, do not proceed
-4. For non-blocking hooks (before_review, after_review):
-   - Log errors but continue workflow
+3. All hooks are blocking (before_doing, after_doing, before_review, after_review):
+   - If exit code ≠ 0: STOP, fix issues, do not proceed with API calls
 ```
 
 ---

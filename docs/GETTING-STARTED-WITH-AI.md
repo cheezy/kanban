@@ -215,7 +215,7 @@ echo "All tests passed for $TASK_IDENTIFIER"
 
 #### before_review
 
-Executes when task enters review (non-blocking, 60s timeout).
+Executes before completing task (blocking, 60s timeout).
 
 ```bash
 echo "Creating PR for $TASK_IDENTIFIER"
@@ -226,7 +226,7 @@ This task was completed by an AI agent and is ready for human review."
 
 #### after_review
 
-Executes after review approval (non-blocking, 60s timeout).
+Executes after review approval (blocking, 60s timeout).
 
 ```bash
 echo "Task $TASK_IDENTIFIER approved and completed"

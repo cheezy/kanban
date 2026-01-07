@@ -41,7 +41,8 @@ defmodule Kanban.Hooks.ValidatorTest do
         "duration_ms" => 1000
       }
 
-      assert {:error, "test_hook hook result must include exit_code, output, and duration_ms fields"} =
+      assert {:error,
+              "test_hook hook result must include exit_code, output, and duration_ms fields"} =
                Validator.validate_hook_execution(result, "test_hook", blocking: true)
 
       # Missing output
@@ -50,7 +51,8 @@ defmodule Kanban.Hooks.ValidatorTest do
         "duration_ms" => 1000
       }
 
-      assert {:error, "test_hook hook result must include exit_code, output, and duration_ms fields"} =
+      assert {:error,
+              "test_hook hook result must include exit_code, output, and duration_ms fields"} =
                Validator.validate_hook_execution(result, "test_hook", blocking: true)
 
       # Missing duration_ms
@@ -59,13 +61,15 @@ defmodule Kanban.Hooks.ValidatorTest do
         "output" => "Success"
       }
 
-      assert {:error, "test_hook hook result must include exit_code, output, and duration_ms fields"} =
+      assert {:error,
+              "test_hook hook result must include exit_code, output, and duration_ms fields"} =
                Validator.validate_hook_execution(result, "test_hook", blocking: true)
 
       # All missing
       result = %{}
 
-      assert {:error, "test_hook hook result must include exit_code, output, and duration_ms fields"} =
+      assert {:error,
+              "test_hook hook result must include exit_code, output, and duration_ms fields"} =
                Validator.validate_hook_execution(result, "test_hook", blocking: true)
     end
 
@@ -76,7 +80,8 @@ defmodule Kanban.Hooks.ValidatorTest do
         "duration_ms" => 500
       }
 
-      assert {:error, "test_hook is a blocking hook and failed with exit code 1. Fix the issues and try again."} =
+      assert {:error,
+              "test_hook is a blocking hook and failed with exit code 1. Fix the issues and try again."} =
                Validator.validate_hook_execution(result, "test_hook", blocking: true)
 
       result = %{
@@ -145,10 +150,14 @@ defmodule Kanban.Hooks.ValidatorTest do
     end
 
     test "includes hook name in error messages" do
-      assert {:error, message} = Validator.validate_hook_execution(nil, "before_doing", blocking: true)
+      assert {:error, message} =
+               Validator.validate_hook_execution(nil, "before_doing", blocking: true)
+
       assert message =~ "before_doing"
 
-      assert {:error, message} = Validator.validate_hook_execution(nil, "after_doing", blocking: true)
+      assert {:error, message} =
+               Validator.validate_hook_execution(nil, "after_doing", blocking: true)
+
       assert message =~ "after_doing"
 
       result = %{"exit_code" => 1, "output" => "fail", "duration_ms" => 100}
@@ -177,7 +186,9 @@ defmodule Kanban.Hooks.ValidatorTest do
         "duration_ms" => 100
       }
 
-      assert {:error, message} = Validator.validate_hook_execution(result, "test_hook", blocking: true)
+      assert {:error, message} =
+               Validator.validate_hook_execution(result, "test_hook", blocking: true)
+
       assert message =~ "exit code -1"
 
       # Positive non-zero exit codes should fail

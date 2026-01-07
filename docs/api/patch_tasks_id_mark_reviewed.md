@@ -22,9 +22,31 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `id` | string | Yes | Task ID (numeric) or task identifier (e.g., "W21") |
 
-### Request Body
+### Request Body Parameters
 
-This endpoint does NOT accept a request body. The review decision must already be set on the task via the web UI by a human reviewer.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `after_review_result` | object | **Yes** | Result of executing the `after_review` hook. Must include `exit_code`, `output`, and `duration_ms`. |
+
+**IMPORTANT:** You must execute the `after_review` hook BEFORE calling this endpoint and include the execution result in your request.
+
+### Hook Result Format
+
+The `after_review_result` parameter must be an object with these fields:
+
+```json
+{
+  "exit_code": 0,
+  "output": "Hook execution output (stdout/stderr combined)",
+  "duration_ms": 1234
+}
+```
+
+- `exit_code`: Must be `0` for success. Non-zero exit codes will be rejected.
+- `output`: String containing the output from hook execution (e.g., deployment logs, notification confirmations)
+- `duration_ms`: Time taken to execute the hook in milliseconds
+
+**Note:** The review decision must already be set on the task via the web UI by a human reviewer.
 
 ## Response
 
@@ -72,7 +94,7 @@ The behavior depends on the review status:
       "HOOK_NAME": "after_review"
     },
     "timeout": 60000,
-    "blocking": false
+    "blocking": true
   }
 }
 ```
@@ -95,6 +117,33 @@ The behavior depends on the review status:
 ```
 
 ### Unprocessable Entity (422)
+
+Hook validation failed (missing or invalid `after_review_result`):
+
+```json
+{
+  "error": "after_review hook result is required",
+  "hook": "after_review",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md",
+  "required_format": {
+    "after_review_result": {
+      "exit_code": 0,
+      "output": "Hook execution output",
+      "duration_ms": 1234
+    }
+  }
+}
+```
+
+Or hook execution failed with non-zero exit code:
+
+```json
+{
+  "error": "after_review is a blocking hook and failed with exit code 1. Fix the issues and try again.",
+  "hook": "after_review",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md"
+}
+```
 
 Task is not in Review column:
 
@@ -122,86 +171,138 @@ Invalid review status:
 
 ## Workflow
 
+**CRITICAL: Hook execution is mandatory!** Follow this workflow:
+
 1. **Human reviewer reviews the task** via the web UI
    - They examine the work, test the changes, review code, etc.
    - They set the review status to: `approved`, `changes_requested`, or `rejected`
 
-2. **Agent calls this endpoint** to finalize the review
+2. **Execute the `after_review` hook FIRST** (blocking, 60s timeout)
+   - This hook typically handles deployment, notifications, or finalization
+   - Example: Deploy to production, notify stakeholders, update changelog
+   - Capture the exit code, output, and duration
+   - If hook fails (non-zero exit code), fix the issues before proceeding
 
-3. **If approved:**
+3. **Call the mark_reviewed endpoint** - Include the hook execution result
+   - Hook must have succeeded (exit code 0)
+   - Include `after_review_result` in request
+   - If hook failed, do NOT call the endpoint - fix the issues first
+
+4. **If approved:**
    - Task moves to Done column
    - Task status changes to `completed`
    - `completed_at` timestamp is set
    - Parent goal (if any) may also move to Done
    - Dependent tasks are unblocked
-   - Returns `after_review` hook metadata
 
-4. **If changes requested or rejected:**
+5. **If changes requested or rejected:**
    - Task moves back to Doing column
    - Task status changes back to `in_progress`
    - Task remains assigned to the same agent
-   - No hook is returned
-
-5. **Execute `after_review` hook** (if approved, non-blocking, 60s timeout)
-   - This hook runs after successful review
-   - Example: Deploy to production, notify stakeholders, update documentation
-   - Failures are logged but don't prevent task from being marked done
 
 ## Example Usage
 
-### Mark task as reviewed
+### Mark task as reviewed after executing hook
 
 ```bash
+# Step 1: Execute after_review hook FIRST
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c './scripts/deploy.sh && ./scripts/notify_team.sh' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+# Step 2: If hook succeeded, mark as reviewed
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
+  -d "{
+    \"after_review_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }" \
   https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed
 ```
 
 ### With numeric ID
 
 ```bash
+# Execute hook first
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c 'npm run deploy && npm run notify' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+# Mark reviewed with result
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
+  -d "{
+    \"after_review_result\": {
+      \"exit_code\": $EXIT_CODE,
+      \"output\": \"$OUTPUT\",
+      \"duration_ms\": $DURATION
+    }
+  }" \
   https://www.stridelikeaboss.com/api/tasks/123/mark_reviewed
 ```
 
-## Hook Execution Example
+## Hook Execution Details
 
-If the task was approved, execute the `after_review` hook:
+The `after_review` hook must be executed BEFORE calling this endpoint:
 
 ```bash
-# Set environment variables from hook.env
+# Set environment variables from task data
 export TASK_ID="123"
 export TASK_IDENTIFIER="W21"
+export TASK_TITLE="Implement authentication"
 export HOOK_NAME="after_review"
 # ... set all env vars
 
 # Read hook command from .stride.md and execute with 60s timeout
-# This is NON-BLOCKING - log errors but don't fail
-timeout 60 bash -c './scripts/deploy_to_production.sh' || echo "after_review hook failed but task is still done"
+# This is BLOCKING - must succeed for endpoint call to work
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c './scripts/deploy_to_production.sh' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "after_review hook failed with exit code $EXIT_CODE"
+  echo "Fix the issues before calling mark_reviewed endpoint"
+  exit 1
+fi
 ```
 
 ## Notes
 
+- The `after_review_result` parameter is **required**
+- You MUST execute the `after_review` hook BEFORE calling this endpoint
+- The hook must complete successfully (exit code 0) or the mark_reviewed call will be rejected
 - The review status must be set by a human reviewer BEFORE calling this endpoint
 - You cannot set the review status via the API - it must be done through the web UI
 - Valid review statuses: `approved`, `changes_requested`, `rejected`
 - If approved, the task automatically moves to Done and unblocks dependent tasks
 - If changes requested/rejected, the task moves back to Doing for rework
-- The `after_review` hook is **non-blocking** - failures are logged but don't prevent completion
+- The `after_review` hook is **blocking** - non-zero exit codes will cause the API to reject your request
+- Hook timeout for `after_review` is 60 seconds (60000 milliseconds)
 - Parent goals automatically move to Done when all child tasks are complete
 - This is typically called by an agent polling for review completion, not immediately after `complete`
 
 ## Typical Agent Workflow
 
-1. Complete task: `PATCH /api/tasks/:id/complete`
-2. Execute `after_doing` and `before_review` hooks
-3. Wait for human review (poll periodically or use webhooks)
-4. When review is complete, call `PATCH /api/tasks/:id/mark_reviewed`
-5. If approved, execute `after_review` hook
-6. If changes requested, fix issues and complete again
+1. Implement the work
+2. Execute `after_doing` hook (blocking, 120s timeout)
+3. Execute `before_review` hook (blocking, 60s timeout)
+4. Complete task: `PATCH /api/tasks/:id/complete` with both hook results
+5. Wait for human review (poll periodically or use webhooks)
+6. When review status is set to approved:
+   - Execute `after_review` hook (blocking, 60s timeout)
+   - Call `PATCH /api/tasks/:id/mark_reviewed` with hook result
+7. If changes requested, fix issues and repeat from step 1
 
 ## See Also
 

@@ -15,8 +15,8 @@ defmodule Kanban.Hooks do
   @hook_config %{
     "before_doing" => %{blocking: true, timeout: 60_000},
     "after_doing" => %{blocking: true, timeout: 120_000},
-    "before_review" => %{blocking: false, timeout: 60_000},
-    "after_review" => %{blocking: false, timeout: 60_000}
+    "before_review" => %{blocking: true, timeout: 60_000},
+    "after_review" => %{blocking: true, timeout: 60_000}
   }
 
   @doc """

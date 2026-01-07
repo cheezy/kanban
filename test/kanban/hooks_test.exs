@@ -84,8 +84,8 @@ defmodule Kanban.HooksTest do
       hooks_map = Map.new(hooks)
       assert hooks_map["before_doing"].blocking == true
       assert hooks_map["after_doing"].blocking == true
-      assert hooks_map["before_review"].blocking == false
-      assert hooks_map["after_review"].blocking == false
+      assert hooks_map["before_review"].blocking == true
+      assert hooks_map["after_review"].blocking == true
     end
   end
 end

@@ -55,7 +55,7 @@ mix credo --strict
 
 ## before_review
 
-Executes when task enters review (non-blocking, 60s timeout).
+Executes when task enters review (blocking, 60s timeout).
 
 ```bash
 echo "Creating PR for $TASK_IDENTIFIER"
@@ -64,7 +64,7 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 
 ## after_review
 
-Executes after review approval (non-blocking, 60s timeout).
+Executes after review approval (blocking, 60s timeout).
 
 ```bash
 echo "Task $TASK_IDENTIFIER complete"
@@ -83,21 +83,21 @@ Stride defines exactly four hook points in the task lifecycle:
 |------|------|----------|---------|-------------|
 | `before_doing` | Before starting work | Yes | 60s | Pull latest code, setup workspace |
 | `after_doing` | After completing work | Yes | 120s | Run tests, build project, lint code |
-| `before_review` | Entering review | No | 60s | Create PR, generate documentation |
-| `after_review` | After review approval | No | 60s | Merge PR, deploy to production |
+| `before_review` | Entering review | Yes | 60s | Create PR, generate documentation |
+| `after_review` | After review approval | Yes | 60s | Merge PR, deploy to production |
 
-### Blocking vs Non-Blocking
+### Blocking Hooks
 
-**Blocking Hooks** (`before_*`):
-- If hook fails, the task action is aborted
+**ALL hooks are now blocking:**
+- If hook fails (non-zero exit code), the task action is aborted
 - Task remains in previous state
-- Error returned to agent
-- Example: If `after_doing` tests fail, task completion is blocked
+- Error returned to agent with 422 status
+- Agent must fix the issue and retry
 
-**Non-Blocking Hooks** (`after_*`):
-- If hook fails, action still completes
-- Error logged but workflow continues
-- Example: If `before_review` PR creation fails, task still moves to review
+**Examples:**
+- If `after_doing` tests fail, task completion is blocked
+- If `before_review` PR creation fails, task completion is blocked
+- If `after_review` deployment fails, mark_reviewed is blocked
 
 ## Hook Execution Workflow
 
@@ -142,37 +142,52 @@ TASK_TITLE=$(echo $RESPONSE | jq -r '.data.title')
 # 4. Do your work on the task
 # ... implement changes ...
 
-# 5. Execute after_doing hook FIRST (before completing)
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
-EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
-DURATION=$((END_TIME - START_TIME))
+# 5. Execute after_doing hook FIRST
+START_TIME_1=$(date +%s%3N)
+OUTPUT_1=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+EXIT_CODE_1=$?
+END_TIME_1=$(date +%s%3N)
+DURATION_1=$((END_TIME_1 - START_TIME_1))
 
-# Check if tests passed
-if [ $EXIT_CODE -ne 0 ]; then
+if [ $EXIT_CODE_1 -ne 0 ]; then
   echo "Tests failed - cannot complete task"
   exit 1
 fi
 
-# 6. Complete the task with hook result
+# 6. Execute before_review hook SECOND
+START_TIME_2=$(date +%s%3N)
+OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+EXIT_CODE_2=$?
+END_TIME_2=$(date +%s%3N)
+DURATION_2=$((END_TIME_2 - START_TIME_2))
+
+if [ $EXIT_CODE_2 -ne 0 ]; then
+  echo "PR creation failed - cannot complete task"
+  exit 1
+fi
+
+# 7. Complete the task with BOTH hook results
 COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
     \"agent_name\": \"Claude Sonnet 4.5\",
     \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing\",
+    \"completion_notes\": \"All tests passing, PR created\",
     \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
+      \"exit_code\": $EXIT_CODE_1,
+      \"output\": \"$OUTPUT_1\",
+      \"duration_ms\": $DURATION_1
+    },
+    \"before_review_result\": {
+      \"exit_code\": $EXIT_CODE_2,
+      \"output\": \"$OUTPUT_2\",
+      \"duration_ms\": $DURATION_2
     }
   }" \
   $STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete)
 
-# 7. Execute remaining hooks (before_review, after_review if needs_review=false)
-# These are returned in the response for reference
+# 8. If needs_review=false, execute after_review hook (returned in response)
 ```
 
 ## Environment Variables
@@ -381,25 +396,30 @@ if ($LASTEXITCODE -ne 0) {
 }
 ```
 
-### Handling Non-Blocking Hook Failures
+### Hook Execution Pattern
 
 **Unix/Linux/macOS/WSL2:**
 
 ```bash
-# Execute before_review hook (non-blocking)
-timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' || {
-  echo "WARNING: PR creation failed, but task moved to review"
-  echo "Create PR manually"
-}
+# Execute before_review hook (BLOCKING - must succeed)
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
 
-# Continue with workflow even if hook failed
-echo "Task moved to Review column"
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: before_review hook failed with exit code $EXIT_CODE"
+  echo "Fix the issue before calling /complete endpoint"
+  exit 1
+fi
 ```
 
 **Windows PowerShell:**
 
 ```powershell
-# Execute before_review hook (non-blocking) with timeout
+# Execute before_review hook (BLOCKING - must succeed) with timeout
+$startTime = Get-Date
 $job = Start-Job -ScriptBlock { gh pr create --title "$env:TASK_TITLE" }
 $completed = Wait-Job $job -Timeout 60
 
@@ -516,8 +536,7 @@ mix credo
 - Verify environment variables are set properly
 - Ensure commands are available (git, mix, npm, etc.)
 - Check timeout is sufficient for the operation
-- For blocking hooks, fix the issue before proceeding
-- For non-blocking hooks, log the error and continue
+- All hooks are blocking - fix any failures before proceeding with API calls
 
 ### Commands Not Found
 
@@ -628,18 +647,31 @@ echo "Working on task: $TASK_IDENTIFIER"
 
 # 5. Execute after_doing hook FIRST
 echo "Executing after_doing hook..."
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
-EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
-DURATION=$((END_TIME - START_TIME))
+START_TIME_1=$(date +%s%3N)
+OUTPUT_1=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+EXIT_CODE_1=$?
+END_TIME_1=$(date +%s%3N)
+DURATION_1=$((END_TIME_1 - START_TIME_1))
 
-if [ $EXIT_CODE -ne 0 ]; then
+if [ $EXIT_CODE_1 -ne 0 ]; then
   echo "ERROR: Tests failed - cannot complete task"
   exit 1
 fi
 
-# 6. Complete the task with hook result
+# 6. Execute before_review hook SECOND
+echo "Executing before_review hook..."
+START_TIME_2=$(date +%s%3N)
+OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+EXIT_CODE_2=$?
+END_TIME_2=$(date +%s%3N)
+DURATION_2=$((END_TIME_2 - START_TIME_2))
+
+if [ $EXIT_CODE_2 -ne 0 ]; then
+  echo "ERROR: PR creation failed - cannot complete task"
+  exit 1
+fi
+
+# 7. Complete the task with BOTH hook results
 echo "Completing task..."
 COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
@@ -647,19 +679,23 @@ COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -d "{
     \"agent_name\": \"$AGENT_NAME\",
     \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing\",
+    \"completion_notes\": \"All tests passing, PR created\",
     \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
+      \"exit_code\": $EXIT_CODE_1,
+      \"output\": \"$OUTPUT_1\",
+      \"duration_ms\": $DURATION_1
+    },
+    \"before_review_result\": {
+      \"exit_code\": $EXIT_CODE_2,
+      \"output\": \"$OUTPUT_2\",
+      \"duration_ms\": $DURATION_2
     }
   }" \
   "$STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete")
 
-# 7. Execute remaining hooks (before_review, after_review if needs_review=false)
-# Note: Hooks are returned in response but before_doing and after_doing already executed
+# 8. Execute after_review hook if needs_review=false (returned in response)
 
-# 8. Check if task needs review
+# 9. Check if task needs review
 NEEDS_REVIEW=$(echo "$COMPLETE_RESPONSE" | jq -r '.data.needs_review')
 if [ "$NEEDS_REVIEW" = "false" ]; then
   echo "✓ Task completed and moved to Done"

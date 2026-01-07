@@ -254,13 +254,11 @@ defmodule KanbanWeb.API.AgentControllerTest do
       before_review = Enum.find(hooks, &(&1["name"] == "before_review"))
       after_review = Enum.find(hooks, &(&1["name"] == "after_review"))
 
-      # Blocking hooks
+      # All hooks are now blocking
       assert before_doing["blocking"] == true
       assert after_doing["blocking"] == true
-
-      # Non-blocking hooks
-      assert before_review["blocking"] == false
-      assert after_review["blocking"] == false
+      assert before_review["blocking"] == true
+      assert after_review["blocking"] == true
     end
 
     test "hook timeouts are documented correctly", %{conn: conn} do

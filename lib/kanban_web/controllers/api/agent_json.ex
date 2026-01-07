@@ -116,7 +116,8 @@ defmodule KanbanWeb.API.AgentJSON do
 
         ## before_review
 
-        Executes when task enters review (non-blocking, 60s timeout).
+        Executes when task enters review (blocking, 60s timeout).
+        If this fails, task completion should fail.
 
         ```bash
         echo "Creating PR for $TASK_IDENTIFIER"
@@ -125,7 +126,8 @@ defmodule KanbanWeb.API.AgentJSON do
 
         ## after_review
 
-        Executes after review approval (non-blocking, 60s timeout).
+        Executes after review approval (blocking, 60s timeout).
+        If this fails, mark_reviewed should fail.
 
         ```bash
         echo "Deploying $TASK_IDENTIFIER"
@@ -140,7 +142,8 @@ defmodule KanbanWeb.API.AgentJSON do
           description:
             "Claim next available task matching your capabilities. Claims automatically expire after 60 minutes if not completed, releasing the task for other agents. REQUIRES before_doing_result parameter with proof of hook execution.",
           required_parameters: ["before_doing_result"],
-          hook_validation: "MANDATORY - Must execute before_doing hook BEFORE calling this endpoint and include result",
+          hook_validation:
+            "MANDATORY - Must execute before_doing hook BEFORE calling this endpoint and include result",
           returns: "Task data + before_doing hook metadata",
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks_claim.md"
         },
@@ -148,18 +151,22 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "complete_task",
           endpoint: "PATCH #{base_url}/api/tasks/:id/complete",
           description:
-            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result parameter with proof of hook execution.",
-          required_parameters: ["after_doing_result"],
-          hook_validation: "MANDATORY - Must execute after_doing hook BEFORE calling this endpoint and include result",
-          returns:
-            "Task data + array of hook metadata (after_doing, before_review, after_review)",
+            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution.",
+          required_parameters: ["after_doing_result", "before_review_result"],
+          hook_validation:
+            "MANDATORY - Must execute BOTH after_doing AND before_review hooks BEFORE calling this endpoint and include both results",
+          returns: "Task data + array of hook metadata (after_review if needs_review=false)",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
         },
         %{
           name: "mark_reviewed",
           endpoint: "PATCH #{base_url}/api/tasks/:id/mark_reviewed",
-          description: "Finalize review after human reviewer sets status",
-          returns: "Task data + after_review hook (if approved)",
+          description:
+            "Finalize review after human reviewer sets status. REQUIRES after_review_result parameter with proof of hook execution.",
+          required_parameters: ["after_review_result"],
+          hook_validation:
+            "MANDATORY - Must execute after_review hook BEFORE calling this endpoint and include result",
+          returns: "Task data",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_mark_reviewed.md"
         },
         %{
@@ -191,18 +198,18 @@ defmodule KanbanWeb.API.AgentJSON do
           "HOOK_NAME - Current hook name (before_doing, after_doing, etc.)"
         ],
         execution_flow: [
-          "CRITICAL: Hook execution is MANDATORY at the API level. You must provide proof of hook execution when claiming and completing tasks.",
+          "CRITICAL: ALL hook execution is MANDATORY at the API level. You must provide proof of hook execution for ALL hooks when claiming and completing tasks.",
           "1. Execute before_doing hook (blocking, 60s) - MUST succeed with exit_code 0",
           "2. Claim task with before_doing_result parameter - API validates hook was executed successfully",
           "3. Do your work",
           "4. Execute after_doing hook (blocking, 120s) - MUST succeed with exit_code 0",
-          "5. Complete task with after_doing_result parameter - API validates hook was executed successfully",
-          "6. Server returns remaining hooks: before_review, after_review (conditional)",
-          "7. Execute before_review hook (non-blocking, 60s)",
-          "8a. IF needs_review=false: Execute after_review hook, task moves to Done, IMMEDIATELY claim next task",
-          "8b. IF needs_review=true: Task moves to Review, STOP and wait for human review",
-          "9. When review complete: Call mark_reviewed to receive after_review hook (if approved)",
-          "10. Execute after_review hook (non-blocking, 60s)",
+          "5. Execute before_review hook (blocking, 60s) - MUST succeed with exit_code 0",
+          "6. Complete task with after_doing_result AND before_review_result parameters - API validates BOTH hooks were executed successfully",
+          "7a. IF needs_review=false: Server returns after_review hook, execute it (blocking, 60s), task moves to Done, IMMEDIATELY claim next task",
+          "7b. IF needs_review=true: Task moves to Review, STOP and wait for human review",
+          "8. When review status is set to approved: Execute after_review hook (blocking, 60s) - MUST succeed with exit_code 0",
+          "9. Call mark_reviewed with after_review_result parameter - API validates hook was executed successfully",
+          "IMPORTANT: ALL four hooks are now blocking - any hook failure will prevent the API call from succeeding",
           "IMPORTANT: Continue claiming and completing tasks until you encounter needs_review=true or no tasks available"
         ]
       },
@@ -640,22 +647,25 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           %{
             mistake: "Running after_doing hook AFTER calling /complete endpoint",
-            consequence: "API REQUIRES after_doing_result parameter - request will be rejected (422 error)",
+            consequence:
+              "API REQUIRES after_doing_result parameter - request will be rejected (422 error)",
             fix:
               "Execute after_doing hook BEFORE calling /complete. Capture exit_code, output, and duration_ms. Include after_doing_result in request body. API validates hook was executed and succeeded."
           },
           %{
-            mistake: "Not understanding blocking vs non-blocking hooks",
-            consequence: "Incorrect error handling, tasks marked complete when they should fail",
+            mistake: "Not executing before_review hook before calling /complete endpoint",
+            consequence:
+              "API REQUIRES before_review_result parameter - request will be rejected (422 error)",
             fix:
-              "before_doing and after_doing are BLOCKING (must pass). before_review and after_review are NON-BLOCKING (logged but don't block)"
+              "ALL four hooks are now BLOCKING and must succeed. Execute after_doing AND before_review hooks BEFORE calling /complete. Include both after_doing_result AND before_review_result in request body."
           }
         ]
       },
       quick_reference_card: %{
         description: "Ultra-condensed reference for experienced agents - the essentials only",
         onboarding_url: "#{base_url}/api/agent/onboarding",
-        critical_requirement: "Hook validation is MANDATORY - must include before_doing_result when claiming, after_doing_result when completing",
+        critical_requirement:
+          "Hook validation is MANDATORY - must include before_doing_result when claiming, after_doing_result when completing",
         workflow:
           "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → complete WITH result → [if needs_review=false: claim next, else: stop]",
         required_files: [".stride.md (hooks)", ".stride_auth.md (token, gitignored)"],
@@ -685,9 +695,10 @@ defmodule KanbanWeb.API.AgentJSON do
           "2. CALL /claim WITH before_doing_result parameter",
           "3. [do work]",
           "4. EXECUTE after_doing (blocking, 120s) - capture exit_code, output, duration_ms",
-          "5. CALL /complete WITH after_doing_result parameter",
-          "6. Execute before_review (non-blocking, 60s)",
-          "7. Execute after_review (non-blocking, 60s, only if needs_review=false or review approved)"
+          "5. EXECUTE before_review (blocking, 60s) - capture exit_code, output, duration_ms",
+          "6. CALL /complete WITH after_doing_result AND before_review_result parameters",
+          "7. IF needs_review=false: Execute after_review (blocking, 60s)",
+          "8. IF needs_review=true: Wait for approval, then execute after_review (blocking, 60s) and call /mark_reviewed WITH after_review_result"
         ]
       }
     }

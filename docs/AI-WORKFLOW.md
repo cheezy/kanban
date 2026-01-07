@@ -115,16 +115,18 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - If this fails, DO NOT call `/complete` - fix the issues first
    - This validates your work is ready for completion
 
-6. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
-   - **REQUIRED:** Include `after_doing_result` parameter with hook execution result
-   - **Only call this AFTER `after_doing` hook succeeds**
-   - API validates hook was executed and succeeded
-   - Receives `after_doing`, `before_review`, and optionally `after_review` hooks in response
-   - Task moves to Review column (or Done if `needs_review=false`)
-
-7. **Execute `before_review` hook** (non-blocking, 60s timeout)
+6. **⚠️ CRITICAL: Execute `before_review` hook SECOND** (blocking, 60s timeout)
    - Example: Create PR, generate documentation
-   - Execute this after `/complete` succeeds
+   - Capture exit_code, output, and duration_ms
+   - **Hook must succeed (exit_code 0) to proceed**
+   - If this fails, DO NOT call `/complete` - fix the issues first
+   - This prepares the task for review
+
+7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
+   - **REQUIRED:** Include BOTH `after_doing_result` AND `before_review_result` parameters
+   - **Only call this AFTER both hooks succeed**
+   - API validates both hooks were executed and succeeded
+   - Task moves to Review column (or Done if `needs_review=false`)
 
 8. **⚠️ STOP HERE if `needs_review=true`**
    - **DO NOT execute `after_review` hook yet!**
@@ -132,16 +134,18 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - Human reviewer sets review_status through the UI or API
    - Proceed to step 9 only when notified of approval
 
-9. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md)
-   - **Only call this after receiving human approval** (if `needs_review=true`)
-   - Or call immediately after step 7 (if `needs_review=false`)
-   - If approved: receives `after_review` hook, task moves to Done
-   - If changes requested: task returns to Doing, repeat from step 4
+9. **Execute `after_review` hook FIRST** (blocking, 60s timeout)
+   - Example: Deploy to production, notify stakeholders
+   - Capture exit_code, output, and duration_ms
+   - **Hook must succeed (exit_code 0) to proceed**
+   - If this fails, DO NOT call `/mark_reviewed` - fix the issues first
 
-10. **Execute `after_review` hook** (non-blocking, 60s timeout)
-    - Example: Deploy to production, notify stakeholders
-    - **Execute ONLY after `/mark_reviewed` returns approved status**
-    - Or execute immediately after step 7 if `needs_review=false`
+10. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md)
+    - **REQUIRED:** Include `after_review_result` parameter with hook execution result
+    - **Only call this AFTER `after_review` hook succeeds** (if `needs_review=true`)
+    - API validates hook was executed and succeeded
+    - If approved: task moves to Done
+    - If changes requested: task returns to Doing, repeat from step 4
 
 11. **Dependencies automatically unblock** - Next tasks become available
 
@@ -277,7 +281,7 @@ See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
 ### Task Completion
 
-**⚠️ CRITICAL:** You MUST execute the `after_doing` hook BEFORE calling the complete endpoint and include the result in your request.
+**⚠️ CRITICAL:** You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
 
 When completing a task, use [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md):
 
@@ -286,27 +290,28 @@ PATCH /api/tasks/:id/complete
 {
   "agent_name": "Claude Sonnet 4.5",
   "time_spent_minutes": 45,
-  "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing.",
+  "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing. PR created.",
   "after_doing_result": {
     "exit_code": 0,
     "output": "Running tests...\n230 tests, 0 failures\nmix format --check-formatted\nAll files formatted correctly",
     "duration_ms": 45678
+  },
+  "before_review_result": {
+    "exit_code": 0,
+    "output": "Creating pull request...\nPR #123 created: https://github.com/org/repo/pull/123",
+    "duration_ms": 2340
   }
 }
 ```
 
 **What happens:**
-1. API validates that `after_doing_result` is present and hook succeeded (exit_code 0)
+1. API validates that BOTH `after_doing_result` and `before_review_result` are present and hooks succeeded (exit_code 0)
 2. Task moves to Review column (or Done if `needs_review=false`)
-3. Server returns hook metadata for:
-   - `after_doing` (blocking) - Already executed (for reference)
-   - `before_review` (non-blocking) - Create PR
-   - `after_review` (non-blocking, only if `needs_review=false`)
-4. Agent executes remaining hooks in order
-5. If `needs_review=true`, wait for human review
-6. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize
+3. If `needs_review=false`, server returns `after_review` hook metadata
+4. If `needs_review=true`, wait for human review
+5. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
 
-**Important:** If the `after_doing` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hook and try again.
+**Important:** If either the `after_doing` or `before_review` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hooks and try again.
 
 See [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) for complete documentation.
 
@@ -426,8 +431,8 @@ See [../api/README.md](../api/README.md) for complete hook system documentation 
 **Quality Improvements:**
 - **Completion tracking** - Time spent, notes, agent attribution
 - **Review workflow** - Optional human review with approve/reject
-- **Blocking hooks** - Tests must pass before task completion
-- **Non-blocking hooks** - Deploy/notify without blocking workflow
+- **Mandatory hook validation** - All four hooks are blocking and must succeed
+- **API-level enforcement** - Server validates hook execution before state changes
 
 **Coordination:**
 - **Dependencies** - Server handles blocking/unblocking automatically

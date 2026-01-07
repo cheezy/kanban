@@ -286,16 +286,34 @@ defmodule KanbanWeb.API.TaskController do
     agent_name = params["agent_name"] || "Unknown"
     before_doing_result = params["before_doing_result"]
 
-    case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing", blocking: true) do
+    case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing",
+           blocking: true
+         ) do
       :ok ->
-        proceed_with_claim(conn, agent_capabilities, user, board, task_identifier, agent_name, api_token)
+        proceed_with_claim(
+          conn,
+          agent_capabilities,
+          user,
+          board,
+          task_identifier,
+          agent_name,
+          api_token
+        )
 
       {:error, reason} ->
         handle_hook_validation_error(conn, "before_doing", reason)
     end
   end
 
-  defp proceed_with_claim(conn, agent_capabilities, user, board, task_identifier, agent_name, api_token) do
+  defp proceed_with_claim(
+         conn,
+         agent_capabilities,
+         user,
+         board,
+         task_identifier,
+         agent_name,
+         api_token
+       ) do
     case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier, agent_name) do
       {:ok, task, hook_info} ->
         emit_telemetry(conn, :task_claimed, %{
@@ -325,18 +343,28 @@ defmodule KanbanWeb.API.TaskController do
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
     agent_name = params["agent_name"] || "Unknown"
     after_doing_result = params["after_doing_result"]
+    before_review_result = params["before_review_result"]
 
     if task.column.board_id != board.id do
       conn
       |> put_status(:forbidden)
       |> json(%{error: "Task does not belong to this board"})
     else
-      case Kanban.Hooks.Validator.validate_hook_execution(after_doing_result, "after_doing", blocking: true) do
-        :ok ->
-          proceed_with_complete(conn, task, user, params, api_token, agent_name)
-
+      with :ok <-
+             Kanban.Hooks.Validator.validate_hook_execution(after_doing_result, "after_doing",
+               blocking: true
+             ),
+           :ok <-
+             Kanban.Hooks.Validator.validate_hook_execution(before_review_result, "before_review",
+               blocking: true
+             ) do
+        proceed_with_complete(conn, task, user, params, api_token, agent_name)
+      else
         {:error, reason} ->
-          handle_hook_validation_error(conn, "after_doing", reason)
+          hook_name =
+            if String.contains?(reason, "after_doing"), do: "after_doing", else: "before_review"
+
+          handle_hook_validation_error(conn, hook_name, reason)
       end
     end
   end
@@ -429,80 +457,93 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   # credo:disable-for-lines:57
-  def mark_reviewed(conn, %{"id" => id_or_identifier}) do
+  def mark_reviewed(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
+    after_review_result = params["after_review_result"]
 
     if task.column.board_id != board.id do
       conn
       |> put_status(:forbidden)
       |> json(%{error: "Task does not belong to this board"})
     else
-      case Tasks.mark_reviewed(task, user) do
-        {:ok, task, hook_info} ->
-          event_name =
-            if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+      case Kanban.Hooks.Validator.validate_hook_execution(after_review_result, "after_review",
+             blocking: true
+           ) do
+        :ok ->
+          proceed_with_mark_reviewed(conn, task, user)
 
-          emit_telemetry(conn, event_name, %{
-            task_id: task.id,
-            review_status: task.review_status
-          })
-
-          render(conn, :show, task: task, hook: hook_info)
-
-        {:ok, task} ->
-          event_name =
-            if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
-
-          emit_telemetry(conn, event_name, %{
-            task_id: task.id,
-            review_status: task.review_status
-          })
-
-          render(conn, :show, task: task)
-
-        {:error, :invalid_column} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "Task must be in Review column to mark as reviewed"},
-              :invalid_column_for_review
-            )
-
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
-
-        {:error, :review_not_performed} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "Task must have a review status before being marked as reviewed"},
-              :review_not_performed
-            )
-
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
-
-        {:error, :invalid_review_status} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{
-                error:
-                  "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
-              },
-              :invalid_review_status
-            )
-
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
-
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
+        {:error, reason} ->
+          handle_hook_validation_error(conn, "after_review", reason)
       end
+    end
+  end
+
+  defp proceed_with_mark_reviewed(conn, task, user) do
+    case Tasks.mark_reviewed(task, user) do
+      {:ok, task, hook_info} ->
+        event_name =
+          if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+
+        emit_telemetry(conn, event_name, %{
+          task_id: task.id,
+          review_status: task.review_status
+        })
+
+        render(conn, :show, task: task, hook: hook_info)
+
+      {:ok, task} ->
+        event_name =
+          if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+
+        emit_telemetry(conn, event_name, %{
+          task_id: task.id,
+          review_status: task.review_status
+        })
+
+        render(conn, :show, task: task)
+
+      {:error, :invalid_column} ->
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{error: "Task must be in Review column to mark as reviewed"},
+            :invalid_column_for_review
+          )
+
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(error_response)
+
+      {:error, :review_not_performed} ->
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{error: "Task must have a review status before being marked as reviewed"},
+            :review_not_performed
+          )
+
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(error_response)
+
+      {:error, :invalid_review_status} ->
+        error_response =
+          ErrorDocs.add_docs_to_error(
+            %{
+              error:
+                "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'"
+            },
+            :invalid_review_status
+          )
+
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(error_response)
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
     end
   end
 

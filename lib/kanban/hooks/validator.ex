@@ -53,7 +53,10 @@ defmodule Kanban.Hooks.Validator do
     {:error, "#{hook_name} hook result must be a map"}
   end
 
-  defp validate_has_required_fields(%{"exit_code" => _, "output" => _, "duration_ms" => _}, _hook_name) do
+  defp validate_has_required_fields(
+         %{"exit_code" => _, "output" => _, "duration_ms" => _},
+         _hook_name
+       ) do
     :ok
   end
 
@@ -64,7 +67,8 @@ defmodule Kanban.Hooks.Validator do
   defp validate_exit_code(%{"exit_code" => 0}, _hook_name, _blocking), do: :ok
 
   defp validate_exit_code(%{"exit_code" => code}, hook_name, true) do
-    {:error, "#{hook_name} is a blocking hook and failed with exit code #{code}. Fix the issues and try again."}
+    {:error,
+     "#{hook_name} is a blocking hook and failed with exit code #{code}. Fix the issues and try again."}
   end
 
   defp validate_exit_code(_result, _hook_name, false), do: :ok

@@ -27,6 +27,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `after_doing_result` | object | **Yes** | Result of executing the `after_doing` hook. Must include `exit_code`, `output`, and `duration_ms`. |
+| `before_review_result` | object | **Yes** | Result of executing the `before_review` hook. Must include `exit_code`, `output`, and `duration_ms`. |
 | `agent_name` | string | No | Name of the agent completing the task (e.g., "Claude Sonnet 4.5"). Defaults to "Unknown". |
 | `time_spent_minutes` | integer | No | Time spent on the task in minutes |
 | `completion_notes` | string | No | Notes about the completion |
@@ -34,11 +35,11 @@ Authorization: Bearer <your_api_token>
 | `actual_complexity` | string | No | Actual complexity experienced ("small", "medium", "large") |
 | `actual_files_changed` | string | No | Actual number of files changed |
 
-**IMPORTANT:** You must execute the `after_doing` hook BEFORE calling this endpoint and include the execution result in your request.
+**IMPORTANT:** You must execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling this endpoint and include both execution results in your request.
 
 ### Hook Result Format
 
-The `after_doing_result` parameter must be an object with these fields:
+Both `after_doing_result` and `before_review_result` parameters must be objects with these fields:
 
 ```json
 {
@@ -49,7 +50,7 @@ The `after_doing_result` parameter must be an object with these fields:
 ```
 
 - `exit_code`: Must be `0` for success. Non-zero exit codes will be rejected.
-- `output`: String containing the output from hook execution (e.g., test results, linter output)
+- `output`: String containing the output from hook execution (e.g., test results, linter output, PR creation output)
 - `duration_ms`: Time taken to execute the hook in milliseconds
 
 ### Request Body Example
@@ -63,6 +64,11 @@ The `after_doing_result` parameter must be an object with these fields:
     "exit_code": 0,
     "output": "Running tests...\n230 tests, 0 failures\nmix format --check-formatted\nAll files formatted correctly\nmix credo --strict\nNo issues found",
     "duration_ms": 45678
+  },
+  "before_review_result": {
+    "exit_code": 0,
+    "output": "Creating pull request...\nPR #123 created: https://github.com/org/repo/pull/123",
+    "duration_ms": 2340
   }
 }
 ```
@@ -75,11 +81,11 @@ Returns the completed task and hook metadata. The number of hooks depends on the
 
 **If `needs_review=true`** (task goes to Review column):
 
-- Returns `after_doing` and `before_review` hooks
+- Returns `after_doing` hook only (both `after_doing` and `before_review` were already executed and validated)
 
 **If `needs_review=false`** (task goes directly to Done):
 
-- Returns `after_doing`, `before_review`, and `after_review` hooks
+- Returns `after_doing` and `after_review` hooks (`after_doing` and `before_review` were already executed; `after_review` still needs execution)
 
 ```json
 {
@@ -138,7 +144,7 @@ Returns the completed task and hook metadata. The number of hooks depends on the
         "HOOK_NAME": "before_review"
       },
       "timeout": 60000,
-      "blocking": false
+      "blocking": true
     }
   ]
 }
@@ -210,16 +216,23 @@ Or task is not in a valid state to complete:
    - This hook typically runs tests, builds, or quality checks
    - Example: Run test suite, build project, run linters
    - Capture the exit code, output, and duration
+   - If hook fails (non-zero exit code), fix the issues before proceeding
 
-3. **Call the complete endpoint** - Include the hook execution result
-   - If hook succeeded (exit code 0), include the result and complete the task
-   - If hook failed (non-zero exit code), do NOT call the complete endpoint - fix the issues first
+3. **Execute the `before_review` hook SECOND** (blocking, 60s timeout)
+   - This hook typically creates PRs, generates documentation, or prepares for review
+   - Example: Create pull request, generate API docs, update changelog
+   - Capture the exit code, output, and duration
+   - If hook fails (non-zero exit code), fix the issues before proceeding
 
-4. **Execute remaining hooks** (returned in the response):
-   - `before_review` hook (non-blocking, 60s timeout) - always returned
-   - `after_review` hook (non-blocking, 60s timeout) - only if `needs_review=false`
+4. **Call the complete endpoint** - Include BOTH hook execution results
+   - Both hooks must have succeeded (exit code 0)
+   - Include both `after_doing_result` and `before_review_result` in request
+   - If either hook failed, do NOT call the complete endpoint - fix the issues first
 
-5. **Wait for review** (if `needs_review=true`)
+5. **Execute remaining hooks** (returned in the response):
+   - `after_review` hook (blocking, 60s timeout) - only if `needs_review=false`
+
+6. **Wait for review** (if `needs_review=true`)
    - A human reviewer will approve or request changes
    - Call `PATCH /api/tasks/:id/mark_reviewed` to finalize
 
@@ -228,51 +241,88 @@ Or task is not in a valid state to complete:
 ### Complete Workflow Example
 
 ```bash
-# Step 1: Execute after_doing hook BEFORE calling complete
+# Step 1: Execute after_doing hook FIRST
 # Read hook command from .stride.md (e.g., "mix test && mix credo --strict")
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test && mix format --check-formatted && mix credo --strict' 2>&1)
-EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
-DURATION=$((END_TIME - START_TIME))
+START_TIME_1=$(date +%s%3N)
+OUTPUT_1=$(timeout 120 bash -c 'mix test && mix format --check-formatted && mix credo --strict' 2>&1)
+EXIT_CODE_1=$?
+END_TIME_1=$(date +%s%3N)
+DURATION_1=$((END_TIME_1 - START_TIME_1))
 
-# Step 2: If hook succeeded, complete the task with result
+# Check if after_doing succeeded before proceeding
+if [ $EXIT_CODE_1 -ne 0 ]; then
+  echo "after_doing hook failed. Fix issues before continuing."
+  exit 1
+fi
+
+# Step 2: Execute before_review hook SECOND
+# Read hook command from .stride.md (e.g., "gh pr create --title '$TASK_TITLE'")
+START_TIME_2=$(date +%s%3N)
+OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "W21: Implement authentication" --body "Ready for review"' 2>&1)
+EXIT_CODE_2=$?
+END_TIME_2=$(date +%s%3N)
+DURATION_2=$((END_TIME_2 - START_TIME_2))
+
+# Check if before_review succeeded before proceeding
+if [ $EXIT_CODE_2 -ne 0 ]; then
+  echo "before_review hook failed. Fix issues before continuing."
+  exit 1
+fi
+
+# Step 3: If both hooks succeeded, complete the task with both results
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
     \"agent_name\": \"Claude Sonnet 4.5\",
     \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing. Ready for review.\",
+    \"completion_notes\": \"All tests passing. PR created. Ready for review.\",
     \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
+      \"exit_code\": $EXIT_CODE_1,
+      \"output\": \"$OUTPUT_1\",
+      \"duration_ms\": $DURATION_1
+    },
+    \"before_review_result\": {
+      \"exit_code\": $EXIT_CODE_2,
+      \"output\": \"$OUTPUT_2\",
+      \"duration_ms\": $DURATION_2
     }
   }" \
   https://www.stridelikeaboss.com/api/tasks/W21/complete
 ```
 
-### Complete task by ID with hook validation
+### Complete task by ID with both hooks validated
 
 ```bash
-# Execute hook first
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'npm test && npm run lint && npm run build' 2>&1)
-EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
-DURATION=$((END_TIME - START_TIME))
+# Execute after_doing hook
+START_TIME_1=$(date +%s%3N)
+OUTPUT_1=$(timeout 120 bash -c 'npm test && npm run lint && npm run build' 2>&1)
+EXIT_CODE_1=$?
+END_TIME_1=$(date +%s%3N)
+DURATION_1=$((END_TIME_1 - START_TIME_1))
 
-# Complete with result
+# Execute before_review hook
+START_TIME_2=$(date +%s%3N)
+OUTPUT_2=$(timeout 60 bash -c 'npm run docs:generate' 2>&1)
+EXIT_CODE_2=$?
+END_TIME_2=$(date +%s%3N)
+DURATION_2=$((END_TIME_2 - START_TIME_2))
+
+# Complete with both results
 curl -X PATCH \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
     \"agent_name\": \"Claude Sonnet 4.5\",
     \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
+      \"exit_code\": $EXIT_CODE_1,
+      \"output\": \"$OUTPUT_1\",
+      \"duration_ms\": $DURATION_1
+    },
+    \"before_review_result\": {
+      \"exit_code\": $EXIT_CODE_2,
+      \"output\": \"$OUTPUT_2\",
+      \"duration_ms\": $DURATION_2
     }
   }" \
   https://www.stridelikeaboss.com/api/tasks/123/complete
@@ -283,34 +333,40 @@ curl -X PATCH \
 After completing the task, execute remaining hooks from the response:
 
 ```bash
-# The API response includes before_review and after_review hooks
-# Execute these AFTER the complete endpoint returns successfully
+# The API response may include after_review hook (only if needs_review=false)
+# Execute this AFTER the complete endpoint returns successfully
 
-# 1. Execute before_review hook (NON-BLOCKING - log errors but continue)
+# If needs_review=false, execute after_review hook (BLOCKING)
 export TASK_ID="123"
 export TASK_IDENTIFIER="W21"
-export HOOK_NAME="before_review"
+export HOOK_NAME="after_review"
 # ... set all env vars from response
 
-timeout 60 bash -c './scripts/create_pr.sh' || echo "before_review hook failed but continuing"
+START_TIME=$(date +%s%3N)
+OUTPUT=$(timeout 60 bash -c './scripts/deploy.sh' 2>&1)
+EXIT_CODE=$?
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
 
-# 2. If needs_review=false, execute after_review hook (NON-BLOCKING)
-export HOOK_NAME="after_review"
-timeout 60 bash -c './scripts/deploy.sh' || echo "after_review hook failed but continuing"
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "after_review hook failed with exit code $EXIT_CODE"
+  echo "Output: $OUTPUT"
+  # Handle failure - task may need manual intervention
+fi
 ```
 
 ## Notes
 
-- The `after_doing_result` parameter is **required**
-- You MUST execute the `after_doing` hook BEFORE calling this endpoint
-- The hook must complete successfully (exit code 0) or the completion will be rejected
+- Both `after_doing_result` and `before_review_result` parameters are **required**
+- You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling this endpoint
+- Both hooks must complete successfully (exit code 0) or the completion will be rejected
 - You can only complete tasks that are assigned to you
 - Task must be in `in_progress` or `blocked` status
 - If `needs_review=true`, task moves to Review column with `review` status
 - If `needs_review=false`, task automatically moves to Done column with `completed` status
-- The `after_doing` hook is **blocking** - non-zero exit codes will cause the API to reject your completion
-- The `before_review` hook is **non-blocking** - failures are logged but don't prevent completion
-- The hook timeout for `after_doing` is 120 seconds (120000 milliseconds)
+- Both `after_doing` and `before_review` hooks are **blocking** - non-zero exit codes will cause the API to reject your completion
+- The `after_review` hook is also **blocking** and must be executed after API call returns (only if `needs_review=false`)
+- Hook timeouts: `after_doing` is 120 seconds, `before_review` is 60 seconds, `after_review` is 60 seconds
 - Agent model from your API token is automatically recorded as `completed_by_agent`
 - If the task is a goal (parent task), it will only move to Done when all child tasks are complete
 

@@ -103,11 +103,11 @@ Ready → Doing → Review → Done
 3. **Claim a task** - `POST /api/tasks/claim` with `before_doing_result` parameter (required)
 4. **Work on the task** - Implement changes, write code, run tests
 5. **Execute `after_doing` hook FIRST** (blocking, 120s timeout) - Run tests, build, lint - Capture exit_code, output, duration_ms
-6. **Complete the task** - `PATCH /api/tasks/:id/complete` with `after_doing_result` parameter (required, only after step 5 succeeds)
-7. **Execute `before_review` hook** (non-blocking, 60s timeout) - Create PR, notify reviewers
+6. **Execute `before_review` hook SECOND** (blocking, 60s timeout) - Create PR, notify reviewers - Capture exit_code, output, duration_ms
+7. **Complete the task** - `PATCH /api/tasks/:id/complete` with BOTH `after_doing_result` AND `before_review_result` parameters (required, only after steps 5 and 6 succeed)
 8. **Wait for review** (if `needs_review=true`)
-9. **Finalize review** - `PATCH /api/tasks/:id/mark_reviewed`
-10. **Execute `after_review` hook** (non-blocking, 60s timeout) - Deploy, close tickets
+9. **Execute `after_review` hook** (blocking, 60s timeout) - Deploy, close tickets - Capture exit_code, output, duration_ms
+10. **Finalize review** - `PATCH /api/tasks/:id/mark_reviewed` with `after_review_result` parameter (required, only after step 9 succeeds)
 
 ### Task Statuses
 
@@ -346,7 +346,18 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# 6. Complete the task with hook result
+# 6. Execute before_review hook (blocking)
+START_TIME=$(date +%s%3N)
+REVIEW_OUTPUT=$(timeout 60 bash -c 'gh pr create ...' 2>&1)
+REVIEW_EXIT_CODE=$?
+REVIEW_DURATION=$(($(date +%s%3N) - START_TIME))
+
+if [ $REVIEW_EXIT_CODE -ne 0 ]; then
+  echo "before_review hook failed - cannot complete task"
+  exit 1
+fi
+
+# 7. Complete the task with BOTH hook results
 COMPLETE_RESPONSE=$(curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
@@ -358,12 +369,14 @@ COMPLETE_RESPONSE=$(curl -s -X PATCH \
       \"exit_code\": $EXIT_CODE,
       \"output\": \"$OUTPUT\",
       \"duration_ms\": $DURATION
+    },
+    \"before_review_result\": {
+      \"exit_code\": $REVIEW_EXIT_CODE,
+      \"output\": \"$REVIEW_OUTPUT\",
+      \"duration_ms\": $REVIEW_DURATION
     }
   }" \
   $STRIDE_API_URL/api/tasks/$TASK_ID/complete)
-
-# 7. Execute before_review hook (non-blocking)
-timeout 60 bash -c 'gh pr create ...' || echo "PR creation failed but continuing"
 ```
 
 ### Example 2: Create a Goal with Child Tasks
@@ -437,10 +450,10 @@ done
 
 1. **Execute hooks BEFORE API calls** - Hook execution is mandatory and validated by the API
 2. **Include hook results** - All hook results (exit_code, output, duration_ms) must be provided in API requests
-3. **Respect blocking status** - If a blocking hook fails, don't call the API endpoint - fix the issue first
-4. **Set timeouts** - Use the timeout values from hook metadata (60s for before_doing, 120s for after_doing)
+3. **All hooks are blocking** - All four hooks (before_doing, after_doing, before_review, after_review) must succeed with exit_code 0
+4. **Set timeouts** - Use the timeout values from hook metadata (60s for before_doing/before_review/after_review, 120s for after_doing)
 5. **Provide context** - Include `agent_name`, `time_spent_minutes`, and `completion_notes`
-6. **Handle errors** - For blocking hooks, abort on failure; for non-blocking hooks, log errors but continue
+6. **Abort on hook failure** - If any hook fails, don't call the API endpoint - fix the issue first
 7. **Check dependencies** - Use `GET /api/tasks/:id` to verify dependencies are complete
 8. **Unclaim when stuck** - If you can't complete a task, unclaim it with a reason
 9. **Create child tasks** - Break down complex work into goals with child tasks
@@ -458,10 +471,11 @@ done
 - Verify hook command in `.stride.md` is correct
 - Check environment variables are set properly
 - Ensure timeout is sufficient for the operation
-- For blocking hooks, fix the issue before proceeding
-- For non-blocking hooks, log the error and continue
+- All hooks are blocking - fix any failures before proceeding with API calls
 - If you receive a 422 error, the API rejected your request due to missing or failed hook validation
-- Ensure you're including `before_doing_result` when claiming and `after_doing_result` when completing
+- Ensure you're including `before_doing_result` when claiming
+- Ensure you're including BOTH `after_doing_result` AND `before_review_result` when completing
+- Ensure you're including `after_review_result` when calling mark_reviewed
 - Verify the hook result format includes all required fields: exit_code, output, duration_ms
 
 ### Review Not Progressing
