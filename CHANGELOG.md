@@ -5,6 +5,101 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-01-07
+
+### Changed
+
+#### ⚠️ BREAKING CHANGE: All Four Hooks Now Blocking with Mandatory API Validation
+
+All hooks (`before_doing`, `after_doing`, `before_review`, `after_review`) are now **blocking** and require **mandatory validation** at the API level. Agents must execute hooks before calling endpoints and include execution results in their requests.
+
+**What Changed:**
+
+- **`before_review` hook**: Changed from non-blocking to **blocking** (60s timeout)
+- **`after_review` hook**: Changed from non-blocking to **blocking** (60s timeout)
+- **API validation enforced**: All endpoints now reject requests (422 error) if required hook results are missing or hooks failed
+
+**Updated API Endpoints:**
+
+1. **`PATCH /api/tasks/:id/complete`** - Now requires BOTH hook results:
+   - **Required parameters**: `after_doing_result` AND `before_review_result`
+   - **Execution order**: Execute `after_doing` hook FIRST, then `before_review` hook SECOND, then call endpoint
+   - **Validation**: Both hooks must succeed (exit_code 0) or request is rejected
+   - **Error response**: 422 if either hook result is missing or hook failed
+
+2. **`PATCH /api/tasks/:id/mark_reviewed`** - Now requires hook result:
+   - **Required parameter**: `after_review_result`
+   - **Execution order**: Execute `after_review` hook FIRST, then call endpoint
+   - **Validation**: Hook must succeed (exit_code 0) or request is rejected
+   - **Error response**: 422 if hook result is missing or hook failed
+
+**New Workflow (All Hooks Blocking):**
+
+```
+1. Execute before_doing hook (blocking, 60s) → Capture result
+2. POST /api/tasks/claim WITH before_doing_result
+3. [Do work]
+4. Execute after_doing hook (blocking, 120s) → Capture result
+5. Execute before_review hook (blocking, 60s) → Capture result
+6. PATCH /api/tasks/:id/complete WITH after_doing_result AND before_review_result
+7. IF needs_review=true: Wait for human approval
+8. Execute after_review hook (blocking, 60s) → Capture result
+9. PATCH /api/tasks/:id/mark_reviewed WITH after_review_result
+```
+
+**Migration Guide for Agents:**
+
+**Before (v1.14.x):**
+```bash
+# Old: Execute after_doing only before /complete
+mix test
+curl -X PATCH .../complete -d '{"after_doing_result": {...}}'
+# Execute before_review AFTER /complete (non-blocking)
+gh pr create ...
+```
+
+**After (v1.15.0):**
+```bash
+# New: Execute BOTH hooks BEFORE /complete
+START_1=$(date +%s%3N)
+OUTPUT_1=$(timeout 120 bash -c 'mix test' 2>&1)
+EXIT_1=$?
+DURATION_1=$(($(date +%s%3N) - START_1))
+
+START_2=$(date +%s%3N)
+OUTPUT_2=$(timeout 60 bash -c 'gh pr create ...' 2>&1)
+EXIT_2=$?
+DURATION_2=$(($(date +%s%3N) - START_2))
+
+# Only call /complete if BOTH hooks succeeded
+if [ $EXIT_1 -eq 0 ] && [ $EXIT_2 -eq 0 ]; then
+  curl -X PATCH .../complete \
+    -d "{
+      \"after_doing_result\": {\"exit_code\": $EXIT_1, \"output\": \"$OUTPUT_1\", \"duration_ms\": $DURATION_1},
+      \"before_review_result\": {\"exit_code\": $EXIT_2, \"output\": \"$OUTPUT_2\", \"duration_ms\": $DURATION_2}
+    }"
+fi
+```
+
+**Why This Change:**
+
+- **Quality Enforcement**: Prevents tasks from entering review with failing PR creation or missing documentation
+- **Consistency**: All four hooks now have identical blocking behavior - simpler mental model
+- **Early Validation**: Catches issues (failing tests, PR creation failures, deployment failures) before state transitions
+- **Audit Trail**: Complete record of all hook execution results in the database
+
+**Updated Documentation:**
+
+- `docs/AI-WORKFLOW.md` - Updated workflow steps and hook execution order
+- `docs/api/README.md` - Updated endpoint requirements and examples
+- `docs/api/patch_tasks_id_complete.md` - Added `before_review_result` requirement
+- `docs/api/patch_tasks_id_mark_reviewed.md` - Added `after_review_result` requirement
+- `docs/REVIEW-WORKFLOW.md` - Updated review workflow with new hook execution order
+- `docs/GETTING-STARTED-WITH-AI.md` - Updated hook descriptions and examples
+- `docs/AGENT-HOOK-EXECUTION-GUIDE.md` - Updated execution patterns
+- `docs/STRIDE-SKILLS-PLAN.md` - Updated completion process
+- `lib/kanban_web/controllers/api/agent_json.ex` - Updated onboarding endpoint
+
 ## [1.14.1] - 2026-01-06
 
 ### Fixed
