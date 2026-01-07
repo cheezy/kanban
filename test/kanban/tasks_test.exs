@@ -2691,6 +2691,52 @@ defmodule Kanban.TasksTest do
 
       assert result.id == task.id
     end
+
+    test "never returns goals as next task", %{ready_column: column, board: board, user: user} do
+      # Create a goal in Ready column
+      {:ok, _goal} =
+        Tasks.create_task(column, %{
+          "title" => "Test Goal",
+          "type" => "goal",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      # Create a work task in Ready column
+      {:ok, work_task} =
+        Tasks.create_task(column, %{
+          "title" => "Work Task",
+          "type" => "work",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      # Should return the work task, not the goal
+      assert result.id == work_task.id
+      assert result.type == :work
+    end
+
+    test "returns nil when only goals are available", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      # Create only a goal in Ready column
+      {:ok, _goal} =
+        Tasks.create_task(column, %{
+          "title" => "Test Goal",
+          "type" => "goal",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      # Should return nil since goals cannot be claimed
+      assert result == nil
+    end
   end
 
   describe "claim_next_task/3" do

@@ -1250,6 +1250,7 @@ defmodule Kanban.Tasks do
         on: t.column_id == c.id,
         where: c.name == "Ready",
         where: c.board_id == ^board_id,
+        where: t.type in [:work, :defect],
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
         order_by: [desc: t.priority, asc: t.position],
         preload: [:column, :assigned_to, :created_by]
