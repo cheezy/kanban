@@ -140,6 +140,30 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # Batch create errors
+  def get_docs(:batch_create_invalid_root_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/post_tasks_batch.md",
+      common_causes: [
+        "Used 'tasks' as the root key instead of 'goals'",
+        "The batch endpoint expects {\"goals\": [...]} not {\"tasks\": [...]}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
+  def get_docs(:batch_create_missing_goals_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/post_tasks_batch.md",
+      common_causes: [
+        "Missing 'goals' key in request body",
+        "Request body may be empty or malformed",
+        "The batch endpoint requires {\"goals\": [...]}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
   # Validation errors (used by TaskJSON.error/1)
   def get_docs(:validation_error, opts) do
     field_errors = Keyword.get(opts, :fields, [])

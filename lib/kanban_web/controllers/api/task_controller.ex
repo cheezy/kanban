@@ -74,6 +74,33 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def batch_create(conn, %{"tasks" => _tasks}) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. The root key must be 'goals', not 'tasks'. See documentation for correct format.",
+          example: %{
+            goals: [
+              %{
+                title: "Goal Title",
+                type: "goal",
+                tasks: [
+                  %{title: "Task 1", type: "work"},
+                  %{title: "Task 2", type: "work"}
+                ]
+              }
+            ]
+          }
+        },
+        :batch_create_invalid_root_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
+  end
+
   def batch_create(conn, %{"goals" => goals}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
@@ -91,6 +118,33 @@ defmodule KanbanWeb.API.TaskController do
       |> process_batch_goals(column, user, api_token, conn)
       |> handle_batch_result(conn)
     end
+  end
+
+  def batch_create(conn, _params) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. Missing 'goals' key in request body. See documentation for correct format.",
+          example: %{
+            goals: [
+              %{
+                title: "Goal Title",
+                type: "goal",
+                tasks: [
+                  %{title: "Task 1", type: "work"},
+                  %{title: "Task 2", type: "work"}
+                ]
+              }
+            ]
+          }
+        },
+        :batch_create_missing_goals_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
   end
 
   def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do

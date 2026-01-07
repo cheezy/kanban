@@ -364,6 +364,52 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 401)
     end
 
+    test "returns helpful error when using 'tasks' instead of 'goals' as root key", %{conn: conn} do
+      task_params = [
+        %{
+          "title" => "Goal 1",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "Task 1", "type" => "work"}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", tasks: task_params)
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url,
+               "common_causes" => causes,
+               "correct_format" => format_hint
+             } = response
+
+      assert error =~ "root key must be 'goals', not 'tasks'"
+      assert is_map(example)
+      assert Map.has_key?(example, "goals")
+      assert doc_url =~ "post_tasks_batch.md"
+      assert is_list(causes)
+      assert format_hint == "See the 'example' field in this response"
+    end
+
+    test "returns helpful error when missing 'goals' key entirely", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks/batch", %{})
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url
+             } = response
+
+      assert error =~ "Missing 'goals' key"
+      assert is_map(example)
+      assert Map.has_key?(example, "goals")
+      assert doc_url =~ "post_tasks_batch.md"
+    end
+
     test "handles goals with complex fields", %{conn: conn} do
       goals_params = [
         %{
