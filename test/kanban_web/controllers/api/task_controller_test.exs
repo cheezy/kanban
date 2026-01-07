@@ -203,6 +203,42 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = post(conn, ~p"/api/tasks", task: goal_params)
       assert json_response(conn, 422)["errors"] != %{}
     end
+
+    test "returns helpful error when using 'data' instead of 'task' as root key", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks", data: %{"title" => "Test Task"})
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url,
+               "common_causes" => causes,
+               "correct_format" => format_hint
+             } = response
+
+      assert error =~ "request body key must be 'task', not 'data'"
+      assert is_map(example)
+      assert Map.has_key?(example, "task")
+      assert doc_url =~ "post_tasks.md"
+      assert is_list(causes)
+      assert format_hint == "See the 'example' field in this response"
+    end
+
+    test "returns helpful error when missing 'task' key entirely", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks", %{})
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url
+             } = response
+
+      assert error =~ "Missing 'task' key"
+      assert is_map(example)
+      assert Map.has_key?(example, "task")
+      assert doc_url =~ "post_tasks.md"
+    end
   end
 
   describe "POST /api/tasks/batch" do
@@ -614,6 +650,45 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "Updated"})
       assert json_response(conn, 401)
+    end
+
+    test "returns helpful error when using 'data' instead of 'task' as root key", %{
+      conn: conn,
+      task: task
+    } do
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", data: %{"title" => "Updated"})
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url,
+               "common_causes" => causes,
+               "correct_format" => format_hint
+             } = response
+
+      assert error =~ "request body key must be 'task', not 'data'"
+      assert is_map(example)
+      assert Map.has_key?(example, "task")
+      assert doc_url =~ "patch_tasks_id.md"
+      assert is_list(causes)
+      assert format_hint == "See the 'example' field in this response"
+    end
+
+    test "returns helpful error when missing 'task' key entirely", %{conn: conn, task: task} do
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", %{})
+      response = json_response(conn, 422)
+
+      assert %{
+               "error" => error,
+               "example" => example,
+               "documentation" => doc_url
+             } = response
+
+      assert error =~ "Missing 'task' key"
+      assert is_map(example)
+      assert Map.has_key?(example, "task")
+      assert doc_url =~ "patch_tasks_id.md"
     end
   end
 

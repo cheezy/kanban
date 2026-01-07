@@ -45,6 +45,29 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  def create(conn, %{"data" => _data}) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. The request body key must be 'task', not 'data'. See documentation for correct format.",
+          example: %{
+            task: %{
+              title: "Task title",
+              description: "Task description",
+              type: "work",
+              priority: "medium"
+            }
+          }
+        },
+        :create_invalid_root_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
+  end
+
   def create(conn, %{"task" => task_params}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
@@ -72,6 +95,29 @@ defmodule KanbanWeb.API.TaskController do
         |> handle_task_creation(conn)
       end
     end
+  end
+
+  def create(conn, _params) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. Missing 'task' key in request body. See documentation for correct format.",
+          example: %{
+            task: %{
+              title: "Task title",
+              description: "Task description",
+              type: "work",
+              priority: "medium"
+            }
+          }
+        },
+        :create_missing_task_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
   end
 
   def batch_create(conn, %{"tasks" => _tasks}) do
@@ -147,6 +193,28 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
+  def update(conn, %{"id" => _id_or_identifier, "data" => _data}) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. The request body key must be 'task', not 'data'. See documentation for correct format.",
+          example: %{
+            task: %{
+              title: "Updated title",
+              description: "Updated description",
+              priority: "high"
+            }
+          }
+        },
+        :update_invalid_root_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
+  end
+
   def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do
     board = conn.assigns.current_board
     task = get_task_by_id_or_identifier!(id_or_identifier, board)
@@ -168,6 +236,28 @@ defmodule KanbanWeb.API.TaskController do
           |> render(:error, changeset: changeset)
       end
     end
+  end
+
+  def update(conn, %{"id" => _id_or_identifier}) do
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error:
+            "Invalid request format. Missing 'task' key in request body. See documentation for correct format.",
+          example: %{
+            task: %{
+              title: "Updated title",
+              description: "Updated description",
+              priority: "high"
+            }
+          }
+        },
+        :update_missing_task_key
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(error_response)
   end
 
   def next(conn, _params) do

@@ -164,6 +164,54 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # Create errors
+  def get_docs(:create_invalid_root_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/post_tasks.md",
+      common_causes: [
+        "Used 'data' as the root key instead of 'task'",
+        "The create endpoint expects {\"task\": {...}} not {\"data\": {...}}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
+  def get_docs(:create_missing_task_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/post_tasks.md",
+      common_causes: [
+        "Missing 'task' key in request body",
+        "Request body may be empty or malformed",
+        "The create endpoint requires {\"task\": {...}}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
+  # Update errors
+  def get_docs(:update_invalid_root_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/patch_tasks_id.md",
+      common_causes: [
+        "Used 'data' as the root key instead of 'task'",
+        "The update endpoint expects {\"task\": {...}} not {\"data\": {...}}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
+  def get_docs(:update_missing_task_key, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/patch_tasks_id.md",
+      common_causes: [
+        "Missing 'task' key in request body",
+        "Request body may be empty or malformed",
+        "The update endpoint requires {\"task\": {...}}"
+      ],
+      correct_format: "See the 'example' field in this response"
+    }
+  end
+
   # Validation errors (used by TaskJSON.error/1)
   def get_docs(:validation_error, opts) do
     field_errors = Keyword.get(opts, :fields, [])
