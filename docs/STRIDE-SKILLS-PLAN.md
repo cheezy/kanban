@@ -140,10 +140,10 @@ NEXT STEP: Immediately begin working on the task after successful claim
 
 **Description:** "Use when you've finished work on a Stride task and need to mark it complete, before calling /api/tasks/:id/complete"
 
-**Purpose:** Enforce proper completion workflow with after_doing hook BEFORE completion endpoint
+**Purpose:** Enforce proper completion workflow with after_doing AND before_review hooks BEFORE completion endpoint
 
 **Key Sections:**
-- **The Iron Law:** EXECUTE AFTER_DOING BEFORE CALLING COMPLETE
+- **The Iron Law:** EXECUTE BOTH after_doing AND before_review BEFORE CALLING COMPLETE
 - **The Critical Mistake** (why calling complete before validation fails)
 - **The Complete Completion Process**
 - **Hook Execution Pattern** (after_doing, before_review, after_review)
@@ -154,31 +154,36 @@ NEXT STEP: Immediately begin working on the task after successful claim
 **Enforcement Strategy:**
 - Must invoke BEFORE calling `/api/tasks/:id/complete`
 - Must execute after_doing hook first (blocking, 120s)
-- Must only call complete endpoint AFTER hook succeeds
+- Must execute before_review hook second (blocking, 60s)
+- Must only call complete endpoint AFTER both hooks succeed
+- Must include both hook results in the API request
 - Must handle review cycle properly based on needs_review flag
 
 **Content Outline:**
 ```markdown
 ## The Iron Law
-EXECUTE after_doing HOOK BEFORE CALLING COMPLETE ENDPOINT
+EXECUTE BOTH after_doing AND before_review HOOKS BEFORE CALLING COMPLETE ENDPOINT
 
 ## The Critical Mistake
-Calling PATCH /api/tasks/:id/complete before running after_doing causes:
+Calling PATCH /api/tasks/:id/complete before running BOTH hooks causes:
 - Task marked done prematurely
-- Failed tests hidden
+- Failed tests hidden (after_doing skipped)
+- Review preparation skipped (before_review skipped)
 - Quality gates bypassed
 
 ## The Complete Completion Process
 1. Mark todo as in_progress: "Completing task"
 2. Read .stride.md after_doing section
 3. Execute after_doing hook (120s timeout, blocking)
-4. If hook fails: FIX ISSUES, do not proceed
-5. Read .stride.md before_review section
-6. Execute before_review hook (60s timeout, blocking)
-7. If hook fails: FIX ISSUES, do not proceed
-8. If both hooks succeed: Call PATCH /api/tasks/:id/complete with BOTH hook results
-9. If needs_review=true: STOP and wait
-10. If needs_review=false: Execute after_review hook (60s timeout, blocking)
+4. Capture exit_code, output, duration_ms from after_doing
+5. If hook fails: FIX ISSUES, do not proceed
+6. Read .stride.md before_review section
+7. Execute before_review hook (60s timeout, blocking)
+8. Capture exit_code, output, duration_ms from before_review
+9. If hook fails: FIX ISSUES, do not proceed
+10. If both hooks succeed: Call PATCH /api/tasks/:id/complete with BOTH hook results
+11. If needs_review=true: STOP and wait
+12. If needs_review=false: Execute after_review hook (60s timeout, blocking)
 
 ## Completion Workflow Flowchart
 
@@ -275,18 +280,34 @@ COMPLETION WORKFLOW:
 ├─ 1. Work is complete ✓
 ├─ 2. Read after_doing hook from .stride.md ✓
 ├─ 3. Execute after_doing (120s timeout, blocking) ✓
-├─ 4. Hook fails? → FIX, retry, DO NOT proceed ✓
-├─ 5. Read before_review hook ✓
-├─ 6. Execute before_review (60s timeout, blocking) ✓
-├─ 7. Hook fails? → FIX, retry, DO NOT proceed ✓
-├─ 8. Both succeed? → Call PATCH /api/tasks/:id/complete ✓
-├─ 9. needs_review=true? → STOP, wait for human ✓
-└─ 10. needs_review=false? → Execute after_review, claim next ✓
+├─ 4. Capture exit_code, output, duration_ms ✓
+├─ 5. Hook fails? → FIX, retry, DO NOT proceed ✓
+├─ 6. Read before_review hook ✓
+├─ 7. Execute before_review (60s timeout, blocking) ✓
+├─ 8. Capture exit_code, output, duration_ms ✓
+├─ 9. Hook fails? → FIX, retry, DO NOT proceed ✓
+├─ 10. Both succeed? → Call PATCH /api/tasks/:id/complete WITH both results ✓
+├─ 11. needs_review=true? → STOP, wait for human ✓
+└─ 12. needs_review=false? → Execute after_review, claim next ✓
 
 API ENDPOINT: PATCH /api/tasks/:id/complete
-REQUIRED: {"time_spent_minutes": 45, "completion_notes": "..."}
-CRITICAL: Execute after_doing BEFORE calling complete
-HOOK ORDER: after_doing → before_review → complete → after_review
+REQUIRED: {
+  "agent_name": "Claude",
+  "time_spent_minutes": 45,
+  "completion_notes": "All tests passing...",
+  "after_doing_result": {
+    "exit_code": 0,
+    "output": "Tests passed...",
+    "duration_ms": 45678
+  },
+  "before_review_result": {
+    "exit_code": 0,
+    "output": "PR created...",
+    "duration_ms": 2340
+  }
+}
+CRITICAL: Execute BOTH after_doing AND before_review BEFORE calling complete
+HOOK ORDER: after_doing → before_review → complete (with both results) → after_review
 ```
 ```
 
