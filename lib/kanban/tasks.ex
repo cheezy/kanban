@@ -15,19 +15,33 @@ defmodule Kanban.Tasks do
   @doc """
   Returns the list of tasks for a column, ordered by position.
 
+  By default, excludes archived tasks. Pass `include_archived: true` to include them.
+
   ## Examples
 
       iex> list_tasks(column)
       [%Task{}, ...]
 
+      iex> list_tasks(column, include_archived: true)
+      [%Task{}, ...]
+
   """
-  def list_tasks(column) do
+  def list_tasks(column, opts \\ []) do
+    include_archived = Keyword.get(opts, :include_archived, false)
+
     Task
     |> where([t], t.column_id == ^column.id)
+    |> maybe_filter_archived(include_archived)
     |> order_by([t], t.position)
     |> preload(:assigned_to)
     |> Repo.all()
   end
+
+  defp maybe_filter_archived(query, false) do
+    where(query, [t], is_nil(t.archived_at))
+  end
+
+  defp maybe_filter_archived(query, true), do: query
 
   @doc """
   Gets a single task.

@@ -46,6 +46,38 @@ defmodule Kanban.TasksTest do
       assert length(Tasks.list_tasks(column1)) == 1
       assert length(Tasks.list_tasks(column2)) == 1
     end
+
+    test "excludes archived tasks by default" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Active Task"})
+      task2 = task_fixture(column, %{title: "To Be Archived"})
+
+      {:ok, _archived} = Tasks.archive_task(task2)
+
+      tasks = Tasks.list_tasks(column)
+
+      assert length(tasks) == 1
+      assert hd(tasks).id == task1.id
+    end
+
+    test "includes archived tasks when option is set" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Active Task"})
+      task2 = task_fixture(column, %{title: "Archived Task"})
+
+      {:ok, _archived} = Tasks.archive_task(task2)
+
+      tasks = Tasks.list_tasks(column, include_archived: true)
+
+      assert length(tasks) == 2
+      assert Enum.map(tasks, & &1.id) |> Enum.sort() == [task1.id, task2.id] |> Enum.sort()
+    end
   end
 
   describe "get_task!/1" do
