@@ -262,8 +262,8 @@ This release solves the "agent memory problem" - where AI agents would forget ho
 
 #### Homepage Redesign
 
-- **AI-Human Collaboration Focus** - Completely redesigned the homepage to showcase Stride as an AI-Human collaboration platform:
-  - **Hero section** - Updated badge to "AI-Human Collaboration Platform" and headline to emphasize AI agents working alongside humans
+- **Human-AI Collaboration Focus** - Completely redesigned the homepage to showcase Stride as a Human-AI collaboration platform:
+  - **Hero section** - Updated badge to "Human-AI Collaboration Platform" and headline to emphasize AI agents working alongside humans
   - **Value proposition** - Rewritten to highlight workflow hooks, task delegation to AI, and human review control
   - **Feature cards** - Replaced generic kanban features with collaboration-focused features:
     - **AI Agent Integration** - REST API with capability matching and workflow hooks
@@ -273,7 +273,7 @@ This release solves the "agent memory problem" - where AI agents would forget ho
 
 #### About Page Enhancement
 
-- **AI-Human Collaboration Platform Section** - Added new section explaining Stride's collaborative features:
+- **Human-AI Collaboration Platform Section** - Added new section explaining Stride's collaborative features:
   - **Overview** - Describes how AI agents and humans work together through REST API and review workflows
   - **Five key features** - Capability matching, atomic task claiming, client-side hooks, human review, and API documentation
   - **Use case description** - Explains how teams delegate repetitive tasks to AI while humans focus on architecture and review

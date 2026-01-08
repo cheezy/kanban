@@ -2158,9 +2158,10 @@ msgid "AI agents can claim and complete tasks using comprehensive REST API with 
 msgstr "Les agents IA peuvent revendiquer et compléter des tâches en utilisant une API REST complète avec correspondance de capacités et crochets de flux de travail."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/home.html.heex:16
 #, elixir-autogen, elixir-format
-msgid "AI-Human Collaboration Platform"
-msgstr ""
+msgid "Human-AI Collaboration Platform"
+msgstr "Plateforme de Collaboration Humain-IA"
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:272
 #, elixir-autogen, elixir-format
@@ -2184,8 +2185,8 @@ msgstr "Revendication Automatisée de Tâches"
 
 #: lib/kanban_web/controllers/page_html/home.html.heex:110
 #, elixir-autogen, elixir-format
-msgid "Built for AI-Human Collaboration"
-msgstr "Conçu pour la Collaboration IA-Humain"
+msgid "Built for Human-AI Collaboration"
+msgstr "Conçu pour la Collaboration Humain-IA"
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:51
 #, elixir-autogen, elixir-format
@@ -2441,11 +2442,6 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr ""
-
-#: lib/kanban_web/controllers/page_html/home.html.heex:16
-#, elixir-autogen, elixir-format
-msgid "Human-AI Collaboration Platform"
-msgstr "Plateforme de Collaboration Humain-IA"
 
 #: lib/kanban_web/live/task_live/form_component.ex:332
 #: lib/kanban_web/live/task_live/form_component.ex:354
