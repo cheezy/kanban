@@ -136,6 +136,8 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 
 See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating effective tasks.
 
+**✨ Claude Code Skills:** Agents receive the `stride-creating-tasks` skill via the onboarding endpoint to ensure comprehensive task specifications and prevent exploration failures.
+
 ## API Endpoints
 
 ### Task Discovery & Management

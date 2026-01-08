@@ -292,6 +292,12 @@ Give your AI agent this prompt to break down and upload a goal:
 >
 > **Important**: The API only supports uploading ONE goal per request. If you need to create multiple goals, you must make separate API calls for each goal."
 
+**✨ Claude Code Skills Available:**
+- Use `stride-creating-tasks` for individual tasks and defects
+- Use `stride-creating-goals` for goals with nested tasks (coming soon)
+
+These skills are automatically provided via the onboarding endpoint and enforce comprehensive task specifications that prevent agents from wasting 3+ hours on discovery.
+
 **Example: If you ask your agent to implement user authentication, it would:**
 
 1. Analyze the requirement and break it into logical tasks

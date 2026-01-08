@@ -279,6 +279,8 @@ POST /api/tasks
 
 See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
+**✨ Claude Code Skill Available:** Use the `stride-creating-tasks` skill before calling POST /api/tasks to ensure comprehensive task specifications and prevent 3+ hour exploration failures. This skill is automatically provided via the onboarding endpoint.
+
 ### Task Completion
 
 **⚠️ CRITICAL:** You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.

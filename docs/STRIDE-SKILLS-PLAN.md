@@ -349,16 +349,68 @@ Rich task = 30 minutes implementation
 [Real examples from Stride docs]
 
 ## Required Fields Checklist
-- [ ] title (clear, specific)
-- [ ] type ("work", "defect", or "goal")
-- [ ] description (WHY and WHAT)
-- [ ] complexity ("small", "medium", "large")
-- [ ] key_files (prevents merge conflicts)
-- [ ] verification_steps (objects with step_type, step_text, expected_result)
-- [ ] testing_strategy (unit_tests, integration_tests, edge_cases)
-- [ ] acceptance_criteria
-- [ ] patterns_to_follow
-- [ ] pitfalls
+- [ ] title (clear, specific verb + what + where)
+- [ ] type (MUST be string: "work", "defect", or "goal" - no other values)
+- [ ] description (WHY problem + WHAT solution)
+- [ ] complexity (string: "small", "medium", "large")
+- [ ] priority (string: "low", "medium", "high", "critical")
+- [ ] why (problem being solved / value provided)
+- [ ] what (specific feature/change)
+- [ ] where_context (UI location / code area)
+- [ ] estimated_files (helps set expectations: "1-2", "3-5", "5+")
+- [ ] key_files (array of objects - CRITICAL for preventing merge conflicts)
+- [ ] dependencies (array of identifiers/indices - CRITICAL for execution order)
+- [ ] verification_steps (array of objects with step_type, step_text, position)
+- [ ] testing_strategy (object with unit_tests/integration_tests/manual_tests as arrays)
+- [ ] acceptance_criteria (newline-separated string)
+- [ ] patterns_to_follow (newline-separated string with file references)
+- [ ] pitfalls (array of strings - what NOT to do)
+
+## Field Type Validations (CRITICAL)
+
+**type field** - MUST be exact string match:
+- ✅ Valid: "work", "defect", "goal" (strings only)
+- ❌ Invalid: "task", "bug", "feature", null, or any other value
+
+**testing_strategy arrays** - MUST be arrays, not strings:
+- ✅ "unit_tests": ["Test 1", "Test 2"] (array of strings)
+- ❌ "unit_tests": "Run tests" (single string - will fail)
+- Same requirement for integration_tests and manual_tests
+
+**verification_steps** - MUST be array of objects:
+- ✅ [{"step_type": "command", "step_text": "mix test", "position": 0}]
+- ❌ ["mix test"] (array of strings - will crash)
+- ❌ "mix test" (single string - will crash)
+
+## Dependencies Pattern (CRITICAL for Task Order)
+
+**Rule: Use indices for NEW tasks, identifiers for EXISTING tasks**
+
+**When creating tasks in the SAME request (use array indices):**
+```json
+{
+  "title": "Auth System",
+  "type": "goal",
+  "tasks": [
+    {"title": "Schema", "type": "work"},
+    {"title": "Endpoints", "type": "work", "dependencies": [0]},
+    {"title": "Tests", "type": "work", "dependencies": [0, 1]}
+  ]
+}
+```
+**Why indices?** Identifiers (W47, G12) are auto-generated when tasks are created. For tasks being created in the same request, you don't know their identifiers yet, so use their position index (0, 1, 2).
+
+**When depending on EXISTING tasks already in the system (use identifiers):**
+```json
+{
+  "title": "New Feature",
+  "type": "work",
+  "dependencies": ["W47", "W48"]
+}
+```
+**Why identifiers?** The tasks W47 and W48 already exist in the system with assigned identifiers, so you reference them directly.
+
+**Critical:** Dependencies control when tasks become claimable. Tasks with unmet dependencies won't appear in /api/tasks/next.
 
 ## Testing Strategy Pattern
 ```json
@@ -371,6 +423,24 @@ Rich task = 30 minutes implementation
 }
 ```
 
+## Key Files Pattern (Prevents Merge Conflicts)
+```json
+"key_files": [
+  {
+    "file_path": "lib/kanban_web/controllers/auth_controller.ex",
+    "note": "Add authentication endpoints",
+    "position": 0
+  },
+  {
+    "file_path": "lib/kanban/accounts.ex",
+    "note": "User account logic",
+    "position": 1
+  }
+]
+```
+
+**Critical:** Tasks with overlapping key_files cannot be claimed simultaneously.
+
 ## Verification Steps Pattern (CRITICAL)
 MUST be array of objects, NOT strings:
 ```json
@@ -380,6 +450,12 @@ MUST be array of objects, NOT strings:
     "step_text": "mix test path/to/test.exs",
     "expected_result": "All tests pass",
     "position": 0
+  },
+  {
+    "step_type": "manual",
+    "step_text": "Navigate to /login and test",
+    "expected_result": "Login works correctly",
+    "position": 1
   }
 ]
 ```
@@ -402,17 +478,22 @@ MUST be array of objects, NOT strings:
 
 ```
 TASK CREATION CHECKLIST:
-├─ title ✓ (clear, specific)
-├─ type ✓ ("work", "defect", "goal")
-├─ description ✓ (WHY + WHAT)
-├─ complexity ✓ (small/medium/large)
-├─ key_files ✓ (prevent conflicts)
-├─ verification_steps ✓ (objects, not strings!)
-├─ testing_strategy ✓ (unit/integration/edge cases)
-├─ acceptance_criteria ✓
-├─ patterns_to_follow ✓
-└─ pitfalls ✓
-```
+├─ title ✓ (verb + what + where)
+├─ type ✓ (string: "work", "defect", "goal" ONLY)
+├─ why ✓ (problem/value)
+├─ what ✓ (specific change)
+├─ where_context ✓ (UI/code location)
+├─ description ✓ (WHY + WHAT combined)
+├─ complexity ✓ (string: small/medium/large)
+├─ priority ✓ (string: low/medium/high/critical)
+├─ estimated_files ✓ ("1-2", "3-5", "5+")
+├─ key_files ✓ (array of objects - prevents conflicts)
+├─ dependencies ✓ (array - controls execution order)
+├─ verification_steps ✓ (array of objects, not strings!)
+├─ testing_strategy ✓ (object with arrays for unit/integration/manual)
+├─ acceptance_criteria ✓ (newline-separated string)
+├─ patterns_to_follow ✓ (newline-separated with file refs)
+└─ pitfalls ✓ (array of strings)
 ```
 
 ---
@@ -462,7 +543,7 @@ GOALS REQUIRE PROPER STRUCTURE AND DEPENDENCIES
 
 ```json
 {
-  "goals": [  // ← MUST be "goals"
+  "goals": [
     {
       "title": "Goal 1",
       "type": "goal",
@@ -475,6 +556,8 @@ GOALS REQUIRE PROPER STRUCTURE AND DEPENDENCIES
   ]
 }
 ```
+
+**Note:** Root key MUST be `"goals"` (not `"tasks"`)
 
 ## The Most Common Mistake
 Using root key "tasks" instead of "goals" - This is the #1 batch creation error
