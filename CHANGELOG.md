@@ -5,6 +5,24 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-01-08
+
+### Added
+
+#### Claude Code Skills for AI Agent Workflow Enforcement
+
+- **Four Workflow Enforcement Skills** - Complete set of Claude Code skills distributed via the onboarding endpoint to enforce Stride workflow discipline:
+  - **stride-claiming-tasks** - Enforces proper task claiming workflow with hook execution before claiming
+  - **stride-completing-tasks** - Ensures both after_doing and before_review hooks are executed before marking tasks complete
+  - **stride-creating-tasks** - Requires comprehensive task specifications to prevent 3+ hour exploration failures
+  - **stride-creating-goals** - Enforces proper goal structure with nested tasks and correct batch format
+
+- **Onboarding Endpoint Distribution** - Skills automatically provided through `GET /api/agent/onboarding`:
+  - Complete skill content embedded in JSON response
+  - Step-by-step installation instructions with exact commands
+  - Usage guidance explaining when to invoke each skill
+  - Automatic discovery by Claude Code when installed
+
 ## [1.16.0] - 2026-01-08
 
 ### Added

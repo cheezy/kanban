@@ -31,6 +31,58 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.17.0] - 2026-01-08</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Claude Code Skills for AI Agent Workflow Enforcement
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Four Workflow Enforcement Skills</strong>
+                - Complete set of Claude Code skills distributed via the onboarding endpoint to enforce Stride workflow discipline:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>stride-claiming-tasks</strong>
+                  - Enforces proper task claiming workflow with hook execution before claiming
+                </li>
+                <li>
+                  <strong>stride-completing-tasks</strong>
+                  - Ensures both after_doing and before_review hooks are executed before marking tasks complete
+                </li>
+                <li>
+                  <strong>stride-creating-tasks</strong>
+                  - Requires comprehensive task specifications to prevent 3+ hour exploration failures
+                </li>
+                <li>
+                  <strong>stride-creating-goals</strong>
+                  - Enforces proper goal structure with nested tasks and correct batch format
+                </li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-4 mt-4">
+                <strong>Onboarding Endpoint Distribution</strong>
+                - Skills automatically provided through <code>GET /api/agent/onboarding</code>:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>Complete skill content embedded in JSON response</li>
+                <li>Step-by-step installation instructions with exact commands</li>
+                <li>Usage guidance explaining when to invoke each skill</li>
+                <li>Automatic discovery by Claude Code when installed</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.16.0] - 2026-01-08</h2>
 
           <div class="mb-8">
