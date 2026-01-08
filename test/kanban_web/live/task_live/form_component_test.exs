@@ -1243,6 +1243,46 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert length(capabilities) == 2
       assert capabilities == ["elixir", "liveview"]
     end
+
+    test "saving task with all capabilities removed updates to empty array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test Task",
+          required_capabilities: ["elixir", "phoenix"]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{
+            "task" => %{
+              "title" => "Test Task",
+              "required_capabilities" => [""]
+            }
+          },
+          socket
+        )
+
+      updated_task = Tasks.get_task!(task.id)
+      assert updated_task.required_capabilities == []
+    end
   end
 
   describe "handle_event save for new task" do

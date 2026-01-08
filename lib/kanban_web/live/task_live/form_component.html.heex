@@ -309,6 +309,7 @@
         <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>
           {msg}
         </.error>
+        <input type="hidden" name="task[technology_requirements][]" value="" />
         <%= for {tech, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :technology_requirements) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -384,6 +385,7 @@
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Common Pitfalls")}</h3>
         <.error :for={msg <- Enum.map(f[:pitfalls].errors, &translate_error/1)}>{msg}</.error>
+        <input type="hidden" name="task[pitfalls][]" value="" />
         <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :pitfalls) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -420,6 +422,7 @@
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Out of Scope")}</h3>
         <.error :for={msg <- Enum.map(f[:out_of_scope].errors, &translate_error/1)}>{msg}</.error>
+        <input type="hidden" name="task[out_of_scope][]" value="" />
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :out_of_scope) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -460,6 +463,7 @@
         <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>
           {msg}
         </.error>
+        <input type="hidden" name="task[security_considerations][]" value="" />
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :security_considerations) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
@@ -506,6 +510,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Unit Tests")}</span>
           </label>
+          <input type="hidden" name="task[testing_strategy][unit_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "unit_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -540,6 +545,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Integration Tests")}</span>
           </label>
+          <input type="hidden" name="task[testing_strategy][integration_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "integration_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -574,6 +580,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Manual Tests")}</span>
           </label>
+          <input type="hidden" name="task[testing_strategy][manual_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "manual_tests", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -621,6 +628,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Telemetry Events")}</span>
           </label>
+          <input type="hidden" name="task[integration_points][telemetry_events][]" value="" />
           <%= for {event, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "telemetry_events", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -655,6 +663,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("PubSub Broadcasts")}</span>
           </label>
+          <input type="hidden" name="task[integration_points][pubsub_broadcasts][]" value="" />
           <%= for {broadcast, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "pubsub_broadcasts", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -689,6 +698,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("Phoenix Channels")}</span>
           </label>
+          <input type="hidden" name="task[integration_points][phoenix_channels][]" value="" />
           <%= for {channel, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "phoenix_channels", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -723,6 +733,7 @@
           <label class="label">
             <span class="label-text font-semibold">{gettext("External APIs")}</span>
           </label>
+          <input type="hidden" name="task[integration_points][external_apis][]" value="" />
           <%= for {api, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "external_apis", []))) do %>
             <div class="flex gap-2 mb-2">
               <input
@@ -759,6 +770,7 @@
     <div class="mt-6 pt-6 border-t border-base-300">
       <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Dependencies")}</h3>
       <.error :for={msg <- Enum.map(f[:dependencies].errors, &translate_error/1)}>{msg}</.error>
+      <input type="hidden" name="task[dependencies][]" value="" />
       <%= for {dep, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :dependencies) || []) do %>
         <div class="flex gap-2 mb-2">
           <input
@@ -815,6 +827,7 @@
         <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>
           {msg}
         </.error>
+        <input type="hidden" name="task[required_capabilities][]" value="" />
         <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
           <div class="flex gap-2 mb-2">
             <input
