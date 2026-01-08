@@ -563,6 +563,66 @@ defmodule Kanban.Tasks do
     end
   end
 
+  @doc """
+  Archives a task by setting archived_at to the current timestamp.
+
+  ## Examples
+
+      iex> archive_task(task)
+      {:ok, %Task{}}
+
+      iex> archive_task(task)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def archive_task(%Task{} = task) do
+    changeset = Task.changeset(task, %{archived_at: DateTime.utc_now()})
+
+    case Repo.update(changeset) do
+      {:ok, updated_task} ->
+        :telemetry.execute(
+          [:kanban, :task, :archived],
+          %{task_id: updated_task.id},
+          %{identifier: updated_task.identifier}
+        )
+
+        {:ok, updated_task}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Unarchives a task by setting archived_at to nil.
+
+  ## Examples
+
+      iex> unarchive_task(task)
+      {:ok, %Task{}}
+
+      iex> unarchive_task(task)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def unarchive_task(%Task{} = task) do
+    changeset = Task.changeset(task, %{archived_at: nil})
+
+    case Repo.update(changeset) do
+      {:ok, updated_task} ->
+        :telemetry.execute(
+          [:kanban, :task, :unarchived],
+          %{task_id: updated_task.id},
+          %{identifier: updated_task.identifier}
+        )
+
+        {:ok, updated_task}
+
+      error ->
+        error
+    end
+  end
+
   defp delete_goal_if_no_children(goal_id) do
     remaining_children_count =
       Task

@@ -4642,4 +4642,110 @@ defmodule Kanban.TasksTest do
       assert updated_task.status == :blocked
     end
   end
+
+  describe "archive_task/1" do
+    test "archives a task by setting archived_at" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert task.archived_at == nil
+
+      assert {:ok, archived_task} = Tasks.archive_task(task)
+      assert archived_task.archived_at != nil
+      assert %DateTime{} = archived_task.archived_at
+    end
+
+    test "archiving already archived task updates archived_at" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert {:ok, first_archived} = Tasks.archive_task(task)
+      first_timestamp = first_archived.archived_at
+
+      Process.sleep(1000)
+
+      assert {:ok, second_archived} = Tasks.archive_task(first_archived)
+      assert DateTime.compare(second_archived.archived_at, first_timestamp) == :gt
+    end
+
+    test "emits telemetry event when archiving task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      :telemetry.attach(
+        "test-archive-handler",
+        [:kanban, :task, :archived],
+        fn event, measurements, metadata, _config ->
+          send(self(), {:telemetry_event, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      assert {:ok, archived_task} = Tasks.archive_task(task)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :archived], measurements, metadata}
+      assert measurements.task_id == archived_task.id
+      assert metadata.identifier == archived_task.identifier
+
+      :telemetry.detach("test-archive-handler")
+    end
+  end
+
+  describe "unarchive_task/1" do
+    test "unarchives a task by setting archived_at to nil" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, archived_task} = Tasks.archive_task(task)
+      assert archived_task.archived_at != nil
+
+      assert {:ok, unarchived_task} = Tasks.unarchive_task(archived_task)
+      assert unarchived_task.archived_at == nil
+    end
+
+    test "unarchiving non-archived task keeps archived_at as nil" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert task.archived_at == nil
+
+      assert {:ok, unarchived_task} = Tasks.unarchive_task(task)
+      assert unarchived_task.archived_at == nil
+    end
+
+    test "emits telemetry event when unarchiving task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      :telemetry.attach(
+        "test-unarchive-handler",
+        [:kanban, :task, :unarchived],
+        fn event, measurements, metadata, _config ->
+          send(self(), {:telemetry_event, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      assert {:ok, unarchived_task} = Tasks.unarchive_task(archived_task)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :unarchived], measurements, metadata}
+      assert measurements.task_id == unarchived_task.id
+      assert metadata.identifier == unarchived_task.identifier
+
+      :telemetry.detach("test-unarchive-handler")
+    end
+  end
 end

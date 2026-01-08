@@ -44,17 +44,24 @@
               </h4>
 
               <p class="text-base-content opacity-80 mb-4">
-                All hooks (<code>before_doing</code>, <code>after_doing</code>, <code>before_review</code>, <code>after_review</code>) are now <strong>blocking</strong> and require <strong>mandatory validation</strong> at the API level. Agents must execute hooks before calling endpoints and include execution results in their requests.
+                All hooks (<code>before_doing</code>, <code>after_doing</code>, <code>before_review</code>, <code>after_review</code>) are now
+                <strong>blocking</strong>
+                and require <strong>mandatory validation</strong>
+                at the API level. Agents must execute hooks before calling endpoints and include execution results in their requests.
               </p>
 
               <div class="mb-4">
                 <strong class="text-base-content">What Changed:</strong>
                 <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4 mt-2">
                   <li>
-                    <strong><code>before_review</code> hook</strong>: Changed from non-blocking to <strong>blocking</strong> (60s timeout)
+                    <strong><code>before_review</code> hook</strong>: Changed from non-blocking to
+                    <strong>blocking</strong>
+                    (60s timeout)
                   </li>
                   <li>
-                    <strong><code>after_review</code> hook</strong>: Changed from non-blocking to <strong>blocking</strong> (60s timeout)
+                    <strong><code>after_review</code> hook</strong>: Changed from non-blocking to
+                    <strong>blocking</strong>
+                    (60s timeout)
                   </li>
                   <li>
                     <strong>API validation enforced</strong>: All endpoints now reject requests (422 error) if required hook results are missing or hooks failed
@@ -66,21 +73,43 @@
                 <strong class="text-base-content">Updated API Endpoints:</strong>
                 <ol class="list-decimal list-inside space-y-3 text-base-content opacity-80 ml-4 mt-2">
                   <li>
-                    <strong><code>PATCH /api/tasks/:id/complete</code></strong> - Now requires BOTH hook results:
+                    <strong><code>PATCH /api/tasks/:id/complete</code></strong>
+                    - Now requires BOTH hook results:
                     <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
-                      <li><strong>Required parameters</strong>: <code>after_doing_result</code> AND <code>before_review_result</code></li>
-                      <li><strong>Execution order</strong>: Execute <code>after_doing</code> hook FIRST, then <code>before_review</code> hook SECOND, then call endpoint</li>
-                      <li><strong>Validation</strong>: Both hooks must succeed (exit_code 0) or request is rejected</li>
-                      <li><strong>Error response</strong>: 422 if either hook result is missing or hook failed</li>
+                      <li>
+                        <strong>Required parameters</strong>: <code>after_doing_result</code>
+                        AND <code>before_review_result</code>
+                      </li>
+                      <li>
+                        <strong>Execution order</strong>: Execute <code>after_doing</code>
+                        hook FIRST, then <code>before_review</code>
+                        hook SECOND, then call endpoint
+                      </li>
+                      <li>
+                        <strong>Validation</strong>: Both hooks must succeed (exit_code 0) or request is rejected
+                      </li>
+                      <li>
+                        <strong>Error response</strong>: 422 if either hook result is missing or hook failed
+                      </li>
                     </ul>
                   </li>
                   <li>
-                    <strong><code>PATCH /api/tasks/:id/mark_reviewed</code></strong> - Now requires hook result:
+                    <strong><code>PATCH /api/tasks/:id/mark_reviewed</code></strong>
+                    - Now requires hook result:
                     <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
-                      <li><strong>Required parameter</strong>: <code>after_review_result</code></li>
-                      <li><strong>Execution order</strong>: Execute <code>after_review</code> hook FIRST, then call endpoint</li>
-                      <li><strong>Validation</strong>: Hook must succeed (exit_code 0) or request is rejected</li>
-                      <li><strong>Error response</strong>: 422 if hook result is missing or hook failed</li>
+                      <li>
+                        <strong>Required parameter</strong>: <code>after_review_result</code>
+                      </li>
+                      <li>
+                        <strong>Execution order</strong>: Execute <code>after_review</code>
+                        hook FIRST, then call endpoint
+                      </li>
+                      <li>
+                        <strong>Validation</strong>: Hook must succeed (exit_code 0) or request is rejected
+                      </li>
+                      <li>
+                        <strong>Error response</strong>: 422 if hook result is missing or hook failed
+                      </li>
                     </ul>
                   </li>
                 </ol>
@@ -120,15 +149,58 @@
               <div class="mb-4">
                 <strong class="text-base-content">Updated Documentation:</strong>
                 <ul class="list-disc list-inside space-y-1 text-base-content opacity-80 ml-4 mt-2">
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/AI-WORKFLOW.md</code> - Updated workflow steps and hook execution order</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/api/README.md</code> - Updated endpoint requirements and examples</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/api/patch_tasks_id_complete.md</code> - Added <code>before_review_result</code> requirement</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/api/patch_tasks_id_mark_reviewed.md</code> - Added <code>after_review_result</code> requirement</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/REVIEW-WORKFLOW.md</code> - Updated review workflow with new hook execution order</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/GETTING-STARTED-WITH-AI.md</code> - Updated hook descriptions and examples</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/AGENT-HOOK-EXECUTION-GUIDE.md</code> - Updated execution patterns</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">docs/STRIDE-SKILLS-PLAN.md</code> - Updated completion process</li>
-                  <li><code class="text-sm bg-base-200 px-2 py-1 rounded">lib/kanban_web/controllers/api/agent_json.ex</code> - Updated onboarding endpoint</li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">docs/AI-WORKFLOW.md</code>
+                    - Updated workflow steps and hook execution order
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">docs/api/README.md</code>
+                    - Updated endpoint requirements and examples
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/api/patch_tasks_id_complete.md
+                    </code>
+                    - Added <code>before_review_result</code>
+                    requirement
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/api/patch_tasks_id_mark_reviewed.md
+                    </code>
+                    - Added <code>after_review_result</code>
+                    requirement
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/REVIEW-WORKFLOW.md
+                    </code>
+                    - Updated review workflow with new hook execution order
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/GETTING-STARTED-WITH-AI.md
+                    </code>
+                    - Updated hook descriptions and examples
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/AGENT-HOOK-EXECUTION-GUIDE.md
+                    </code>
+                    - Updated execution patterns
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      docs/STRIDE-SKILLS-PLAN.md
+                    </code>
+                    - Updated completion process
+                  </li>
+                  <li>
+                    <code class="text-sm bg-base-200 px-2 py-1 rounded">
+                      lib/kanban_web/controllers/api/agent_json.ex
+                    </code>
+                    - Updated onboarding endpoint
+                  </li>
                 </ul>
               </div>
             </div>
