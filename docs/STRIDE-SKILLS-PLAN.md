@@ -19,9 +19,9 @@ This plan details the creation of 4 Superpowers skills that will enforce proper 
 
 ### Skill 1: `stride-claiming-tasks`
 
-**Description:** "Use when you want to claim a task from Stride, before making any API calls to /api/tasks/claim"
+**Description:** "Use when you want to claim a task from Stride, before making any API calls to /api/tasks/claim. After successful claiming, immediately begin implementation."
 
-**Purpose:** Enforce the proper claiming workflow including hook execution
+**Purpose:** Enforce the proper claiming workflow including hook execution, then transition to active work
 
 **Key Sections:**
 - **The Iron Law:** NO CLAIMING WITHOUT HOOK EXECUTION
@@ -56,15 +56,82 @@ NO TASK CLAIMING WITHOUT PROPER SETUP AND HOOK EXECUTION
 [How to execute with 60s timeout]
 [What to do if hook fails]
 
+## When Hooks Fail
+
+**If before_doing fails:**
+1. Read the error output carefully
+2. Fix the underlying issue (usually: outdated code, missing deps, merge conflicts)
+3. Re-run the hook manually to verify fix
+4. Only proceed to claim task after hook succeeds
+5. Never skip a failing hook
+
+**Common before_doing failures:**
+- Merge conflicts → Resolve conflicts first
+- Missing dependencies → Run deps.get
+- Test failures → Fix tests before claiming new work
+
+## After Successful Claim
+
+**CRITICAL: Once the task is claimed, you MUST immediately begin implementation.**
+
+Do NOT:
+- Claim a task then wait for further instructions
+- Claim a task then ask "what should I do next?"
+- Claim multiple tasks before starting work
+
+DO:
+- Read the task description, acceptance criteria, and key files
+- Start implementing the solution immediately
+- Follow patterns_to_follow and avoid pitfalls
+- Work continuously until ready to complete (using `stride-completing-tasks` skill)
+
+**The claiming skill's job ends when you start coding. Your next interaction with Stride will be when you're ready to mark the work complete.**
+
 ## Red Flags - STOP
 - "I'll just claim quickly and run hooks later"
 - "The hook is just git pull, I can skip it"
+- "I can fix hook failures after claiming"
+- "I'll claim this task and then figure out what to do"
 
 ## Rationalization Table
-| Excuse | Reality |
-|--------|---------|
-| "This is urgent" | Hooks prevent merge conflicts |
-| "I know the code is current" | Hooks ensure consistency |
+| Excuse | Reality | Consequence |
+|--------|---------|-------------|
+| "This is urgent" | Hooks prevent merge conflicts | Wastes 2+ hours fixing conflicts later |
+| "I know the code is current" | Hooks ensure consistency | Outdated deps cause runtime failures |
+| "Just a quick claim" | Setup takes 30 seconds | Skip it and lose 30 minutes debugging |
+| "The hook is just git pull" | May also run deps.get, migrations | Missing deps break implementation |
+| "I'll claim and ask what's next" | Claiming means you're ready to work | Wastes claim time, blocks other agents |
+
+## Quick Reference Card
+
+```
+CLAIMING WORKFLOW:
+├─ 1. Verify .stride_auth.md exists ✓
+├─ 2. Verify .stride.md exists ✓
+├─ 3. Extract API token and URL ✓
+├─ 4. Call GET /api/tasks/next ✓
+├─ 5. Review task details ✓
+├─ 6. Read before_doing hook from .stride.md ✓
+├─ 7. Execute before_doing (60s timeout) ✓
+├─ 8. Capture exit_code, output, duration_ms ✓
+├─ 9. Hook succeeds? → Call POST /api/tasks/claim WITH result ✓
+├─ 10. Hook fails? → Fix issues, retry, never skip ✓
+└─ 11. Task claimed? → BEGIN IMPLEMENTATION IMMEDIATELY ✓
+
+API ENDPOINT: POST /api/tasks/claim
+REQUIRED: {
+  "identifier": "W47",
+  "agent_name": "Claude",
+  "before_doing_result": {
+    "exit_code": 0,
+    "output": "Hook output...",
+    "duration_ms": 450
+  }
+}
+HOOK TIMING: before_doing executes BEFORE claim
+CRITICAL: Must include before_doing_result in claim request
+NEXT STEP: Immediately begin working on the task after successful claim
+```
 ```
 
 ---
@@ -113,13 +180,114 @@ Calling PATCH /api/tasks/:id/complete before running after_doing causes:
 9. If needs_review=true: STOP and wait
 10. If needs_review=false: Execute after_review hook (60s timeout, blocking)
 
-## Review Decision Flowchart
-[Flowchart showing needs_review true/false paths]
+## Completion Workflow Flowchart
+
+```
+Work Complete
+    ↓
+Execute after_doing (120s)
+    ↓
+Success? ─NO→ Fix Issues → Retry after_doing
+    ↓ YES
+Execute before_review (60s)
+    ↓
+Success? ─NO→ Fix Issues → Retry before_review
+    ↓ YES
+Call PATCH /api/tasks/:id/complete
+    ↓
+needs_review=true? ─YES→ STOP (wait for human)
+    ↓ NO
+Execute after_review (60s)
+    ↓
+Success? ─NO→ Log warning, task still complete
+    ↓ YES
+Claim next task
+```
+
+## Review vs Auto-Approval Decision
+
+```
+Task marked complete via API
+    ↓
+Check needs_review flag
+    ↓
+    ├─ needs_review=true
+    │      ↓
+    │  Task → Review column
+    │      ↓
+    │  Agent MUST STOP
+    │      ↓
+    │  Wait for human approval
+    │      ↓
+    │  Human calls /mark_reviewed
+    │      ↓
+    │  Execute after_review hook
+    │      ↓
+    │  Task → Done column
+    │
+    └─ needs_review=false
+           ↓
+       Task → Done column immediately
+           ↓
+       Execute after_review hook
+           ↓
+       Claim next task
+```
+
+## When Hooks Fail
+
+**If after_doing fails:**
+1. DO NOT call complete endpoint
+2. Read test/build failures carefully
+3. Fix the failing tests or build issues
+4. Re-run after_doing hook to verify
+5. Only call complete endpoint after success
+
+**If before_review fails:**
+1. DO NOT call complete endpoint
+2. Fix the issue (usually: PR creation, doc generation)
+3. Re-run before_review hook
+4. Only proceed after success
+
+**Common after_doing failures:**
+- Test failures → Fix tests first
+- Build errors → Resolve compilation issues
+- Linting errors → Fix code quality issues
+- Coverage below target → Add missing tests
 
 ## Red Flags - STOP
 - "I'll mark it complete then run tests"
 - "The tests probably pass"
 - "I can fix failures after completing"
+- "I'll skip the hooks this time"
+
+## Rationalization Table
+| Excuse | Reality | Consequence |
+|--------|---------|-------------|
+| "Tests probably pass" | after_doing catches 40% of issues | Task marked done with failing tests |
+| "I can fix later" | Task already marked complete | Have to reopen, wastes review cycle |
+| "Just this once" | Becomes a habit | Quality standards erode completely |
+
+## Quick Reference Card
+
+```
+COMPLETION WORKFLOW:
+├─ 1. Work is complete ✓
+├─ 2. Read after_doing hook from .stride.md ✓
+├─ 3. Execute after_doing (120s timeout, blocking) ✓
+├─ 4. Hook fails? → FIX, retry, DO NOT proceed ✓
+├─ 5. Read before_review hook ✓
+├─ 6. Execute before_review (60s timeout, blocking) ✓
+├─ 7. Hook fails? → FIX, retry, DO NOT proceed ✓
+├─ 8. Both succeed? → Call PATCH /api/tasks/:id/complete ✓
+├─ 9. needs_review=true? → STOP, wait for human ✓
+└─ 10. needs_review=false? → Execute after_review, claim next ✓
+
+API ENDPOINT: PATCH /api/tasks/:id/complete
+REQUIRED: {"time_spent_minutes": 45, "completion_notes": "..."}
+CRITICAL: Execute after_doing BEFORE calling complete
+HOOK ORDER: after_doing → before_review → complete → after_review
+```
 ```
 
 ---
@@ -199,6 +367,31 @@ MUST be array of objects, NOT strings:
 - "I'll just create a simple task"
 - "The agent can figure out the details"
 - "This is self-explanatory"
+- "I'll add details later if needed"
+
+## Rationalization Table
+| Excuse | Reality | Consequence |
+|--------|---------|-------------|
+| "Simple task" | Agent spends 3+ hours exploring | 3 hours wasted on discovery |
+| "Self-explanatory" | Missing context causes wrong approach | Implement wrong solution, have to redo |
+| "Add details later" | Never happens | Minimal task sits incomplete for days |
+| "Agent will ask" | Breaks flow, causes delays | Back-and-forth wastes 2+ hours |
+
+## Quick Reference Card
+
+```
+TASK CREATION CHECKLIST:
+├─ title ✓ (clear, specific)
+├─ type ✓ ("work", "defect", "goal")
+├─ description ✓ (WHY + WHAT)
+├─ complexity ✓ (small/medium/large)
+├─ key_files ✓ (prevent conflicts)
+├─ verification_steps ✓ (objects, not strings!)
+├─ testing_strategy ✓ (unit/integration/edge cases)
+├─ acceptance_criteria ✓
+├─ patterns_to_follow ✓
+└─ pitfalls ✓
+```
 ```
 
 ---
@@ -280,6 +473,48 @@ System auto-generates (G1, W47, D12, etc.)
 - "I'll use 'tasks' as the root key"
 - "I'll specify identifiers for new tasks"
 - "Dependencies across goals will work in batch"
+- "I'll skip nested task details"
+
+## Rationalization Table
+| Excuse | Reality | Consequence |
+|--------|---------|-------------|
+| "'tasks' works too" | API requires "goals" root key | 422 error, batch rejected entirely |
+| "I'll add identifiers" | System auto-generates them | Validation error, creation fails |
+| "Cross-goal deps work" | Only within-goal indices work | Dependencies ignored silently |
+| "Simple nested tasks" | Each must follow full task spec | Minimal nested tasks fail same way |
+
+## Quick Reference Card
+
+```
+BATCH CREATION FORMAT:
+{
+  "goals": [  ← MUST be "goals" not "tasks"
+    {
+      "title": "Goal Title",
+      "type": "goal",
+      "complexity": "large",
+      "tasks": [
+        {
+          "title": "Task 1",
+          "type": "work",
+          // Full task spec required!
+        },
+        {
+          "title": "Task 2",
+          "type": "work",
+          "dependencies": [0]  ← Array index
+        }
+      ]
+    }
+  ]
+}
+
+DEPENDENCY RULES:
+├─ Within goal → Use indices [0, 1, 2]
+├─ Existing tasks → Use IDs ["W47", "W48"]
+├─ Across goals in batch → DON'T (create sequentially)
+└─ Never specify IDs for new tasks (auto-generated)
+```
 ```
 
 ---
