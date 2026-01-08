@@ -16,6 +16,9 @@
         >
           <.button>{gettext("API Tokens")}</.button>
         </.link>
+        <.link navigate={~p"/boards/#{@board}/archive"}>
+          <.button>{gettext("Archived Tasks")}</.button>
+        </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
           <.button>{gettext("Edit board")}</.button>
         </.link>
@@ -231,6 +234,16 @@
                       <.icon
                         name="hero-pencil-solid"
                         class="h-4 w-4 text-base-content opacity-50 hover:text-blue-600 transition-colors"
+                      />
+                    </.link>
+                    <.link
+                      phx-click={JS.push("archive_task", value: %{id: task.id})}
+                      aria-label={gettext("Archive task")}
+                      class="p-1.5 bg-base-100/90 hover:bg-gray-50 dark:hover:bg-gray-900/30 rounded-md transition-colors shadow-sm"
+                    >
+                      <.icon
+                        name="hero-archive-box-solid"
+                        class="h-4 w-4 text-base-content opacity-50 hover:text-gray-600 transition-colors"
                       />
                     </.link>
                     <.link

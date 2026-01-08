@@ -4815,7 +4815,8 @@ defmodule Kanban.TasksTest do
       goal_index = Enum.find_index(tasks_in_ready, &(&1.id == updated_goal.id))
       child_index = Enum.find_index(tasks_in_ready, &(&1.id == moved_child.id))
 
-      assert goal_index < child_index, "Goal should be positioned before its child in the sorted list"
+      assert goal_index < child_index,
+             "Goal should be positioned before its child in the sorted list"
     end
 
     test "places goal after existing goals when multiple goals exist" do

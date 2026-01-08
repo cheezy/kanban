@@ -62,6 +62,25 @@ defmodule Kanban.Tasks do
   end
 
   @doc """
+  Returns all archived tasks for a board, sorted by archived_at descending.
+
+  ## Examples
+
+      iex> list_archived_tasks_for_board(board_id)
+      [%Task{}, ...]
+
+  """
+  def list_archived_tasks_for_board(board_id) do
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id == ^board_id)
+    |> where([t], not is_nil(t.archived_at))
+    |> order_by([t], desc: t.archived_at)
+    |> preload(:assigned_to)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single task.
 
   Raises `Ecto.NoResultsError` if the Task does not exist.
@@ -2396,9 +2415,7 @@ defmodule Kanban.Tasks do
       )
       |> Repo.all()
 
-    Logger.info(
-      "Shifting #{length(tasks_to_shift)} tasks from position #{target_position}"
-    )
+    Logger.info("Shifting #{length(tasks_to_shift)} tasks from position #{target_position}")
 
     # Shift each task down by 1, from highest position to lowest to avoid conflicts
     Enum.each(tasks_to_shift, fn task ->

@@ -187,6 +187,25 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("archive_task", %{"id" => id}, socket) do
+    task = Tasks.get_task!(id)
+
+    case Tasks.archive_task(task) do
+      {:ok, _archived_task} ->
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Task archived successfully"))
+         |> stream(:columns, columns, reset: true)
+         |> load_tasks_for_columns(columns)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
+    end
+  end
+
+  @impl true
   def handle_event("delete_task", %{"id" => id}, socket) do
     task = Tasks.get_task!(id)
 

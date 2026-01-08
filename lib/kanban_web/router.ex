@@ -110,6 +110,7 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show
+      live "/boards/:id/archive", ArchiveLive.Index, :index
       live "/boards/:id/api_tokens", BoardLive.Show, :api_tokens
       live "/boards/:id/columns/new", BoardLive.Show, :new_column
       live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
