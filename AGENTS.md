@@ -11,6 +11,28 @@
 - Always provide translations of all text that is visible in the UI
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 
+### Module design and complexity
+
+**IMPORTANT**: When working with modules that are becoming too large or complex:
+
+- **Monitor module size and complexity**: If a module exceeds ~500-600 lines or contains deeply nested logic with high cyclomatic complexity, consider refactoring
+- **Break out logical concerns**: Extract related functionality into separate, focused modules that handle a single responsibility
+- **Use helper modules**: For complex domains (like task management), consider creating dedicated modules for specific sub-concerns:
+  - Positioning logic (e.g., `Tasks.Positioning`)
+  - Dependency management (e.g., `Tasks.Dependencies`)
+  - Validation logic (e.g., `Tasks.Validation`)
+  - Query builders (e.g., `Tasks.Queries`)
+- **Extract helper functions**: When a function becomes complex (cyclomatic complexity > 9), extract complex conditional logic into smaller, well-named helper functions
+- **Maintain clear module boundaries**: Each module should have a clear, single purpose with a well-defined public API
+- **Document module organization**: When splitting modules, update documentation to explain the new structure and how modules relate to each other
+
+This approach improves:
+- Code maintainability and readability
+- Test isolation and coverage
+- Collaboration between developers
+- Ability to reason about individual components
+- Credo compliance and code quality metrics
+
 ### UI/UX guidelines
 
 - **Always follow existing application styles and patterns** when adding new UI elements
