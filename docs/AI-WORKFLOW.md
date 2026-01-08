@@ -91,6 +91,8 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 **Complete AI Workflow with Hooks (Claim → Execute → Complete → Review):**
 
+**✨ Claude Code Skill Available:** Use the `stride-claiming-tasks` skill before calling POST /api/tasks/claim to ensure proper prerequisite verification and hook execution. This skill is automatically provided via the onboarding endpoint.
+
 1. **Discover tasks** - Call [GET /api/tasks/next](../api/get_tasks_next.md) to find available tasks
 
 2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout)

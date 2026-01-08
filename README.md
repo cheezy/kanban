@@ -137,8 +137,9 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating effective tasks.
 
 **✨ Claude Code Skills:** Agents receive workflow enforcement skills via the onboarding endpoint:
-- `stride-creating-tasks`: Ensures comprehensive task specifications and prevents exploration failures
+- `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
 - `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
+- `stride-creating-tasks`: Ensures comprehensive task specifications and prevents exploration failures
 
 ## API Endpoints
 
