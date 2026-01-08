@@ -304,6 +304,36 @@ See [POST /api/tasks/batch](post_tasks_batch.md) for complete documentation on b
 - **Self-documenting** - All endpoint paths and documentation links included
 - **Environment-aware** - Templates include correct URLs for dev/production
 
+## Best Practices
+
+### Reload with Each New Session
+
+**⚠️ IMPORTANT:** Both AI agents and humans should reload the onboarding endpoint at the start of each new work session.
+
+**Why reload?**
+- Claude Code skills may be updated with bug fixes or improvements
+- API documentation URLs may change
+- Hook configurations may be modified
+- New workflow features may be added
+- Base URLs or endpoints may be updated
+
+**When to reload:**
+- At the start of each new Claude Code session
+- After any system maintenance or updates
+- When starting work on a new project or board
+- If you encounter unexpected behavior
+
+**How to reload:**
+```bash
+# Fetch latest onboarding information
+curl -s https://www.stridelikeaboss.com/api/agent/onboarding | jq '.'
+
+# Update your Claude Code skills if they've changed
+# (Check the claude_code_skills section)
+```
+
+This ensures you're always working with the latest skills, documentation, and system configuration.
+
 ## See Also
 
 - [README.md](README.md) - Complete API documentation

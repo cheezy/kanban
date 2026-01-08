@@ -118,9 +118,20 @@ This endpoint returns everything the agent needs to know:
 - Available hooks and their purpose
 - All API endpoints
 - Environment variables available in hooks
+- Claude Code skills for workflow enforcement
 
 **If you're using Claude Code or another AI coding assistant**, just tell it:
 > "Please read the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding"
+
+**⚠️ IMPORTANT: Reload with Each New Session**
+
+Both AI agents and humans should reload the onboarding endpoint at the start of each new work session to ensure you have the latest:
+- Claude Code skills (may be updated with bug fixes or improvements)
+- API documentation and endpoints
+- Hook configurations
+- Workflow features
+
+Reload at the start of each new Claude Code session or after any system updates.
 
 ### Creating `.stride_auth.md`
 
