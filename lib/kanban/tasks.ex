@@ -2325,9 +2325,15 @@ defmodule Kanban.Tasks do
       if all_in_done? do
         done_column
       else
-        goal_context.children_data
-        |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
-        |> Enum.min_by(& &1.position)
+        valid_columns =
+          goal_context.children_data
+          |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
+          |> Enum.reject(&is_nil/1)
+
+        case valid_columns do
+          [] -> List.first(goal_context.all_columns)
+          columns -> Enum.min_by(columns, & &1.position)
+        end
       end
 
     {:ok, target_column}
