@@ -1375,6 +1375,101 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "security: cross-board task creation prevention" do
+    test "prevents creating task in another user's board column" do
+      # Setup: Create two users with their own boards
+      user1 = user_fixture(%{email: "user1@example.com"})
+      user2 = user_fixture(%{email: "user2@example.com"})
+
+      board1 = board_fixture(user1)
+      board2 = board_fixture(user2)
+
+      column1 = column_fixture(board1, %{name: "Board 1 Column"})
+      column2 = column_fixture(board2, %{name: "Board 2 Column"})
+
+      task = %Tasks.Task{column_id: column1.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board1,
+            action: :new_task,
+            column_id: column1.id,
+            patch: "/boards/#{board1.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      # Attempt: Try to create task with column_id from board2
+      task_params = %{
+        "title" => "Malicious Task",
+        "column_id" => column2.id
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Verify: Task was NOT created
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Malicious Task") == nil
+
+      # Verify: Error message is shown
+      assert updated_socket.assigns.error_message == "Security error: Invalid column"
+
+      # Verify: Form has error
+      assert updated_socket.assigns.form.source.errors[:column_id] != nil
+    end
+
+    test "prevents moving task to another user's board column via edit" do
+      # Setup: Create two users with their own boards
+      user1 = user_fixture(%{email: "user1@example.com"})
+      user2 = user_fixture(%{email: "user2@example.com"})
+
+      board1 = board_fixture(user1)
+      board2 = board_fixture(user2)
+
+      column1 = column_fixture(board1, %{name: "Board 1 Column"})
+      column2 = column_fixture(board2, %{name: "Board 2 Column"})
+
+      # Create task in board1
+      task = task_fixture(column1, %{title: "Legitimate Task"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board1,
+            action: :edit_task,
+            patch: "/boards/#{board1.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      # Attempt: Try to move task to board2's column
+      task_params = %{
+        "title" => "Legitimate Task",
+        "column_id" => column2.id
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Verify: Task was NOT moved
+      reloaded_task = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert reloaded_task.column_id == column1.id
+
+      # Verify: Error message is shown
+      assert updated_socket.assigns.error_message == "Security error: Invalid column"
+
+      # Verify: Form has error
+      assert updated_socket.assigns.form.source.errors[:column_id] != nil
+    end
+  end
+
   describe "assignable users" do
     test "builds assignable users list from board users" do
       user1 = user_fixture(%{email: "user1@example.com", name: "User One"})

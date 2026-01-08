@@ -314,6 +314,51 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp save_task(socket, :edit_task, task_params) do
+    # Security: If column_id is being changed, verify it belongs to the current board
+    if Map.has_key?(task_params, "column_id") do
+      column_id = task_params["column_id"]
+      column = Columns.get_column!(column_id)
+
+      if column.board_id == socket.assigns.board.id do
+        perform_task_update(socket, task_params)
+      else
+        changeset =
+          socket.assigns.task
+          |> Tasks.Task.changeset(task_params)
+          |> Ecto.Changeset.add_error(:column_id, gettext("Column does not belong to this board"))
+
+        {:noreply,
+         socket
+         |> assign(:error_message, gettext("Security error: Invalid column"))
+         |> assign_form(changeset)}
+      end
+    else
+      perform_task_update(socket, task_params)
+    end
+  end
+
+  defp save_task(socket, :new_task, task_params) do
+    column_id = task_params["column_id"] || socket.assigns.column_id
+
+    column = Columns.get_column!(column_id)
+
+    # Security: Verify column belongs to the current board
+    if column.board_id != socket.assigns.board.id do
+      changeset =
+        socket.assigns.task
+        |> Tasks.Task.changeset(task_params)
+        |> Ecto.Changeset.add_error(:column_id, gettext("Column does not belong to this board"))
+
+      {:noreply,
+       socket
+       |> assign(:error_message, gettext("Security error: Invalid column"))
+       |> assign_form(changeset)}
+    else
+      create_task_in_column(socket, column, task_params)
+    end
+  end
+
+  defp perform_task_update(socket, task_params) do
     # Auto-populate review fields when review_status changes
     task_params =
       case Map.get(socket.assigns, :current_scope) do
@@ -341,11 +386,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
-  defp save_task(socket, :new_task, task_params) do
-    column_id = task_params["column_id"] || socket.assigns.column_id
-
-    column = Columns.get_column!(column_id)
-
+  defp create_task_in_column(socket, column, task_params) do
     case Tasks.create_task(column, task_params) do
       {:ok, task} ->
         notify_parent({:saved, task})
