@@ -283,6 +283,8 @@ See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
 ### Task Completion
 
+**✨ Claude Code Skill Available:** Use the `stride-completing-tasks` skill before calling PATCH /api/tasks/:id/complete to ensure proper hook execution order and prevent quality gate bypasses. This skill is automatically provided via the onboarding endpoint.
+
 **⚠️ CRITICAL:** You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
 
 When completing a task, use [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md):

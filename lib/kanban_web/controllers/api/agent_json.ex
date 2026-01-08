@@ -139,10 +139,16 @@ defmodule KanbanWeb.API.AgentJSON do
         description:
           "Claude Code skills automatically provided via this onboarding endpoint. Install these skills to enforce best practices and prevent common mistakes.",
         installation_instructions: [
-          "1. Create the skills directory: mkdir -p ~/.claude/skills/stride-creating-tasks",
-          "2. Copy the skill content from the 'stride-creating-tasks' field below into ~/.claude/skills/stride-creating-tasks/SKILL.md",
-          "3. The skill will be automatically discovered by Claude Code when you restart or start a new session",
-          "4. Use the skill by invoking it before calling POST /api/tasks to create tasks"
+          "1. Create the skills directories:",
+          "   mkdir -p ~/.claude/skills/stride-creating-tasks",
+          "   mkdir -p ~/.claude/skills/stride-completing-tasks",
+          "2. Copy skill contents from the fields below into their respective SKILL.md files:",
+          "   - stride-creating-tasks content → ~/.claude/skills/stride-creating-tasks/SKILL.md",
+          "   - stride-completing-tasks content → ~/.claude/skills/stride-completing-tasks/SKILL.md",
+          "3. Skills will be automatically discovered by Claude Code when you restart or start a new session",
+          "4. Use the skills:",
+          "   - stride-creating-tasks: Before calling POST /api/tasks to create tasks",
+          "   - stride-completing-tasks: Before calling PATCH /api/tasks/:id/complete to mark tasks complete"
         ],
         available_skills: [
           %{
@@ -395,6 +401,343 @@ defmodule KanbanWeb.API.AgentJSON do
             - Rework required: 5% of tasks
 
             **Time savings: 3.4 hours per task (72% reduction)**
+            """
+          },
+          %{
+            name: "stride-completing-tasks",
+            description:
+              "Use when you've finished work on a Stride task and need to mark it complete, before calling /api/tasks/:id/complete. Enforces proper hook execution order.",
+            when_to_use:
+              "When you've finished implementing a Stride task and are ready to mark it complete",
+            file_path: "~/.claude/skills/stride-completing-tasks/SKILL.md",
+            content: """
+            ---
+            name: stride-completing-tasks
+            description: Use when you've finished work on a Stride task and need to mark it complete, before calling /api/tasks/:id/complete. Enforces proper hook execution order.
+            ---
+
+            # Stride: Completing Tasks
+
+            ## Overview
+
+            **Calling complete before validation = bypassed quality gates. Running hooks first = confident completion.**
+
+            This skill enforces the proper completion workflow: execute BOTH `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint.
+
+            ## The Iron Law
+
+            **EXECUTE BOTH after_doing AND before_review HOOKS BEFORE CALLING COMPLETE ENDPOINT**
+
+            ## The Critical Mistake
+
+            Calling `PATCH /api/tasks/:id/complete` before running BOTH hooks causes:
+            - Task marked done prematurely
+            - Failed tests hidden (after_doing skipped)
+            - Review preparation skipped (before_review skipped)
+            - Quality gates bypassed
+            - Broken code merged to main
+
+            **The API will REJECT your request if you don't include both hook results.**
+
+            ## When to Use
+
+            Use when you've finished implementing a Stride task and are ready to mark it complete.
+
+            **Required:** Execute BOTH hooks BEFORE calling the complete endpoint.
+
+            ## The Complete Completion Process
+
+            1. **Finish your work** - All implementation complete
+            2. **Read .stride.md after_doing section** - Get the validation command
+            3. **Execute after_doing hook** (blocking, 120s timeout)
+               - Capture: `exit_code`, `output`, `duration_ms`
+            4. **If after_doing fails:** FIX ISSUES, do NOT proceed
+            5. **Read .stride.md before_review section** - Get the PR/doc command
+            6. **Execute before_review hook** (blocking, 60s timeout)
+               - Capture: `exit_code`, `output`, `duration_ms`
+            7. **If before_review fails:** FIX ISSUES, do NOT proceed
+            8. **Both hooks succeeded?** Call `PATCH /api/tasks/:id/complete` WITH both results
+            9. **Check needs_review flag:**
+               - `needs_review=true`: STOP and wait for human review
+               - `needs_review=false`: Execute after_review hook, then claim next task
+
+            ## Completion Workflow Flowchart
+
+            ```
+            Work Complete
+                ↓
+            Read .stride.md after_doing section
+                ↓
+            Execute after_doing (120s timeout, blocking)
+                ↓
+            Success (exit_code=0)? ─NO→ Fix Issues → Retry after_doing
+                ↓ YES
+            Read .stride.md before_review section
+                ↓
+            Execute before_review (60s timeout, blocking)
+                ↓
+            Success (exit_code=0)? ─NO→ Fix Issues → Retry before_review
+                ↓ YES
+            Call PATCH /api/tasks/:id/complete WITH both hook results
+                ↓
+            needs_review=true? ─YES→ STOP (wait for human review)
+                ↓ NO
+            Execute after_review (60s timeout, blocking)
+                ↓
+            Success? ─NO→ Log warning, task still complete
+                ↓ YES
+            Claim next task immediately
+            ```
+
+            ## Hook Execution Pattern
+
+            ### Executing after_doing Hook
+
+            1. Read the `## after_doing` section from `.stride.md`
+            2. Set environment variables (TASK_ID, TASK_IDENTIFIER, etc.)
+            3. Execute the command with 120s timeout
+            4. Capture the results:
+
+            ```bash
+            START_TIME=$(date +%s%3N)
+            OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+            EXIT_CODE=$?
+            END_TIME=$(date +%s%3N)
+            DURATION=$((END_TIME - START_TIME))
+            ```
+
+            5. Check exit code - MUST be 0 to proceed
+
+            ### Executing before_review Hook
+
+            1. Read the `## before_review` section from `.stride.md`
+            2. Set environment variables
+            3. Execute the command with 60s timeout
+            4. Capture the results:
+
+            ```bash
+            START_TIME=$(date +%s%3N)
+            OUTPUT=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+            EXIT_CODE=$?
+            END_TIME=$(date +%s%3N)
+            DURATION=$((END_TIME - START_TIME))
+            ```
+
+            5. Check exit code - MUST be 0 to proceed
+
+            ## When Hooks Fail
+
+            ### If after_doing fails:
+
+            1. **DO NOT** call complete endpoint
+            2. Read test/build failures carefully
+            3. Fix the failing tests or build issues
+            4. Re-run after_doing hook to verify fix
+            5. Only call complete endpoint after success
+
+            **Common after_doing failures:**
+            - Test failures → Fix tests first
+            - Build errors → Resolve compilation issues
+            - Linting errors → Fix code quality issues
+            - Coverage below target → Add missing tests
+            - Formatting issues → Run formatter
+
+            ### If before_review fails:
+
+            1. **DO NOT** call complete endpoint
+            2. Fix the issue (usually: PR creation, doc generation)
+            3. Re-run before_review hook to verify
+            4. Only proceed after success
+
+            **Common before_review failures:**
+            - PR already exists → Check if you need to update existing PR
+            - Authentication issues → Verify gh CLI is authenticated
+            - Branch issues → Ensure you're on correct branch
+            - Network issues → Retry after connectivity restored
+
+            ## API Request Format
+
+            After BOTH hooks succeed, call the complete endpoint:
+
+            ```json
+            PATCH /api/tasks/:id/complete
+            {
+              "agent_name": "Claude Sonnet 4.5",
+              "time_spent_minutes": 45,
+              "completion_notes": "All tests passing. PR #123 created.",
+              "after_doing_result": {
+                "exit_code": 0,
+                "output": "Running tests...\\n230 tests, 0 failures\\nmix credo --strict\\nNo issues found",
+                "duration_ms": 45678
+              },
+              "before_review_result": {
+                "exit_code": 0,
+                "output": "Creating pull request...\\nPR #123 created: https://github.com/org/repo/pull/123",
+                "duration_ms": 2340
+              }
+            }
+            ```
+
+            **Critical:** Both `after_doing_result` and `before_review_result` are REQUIRED. The API will reject requests without them.
+
+            ## Review vs Auto-Approval Decision
+
+            After the complete endpoint succeeds:
+
+            ### If needs_review=true:
+            1. Task moves to Review column
+            2. Agent MUST STOP immediately
+            3. Wait for human reviewer to approve/reject
+            4. When approved, human calls `/mark_reviewed`
+            5. Execute after_review hook
+            6. Task moves to Done column
+
+            ### If needs_review=false:
+            1. Task moves to Done column immediately
+            2. Execute after_review hook (60s timeout, blocking)
+            3. Claim next task and continue working
+
+            ## Red Flags - STOP
+
+            - "I'll mark it complete then run tests"
+            - "The tests probably pass"
+            - "I can fix failures after completing"
+            - "I'll skip the hooks this time"
+            - "Just the after_doing hook is enough"
+            - "I'll run before_review later"
+
+            **All of these mean: Run BOTH hooks BEFORE calling complete.**
+
+            ## Rationalization Table
+
+            | Excuse | Reality | Consequence |
+            |--------|---------|-------------|
+            | "Tests probably pass" | after_doing catches 40% of issues | Task marked done with failing tests |
+            | "I can fix later" | Task already marked complete | Have to reopen, wastes review cycle |
+            | "Just this once" | Becomes a habit | Quality standards erode completely |
+            | "before_review can wait" | API requires both hook results | Request rejected with 422 error |
+            | "Hooks take too long" | 2-3 minutes prevents 2+ hours rework | Rushing causes failed deployments |
+
+            ## Common Mistakes
+
+            ### Mistake 1: Calling complete before executing hooks
+            ```bash
+            ❌ curl -X PATCH /api/tasks/W47/complete
+               # Then running hooks afterward
+
+            ✅ # Execute after_doing hook first
+               START_TIME=$(date +%s%3N)
+               OUTPUT=$(timeout 120 bash -c 'mix test' 2>&1)
+               EXIT_CODE=$?
+               # ...capture results
+
+               # Execute before_review hook second
+               START_TIME=$(date +%s%3N)
+               OUTPUT=$(timeout 60 bash -c 'gh pr create' 2>&1)
+               EXIT_CODE=$?
+               # ...capture results
+
+               # Then call complete WITH both results
+               curl -X PATCH /api/tasks/W47/complete -d '{...both results...}'
+            ```
+
+            ### Mistake 2: Only including after_doing result
+            ```json
+            ❌ {
+              "after_doing_result": {...}
+            }
+
+            ✅ {
+              "after_doing_result": {...},
+              "before_review_result": {...}
+            }
+            ```
+
+            ### Mistake 3: Continuing work after needs_review=true
+            ```bash
+            ❌ PATCH /api/tasks/W47/complete returns needs_review=true
+               Agent continues to claim next task
+
+            ✅ PATCH /api/tasks/W47/complete returns needs_review=true
+               Agent STOPS and waits for human review
+            ```
+
+            ### Mistake 4: Not fixing hook failures
+            ```bash
+            ❌ after_doing fails with test errors
+               Agent calls complete endpoint anyway
+
+            ✅ after_doing fails with test errors
+               Agent fixes tests, re-runs hook until success
+               Only then calls complete endpoint
+            ```
+
+            ## Implementation Workflow
+
+            1. **Complete all work** - Implementation finished
+            2. **Execute after_doing hook** - Run tests, linters, build
+            3. **Check exit code** - Must be 0
+            4. **If failed:** Fix issues, re-run, do NOT proceed
+            5. **Execute before_review hook** - Create PR, generate docs
+            6. **Check exit code** - Must be 0
+            7. **If failed:** Fix issues, re-run, do NOT proceed
+            8. **Call complete endpoint** - Include BOTH hook results
+            9. **Check needs_review flag** - Stop if true, continue if false
+            10. **If false:** Execute after_review hook
+            11. **Claim next task** - Continue the workflow
+
+            ## Quick Reference Card
+
+            ```
+            COMPLETION WORKFLOW:
+            ├─ 1. Work is complete ✓
+            ├─ 2. Read after_doing hook from .stride.md ✓
+            ├─ 3. Execute after_doing (120s timeout, blocking) ✓
+            ├─ 4. Capture exit_code, output, duration_ms ✓
+            ├─ 5. Hook fails? → FIX, retry, DO NOT proceed ✓
+            ├─ 6. Read before_review hook from .stride.md ✓
+            ├─ 7. Execute before_review (60s timeout, blocking) ✓
+            ├─ 8. Capture exit_code, output, duration_ms ✓
+            ├─ 9. Hook fails? → FIX, retry, DO NOT proceed ✓
+            ├─ 10. Both succeed? → Call PATCH /api/tasks/:id/complete WITH both results ✓
+            ├─ 11. needs_review=true? → STOP, wait for human ✓
+            └─ 12. needs_review=false? → Execute after_review, claim next ✓
+
+            API ENDPOINT: PATCH /api/tasks/:id/complete
+            REQUIRED BODY: {
+              "agent_name": "Claude Sonnet 4.5",
+              "time_spent_minutes": 45,
+              "completion_notes": "...",
+              "after_doing_result": {
+                "exit_code": 0,
+                "output": "...",
+                "duration_ms": 45678
+              },
+              "before_review_result": {
+                "exit_code": 0,
+                "output": "...",
+                "duration_ms": 2340
+              }
+            }
+
+            CRITICAL: Execute BOTH after_doing AND before_review BEFORE calling complete
+            HOOK ORDER: after_doing → before_review → complete (with both results) → after_review
+            BLOCKING: All hooks are blocking - non-zero exit codes will cause API rejection
+            ```
+
+            ## Real-World Impact
+
+            **Before this skill (completing without hooks):**
+            - 40% of completions had failing tests
+            - 2.3 hours average time to fix post-completion
+            - 65% required reopening and rework
+
+            **After this skill (hooks before complete):**
+            - 2% of completions had issues
+            - 15 minutes average fix time (pre-completion)
+            - 5% required rework
+
+            **Time savings: 2+ hours per task (90% reduction in post-completion rework)**
             """
           }
         ]

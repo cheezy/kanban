@@ -294,9 +294,12 @@ Give your AI agent this prompt to break down and upload a goal:
 
 **✨ Claude Code Skills Available:**
 - Use `stride-creating-tasks` for individual tasks and defects
+- Use `stride-completing-tasks` before marking tasks complete
 - Use `stride-creating-goals` for goals with nested tasks (coming soon)
 
-These skills are automatically provided via the onboarding endpoint and enforce comprehensive task specifications that prevent agents from wasting 3+ hours on discovery.
+These skills are automatically provided via the onboarding endpoint and enforce best practices:
+- `stride-creating-tasks`: Prevents 3+ hour exploration failures from minimal task specifications
+- `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
 
 **Example: If you ask your agent to implement user authentication, it would:**
 
