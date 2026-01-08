@@ -1543,6 +1543,100 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "Task.changeset/2 required_capabilities validation" do
+    test "accepts nil required_capabilities" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", required_capabilities: nil}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.required_capabilities == nil || task.required_capabilities == []
+    end
+
+    test "accepts empty array" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", required_capabilities: []}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.required_capabilities == []
+    end
+
+    test "accepts valid capabilities" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", required_capabilities: ["elixir", "phoenix", "testing"]}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.required_capabilities == ["elixir", "phoenix", "testing"]
+    end
+
+    test "rejects invalid capability" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{title: "Test task", required_capabilities: ["invalid_capability"]}
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert changeset.errors[:required_capabilities] != nil
+
+      {message, _} = changeset.errors[:required_capabilities]
+      assert message =~ "invalid capability: 'invalid_capability'"
+      assert message =~ "Must be one of:"
+    end
+
+    test "rejects multiple invalid capabilities" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        required_capabilities: ["elixir", "invalid1", "phoenix", "invalid2"]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert changeset.errors[:required_capabilities] != nil
+
+      {message, _} = changeset.errors[:required_capabilities]
+      assert message =~ "invalid capabilities: invalid1, invalid2"
+      assert message =~ "Must be one of:"
+    end
+
+    test "rejects array with non-string values" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        required_capabilities: ["elixir", 123, :phoenix]
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list of strings" in errors_on(changeset).required_capabilities
+    end
+
+    test "rejects non-list values" do
+      task = %Kanban.Tasks.Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        required_capabilities: "not a list"
+      }
+
+      changeset = Kanban.Tasks.Task.changeset(task, %{})
+      refute changeset.valid?
+      assert "must be a list" in errors_on(changeset).required_capabilities
+    end
+  end
+
   describe "Task.changeset/2 key_files validation" do
     test "requires file_path in key_files" do
       user = user_fixture()

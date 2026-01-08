@@ -186,6 +186,27 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   def handle_event("add-capability", _params, socket),
     do: handle_add_to_array(socket, :required_capabilities)
 
+  def handle_event("add-capability-from-select", %{"new_capability" => capability}, socket)
+      when capability != "" do
+    changeset = socket.assigns.form.source
+    current_capabilities = Ecto.Changeset.get_field(changeset, :required_capabilities) || []
+
+    # Don't add duplicates
+    if capability in current_capabilities do
+      {:noreply, socket}
+    else
+      updated_capabilities = current_capabilities ++ [capability]
+
+      updated_changeset =
+        changeset
+        |> Ecto.Changeset.put_change(:required_capabilities, updated_capabilities)
+
+      {:noreply, assign(socket, form: to_form(updated_changeset))}
+    end
+  end
+
+  def handle_event("add-capability-from-select", _params, socket), do: {:noreply, socket}
+
   def handle_event("remove-capability", %{"index" => index}, socket),
     do: handle_remove_from_array(socket, :required_capabilities, index)
 

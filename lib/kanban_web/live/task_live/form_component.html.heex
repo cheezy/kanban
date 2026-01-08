@@ -830,13 +830,17 @@
         <input type="hidden" name="task[required_capabilities][]" value="" />
         <%= for {cap, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :required_capabilities) || []) do %>
           <div class="flex gap-2 mb-2">
-            <input
-              type="text"
+            <select
               name="task[required_capabilities][]"
-              value={cap}
-              placeholder={gettext("Required capability")}
-              class="input input-bordered flex-1"
-            />
+              class="select select-bordered flex-1"
+            >
+              <option value={cap} selected>{String.capitalize(cap)}</option>
+              <%= for valid_cap <- Kanban.Tasks.Task.valid_capabilities() do %>
+                <%= if valid_cap != cap do %>
+                  <option value={valid_cap}>{String.capitalize(valid_cap)}</option>
+                <% end %>
+              <% end %>
+            </select>
             <button
               type="button"
               phx-click="remove-capability"
@@ -848,14 +852,20 @@
             </button>
           </div>
         <% end %>
-        <button
-          type="button"
-          phx-click="add-capability"
-          phx-target={@myself}
-          class="btn btn-sm btn-secondary"
-        >
-          + {gettext("Add Required Capability")}
-        </button>
+        <div class="flex gap-2 mb-2">
+          <select
+            id="new-capability-select"
+            class="select select-bordered flex-1"
+            phx-change="add-capability-from-select"
+            phx-target={@myself}
+            name="new_capability"
+          >
+            <option value="" selected>{gettext("Select capability to add...")}</option>
+            <%= for cap <- Kanban.Tasks.Task.valid_capabilities() do %>
+              <option value={cap}>{String.capitalize(cap)}</option>
+            <% end %>
+          </select>
+        </div>
       </div>
     <% end %>
 

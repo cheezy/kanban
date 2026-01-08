@@ -5,6 +5,39 @@ defmodule Kanban.Tasks.Task do
   alias Kanban.Schemas.Task.KeyFile
   alias Kanban.Schemas.Task.VerificationStep
 
+  @valid_capabilities [
+    "api_design",
+    "authentication",
+    "authorization",
+    "code_execution",
+    "code_generation",
+    "code_review",
+    "css",
+    "database",
+    "debugging",
+    "deployment",
+    "devops",
+    "documentation",
+    "ecto",
+    "elixir",
+    "file_operations",
+    "git",
+    "html",
+    "javascript",
+    "liveview",
+    "performance",
+    "phoenix",
+    "refactoring",
+    "security",
+    "sql",
+    "testing",
+    "ui_design",
+    "ux_design",
+    "web_browsing"
+  ]
+
+  def valid_capabilities, do: @valid_capabilities
+
   schema "tasks" do
     field :title, :string
     field :description, :string
@@ -371,15 +404,38 @@ defmodule Kanban.Tasks.Task do
         changeset
 
       caps when is_list(caps) ->
-        if Enum.all?(caps, &is_binary/1) do
-          changeset
-        else
-          add_error(changeset, :required_capabilities, "must be a list of strings")
-        end
+        validate_capability_list(changeset, caps)
 
       _ ->
         add_error(changeset, :required_capabilities, "must be a list")
     end
+  end
+
+  defp validate_capability_list(changeset, caps) do
+    if Enum.all?(caps, &is_binary/1) do
+      invalid_caps = Enum.reject(caps, &(&1 in @valid_capabilities))
+      add_capability_errors(changeset, invalid_caps)
+    else
+      add_error(changeset, :required_capabilities, "must be a list of strings")
+    end
+  end
+
+  defp add_capability_errors(changeset, []), do: changeset
+
+  defp add_capability_errors(changeset, [single]) do
+    add_error(
+      changeset,
+      :required_capabilities,
+      "invalid capability: '#{single}'. Must be one of: #{Enum.join(@valid_capabilities, ", ")}"
+    )
+  end
+
+  defp add_capability_errors(changeset, multiple) do
+    add_error(
+      changeset,
+      :required_capabilities,
+      "invalid capabilities: #{Enum.join(multiple, ", ")}. Must be one of: #{Enum.join(@valid_capabilities, ", ")}"
+    )
   end
 
   defp validate_dependencies(changeset) do
