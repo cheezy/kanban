@@ -845,23 +845,10 @@ defmodule Kanban.Tasks do
 
       if should_move && parent.column_id != new_column_id do
         new_column = Repo.get!(Column, new_column_id)
-        next_position = get_next_position(new_column)
 
-        parent
-        |> Ecto.Changeset.change(%{
-          column_id: new_column_id,
-          position: next_position
-        })
-        |> Repo.update!()
-
-        board_id = new_column.board_id
-        updated_parent = get_task_for_view!(parent.id)
-
-        Phoenix.PubSub.broadcast(
-          Kanban.PubSub,
-          "board:#{board_id}",
-          {:task_updated, updated_parent}
-        )
+        # Use the same positioning logic as update_parent_goal_position
+        # This ensures goals are always positioned before their children
+        move_goal_to_top_with_other_goals(parent, new_column, task.id)
       end
     end
 
@@ -2340,11 +2327,43 @@ defmodule Kanban.Tasks do
     end
   end
 
+  # Calculates the target position for a goal based on two constraints:
+  # 1. Must be before children (if any exist in the column)
+  # 2. Must be after other goals (to keep goals grouped at top)
+  defp calculate_goal_target_position(min_child_position, last_goal_position) do
+    cond do
+      min_child_position != nil && last_goal_position != nil ->
+        # Must be before children AND after other goals
+        # Use the minimum to satisfy both constraints
+        min(min_child_position, last_goal_position + 1)
+
+      min_child_position != nil ->
+        # Must be before the leftmost child, no other goals to consider
+        min_child_position
+
+      last_goal_position != nil ->
+        # No children in this column, place after other goals
+        last_goal_position + 1
+
+      true ->
+        # No other goals and no children, place at position 0
+        0
+    end
+  end
+
   defp move_goal_to_top_with_other_goals(parent_goal, target_column, _moving_task_id) do
     require Logger
 
-    # Find the position after the last goal in the target column
-    # Goals should be at the top, grouped together, before all work/defect tasks
+    # Find the minimum position of this goal's children in the target column
+    # The goal must be positioned BEFORE all its children
+    min_child_position =
+      from(t in Task,
+        where: t.column_id == ^target_column.id and t.parent_id == ^parent_goal.id,
+        select: min(t.position)
+      )
+      |> Repo.one()
+
+    # Find the position after the last goal in the target column (excluding this goal)
     last_goal_position =
       from(t in Task,
         where: t.column_id == ^target_column.id and t.type == :goal and t.id != ^parent_goal.id,
@@ -2352,18 +2371,11 @@ defmodule Kanban.Tasks do
       )
       |> Repo.one()
 
-    # Determine target position for the goal (after other goals, before work tasks)
-    target_position =
-      if last_goal_position do
-        # Place after the last existing goal
-        last_goal_position + 1
-      else
-        # No other goals exist, place at position 0
-        0
-      end
+    # Calculate target position based on constraints
+    target_position = calculate_goal_target_position(min_child_position, last_goal_position)
 
     Logger.info(
-      "Moving goal #{parent_goal.identifier} to column #{target_column.id} at position #{target_position}"
+      "Moving goal #{parent_goal.identifier} to column #{target_column.id} at position #{target_position} (min_child_position: #{inspect(min_child_position)}, last_goal_position: #{inspect(last_goal_position)})"
     )
 
     # First, move the goal to a temporary negative position to avoid conflicts
@@ -2371,14 +2383,13 @@ defmodule Kanban.Tasks do
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
 
-    # Get all non-goal tasks at or after the target position that need to be shifted down
-    # This ensures the goal stays before all work/defect tasks
+    # Get all tasks at or after the target position that need to be shifted down
+    # This includes both goals and work/defect tasks, but excludes the moving goal
     tasks_to_shift =
       from(t in Task,
         where:
           t.column_id == ^target_column.id and
             t.position >= ^target_position and
-            t.type != :goal and
             t.id != ^parent_goal.id,
         select: %{id: t.id, position: t.position},
         order_by: [desc: t.position]
@@ -2386,7 +2397,7 @@ defmodule Kanban.Tasks do
       |> Repo.all()
 
     Logger.info(
-      "Shifting #{length(tasks_to_shift)} non-goal tasks from position #{target_position}"
+      "Shifting #{length(tasks_to_shift)} tasks from position #{target_position}"
     )
 
     # Shift each task down by 1, from highest position to lowest to avoid conflicts

@@ -4091,6 +4091,183 @@ defmodule Kanban.TasksTest do
       assert positions == Enum.sort(positions), "Positions should be sequential"
       assert length(Enum.uniq(positions)) == length(positions), "No duplicate positions"
     end
+
+    test "goal is positioned before its children when all children are claimed to Doing column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready", position: 0})
+      doing_column = column_fixture(board, %{name: "Doing", position: 1})
+
+      {:ok, goal} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Parent Goal",
+          "type" => "goal"
+        })
+
+      {:ok, _child1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 1",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, claimed_task, _hook} = Tasks.claim_next_task([], user, board.id)
+
+      assert claimed_task.column_id == doing_column.id
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_child1 = Tasks.get_task!(claimed_task.id)
+
+      assert updated_goal.column_id == doing_column.id,
+             "Goal should move to Doing when its only child moves"
+
+      assert updated_goal.position < updated_child1.position,
+             "Goal (pos #{updated_goal.position}) should be positioned before child (pos #{updated_child1.position})"
+    end
+
+    test "goal is positioned before all its children when multiple children are in target column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready", position: 0})
+      doing_column = column_fixture(board, %{name: "Doing", position: 1})
+
+      {:ok, goal} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Parent Goal",
+          "type" => "goal"
+        })
+
+      {:ok, child1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 1",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, child2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 2",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, child3} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 3",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, _claimed1, _} = Tasks.claim_next_task([], user, board.id, child1.identifier)
+      {:ok, _claimed2, _} = Tasks.claim_next_task([], user, board.id, child2.identifier)
+      {:ok, _claimed3, _} = Tasks.claim_next_task([], user, board.id, child3.identifier)
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_child1 = Tasks.get_task!(child1.id)
+      updated_child2 = Tasks.get_task!(child2.id)
+      updated_child3 = Tasks.get_task!(child3.id)
+
+      assert updated_goal.column_id == doing_column.id
+      assert updated_child1.column_id == doing_column.id
+      assert updated_child2.column_id == doing_column.id
+      assert updated_child3.column_id == doing_column.id
+
+      assert updated_goal.position < updated_child1.position,
+             "Goal should be before child1"
+
+      assert updated_goal.position < updated_child2.position,
+             "Goal should be before child2"
+
+      assert updated_goal.position < updated_child3.position,
+             "Goal should be before child3"
+    end
+
+    test "goal is positioned after other goals when moving to new column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready", position: 0})
+      doing_column = column_fixture(board, %{name: "Doing", position: 1})
+
+      {:ok, other_goal} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Other Goal",
+          "type" => "goal"
+        })
+
+      {:ok, goal} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Parent Goal",
+          "type" => "goal"
+        })
+
+      {:ok, child} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, _claimed, _} = Tasks.claim_next_task([], user, board.id, child.identifier)
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_other_goal = Tasks.get_task!(other_goal.id)
+      updated_child = Tasks.get_task!(child.id)
+
+      assert updated_goal.column_id == doing_column.id
+
+      assert updated_other_goal.position < updated_goal.position,
+             "Existing goal should be before new goal"
+
+      assert updated_goal.position < updated_child.position,
+             "New goal should be before its child"
+    end
+
+    test "goal is positioned before children when moved via drag-and-drop" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready", position: 0})
+      _doing_column = column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 3})
+
+      {:ok, goal} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Parent Goal",
+          "type" => "goal"
+        })
+
+      {:ok, child1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 1",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      {:ok, child2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Child 2",
+          "type" => "work",
+          "parent_id" => goal.id
+        })
+
+      Tasks.move_task(child1, done_column, 0)
+      Tasks.move_task(child2, done_column, 1)
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_child1 = Tasks.get_task!(child1.id)
+      updated_child2 = Tasks.get_task!(child2.id)
+
+      assert updated_goal.column_id == done_column.id,
+             "Goal should move to Done when all children are in Done"
+
+      assert updated_child1.column_id == done_column.id
+      assert updated_child2.column_id == done_column.id
+
+      assert updated_goal.position < updated_child1.position,
+             "Goal should be positioned before child1"
+
+      assert updated_goal.position < updated_child2.position,
+             "Goal should be positioned before child2"
+    end
   end
 
   describe "create_goal_with_tasks/3" do
@@ -4630,15 +4807,15 @@ defmodule Kanban.TasksTest do
 
       # Get all tasks in ready column sorted by position
       tasks_in_ready = Tasks.list_tasks(ready) |> Enum.sort_by(& &1.position)
-      task_ids = Enum.map(tasks_in_ready, & &1.id)
 
-      # Goal should be at position 0 (top of column)
-      assert hd(task_ids) == updated_goal.id
-      assert updated_goal.position == 0
+      # Goal should be positioned before its child
+      assert updated_goal.position < moved_child.id
 
-      # Child task and existing tasks should be below the goal
-      child_task_index = Enum.find_index(task_ids, &(&1 == moved_child.id))
-      assert child_task_index > 0
+      # Find goal position in the sorted list
+      goal_index = Enum.find_index(tasks_in_ready, &(&1.id == updated_goal.id))
+      child_index = Enum.find_index(tasks_in_ready, &(&1.id == moved_child.id))
+
+      assert goal_index < child_index, "Goal should be positioned before its child in the sorted list"
     end
 
     test "places goal after existing goals when multiple goals exist" do
