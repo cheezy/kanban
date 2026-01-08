@@ -140,6 +140,7 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 - `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
 - `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
 - `stride-creating-tasks`: Ensures comprehensive task specifications and prevents exploration failures
+- `stride-creating-goals`: Ensures proper goal structure and prevents batch creation format errors
 
 ## API Endpoints
 

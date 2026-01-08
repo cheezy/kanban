@@ -296,12 +296,13 @@ Give your AI agent this prompt to break down and upload a goal:
 - Use `stride-claiming-tasks` before claiming tasks
 - Use `stride-completing-tasks` before marking tasks complete
 - Use `stride-creating-tasks` for individual tasks and defects
-- Use `stride-creating-goals` for goals with nested tasks (coming soon)
+- Use `stride-creating-goals` for goals with nested tasks or batch creation
 
 These skills are automatically provided via the onboarding endpoint and enforce best practices:
 - `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
 - `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
 - `stride-creating-tasks`: Prevents 3+ hour exploration failures from minimal task specifications
+- `stride-creating-goals`: Ensures proper goal structure and prevents batch creation format errors
 
 **Example: If you ask your agent to implement user authentication, it would:**
 

@@ -281,7 +281,11 @@ POST /api/tasks
 
 See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
-**✨ Claude Code Skill Available:** Use the `stride-creating-tasks` skill before calling POST /api/tasks to ensure comprehensive task specifications and prevent 3+ hour exploration failures. This skill is automatically provided via the onboarding endpoint.
+**✨ Claude Code Skills Available:**
+- Use `stride-creating-tasks` for individual tasks and defects
+- Use `stride-creating-goals` for goals with nested tasks or batch creation
+
+These skills are automatically provided via the onboarding endpoint and prevent common mistakes.
 
 ### Task Completion
 
