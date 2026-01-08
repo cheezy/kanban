@@ -44,6 +44,24 @@ defmodule Kanban.Tasks do
   defp maybe_filter_archived(query, true), do: query
 
   @doc """
+  Returns archived tasks for a column, sorted by archived_at descending.
+
+  ## Examples
+
+      iex> list_archived_tasks(column)
+      [%Task{}, ...]
+
+  """
+  def list_archived_tasks(column) do
+    Task
+    |> where([t], t.column_id == ^column.id)
+    |> where([t], not is_nil(t.archived_at))
+    |> order_by([t], desc: t.archived_at)
+    |> preload(:assigned_to)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single task.
 
   Raises `Ecto.NoResultsError` if the Task does not exist.

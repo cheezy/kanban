@@ -80,6 +80,56 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "list_archived_tasks/1" do
+    test "returns only archived tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Active"})
+      task2 = task_fixture(column, %{title: "Archived 1"})
+      task3 = task_fixture(column, %{title: "Archived 2"})
+
+      {:ok, _} = Tasks.archive_task(task2)
+      {:ok, _} = Tasks.archive_task(task3)
+
+      archived = Tasks.list_archived_tasks(column)
+
+      assert length(archived) == 2
+      assert Enum.all?(archived, fn t -> t.archived_at != nil end)
+      refute Enum.any?(archived, fn t -> t.id == task1.id end)
+    end
+
+    test "returns archived tasks sorted by archived_at descending" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First"})
+      task2 = task_fixture(column, %{title: "Second"})
+
+      {:ok, first_archived} = Tasks.archive_task(task1)
+      Process.sleep(1000)
+      {:ok, second_archived} = Tasks.archive_task(task2)
+
+      archived = Tasks.list_archived_tasks(column)
+
+      assert length(archived) == 2
+      assert hd(archived).id == second_archived.id
+      assert DateTime.compare(hd(archived).archived_at, first_archived.archived_at) == :gt
+    end
+
+    test "returns empty list when no archived tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      _task = task_fixture(column)
+
+      assert Tasks.list_archived_tasks(column) == []
+    end
+  end
+
   describe "get_task!/1" do
     test "returns the task with given id" do
       user = user_fixture()
