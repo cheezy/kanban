@@ -5,6 +5,20 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-01-08
+
+### Added
+
+#### Task Archive System
+
+- **Archive Functionality** - Tasks can now be archived and later restored or permanently deleted:
+  - **Archive Tasks** - Archive button added to task card menus on board view
+  - **Archived Tasks Page** - Dedicated page (`/boards/:id/archive`) to view all archived tasks for a board
+  - **Unarchive Tasks** - Restore archived tasks back to their original column
+  - **Permanent Delete** - Delete archived tasks permanently from the database
+  - **Archive Navigation** - "Archived Tasks" link added to board header for easy access
+  - **Empty State** - Friendly empty state when no archived tasks exist
+
 ## [1.15.0] - 2026-01-07
 
 ### Changed
