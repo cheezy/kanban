@@ -10,22 +10,23 @@ defmodule KanbanWeb.API.AgentJSON do
       critical_first_steps: %{
         action: "CREATE_FILES_NOW",
         instructions: [
-          "Before claiming any tasks, you MUST create configuration files and Skills:",
+          "Before claiming any tasks, you MUST create configuration files:",
           "1. Create .stride_auth.md by copying the COMPLETE contents from file_templates.stride_auth_md EXACTLY as shown - do not summarize or omit any lines",
           "2. Add .stride_auth.md to .gitignore (NEVER commit this file - it contains secrets)",
-          "3. Create .stride.md by copying the COMPLETE contents from file_templates.stride_md EXACTLY as shown - do not summarize or omit any lines",
-          "4. Create all 4 Stride Skills from claude_code_skills.available_skills array:",
+          "3. Create .stride.md by copying the COMPLETE contents from file_templates.stride_md EXACTLY as shown - do not omit any lines",
+          "4. IF you are Claude Code: Create all 4 Stride Skills from claude_code_skills.available_skills array:",
           "   - For each skill: create directory ~/.claude/skills/{skill.name}/ and write skill.content to SKILL.md",
           "   - Skills: stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals",
-          "5. Verify all files exist before proceeding (.stride_auth.md, .stride.md, and 4 Skills)"
+          "   - Other AI assistants: Skip this step and wait for multi_agent_instructions (coming soon)",
+          "5. Verify files exist: .stride_auth.md (gitignored), .stride.md (version controlled), and Skills if Claude Code"
         ],
         why_critical:
-          "Without these files, you cannot execute hooks, authenticate with the API, or follow proper workflow patterns. The .stride_auth.md file contains your API token and MUST be gitignored. Skills enforce critical workflow patterns that prevent common mistakes.",
+          "Without these files, you cannot execute hooks, authenticate with the API, or follow proper workflow patterns. The .stride_auth.md file contains your API token and MUST be gitignored. Skills (Claude Code only) enforce critical workflow patterns that prevent common mistakes.",
         file_creation_requirements: [
           "CRITICAL: Copy the ENTIRE template content character-for-character",
           "CRITICAL: Do NOT summarize, truncate, or omit any sections",
           "CRITICAL: Do NOT modify the structure or remove placeholder text like {{YOUR_TOKEN_HERE}}",
-          "CRITICAL: Create ALL 4 Skills - they enforce mandatory workflow patterns",
+          "CRITICAL (Claude Code only): Create ALL 4 Skills - they enforce mandatory workflow patterns",
           "The templates contain important documentation and examples that must be preserved in full"
         ]
       },
@@ -48,8 +49,8 @@ defmodule KanbanWeb.API.AgentJSON do
         "1. IMMEDIATELY create .stride_auth.md by copying the ENTIRE file_templates.stride_auth_md content exactly - do not omit any lines",
         "2. IMMEDIATELY add .stride_auth.md to your .gitignore file (CRITICAL - contains secrets)",
         "3. IMMEDIATELY create .stride.md by copying the ENTIRE file_templates.stride_md content exactly - do not omit any lines",
-        "4. IMMEDIATELY create all 4 Skills from claude_code_skills.available_skills - for each skill create ~/.claude/skills/{name}/SKILL.md with the content",
-        "5. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled), and 4 Skills in ~/.claude/skills/",
+        "4. IF you are Claude Code: IMMEDIATELY create all 4 Skills from claude_code_skills.available_skills - for each skill create ~/.claude/skills/{name}/SKILL.md with the content. Other AI assistants: skip this step (use multi_agent_instructions when available)",
+        "5. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled), and Skills if using Claude Code",
         "6. Call POST #{base_url}/api/tasks/claim to get your first task",
         "7. Execute hooks and complete your work following the workflow"
       ],
@@ -142,10 +143,13 @@ defmodule KanbanWeb.API.AgentJSON do
       },
       claude_code_skills: %{
         description:
-          "Claude Code skills automatically provided via this onboarding endpoint. You MUST create these skill files when you fetch this onboarding endpoint, just like you create .stride.md and .stride_auth.md files.",
-        critical_action: "CREATE_SKILL_FILES_NOW",
+          "Contextual workflow enforcement skills specifically for Claude Code. If you are Claude Code, you MUST create these skill files when you fetch this onboarding endpoint, just like you create .stride.md and .stride_auth.md files. Other AI assistants should ignore this section and use multi_agent_instructions instead (coming soon).",
+        critical_action: "CLAUDE_CODE_ONLY_CREATE_SKILL_FILES_NOW",
+        agent_type_required: "claude_code",
         installation_instructions: [
-          "When you fetch this onboarding endpoint, you MUST automatically create all skill files:",
+          "IMPORTANT: These skills are ONLY for Claude Code. If you are a different AI assistant (GitHub Copilot, Cursor, Windsurf, Aider, Continue.dev, etc.), skip this section and wait for the multi_agent_instructions section (coming soon).",
+          "",
+          "If you ARE Claude Code, when you fetch this onboarding endpoint, you MUST automatically create all skill files:",
           "1. For each skill in available_skills array below:",
           "   - Extract the 'name' field (e.g., 'stride-claiming-tasks')",
           "   - Create directory: ~/.claude/skills/{name}/",
@@ -161,7 +165,9 @@ defmodule KanbanWeb.API.AgentJSON do
           "   - stride-claiming-tasks: Execute before_doing hook BEFORE claiming",
           "   - stride-completing-tasks: Execute after_doing AND before_review hooks BEFORE completing",
           "   - stride-creating-tasks: Ensure comprehensive task specifications",
-          "   - stride-creating-goals: Proper goal structure with nested tasks"
+          "   - stride-creating-goals: Proper goal structure with nested tasks",
+          "",
+          "Why Claude Code only? These skills use Claude Code's specific skill discovery mechanism. Other AI assistants have different formats for always-active instructions (see future multi_agent_instructions section)."
         ],
         available_skills: [
           %{
