@@ -5,6 +5,48 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] - 2026-01-09
+
+### Added
+
+#### Multi-Agent Instructions for Non-Claude Code AI Assistants
+
+- **Five AI Assistant Formats** - Always-active code completion guidance distributed as downloadable files:
+  - **GitHub Copilot** (`.github/copilot-instructions.md`) - Repository-scoped instructions optimized for 4000 token limit
+  - **Cursor** (`.cursorrules`) - Project-scoped rules with expanded examples for 8000 token limit
+  - **Windsurf Cascade** (`.windsurfrules`) - Hierarchical rules that cascade from parent directories
+  - **Aider** (`.aider.conf.yml`) - Structured YAML configuration with conventions and workflows
+  - **Continue.dev** (`.continue/config.json`) - JSON configuration with custom context providers and slash commands
+
+- **Onboarding Endpoint Enhancement** - `GET /api/agent/onboarding` now includes `multi_agent_instructions` section:
+  - Download URLs for all five instruction formats
+  - Platform-specific installation commands (Unix/Linux/macOS and Windows)
+  - Token limit information for each format
+  - Usage notes explaining complementary relationship with Claude Code Skills
+
+- **Documentation Directory** - All instruction files stored in `docs/multi-agent-instructions/`:
+  - `copilot-instructions.md` (9KB) - Markdown format with code examples
+  - `cursorrules.txt` (15KB) - Plain text with detailed patterns
+  - `windsurfrules.txt` (15KB) - Plain text with cascading rules
+  - `aider.conf.yml` (7KB) - YAML format with structured sections
+  - `continue-config.json` (4KB) - JSON with custom commands and context providers
+
+- **Core Content Coverage** - All formats include essential Stride integration guidance:
+  - Hook execution mandate (all four hooks and their requirements)
+  - Top 5 critical mistakes agents make
+  - Essential task field requirements
+  - Code patterns for claiming, completing, and creating tasks
+  - Batch creation examples
+  - Documentation links
+
+### Changed
+
+#### Onboarding Endpoint Optimization
+
+- **Multi-Agent Instructions Architecture** - Complementary approach to Claude Code Skills:
+  - **Claude Code Skills**: Contextual workflow enforcement (1000+ lines per skill, embedded content)
+  - **Multi-Agent Instructions**: Always-active code completion (200-400 lines, downloadable files)
+
 ## [1.17.0] - 2026-01-08
 
 ### Added

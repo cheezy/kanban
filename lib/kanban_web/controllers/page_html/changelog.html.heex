@@ -31,6 +31,117 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.17.1] - 2026-01-09</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Multi-Agent Instructions for Non-Claude Code AI Assistants
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Five AI Assistant Formats</strong>
+                - Always-active code completion guidance distributed as downloadable files:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>GitHub Copilot</strong>
+                  (<code>.github/copilot-instructions.md</code>) - Repository-scoped instructions optimized for 4000 token limit
+                </li>
+                <li>
+                  <strong>Cursor</strong>
+                  (<code>.cursorrules</code>) - Project-scoped rules with expanded examples for 8000 token limit
+                </li>
+                <li>
+                  <strong>Windsurf Cascade</strong>
+                  (<code>.windsurfrules</code>) - Hierarchical rules that cascade from parent directories
+                </li>
+                <li>
+                  <strong>Aider</strong>
+                  (<code>.aider.conf.yml</code>) - Structured YAML configuration with conventions and workflows
+                </li>
+                <li>
+                  <strong>Continue.dev</strong>
+                  (<code>.continue/config.json</code>) - JSON configuration with custom context providers and slash commands
+                </li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-4 mt-4">
+                <strong>Onboarding Endpoint Enhancement</strong>
+                - <code>GET /api/agent/onboarding</code> now includes <code>multi_agent_instructions</code> section:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>Download URLs for all five instruction formats</li>
+                <li>Platform-specific installation commands (Unix/Linux/macOS and Windows)</li>
+                <li>Token limit information for each format</li>
+                <li>Usage notes explaining complementary relationship with Claude Code Skills</li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-4 mt-4">
+                <strong>Documentation Directory</strong>
+                - All instruction files stored in <code>docs/multi-agent-instructions/</code>:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li><code>copilot-instructions.md</code> (9KB) - Markdown format with code examples</li>
+                <li><code>cursorrules.txt</code> (15KB) - Plain text with detailed patterns</li>
+                <li><code>windsurfrules.txt</code> (15KB) - Plain text with cascading rules</li>
+                <li><code>aider.conf.yml</code> (7KB) - YAML format with structured sections</li>
+                <li><code>continue-config.json</code> (4KB) - JSON with custom commands and context providers</li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-4 mt-4">
+                <strong>Core Content Coverage</strong>
+                - All formats include essential Stride integration guidance:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>Hook execution mandate (all four hooks and their requirements)</li>
+                <li>Top 5 critical mistakes agents make</li>
+                <li>Essential task field requirements</li>
+                <li>Code patterns for claiming, completing, and creating tasks</li>
+                <li>Batch creation examples</li>
+                <li>Documentation links</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Changed
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Onboarding Endpoint Optimization
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Multi-Agent Instructions Architecture</strong>
+                - Complementary approach to Claude Code Skills:
+              </p>
+
+              <ul class="list-disc list-inside space-y-2 text-base-content opacity-80 ml-4">
+                <li>
+                  <strong>Claude Code Skills:</strong>
+                  Contextual workflow enforcement (1000+ lines per skill, embedded content)
+                </li>
+                <li>
+                  <strong>Multi-Agent Instructions:</strong>
+                  Always-active code completion (200-400 lines, downloadable files)
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.17.0] - 2026-01-08</h2>
 
           <div class="mb-8">
