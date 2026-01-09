@@ -11,24 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Multi-Agent Instructions for Non-Claude Code AI Assistants
 
-- **Five AI Assistant Formats** - Always-active code completion guidance distributed as downloadable files:
+- **Four AI Assistant Formats** - Always-active code completion guidance distributed as downloadable files:
   - **GitHub Copilot** (`.github/copilot-instructions.md`) - Repository-scoped instructions optimized for 4000 token limit
   - **Cursor** (`.cursorrules`) - Project-scoped rules with expanded examples for 8000 token limit
   - **Windsurf Cascade** (`.windsurfrules`) - Hierarchical rules that cascade from parent directories
-  - **Aider** (`.aider.conf.yml`) - Structured YAML configuration with conventions and workflows
   - **Continue.dev** (`.continue/config.json`) - JSON configuration with custom context providers and slash commands
 
 - **Onboarding Endpoint Enhancement** - `GET /api/agent/onboarding` now includes `multi_agent_instructions` section:
-  - Download URLs for all five instruction formats
+  - Download URLs for all four instruction formats
   - Platform-specific installation commands (Unix/Linux/macOS and Windows)
   - Token limit information for each format
   - Usage notes explaining complementary relationship with Claude Code Skills
+  - Safe installation guidance (backup, append, manual merge options)
 
 - **Documentation Directory** - All instruction files stored in `docs/multi-agent-instructions/`:
   - `copilot-instructions.md` (9KB) - Markdown format with code examples
   - `cursorrules.txt` (15KB) - Plain text with detailed patterns
   - `windsurfrules.txt` (15KB) - Plain text with cascading rules
-  - `aider.conf.yml` (7KB) - YAML format with structured sections
   - `continue-config.json` (4KB) - JSON with custom commands and context providers
 
 - **Core Content Coverage** - All formats include essential Stride integration guidance:

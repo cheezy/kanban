@@ -1738,6 +1738,8 @@ defmodule KanbanWeb.API.AgentJSON do
           "Always-active code completion guidance for AI assistants other than Claude Code. These provide essential Stride integration patterns without the contextual workflow enforcement of Claude Code Skills.",
         note:
           "Claude Code users should use the claude_code_skills section above for comprehensive workflow enforcement. Other AI assistants should download the appropriate format below.",
+        installation_warning:
+          "IMPORTANT: The installation commands will overwrite existing configuration files. If you have existing custom configurations, back them up first or append Stride instructions to your existing file. See usage_notes below for safer installation approaches.",
         formats: %{
           copilot: %{
             file_path: ".github/copilot-instructions.md",
@@ -1771,16 +1773,6 @@ defmodule KanbanWeb.API.AgentJSON do
               "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt\" -OutFile .windsurfrules",
             token_limit: "~8000 tokens (~400 lines)"
           },
-          aider: %{
-            file_path: ".aider.conf.yml",
-            description: "Aider configuration (project-scoped YAML)",
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml",
-            installation_unix:
-              "curl -o .aider.conf.yml #{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml",
-            installation_windows:
-              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml\" -OutFile .aider.conf.yml",
-            token_limit: "Moderate (~150 lines YAML)"
-          },
           continue: %{
             file_path: ".continue/config.json",
             description: "Continue.dev configuration (project-scoped JSON with context providers)",
@@ -1799,6 +1791,13 @@ defmodule KanbanWeb.API.AgentJSON do
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should ignore this section and use claude_code_skills instead"
+        ],
+        safe_installation: [
+          "RECOMMENDED: Check if config file exists before overwriting: [ -f .cursorrules ] && echo 'File exists, backup first'",
+          "RECOMMENDED: Backup existing config: cp .cursorrules .cursorrules.backup",
+          "ALTERNATIVE: Append Stride instructions: echo '\\n\\n# Stride Integration' >> .cursorrules && curl -s [url] >> .cursorrules",
+          "ALTERNATIVE: Download to temp location and manually merge: curl -o /tmp/stride-instructions.txt [url]",
+          "For more details see: #{@docs_base_url}/docs/MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
         ]
       },
       resources: %{

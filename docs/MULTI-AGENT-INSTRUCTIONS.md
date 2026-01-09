@@ -8,6 +8,8 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Core Principle:** Complement Claude Code Skills (contextual workflow enforcement) with always-active code completion guidance for other AI assistants.
 
+**Supported AI Assistants:** GitHub Copilot, Cursor, Windsurf Cascade, Continue.dev
+
 ## Architecture
 
 ### Two-Tier Approach
@@ -33,7 +35,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
-## Supported AI Assistants
+## Supported AI Assistants (4 Total)
 
 ### 1. GitHub Copilot
 
@@ -110,31 +112,7 @@ curl -o .windsurfrules \
 - Project root: `./project/.windsurfrules`
 - Parent directory: `/parent/.windsurfrules` (affects all child projects)
 
-### 4. Aider
-
-**File:** `.aider.conf.yml`
-
-**Location:** `docs/multi-agent-instructions/aider.conf.yml`
-
-**Scope:** Project-scoped YAML configuration
-
-**Token Limit:** Moderate (~150 lines YAML)
-
-**Format:** Structured YAML with sections
-
-**Download:**
-```bash
-curl -o .aider.conf.yml \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/aider.conf.yml
-```
-
-**Focus:**
-- Structured format with conventions section
-- Main system message with hook execution requirements
-- Code patterns organized by workflow step
-- YAML format is more token-efficient
-
-### 5. Continue.dev
+### 4. Continue.dev
 
 **File:** `.continue/config.json`
 
@@ -163,7 +141,7 @@ curl -o .continue/config.json \
 
 ### Core Content (All Formats)
 
-All five instruction formats cover the same essential topics:
+All four instruction formats cover the same essential topics:
 
 1. **Hook Execution Mandate**
    - All four hooks and their purpose
@@ -211,11 +189,6 @@ All five instruction formats cover the same essential topics:
 - Similar to Cursor
 - Can include slightly more context
 
-**Aider (YAML):**
-- Structured format with sections
-- `main-system-message` for core guidance
-- `conventions` for validation rules
-
 **Continue.dev (JSON):**
 - System message with core rules
 - Custom context provider for external docs
@@ -258,11 +231,10 @@ docs/multi-agent-instructions/
 ├── copilot-instructions.md    # 9KB
 ├── cursorrules.txt            # 15KB
 ├── windsurfrules.txt          # 15KB
-├── aider.conf.yml             # 7KB
 └── continue-config.json       # 4KB
 ```
 
-Total size: ~50KB of instruction content
+Total size: ~43KB of instruction content
 
 ### Endpoint Optimization
 
@@ -289,7 +261,24 @@ When AI agents fetch the onboarding endpoint, they should automatically download
 
 ### Manual Installation
 
-Developers can also manually download instruction files:
+Developers can manually download instruction files. **IMPORTANT:** These commands will overwrite existing configuration files. If you have existing custom configurations, consider backing them up first or manually merging the Stride instructions.
+
+**Check for existing files first:**
+```bash
+# Check which files already exist
+ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json 2>/dev/null
+```
+
+**Backup existing files (recommended):**
+```bash
+# Backup existing configuration before installing
+[ -f .github/copilot-instructions.md ] && cp .github/copilot-instructions.md .github/copilot-instructions.md.backup
+[ -f .cursorrules ] && cp .cursorrules .cursorrules.backup
+[ -f .windsurfrules ] && cp .windsurfrules .windsurfrules.backup
+[ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
+```
+
+**Download Stride instructions:**
 
 **GitHub Copilot:**
 ```bash
@@ -309,12 +298,6 @@ curl -o .windsurfrules \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt
 ```
 
-**Aider:**
-```bash
-curl -o .aider.conf.yml \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/aider.conf.yml
-```
-
 **Continue.dev:**
 ```bash
 mkdir -p .continue
@@ -322,9 +305,45 @@ curl -o .continue/config.json \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json
 ```
 
+**Merging with existing configuration:**
+
+If you have existing custom instructions, you may want to manually merge them:
+
+1. **Download to a temporary location:**
+   ```bash
+   curl -o /tmp/stride-copilot-instructions.md \
+     https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md
+   ```
+
+2. **Manually review and merge** the Stride-specific sections into your existing file, or
+
+3. **Append Stride instructions** to your existing configuration (for formats that support it):
+   ```bash
+   # For text-based formats like Cursor/Windsurf
+   echo "\n\n# === Stride Integration Instructions ===" >> .cursorrules
+   curl -s https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt >> .cursorrules
+   ```
+
 ### Windows Installation
 
 **PowerShell:**
+
+**IMPORTANT:** These commands will overwrite existing files. Back up first if you have custom configurations.
+
+**Check for existing files:**
+```powershell
+Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json -ErrorAction SilentlyContinue
+```
+
+**Backup existing files (recommended):**
+```powershell
+if (Test-Path .github/copilot-instructions.md) { Copy-Item .github/copilot-instructions.md .github/copilot-instructions.md.backup }
+if (Test-Path .cursorrules) { Copy-Item .cursorrules .cursorrules.backup }
+if (Test-Path .windsurfrules) { Copy-Item .windsurfrules .windsurfrules.backup }
+if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
+```
+
+**Download Stride instructions:**
 ```powershell
 # GitHub Copilot
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md" -OutFile .github/copilot-instructions.md
@@ -335,12 +354,16 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 # Windsurf
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt" -OutFile .windsurfrules
 
-# Aider
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/aider.conf.yml" -OutFile .aider.conf.yml
-
 # Continue.dev
 New-Item -ItemType Directory -Force -Path .continue
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json" -OutFile .continue/config.json
+```
+
+**Appending to existing configuration:**
+```powershell
+# For text-based formats like Cursor/Windsurf
+"`n`n# === Stride Integration Instructions ===" | Add-Content .cursorrules
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt" | Select-Object -ExpandProperty Content | Add-Content .cursorrules
 ```
 
 ## Maintenance
@@ -378,7 +401,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Aider, Continue.dev |
+| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
