@@ -10,18 +10,22 @@ defmodule KanbanWeb.API.AgentJSON do
       critical_first_steps: %{
         action: "CREATE_FILES_NOW",
         instructions: [
-          "Before claiming any tasks, you MUST create two configuration files:",
+          "Before claiming any tasks, you MUST create configuration files and Skills:",
           "1. Create .stride_auth.md by copying the COMPLETE contents from file_templates.stride_auth_md EXACTLY as shown - do not summarize or omit any lines",
           "2. Add .stride_auth.md to .gitignore (NEVER commit this file - it contains secrets)",
           "3. Create .stride.md by copying the COMPLETE contents from file_templates.stride_md EXACTLY as shown - do not summarize or omit any lines",
-          "4. Verify both files exist before proceeding"
+          "4. Create all 4 Stride Skills from claude_code_skills.available_skills array:",
+          "   - For each skill: create directory ~/.claude/skills/{skill.name}/ and write skill.content to SKILL.md",
+          "   - Skills: stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals",
+          "5. Verify all files exist before proceeding (.stride_auth.md, .stride.md, and 4 Skills)"
         ],
         why_critical:
-          "Without these files, you cannot execute hooks or authenticate with the API. The .stride_auth.md file contains your API token and MUST be gitignored to prevent exposing secrets.",
+          "Without these files, you cannot execute hooks, authenticate with the API, or follow proper workflow patterns. The .stride_auth.md file contains your API token and MUST be gitignored. Skills enforce critical workflow patterns that prevent common mistakes.",
         file_creation_requirements: [
           "CRITICAL: Copy the ENTIRE template content character-for-character",
           "CRITICAL: Do NOT summarize, truncate, or omit any sections",
           "CRITICAL: Do NOT modify the structure or remove placeholder text like {{YOUR_TOKEN_HERE}}",
+          "CRITICAL: Create ALL 4 Skills - they enforce mandatory workflow patterns",
           "The templates contain important documentation and examples that must be preserved in full"
         ]
       },
@@ -44,9 +48,10 @@ defmodule KanbanWeb.API.AgentJSON do
         "1. IMMEDIATELY create .stride_auth.md by copying the ENTIRE file_templates.stride_auth_md content exactly - do not omit any lines",
         "2. IMMEDIATELY add .stride_auth.md to your .gitignore file (CRITICAL - contains secrets)",
         "3. IMMEDIATELY create .stride.md by copying the ENTIRE file_templates.stride_md content exactly - do not omit any lines",
-        "4. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled)",
-        "5. Call POST #{base_url}/api/tasks/claim to get your first task",
-        "6. Execute hooks and complete your work following the workflow"
+        "4. IMMEDIATELY create all 4 Skills from claude_code_skills.available_skills - for each skill create ~/.claude/skills/{name}/SKILL.md with the content",
+        "5. Verify files are created: .stride_auth.md (gitignored), .stride.md (version controlled), and 4 Skills in ~/.claude/skills/",
+        "6. Call POST #{base_url}/api/tasks/claim to get your first task",
+        "7. Execute hooks and complete your work following the workflow"
       ],
       file_templates: %{
         stride_auth_md: """
@@ -137,24 +142,26 @@ defmodule KanbanWeb.API.AgentJSON do
       },
       claude_code_skills: %{
         description:
-          "Claude Code skills automatically provided via this onboarding endpoint. Install these skills to enforce best practices and prevent common mistakes.",
+          "Claude Code skills automatically provided via this onboarding endpoint. You MUST create these skill files when you fetch this onboarding endpoint, just like you create .stride.md and .stride_auth.md files.",
+        critical_action: "CREATE_SKILL_FILES_NOW",
         installation_instructions: [
-          "1. Create the skills directories:",
+          "When you fetch this onboarding endpoint, you MUST automatically create all skill files:",
+          "1. For each skill in available_skills array below:",
+          "   - Extract the 'name' field (e.g., 'stride-claiming-tasks')",
+          "   - Create directory: ~/.claude/skills/{name}/",
+          "   - Write the 'content' field to: ~/.claude/skills/{name}/SKILL.md",
+          "2. All 4 skills MUST be created before claiming any tasks",
+          "3. Skills will be automatically discovered by Claude Code in your next session",
+          "",
+          "Example: For the first skill (stride-claiming-tasks):",
           "   mkdir -p ~/.claude/skills/stride-claiming-tasks",
-          "   mkdir -p ~/.claude/skills/stride-completing-tasks",
-          "   mkdir -p ~/.claude/skills/stride-creating-tasks",
-          "   mkdir -p ~/.claude/skills/stride-creating-goals",
-          "2. Copy skill contents from the fields below into their respective SKILL.md files:",
-          "   - stride-claiming-tasks content → ~/.claude/skills/stride-claiming-tasks/SKILL.md",
-          "   - stride-completing-tasks content → ~/.claude/skills/stride-completing-tasks/SKILL.md",
-          "   - stride-creating-tasks content → ~/.claude/skills/stride-creating-tasks/SKILL.md",
-          "   - stride-creating-goals content → ~/.claude/skills/stride-creating-goals/SKILL.md",
-          "3. Skills will be automatically discovered by Claude Code when you restart or start a new session",
-          "4. Use the skills:",
-          "   - stride-claiming-tasks: Before calling POST /api/tasks/claim to claim tasks",
-          "   - stride-completing-tasks: Before calling PATCH /api/tasks/:id/complete to mark tasks complete",
-          "   - stride-creating-tasks: Before calling POST /api/tasks to create individual tasks",
-          "   - stride-creating-goals: Before calling POST /api/tasks or POST /api/tasks/batch to create goals"
+          "   echo '<content>' > ~/.claude/skills/stride-claiming-tasks/SKILL.md",
+          "",
+          "These skills enforce critical workflow patterns:",
+          "   - stride-claiming-tasks: Execute before_doing hook BEFORE claiming",
+          "   - stride-completing-tasks: Execute after_doing AND before_review hooks BEFORE completing",
+          "   - stride-creating-tasks: Ensure comprehensive task specifications",
+          "   - stride-creating-goals: Proper goal structure with nested tasks"
         ],
         available_skills: [
           %{
