@@ -1212,6 +1212,163 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "handle_event add-capability-from-select" do
+    test "adds capability from dropdown with non-empty value" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add-capability-from-select",
+          %{"new_capability" => "elixir"},
+          socket
+        )
+
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
+      assert capabilities == ["elixir"]
+    end
+
+    test "prevents duplicate capabilities" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          required_capabilities: ["elixir", "phoenix"]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add-capability-from-select",
+          %{"new_capability" => "elixir"},
+          socket
+        )
+
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
+      assert capabilities == ["elixir", "phoenix"]
+      assert length(capabilities) == 2
+    end
+
+    test "adds capability to existing list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Test",
+          required_capabilities: ["elixir"]
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add-capability-from-select",
+          %{"new_capability" => "phoenix"},
+          socket
+        )
+
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
+      assert capabilities == ["elixir", "phoenix"]
+    end
+
+    test "ignores empty capability value" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add-capability-from-select",
+          %{"new_capability" => ""},
+          socket
+        )
+
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
+      assert capabilities == [] || capabilities == nil
+    end
+
+    test "handles missing new_capability parameter" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("add-capability-from-select", %{}, socket)
+
+      capabilities =
+        Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
+
+      assert capabilities == [] || capabilities == nil
+    end
+  end
+
   describe "handle_event remove-capability" do
     test "removes capability at specified index" do
       user = user_fixture()
@@ -2700,6 +2857,274 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       # Verify status was updated
       updated_task = Tasks.get_task!(task.id)
       assert updated_task.status == :completed
+    end
+  end
+
+  describe "normalize_embedded_field with map inputs" do
+    test "converts map with numeric string keys to sorted list" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "key_files" => %{
+          "0" => %{"file_path" => "lib/second.ex", "note" => "Second", "position" => "1"},
+          "1" => %{"file_path" => "lib/first.ex", "note" => "First", "position" => "0"}
+        }
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task
+      assert length(created_task.key_files) == 2
+      assert Enum.at(created_task.key_files, 0).file_path == "lib/second.ex"
+      assert Enum.at(created_task.key_files, 1).file_path == "lib/first.ex"
+    end
+
+    test "removes _persistent_id from embedded entries during normalization" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "verification_steps" => %{
+          "0" => %{
+            "step_type" => "command",
+            "step_text" => "mix test",
+            "expected_result" => "Pass",
+            "position" => "0",
+            "_persistent_id" => "some-id"
+          }
+        }
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task
+      assert length(created_task.verification_steps) == 1
+
+      step = hd(created_task.verification_steps)
+      assert step.step_text == "mix test"
+      refute Map.has_key?(step, :_persistent_id)
+    end
+
+    test "handles already-normalized list inputs" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "key_files" => [
+          %{"file_path" => "lib/test.ex", "note" => "Test", "position" => 0}
+        ]
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task
+      assert length(created_task.key_files) == 1
+      assert hd(created_task.key_files).file_path == "lib/test.ex"
+    end
+
+    test "does not add empty arrays for missing embedded fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task Without Embeds"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task Without Embeds")
+      assert created_task
+      assert created_task.key_files == [] || created_task.key_files == nil
+      assert created_task.verification_steps == [] || created_task.verification_steps == nil
+    end
+  end
+
+  describe "normalize_map_with_arrays" do
+    test "normalizes testing_strategy with empty strings filtered" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "testing_strategy" => %{
+          "unit_tests" => ["Test 1", "", "Test 2", ""],
+          "integration_tests" => ["Integration test", ""]
+        }
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task
+      assert created_task.testing_strategy["unit_tests"] == ["Test 1", "Test 2"]
+      assert created_task.testing_strategy["integration_tests"] == ["Integration test"]
+    end
+
+    test "normalizes integration_points with empty strings filtered" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task",
+        "integration_points" => %{
+          "telemetry_events" => ["[:kanban, :task, :created]", "", "[:kanban, :task, :updated]"],
+          "pubsub_broadcasts" => ["task:updated", ""]
+        }
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task")
+      assert created_task
+
+      assert created_task.integration_points["telemetry_events"] == [
+               "[:kanban, :task, :created]",
+               "[:kanban, :task, :updated]"
+             ]
+
+      assert created_task.integration_points["pubsub_broadcasts"] == ["task:updated"]
+    end
+
+    test "does not add default maps for missing map fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Test Task Without Maps"
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created_task = Kanban.Repo.get_by(Tasks.Task, title: "Test Task Without Maps")
+      assert created_task
+      assert created_task.testing_strategy == %{} || created_task.testing_strategy == nil
+      assert created_task.integration_points == %{} || created_task.integration_points == nil
     end
   end
 end
