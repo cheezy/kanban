@@ -856,59 +856,6 @@ defmodule Kanban.Tasks do
     end
   end
 
-  defp maybe_move_parent_task(task, new_column_id) do
-    if task.parent_id do
-      parent = Repo.get!(Task, task.parent_id)
-
-      should_move = should_move_parent_goal?(parent, task.id, new_column_id)
-
-      if should_move && parent.column_id != new_column_id do
-        new_column = Repo.get!(Column, new_column_id)
-
-        # Use the same positioning logic as update_parent_goal_position
-        # This ensures goals are always positioned before their children
-        move_goal_to_top_with_other_goals(parent, new_column, task.id)
-      end
-    end
-
-    :ok
-  end
-
-  defp should_move_parent_goal?(parent, moving_task_id, new_column_id) do
-    # Get the parent's column and board
-    parent_column = Repo.get!(Column, parent.column_id)
-
-    # Get all columns for this board, ordered by position
-    all_columns =
-      from(c in Column,
-        where: c.board_id == ^parent_column.board_id,
-        order_by: [asc: c.position]
-      )
-      |> Repo.all()
-
-    column_positions = Map.new(all_columns, fn col -> {col.id, col.position} end)
-    new_column_position = column_positions[new_column_id]
-
-    # Get all other children of this parent (excluding the moving task)
-    other_children_columns =
-      from(t in Task,
-        where: t.parent_id == ^parent.id and t.id != ^moving_task_id,
-        select: t.column_id
-      )
-      |> Repo.all()
-      |> Enum.map(fn col_id -> column_positions[col_id] end)
-      |> Enum.reject(&is_nil/1)
-
-    # If there are no other children, move the parent
-    if Enum.empty?(other_children_columns) do
-      true
-    else
-      # Only move if no other children are in columns to the left of the new column
-      leftmost_other_child_position = Enum.min(other_children_columns)
-      new_column_position <= leftmost_other_child_position
-    end
-  end
-
   defp reorder_after_deletion(deleted_task) do
     # Get all tasks after the deleted position in the same column
     query =
@@ -1572,7 +1519,7 @@ defmodule Kanban.Tasks do
       {1, _} ->
         updated_task = get_task_for_view!(task.id)
 
-        maybe_move_parent_task(updated_task, doing_column.id)
+        update_parent_goal_position(updated_task, task.column_id, doing_column.id)
 
         Phoenix.PubSub.broadcast(
           Kanban.PubSub,
@@ -1729,8 +1676,9 @@ defmodule Kanban.Tasks do
         case Repo.update(changeset) do
           {:ok, updated_task} ->
             updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
+            old_column_id = task.column_id
 
-            maybe_move_parent_task(updated_task, review_column.id)
+            update_parent_goal_position(updated_task, old_column_id, review_column.id)
 
             require Logger
 
@@ -1782,7 +1730,7 @@ defmodule Kanban.Tasks do
                 {:ok, _final_task} ->
                   final_task = get_task_for_view!(updated_task.id)
 
-                  maybe_move_parent_task(final_task, done_column.id)
+                  update_parent_goal_position(final_task, review_column.id, done_column.id)
 
                   Logger.info("Task #{task.id} auto-moved to Done (needs_review=false)")
 
@@ -1888,8 +1836,9 @@ defmodule Kanban.Tasks do
     case Repo.update(changeset) do
       {:ok, _updated_task} ->
         updated_task = get_task_for_view!(task.id)
+        old_column_id = task.column_id
 
-        maybe_move_parent_task(updated_task, done_column.id)
+        update_parent_goal_position(updated_task, old_column_id, done_column.id)
 
         require Logger
         Logger.info("Task #{task.id} approved and moved to Done by user #{user.id}")
@@ -1939,8 +1888,9 @@ defmodule Kanban.Tasks do
     case Repo.update(changeset) do
       {:ok, _updated_task} ->
         updated_task = get_task_for_view!(task.id)
+        old_column_id = task.column_id
 
-        maybe_move_parent_task(updated_task, doing_column.id)
+        update_parent_goal_position(updated_task, old_column_id, doing_column.id)
 
         require Logger
 
