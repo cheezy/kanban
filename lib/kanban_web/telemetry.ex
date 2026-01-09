@@ -20,14 +20,16 @@ defmodule KanbanWeb.Telemetry do
   end
 
   def metrics do
+    phoenix_metrics() ++
+      application_metrics() ++
+      database_metrics() ++
+      vm_metrics()
+  end
+
+  defp phoenix_metrics do
     [
-      # Phoenix Metrics
-      summary("phoenix.endpoint.start.system_time",
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.endpoint.stop.duration",
-        unit: {:native, :millisecond}
-      ),
+      summary("phoenix.endpoint.start.system_time", unit: {:native, :millisecond}),
+      summary("phoenix.endpoint.stop.duration", unit: {:native, :millisecond}),
       summary("phoenix.router_dispatch.start.system_time",
         tags: [:route],
         unit: {:native, :millisecond}
@@ -40,37 +42,81 @@ defmodule KanbanWeb.Telemetry do
         tags: [:route],
         unit: {:native, :millisecond}
       ),
-      summary("phoenix.socket_connected.duration",
-        unit: {:native, :millisecond}
-      ),
+      summary("phoenix.socket_connected.duration", unit: {:native, :millisecond}),
       sum("phoenix.socket_drain.count"),
-      summary("phoenix.channel_joined.duration",
-        unit: {:native, :millisecond}
-      ),
+      summary("phoenix.channel_joined.duration", unit: {:native, :millisecond}),
       summary("phoenix.channel_handled_in.duration",
         tags: [:event],
         unit: {:native, :millisecond}
-      ),
+      )
+    ]
+  end
 
-      # User Metrics
+  defp application_metrics do
+    user_metrics() ++ board_metrics() ++ task_metrics() ++ api_metrics()
+  end
+
+  defp user_metrics do
+    [
       sum("kanban.user.registration.count",
         description: "Total number of user registrations"
       ),
-      counter("kanban.user.login.count",
-        description: "Total number of user logins"
-      ),
+      counter("kanban.user.login.count", description: "Total number of user logins")
+    ]
+  end
 
-      # Board Metrics
-      sum("kanban.board.creation.count",
-        description: "Total number of boards created"
-      ),
+  defp board_metrics do
+    [
+      sum("kanban.board.creation.count", description: "Total number of boards created")
+    ]
+  end
 
-      # Task Metrics
-      sum("kanban.task.creation.count",
-        description: "Total number of tasks created"
+  defp task_metrics do
+    [
+      sum("kanban.api.task_created.count",
+        description: "Total number of tasks created via API"
       ),
+      sum("kanban.api.task_completed.count",
+        description: "Total number of tasks completed via API"
+      ),
+      counter("kanban.api.task_claimed.count",
+        description: "Total number of tasks claimed by agents"
+      ),
+      counter("kanban.api.task_unclaimed.count",
+        description: "Total number of tasks unclaimed by agents"
+      ),
+      counter("kanban.api.task_marked_done.count",
+        description: "Total number of tasks marked as done after review"
+      ),
+      counter("kanban.api.task_returned_to_doing.count",
+        description: "Total number of tasks returned to doing from review"
+      ),
+      counter("kanban.api.next_task_fetched.count",
+        description: "Total number of next task requests"
+      )
+    ]
+  end
 
-      # Database Metrics
+  defp api_metrics do
+    [
+      counter("kanban.api.request.count",
+        tags: [:endpoint, :method],
+        description: "Total number of API requests by endpoint and method"
+      ),
+      summary("kanban.api.request.duration",
+        tags: [:endpoint, :method],
+        unit: {:native, :millisecond},
+        description: "API request duration by endpoint and method"
+      ),
+      counter("kanban.api.error.count",
+        tags: [:endpoint, :status],
+        description: "API errors by endpoint and status code"
+      )
+    ]
+  end
+
+  defp database_metrics do
+    [
       summary("kanban.repo.query.total_time",
         unit: {:native, :millisecond},
         description: "The sum of the other measurements"
@@ -89,11 +135,13 @@ defmodule KanbanWeb.Telemetry do
       ),
       summary("kanban.repo.query.idle_time",
         unit: {:native, :millisecond},
-        description:
-          "The time the connection spent waiting before being checked out for the query"
-      ),
+        description: "The time the connection spent waiting before being checked out for the query"
+      )
+    ]
+  end
 
-      # VM Metrics
+  defp vm_metrics do
+    [
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
       summary("vm.total_run_queue_lengths.cpu"),

@@ -23,11 +23,13 @@ defmodule KanbanWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug KanbanWeb.Plugs.ApiTelemetry
     plug KanbanWeb.Plugs.AuthenticateApiToken
   end
 
   pipeline :api_public do
     plug :accepts, ["json"]
+    plug KanbanWeb.Plugs.ApiTelemetry
   end
 
   scope "/", KanbanWeb do
@@ -83,7 +85,7 @@ defmodule KanbanWeb.Router do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
 
     live_dashboard "/dashboard",
-      metrics: KanbanWeb.Telemetry,
+      metrics: {KanbanWeb.Telemetry, :metrics},
       ecto_repos: [Kanban.Repo],
       ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
 
