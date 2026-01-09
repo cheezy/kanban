@@ -1,0 +1,56 @@
+{
+  "models": [],
+  "customCommands": [
+    {
+      "name": "stride-help",
+      "description": "Get help with Stride task management",
+      "prompt": "Refer to the Stride documentation at https://www.stridelikeaboss.com/api/agent/onboarding for guidance on task management, hooks, and API usage."
+    }
+  ],
+  "contextProviders": [
+    {
+      "name": "stride-docs",
+      "params": {
+        "urls": [
+          "https://www.stridelikeaboss.com/api/agent/onboarding",
+          "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md",
+          "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+          "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md"
+        ]
+      }
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "stride-claim",
+      "description": "Claim next available Stride task",
+      "prompt": "Help me claim the next available task from Stride. First call GET /api/tasks/next, then POST /api/tasks/claim with the task_id. Execute the before_doing hook before starting work."
+    },
+    {
+      "name": "stride-complete",
+      "description": "Complete current Stride task",
+      "prompt": "Help me complete the current task. Remember to: 1) Execute after_doing hook FIRST, 2) Only if hook succeeds, call PATCH /api/tasks/:id/complete, 3) Execute before_review hook (non-blocking)."
+    },
+    {
+      "name": "stride-create",
+      "description": "Create new Stride task",
+      "prompt": "Help me create a new Stride task. Remember: Don't specify identifier (auto-generated), verification_steps must be array of objects, testing_strategy fields must be arrays, type must be 'work'/'defect'/'goal'."
+    }
+  ],
+  "systemMessage": "You are working with the Stride task management system.\n\nCRITICAL RULES:\n\n1. Never specify identifiers when creating tasks (auto-generated as G1, W47, D12)\n2. verification_steps must be array of objects with step_type, step_text, expected_result, position\n3. testing_strategy fields (unit_tests, integration_tests, manual_tests) must be arrays\n4. type must be exactly 'work', 'defect', or 'goal' as strings\n5. Execute after_doing hook BEFORE calling complete endpoint\n\nHOOK EXECUTION:\nStride has four client-side hooks:\n- before_doing (60s, blocking) - Before starting work\n- after_doing (120s, blocking) - After work, BEFORE calling complete endpoint\n- before_review (60s, non-blocking) - When entering review\n- after_review (60s, non-blocking) - After approval\n\nBlocking hooks must succeed for workflow to continue.\n\nESSENTIAL TASK FIELDS:\nRequired: type, title\nCritical: key_files, dependencies, verification_steps, testing_strategy\nRecommended: description, complexity, priority, needs_review, pitfalls, patterns_to_follow, acceptance_criteria\n\nCOMPLETION ORDER:\n1. Finish work\n2. Execute after_doing hook (tests, lint, build)\n3. Only if hook succeeds, call PATCH /api/tasks/:id/complete\n4. Execute before_review hook (non-blocking)\n\nBATCH CREATION:\nRoot key must be 'goals' (not 'tasks'). Dependencies within goals use array indices [0, 1]. Cross-goal dependencies don't work in batch.\n\nDOCUMENTATION:\n- Onboarding: https://www.stridelikeaboss.com/api/agent/onboarding\n- Task Writing: https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md\n- API Reference: https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md\n\nNOTE: For comprehensive workflow enforcement, Claude Code users should install the four Stride Skills from the onboarding endpoint.",
+  "allowAnonymousTelemetry": false,
+  "docs": [
+    {
+      "title": "Stride Onboarding",
+      "startUrl": "https://www.stridelikeaboss.com/api/agent/onboarding"
+    },
+    {
+      "title": "Stride Task Writing Guide",
+      "startUrl": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md"
+    },
+    {
+      "title": "Stride API Reference",
+      "startUrl": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md"
+    }
+  ]
+}

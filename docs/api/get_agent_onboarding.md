@@ -69,6 +69,46 @@ Returns comprehensive onboarding information:
       "creation": [...]
     }
   },
+  "multi_agent_instructions": {
+    "description": "Always-active code completion guidance for other AI assistants",
+    "formats": {
+      "copilot": {
+        "file_path": ".github/copilot-instructions.md",
+        "description": "GitHub Copilot instructions",
+        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
+        "installation_unix": "curl -o .github/copilot-instructions.md [download_url]",
+        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .github/copilot-instructions.md"
+      },
+      "cursor": {
+        "file_path": ".cursorrules",
+        "description": "Cursor rules",
+        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt",
+        "installation_unix": "curl -o .cursorrules [download_url]",
+        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .cursorrules"
+      },
+      "windsurf": {
+        "file_path": ".windsurfrules",
+        "description": "Windsurf Cascade rules",
+        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt",
+        "installation_unix": "curl -o .windsurfrules [download_url]",
+        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .windsurfrules"
+      },
+      "aider": {
+        "file_path": ".aider.conf.yml",
+        "description": "Aider configuration",
+        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/aider.conf.yml",
+        "installation_unix": "curl -o .aider.conf.yml [download_url]",
+        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .aider.conf.yml"
+      },
+      "continue": {
+        "file_path": ".continue/config.json",
+        "description": "Continue.dev configuration",
+        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json",
+        "installation_unix": "mkdir -p .continue && curl -o .continue/config.json [download_url]",
+        "installation_windows": "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"[download_url]\" -OutFile .continue/config.json"
+      }
+    }
+  },
   "resources": {
     "documentation_url": "https://www.stridelikeaboss.com/docs/api/README.md",
     "api_workflow_guide": "https://www.stridelikeaboss.com/docs/WIP/AI-WORKFLOW.md",
@@ -117,6 +157,26 @@ Complete hook system information:
 - All four hook points with metadata
 - Environment variables available to hooks
 - Execution flow explanation
+
+### `multi_agent_instructions`
+
+Always-active code completion guidance for AI assistants other than Claude Code:
+
+- **Description**: Complementary approach to Claude Code Skills
+- **Formats**: Five AI assistant formats (Copilot, Cursor, Windsurf, Aider, Continue.dev)
+- **Download URLs**: Direct links to instruction files hosted on GitHub
+- **Installation**: Platform-specific download commands (Unix/Linux/macOS and Windows)
+
+Each format includes:
+
+- File path where instructions should be placed
+- Description of the AI assistant
+- Download URL for the instruction file
+- Installation command for Unix/Linux/macOS (using curl)
+- Installation command for Windows (using PowerShell)
+- Token limit information
+
+**Note**: Claude Code users should use the `claude_code_skills` section instead for comprehensive workflow enforcement.
 
 ### `api_reference`
 

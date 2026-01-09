@@ -1733,6 +1733,74 @@ defmodule KanbanWeb.API.AgentJSON do
           "6. Never create minimal tasks - they waste time and cause failure"
         ]
       },
+      multi_agent_instructions: %{
+        description:
+          "Always-active code completion guidance for AI assistants other than Claude Code. These provide essential Stride integration patterns without the contextual workflow enforcement of Claude Code Skills.",
+        note:
+          "Claude Code users should use the claude_code_skills section above for comprehensive workflow enforcement. Other AI assistants should download the appropriate format below.",
+        formats: %{
+          copilot: %{
+            file_path: ".github/copilot-instructions.md",
+            description: "GitHub Copilot instructions (repository-scoped, always active)",
+            download_url:
+              "#{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md",
+            installation_unix:
+              "curl -o .github/copilot-instructions.md #{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md\" -OutFile .github/copilot-instructions.md",
+            token_limit: "~4000 tokens (~250 lines)"
+          },
+          cursor: %{
+            file_path: ".cursorrules",
+            description: "Cursor rules (project-scoped, always active)",
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt",
+            installation_unix:
+              "curl -o .cursorrules #{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt\" -OutFile .cursorrules",
+            token_limit: "~8000 tokens (~400 lines)"
+          },
+          windsurf: %{
+            file_path: ".windsurfrules",
+            description: "Windsurf Cascade rules (hierarchical, cascades from parent directories)",
+            download_url:
+              "#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
+            installation_unix:
+              "curl -o .windsurfrules #{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt\" -OutFile .windsurfrules",
+            token_limit: "~8000 tokens (~400 lines)"
+          },
+          aider: %{
+            file_path: ".aider.conf.yml",
+            description: "Aider configuration (project-scoped YAML)",
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml",
+            installation_unix:
+              "curl -o .aider.conf.yml #{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/aider.conf.yml\" -OutFile .aider.conf.yml",
+            token_limit: "Moderate (~150 lines YAML)"
+          },
+          continue: %{
+            file_path: ".continue/config.json",
+            description: "Continue.dev configuration (project-scoped JSON with context providers)",
+            download_url:
+              "#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+            installation_unix:
+              "mkdir -p .continue && curl -o .continue/config.json #{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+            installation_windows:
+              "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json\" -OutFile .continue/config.json",
+            token_limit: "Flexible (~100 lines JSON, uses context providers)"
+          }
+        },
+        usage_notes: [
+          "These instructions complement Claude Code Skills by providing similar guidance for other AI assistants",
+          "Choose the format that matches your AI assistant and download it using the commands above",
+          "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
+          "Token limits vary by assistant - content is optimized accordingly",
+          "Claude Code users should ignore this section and use claude_code_skills instead"
+        ]
+      },
       resources: %{
         documentation_url: "#{@docs_base_url}/docs/api/README.md",
         authentication_guide: "#{@docs_base_url}/docs/AUTHENTICATION.md",
