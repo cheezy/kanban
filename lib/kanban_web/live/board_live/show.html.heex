@@ -194,7 +194,7 @@
                     "group task-card relative overflow-hidden rounded-lg shadow-md hover:shadow-xl border transition-all duration-200",
                     if task.identifier && String.starts_with?(task.identifier, "G") do
                       # Goal card styling (compact height, yellow background, non-draggable)
-                      "p-1.5 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300/60 hover:border-yellow-400/50 min-h-[45px]"
+                      "p-1.5 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/40 dark:to-yellow-800/40 border-yellow-300/60 dark:border-yellow-700/60 hover:border-yellow-400/50 dark:hover:border-yellow-600/50 min-h-[45px]"
                     else
                       # Regular task card styling
                       "p-3 bg-gradient-to-br from-base-100 to-base-200/50 border-base-300/60 hover:border-blue-300/50 transform hover:-translate-y-0.5"
@@ -289,14 +289,14 @@
                           }) %>
                         <div class="mt-1">
                           <div class="flex items-center gap-2">
-                            <div class="flex-1 h-1.5 bg-yellow-200 rounded-full overflow-hidden">
+                            <div class="flex-1 h-1.5 bg-yellow-200 dark:bg-yellow-800/50 rounded-full overflow-hidden">
                               <div
                                 class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-300"
                                 style={"width: #{progress.percentage}%"}
                               >
                               </div>
                             </div>
-                            <span class="text-xs font-medium text-yellow-700">
+                            <span class="text-xs font-medium text-yellow-700 dark:text-yellow-400">
                               {progress.completed}/{progress.total}
                             </span>
                           </div>
@@ -318,7 +318,7 @@
                                 "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
 
                               task_type_prefix == "G" ->
-                                "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200/50"
+                                "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/60 dark:to-yellow-800/60 text-yellow-700 dark:text-yellow-300 border-yellow-200/50 dark:border-yellow-700/50"
 
                               true ->
                                 "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200/50"
