@@ -187,7 +187,6 @@ defmodule KanbanWeb.API.AgentJSON do
         - **API Token:** `{{YOUR_TOKEN_HERE}}`
         - **User Email:** `{{YOUR_EMAIL}}`
         - **Token Name:** Development Agent
-        - **Capabilities:** code_generation, testing
 
         ## Usage
 

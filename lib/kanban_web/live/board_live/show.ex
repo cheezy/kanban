@@ -323,7 +323,10 @@ defmodule KanbanWeb.BoardLive.Show do
     user = socket.assigns.current_scope.user
     board = socket.assigns.board
 
-    token_params = Map.merge(params["api_token"] || %{}, params["token"] || %{})
+    token_params =
+      params["api_token"]
+      |> Map.merge(params["token"] || %{})
+      |> parse_agent_capabilities()
 
     case ApiTokens.create_api_token(user, board, token_params) do
       {:ok, {_api_token, plain_text_token}} ->
@@ -671,6 +674,23 @@ defmodule KanbanWeb.BoardLive.Show do
   defp subscribe_to_board_updates(socket, board_id) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board_id}")
+    end
+  end
+
+  defp parse_agent_capabilities(params) do
+    case params do
+      %{"agent_capabilities" => capabilities} when is_binary(capabilities) ->
+        parsed_capabilities =
+          capabilities
+          |> String.split(",")
+          |> Enum.map(&String.trim/1)
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.uniq()
+
+        Map.put(params, "agent_capabilities", parsed_capabilities)
+
+      _ ->
+        params
     end
   end
 

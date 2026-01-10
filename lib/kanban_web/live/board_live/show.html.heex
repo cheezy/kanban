@@ -556,6 +556,17 @@
           placeholder={gettext("Task automation")}
         />
 
+        <.input
+          field={@token_form[:agent_capabilities]}
+          type="text"
+          label={gettext("Agent Capabilities")}
+          placeholder={gettext("code_generation, testing, documentation")}
+          phx-debounce="blur"
+        />
+        <p class="mt-1 text-sm text-base-content opacity-60">
+          {gettext("Comma-separated list. Valid capabilities: code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops. Leave empty to allow all tasks.")}
+        </p>
+
         <div class="mt-4">
           <.button phx-disable-with={gettext("Creating...")}>
             {gettext("Generate Token")}
