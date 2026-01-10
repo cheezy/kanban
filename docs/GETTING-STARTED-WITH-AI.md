@@ -69,8 +69,9 @@ AI agents need an API token to authenticate with your Stride instance.
 
 3. **Configure the token:**
    - **Name**: Descriptive name for this token (e.g., "Claude Development Agent")
+   - **Agent Capabilities**: Comma-separated list of capabilities (e.g., "code_generation, testing, documentation")
    - **Agent Model**: Optional - helps track which AI model is being used
-   - **Capabilities**: Select what this agent can do (see [AGENT-CAPABILITIES](./AGENT-CAPABILITIES.md))
+   - **Agent Purpose**: Optional - describes what this agent is for
 
 4. **Click "Create Token"**
 
@@ -82,23 +83,28 @@ AI agents need an API token to authenticate with your Stride instance.
 
 ### Understanding Capabilities
 
-Capabilities determine which tasks an agent can see and claim. Stride will only assign capabilities that match what your agent can actually do:
+Capabilities determine which tasks an agent can see and claim. When creating an API token, you enter capabilities as a comma-separated list that matches what your agent can actually do.
 
 **Standard Capabilities:**
 - `code_generation` - Writing new code
 - `code_review` - Reviewing code changes
+- `database_design` - Database schema design and migrations
 - `testing` - Writing and running tests
+- `documentation` - Writing docs, comments, guides
 - `debugging` - Finding and fixing bugs
-- `documentation` - Writing docs
 - `refactoring` - Improving code structure
-- `database` - Database migrations and queries
-- `frontend` - UI/UX development
-- `backend` - Server-side development
-- `devops` - Deployment and infrastructure
-- `security` - Security reviews and fixes
-- `performance` - Performance optimization
+- `api_design` - REST/GraphQL API design
+- `ui_implementation` - User interface implementation
+- `performance_optimization` - Performance tuning and optimization
+- `security_analysis` - Security audits and vulnerability fixes
+- `devops` - CI/CD, Docker, deployment pipelines
 
-**Pro Tip**: Start with a focused set of capabilities (e.g., just `code_generation` and `testing`) and expand as you gain confidence in your agent's work.
+**Examples:**
+- Single capability: `code_generation`
+- Multiple capabilities: `code_generation, testing, documentation`
+- Full-stack agent: `code_generation, database_design, ui_implementation, testing, debugging`
+
+**Pro Tip**: Start with a focused set of capabilities (e.g., just `code_generation, testing`) and expand as you gain confidence in your agent's work. Leave the field empty to allow the agent to claim any task regardless of requirements.
 
 ## Configuring Your AI Agent
 
@@ -152,7 +158,6 @@ Create a file named `.stride_auth.md` with the following content:
 - **API Token:** `stride_abc123def456...` (your actual token)
 - **User Email:** `your-email@example.com`
 - **Token Name:** Development Agent
-- **Capabilities:** code_generation, testing
 
 ## Usage
 

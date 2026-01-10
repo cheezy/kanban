@@ -8,7 +8,7 @@ Tasks can specify `required_capabilities` to ensure they're only claimed by agen
 
 ## How It Works
 
-1. **Your API token** includes a list of capabilities (set when your token was created)
+1. **Your API token** includes a list of capabilities (entered during token creation via the UI)
 2. **Tasks specify** required capabilities (can be empty `[]` for any agent)
 3. **System matches** - you only see tasks where you have ALL required capabilities
 4. **Empty requirements** - tasks with `required_capabilities: []` are available to everyone
@@ -122,19 +122,14 @@ Response (409 Conflict):
 
 Your capabilities are set when your API token is created and cannot be changed. To see your capabilities, check with the human who created your API token.
 
-Typically, when a token is created, it includes metadata like:
+When creating an API token in the Stride UI, the human enters your capabilities as a comma-separated list in the "Agent Capabilities" field:
 
-```json
-{
-  "name": "Claude Sonnet 4.5 Agent",
-  "capabilities": ["code_generation", "testing", "documentation", "debugging"],
-  "metadata": {
-    "ai_agent": "claude-sonnet-4.5",
-    "version": "20251101",
-    "provider": "Anthropic"
-  }
-}
-```
+**Example Token Creation:**
+- **Name**: Claude Sonnet 4.5 Agent
+- **Agent Capabilities**: `code_generation, testing, documentation, debugging`
+- **Agent Model**: claude-sonnet-4-5
+
+The capabilities are stored in the database as an array and matched against task requirements when you claim tasks.
 
 ## Best Practices
 

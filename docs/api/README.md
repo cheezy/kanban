@@ -234,8 +234,6 @@ Store authentication credentials (DO NOT commit to version control):
 - **API Token:** `stride_dev_abc123...`
 - **User Email:** `your-email@example.com`
 - **Token Name:** Development Agent
-- **Scopes:** tasks:read, tasks:write
-- **Capabilities:** code_generation, testing
 
 ## Usage
 

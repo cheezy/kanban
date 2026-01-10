@@ -39,10 +39,9 @@ Authorization: Bearer stride_dev_abc123def456...
 ## API Configuration
 
 - **API URL:** `http://www.stridelikeaboss.com`
-- **API Token:** `stride_dev_abc123...
+- **API Token:** `stride_dev_abc123...`
 - **User Email:** `user@example.com`
 - **Token Name:** Development Agent
-- **Capabilities:** code_generation, testing
 
 ## Environment Variables
 
@@ -75,6 +74,8 @@ curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
 2. **Use these values** in all API requests
 
 3. **Never commit this file** - It should already be in `.gitignore`, but verify
+
+**Note**: Agent capabilities are configured during API token creation in the Stride UI, not in this file. The human who created your token specified your capabilities when generating the token.
 
 ### If `.stride_auth.md` Doesn't Exist
 
@@ -173,7 +174,6 @@ When your token was created, the human may have provided metadata about you:
 {
   "name": "Claude Sonnet 4.5 Agent",
   "agent_model": "claude-sonnet-4-5",
-  "agent_version": "20251229",
   "agent_purpose": "Task automation"
 }
 ```
