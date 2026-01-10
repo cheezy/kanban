@@ -99,11 +99,11 @@
                         <.link
                           patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"}
                           title={gettext("Add task")}
-                          class="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 transition-all hover:scale-110"
+                          class="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 hover:from-green-200 hover:to-emerald-200 dark:hover:from-green-800/40 dark:hover:to-emerald-800/40 transition-all hover:scale-110"
                         >
                           <.icon
                             name="hero-plus-circle-solid"
-                            class="h-5 w-5 text-green-600"
+                            class="h-5 w-5 text-green-600 dark:text-green-400"
                           />
                         </.link>
                       <% end %>
@@ -119,8 +119,8 @@
                     <span class={[
                       "text-xs px-2.5 py-1 rounded-full font-medium border shadow-sm",
                       (over_limit &&
-                         "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50") ||
-                        "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200/50"
+                         "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 text-red-700 dark:text-red-400 border-red-200/50 dark:border-red-800/50") ||
+                        "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800/50"
                     ]}>
                       {gettext("WIP")}: {column.wip_limit}
                     </span>
@@ -315,13 +315,13 @@
                             "inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-transform hover:scale-105 flex-shrink-0 border",
                             cond do
                               task_type_prefix == "D" ->
-                                "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
+                                "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 text-red-700 dark:text-red-400 border-red-200/50 dark:border-red-800/50"
 
                               task_type_prefix == "G" ->
-                                "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/60 dark:to-yellow-800/60 text-yellow-700 dark:text-yellow-300 border-yellow-200/50 dark:border-yellow-700/50"
+                                "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 text-yellow-700 dark:text-yellow-400 border-yellow-200/50 dark:border-yellow-800/50"
 
                               true ->
-                                "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200/50"
+                                "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800/50"
                             end
                           ]}
                           title={
@@ -338,16 +338,16 @@
                           "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium shadow-sm transition-transform hover:scale-105 border flex-shrink-0",
                           case task.priority do
                             :critical ->
-                              "bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200/50"
+                              "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 text-red-700 dark:text-red-400 border-red-200/50 dark:border-red-800/50"
 
                             :high ->
-                              "bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-orange-200/50"
+                              "bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 text-orange-700 dark:text-orange-400 border-orange-200/50 dark:border-orange-800/50"
 
                             :medium ->
-                              "bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 border-yellow-200/50"
+                              "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 text-yellow-700 dark:text-yellow-400 border-yellow-200/50 dark:border-yellow-800/50"
 
                             :low ->
-                              "bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200/50"
+                              "bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-800/50"
                           end
                         ]}>
                           {case task.priority do

@@ -400,7 +400,8 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for red warning badge indicating limit exceeded
-      assert html =~ "from-red-50 to-red-100 text-red-700"
+      assert html =~ "from-red-50 to-red-100"
+      assert html =~ "dark:from-red-900/30 dark:to-red-800/30"
     end
 
     test "displays blue indicator when column under WIP limit", %{conn: conn, user: user} do
@@ -411,7 +412,8 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for blue badge when under limit
-      assert html =~ "from-blue-50 to-blue-100 text-blue-700"
+      assert html =~ "from-blue-50 to-blue-100"
+      assert html =~ "dark:from-blue-900/30 dark:to-blue-800/30"
     end
 
     test "displays blue indicator when column at WIP limit", %{conn: conn, user: user} do
@@ -423,8 +425,9 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       # Check for blue badge when at limit (not exceeding)
-      assert html =~ "from-blue-50 to-blue-100 text-blue-700"
-      refute html =~ "from-red-50 to-red-100 text-red-700"
+      assert html =~ "from-blue-50 to-blue-100"
+      assert html =~ "dark:from-blue-900/30 dark:to-blue-800/30"
+      refute html =~ "from-red-50 to-red-100"
     end
 
     test "cannot create task when WIP limit reached", %{conn: conn, user: user} do
