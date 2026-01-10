@@ -5,6 +5,28 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-01-10
+
+### Added
+
+#### Agent Capabilities Input Field
+
+- **UI Input for Agent Capabilities** - Added agent capabilities input field to API token creation form:
+
+#### Dark Mode Enhancements
+
+- **Improved Task Card Styling** - Enhanced dark mode appearance for task cards:
+
+### Changed
+
+#### Agent Capabilities Management
+
+- **Token Creation Workflow** - Capabilities now entered during token creation instead of configuration file:
+
+#### Claude Code Skills Enhancement
+
+- **Automatic Workflow Progression** - Skills updated to enable continuous agent operation:
+
 ## [1.17.1] - 2026-01-09
 
 ### Added
