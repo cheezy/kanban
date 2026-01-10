@@ -18,7 +18,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       assert response["version"] == "1.0"
       assert is_binary(response["api_base_url"])
-      assert is_map(response["critical_first_steps"])
+      assert is_map(response["⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️"])
+      assert is_map(response["MANDATORY_SETUP_CHECKLIST"])
       assert is_map(response["overview"])
       assert is_list(response["quick_start"])
       assert is_map(response["file_templates"])
@@ -28,21 +29,37 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(response["resources"])
     end
 
-    test "includes critical first steps with proper structure", %{conn: conn} do
+    test "includes setup warning with proper structure", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
-      critical_steps = response["critical_first_steps"]
-      assert critical_steps["action"] == "CREATE_FILES_NOW"
-      assert is_list(critical_steps["instructions"])
-      assert length(critical_steps["instructions"]) >= 4
-      assert is_binary(critical_steps["why_critical"])
+      # Check warning structure
+      warning = response["⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️"]
+      assert is_binary(warning["YOU_MUST_COMPLETE_THESE_STEPS_FIRST"])
+      assert is_binary(warning["WHY_THIS_IS_MANDATORY"])
+      assert is_binary(warning["SETUP_TAKES"])
+      assert is_binary(warning["DO_THIS_NOW"])
 
-      # Verify instructions mention both required files
-      instructions_text = Enum.join(critical_steps["instructions"], " ")
-      assert instructions_text =~ ".stride_auth.md"
-      assert instructions_text =~ ".stride.md"
-      assert instructions_text =~ ".gitignore"
+      # Check mandatory checklist structure
+      checklist = response["MANDATORY_SETUP_CHECKLIST"]
+      assert checklist["COMPLETE_ALL_STEPS_IN_ORDER"] == true
+
+      # Verify steps exist
+      assert is_map(checklist["STEP_1_CHECK_stride_auth_md"])
+      assert is_map(checklist["STEP_2_CREATE_stride_auth_md"])
+      assert is_map(checklist["STEP_3_CHECK_gitignore"])
+      assert is_map(checklist["STEP_4_ADD_TO_gitignore"])
+      assert is_map(checklist["STEP_5_CHECK_stride_md"])
+      assert is_map(checklist["STEP_6_CREATE_stride_md"])
+      assert is_map(checklist["STEP_7_INSTALL_SKILLS"])
+      assert is_map(checklist["STEP_8_NOTIFY_USER"])
+      assert is_map(checklist["STEP_9_SETUP_COMPLETE"])
+
+      # Verify step structure
+      step_1 = checklist["STEP_1_CHECK_stride_auth_md"]
+      assert step_1["order"] == 1
+      assert is_binary(step_1["action"])
+      assert step_1["action"] =~ ".stride_auth.md"
     end
 
     test "includes overview with key features", %{conn: conn} do
