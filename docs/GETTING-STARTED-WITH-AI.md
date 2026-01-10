@@ -112,7 +112,7 @@ AI agents need two configuration files in their working directory to operate wit
 
 ### Agent Onboarding Endpoint
 
-Before configuring files, have your AI agent call the onboarding endpoint to understand the full system:
+Before configuring files, have your AI agent read and execute the commands from the onboarding endpoint:
 
 ```bash
 curl https://www.stridelikeaboss.com/api/agent/onboarding
@@ -127,7 +127,7 @@ This endpoint returns everything the agent needs to know:
 - Claude Code skills for workflow enforcement
 
 **If you're using Claude Code or another AI coding assistant**, just tell it:
-> "Please read the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding"
+> "Please read and execute the commands from the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding"
 
 **⚠️ IMPORTANT: Reload with Each New Session**
 
