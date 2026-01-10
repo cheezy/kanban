@@ -11,27 +11,27 @@
 msgid ""
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:703
+#: lib/kanban_web/live/board_live/show.ex:723
 #, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:705
+#: lib/kanban_web/live/board_live/show.ex:725
 #, elixir-autogen, elixir-format
 msgid "Doing"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:707
+#: lib/kanban_web/live/board_live/show.ex:727
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:704
+#: lib/kanban_web/live/board_live/show.ex:724
 #, elixir-autogen, elixir-format
 msgid "Ready"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:706
+#: lib/kanban_web/live/board_live/show.ex:726
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr ""

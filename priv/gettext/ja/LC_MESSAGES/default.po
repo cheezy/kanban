@@ -13,7 +13,7 @@ msgstr ""
 
 #: lib/kanban_web/components/core_components.ex:417
 #: lib/kanban_web/live/archive_live/index.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:584
+#: lib/kanban_web/live/board_live/show.html.heex:595
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "アクション"
@@ -276,7 +276,7 @@ msgid "Listing Boards"
 msgstr "ボード一覧"
 
 #: lib/kanban_web/live/board_live/form.html.heex:30
-#: lib/kanban_web/live/board_live/show.html.heex:581
+#: lib/kanban_web/live/board_live/show.html.heex:592
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/user_live/registration.ex:52
 #: lib/kanban_web/live/user_live/settings.ex:28
@@ -456,7 +456,7 @@ msgstr "この列のWIP制限に達しました"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:603
+#: lib/kanban_web/live/board_live/show.ex:606
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "タスクを移動できません：列がWIP制限に達しています"
@@ -483,7 +483,7 @@ msgstr "重大"
 msgid "Defect"
 msgstr "不具合"
 
-#: lib/kanban_web/live/board_live/show.ex:612
+#: lib/kanban_web/live/board_live/show.ex:615
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "タスクの移動に失敗しました"
@@ -766,12 +766,12 @@ msgstr "自分自身をボードに追加することはできません"
 msgid "Only the board owner can delete columns"
 msgstr "ボードの所有者のみが列を削除できます"
 
-#: lib/kanban_web/live/board_live/show.ex:479
+#: lib/kanban_web/live/board_live/show.ex:482
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "ボードの所有者のみが列を管理できます"
 
-#: lib/kanban_web/live/board_live/show.ex:497
+#: lib/kanban_web/live/board_live/show.ex:500
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "ボードの所有者のみが列を作成できます"
@@ -1130,7 +1130,7 @@ msgid "About Tango"
 msgstr "Tangoについて"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:17
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:2524
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:2743
 #: lib/kanban_web/controllers/page_html/tango.html.heex:17
 #: lib/kanban_web/controllers/page_html/tango.html.heex:101
 #, elixir-autogen, elixir-format
@@ -1343,8 +1343,8 @@ msgstr ""
 msgid "Blocked"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:482
-#: lib/kanban_web/live/board_live/show.ex:500
+#: lib/kanban_web/live/board_live/show.ex:485
+#: lib/kanban_web/live/board_live/show.ex:503
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
@@ -1354,7 +1354,7 @@ msgstr ""
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:485
+#: lib/kanban_web/live/board_live/show.ex:488
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
@@ -1846,7 +1846,7 @@ msgstr ""
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:534
+#: lib/kanban_web/live/board_live/show.ex:537
 #: lib/kanban_web/live/board_live/show.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
@@ -1862,12 +1862,12 @@ msgstr "%{board_name}のAPIトークン"
 msgid "API endpoint or service"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:362
+#: lib/kanban_web/live/board_live/show.ex:365
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "APIトークンが正常に取り消されました"
 
-#: lib/kanban_web/live/board_live/show.html.heex:570
+#: lib/kanban_web/live/board_live/show.html.heex:581
 #, elixir-autogen, elixir-format
 msgid "Active Tokens"
 msgstr "アクティブなトークン"
@@ -1917,7 +1917,7 @@ msgstr ""
 msgid "Agent Model (Optional)"
 msgstr "エージェントモデル（オプション）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:614
+#: lib/kanban_web/live/board_live/show.html.heex:625
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to revoke this token?"
 msgstr "このボードを削除してもよろしいですか？"
@@ -1933,7 +1933,7 @@ msgstr "コピー"
 msgid "Copy this token now - you won't be able to see it again:"
 msgstr "今すぐこのトークンをコピーしてください - 再度表示することはできません："
 
-#: lib/kanban_web/live/board_live/show.html.heex:560
+#: lib/kanban_web/live/board_live/show.html.heex:571
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Creating..."
 msgstr "アカウントを作成中..."
@@ -1944,12 +1944,12 @@ msgstr "アカウントを作成中..."
 msgid "External APIs"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:365
+#: lib/kanban_web/live/board_live/show.ex:368
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to revoke token"
 msgstr "タスクの移動に失敗しました"
 
-#: lib/kanban_web/live/board_live/show.html.heex:561
+#: lib/kanban_web/live/board_live/show.html.heex:572
 #, elixir-autogen, elixir-format
 msgid "Generate Token"
 msgstr "トークンを生成"
@@ -1972,7 +1972,7 @@ msgstr ""
 msgid "Integration test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:583
+#: lib/kanban_web/live/board_live/show.html.heex:594
 #, elixir-autogen, elixir-format
 msgid "Last Used"
 msgstr ""
@@ -1993,12 +1993,12 @@ msgstr ""
 msgid "My AI Agent"
 msgstr "マイAIエージェント"
 
-#: lib/kanban_web/live/board_live/show.html.heex:604
+#: lib/kanban_web/live/board_live/show.html.heex:615
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "未使用"
 
-#: lib/kanban_web/live/board_live/show.html.heex:574
+#: lib/kanban_web/live/board_live/show.html.heex:585
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "まだAPIトークンがありません。上記で生成して開始してください。"
@@ -2020,12 +2020,12 @@ msgstr ""
 msgid "Purpose (Optional)"
 msgstr "目的（オプション）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:616
+#: lib/kanban_web/live/board_live/show.html.heex:627
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Revoke"
 msgstr "削除"
 
-#: lib/kanban_web/live/board_live/show.html.heex:619
+#: lib/kanban_web/live/board_live/show.html.heex:630
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "取り消し済み"
@@ -2065,7 +2065,7 @@ msgstr "トークン名"
 msgid "Token created successfully!"
 msgstr "列が正常に作成されました"
 
-#: lib/kanban_web/live/board_live/show.ex:368
+#: lib/kanban_web/live/board_live/show.ex:371
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr "未承認"
@@ -2081,7 +2081,7 @@ msgstr ""
 msgid "Unit test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:582
+#: lib/kanban_web/live/board_live/show.html.heex:593
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr ""
@@ -2453,3 +2453,18 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Select capability to add..."
 msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:562
+#, elixir-autogen, elixir-format
+msgid "Agent Capabilities"
+msgstr "エージェント機能"
+
+#: lib/kanban_web/live/board_live/show.html.heex:567
+#, elixir-autogen, elixir-format
+msgid "Comma-separated list. Valid capabilities: code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops. Leave empty to allow all tasks."
+msgstr "カンマ区切りリスト。有効な機能：code_generation、code_review、database_design、testing、documentation、debugging、refactoring、api_design、ui_implementation、performance_optimization、security_analysis、devops。すべてのタスクを許可するには空のままにしてください。"
+
+#: lib/kanban_web/live/board_live/show.html.heex:563
+#, elixir-autogen, elixir-format
+msgid "code_generation, testing, documentation"
+msgstr "code_generation, testing, documentation"
