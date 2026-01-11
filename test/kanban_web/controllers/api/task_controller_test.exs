@@ -1005,6 +1005,45 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["id"] == task.id
     end
 
+    test "empty agent capabilities can claim specific task by identifier with requirements", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Empty Capabilities Token",
+          "agent_capabilities" => []
+        })
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Testing",
+          "status" => "open",
+          "required_capabilities" => ["testing", "deployment"],
+          "created_by_id" => user.id
+        })
+
+      conn =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{
+          "identifier" => task.identifier,
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      response = json_response(conn, 200)["data"]
+
+      # Empty agent_capabilities should match any task even when claiming by identifier
+      assert response["id"] == task.id
+      assert response["status"] == "in_progress"
+    end
+
     test "prevents double claiming", %{
       conn: conn,
       ready_column: ready_column,

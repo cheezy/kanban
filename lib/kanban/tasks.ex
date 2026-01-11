@@ -1467,12 +1467,20 @@ defmodule Kanban.Tasks do
         preload: [:column, :assigned_to, :created_by]
       )
 
+    # Apply capability filter (always check that agent has required capabilities)
+    # Empty agent_capabilities means the agent can claim any task
     query =
-      from(t in query,
-        where:
-          fragment("cardinality(?)", t.required_capabilities) == 0 or
-            fragment("?::varchar[] @> ?", ^agent_capabilities, t.required_capabilities)
-      )
+      if agent_capabilities == [] do
+        # If agent has no capabilities specified, they can claim any task
+        from(t in query)
+      else
+        # If agent has specific capabilities, filter tasks
+        from(t in query,
+          where:
+            fragment("cardinality(?)", t.required_capabilities) == 0 or
+              fragment("?::varchar[] @> ?", ^agent_capabilities, t.required_capabilities)
+        )
+      end
 
     query =
       from(t in query,
