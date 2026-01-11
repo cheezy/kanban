@@ -839,6 +839,49 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["id"] == task2.id
     end
 
+    test "empty agent capabilities can claim tasks with any requirements", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      # Create API token with empty capabilities
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Empty Capabilities Token",
+          "agent_capabilities" => []
+        })
+
+      {:ok, task1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Testing",
+          "status" => "open",
+          "required_capabilities" => ["testing", "deployment"],
+          "created_by_id" => user.id
+        })
+
+      {:ok, _task2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Code Gen",
+          "status" => "open",
+          "required_capabilities" => ["code_generation"],
+          "created_by_id" => user.id
+        })
+
+      conn =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      # Empty agent_capabilities should match any task
+      # Should return first task by priority/position
+      assert response["id"] == task1.id
+    end
+
     test "returns 401 without authentication" do
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
@@ -888,6 +931,78 @@ defmodule KanbanWeb.API.TaskControllerTest do
         post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
 
       assert json_response(conn, 409)["error"] =~ "No tasks available"
+    end
+
+    test "empty agent capabilities can claim tasks via claim endpoint", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board,
+      doing_column: doing_column
+    } do
+      # Create API token with empty capabilities
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Empty Capabilities Token",
+          "agent_capabilities" => []
+        })
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Requires Multiple Capabilities",
+          "status" => "open",
+          "required_capabilities" => ["testing", "deployment", "security"],
+          "created_by_id" => user.id
+        })
+
+      conn =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
+
+      response = json_response(conn, 200)["data"]
+
+      # Empty agent_capabilities should be able to claim any task
+      assert response["id"] == task.id
+      assert response["status"] == "in_progress"
+      assert response["column_id"] == doing_column.id
+    end
+
+    test "empty capabilities combined with no task requirements", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Empty Capabilities Token",
+          "agent_capabilities" => []
+        })
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "No Requirements",
+          "status" => "open",
+          "required_capabilities" => [],
+          "created_by_id" => user.id
+        })
+
+      conn =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)["data"]
+
+      # Empty capabilities + empty requirements should work
+      assert response["id"] == task.id
     end
 
     test "prevents double claiming", %{
