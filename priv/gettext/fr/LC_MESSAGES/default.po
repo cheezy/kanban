@@ -11,7 +11,7 @@ msgstr ""
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n>1);\n"
 
-#: lib/kanban_web/components/core_components.ex:417
+#: lib/kanban_web/components/core_components.ex:422
 #: lib/kanban_web/live/archive_live/index.html.heex:38
 #: lib/kanban_web/live/board_live/show.html.heex:595
 #, elixir-autogen, elixir-format
@@ -34,8 +34,8 @@ msgstr "Quelque chose s'est mal passé !"
 msgid "We can't find the internet"
 msgstr "Impossible de trouver Internet"
 
-#: lib/kanban_web/components/core_components.ex:75
-#: lib/kanban_web/components/core_components.ex:578
+#: lib/kanban_web/components/core_components.ex:80
+#: lib/kanban_web/components/core_components.ex:583
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "fermer"
@@ -863,7 +863,7 @@ msgstr "À propos"
 msgid "About Stride"
 msgstr "À propos de Stride"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:291
+#: lib/kanban_web/controllers/page_html/about.html.heex:132
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr "Retour à l'accueil"
@@ -878,106 +878,15 @@ msgstr "Construit avec l'IA"
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr "Stride est une application moderne de gestion des tâches entièrement construite grâce au développement assisté par l'IA. Ce projet démontre la puissance de la collaboration humain-IA dans le développement logiciel."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:110
+#: lib/kanban_web/controllers/page_html/about.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr "L'IA n'est pas parfaite et je suis sûr qu'il y a des problèmes cachés dans cette application. Veuillez signaler les problèmes ou demander de nouvelles fonctionnalités afin que cette application puisse s'améliorer."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:191
-#, elixir-autogen, elixir-format
-msgid "Adding Columns to the Boards"
-msgstr "Ajout de colonnes aux tableaux"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:200
-#, elixir-autogen, elixir-format
-msgid "Adding Tasks to Columns"
-msgstr "Ajout de tâches aux colonnes"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:227
-#, elixir-autogen, elixir-format
-msgid "Adding Type, Priority, Identifier, Comments, and History to Tasks"
-msgstr "Ajout du type, de la priorité, de l'identifiant, des commentaires et de l'historique aux tâches"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:236
-#, elixir-autogen, elixir-format
-msgid "Adding Users to Boards and Tasks and drag-and-drop for Columns"
-msgstr "Ajout d'utilisateurs aux tableaux et tâches et glisser-déposer pour les colonnes"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:218
-#, elixir-autogen, elixir-format
-msgid "Adding drag-and-drop for Tasks"
-msgstr "Ajout du glisser-déposer pour les tâches"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:245
-#, elixir-autogen, elixir-format
-msgid "Authorization and user permissions"
-msgstr "Autorisation et permissions des utilisateurs"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:155
-#, elixir-autogen, elixir-format
-msgid "Building the authentication system"
-msgstr "Construction du système d'authentification"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:254
-#, elixir-autogen, elixir-format
-msgid "Cleanup and simplification of Authentication"
-msgstr "Nettoyage et simplification de l'authentification"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:209
-#, elixir-autogen, elixir-format
-msgid "Cleanup of the Tasks UI and auto dismissing Flash messages"
-msgstr "Nettoyage de l'interface des tâches et messages Flash à fermeture automatique"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:146
-#, elixir-autogen, elixir-format
-msgid "Creating the plan"
-msgstr "Création du plan"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:182
-#, elixir-autogen, elixir-format
-msgid "Finishing the UI for Boards"
-msgstr "Finalisation de l'interface pour les tableaux"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:127
-#, elixir-autogen, elixir-format
-msgid "I blogged about the AI driven development of this application. In the posts I included a lot of videos and images in which you can see how it is done. The posts are here:"
-msgstr "J'ai blogué sur le développement de cette application piloté par l'IA. Dans les articles, j'ai inclus de nombreuses vidéos et images dans lesquelles vous pouvez voir comment cela se fait. Les articles sont ici :"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:173
-#, elixir-autogen, elixir-format
-msgid "Moving the design to function components and starting on Boards"
-msgstr "Déplacement du design vers les composants fonctionnels et début des tableaux"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:107
+#: lib/kanban_web/controllers/page_html/about.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr "Signaler des problèmes ou demander des fonctionnalités"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:24
-#, elixir-autogen, elixir-format
-msgid "See the entire process for yourself in the "
-msgstr "Voyez tout le processus par vous-même dans la "
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:137
-#, elixir-autogen, elixir-format
-msgid "Setup, configuration, and tools"
-msgstr "Configuration, paramétrage et outils"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:25
-#: lib/kanban_web/controllers/page_html/about.html.heex:124
-#, elixir-autogen, elixir-format
-msgid "The Blog"
-msgstr "Le Blog"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:164
-#, elixir-autogen, elixir-format
-msgid "Updating the Visual Design and adding French Translations"
-msgstr "Mise à jour du design visuel et ajout des traductions françaises"
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:25
-#, elixir-autogen, elixir-format
-msgid "section below."
-msgstr "section ci-dessous."
 
 #: lib/kanban_web/live/issue_live/form_component.ex:68
 #, elixir-autogen, elixir-format
@@ -1090,11 +999,6 @@ msgstr "Aller à Mes Tableaux"
 msgid "Error Tracker"
 msgstr "Suivi des erreurs"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:263
-#, elixir-autogen, elixir-format
-msgid "Polish and enhancements - make it beautiful and professional"
-msgstr "Perfectionnement et améliorations - rendre l'application belle et professionnelle"
-
 #: lib/kanban_web/live/task_live/form_component.html.heex:953
 #: lib/kanban_web/live/task_live/view_component.ex:815
 #, elixir-autogen, elixir-format, fuzzy
@@ -1142,7 +1046,7 @@ msgstr "Retour à À propos"
 msgid "Our Mission"
 msgstr "Notre mission"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:32
+#: lib/kanban_web/controllers/page_html/about.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Read about the people behind this app"
 msgstr "En savoir plus sur les personnes derrière cette application"
@@ -1184,17 +1088,17 @@ msgstr ""
 msgid "Edit task"
 msgstr "Modifier"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:90
+#: lib/kanban_web/controllers/page_html/about.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Version History"
 msgstr "Historique des versions"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:100
+#: lib/kanban_web/controllers/page_html/about.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "View Changelog"
 msgstr "Voir le journal des modifications"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:93
+#: lib/kanban_web/controllers/page_html/about.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "View the complete version history and feature list for this application."
 msgstr "Voir l'historique complet des versions et la liste des fonctionnalités de cette application."
@@ -2123,27 +2027,27 @@ msgstr "Copié!"
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "Les jetons API ne sont disponibles que pour les tableaux optimisés pour l'IA"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:76
+#: lib/kanban_web/controllers/page_html/about.html.heex:72
 #, elixir-autogen, elixir-format
 msgid " - Complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:64
+#: lib/kanban_web/controllers/page_html/about.html.heex:60
 #, elixir-autogen, elixir-format
 msgid " - Execute custom code at key moments: before_doing, after_doing, before_review, after_review"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:58
+#: lib/kanban_web/controllers/page_html/about.html.heex:54
 #, elixir-autogen, elixir-format
 msgid " - Optimistic locking prevents multiple agents from claiming the same task"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:70
+#: lib/kanban_web/controllers/page_html/about.html.heex:66
 #, elixir-autogen, elixir-format
 msgid " - Optional human approval before tasks move to Done, with request for changes capability"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:52
+#: lib/kanban_web/controllers/page_html/about.html.heex:48
 #, elixir-autogen, elixir-format
 msgid " - Tasks specify required capabilities, and agents only see tasks matching their skills"
 msgstr ""
@@ -2158,18 +2062,13 @@ msgstr "Intégration d'Agents IA"
 msgid "AI agents can claim and complete tasks using comprehensive REST API with capability matching and workflow hooks."
 msgstr "Les agents IA peuvent revendiquer et compléter des tâches en utilisant une API REST complète avec correspondance de capacités et crochets de flux de travail."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:39
+#: lib/kanban_web/controllers/page_html/about.html.heex:35
 #: lib/kanban_web/controllers/page_html/home.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Human-AI Collaboration Platform"
 msgstr "Plateforme de Collaboration Humain-IA"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:272
-#, elixir-autogen, elixir-format
-msgid "All of the small things necessary to get it ready for release"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:57
+#: lib/kanban_web/controllers/page_html/about.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Atomic Task Claiming"
 msgstr ""
@@ -2189,7 +2088,7 @@ msgstr "Revendication Automatisée de Tâches"
 msgid "Built for Human-AI Collaboration"
 msgstr "Conçu pour la Collaboration Humain-IA"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:51
+#: lib/kanban_web/controllers/page_html/about.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Capability Matching"
 msgstr ""
@@ -2199,13 +2098,13 @@ msgstr ""
 msgid "Child Tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:63
+#: lib/kanban_web/controllers/page_html/about.html.heex:59
 #: lib/kanban_web/controllers/page_html/home.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Client-Side Workflow Hooks"
 msgstr "Crochets de Flux de Travail Côté Client"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:75
+#: lib/kanban_web/controllers/page_html/about.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Comprehensive API Documentation"
 msgstr ""
@@ -2228,7 +2127,7 @@ msgstr "Guide de Démarrage avec les Agents IA"
 msgid "Goal"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:69
+#: lib/kanban_web/controllers/page_html/about.html.heex:65
 #: lib/kanban_web/controllers/page_html/home.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Human Review Workflow"
@@ -2239,7 +2138,7 @@ msgstr "Flux de Travail de Révision Humaine"
 msgid "ID"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:47
+#: lib/kanban_web/controllers/page_html/about.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Key collaboration features include:"
 msgstr ""
@@ -2264,7 +2163,7 @@ msgstr ""
 msgid "Powerful features that enable humans and AI agents to work together seamlessly"
 msgstr "Fonctionnalités puissantes qui permettent aux humains et aux agents IA de travailler ensemble de manière fluide"
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:42
+#: lib/kanban_web/controllers/page_html/about.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
 msgstr ""
@@ -2279,7 +2178,7 @@ msgstr ""
 msgid "The kanban board designed for seamless collaboration between humans and AI agents. Define workflows with hooks, delegate tasks to AI, and maintain full control through human review."
 msgstr "Le tableau kanban conçu pour une collaboration fluide entre humains et agents IA. Définissez des workflows avec des hooks, déléguez des tâches à l'IA et gardez le contrôle total grâce à la revue humaine."
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:82
+#: lib/kanban_web/controllers/page_html/about.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
