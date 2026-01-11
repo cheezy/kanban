@@ -372,6 +372,28 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
+  def handle_event("delete_token", %{"id" => id}, socket) do
+    api_token = ApiTokens.get_api_token!(id)
+    board = socket.assigns.board
+
+    if api_token.board_id == board.id do
+      case ApiTokens.delete_api_token(api_token) do
+        {:ok, _api_token} ->
+          api_tokens = ApiTokens.list_api_tokens(board)
+
+          {:noreply,
+           socket
+           |> assign(:api_tokens, api_tokens)
+           |> put_flash(:info, gettext("API token deleted successfully"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete token"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
+    end
+  end
+
   @impl true
   def handle_info({:show_task_modal, task_id}, socket) do
     require Logger

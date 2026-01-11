@@ -456,7 +456,7 @@ msgstr ""
 msgid "Stride"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:606
+#: lib/kanban_web/live/board_live/show.ex:628
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr ""
@@ -483,7 +483,7 @@ msgstr ""
 msgid "Defect"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:615
+#: lib/kanban_web/live/board_live/show.ex:637
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr ""
@@ -766,12 +766,12 @@ msgstr ""
 msgid "Only the board owner can delete columns"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:482
+#: lib/kanban_web/live/board_live/show.ex:504
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:500
+#: lib/kanban_web/live/board_live/show.ex:522
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr ""
@@ -1332,8 +1332,8 @@ msgstr ""
 msgid "Blocked"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:485
-#: lib/kanban_web/live/board_live/show.ex:503
+#: lib/kanban_web/live/board_live/show.ex:507
+#: lib/kanban_web/live/board_live/show.ex:525
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
@@ -1343,7 +1343,7 @@ msgstr ""
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:488
+#: lib/kanban_web/live/board_live/show.ex:510
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
@@ -1835,7 +1835,7 @@ msgstr ""
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:537
+#: lib/kanban_web/live/board_live/show.ex:559
 #: lib/kanban_web/live/board_live/show.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
@@ -2055,6 +2055,7 @@ msgid "Token created successfully!"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:371
+#: lib/kanban_web/live/board_live/show.ex:393
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr ""
@@ -2381,6 +2382,7 @@ msgid "Board:"
 msgstr ""
 
 #: lib/kanban_web/live/archive_live/index.html.heex:91
+#: lib/kanban_web/live/board_live/show.html.heex:638
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr ""
@@ -2456,4 +2458,19 @@ msgstr ""
 #: lib/kanban_web/live/board_live/show.html.heex:563
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:387
+#, elixir-autogen, elixir-format
+msgid "API token deleted successfully"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:636
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this token?"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:390
+#, elixir-autogen, elixir-format
+msgid "Failed to delete token"
 msgstr ""

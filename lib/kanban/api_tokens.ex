@@ -151,7 +151,7 @@ defmodule Kanban.ApiTokens do
   end
 
   @doc """
-  Deletes an api_token.
+  Deletes an API token.
 
   ## Examples
 
@@ -163,7 +163,21 @@ defmodule Kanban.ApiTokens do
 
   """
   def delete_api_token(%ApiToken{} = api_token) do
-    Repo.delete(api_token)
+    api_token
+    |> Repo.delete()
+    |> case do
+      {:ok, api_token} = result ->
+        :telemetry.execute(
+          [:kanban, :api, :token_deleted],
+          %{count: 1},
+          %{user_id: api_token.user_id, token_id: api_token.id}
+        )
+
+        result
+
+      error ->
+        error
+    end
   end
 
   @doc """

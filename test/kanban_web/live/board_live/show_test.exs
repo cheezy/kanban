@@ -634,6 +634,27 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "revoked successfully" or html =~ "Revoked"
     end
 
+    test "deletes revoked API token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, {token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{
+          name: "Token to Delete"
+        })
+
+      {:ok, _revoked_token} = Kanban.ApiTokens.revoke_api_token(token)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> element("button[phx-click='delete_token'][phx-value-id='#{token.id}']")
+      |> render_click()
+
+      html = render(show_live)
+      assert html =~ "deleted successfully"
+      refute html =~ "Token to Delete"
+    end
+
     test "displays 'Never' for unused tokens", %{conn: conn, user: user} do
       board = ai_optimized_board_fixture(user)
 
@@ -974,6 +995,24 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       html =
         show_live
         |> render_hook("revoke_token", %{"id" => to_string(api_token.id)})
+
+      assert html =~ "Unauthorized"
+    end
+
+    test "delete_token prevents deleting token from different board", %{conn: conn, user: user} do
+      board1 = ai_optimized_board_fixture(user)
+      board2 = ai_optimized_board_fixture(user)
+
+      {:ok, {api_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board2, %{name: "Other Board Token"})
+
+      {:ok, _revoked_token} = Kanban.ApiTokens.revoke_api_token(api_token)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board1}/api_tokens")
+
+      html =
+        show_live
+        |> render_hook("delete_token", %{"id" => to_string(api_token.id)})
 
       assert html =~ "Unauthorized"
     end
