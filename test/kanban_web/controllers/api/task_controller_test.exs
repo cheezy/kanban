@@ -600,15 +600,21 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns 404 for nonexistent task", %{conn: conn} do
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/api/tasks/999999")
-      end
+      conn = get(conn, ~p"/api/tasks/999999")
+      response = json_response(conn, 404)
+      assert response["error"] == "Task not found"
     end
 
     test "returns 404 for nonexistent identifier", %{conn: conn} do
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/api/tasks/INVALID99")
-      end
+      conn = get(conn, ~p"/api/tasks/INVALID99")
+      response = json_response(conn, 404)
+      assert response["error"] == "Task not found"
+    end
+
+    test "returns 404 for realistic but nonexistent identifier like 'current'", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/current")
+      response = json_response(conn, 404)
+      assert response["error"] == "Task not found"
     end
 
     test "returns 401 without authentication", %{task: task} do
@@ -671,9 +677,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "returns 404 for nonexistent task", %{conn: conn} do
-      assert_error_sent 404, fn ->
-        patch(conn, ~p"/api/tasks/999999", task: %{"title" => "Updated"})
-      end
+      conn = patch(conn, ~p"/api/tasks/999999", task: %{"title" => "Updated"})
+      response = json_response(conn, 404)
+      assert response["error"] == "Task not found"
     end
 
     test "returns 401 without authentication", %{task: task} do

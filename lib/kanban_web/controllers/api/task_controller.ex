@@ -34,14 +34,21 @@ defmodule KanbanWeb.API.TaskController do
 
   def show(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      render(conn, :show, task: task)
+    case get_task_by_id_or_identifier(id_or_identifier, board) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Task not found"})
+
+      task ->
+        if task.column.board_id != board.id do
+          conn
+          |> put_status(:forbidden)
+          |> json(%{error: "Task does not belong to this board"})
+        else
+          render(conn, :show, task: task)
+        end
     end
   end
 
@@ -217,24 +224,31 @@ defmodule KanbanWeb.API.TaskController do
 
   def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do
     board = conn.assigns.current_board
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      case Tasks.update_task(task, task_params) do
-        {:ok, task} ->
-          task = Tasks.get_task_for_view!(task.id)
-          emit_telemetry(conn, :task_updated, %{task_id: task.id})
-          render(conn, :show, task: task)
+    case get_task_by_id_or_identifier(id_or_identifier, board) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Task not found"})
 
-        {:error, %Ecto.Changeset{} = changeset} ->
+      task ->
+        if task.column.board_id != board.id do
           conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
-      end
+          |> put_status(:forbidden)
+          |> json(%{error: "Task does not belong to this board"})
+        else
+          case Tasks.update_task(task, task_params) do
+            {:ok, task} ->
+              task = Tasks.get_task_for_view!(task.id)
+              emit_telemetry(conn, :task_updated, %{task_id: task.id})
+              render(conn, :show, task: task)
+
+            {:error, %Ecto.Changeset{} = changeset} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> render(:error, changeset: changeset)
+          end
+        end
     end
   end
 
@@ -639,11 +653,11 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp get_task_by_id_or_identifier!(id_or_identifier, board) do
+  defp get_task_by_id_or_identifier(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
       {id, ""} ->
         # It's a numeric ID
-        Tasks.get_task_for_view!(id)
+        Tasks.get_task_for_view(id)
 
       _ ->
         # It's an identifier like "W14"
@@ -651,6 +665,13 @@ defmodule KanbanWeb.API.TaskController do
         column_ids = Enum.map(columns, & &1.id)
 
         Tasks.get_task_by_identifier_for_view!(id_or_identifier, column_ids)
+    end
+  end
+
+  defp get_task_by_id_or_identifier!(id_or_identifier, board) do
+    case get_task_by_id_or_identifier(id_or_identifier, board) do
+      nil -> raise Ecto.NoResultsError, queryable: Kanban.Tasks.Task
+      task -> task
     end
   end
 

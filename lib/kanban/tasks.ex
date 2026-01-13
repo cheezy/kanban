@@ -162,11 +162,42 @@ defmodule Kanban.Tasks do
     end
   end
 
+  def get_task_for_view(id) do
+    alias Kanban.Tasks.TaskComment
+
+    case Repo.get(Task, id) do
+      nil ->
+        nil
+
+      task ->
+        task =
+          Repo.preload(task, [
+            :assigned_to,
+            :column,
+            :created_by,
+            :completed_by,
+            :reviewed_by,
+            task_histories:
+              from(h in TaskHistory,
+                order_by: [desc: h.inserted_at],
+                preload: [:from_user, :to_user]
+              ),
+            comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+          ])
+
+        if task.type == :goal do
+          task
+          |> Repo.preload(children: from(t in Task, order_by: [asc: t.position], preload: [:column]))
+        else
+          task
+        end
+    end
+  end
+
   @doc """
   Gets a task by its identifier (e.g. "W14", "D5") with all associations preloaded.
 
-  Raises `Ecto.NoResultsError` if the Task does not exist or doesn't belong to
-  any of the given column_ids.
+  Returns `nil` if the Task does not exist or doesn't belong to any of the given column_ids.
 
   ## Examples
 
@@ -174,28 +205,33 @@ defmodule Kanban.Tasks do
       %Task{identifier: "W14", ...}
 
       iex> get_task_by_identifier_for_view!("INVALID", [1, 2, 3])
-      ** (Ecto.NoResultsError)
+      nil
 
   """
   def get_task_by_identifier_for_view!(identifier, column_ids) do
     alias Kanban.Tasks.TaskComment
 
-    Task
-    |> where([t], t.identifier == ^identifier and t.column_id in ^column_ids)
-    |> Repo.one!()
-    |> Repo.preload([
-      :assigned_to,
-      :column,
-      :created_by,
-      :completed_by,
-      :reviewed_by,
-      task_histories:
-        from(h in TaskHistory,
-          order_by: [desc: h.inserted_at],
-          preload: [:from_user, :to_user]
-        ),
-      comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
-    ])
+    case Task
+         |> where([t], t.identifier == ^identifier and t.column_id in ^column_ids)
+         |> Repo.one() do
+      nil ->
+        nil
+
+      task ->
+        Repo.preload(task, [
+          :assigned_to,
+          :column,
+          :created_by,
+          :completed_by,
+          :reviewed_by,
+          task_histories:
+            from(h in TaskHistory,
+              order_by: [desc: h.inserted_at],
+              preload: [:from_user, :to_user]
+            ),
+          comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+        ])
+    end
   end
 
   @doc """
