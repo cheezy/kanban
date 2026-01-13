@@ -1584,6 +1584,8 @@ defmodule Kanban.Tasks do
           )
           |> Repo.one()
 
+        next_position = get_next_position(ready_column)
+
         changeset =
           task
           |> Ecto.Changeset.change(%{
@@ -1591,7 +1593,8 @@ defmodule Kanban.Tasks do
             claimed_at: nil,
             claim_expires_at: nil,
             assigned_to_id: nil,
-            column_id: ready_column.id
+            column_id: ready_column.id,
+            position: next_position
           })
 
         case Repo.update(changeset) do
