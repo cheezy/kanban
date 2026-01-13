@@ -17,13 +17,13 @@
         {Credo.Check.Readability.WithCustomTaggedTuple, []},
         {Credo.Check.Refactor.ABCSize, []},
         {Credo.Check.Warning.UnsafeToAtom, []},
+        {Credo.Check.Refactor.Nesting, max_nesting: 3},
 
         # Disabled checks
         {Credo.Check.Design.TagFIXME, false},
         {Credo.Check.Design.TagTODO, false},
         {Credo.Check.Readability.ModuleDoc, false},
         {Credo.Check.Refactor.LongQuoteBlocks, false},
-        {Credo.Check.Refactor.Nesting, false}
       ]
     }
   ]

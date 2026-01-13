@@ -1414,27 +1414,27 @@ defmodule Kanban.Tasks do
   end
 
   defp has_key_file_conflict?(task, conflicting_tasks) do
-    if task.key_files && not Enum.empty?(task.key_files) do
-      task_file_paths =
-        task.key_files
-        |> Enum.map(fn kf -> kf.file_path end)
-        |> Enum.reject(&is_nil/1)
-
-      Enum.any?(conflicting_tasks, fn conflict ->
-        if conflict.key_files && not Enum.empty?(conflict.key_files) do
-          conflict_paths =
-            conflict.key_files
-            |> Enum.map(fn kf -> kf.file_path end)
-            |> Enum.reject(&is_nil/1)
-
-          Enum.any?(task_file_paths, fn path -> path in conflict_paths end)
-        else
-          false
-        end
-      end)
-    else
-      false
+    case extract_file_paths(task.key_files) do
+      [] -> false
+      task_paths -> Enum.any?(conflicting_tasks, &files_overlap?(task_paths, &1.key_files))
     end
+  end
+
+  defp extract_file_paths(nil), do: []
+  defp extract_file_paths([]), do: []
+
+  defp extract_file_paths(key_files) do
+    key_files
+    |> Enum.map(fn kf -> kf.file_path end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp files_overlap?(_task_paths, nil), do: false
+  defp files_overlap?(_task_paths, []), do: false
+
+  defp files_overlap?(task_paths, conflict_key_files) do
+    conflict_paths = extract_file_paths(conflict_key_files)
+    Enum.any?(task_paths, fn path -> path in conflict_paths end)
   end
 
   @doc """
