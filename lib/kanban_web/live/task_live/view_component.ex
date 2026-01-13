@@ -5,15 +5,25 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
-    task = Tasks.get_task_for_view!(task_id)
+    case Tasks.get_task_for_view(task_id) do
+      nil ->
+        {:ok,
+         socket
+         |> assign(assigns)
+         |> assign(:task, nil)
+         |> assign(:board_id, Map.get(assigns, :board_id))
+         |> assign(:can_modify, Map.get(assigns, :can_modify, false))
+         |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
 
-    {:ok,
-     socket
-     |> assign(assigns)
-     |> assign(:task, task)
-     |> assign(:board_id, Map.get(assigns, :board_id))
-     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
-     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+      task ->
+        {:ok,
+         socket
+         |> assign(assigns)
+         |> assign(:task, task)
+         |> assign(:board_id, Map.get(assigns, :board_id))
+         |> assign(:can_modify, Map.get(assigns, :can_modify, false))
+         |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+    end
   end
 
   defp field_visible?(field_visibility, field_name) do
@@ -65,10 +75,21 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   def render(assigns) do
     ~H"""
     <div class="space-y-6">
-      <div class="border-b border-base-300 pb-4">
-        <div class="flex items-start justify-between mb-2">
-          <div class="flex items-center gap-3 flex-wrap">
-            <h2 class="text-2xl font-bold text-base-content">{@task.identifier}</h2>
+      <%= if @task == nil do %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <.icon name="hero-exclamation-triangle" class="w-12 h-12 text-red-600 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-red-900 mb-2">
+            {gettext("Task Not Found")}
+          </h3>
+          <p class="text-red-700">
+            {gettext("This task may have been deleted or you may not have permission to view it.")}
+          </p>
+        </div>
+      <% else %>
+        <div class="border-b border-base-300 pb-4">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-3 flex-wrap">
+              <h2 class="text-2xl font-bold text-base-content">{@task.identifier}</h2>
             <span class={[
               "px-3 py-1 text-xs font-semibold rounded-full",
               case @task.type do
@@ -869,6 +890,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           </div>
         <% end %>
       </div>
+      <% end %>
     </div>
     """
   end
