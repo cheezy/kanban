@@ -1,10 +1,183 @@
 defmodule Kanban.Tasks.Task do
+  @moduledoc """
+  Schema and validations for tasks in the Stride task management system.
+
+  Tasks represent work items that can be assigned to humans or AI agents.
+  They support hierarchical relationships (goals with children), dependency
+  tracking, capability matching, and comprehensive metadata for AI-assisted
+  development.
+
+  ## Task Types
+
+  - `:work` - Feature implementation, enhancement, or general development work
+  - `:defect` - Bug fix or correction
+  - `:goal` - Large initiative containing multiple child tasks
+
+  ## Task Lifecycle
+
+  1. Created in Ready column (`:open` status)
+  2. Claimed by agent or assigned to human (`:in_progress` status, claim tracking)
+  3. Work completed (`:completed` status, completion metadata)
+  4. Optional review cycle (`:needs_review`, review tracking)
+  5. Finalized as Done or returned for changes
+
+  ## Field Categories
+
+  ### Core Fields
+  - `title` - Short description (required)
+  - `description` - Detailed explanation
+  - `acceptance_criteria` - Definition of done
+  - `type` - :work, :defect, or :goal (required)
+  - `priority` - :low, :medium, :high, or :critical (required)
+  - `complexity` - :small, :medium, or :large
+  - `status` - :open, :in_progress, :completed, or :blocked
+
+  ### Planning & Context
+  - `why` - Problem/value explanation
+  - `what` - Specific change description
+  - `where_context` - Location in code/UI
+  - `estimated_files` - Files expected to change
+
+  ### Implementation Guidance
+  - `patterns_to_follow` - Code patterns to replicate
+  - `database_changes` - Schema modifications needed
+  - `validation_rules` - Input validation requirements
+  - `key_files` - Critical files to modify (embeds)
+  - `verification_steps` - How to verify completion (embeds)
+  - `pitfalls` - What NOT to do
+  - `out_of_scope` - Explicitly excluded functionality
+
+  ### AI Context
+  - `required_capabilities` - Agent skills needed (e.g., ["code_generation", "testing"])
+  - `security_considerations` - Security implications
+  - `testing_strategy` - Comprehensive testing approach
+  - `integration_points` - External systems/events involved
+  - `technology_requirements` - Specific tools/libraries needed
+
+  ### Observability
+  - `telemetry_event` - Event name to emit
+  - `metrics_to_track` - What to measure
+  - `logging_requirements` - Logging expectations
+
+  ### Error Handling
+  - `error_user_message` - User-facing error message
+  - `error_on_failure` - Error to raise on failure
+
+  ### Tracking & Relationships
+  - `dependencies` - Task identifiers that must complete first
+  - `parent_id` - Parent goal (for hierarchical structure)
+  - `created_by` / `created_by_agent` - Creator tracking
+  - `completed_by` / `completed_by_agent` - Completer tracking
+  - `claimed_at` / `claim_expires_at` - Claim tracking
+  - `needs_review` / `review_status` - Review workflow
+  - `actual_complexity` / `actual_files_changed` / `time_spent_minutes` - Actuals vs estimates
+
+  ## Examples
+
+  ### Basic Task
+
+      %Task{
+        title: "Add user login endpoint",
+        description: "Implement POST /api/login with JWT authentication",
+        type: :work,
+        priority: :high,
+        complexity: :medium,
+        acceptance_criteria: "Returns JWT token on valid credentials"
+      }
+
+  ### Task with AI Context
+
+      %Task{
+        title: "Implement OAuth2 authentication",
+        type: :work,
+        required_capabilities: ["code_generation", "security_analysis"],
+        security_considerations: [
+          "Store tokens securely",
+          "Validate redirect URIs",
+          "Use PKCE for mobile apps"
+        ],
+        testing_strategy: %{
+          "unit_tests" => ["Test token generation", "Test token validation"],
+          "integration_tests" => ["Full OAuth2 flow"],
+          "edge_cases" => ["Expired tokens", "Invalid client IDs"]
+        },
+        key_files: [
+          %{file_path: "lib/auth/oauth.ex", note: "Main OAuth logic", position: 0},
+          %{file_path: "test/auth/oauth_test.exs", note: "Test coverage", position: 1}
+        ],
+        verification_steps: [
+          %{step_type: "command", step_text: "mix test test/auth/oauth_test.exs", expected_result: "All OAuth tests pass", position: 0},
+          %{step_type: "command", step_text: "mix credo --strict lib/auth/oauth.ex", expected_result: "No code issues", position: 1},
+          %{step_type: "manual", step_text: "Test OAuth flow in browser with valid credentials", expected_result: "Successfully authenticate and receive token", position: 2},
+          %{step_type: "manual", step_text: "Test OAuth flow with expired token", expected_result: "Proper error message and redirect", position: 3}
+        ]
+      }
+
+  ### Goal with Children
+
+      %Task{
+        title: "User Authentication System",
+        type: :goal,
+        complexity: :large,
+        children: [
+          %Task{title: "Database schema for users", type: :work},
+          %Task{title: "Login endpoint", type: :work, dependencies: ["W1"]},
+          %Task{title: "Password reset flow", type: :work, dependencies: ["W2"]}
+        ]
+      }
+
+  ## Validations
+
+  See individual validation functions for details on:
+  - `validate_required_capabilities/1` - Must be valid capability strings
+  - `validate_dependencies/1` - No circular dependencies
+  - `validate_testing_strategy/1` - Proper JSON structure
+  - `validate_key_files` - Array of objects with required fields
+  - `validate_verification_steps` - Array of objects with step_type/step_text
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
   alias Kanban.Schemas.Task.KeyFile
   alias Kanban.Schemas.Task.VerificationStep
 
+  @doc """
+  Valid capability strings for the `required_capabilities` field.
+
+  Capabilities determine which agents can claim tasks. An agent must have ALL
+  required capabilities to see and claim a task.
+
+  ## Available Capabilities
+
+  - `api_design` - REST/GraphQL API design
+  - `code_generation` - Writing new code
+  - `code_review` - Reviewing code changes
+  - `database_design` - Database schema design and migrations
+  - `debugging` - Finding and fixing bugs
+  - `devops` - CI/CD, Docker, deployment pipelines
+  - `documentation` - Writing docs, comments, guides
+  - `file_operations` - File processing, data import/export
+  - `git` - Branch management, commit workflows, git automation
+  - `performance_optimization` - Performance tuning and optimization
+  - `refactoring` - Improving code structure
+  - `security_analysis` - Security audits and vulnerability fixes
+  - `testing` - Writing and running tests
+  - `ui_design` - UI/UX design, wireframes, design systems
+  - `ui_implementation` - User interface implementation
+  - `web_browsing` - Web scraping, browser automation, web testing
+
+  ## Examples
+
+      # Single capability
+      required_capabilities: ["code_generation"]
+
+      # Multiple capabilities
+      required_capabilities: ["code_generation", "testing", "security_analysis"]
+
+      # No requirements (any agent can claim)
+      required_capabilities: []
+  """
   @valid_capabilities [
     "api_design",
     "code_generation",
@@ -27,80 +200,167 @@ defmodule Kanban.Tasks.Task do
   def valid_capabilities, do: @valid_capabilities
 
   schema "tasks" do
+    # Core Fields (Required)
+    # Short task description - Example: "Add user login endpoint"
     field :title, :string
+
+    # Detailed explanation of what needs to be done - Example: "Implement POST /api/login with JWT authentication"
     field :description, :string
+
+    # Definition of done - Example: "Returns JWT token on valid credentials, handles invalid passwords gracefully"
     field :acceptance_criteria, :string
+
+    # Order within column (unique per column) - Validated: >= 0, Example: 0, 1, 2
     field :position, :integer
+
+    # Task type - Validated: :work | :defect | :goal, Default: :work
     field :type, Ecto.Enum, values: [:work, :defect, :goal], default: :work
+
+    # Task priority - Validated: :low | :medium | :high | :critical, Default: :medium
     field :priority, Ecto.Enum, values: [:low, :medium, :high, :critical], default: :medium
+
+    # Auto-generated unique ID (W42, D12, G5) - Example: "W42", "D12", "G5"
     field :identifier, :string
 
-    # Planning & Context (01A)
+    # Planning & Context
+    # Estimated size - Validated: :small | :medium | :large, Default: :small
+    # Example: :small (<4hrs), :medium (4-16hrs), :large (>16hrs)
     field :complexity, Ecto.Enum, values: [:small, :medium, :large], default: :small
+
+    # Files expected to change - Example: "lib/auth/*.ex, test/auth/*.exs"
     field :estimated_files, :string
+
+    # Problem/value explanation - Example: "Users can't reset passwords, support tickets increasing"
     field :why, :string
+
+    # Specific change needed - Example: "Add password reset flow with email verification"
     field :what, :string
+
+    # Location in code/UI - Example: "User settings page, /lib/auth/reset_password.ex"
     field :where_context, :string
 
-    # Implementation Guidance (01A)
+    # Implementation Guidance
+    # Code patterns to replicate - Example: "Follow existing auth pattern in lib/auth/login.ex"
     field :patterns_to_follow, :string
+
+    # Schema modifications needed - Example: "Add password_reset_tokens table with expires_at column"
     field :database_changes, :string
+
+    # Input validation requirements - Example: "Email must be valid format, token expires after 1 hour"
     field :validation_rules, :string
 
-    # Observability (01A)
+    # Observability
+    # Event name to emit - Example: "user.password_reset"
     field :telemetry_event, :string
+
+    # What to measure - Example: "Reset success rate, time to complete"
     field :metrics_to_track, :string
+
+    # Logging expectations - Example: "Log reset requests with user ID, log token generation"
     field :logging_requirements, :string
 
-    # Error Handling (01A)
+    # Error Handling
+    # User-facing error message - Example: "Password reset link expired. Please request a new one."
     field :error_user_message, :string
+
+    # Error to raise on failure - Example: "Kanban.Auth.TokenExpiredError"
     field :error_on_failure, :string
 
-    # JSONB collections (01B)
+    # Critical Files (Embedded Array of Objects)
+    # Format: [%{file_path: "lib/auth.ex", note: "Main auth logic", position: 0}, ...]
+    # Validates: Array of objects with file_path (string), note (string), position (integer)
     embeds_many :key_files, KeyFile, on_replace: :delete
+
+    # Verification Steps (Embedded Array of Objects)
+    # Format: [%{step_type: "command", step_text: "mix test", expected_result: "All pass", position: 0}, ...]
+    # Validates: step_type must be "command" or "manual", all fields required
     embeds_many :verification_steps, VerificationStep, on_replace: :delete
+
+    # Specific tools/libraries - Validated: Array of strings, Example: ["bcrypt", "jason", "ecto"]
     field :technology_requirements, {:array, :string}
+
+    # What NOT to do - Validated: Array of strings
+    # Example: ["Don't modify existing login flow", "Avoid storing passwords in plain text"]
     field :pitfalls, {:array, :string}
+
+    # Explicitly excluded - Validated: Array of strings
+    # Example: ["Social login", "2FA", "Account recovery via SMS"]
     field :out_of_scope, {:array, :string}
 
-    # AI Context Fields (W23)
+    # AI Context
+    # Security implications - Validated: Array of strings
+    # Example: ["Store tokens securely", "Use PKCE for mobile", "Rate limit requests"]
     field :security_considerations, {:array, :string}, default: []
+
+    # Comprehensive testing approach - Validated: Map with string or array values
+    # Example: %{"unit_tests" => ["Test token gen"], "edge_cases" => ["Expired tokens", "Invalid emails"]}
     field :testing_strategy, :map, default: %{}
+
+    # External systems/events - Validated: Map with string or array values
+    # Example: %{"email_service" => "SendGrid", "pubsub" => ["UserPasswordReset", "UserNotified"]}
     field :integration_points, :map, default: %{}
 
-    # Creator tracking (02)
+    # Creator Tracking
+    # Agent model that created task - Example: "claude-sonnet-4-5", "gpt-4"
     field :created_by_agent, :string
 
-    # Completion tracking (02)
+    # Completion Tracking
+    # When completed - Validated: Must be set when status=:completed
     field :completed_at, :utc_datetime
+
+    # Agent that completed - Example: "claude-sonnet-4-5"
     field :completed_by_agent, :string
+
+    # Work summary - Example: "Implemented JWT auth with refresh tokens. All tests passing."
     field :completion_summary, :string
 
-    # Task relationships (02)
+    # Task Relationships
+    # Tasks that must finish first - Validated: Array of identifiers, no circular deps
+    # Example: ["W1", "W5", "D3"]
     field :dependencies, {:array, :string}, default: []
 
-    # Status tracking (02)
+    # Status Tracking
+    # Current state - Validated: :open | :in_progress | :completed | :blocked, Default: :open
     field :status, Ecto.Enum, values: [:open, :in_progress, :completed, :blocked], default: :open
 
-    # Claim tracking (02)
+    # Claim Tracking
+    # When claimed - Validated: Must be before claim_expires_at
     field :claimed_at, :utc_datetime
+
+    # When claim expires - Validated: Must be after claimed_at
     field :claim_expires_at, :utc_datetime
 
-    # Agent capabilities (02)
+    # Agent Capabilities
+    # Required skills - Validated: Must be valid capability strings from @valid_capabilities
+    # Example: ["code_generation", "testing", "security_analysis"]
     field :required_capabilities, {:array, :string}, default: []
 
-    # Actual vs estimated (02)
+    # Actuals vs Estimates
+    # Actual size after completion - Validated: :small | :medium | :large
     field :actual_complexity, Ecto.Enum, values: [:small, :medium, :large]
+
+    # Files actually changed - Example: "lib/auth/oauth.ex, lib/auth/token.ex, test/auth_test.exs"
     field :actual_files_changed, :string
+
+    # Time spent in minutes - Validated: >= 0, Example: 45, 120, 360
     field :time_spent_minutes, :integer
 
-    # Review queue (02)
+    # Review Workflow
+    # Requires human approval - Default: false
     field :needs_review, :boolean, default: false
+
+    # Review state - Validated: :pending | :approved | :changes_requested | :rejected
+    # Note: :approved/:changes_requested/:rejected require reviewed_at and reviewed_by_id
     field :review_status, Ecto.Enum, values: [:pending, :approved, :changes_requested, :rejected]
+
+    # Reviewer feedback - Example: "Great work! Minor: add error handling for edge case X"
     field :review_notes, :string
+
+    # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
-    # Archive tracking
+    # Archive Tracking
+    # When archived (soft delete)
     field :archived_at, :utc_datetime
 
     # Hierarchy
