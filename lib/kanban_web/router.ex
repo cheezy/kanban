@@ -86,6 +86,7 @@ defmodule KanbanWeb.Router do
 
     live_dashboard "/dashboard",
       metrics: KanbanWeb.Telemetry,
+      metrics_history: {KanbanWeb.Telemetry.MetricsStorage, :metrics_history, []},
       ecto_repos: [Kanban.Repo],
       ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
 

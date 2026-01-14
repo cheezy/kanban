@@ -8,15 +8,23 @@ defmodule KanbanWeb.Telemetry do
 
   @impl true
   def init(_arg) do
-    children = [
-      # Telemetry poller will execute the given period measurements
-      # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
-      # Add reporters as children of your supervision tree.
-      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
-    ]
+    children =
+      [
+        # Telemetry poller will execute the given period measurements
+        # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
+        {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+      ] ++ metrics_storage_children()
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  # Only start MetricsStorage in non-test environments to avoid database sandbox issues
+  defp metrics_storage_children do
+    if Application.get_env(:kanban, :env) == :test do
+      []
+    else
+      [{KanbanWeb.Telemetry.MetricsStorage, metrics()}]
+    end
   end
 
   def metrics do
