@@ -85,7 +85,7 @@ defmodule KanbanWeb.Router do
     pipe_through [:browser, :require_authenticated_user, :require_admin_user]
 
     live_dashboard "/dashboard",
-      metrics: {KanbanWeb.Telemetry, :metrics},
+      metrics: KanbanWeb.Telemetry,
       ecto_repos: [Kanban.Repo],
       ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
 
