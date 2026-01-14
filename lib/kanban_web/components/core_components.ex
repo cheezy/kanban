@@ -58,9 +58,7 @@ defmodule KanbanWeb.CoreComponents do
       phx-click={
         JS.push("lv:clear-flash", value: %{key: @kind})
         |> hide("##{@id}")
-        |> JS.dispatch("click", to: "##{@id}")
       }
-      onclick="event.stopPropagation();"
       role="alert"
       class="toast toast-top toast-end z-50"
       {@rest}
