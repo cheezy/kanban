@@ -1569,9 +1569,9 @@ defmodule Kanban.TasksTest do
       board = board_fixture(user)
       column = column_fixture(board)
 
-      attrs = %{title: "Test task", required_capabilities: ["elixir", "phoenix", "testing"]}
+      attrs = %{title: "Test task", required_capabilities: ["testing", "debugging", "code_generation"]}
       {:ok, task} = Tasks.create_task(column, attrs)
-      assert task.required_capabilities == ["elixir", "phoenix", "testing"]
+      assert task.required_capabilities == ["testing", "debugging", "code_generation"]
     end
 
     test "rejects invalid capability" do
@@ -1596,7 +1596,7 @@ defmodule Kanban.TasksTest do
 
       attrs = %{
         title: "Test task",
-        required_capabilities: ["elixir", "invalid1", "phoenix", "invalid2"]
+        required_capabilities: ["testing", "invalid1", "debugging", "invalid2"]
       }
 
       {:error, changeset} = Tasks.create_task(column, attrs)
@@ -1614,7 +1614,7 @@ defmodule Kanban.TasksTest do
         position: 0,
         type: :work,
         priority: :medium,
-        required_capabilities: ["elixir", 123, :phoenix]
+        required_capabilities: ["testing", 123, :debugging]
       }
 
       changeset = Kanban.Tasks.Task.changeset(task, %{})
@@ -2157,12 +2157,12 @@ defmodule Kanban.TasksTest do
       attrs = %{
         title: "Test task",
         position: 0,
-        required_capabilities: ["elixir", "phoenix", "liveview"]
+        required_capabilities: ["testing", "debugging", "code_generation"]
       }
 
       {:ok, task} = Tasks.create_task(column, attrs)
 
-      assert task.required_capabilities == ["elixir", "phoenix", "liveview"]
+      assert task.required_capabilities == ["testing", "debugging", "code_generation"]
     end
 
     test "validates required_capabilities must be list of strings" do
@@ -2172,7 +2172,7 @@ defmodule Kanban.TasksTest do
         type: :work,
         priority: :medium,
         status: :open,
-        required_capabilities: ["elixir", 123, :phoenix]
+        required_capabilities: ["testing", 123, :debugging]
       }
 
       changeset = Kanban.Tasks.Task.changeset(task, %{})
@@ -2356,7 +2356,7 @@ defmodule Kanban.TasksTest do
         status: :completed,
         claimed_at: claimed_at,
         claim_expires_at: claim_expires_at,
-        required_capabilities: ["elixir", "phoenix"],
+        required_capabilities: ["testing", "debugging"],
         actual_complexity: :medium,
         actual_files_changed: "lib/kanban/tasks.ex",
         time_spent_minutes: 90,
@@ -2379,7 +2379,7 @@ defmodule Kanban.TasksTest do
       assert task.status == :completed
       assert DateTime.compare(task.claimed_at, claimed_at) == :eq
       assert DateTime.compare(task.claim_expires_at, claim_expires_at) == :eq
-      assert task.required_capabilities == ["elixir", "phoenix"]
+      assert task.required_capabilities == ["testing", "debugging"]
       assert task.actual_complexity == :medium
       assert task.actual_files_changed == "lib/kanban/tasks.ex"
       assert task.time_spent_minutes == 90
@@ -2722,7 +2722,7 @@ defmodule Kanban.TasksTest do
         Tasks.create_task(column, %{
           "title" => "Requires Testing",
           "status" => "open",
-          "required_capabilities" => ["testing", "deployment"],
+          "required_capabilities" => ["testing", "devops"],
           "created_by_id" => user.id
         })
 
@@ -2994,7 +2994,7 @@ defmodule Kanban.TasksTest do
         Tasks.create_task(column, %{
           "title" => "Requires Deployment",
           "status" => "open",
-          "required_capabilities" => ["deployment"],
+          "required_capabilities" => ["devops"],
           "created_by_id" => user.id
         })
 

@@ -86,18 +86,22 @@ AI agents need an API token to authenticate with your Stride instance.
 Capabilities determine which tasks an agent can see and claim. When creating an API token, you enter capabilities as a comma-separated list that matches what your agent can actually do.
 
 **Standard Capabilities:**
+- `api_design` - REST/GraphQL API design
 - `code_generation` - Writing new code
 - `code_review` - Reviewing code changes
 - `database_design` - Database schema design and migrations
-- `testing` - Writing and running tests
-- `documentation` - Writing docs, comments, guides
 - `debugging` - Finding and fixing bugs
-- `refactoring` - Improving code structure
-- `api_design` - REST/GraphQL API design
-- `ui_implementation` - User interface implementation
-- `performance_optimization` - Performance tuning and optimization
-- `security_analysis` - Security audits and vulnerability fixes
 - `devops` - CI/CD, Docker, deployment pipelines
+- `documentation` - Writing docs, comments, guides
+- `file_operations` - File processing, data import/export
+- `git` - Branch management, commit workflows, git automation
+- `performance_optimization` - Performance tuning and optimization
+- `refactoring` - Improving code structure
+- `security_analysis` - Security audits and vulnerability fixes
+- `testing` - Writing and running tests
+- `ui_design` - UI/UX design, wireframes, design systems
+- `ui_implementation` - User interface implementation
+- `web_browsing` - Web scraping, browser automation, web testing
 
 **Examples:**
 - Single capability: `code_generation`
@@ -344,13 +348,13 @@ These skills are automatically provided via the onboarding endpoint and enforce 
         "title": "Implement signup endpoint",
         "description": "POST /api/users with validation, password hashing, and error handling",
         "complexity": "medium",
-        "required_capabilities": ["code_generation", "backend", "security"]
+        "required_capabilities": ["code_generation", "api_design", "security"]
       },
       {
         "title": "Add login endpoint",
         "description": "POST /api/login with JWT token generation and secure session handling",
         "complexity": "medium",
-        "required_capabilities": ["code_generation", "backend", "security"]
+        "required_capabilities": ["code_generation", "api_design", "security"]
       }
     ]
   }

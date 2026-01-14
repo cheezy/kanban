@@ -1233,14 +1233,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event(
           "add-capability-from-select",
-          %{"new_capability" => "elixir"},
+          %{"new_capability" => "testing"},
           socket
         )
 
       capabilities =
         Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
 
-      assert capabilities == ["elixir"]
+      assert capabilities == ["testing"]
     end
 
     test "prevents duplicate capabilities" do
@@ -1251,7 +1251,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task =
         task_fixture(column, %{
           title: "Test",
-          required_capabilities: ["elixir", "phoenix"]
+          required_capabilities: ["testing", "debugging"]
         })
 
       {:ok, socket} =
@@ -1267,14 +1267,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event(
           "add-capability-from-select",
-          %{"new_capability" => "elixir"},
+          %{"new_capability" => "testing"},
           socket
         )
 
       capabilities =
         Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
 
-      assert capabilities == ["elixir", "phoenix"]
+      assert capabilities == ["testing", "debugging"]
       assert length(capabilities) == 2
     end
 
@@ -1286,7 +1286,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task =
         task_fixture(column, %{
           title: "Test",
-          required_capabilities: ["elixir"]
+          required_capabilities: ["testing"]
         })
 
       {:ok, socket} =
@@ -1302,14 +1302,14 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:noreply, updated_socket} =
         FormComponent.handle_event(
           "add-capability-from-select",
-          %{"new_capability" => "phoenix"},
+          %{"new_capability" => "debugging"},
           socket
         )
 
       capabilities =
         Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
 
-      assert capabilities == ["elixir", "phoenix"]
+      assert capabilities == ["testing", "debugging"]
     end
 
     test "ignores empty capability value" do
@@ -1378,7 +1378,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task =
         task_fixture(column, %{
           title: "Test",
-          required_capabilities: ["elixir", "phoenix", "liveview"]
+          required_capabilities: ["testing", "debugging", "code_generation"]
         })
 
       {:ok, socket} =
@@ -1398,7 +1398,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         Ecto.Changeset.get_field(updated_socket.assigns.form.source, :required_capabilities)
 
       assert length(capabilities) == 2
-      assert capabilities == ["elixir", "liveview"]
+      assert capabilities == ["testing", "code_generation"]
     end
 
     test "saving task with all capabilities removed updates to empty array" do
@@ -1409,7 +1409,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task =
         task_fixture(column, %{
           title: "Test Task",
-          required_capabilities: ["elixir", "phoenix"]
+          required_capabilities: ["testing", "debugging"]
         })
 
       {:ok, socket} =

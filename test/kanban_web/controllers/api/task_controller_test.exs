@@ -824,7 +824,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Requires Testing",
           "status" => "open",
-          "required_capabilities" => ["testing", "deployment"],
+          "required_capabilities" => ["testing", "devops"],
           "created_by_id" => user.id
         })
 
@@ -862,7 +862,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Requires Testing",
           "status" => "open",
-          "required_capabilities" => ["testing", "deployment"],
+          "required_capabilities" => ["testing", "devops"],
           "created_by_id" => user.id
         })
 
@@ -957,7 +957,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Requires Multiple Capabilities",
           "status" => "open",
-          "required_capabilities" => ["testing", "deployment", "security"],
+          "required_capabilities" => ["testing", "devops", "security_analysis"],
           "created_by_id" => user.id
         })
 
@@ -1027,7 +1027,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Requires Testing",
           "status" => "open",
-          "required_capabilities" => ["testing", "deployment"],
+          "required_capabilities" => ["testing", "devops"],
           "created_by_id" => user.id
         })
 
@@ -1092,7 +1092,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Requires Deployment",
           "status" => "open",
-          "required_capabilities" => ["deployment"],
+          "required_capabilities" => ["devops"],
           "created_by_id" => user.id
         })
 

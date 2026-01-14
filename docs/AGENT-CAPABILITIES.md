@@ -19,18 +19,22 @@ These are the recommended capability types. Your API token can declare any combi
 
 | Capability | Description | Example Tasks |
 |------------|-------------|---------------|
+| `api_design` | Can design REST/GraphQL APIs | API endpoint design, contract definition |
 | `code_generation` | Can write code | Most programming tasks, new features, implementations |
 | `code_review` | Can review code quality | PR reviews, code quality analysis |
 | `database_design` | Can design schemas and migrations | Database schema changes, migration writing |
-| `testing` | Can write automated tests | Unit tests, integration tests, test coverage |
-| `documentation` | Can write docs, comments, READMEs | Documentation updates, API docs, guides |
 | `debugging` | Can diagnose and fix bugs | Bug fixes, troubleshooting, error investigation |
-| `refactoring` | Can improve code structure | Code cleanup, architecture improvements |
-| `api_design` | Can design REST/GraphQL APIs | API endpoint design, contract definition |
-| `ui_implementation` | Can implement user interfaces | Frontend features, UI components, styling |
-| `performance_optimization` | Can optimize slow code | Performance tuning, caching, query optimization |
-| `security_analysis` | Can identify security vulnerabilities | Security audits, vulnerability fixes |
 | `devops` | Can write CI/CD, Docker configs | Deployment scripts, Docker, CI/CD pipelines |
+| `documentation` | Can write docs, comments, READMEs | Documentation updates, API docs, guides |
+| `file_operations` | Can read, write, and manipulate files | File processing, data import/export, file system tasks |
+| `git` | Can perform git operations | Branch management, commit workflows, git automation |
+| `performance_optimization` | Can optimize slow code | Performance tuning, caching, query optimization |
+| `refactoring` | Can improve code structure | Code cleanup, architecture improvements |
+| `security_analysis` | Can identify security vulnerabilities | Security audits, vulnerability fixes |
+| `testing` | Can write automated tests | Unit tests, integration tests, test coverage |
+| `ui_design` | Can design user interfaces | UI/UX design, wireframes, design systems |
+| `ui_implementation` | Can implement user interfaces | Frontend features, UI components, styling |
+| `web_browsing` | Can interact with web pages | Web scraping, browser automation, web testing |
 
 ## Examples
 

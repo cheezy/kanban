@@ -893,7 +893,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       task =
         task_fixture(column, %{
-          required_capabilities: ["web_browsing", "code_execution", "file_operations"]
+          required_capabilities: ["web_browsing", "git", "file_operations"]
         })
 
       result =
@@ -905,7 +905,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Required Agent Capabilities"
       assert result =~ "web_browsing"
-      assert result =~ "code_execution"
+      assert result =~ "git"
       assert result =~ "file_operations"
     end
 
