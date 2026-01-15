@@ -43,7 +43,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp status_label(_), do: gettext("Unknown")
 
   defp review_status_badge_class(:pending),
-    do: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800"
+    do: "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
 
   defp review_status_badge_class(:approved),
     do: "px-2 py-1 text-xs rounded bg-green-100 text-green-800"
@@ -62,7 +62,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp review_status_label(:rejected), do: gettext("Rejected")
   defp review_status_label(_), do: gettext("Unknown")
 
-  defp review_section_class(:pending), do: "bg-yellow-50 border border-yellow-200 rounded-lg p-4"
+  defp review_section_class(:pending), do: "bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-700/50"
   defp review_section_class(:approved), do: "bg-green-50 border border-green-200 rounded-lg p-4"
 
   defp review_section_class(:changes_requested),
@@ -93,9 +93,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <span class={[
               "px-3 py-1 text-xs font-semibold rounded-full",
               case @task.type do
-                :work -> "bg-blue-100 text-blue-800"
-                :defect -> "bg-red-100 text-red-800"
-                :goal -> "bg-yellow-100 text-yellow-800"
+                :work -> "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
+                :defect -> "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
+                :goal -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
               end
             ]}>
               {case @task.type do
@@ -108,9 +108,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               <span class={[
                 "px-3 py-1 text-xs font-semibold rounded-full",
                 case @task.complexity do
-                  :small -> "bg-green-100 text-green-800"
-                  :medium -> "bg-yellow-100 text-yellow-800"
-                  :large -> "bg-red-100 text-red-800"
+                  :small -> "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
+                  :medium -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
+                  :large -> "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
                 end
               ]}>
                 {case @task.complexity do
@@ -479,11 +479,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
       <% end %>
 
       <%= if @task.pitfalls && !Enum.empty?(@task.pitfalls) && field_visible?(@field_visibility, "pitfalls") do %>
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 class="text-sm font-semibold text-yellow-900 mb-2">{gettext("Pitfalls to Avoid")}</h4>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-700/50">
+          <h4 class="text-sm font-semibold text-yellow-900 mb-2 dark:text-yellow-200">{gettext("Pitfalls to Avoid")}</h4>
           <ul class="list-disc list-inside space-y-1">
             <%= for pitfall <- @task.pitfalls do %>
-              <li class="text-yellow-900">{pitfall}</li>
+              <li class="text-yellow-900 dark:text-yellow-200">{pitfall}</li>
             <% end %>
           </ul>
         </div>
@@ -779,9 +779,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                       <span class={[
                         "px-2 py-1 text-xs font-semibold rounded-full",
                         case child.type do
-                          :work -> "bg-blue-100 text-blue-800"
-                          :defect -> "bg-red-100 text-red-800"
-                          :goal -> "bg-yellow-100 text-yellow-800"
+                          :work -> "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
+                          :defect -> "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
+                          :goal -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
                         end
                       ]}>
                         {case child.type do
