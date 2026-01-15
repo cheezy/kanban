@@ -439,12 +439,12 @@ defmodule Kanban.Tasks do
 
   # Pre-generate all task identifiers so we can resolve index-based dependencies
   # We track counters in memory since database hasn't been updated yet
-  defp pregenerate_task_identifiers(_column, child_tasks_attrs) do
-    # Get initial max values from database for each type
+  defp pregenerate_task_identifiers(column, child_tasks_attrs) do
+    # Get initial max values from database for each type, scoped to this board
     initial_counters = %{
-      work: get_max_identifier_number(:work, "W"),
-      defect: get_max_identifier_number(:defect, "D"),
-      goal: get_max_identifier_number(:goal, "G")
+      work: get_max_identifier_number(column.board_id, :work, "W"),
+      defect: get_max_identifier_number(column.board_id, :defect, "D"),
+      goal: get_max_identifier_number(column.board_id, :goal, "G")
     }
 
     {identifiers, _final_counters} =
@@ -1123,10 +1123,10 @@ defmodule Kanban.Tasks do
     end)
   end
 
-  defp generate_identifier(_column, task_type) do
+  defp generate_identifier(column, task_type) do
     task_type = normalize_task_type(task_type)
     prefix = get_task_type_prefix(task_type)
-    max_number = get_max_identifier_number(task_type, prefix)
+    max_number = get_max_identifier_number(column.board_id, task_type, prefix)
 
     "#{prefix}#{max_number + 1}"
   end
@@ -1141,12 +1141,14 @@ defmodule Kanban.Tasks do
   defp get_task_type_prefix(:defect), do: "D"
   defp get_task_type_prefix(:goal), do: "G"
 
-  defp get_max_identifier_number(_task_type, prefix) do
+  defp get_max_identifier_number(board_id, _task_type, prefix) do
     # Query by prefix pattern instead of type to handle cases where
     # a task's type was changed but identifier remained the same
     # (e.g., W28 that was changed from work to defect)
+    # Scope to board_id to ensure identifiers restart per board
     Task
-    |> where([t], like(t.identifier, ^"#{prefix}%"))
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id == ^board_id and like(t.identifier, ^"#{prefix}%"))
     |> select([t], t.identifier)
     |> Repo.all()
     |> Enum.map(&extract_identifier_number(&1, prefix))
