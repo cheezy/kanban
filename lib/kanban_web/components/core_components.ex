@@ -366,7 +366,7 @@ defmodule KanbanWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-6"]}>
+    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-2"]}>
       <div>
         <h1 class="text-3xl font-bold leading-tight text-base-content tracking-tight">
           {render_slot(@inner_block)}
