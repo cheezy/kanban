@@ -372,14 +372,15 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
 
       assert state == %{metrics: []}
 
-      result = Repo.one(
-        from m in "metrics_events",
+      result =
+        from(m in "metrics_events",
           select: %{
             metric_name: m.metric_name,
             measurement: m.measurement,
             metadata: m.metadata
           }
-      )
+        )
+        |> Repo.one()
 
       assert result.metric_name == "test.metric"
       assert result.measurement == 42.5
@@ -401,13 +402,14 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
         %{metrics: []}
       )
 
-      result = Repo.one(
-        from m in "metrics_events",
+      result =
+        from(m in "metrics_events",
           select: %{
             metric_name: m.metric_name,
             metadata: m.metadata
           }
-      )
+        )
+        |> Repo.one()
 
       assert result.metadata == %{
         "string" => "value",
