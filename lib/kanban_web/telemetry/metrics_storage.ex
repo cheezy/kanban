@@ -91,7 +91,8 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   def handle_event(_event_name, measurements, metadata, %{metric: metric}) do
     # Skip database queries on metrics_events table to prevent recursive metrics collection
-    if metrics_table_query?(metadata) do
+    # Also skip VM metrics as they're high-frequency and low business value
+    if metrics_table_query?(metadata) or vm_metric?(metric.name) do
       :ok
     else
       measurement_value = extract_measurement(measurements, metric.measurement)
@@ -102,6 +103,15 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
       end
     end
   end
+
+  defp vm_metric?(metric_name) when is_list(metric_name) do
+    case metric_name do
+      [:vm | _] -> true
+      _ -> false
+    end
+  end
+
+  defp vm_metric?(_), do: false
 
   defp metrics_table_query?(metadata) do
     # Check if this is a query against the metrics_events table
@@ -171,4 +181,13 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   end
 
   defp sanitize_value(_value), do: nil
+
+  if Mix.env() == :test do
+    def __format_label__(metric_name), do: format_label(metric_name)
+    def __extract_measurement__(measurements, measurement), do: extract_measurement(measurements, measurement)
+    def __sanitize_value__(value), do: sanitize_value(value)
+    def __sanitize_metadata__(metadata), do: sanitize_metadata(metadata)
+    def __metrics_table_query__?(metadata), do: metrics_table_query?(metadata)
+    def __vm_metric__?(metric_name), do: vm_metric?(metric_name)
+  end
 end
