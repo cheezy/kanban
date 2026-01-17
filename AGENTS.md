@@ -179,8 +179,8 @@ During this session, the following dark mode fixes were applied:
 
 **ALWAYS** run follow these quality guidelines:
 
-- When you complete a task that has new functions write unit tests for the new function
-- When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
+- **IMPORTANT**: When you complete a task that has new functions write unit tests for the new function
+- **IMPORTANT**: When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
 - Each time you write or update a unit tests run them with `mix test` and ensure they pass
 - **IMPORTANT**: When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
 - **IMPORTANT**: When you complete a task run `mix credo --strict` to check for code quality issues and fix them
@@ -189,8 +189,8 @@ During this session, the following dark mode fixes were applied:
 
 **ALWAYS** run follow these security guidelines:
 
-- When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
-- When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
+- **IMPORTANT**: When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
+- **IMPORTANT**: When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
 - **IMPORTANT**: When you complete a task run `mix sobelow --config` to check for security issues and fix any issue
 
 ### Phoenix v1.8 guidelines
