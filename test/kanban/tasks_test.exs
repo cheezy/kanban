@@ -2823,7 +2823,10 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      done_column = Enum.find(Kanban.Columns.list_columns(board), &(&1.name == "Done"))
+      done_column =
+        board
+        |> Kanban.Columns.list_columns()
+        |> Enum.find(&(&1.name == "Done"))
 
       # Test 1: Critical should be returned first
       result1 = Tasks.get_next_task([], board.id)
@@ -2880,7 +2883,10 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      done_column = Enum.find(Kanban.Columns.list_columns(board), &(&1.name == "Done"))
+      done_column =
+        board
+        |> Kanban.Columns.list_columns()
+        |> Enum.find(&(&1.name == "Done"))
 
       # Should return task at top of column (position 0) first
       result1 = Tasks.get_next_task([], board.id)

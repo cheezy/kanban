@@ -899,7 +899,7 @@
       </div>
     <% end %>
 
-    <%= if Ecto.Changeset.get_field(@form.source, :review_status) do %>
+    <%= if Ecto.Changeset.get_field(@form.source, :review_status) || (Ecto.assoc_loaded?(@task.column) && @task.column.name == "Review") || Ecto.Changeset.get_field(@form.source, :needs_review) do %>
       <%!-- Review Queue Section --%>
       <div class="mt-6 pt-6 border-t border-base-300">
         <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>

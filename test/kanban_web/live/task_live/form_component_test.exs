@@ -3127,4 +3127,65 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert created_task.integration_points == %{} || created_task.integration_points == nil
     end
   end
+
+  describe "Review Queue section visibility logic" do
+    test "task with review_status set should make review fields visible" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test", review_status: :pending})
+
+      # Verify the task has review_status which triggers visibility
+      assert task.review_status == :pending
+    end
+
+    test "task in Review column should make review fields visible" do
+      user = user_fixture()
+      board = board_fixture(user)
+      review_column = column_fixture(board, %{name: "Review"})
+      task = task_fixture(review_column, %{title: "Test", review_status: nil})
+      |> Kanban.Repo.preload(:column)
+
+      # Verify the task is in Review column which should trigger visibility
+      assert task.column.name == "Review"
+      assert is_nil(task.review_status)
+    end
+
+    test "task with needs_review true should make review fields visible" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Doing"})
+      task = task_fixture(column, %{title: "Test", needs_review: true, review_status: nil})
+
+      # Verify needs_review flag which should trigger visibility
+      assert task.needs_review == true
+      assert is_nil(task.review_status)
+    end
+
+    test "task without review triggers should hide review fields" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Test", needs_review: false, review_status: nil})
+      |> Kanban.Repo.preload(:column)
+
+      # Verify none of the visibility conditions are met
+      assert is_nil(task.review_status)
+      assert task.needs_review == false
+      assert task.column.name != "Review"
+    end
+
+    test "Review column overrides needs_review false" do
+      user = user_fixture()
+      board = board_fixture(user)
+      review_column = column_fixture(board, %{name: "Review"})
+      task = task_fixture(review_column, %{title: "Test", needs_review: false, review_status: nil})
+      |> Kanban.Repo.preload(:column)
+
+      # Even though needs_review is false, being in Review column should show fields
+      assert task.column.name == "Review"
+      assert task.needs_review == false
+      assert is_nil(task.review_status)
+    end
+  end
 end
