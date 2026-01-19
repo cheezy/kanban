@@ -5,6 +5,27 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-01-19
+
+### Added
+
+#### Resources & How-To Guides Section
+
+- **New Resources Landing Page** - Comprehensive help center for learning Stride:
+  - **Search Functionality** - Real-time search across all guide titles and descriptions
+  - **Tag-Based Filtering** - Filter guides by category tags (getting-started, developer, non-developer, best-practices, etc.)
+  - **Sorting Options** - Sort by relevance, newest, or alphabetically (A-Z)
+
+- **How-To Guide Detail Pages** - Step-by-step instruction views:
+  - **Hero Section** - Gradient background with title, description, content type badge, and reading time
+  - **Step-by-Step Content** - Numbered steps with markdown support (bold, code blocks, lists)
+
+- **13 How-To Guides** - Comprehensive documentation covering:
+  - **Getting Started (4 guides)**: Creating boards, understanding columns, adding tasks, inviting team members
+  - **Developer Guides (4 guides)**: Workflow hooks, API authentication, task dependencies, troubleshooting
+  - **Non-Developer Guides (3 guides)**: Writing tasks for AI, monitoring progress, reviewing completed work
+  - **Best Practices (2 guides)**: Organizing with dependencies, using complexity and priority effectively
+
 ## [1.18.0] - 2026-01-10
 
 ### Added
