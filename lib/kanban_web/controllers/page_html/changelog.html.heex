@@ -31,6 +31,46 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.20.0] - 2026-01-19</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Google Gemini Code Assist Support
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Multi-Agent Integration Expansion</strong>
+                - Added comprehensive support for Google Gemini Code Assist as the fifth supported AI coding assistant:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>GEMINI.md Instruction File</strong>: Created Markdown-formatted instruction file with complete Stride integration guidelines</li>
+                <li><strong>Hierarchical Context Support</strong>: Supports project-scoped, global (<code>~/.gemini/GEMINI.md</code>), and component-level context files</li>
+                <li><strong>Impact</strong>: Gemini Code Assist users can now leverage Stride's workflow enforcement with agent/chat mode context files</li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-2">
+                <strong>Supported AI Assistants (Now 5 Total):</strong>
+              </p>
+
+              <ol class="list-decimal list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li>Claude Code (Skills-based, contextual)</li>
+                <li>GitHub Copilot (<code>.github/copilot-instructions.md</code>)</li>
+                <li>Cursor (<code>.cursorrules</code>)</li>
+                <li>Windsurf Cascade (<code>.windsurfrules</code>)</li>
+                <li>Continue.dev (<code>.continue/config.json</code>)</li>
+                <li><strong>Google Gemini Code Assist</strong> (<code>GEMINI.md</code> or <code>AGENT.md</code>)</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.19.1] - 2026-01-19</h2>
 
           <div class="mb-8">

@@ -1956,6 +1956,24 @@ defmodule KanbanWeb.API.AgentJSON do
             installation_windows:
               "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json\" -OutFile .continue/config.json",
             token_limit: "Flexible (~100 lines JSON, uses context providers)"
+          },
+          gemini: %{
+            file_path: "GEMINI.md",
+            description:
+              "Google Gemini Code Assist instructions (project-scoped Markdown for agent/chat mode)",
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md",
+            installation_unix:
+              "curl -o GEMINI.md #{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md\" -OutFile GEMINI.md",
+            token_limit: "~8000 tokens (~400 lines)",
+            alternative_locations: [
+              "Project root: ./GEMINI.md or ./AGENT.md",
+              "Global: ~/.gemini/GEMINI.md (applies to all projects)",
+              "Component-level: Place in subdirectories for context override"
+            ],
+            note:
+              "Gemini Code Assist supports hierarchical context files - more specific files override or supplement content from parent directories. You can also use AGENT.md as an alternative filename in IntelliJ IDEs."
           }
         },
         usage_notes: [

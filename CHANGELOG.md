@@ -5,6 +5,25 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-01-19
+
+### Added
+
+#### Google Gemini Code Assist Support
+
+- **Multi-Agent Integration Expansion** - Added comprehensive support for Google Gemini Code Assist as the fifth supported AI coding assistant:
+  - **GEMINI.md Instruction File**: Created Markdown-formatted instruction file with complete Stride integration guidelines
+  - **Hierarchical Context Support**: Supports project-scoped, global (`~/.gemini/GEMINI.md`), and component-level context files
+  - **Impact**: Gemini Code Assist users can now leverage Stride's workflow enforcement with agent/chat mode context files
+
+**Supported AI Assistants (Now 5 Total):**
+1. Claude Code (Skills-based, contextual)
+2. GitHub Copilot (`.github/copilot-instructions.md`)
+3. Cursor (`.cursorrules`)
+4. Windsurf Cascade (`.windsurfrules`)
+5. Continue.dev (`.continue/config.json`)
+6. **Google Gemini Code Assist** (`GEMINI.md` or `AGENT.md`)
+
 ## [1.19.1] - 2026-01-19
 
 ### Fixed

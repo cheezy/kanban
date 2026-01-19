@@ -8,7 +8,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Core Principle:** Complement Claude Code Skills (contextual workflow enforcement) with always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** GitHub Copilot, Cursor, Windsurf Cascade, Continue.dev
+**Supported AI Assistants:** GitHub Copilot, Cursor, Windsurf Cascade, Continue.dev, Google Gemini Code Assist
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
-## Supported AI Assistants (4 Total)
+## Supported AI Assistants (5 Total)
 
 ### 1. GitHub Copilot
 
@@ -137,11 +137,40 @@ curl -o .continue/config.json \
 - Custom slash commands for common workflows
 - Can reference external documentation files
 
+### 5. Google Gemini Code Assist
+
+**File:** `GEMINI.md` (or `AGENT.md` for IntelliJ)
+
+**Location:** `docs/multi-agent-instructions/GEMINI.md`
+
+**Scope:** Project-scoped with hierarchical context support
+
+**Token Limit:** ~8000 tokens (~400 lines)
+
+**Format:** Markdown with headings, lists, code blocks
+
+**Download:**
+```bash
+curl -o GEMINI.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+```
+
+**Alternative Locations:**
+- Project root: `./GEMINI.md` or `./AGENT.md` (IntelliJ)
+- Global: `~/.gemini/GEMINI.md` (applies to all projects)
+- Component-level: Place in subdirectories for context override
+
+**Focus:**
+- Detailed code patterns with Markdown formatting
+- Comprehensive mistake catalog
+- Hook execution details
+- Context file hierarchy support (subdirectories override parent)
+
 ## Content Strategy
 
 ### Core Content (All Formats)
 
-All four instruction formats cover the same essential topics:
+All five instruction formats cover the same essential topics:
 
 1. **Hook Execution Mandate**
    - All four hooks and their purpose
@@ -194,6 +223,12 @@ All four instruction formats cover the same essential topics:
 - Custom context provider for external docs
 - Can reference documentation files directly
 
+**Gemini (Markdown):**
+- Rich formatting with headings, lists, code blocks
+- Similar depth to Cursor/Windsurf formats
+- Supports hierarchical context (subdirectories override parent)
+- Can use either GEMINI.md or AGENT.md filename
+
 ## Distribution Architecture
 
 ### Onboarding Endpoint Structure
@@ -231,10 +266,11 @@ docs/multi-agent-instructions/
 ├── copilot-instructions.md    # 9KB
 ├── cursorrules.txt            # 15KB
 ├── windsurfrules.txt          # 15KB
-└── continue-config.json       # 4KB
+├── continue-config.json       # 4KB
+└── GEMINI.md                  # 15KB
 ```
 
-Total size: ~43KB of instruction content
+Total size: ~58KB of instruction content
 
 ### Endpoint Optimization
 
@@ -254,7 +290,7 @@ Total size: ~43KB of instruction content
 When AI agents fetch the onboarding endpoint, they should automatically download the appropriate instruction file based on their type:
 
 1. Agent fetches `/api/agent/onboarding`
-2. Agent identifies its type (Copilot, Cursor, Windsurf, Aider, Continue.dev)
+2. Agent identifies its type (Copilot, Cursor, Windsurf, Continue.dev, Gemini)
 3. Agent extracts the `download_url` for its format
 4. Agent executes the appropriate `installation_unix` or `installation_windows` command
 5. Instruction file is placed in the correct location
@@ -266,7 +302,7 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json 2>/dev/null
+ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
@@ -276,6 +312,8 @@ ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/con
 [ -f .cursorrules ] && cp .cursorrules .cursorrules.backup
 [ -f .windsurfrules ] && cp .windsurfrules .windsurfrules.backup
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
+[ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
+[ -f AGENT.md ] && cp AGENT.md AGENT.md.backup
 ```
 
 **Download Stride instructions:**
@@ -305,6 +343,25 @@ curl -o .continue/config.json \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json
 ```
 
+**Google Gemini Code Assist:**
+```bash
+curl -o GEMINI.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+```
+
+Alternative for IntelliJ users:
+```bash
+curl -o AGENT.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+```
+
+For global installation (applies to all projects):
+```bash
+mkdir -p ~/.gemini
+curl -o ~/.gemini/GEMINI.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+```
+
 **Merging with existing configuration:**
 
 If you have existing custom instructions, you may want to manually merge them:
@@ -332,7 +389,7 @@ If you have existing custom instructions, you may want to manually merge them:
 
 **Check for existing files:**
 ```powershell
-Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json -ErrorAction SilentlyContinue
+Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md -ErrorAction SilentlyContinue
 ```
 
 **Backup existing files (recommended):**
@@ -341,6 +398,8 @@ if (Test-Path .github/copilot-instructions.md) { Copy-Item .github/copilot-instr
 if (Test-Path .cursorrules) { Copy-Item .cursorrules .cursorrules.backup }
 if (Test-Path .windsurfrules) { Copy-Item .windsurfrules .windsurfrules.backup }
 if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
+if (Test-Path GEMINI.md) { Copy-Item GEMINI.md GEMINI.md.backup }
+if (Test-Path AGENT.md) { Copy-Item AGENT.md AGENT.md.backup }
 ```
 
 **Download Stride instructions:**
@@ -357,6 +416,16 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 # Continue.dev
 New-Item -ItemType Directory -Force -Path .continue
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json" -OutFile .continue/config.json
+
+# Google Gemini Code Assist
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile GEMINI.md
+
+# Or for IntelliJ users
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile AGENT.md
+
+# For global installation
+New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile $env:USERPROFILE\.gemini\GEMINI.md
 ```
 
 **Appending to existing configuration:**
@@ -401,7 +470,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev |
+| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev, Gemini |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
