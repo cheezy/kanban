@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Root Cause**: Visibility condition only checked if `review_status` field had a value, but newly moved tasks to Review column had `nil` review_status
   - **Impact**: Users can now properly review and approve/reject tasks that enter the Review column
 
+### Improved
+
+#### AI Agent Onboarding Documentation
+
+- **Enhanced Getting Started Guide** - Improved clarity in `docs/GETTING-STARTED-WITH-AI.md` for AI agent onboarding:
+  - **Updated Instructions**: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies
+
 ## [1.19.0] - 2026-01-19
 
 ### Added

@@ -131,7 +131,9 @@ This endpoint returns everything the agent needs to know:
 - Claude Code skills for workflow enforcement
 
 **If you're using Claude Code or another AI coding assistant**, just tell it:
-> "Please read and execute the commands from the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding"
+> "Please fetch and review the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding, then help me set up the required configuration files (`.stride_auth.md` and `.stride.md`) and agent configuration for this project"
+
+The onboarding endpoint provides Claude Code Skills for streamlined workflow enforcement. For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
 **⚠️ IMPORTANT: Reload with Each New Session**
 
