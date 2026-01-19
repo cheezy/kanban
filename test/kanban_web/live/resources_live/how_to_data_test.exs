@@ -338,4 +338,182 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
     end
   end
+
+  describe "non-developer guides content" do
+    test "all 3 non-developer guides exist" do
+      non_dev_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("non-developer" in &1.tags))
+
+      assert length(non_dev_guides) == 3
+
+      guide_ids = Enum.map(non_dev_guides, & &1.id)
+      assert "writing-tasks-for-ai" in guide_ids
+      assert "monitoring-task-progress" in guide_ids
+      assert "reviewing-completed-work" in guide_ids
+    end
+
+    test "writing-tasks-for-ai guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("writing-tasks-for-ai")
+
+      assert guide.title == "Writing Effective Tasks for AI Agents"
+      assert "non-developer" in guide.tags
+      assert "ai-agents" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "title")
+      assert String.contains?(all_content, "description")
+      assert String.contains?(all_content, "acceptance criteria")
+    end
+
+    test "monitoring-task-progress guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("monitoring-task-progress")
+
+      assert guide.title == "Monitoring Task Progress"
+      assert "non-developer" in guide.tags
+      assert "monitoring" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "column")
+      assert String.contains?(all_content, "progress")
+    end
+
+    test "reviewing-completed-work guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("reviewing-completed-work")
+
+      assert guide.title == "Reviewing Completed Work"
+      assert "non-developer" in guide.tags
+      assert "reviewing" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "review")
+      assert String.contains?(all_content, "approve") or String.contains?(all_content, "Approve")
+    end
+
+    test "non-developer guides use accessible language" do
+      non_dev_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("non-developer" in &1.tags))
+
+      for guide <- non_dev_guides do
+        # Should have reasonable reading times
+        assert guide.reading_time >= 3 and guide.reading_time <= 10
+
+        # All steps should have content
+        for step <- guide.steps do
+          assert String.length(step.content) > 20,
+                 "Step in #{guide.id} should have substantial content"
+        end
+      end
+    end
+  end
+
+  describe "best practices guides content" do
+    test "all 2 best-practices guides exist" do
+      best_practices_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("best-practices" in &1.tags))
+
+      assert length(best_practices_guides) == 2
+
+      guide_ids = Enum.map(best_practices_guides, & &1.id)
+      assert "organizing-with-dependencies" in guide_ids
+      assert "using-complexity-priority" in guide_ids
+    end
+
+    test "organizing-with-dependencies guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("organizing-with-dependencies")
+
+      assert guide.title == "Organizing Tasks with Dependencies"
+      assert "best-practices" in guide.tags
+      assert "dependencies" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "depend")
+      assert String.contains?(all_content, "order")
+    end
+
+    test "using-complexity-priority guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("using-complexity-priority")
+
+      assert guide.title == "Using Complexity and Priority Effectively"
+      assert "best-practices" in guide.tags
+      assert "priority" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+
+      assert String.contains?(all_content, "complexity") or
+               String.contains?(all_content, "Complexity")
+
+      assert String.contains?(all_content, "priority") or
+               String.contains?(all_content, "Priority")
+    end
+
+    test "best-practices guides have actionable content" do
+      best_practices_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("best-practices" in &1.tags))
+
+      for guide <- best_practices_guides do
+        # Should have practical reading times
+        assert guide.reading_time >= 2 and guide.reading_time <= 10
+
+        # All guides should have multiple steps
+        assert length(guide.steps) >= 3,
+               "Guide #{guide.id} should have at least 3 steps"
+      end
+    end
+  end
+
+  describe "all_tags/0 includes new tags" do
+    test "includes non-developer tag" do
+      assert "non-developer" in HowToData.all_tags()
+    end
+
+    test "includes best-practices tag" do
+      assert "best-practices" in HowToData.all_tags()
+    end
+
+    test "includes ai-agents tag" do
+      assert "ai-agents" in HowToData.all_tags()
+    end
+
+    test "includes monitoring tag" do
+      assert "monitoring" in HowToData.all_tags()
+    end
+
+    test "includes reviewing tag" do
+      assert "reviewing" in HowToData.all_tags()
+    end
+
+    test "includes dependencies tag" do
+      assert "dependencies" in HowToData.all_tags()
+    end
+
+    test "includes priority tag" do
+      assert "priority" in HowToData.all_tags()
+    end
+  end
+
+  describe "total guide count" do
+    test "has all 13 guides" do
+      # 4 getting-started + 4 developer + 3 non-developer + 2 best-practices = 13
+      assert length(HowToData.all_how_tos()) == 13
+    end
+  end
 end
