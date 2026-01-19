@@ -1,0 +1,171 @@
+<div class="min-h-screen bg-base-100">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-base-content mb-4">
+        {gettext("Resources & How-Tos")}
+      </h1>
+      <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
+        {gettext("Learn how to get the most out of Stride with our guides and tutorials.")}
+      </p>
+    </div>
+    
+<!-- Search and Filters -->
+    <div class="mb-8 space-y-4">
+      <!-- Search Bar -->
+      <div class="relative max-w-xl mx-auto">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <.icon name="hero-magnifying-glass" class="h-5 w-5 text-base-content/40" />
+        </div>
+        <input
+          type="text"
+          name="query"
+          value={@search_query}
+          placeholder={gettext("Search for help...")}
+          phx-keyup="search"
+          phx-debounce="300"
+          class="block w-full pl-10 pr-3 py-3 border border-base-300 rounded-xl bg-base-100 text-base-content placeholder-base-content/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
+      </div>
+      
+<!-- Filter Row -->
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <!-- Tag Pills -->
+        <div class="flex flex-wrap justify-center gap-2">
+          <button
+            :for={tag <- @all_tags}
+            phx-click="toggle_tag"
+            phx-value-tag={tag}
+            class={[
+              "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+              if(tag in @selected_tags,
+                do: "bg-blue-600 text-white shadow-md",
+                else: "bg-base-200 text-base-content/70 hover:bg-base-300"
+              )
+            ]}
+          >
+            {format_tag(tag)}
+          </button>
+        </div>
+        
+<!-- Sort Dropdown -->
+        <div class="flex items-center gap-2">
+          <label for="sort" class="text-sm text-base-content/60">{gettext("Sort:")}</label>
+          <select
+            id="sort"
+            name="sort_by"
+            phx-change="sort"
+            class="select select-bordered select-sm bg-base-100 text-base-content"
+          >
+            <option value="relevance" selected={@sort_by == "relevance"}>
+              {gettext("Most Relevant")}
+            </option>
+            <option value="newest" selected={@sort_by == "newest"}>
+              {gettext("Newest")}
+            </option>
+            <option value="a-z" selected={@sort_by == "a-z"}>
+              {gettext("A-Z")}
+            </option>
+          </select>
+        </div>
+        
+<!-- Clear Filters -->
+        <button
+          :if={@search_query != "" or @selected_tags != []}
+          phx-click="clear_filters"
+          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+        >
+          <.icon name="hero-x-mark" class="h-4 w-4" />
+          {gettext("Clear filters")}
+        </button>
+      </div>
+    </div>
+    
+<!-- Results Count -->
+    <div class="mb-6 text-center text-sm text-base-content/60">
+      {ngettext(
+        "Showing %{count} guide",
+        "Showing %{count} guides",
+        length(@filtered_how_tos),
+        count: length(@filtered_how_tos)
+      )}
+    </div>
+    
+<!-- How-To Cards Grid -->
+    <%= if Enum.empty?(@filtered_how_tos) do %>
+      <div class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-base-200 mb-6">
+          <.icon name="hero-document-magnifying-glass" class="h-10 w-10 text-base-content/40" />
+        </div>
+        <h2 class="text-xl font-semibold text-base-content mb-2">
+          {gettext("No guides found")}
+        </h2>
+        <p class="text-base-content/60 mb-4">
+          {gettext("Try adjusting your search or filters to find what you're looking for.")}
+        </p>
+        <button phx-click="clear_filters" class="btn btn-primary btn-sm">
+          {gettext("Clear all filters")}
+        </button>
+      </div>
+    <% else %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <.link
+          :for={how_to <- @filtered_how_tos}
+          navigate={~p"/resources/#{how_to.id}"}
+          class="group bg-base-100 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-base-300/50 hover:border-blue-300/50 overflow-hidden flex flex-col transform hover:-translate-y-1"
+        >
+          <!-- Thumbnail -->
+          <div class="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 relative overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <.icon
+                name={type_icon(how_to.content_type)}
+                class="h-16 w-16 text-blue-500/30 dark:text-blue-400/30"
+              />
+            </div>
+            <!-- Content Type Badge -->
+            <div class="absolute top-3 right-3">
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-base-100/90 dark:bg-base-100/80 text-xs font-medium text-base-content shadow-sm">
+                <.icon name={type_icon(how_to.content_type)} class="h-3.5 w-3.5" />
+                {String.capitalize(how_to.content_type)}
+              </span>
+            </div>
+          </div>
+          
+<!-- Content -->
+          <div class="p-5 flex-1 flex flex-col">
+            <h3 class="text-lg font-semibold text-base-content mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+              {how_to.title}
+            </h3>
+            <p class="text-sm text-base-content/70 mb-4 flex-1 line-clamp-2">
+              {how_to.description}
+            </p>
+            
+<!-- Tags -->
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              <span
+                :for={tag <- Enum.take(how_to.tags, 3)}
+                class="px-2 py-0.5 rounded-full text-xs bg-base-200 text-base-content/70"
+              >
+                {format_tag(tag)}
+              </span>
+            </div>
+            
+<!-- Footer -->
+            <div class="flex items-center justify-between pt-3 border-t border-base-300/60">
+              <span class="flex items-center gap-1 text-xs text-base-content/50">
+                <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                {ngettext("%{count} min read", "%{count} min read", how_to.reading_time,
+                  count: how_to.reading_time
+                )}
+              </span>
+              <span class="text-blue-600 group-hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+                {gettext("Read more")}
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </span>
+            </div>
+          </div>
+        </.link>
+      </div>
+    <% end %>
+  </div>
+</div>
