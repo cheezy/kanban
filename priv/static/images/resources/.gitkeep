@@ -1,0 +1,10 @@
+# Resources Media Assets Directory
+#
+# This directory contains images for the Resources section:
+# - Screenshots
+# - Thumbnails
+# - Diagrams
+#
+# Naming convention: kebab-case (e.g., getting-started-screenshot.png)
+# Preferred formats: PNG for screenshots, SVG for diagrams
+# Reference in templates: ~p"/images/resources/filename.png"
