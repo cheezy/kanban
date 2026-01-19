@@ -213,12 +213,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "getting started guides content" do
-    test "all getting-started guides exist" do
+    test "all 4 getting-started guides exist" do
       getting_started_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("getting-started" in &1.tags))
 
-      assert length(getting_started_guides) >= 4
+      assert length(getting_started_guides) == 4
 
       guide_ids = Enum.map(getting_started_guides, & &1.id)
       assert "creating-your-first-board" in guide_ids
@@ -235,6 +235,106 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       for guide <- getting_started_guides do
         assert "beginner" in guide.tags,
                "Guide #{guide.id} should have beginner tag"
+      end
+    end
+
+    test "creating-your-first-board guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("creating-your-first-board")
+
+      assert guide.title == "Creating Your First Board"
+      assert "getting-started" in guide.tags
+      assert "beginner" in guide.tags
+      assert "boards" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content exists
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "New Board")
+      assert String.contains?(all_content, "name")
+    end
+
+    test "understanding-columns guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("understanding-columns")
+
+      assert guide.title == "Understanding Board Columns and Workflow"
+      assert "getting-started" in guide.tags
+      assert "beginner" in guide.tags
+      assert "workflow" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content exists
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "Column")
+      assert String.contains?(all_content, "workflow")
+    end
+
+    test "adding-your-first-task guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("adding-your-first-task")
+
+      assert guide.title == "Adding Your First Task"
+      assert "getting-started" in guide.tags
+      assert "beginner" in guide.tags
+      assert "tasks" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 3
+
+      # Verify key content exists
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "Task")
+      assert String.contains?(all_content, "Title")
+    end
+
+    test "inviting-team-members guide has complete content" do
+      {:ok, guide} = HowToData.get_how_to("inviting-team-members")
+
+      assert guide.title == "Inviting Team Members"
+      assert "getting-started" in guide.tags
+      assert "beginner" in guide.tags
+      assert "collaboration" in guide.tags
+      assert guide.content_type == "guide"
+      assert length(guide.steps) >= 2
+
+      # Verify key content exists
+      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
+      assert String.contains?(all_content, "email") or String.contains?(all_content, "invite")
+
+      assert String.contains?(all_content, "permission") or
+               String.contains?(all_content, "access")
+    end
+
+    test "getting-started guides have appropriate reading times" do
+      {:ok, board} = HowToData.get_how_to("creating-your-first-board")
+      {:ok, columns} = HowToData.get_how_to("understanding-columns")
+      {:ok, task} = HowToData.get_how_to("adding-your-first-task")
+      {:ok, invite} = HowToData.get_how_to("inviting-team-members")
+
+      # Reading times should be quick for beginner content
+      assert board.reading_time >= 2 and board.reading_time <= 10
+      assert columns.reading_time >= 2 and columns.reading_time <= 10
+      assert task.reading_time >= 2 and task.reading_time <= 10
+      assert invite.reading_time >= 1 and invite.reading_time <= 10
+    end
+
+    test "getting-started guides use beginner-friendly language" do
+      getting_started_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("getting-started" in &1.tags))
+
+      for guide <- getting_started_guides do
+        # All guides should have descriptions
+        assert String.length(guide.description) > 10,
+               "Guide #{guide.id} should have a substantial description"
+
+        # All steps should have titles
+        for step <- guide.steps do
+          assert String.length(step.title) > 0,
+                 "Step in #{guide.id} should have a title"
+
+          assert String.length(step.content) > 10,
+                 "Step in #{guide.id} should have content"
+        end
       end
     end
   end
