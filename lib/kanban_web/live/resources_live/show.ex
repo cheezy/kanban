@@ -5,6 +5,8 @@ defmodule KanbanWeb.ResourcesLive.Show do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.ResourcesLive.Components
+
   alias KanbanWeb.ResourcesLive.HowToData
 
   @impl true
