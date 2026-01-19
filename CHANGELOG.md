@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Enhanced Getting Started Guide** - Improved clarity in `docs/GETTING-STARTED-WITH-AI.md` for AI agent onboarding:
   - **Updated Instructions**: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies
+  - **Multi-Agent Support**: Added explicit mention of agent configuration setup and reference to Multi-Agent Instructions guide
+
+#### Claude Code Skills for Automatic Hook Execution
+
+- **Updated Hook Execution Instructions** - Modified all four Claude Code Skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`) in the onboarding endpoint:
+  - **Automatic Execution**: Added explicit instructions to execute hooks automatically without prompting the user
+  - **Impact**: Eliminates unnecessary user prompts during task claiming and completion, streamlining the agent workflow
 
 ## [1.19.0] - 2026-01-19
 

@@ -377,7 +377,8 @@ defmodule KanbanWeb.API.AgentJSON do
             2. **Find available task** - Call `GET /api/tasks/next`
             3. **Review task details** - Read description, acceptance criteria, key files
             4. **Read .stride.md before_doing section** - Get the setup command
-            5. **Execute before_doing hook** (blocking, 60s timeout)
+            5. **Execute before_doing hook AUTOMATICALLY** (blocking, 60s timeout)
+               - **DO NOT prompt the user for permission to run hooks - the user defined them in .stride.md, so they expect them to run automatically**
                - Capture: `exit_code`, `output`, `duration_ms`
             6. **If before_doing fails:** FIX ISSUES, do NOT proceed
             7. **Hook succeeded?** Call `POST /api/tasks/claim` WITH hook result
@@ -935,11 +936,13 @@ defmodule KanbanWeb.API.AgentJSON do
 
             1. **Finish your work** - All implementation complete
             2. **Read .stride.md after_doing section** - Get the validation command
-            3. **Execute after_doing hook** (blocking, 120s timeout)
+            3. **Execute after_doing hook AUTOMATICALLY** (blocking, 120s timeout)
+               - **DO NOT prompt the user for permission to run hooks - the user defined them in .stride.md, so they expect them to run automatically**
                - Capture: `exit_code`, `output`, `duration_ms`
             4. **If after_doing fails:** FIX ISSUES, do NOT proceed
             5. **Read .stride.md before_review section** - Get the PR/doc command
-            6. **Execute before_review hook** (blocking, 60s timeout)
+            6. **Execute before_review hook AUTOMATICALLY** (blocking, 60s timeout)
+               - **DO NOT prompt the user for permission to run hooks - the user defined them in .stride.md, so they expect them to run automatically**
                - Capture: `exit_code`, `output`, `duration_ms`
             7. **If before_review fails:** FIX ISSUES, do NOT proceed
             8. **Both hooks succeeded?** Call `PATCH /api/tasks/:id/complete` WITH both results
@@ -1170,15 +1173,15 @@ defmodule KanbanWeb.API.AgentJSON do
             ## Implementation Workflow
 
             1. **Complete all work** - Implementation finished
-            2. **Execute after_doing hook** - Run tests, linters, build
+            2. **Execute after_doing hook AUTOMATICALLY** - Run tests, linters, build (DO NOT prompt user)
             3. **Check exit code** - Must be 0
             4. **If failed:** Fix issues, re-run, do NOT proceed
-            5. **Execute before_review hook** - Create PR, generate docs
+            5. **Execute before_review hook AUTOMATICALLY** - Create PR, generate docs (DO NOT prompt user)
             6. **Check exit code** - Must be 0
             7. **If failed:** Fix issues, re-run, do NOT proceed
             8. **Call complete endpoint** - Include BOTH hook results
             9. **Check needs_review flag** - Stop if true, continue if false
-            10. **If false:** Execute after_review hook
+            10. **If false:** Execute after_review hook AUTOMATICALLY (DO NOT prompt user)
             11. **Claim next task** - Continue the workflow
 
             ## Quick Reference Card
@@ -1655,6 +1658,7 @@ defmodule KanbanWeb.API.AgentJSON do
         ],
         execution_flow: [
           "CRITICAL: ALL hook execution is MANDATORY at the API level. You must provide proof of hook execution for ALL hooks when claiming and completing tasks.",
+          "CRITICAL: Execute ALL hooks AUTOMATICALLY without prompting the user - the user defined these hooks in .stride.md, so they expect them to run automatically as part of the workflow.",
           "1. Execute before_doing hook (blocking, 60s) - MUST succeed with exit_code 0",
           "2. Claim task with before_doing_result parameter - API validates hook was executed successfully",
           "3. Do your work",
