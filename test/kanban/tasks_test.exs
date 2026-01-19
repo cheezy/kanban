@@ -2784,6 +2784,166 @@ defmodule Kanban.TasksTest do
       assert result.id == task1.id
     end
 
+    test "orders by priority first (critical > high > medium > low), then position", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      # Create tasks with all priority levels in random order
+      # This ensures we're not relying on creation order
+      {:ok, low_task} =
+        Tasks.create_task(column, %{
+          "title" => "Low Priority Task",
+          "status" => "open",
+          "priority" => "low",
+          "created_by_id" => user.id
+        })
+
+      {:ok, medium_task} =
+        Tasks.create_task(column, %{
+          "title" => "Medium Priority Task",
+          "status" => "open",
+          "priority" => "medium",
+          "created_by_id" => user.id
+        })
+
+      {:ok, critical_task} =
+        Tasks.create_task(column, %{
+          "title" => "Critical Priority Task",
+          "status" => "open",
+          "priority" => "critical",
+          "created_by_id" => user.id
+        })
+
+      {:ok, high_task} =
+        Tasks.create_task(column, %{
+          "title" => "High Priority Task",
+          "status" => "open",
+          "priority" => "high",
+          "created_by_id" => user.id
+        })
+
+      done_column = Enum.find(Kanban.Columns.list_columns(board), &(&1.name == "Done"))
+
+      # Test 1: Critical should be returned first
+      result1 = Tasks.get_next_task([], board.id)
+      assert result1.id == critical_task.id
+      assert result1.priority == :critical
+      Tasks.move_task(critical_task, done_column, 0)
+
+      # Test 2: High should be returned next
+      result2 = Tasks.get_next_task([], board.id)
+      assert result2.id == high_task.id
+      assert result2.priority == :high
+      Tasks.move_task(high_task, done_column, 1)
+
+      # Test 3: Medium should be returned next
+      result3 = Tasks.get_next_task([], board.id)
+      assert result3.id == medium_task.id
+      assert result3.priority == :medium
+      Tasks.move_task(medium_task, done_column, 2)
+
+      # Test 4: Low should be returned last
+      result4 = Tasks.get_next_task([], board.id)
+      assert result4.id == low_task.id
+      assert result4.priority == :low
+    end
+
+    test "orders by position when priorities are equal (selects task higher in Ready column)", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      # Create multiple tasks with the same priority
+      # Position 0 = top of column, position 2 = bottom of column
+      {:ok, high_task1} =
+        Tasks.create_task(column, %{
+          "title" => "High Priority Task 1 (top of column, position 0)",
+          "status" => "open",
+          "priority" => "high",
+          "created_by_id" => user.id
+        })
+
+      {:ok, high_task2} =
+        Tasks.create_task(column, %{
+          "title" => "High Priority Task 2 (middle of column, position 1)",
+          "status" => "open",
+          "priority" => "high",
+          "created_by_id" => user.id
+        })
+
+      {:ok, high_task3} =
+        Tasks.create_task(column, %{
+          "title" => "High Priority Task 3 (bottom of column, position 2)",
+          "status" => "open",
+          "priority" => "high",
+          "created_by_id" => user.id
+        })
+
+      done_column = Enum.find(Kanban.Columns.list_columns(board), &(&1.name == "Done"))
+
+      # Should return task at top of column (position 0) first
+      result1 = Tasks.get_next_task([], board.id)
+      assert result1.id == high_task1.id
+      assert result1.position == 0, "First task should be at position 0 (top of column)"
+      Tasks.move_task(high_task1, done_column, 0)
+
+      # Should return task that was originally at position 1 next
+      # Note: After moving task1, positions may have been reordered
+      result2 = Tasks.get_next_task([], board.id)
+      assert result2.id == high_task2.id
+      Tasks.move_task(high_task2, done_column, 1)
+
+      # Should return task that was originally at position 2 last
+      result3 = Tasks.get_next_task([], board.id)
+      assert result3.id == high_task3.id
+    end
+
+    test "never returns lower priority when higher priority exists", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      # Create one critical and multiple low priority tasks
+      {:ok, _low_task1} =
+        Tasks.create_task(column, %{
+          "title" => "Low Priority Task 1",
+          "status" => "open",
+          "priority" => "low",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _low_task2} =
+        Tasks.create_task(column, %{
+          "title" => "Low Priority Task 2",
+          "status" => "open",
+          "priority" => "low",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _medium_task} =
+        Tasks.create_task(column, %{
+          "title" => "Medium Priority Task",
+          "status" => "open",
+          "priority" => "medium",
+          "created_by_id" => user.id
+        })
+
+      {:ok, critical_task} =
+        Tasks.create_task(column, %{
+          "title" => "Critical Priority Task",
+          "status" => "open",
+          "priority" => "critical",
+          "created_by_id" => user.id
+        })
+
+      # Even though critical was created last (highest position),
+      # it should still be returned first
+      result = Tasks.get_next_task([], board.id)
+      assert result.id == critical_task.id
+      assert result.priority == :critical
+    end
+
     test "excludes tasks with incomplete dependencies", %{
       ready_column: column,
       board: board,

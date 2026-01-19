@@ -1366,6 +1366,8 @@ defmodule Kanban.Tasks do
       |> Repo.all()
 
     # Main query for next task
+    # Use CASE statement to convert priority enum to numeric for proper sorting
+    # critical=4, high=3, medium=2, low=1
     query =
       from(t in Task,
         join: c in Column,
@@ -1374,7 +1376,14 @@ defmodule Kanban.Tasks do
         where: c.board_id == ^board_id,
         where: t.type in [:work, :defect],
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
-        order_by: [desc: t.priority, asc: t.position],
+        order_by: [
+          desc:
+            fragment(
+              "CASE ? WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END",
+              t.priority
+            ),
+          asc: t.position
+        ],
         preload: [:column, :assigned_to, :created_by]
       )
 
