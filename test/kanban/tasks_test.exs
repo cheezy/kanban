@@ -1569,7 +1569,11 @@ defmodule Kanban.TasksTest do
       board = board_fixture(user)
       column = column_fixture(board)
 
-      attrs = %{title: "Test task", required_capabilities: ["testing", "debugging", "code_generation"]}
+      attrs = %{
+        title: "Test task",
+        required_capabilities: ["testing", "debugging", "code_generation"]
+      }
+
       {:ok, task} = Tasks.create_task(column, attrs)
       assert task.required_capabilities == ["testing", "debugging", "code_generation"]
     end
@@ -3104,7 +3108,11 @@ defmodule Kanban.TasksTest do
       assert result == {:error, :not_claimed}
     end
 
-    test "sets a valid position when unclaiming task", %{task: task, user: user, ready_column: ready_column} do
+    test "sets a valid position when unclaiming task", %{
+      task: task,
+      user: user,
+      ready_column: ready_column
+    } do
       {:ok, unclaimed_task} = Tasks.unclaim_task(task, user)
 
       assert unclaimed_task.column_id == ready_column.id
@@ -3112,7 +3120,11 @@ defmodule Kanban.TasksTest do
       assert unclaimed_task.position >= 0
     end
 
-    test "places task at end of Ready column when unclaiming", %{task: task, user: user, ready_column: ready_column} do
+    test "places task at end of Ready column when unclaiming", %{
+      task: task,
+      user: user,
+      ready_column: ready_column
+    } do
       existing_task_count =
         from(t in Kanban.Tasks.Task,
           where: t.column_id == ^ready_column.id,
@@ -3125,28 +3137,33 @@ defmodule Kanban.TasksTest do
       assert unclaimed_task.position == existing_task_count
     end
 
-    test "maintains unique positions when unclaiming multiple tasks", %{ready_column: ready_column, user: user} do
+    test "maintains unique positions when unclaiming multiple tasks", %{
+      ready_column: ready_column,
+      user: user
+    } do
       doing_column =
         from(c in Kanban.Columns.Column,
           where: c.board_id == ^ready_column.board_id and c.name == "Doing"
         )
         |> Kanban.Repo.one()
 
-      {:ok, task1} = Tasks.create_task(doing_column, %{
-        "title" => "Task 1",
-        "status" => "in_progress",
-        "created_by_id" => user.id,
-        "claimed_at" => DateTime.utc_now(),
-        "assigned_to_id" => user.id
-      })
+      {:ok, task1} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Task 1",
+          "status" => "in_progress",
+          "created_by_id" => user.id,
+          "claimed_at" => DateTime.utc_now(),
+          "assigned_to_id" => user.id
+        })
 
-      {:ok, task2} = Tasks.create_task(doing_column, %{
-        "title" => "Task 2",
-        "status" => "in_progress",
-        "created_by_id" => user.id,
-        "claimed_at" => DateTime.utc_now(),
-        "assigned_to_id" => user.id
-      })
+      {:ok, task2} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Task 2",
+          "status" => "in_progress",
+          "created_by_id" => user.id,
+          "claimed_at" => DateTime.utc_now(),
+          "assigned_to_id" => user.id
+        })
 
       {:ok, unclaimed_task1} = Tasks.unclaim_task(task1, user)
       {:ok, unclaimed_task2} = Tasks.unclaim_task(task2, user)
@@ -3166,12 +3183,17 @@ defmodule Kanban.TasksTest do
       assert positions == Enum.uniq(positions), "All positions should be unique"
     end
 
-    test "does not cause unique constraint violation when unclaiming", %{task: task, user: user, ready_column: ready_column} do
-      {:ok, existing_task} = Tasks.create_task(ready_column, %{
-        "title" => "Existing Task in Ready",
-        "status" => "open",
-        "created_by_id" => user.id
-      })
+    test "does not cause unique constraint violation when unclaiming", %{
+      task: task,
+      user: user,
+      ready_column: ready_column
+    } do
+      {:ok, existing_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Existing Task in Ready",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
 
       result = Tasks.unclaim_task(task, user)
 

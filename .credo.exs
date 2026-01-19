@@ -23,7 +23,7 @@
         {Credo.Check.Design.TagFIXME, false},
         {Credo.Check.Design.TagTODO, false},
         {Credo.Check.Readability.ModuleDoc, false},
-        {Credo.Check.Refactor.LongQuoteBlocks, false},
+        {Credo.Check.Refactor.LongQuoteBlocks, false}
       ]
     }
   ]

@@ -6,128 +6,21 @@ defmodule KanbanWeb.ResourcesLive.Index do
   """
   use KanbanWeb, :live_view
 
-  @type_icons %{
-    "guide" => "hero-book-open",
-    "tutorial" => "hero-academic-cap",
-    "reference" => "hero-document-text",
-    "video" => "hero-play-circle"
-  }
-
-  @how_tos [
-    %{
-      id: "creating-your-first-board",
-      title: "Creating Your First Board",
-      description:
-        "Learn how to create and configure a new Stride board for your team or project.",
-      tags: ["getting-started", "beginner", "boards"],
-      content_type: "guide",
-      reading_time: 3,
-      thumbnail: "/images/resources/board-creation.png",
-      created_at: ~D[2026-01-15]
-    },
-    %{
-      id: "understanding-columns",
-      title: "Understanding Board Columns and Workflow",
-      description:
-        "Discover how columns help organize your tasks and create efficient workflows.",
-      tags: ["getting-started", "beginner", "workflow"],
-      content_type: "guide",
-      reading_time: 4,
-      thumbnail: "/images/resources/columns-workflow.png",
-      created_at: ~D[2026-01-15]
-    },
-    %{
-      id: "adding-your-first-task",
-      title: "Adding Your First Task",
-      description: "A step-by-step guide to creating tasks with all the essential fields.",
-      tags: ["getting-started", "beginner", "tasks"],
-      content_type: "guide",
-      reading_time: 3,
-      thumbnail: "/images/resources/task-creation.png",
-      created_at: ~D[2026-01-15]
-    },
-    %{
-      id: "inviting-team-members",
-      title: "Inviting Team Members",
-      description: "Learn how to invite collaborators and manage board access permissions.",
-      tags: ["getting-started", "beginner", "collaboration"],
-      content_type: "guide",
-      reading_time: 2,
-      thumbnail: "/images/resources/invite-members.png",
-      created_at: ~D[2026-01-15]
-    },
-    %{
-      id: "setting-up-hooks",
-      title: "Setting Up Hook Execution",
-      description:
-        "Configure client-side hooks for automated workflows when claiming and completing tasks.",
-      tags: ["developer", "hooks", "automation"],
-      content_type: "tutorial",
-      reading_time: 8,
-      thumbnail: "/images/resources/hooks-setup.png",
-      created_at: ~D[2026-01-16]
-    },
-    %{
-      id: "api-authentication",
-      title: "Configuring API Authentication",
-      description:
-        "Set up API tokens for secure access to the Stride API from your applications.",
-      tags: ["developer", "api", "security"],
-      content_type: "tutorial",
-      reading_time: 5,
-      thumbnail: "/images/resources/api-auth.png",
-      created_at: ~D[2026-01-16]
-    },
-    %{
-      id: "claim-complete-workflow",
-      title: "Understanding Claim/Complete Workflow",
-      description:
-        "Master the task lifecycle with claiming, completing, and review workflows for AI agents.",
-      tags: ["developer", "workflow", "api"],
-      content_type: "guide",
-      reading_time: 10,
-      thumbnail: "/images/resources/claim-complete.png",
-      created_at: ~D[2026-01-16]
-    },
-    %{
-      id: "debugging-hooks",
-      title: "Debugging Hook Failures",
-      description:
-        "Troubleshoot common hook execution issues and learn best practices for reliable automation.",
-      tags: ["developer", "hooks", "troubleshooting"],
-      content_type: "guide",
-      reading_time: 6,
-      thumbnail: "/images/resources/debug-hooks.png",
-      created_at: ~D[2026-01-16]
-    }
-  ]
-
-  @all_tags [
-    "getting-started",
-    "beginner",
-    "developer",
-    "boards",
-    "tasks",
-    "workflow",
-    "collaboration",
-    "hooks",
-    "api",
-    "automation",
-    "security",
-    "troubleshooting"
-  ]
+  alias KanbanWeb.ResourcesLive.HowToData
 
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
     Gettext.put_locale(KanbanWeb.Gettext, locale)
 
+    how_tos = HowToData.all_how_tos()
+
     {:ok,
      socket
      |> assign(:page_title, gettext("Resources & How-Tos"))
-     |> assign(:all_how_tos, @how_tos)
-     |> assign(:filtered_how_tos, @how_tos)
-     |> assign(:all_tags, @all_tags)
+     |> assign(:all_how_tos, how_tos)
+     |> assign(:filtered_how_tos, how_tos)
+     |> assign(:all_tags, HowToData.all_tags())
      |> assign(:search_query, "")
      |> assign(:selected_tags, [])
      |> assign(:sort_by, "relevance")}
@@ -176,12 +69,14 @@ defmodule KanbanWeb.ResourcesLive.Index do
 
   @impl true
   def handle_event("clear_filters", _params, socket) do
+    how_tos = HowToData.all_how_tos()
+
     {:noreply,
      socket
      |> assign(:search_query, "")
      |> assign(:selected_tags, [])
      |> assign(:sort_by, "relevance")
-     |> assign(:filtered_how_tos, @how_tos)}
+     |> assign(:filtered_how_tos, how_tos)}
   end
 
   @doc """
@@ -218,15 +113,7 @@ defmodule KanbanWeb.ResourcesLive.Index do
   defp sort_how_tos(how_tos, "newest"), do: Enum.sort_by(how_tos, & &1.created_at, {:desc, Date})
   defp sort_how_tos(how_tos, "a-z"), do: Enum.sort_by(how_tos, & &1.title)
 
-  def type_icon(content_type) do
-    Map.get(@type_icons, content_type, "hero-document")
-  end
-
-  def format_tag(tag) do
-    tag
-    |> String.replace("-", " ")
-    |> String.split()
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
-  end
+  # Delegate to shared module for consistency
+  defdelegate type_icon(content_type), to: HowToData
+  defdelegate format_tag(tag), to: HowToData
 end

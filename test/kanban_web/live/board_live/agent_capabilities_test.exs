@@ -61,7 +61,8 @@ defmodule KanbanWeb.BoardLive.AgentCapabilitiesTest do
     test "parses all standard capabilities", %{conn: conn, board: board} do
       {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
-      all_capabilities = "code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops"
+      all_capabilities =
+        "code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops"
 
       lv
       |> form("form[phx-submit=create_token]", %{

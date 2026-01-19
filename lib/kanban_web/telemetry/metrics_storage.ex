@@ -184,7 +184,10 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   if Mix.env() == :test do
     def __format_label__(metric_name), do: format_label(metric_name)
-    def __extract_measurement__(measurements, measurement), do: extract_measurement(measurements, measurement)
+
+    def __extract_measurement__(measurements, measurement),
+      do: extract_measurement(measurements, measurement)
+
     def __sanitize_value__(value), do: sanitize_value(value)
     def __sanitize_metadata__(metadata), do: sanitize_metadata(metadata)
     def __metrics_table_query__?(metadata), do: metrics_table_query?(metadata)

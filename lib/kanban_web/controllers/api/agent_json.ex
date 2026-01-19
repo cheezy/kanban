@@ -6,30 +6,32 @@ defmodule KanbanWeb.API.AgentJSON do
   def onboarding(%{base_url: base_url}) do
     %{
       "⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️": %{
-        "YOU_MUST_COMPLETE_THESE_STEPS_FIRST": "The steps below are NOT optional. You CANNOT authenticate or use the API without completing setup. DO NOT skip to other sections.",
-        "WHY_THIS_IS_MANDATORY": "You cannot authenticate with the API without .stride_auth.md. You cannot execute hooks without .stride.md. These files are prerequisites for ALL API calls.",
-        "SETUP_TAKES": "2-3 minutes if files don't exist, <30 seconds if they do",
-        "DO_THIS_NOW": "Complete ALL steps in MANDATORY_SETUP_CHECKLIST below before reading anything else"
+        YOU_MUST_COMPLETE_THESE_STEPS_FIRST:
+          "The steps below are NOT optional. You CANNOT authenticate or use the API without completing setup. DO NOT skip to other sections.",
+        WHY_THIS_IS_MANDATORY:
+          "You cannot authenticate with the API without .stride_auth.md. You cannot execute hooks without .stride.md. These files are prerequisites for ALL API calls.",
+        SETUP_TAKES: "2-3 minutes if files don't exist, <30 seconds if they do",
+        DO_THIS_NOW:
+          "Complete ALL steps in MANDATORY_SETUP_CHECKLIST below before reading anything else"
       },
-
-      "MANDATORY_SETUP_CHECKLIST": %{
-        "COMPLETE_ALL_STEPS_IN_ORDER": true,
-
-        "STEP_1_CHECK_stride_auth_md": %{
+      MANDATORY_SETUP_CHECKLIST: %{
+        COMPLETE_ALL_STEPS_IN_ORDER: true,
+        STEP_1_CHECK_stride_auth_md: %{
           order: 1,
           action: "Check if .stride_auth.md exists",
-          tool_to_use: "Bash tool with: test -f .stride_auth.md && echo 'EXISTS' || echo 'MISSING'",
+          tool_to_use:
+            "Bash tool with: test -f .stride_auth.md && echo 'EXISTS' || echo 'MISSING'",
           if_missing: "Proceed to STEP_2_CREATE_stride_auth_md",
           if_exists: "Skip to STEP_3_CHECK_gitignore"
         },
-
-        "STEP_2_CREATE_stride_auth_md": %{
+        STEP_2_CREATE_stride_auth_md: %{
           order: 2,
           action: "Create .stride_auth.md using Write tool",
           condition: "ONLY if STEP_1 showed MISSING",
           tool_to_use: "Write tool",
           file_path: ".stride_auth.md",
-          content_source: "Copy EXACT content from file_templates.stride_auth_md section below (scroll down to find it)",
+          content_source:
+            "Copy EXACT content from file_templates.stride_auth_md section below (scroll down to find it)",
           critical_warnings: [
             "DO NOT modify the template content",
             "DO NOT remove the {{YOUR_TOKEN_HERE}} placeholder",
@@ -37,52 +39,52 @@ defmodule KanbanWeb.API.AgentJSON do
             "This file will contain secrets - it MUST be added to .gitignore"
           ]
         },
-
-        "STEP_3_CHECK_gitignore": %{
+        STEP_3_CHECK_gitignore: %{
           order: 3,
           action: "Verify .stride_auth.md is in .gitignore",
-          tool_to_use: "Bash tool with: grep -q '.stride_auth.md' .gitignore && echo 'PROTECTED' || echo 'EXPOSED'",
+          tool_to_use:
+            "Bash tool with: grep -q '.stride_auth.md' .gitignore && echo 'PROTECTED' || echo 'EXPOSED'",
           if_exposed: "Proceed to STEP_4_ADD_TO_gitignore",
           if_protected: "Skip to STEP_5_CHECK_stride_md",
-          why_critical: "SECURITY: .stride_auth.md contains API tokens. If committed to git, tokens are exposed publicly."
+          why_critical:
+            "SECURITY: .stride_auth.md contains API tokens. If committed to git, tokens are exposed publicly."
         },
-
-        "STEP_4_ADD_TO_gitignore": %{
+        STEP_4_ADD_TO_gitignore: %{
           order: 4,
           action: "Add .stride_auth.md to .gitignore",
           condition: "ONLY if STEP_3 showed EXPOSED",
-          tool_to_use: "Edit tool (if .gitignore exists) or Write tool (if .gitignore doesn't exist)",
+          tool_to_use:
+            "Edit tool (if .gitignore exists) or Write tool (if .gitignore doesn't exist)",
           content_to_add: ".stride_auth.md",
           verification: "Run: grep '.stride_auth.md' .gitignore"
         },
-
-        "STEP_5_CHECK_stride_md": %{
+        STEP_5_CHECK_stride_md: %{
           order: 5,
           action: "Check if .stride.md exists",
           tool_to_use: "Bash tool with: test -f .stride.md && echo 'EXISTS' || echo 'MISSING'",
           if_missing: "Proceed to STEP_6_CREATE_stride_md",
           if_exists: "Skip to STEP_7_INSTALL_SKILLS"
         },
-
-        "STEP_6_CREATE_stride_md": %{
+        STEP_6_CREATE_stride_md: %{
           order: 6,
           action: "Create .stride.md using Write tool",
           condition: "ONLY if STEP_5 showed MISSING",
           tool_to_use: "Write tool",
           file_path: ".stride.md",
-          content_source: "Copy EXACT content from file_templates.stride_md section below (scroll down to find it)",
+          content_source:
+            "Copy EXACT content from file_templates.stride_md section below (scroll down to find it)",
           critical_warnings: [
             "DO NOT modify the template content",
             "DO NOT summarize or truncate - copy character-for-character",
             "This file defines hook execution scripts"
           ]
         },
-
-        "STEP_7_INSTALL_SKILLS": %{
+        STEP_7_INSTALL_SKILLS: %{
           order: 7,
           action: "Install Claude Code skills (IF you are Claude Code)",
           condition: "ONLY for Claude Code. Other AI assistants skip this step.",
-          how_to_check_if_claude_code: "You are Claude Code if you are running inside the Claude Code CLI tool",
+          how_to_check_if_claude_code:
+            "You are Claude Code if you are running inside the Claude Code CLI tool",
           if_not_claude_code: "Skip to STEP_8_NOTIFY_USER",
           if_claude_code: "Create ALL 4 skill files (ALWAYS overwrite existing)",
           skills_to_create: [
@@ -90,53 +92,58 @@ defmodule KanbanWeb.API.AgentJSON do
               skill_name: "stride-claiming-tasks",
               file_path: "~/.claude/skills/stride-claiming-tasks/SKILL.md",
               tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source: "claude_code_skills.available_skills[0].content (scroll down to find)",
+              content_source:
+                "claude_code_skills.available_skills[0].content (scroll down to find)",
               always_overwrite: "YES - always create/update to get latest version"
             },
             %{
               skill_name: "stride-completing-tasks",
               file_path: "~/.claude/skills/stride-completing-tasks/SKILL.md",
               tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source: "claude_code_skills.available_skills[1].content (scroll down to find)",
+              content_source:
+                "claude_code_skills.available_skills[1].content (scroll down to find)",
               always_overwrite: "YES - always create/update to get latest version"
             },
             %{
               skill_name: "stride-creating-tasks",
               file_path: "~/.claude/skills/stride-creating-tasks/SKILL.md",
               tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source: "claude_code_skills.available_skills[2].content (scroll down to find)",
+              content_source:
+                "claude_code_skills.available_skills[2].content (scroll down to find)",
               always_overwrite: "YES - always create/update to get latest version"
             },
             %{
               skill_name: "stride-creating-goals",
               file_path: "~/.claude/skills/stride-creating-goals/SKILL.md",
               tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source: "claude_code_skills.available_skills[3].content (scroll down to find)",
+              content_source:
+                "claude_code_skills.available_skills[3].content (scroll down to find)",
               always_overwrite: "YES - always create/update to get latest version"
             }
           ],
           verification: "Use Bash to verify all 4 files exist: ls -la ~/.claude/skills/*/SKILL.md"
         },
-
-        "STEP_8_NOTIFY_USER": %{
+        STEP_8_NOTIFY_USER: %{
           order: 8,
           action: "Notify user about API token",
-          message_to_user: "IMPORTANT: You must edit .stride_auth.md and replace {{YOUR_TOKEN_HERE}} with your actual API token. Get your token from #{base_url}",
-          why: "API token is secret and cannot be included in this response. User must provide it.",
+          message_to_user:
+            "IMPORTANT: You must edit .stride_auth.md and replace {{YOUR_TOKEN_HERE}} with your actual API token. Get your token from #{base_url}",
+          why:
+            "API token is secret and cannot be included in this response. User must provide it.",
           user_must_do: "Edit .stride_auth.md manually to add their token"
         },
-
-        "STEP_9_SETUP_COMPLETE": %{
+        STEP_9_SETUP_COMPLETE: %{
           order: 9,
           action: "Setup verification complete",
           next_steps: "After user adds their API token, you can proceed to use the API",
-          now_you_can: "Read the rest of this onboarding response to understand workflows and task creation"
+          now_you_can:
+            "Read the rest of this onboarding response to understand workflows and task creation"
         }
       },
-
-      "SETUP_COMPLETION_CONFIRMATION": %{
-        "BEFORE_PROCEEDING_VERIFY": "You have completed ALL 9 steps in MANDATORY_SETUP_CHECKLIST above",
-        "FILES_THAT_SHOULD_EXIST": [
+      SETUP_COMPLETION_CONFIRMATION: %{
+        BEFORE_PROCEEDING_VERIFY:
+          "You have completed ALL 9 steps in MANDATORY_SETUP_CHECKLIST above",
+        FILES_THAT_SHOULD_EXIST: [
           ".stride_auth.md (with API token placeholder)",
           ".stride.md (with hook definitions)",
           ".gitignore (containing .stride_auth.md)",
@@ -145,9 +152,9 @@ defmodule KanbanWeb.API.AgentJSON do
           "~/.claude/skills/stride-creating-tasks/SKILL.md (Claude Code only)",
           "~/.claude/skills/stride-creating-goals/SKILL.md (Claude Code only)"
         ],
-        "USER_ACTION_REQUIRED": "User must edit .stride_auth.md to add their API token before you can use the API"
+        USER_ACTION_REQUIRED:
+          "User must edit .stride_auth.md to add their API token before you can use the API"
       },
-
       version: "1.0",
       api_base_url: base_url,
       overview: %{
@@ -299,7 +306,8 @@ defmodule KanbanWeb.API.AgentJSON do
             name: "stride-claiming-tasks",
             description:
               "Use when you want to claim a task from Stride, before making any API calls to /api/tasks/claim. After successful claiming, immediately begin implementation.",
-            when_to_use: "Before calling POST /api/tasks/claim to reserve a task for implementation",
+            when_to_use:
+              "Before calling POST /api/tasks/claim to reserve a task for implementation",
             file_path: "~/.claude/skills/stride-claiming-tasks/SKILL.md",
             content: """
             ---
@@ -1925,9 +1933,9 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           windsurf: %{
             file_path: ".windsurfrules",
-            description: "Windsurf Cascade rules (hierarchical, cascades from parent directories)",
-            download_url:
-              "#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
+            description:
+              "Windsurf Cascade rules (hierarchical, cascades from parent directories)",
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
             installation_unix:
               "curl -o .windsurfrules #{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
             installation_windows:
@@ -1936,9 +1944,9 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           continue: %{
             file_path: ".continue/config.json",
-            description: "Continue.dev configuration (project-scoped JSON with context providers)",
-            download_url:
-              "#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+            description:
+              "Continue.dev configuration (project-scoped JSON with context providers)",
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
             installation_unix:
               "mkdir -p .continue && curl -o .continue/config.json #{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
             installation_windows:

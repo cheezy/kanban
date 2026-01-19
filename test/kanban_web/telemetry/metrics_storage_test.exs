@@ -6,7 +6,8 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
 
   describe "format_label/1" do
     test "formats list of atoms as dot-separated string" do
-      assert MetricsStorage.__format_label__([:phoenix, :router, :dispatch]) == "phoenix.router.dispatch"
+      assert MetricsStorage.__format_label__([:phoenix, :router, :dispatch]) ==
+               "phoenix.router.dispatch"
     end
 
     test "formats list with mixed types" do
@@ -365,10 +366,11 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       measurement = 42.5
       metadata = %{key: "value"}
 
-      {:noreply, state} = MetricsStorage.handle_info(
-        {:telemetry_event, metric_name, measurement, metadata},
-        %{metrics: []}
-      )
+      {:noreply, state} =
+        MetricsStorage.handle_info(
+          {:telemetry_event, metric_name, measurement, metadata},
+          %{metrics: []}
+        )
 
       assert state == %{metrics: []}
 
@@ -390,6 +392,7 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
     test "sanitizes metadata when storing event" do
       metric_name = [:test, :sanitize]
       measurement = 10.0
+
       metadata = %{
         string: "value",
         atom: :test,
@@ -412,11 +415,11 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
         |> Repo.one()
 
       assert result.metadata == %{
-        "string" => "value",
-        "atom" => "test",
-        "number" => 42,
-        "datetime" => "2024-01-15T12:00:00Z"
-      }
+               "string" => "value",
+               "atom" => "test",
+               "number" => 42,
+               "datetime" => "2024-01-15T12:00:00Z"
+             }
     end
   end
 end

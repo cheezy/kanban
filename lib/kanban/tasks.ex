@@ -187,7 +187,9 @@ defmodule Kanban.Tasks do
 
         if task.type == :goal do
           task
-          |> Repo.preload(children: from(t in Task, order_by: [asc: t.position], preload: [:column]))
+          |> Repo.preload(
+            children: from(t in Task, order_by: [asc: t.position], preload: [:column])
+          )
         else
           task
         end
