@@ -31,6 +31,86 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.19.1] - 2026-01-19</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Fixed
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Task Priority Selection in <code>/api/tasks/next</code> Endpoint
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Corrected Priority Sorting for Task Claiming</strong>
+                - Fixed critical bug where the <code>/api/tasks/next</code> endpoint was selecting lower-priority tasks instead of higher-priority tasks:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>Impact</strong>: Tasks are now correctly selected in priority order: critical → high → medium → low</li>
+                <li><strong>Secondary Sort</strong>: Position (ascending) is used as tiebreaker when priorities are equal, ensuring tasks higher in the Ready column (lower position number) are selected first</li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Review Queue Section Visibility in Task Forms
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Fixed Review Fields Not Appearing for Tasks in Review</strong>
+                - Resolved issue where review status and review notes fields were hidden when tasks with <code>needs_review=true</code> entered the Review column:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>Root Cause</strong>: Visibility condition only checked if <code>review_status</code> field had a value, but newly moved tasks to Review column had <code>nil</code> review_status</li>
+                <li><strong>Impact</strong>: Users can now properly review and approve/reject tasks that enter the Review column</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Improved
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                AI Agent Onboarding Documentation
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Enhanced Getting Started Guide</strong>
+                - Improved clarity in <code>docs/GETTING-STARTED-WITH-AI.md</code> for AI agent onboarding:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>Updated Instructions</strong>: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies</li>
+                <li><strong>Multi-Agent Support</strong>: Added explicit mention of agent configuration setup and reference to Multi-Agent Instructions guide</li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Claude Code Skills for Automatic Hook Execution
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4">
+                <strong>Updated Hook Execution Instructions</strong>
+                - Modified all four Claude Code Skills (<code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>) in the onboarding endpoint:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>Automatic Execution</strong>: Added explicit instructions to execute hooks automatically without prompting the user</li>
+                <li><strong>Impact</strong>: Eliminates unnecessary user prompts during task claiming and completion, streamlining the agent workflow</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.19.0] - 2026-01-19</h2>
 
           <div class="mb-8">
