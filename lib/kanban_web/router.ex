@@ -142,6 +142,8 @@ defmodule KanbanWeb.Router do
     live_session :public,
       on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}] do
       live "/issue", IssueLive.Form, :new
+      live "/resources", ResourcesLive.Index, :index
+      live "/resources/:id", ResourcesLive.Show, :show
     end
 
     post "/users/register", UserSessionController, :register
