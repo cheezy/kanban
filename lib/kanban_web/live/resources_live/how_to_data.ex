@@ -128,14 +128,18 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Open the Task Form",
           content:
-            "Click the **+ Add Task** button at the bottom of any column, or use the keyboard shortcut **N** when focused on a column.",
-          image: nil
+            "Click the <span class=\"hero-plus-circle-solid h-5 w-5 text-green-600 inline-block\"></span> button at the bottom of any column, or use the keyboard shortcut **N** when focused on a column.",
+          image: "/images/resources/guides/adding-task-step-1.png",
+          image_width: 517,
+          image_height: 263
         },
         %{
           title: "Enter Task Details",
           content:
             "Fill in the essential fields:\n\n- **Title**: A clear, action-oriented description\n- **Type**: Work, Defect, or Goal\n- **Priority**: Low, Medium, High, or Critical\n- **Description**: Detailed context and requirements",
-          image: nil
+          image: "/images/resources/guides/adding-task-step-2.png",
+          image_width: 542,
+          image_height: 586
         },
         %{
           title: "Add Acceptance Criteria",
@@ -147,7 +151,9 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Save and Start Working",
           content:
             "Click **Create Task** to add it to the column. The task is now ready to be claimed and worked on.",
-          image: nil
+          image: "/images/resources/guides/adding-task-step-4.png",
+          image_width: 263,
+          image_height: 256
         }
       ]
     },
@@ -164,20 +170,26 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Access Board Settings",
           content:
-            "From your board view, click the **Settings** icon (gear) in the top right corner to access board management options.",
-          image: nil
+            "From your board view, click the **Edit board** button in the top right corner to access board management options.",
+          image: "/images/resources/guides/inviting-members-step-1.png.placeholder.svg",
+          image_width: 1280,
+          image_height: 720
         },
         %{
           title: "Invite by Email",
           content:
-            "Enter the email address of the person you want to invite. They'll receive an email with a link to join your board.",
-          image: nil
+            "In the board settings, locate the **Board Users** section. Enter the email address of the person you want to invite and click **Add User**. They'll be added to the board immediately if they have an account, or you can share the board link with them.",
+          image: "/images/resources/guides/inviting-members-step-2.png.placeholder.svg",
+          image_width: 1280,
+          image_height: 800
         },
         %{
-          title: "Set Access Level",
+          title: "Manage Access Levels",
           content:
-            "Choose the appropriate permission level:\n\n- **Read Only**: Can view but not modify\n- **Can Edit**: Can create and edit tasks\n- **Owner**: Full control including settings",
-          image: nil
+            "Once users are added to your board, you can see them listed in the Board Users section. Board owners have full control including the ability to edit settings and invite others. All board members can create and edit tasks by default.",
+          image: "/images/resources/guides/inviting-members-step-3.png.placeholder.svg",
+          image_width: 1280,
+          image_height: 720
         }
       ]
     },
