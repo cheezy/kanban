@@ -215,7 +215,9 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Create .stride.md",
           content:
             "Create a `.stride.md` file in your project root with hook definitions. This file is typically created when an AI agent calls the onboarding endpoing and it defines the automation steps that AI agents will execute:\n\n```markdown\n## before_doing\n```bash\ngit pull origin main\nmix deps.get\n```\n\n## after_doing\n```bash\nmix test\nmix credo --strict\n```\n```\n\n**Note:** These hooks only run when an AI agent interacts with tasks on an AI-Optimized board.",
-          image: nil
+          image: "/images/resources/guides/hooks-step-2.png",
+          image_width: 760,
+          image_height: 828
         },
         %{
           title: "Hook Environment Variables",
