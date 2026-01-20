@@ -220,6 +220,14 @@ defmodule KanbanWeb.BoardLive.Show do
          |> stream(:columns, columns, reset: true)
          |> load_tasks_for_columns(columns)}
 
+      {:error, :has_dependents} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Cannot delete task: other tasks depend on it. Remove dependencies first.")
+         )}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
     end
