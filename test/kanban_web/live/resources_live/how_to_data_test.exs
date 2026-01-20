@@ -289,7 +289,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     test "inviting-team-members guide has complete content" do
       {:ok, guide} = HowToData.get_how_to("inviting-team-members")
 
-      assert guide.title == "Inviting Team Members"
+      assert guide.title == "Adding Team Members to Your Board"
       assert "getting-started" in guide.tags
       assert "beginner" in guide.tags
       assert "collaboration" in guide.tags

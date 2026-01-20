@@ -159,8 +159,9 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     },
     %{
       id: "inviting-team-members",
-      title: "Inviting Team Members",
-      description: "Learn how to invite collaborators and manage board access permissions.",
+      title: "Adding Team Members to Your Board",
+      description:
+        "Learn how to add collaborators to your board and set their access permissions.",
       tags: ["getting-started", "beginner", "collaboration"],
       content_type: "guide",
       reading_time: 2,
@@ -170,26 +171,26 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Access Board Settings",
           content:
-            "From your board view, click the **Edit board** button in the top right corner to access board management options.",
-          image: "/images/resources/guides/inviting-members-step-1.png.placeholder.svg",
-          image_width: 1280,
-          image_height: 720
+            "From your board view, click the **Edit board** button in the top right corner to access board management options.\n\n**Important:** Users must already have a Stride account to be added to your board. Team members need to register at Stride before you can add them as collaborators.",
+          image: "/images/resources/guides/inviting-members-step-1.png",
+          image_width: 1387,
+          image_height: 304
         },
         %{
-          title: "Invite by Email",
+          title: "Search for Users",
           content:
-            "In the board settings, locate the **Board Users** section. Enter the email address of the person you want to invite and click **Add User**. They'll be added to the board immediately if they have an account, or you can share the board link with them.",
-          image: "/images/resources/guides/inviting-members-step-2.png.placeholder.svg",
-          image_width: 1280,
-          image_height: 800
+            "In the board settings form, locate the **Board Users** section. Use the search field to find registered Stride users by their email address or name. Select the user from the search results.",
+          image: "/images/resources/guides/inviting-members-step-2.png",
+          image_width: 603,
+          image_height: 369
         },
         %{
-          title: "Manage Access Levels",
+          title: "Set Permission Level",
           content:
-            "Once users are added to your board, you can see them listed in the Board Users section. Board owners have full control including the ability to edit settings and invite others. All board members can create and edit tasks by default.",
-          image: "/images/resources/guides/inviting-members-step-3.png.placeholder.svg",
-          image_width: 1280,
-          image_height: 720
+            "After selecting a user, choose their permission level:\n\n- **Can View**: Read-only access to view tasks and board\n- **Can Edit**: Can create, edit, and manage tasks\n- **Owner**: Full control including board settings and user management\n\nClick **Add User** to complete the process. The user will immediately have access to your board.",
+          image: "/images/resources/guides/inviting-members-step-3.png",
+          image_width: 603,
+          image_height: 298
         }
       ]
     },
