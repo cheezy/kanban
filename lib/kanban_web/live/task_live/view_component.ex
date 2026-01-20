@@ -5,25 +5,16 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
-    case Tasks.get_task_for_view(task_id) do
-      nil ->
-        {:ok,
-         socket
-         |> assign(assigns)
-         |> assign(:task, nil)
-         |> assign(:board_id, Map.get(assigns, :board_id))
-         |> assign(:can_modify, Map.get(assigns, :can_modify, false))
-         |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+    task = Tasks.get_task_for_view(task_id)
 
-      task ->
-        {:ok,
-         socket
-         |> assign(assigns)
-         |> assign(:task, task)
-         |> assign(:board_id, Map.get(assigns, :board_id))
-         |> assign(:can_modify, Map.get(assigns, :can_modify, false))
-         |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
-    end
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:task, task)
+     |> assign(:board_id, Map.get(assigns, :board_id))
+     |> assign(:ai_optimized_board, Map.get(assigns, :ai_optimized_board, false))
+     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
+     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
   end
 
   defp field_visible?(field_visibility, field_name) do
@@ -194,18 +185,20 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             </p>
           </div>
 
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Needs Review")}
-            </h4>
-            <p class="text-base-content">
-              <%= if @task.needs_review do %>
-                {gettext("Yes")}
-              <% else %>
-                {gettext("No")}
-              <% end %>
-            </p>
-          </div>
+          <%= if @ai_optimized_board do %>
+            <div>
+              <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+                {gettext("Needs Review")}
+              </h4>
+              <p class="text-base-content">
+                <%= if @task.needs_review do %>
+                  {gettext("Yes")}
+                <% else %>
+                  {gettext("No")}
+                <% end %>
+              </p>
+            </div>
+          <% end %>
 
           <%= if @task.estimated_files do %>
             <div>
