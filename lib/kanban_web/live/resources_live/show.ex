@@ -41,12 +41,13 @@ defmodule KanbanWeb.ResourcesLive.Show do
 
   @doc """
   Renders markdown content to HTML.
-  Supports basic formatting: **bold**, `code`, and newlines.
+  Supports basic formatting: **bold**, `code`, links, and newlines.
   """
   def render_markdown(content) when is_binary(content) do
     content
     |> convert_bold()
     |> convert_inline_code()
+    |> convert_links()
     |> convert_code_blocks()
     |> convert_lists()
     |> convert_paragraphs()
@@ -63,6 +64,14 @@ defmodule KanbanWeb.ResourcesLive.Show do
       content,
       ~r/`([^`]+)`/,
       "<code class=\"px-1.5 py-0.5 rounded bg-base-200 text-sm font-mono\">\\1</code>"
+    )
+  end
+
+  defp convert_links(content) do
+    String.replace(
+      content,
+      ~r/\[([^\]]+)\]\(([^)]+)\)/,
+      "<a href=\"\\2\" class=\"text-blue-600 dark:text-blue-400 hover:underline\" target=\"_blank\" rel=\"noopener noreferrer\">\\1</a>"
     )
   end
 

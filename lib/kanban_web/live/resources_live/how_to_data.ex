@@ -198,8 +198,8 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
       id: "setting-up-hooks",
       title: "Setting Up Hook Execution",
       description:
-        "Configure client-side hooks for automated workflows when claiming and completing tasks.",
-      tags: ["developer", "hooks", "automation"],
+        "Configure client-side hooks for automated workflows when AI agents claim and complete tasks.",
+      tags: ["developer", "hooks", "automation", "ai-agents"],
       content_type: "tutorial",
       reading_time: 8,
       thumbnail: "/images/resources/hooks-setup.png",
@@ -208,25 +208,31 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Understanding Hooks",
           content:
-            "Hooks are shell commands that execute on the agent's machine at specific points in the task lifecycle:\n\n- **before_doing**: Runs before claiming (e.g., `git pull`)\n- **after_doing**: Runs after completing work (e.g., `mix test`)\n- **before_review**: Runs when entering review (e.g., `gh pr create`)\n- **after_review**: Runs after approval (e.g., `git push`)",
+            "**Important:** Hooks are designed exclusively for AI-Optimized boards working with AI agents. They do not execute for regular boards or human users.\n\nHooks are shell commands that execute on the agent's machine at specific points in the task lifecycle:\n\n- **before_doing**: Runs before the agent claims a task (e.g., `git pull`)\n- **after_doing**: Runs after the agent completes work (e.g., `mix test`)\n- **before_review**: Runs when the agent submits for review (e.g., `gh pr create`)\n- **after_review**: Runs after human approval (e.g., `git push`)",
           image: nil
         },
         %{
           title: "Create .stride.md",
           content:
-            "Create a `.stride.md` file in your project root with hook definitions:\n\n```markdown\n## before_doing\n```bash\ngit pull origin main\nmix deps.get\n```\n\n## after_doing\n```bash\nmix test\nmix credo --strict\n```\n```",
+            "Create a `.stride.md` file in your project root with hook definitions. This file is typically created when an AI agent calls the onboarding endpoing and it defines the automation steps that AI agents will execute:\n\n```markdown\n## before_doing\n```bash\ngit pull origin main\nmix deps.get\n```\n\n## after_doing\n```bash\nmix test\nmix credo --strict\n```\n```\n\n**Note:** These hooks only run when an AI agent interacts with tasks on an AI-Optimized board.",
           image: nil
         },
         %{
           title: "Hook Environment Variables",
           content:
-            "Hooks receive environment variables with task context:\n\n- `TASK_ID`, `TASK_IDENTIFIER`, `TASK_TITLE`\n- `TASK_STATUS`, `TASK_COMPLEXITY`, `TASK_PRIORITY`\n- `BOARD_NAME`, `COLUMN_NAME`, `AGENT_NAME`",
+            "When hooks execute, AI agents receive environment variables with task context:\n\n- `TASK_ID`, `TASK_IDENTIFIER`, `TASK_TITLE`\n- `TASK_STATUS`, `TASK_COMPLEXITY`, `TASK_PRIORITY`\n- `BOARD_NAME`, `COLUMN_NAME`, `AGENT_NAME`\n\nThese variables allow hooks to customize behavior based on the specific task and board context.",
           image: nil
         },
         %{
-          title: "Blocking vs Non-Blocking",
+          title: "Hook Execution Requirements",
           content:
-            "**Blocking hooks** (before_doing, after_doing) must succeed for the action to proceed. If they fail, fix the issue before retrying.\n\n**Non-blocking hooks** (before_review, after_review) log errors but allow the workflow to continue.",
+            "**All four hooks are blocking** - they must succeed for the agent to proceed:\n\n- **before_doing** must succeed before the agent can claim a task\n- **after_doing** must succeed before the agent can mark the task complete\n- **before_review** must succeed before the task enters the review queue\n- **after_review** must succeed before the task is marked as done\n\nIf any hook fails (exits with non-zero code), the agent must fix the issue and retry. Failed hooks prevent the workflow from advancing, ensuring quality gates are enforced.\n\n**Remember:** Hooks are for AI agent automation only. Regular board users won't trigger hook execution.",
+          image: nil
+        },
+        %{
+          title: "Learn More",
+          content:
+            "For comprehensive details on hook execution, including platform-specific examples (Unix/Linux, Windows, macOS), advanced patterns, debugging tips, and best practices, see the complete [Agent Hook Execution Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md).\n\nThis guide covers:\n- Platform-specific hook implementations\n- Complete workflow examples\n- Error handling strategies\n- Security best practices\n- Debugging and troubleshooting",
           image: nil
         }
       ]
