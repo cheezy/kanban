@@ -234,7 +234,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Learn More",
           content:
-            "For comprehensive details on hook execution, including platform-specific examples (Unix/Linux, Windows, macOS), advanced patterns, debugging tips, and best practices, see the complete [Agent Hook Execution Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md).\n\nThis guide covers:\n- Platform-specific hook implementations\n- Complete workflow examples\n- Error handling strategies\n- Security best practices\n- Debugging and troubleshooting",
+            "For comprehensive details on hook execution, including platform-specific examples (Unix/Linux, Windows, macOS), advanced patterns, debugging tips, and best practices, see the complete [Agent Hook Execution Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md).\n\nThis guide covers:\n\n- Platform-specific hook implementations\n- Complete workflow examples\n- Error handling strategies\n- Security best practices\n- Debugging and troubleshooting",
           image: nil
         }
       ]
@@ -302,31 +302,61 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "The Task Lifecycle",
           content:
-            "Tasks flow through these states:\n\n1. **Open** → Available for claiming\n2. **In Progress** → Claimed by an agent\n3. **Review** → Awaiting human approval (if needed)\n4. **Done** → Completed",
+            "Tasks flow through these states:\n\n1. **Open** → Available for claiming\n2. **In Progress** → Claimed by an agent\n3. **Review** → Awaiting human approval (if needed)\n4. **Done** → Completed\n\nAgents automatically discover, claim, and complete tasks through the Stride API.",
           image: nil
         },
         %{
           title: "Finding Available Tasks",
           content:
-            "Use `GET /api/tasks/next` to find the next available task:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" \\\n  \"$API_URL/api/tasks/next\"\n```\n\nThe API returns tasks respecting dependencies and priorities.",
+            "The agent calls `GET /api/tasks/next` to find the next available task. Stride uses sophisticated filtering to determine which task is next:\n\n**1. Column Filter** - Only tasks in the **Ready** column\n\n**2. Task Type** - Only **work** and **defect** tasks (goals are containers, not claimable)\n\n**3. Status Filter** - Tasks that are:\n\n- `open` (never claimed), OR\n- `in_progress` with expired claims (60 minutes timeout)\n\n**4. Capability Matching** - Agent must have ALL required capabilities, OR task requires none\n\n**5. Dependency Check** - ALL dependencies must be completed (in Done column)\n\n**6. Key File Conflicts** - Task cannot modify files currently being worked on in Doing or Review columns\n\n**7. Priority Ordering** - Sorted by priority (critical → high → medium → low)\n\n**8. Position Ordering** - Within same priority, sorted by position (manual ordering)\n\nThe first task passing all criteria is returned.",
+          image: nil
+        },
+        %{
+          title: "Before Claiming: Execute before_doing Hook",
+          content:
+            "**CRITICAL:** Before claiming a task, the agent must execute the `before_doing` hook (blocking, 60s timeout). This hook typically:\n\n- Pulls latest code (`git pull`)\n- Sets up the workspace\n- Installs dependencies\n\nThe hook must succeed (exit code 0) to proceed. The agent captures the exit code, output, and duration.",
           image: nil
         },
         %{
           title: "Claiming a Task",
           content:
-            "Execute the before_doing hook first, then claim:\n\n```bash\ncurl -X POST -H \"Authorization: Bearer $TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"identifier\": \"W1\", \"agent_name\": \"Claude\", \n       \"before_doing_result\": {\"exit_code\": 0, ...}}' \\\n  \"$API_URL/api/tasks/claim\"\n```",
+            "The agent calls `POST /api/tasks/claim` with:\n\n- Task identifier (e.g., \"W42\")\n- Agent name\n- **`before_doing_result`** containing the hook execution results\n\nThe API validates the hook succeeded and moves the task to the **In Progress** column. The agent can now work on the task.",
+          image: nil
+        },
+        %{
+          title: "Working on the Task",
+          content:
+            "The agent performs the actual implementation work:\n\n- Write code and implement features\n- Fix bugs and refactor\n- Write tests\n- Update documentation\n\nOnce the work is complete, the agent prepares to mark the task complete.",
+          image: nil
+        },
+        %{
+          title: "Before Completing: Execute Two Hooks",
+          content:
+            "**CRITICAL:** Before calling the complete endpoint, the agent must execute TWO hooks in order:\n\n**1. after_doing hook** (blocking, 120s timeout)\n\n- Run tests (`mix test`)\n- Lint code (`mix credo`)\n- Build project\n\n**2. before_review hook** (blocking, 60s timeout)\n\n- Create pull request\n- Generate documentation\n\nBoth hooks must succeed (exit code 0). If either fails, the agent must fix the issues before proceeding.",
           image: nil
         },
         %{
           title: "Completing a Task",
           content:
-            "Execute both after_doing and before_review hooks, then complete:\n\n```bash\ncurl -X PATCH -H \"Authorization: Bearer $TOKEN\" \\\n  -d '{\"after_doing_result\": {...}, \n       \"before_review_result\": {...}, \n       \"completion_notes\": \"...\"}' \\\n  \"$API_URL/api/tasks/123/complete\"\n```",
+            "The agent calls `PATCH /api/tasks/:id/complete` with:\n\n- Agent name\n- Time spent (minutes)\n- Completion notes\n- **`after_doing_result`** from step 6\n- **`before_review_result`** from step 6\n\nThe API validates both hooks succeeded. The task moves to:\n- **Review** column if `needs_review=true`\n- **Done** column if `needs_review=false`",
           image: nil
         },
         %{
-          title: "Review Flow",
+          title: "Review Flow (if needs_review=true)",
           content:
-            "If `needs_review` is true, the task enters Review status. A human reviewer approves or requests changes. Once approved, execute the after_review hook.",
+            "If the task requires review, the agent **STOPS and WAITS**:\n\n1. Task enters Review column\n2. Human reviewer examines the work\n3. Reviewer sets status: **approved**, **changes_requested**, or **rejected**\n\nThe agent proceeds to the next step only when notified of approval. If changes are requested, the agent returns to step 5 to make updates.",
+          image: nil
+        },
+        %{
+          title: "After Review: Execute after_review Hook",
+          content:
+            "**After approval** (or immediately if `needs_review=false`), the agent executes the `after_review` hook (blocking, 60s timeout):\n\n- Deploy to production\n- Merge pull request\n- Notify stakeholders\n\nThe hook must succeed (exit code 0). The agent then calls `PATCH /api/tasks/:id/mark_reviewed` with the hook results to finalize completion.",
+          image: nil
+        },
+        %{
+          title: "Dependencies Automatically Unblock",
+          content:
+            "When a task reaches the **Done** column, Stride automatically:\n\n- Marks the task as completed\n- Unblocks dependent tasks\n- Makes the next tasks available for claiming\n\nAgents can immediately claim the newly available tasks and continue the workflow.",
           image: nil
         }
       ]

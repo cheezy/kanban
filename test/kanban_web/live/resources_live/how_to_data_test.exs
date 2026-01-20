@@ -164,11 +164,11 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert guide.content_type == "guide"
       assert length(guide.steps) >= 4
 
-      # Verify it has code examples
+      # Verify it has key workflow content
       all_content = Enum.map_join(guide.steps, "\n", & &1.content)
-      assert String.contains?(all_content, "```")
       assert String.contains?(all_content, "claim")
       assert String.contains?(all_content, "complete")
+      assert String.contains?(all_content, "hook")
     end
 
     test "debugging-hooks guide has complete content" do
