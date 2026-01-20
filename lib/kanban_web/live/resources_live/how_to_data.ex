@@ -214,7 +214,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Create .stride.md",
           content:
-            "Create a `.stride.md` file in your project root with hook definitions. This file is typically created when an AI agent calls the onboarding endpoing and it defines the automation steps that AI agents will execute:\n\n```markdown\n## before_doing\n```bash\ngit pull origin main\nmix deps.get\n```\n\n## after_doing\n```bash\nmix test\nmix credo --strict\n```\n```\n\n**Note:** These hooks only run when an AI agent interacts with tasks on an AI-Optimized board.",
+            "Create a `.stride.md` file in your project root with hook definitions. This file is typically created when an AI agent calls the onboarding endpoint and it defines the automation steps that AI agents will execute:",
           image: "/images/resources/guides/hooks-step-2.png",
           image_width: 760,
           image_height: 828
@@ -253,19 +253,31 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Generate an API Token",
           content:
-            "Navigate to your board settings and click **API Tokens**. Click **Generate New Token** and give it a descriptive name like \"CI/CD Pipeline\" or \"Development\".",
-          image: nil
+            "Navigate to your board settings and click **API Tokens**. Complete the fields with paying special attention to the Agent Capabilities. More information about Agent Capabilities can be found at [Agent Capabilities Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-CAPABILITIES.md).",
+          image: "/images/resources/guides/api-auth-step-1.png",
+          image_width: 636,
+          image_height: 623
         },
         %{
-          title: "Create .stride_auth.md",
+          title: "Complete Token Generation",
           content:
-            "Create a `.stride_auth.md` file (add to `.gitignore`!):\n\n```markdown\n- **API URL:** `https://www.stridelikeaboss.com`\n- **API Token:** `stride_dev_your_token_here`\n- **User Email:** `your-email@example.com`\n```",
-          image: nil
+            "Click **Generate Token** and **Copy** your token. You will not be able to see the token again so it is important to move directly to the next step.",
+          image: "/images/resources/guides/api-auth-step-2.png",
+          image_width: 636,
+          image_height: 273
+        },
+        %{
+          title: "Create .stride_auth.md.",
+          content:
+            "Create a `.stride_auth.md` file (add to `.gitignore`!). This file is typically created when an AI agent calls the onboarding endpoint. Paste the API token from the previous step into this file:",
+          image: "/images/resources/guides/api-auth-step-3.png",
+          image_width: 579,
+          image_height: 211
         },
         %{
           title: "Using the Token",
           content:
-            "Include the token in API requests:\n\n```bash\ncurl -H \"Authorization: Bearer $STRIDE_API_TOKEN\" \\\n  $STRIDE_API_URL/api/tasks/next\n```",
+            "The AI agent will automatically use this token every time it calls Stride. There is nothing you need to do here.",
           image: nil
         },
         %{

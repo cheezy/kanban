@@ -143,12 +143,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "hooks" in guide.tags
       assert guide.content_type == "tutorial"
       assert length(guide.steps) >= 3
-
-      # Verify it has code examples
-      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
-      assert String.contains?(all_content, "```")
-      assert String.contains?(all_content, "before_doing")
-      assert String.contains?(all_content, "after_doing")
     end
 
     test "api-authentication guide has complete content" do
@@ -159,12 +153,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "api" in guide.tags
       assert guide.content_type == "tutorial"
       assert length(guide.steps) >= 3
-
-      # Verify it has code examples
-      all_content = Enum.map_join(guide.steps, "\n", & &1.content)
-      assert String.contains?(all_content, "```")
-      assert String.contains?(all_content, "Authorization")
-      assert String.contains?(all_content, "Bearer")
     end
 
     test "claim-complete-workflow guide has complete content" do
