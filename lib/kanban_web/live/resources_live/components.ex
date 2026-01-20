@@ -189,7 +189,29 @@ defmodule KanbanWeb.ResourcesLive.Components do
               <div class="prose prose-base dark:prose-invert max-w-prose text-base-content/80 leading-relaxed">
                 {Phoenix.HTML.raw(@render_markdown_fn.(step.content))}
               </div>
-              <!-- Step Image (if present) -->
+              <!-- Step Images (if present) -->
+              <%= if step[:images] do %>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <%= for img <- step.images do %>
+                    <div>
+                      <img
+                        src={img.url}
+                        alt={img[:alt] || "Step #{index}: #{step.title}"}
+                        width={img[:width] || 640}
+                        height={img[:height] || 360}
+                        class="rounded-xl shadow-lg border border-base-300/50 max-w-full h-auto"
+                        loading="lazy"
+                      />
+                      <%= if String.ends_with?(img.url, ".svg") do %>
+                        <p class="text-xs text-base-content/50 mt-2 italic text-center">
+                          Placeholder - {img[:width] || 640} × {img[:height] || 360}px
+                        </p>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+              <!-- Step Image (single, if present) -->
               <%= if step[:image] do %>
                 <div class="mt-6">
                   <img

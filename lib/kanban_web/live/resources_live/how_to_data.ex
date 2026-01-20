@@ -71,26 +71,47 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "What Are Columns?",
           content:
-            "Columns represent stages in your workflow. Tasks move from left to right as they progress. Common patterns include **Ready → Doing → Review → Done** or **Backlog → In Progress → Testing → Complete**.",
-          image: nil
+            "Columns represent stages in your workflow. Tasks move from left to right as they progress through different stages toward completion. Stride offers two types of boards with different column configurations.",
         },
         %{
-          title: "Default AI-Optimized Columns",
+          title: "AI-Optimized Boards: Fixed Columns",
           content:
-            "AI-optimized boards come with four columns designed for agent workflows:\n\n- **Ready**: Tasks available for claiming\n- **Doing**: Tasks currently being worked on\n- **Review**: Tasks awaiting human review\n- **Done**: Completed tasks",
-          image: nil
+            "**AI-optimized boards** come with five pre-configured columns designed for AI agent workflows. These columns **cannot be added, removed, or renamed**:\n\n- **Backlog**: Tasks that are not yet ready to be worked on\n- **Ready**: Tasks available for AI agents to claim\n- **Doing**: Tasks currently being worked on\n- **Review**: Tasks awaiting human review\n- **Done**: Completed tasks\n\nThis fixed structure ensures consistency for AI agents working across multiple boards.",
+          image: "/images/resources/guides/understanding-columns-step-2.png",
+          image_width: 714,
+          image_height: 317
         },
         %{
-          title: "Adding Custom Columns",
+          title: "Custom Boards: Flexible Columns",
           content:
-            "Click **Add Column** to create a new column. Enter a name and choose its position in the workflow. You can drag columns to reorder them.",
-          image: nil
+            "**Non-AI optimized boards** give you complete flexibility to design your own workflow. You can:\n\n- Create any number of columns with custom names\n- Add new columns by clicking **Add Column**\n- Reorder columns by dragging them\n- Rename or delete existing columns\n- Design workflows like **Backlog → In Progress → Testing → Complete** or any pattern that fits your team's needs",
+          image: "/images/resources/guides/understanding-columns-step-3.png",
+          image_width: 730,
+          image_height: 180
         },
         %{
-          title: "Column Settings",
+          title: "Choosing the Right Board Type",
           content:
-            "Each column can be configured with WIP (Work In Progress) limits to prevent bottlenecks and keep work flowing smoothly.",
-          image: nil
+            "When creating a board, select:\n\n- **AI Optimized Board** if you'll be working with AI agents or want a standardized agent-friendly workflow\n- **Empty Board** if you need custom columns tailored to your team's specific process\n\nNote: You cannot convert between board types after creation, so choose carefully based on your workflow needs.",
+        },
+        %{
+          title: "Column Settings & WIP Limits",
+          content:
+            "Both board types support **WIP (Work In Progress) limits** for each column. WIP limits prevent bottlenecks by restricting how many tasks can be in a column at once, keeping work flowing smoothly through your workflow.",
+          images: [
+            %{
+              url: "/images/resources/guides/understanding-columns-step-5-1.png",
+              alt: "AI-Optimized Board column settings with WIP limit",
+              width: 602,
+              height: 340
+            },
+            %{
+              url: "/images/resources/guides/understanding-columns-step-5-2.png",
+              alt: "Custom Board column settings with WIP limit",
+              width: 234,
+              height: 77
+            }
+          ]
         }
       ]
     },
