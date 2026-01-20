@@ -24,28 +24,36 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
       created_at: ~D[2026-01-15],
       steps: [
         %{
-          title: "Navigate to the Boards Page",
+          title: "Access Your Boards Dashboard",
           content:
-            "After logging in, click on **My Boards** in the navigation bar to access your boards dashboard.",
-          image: nil
+            "After logging in, you'll automatically land on your **My Boards** dashboard. If you're navigating from elsewhere in the app, you can always return here by clicking **My Boards** in the navigation bar.",
+          image: "/images/resources/guides/board-creation-step-1.png",
+          image_width: 1160,
+          image_height: 74
         },
         %{
           title: "Click New Board",
           content:
             "Click the **New Board** button in the top right corner. You'll see two options: **New Empty Board** for a blank slate, or **New AI Optimized Board** which comes pre-configured with columns optimized for AI agent workflows.",
-          image: nil
+          image: "/images/resources/guides/board-creation-step-2.png",
+          image_width: 300,
+          image_height: 230
         },
         %{
           title: "Enter Board Details",
           content:
             "Give your board a descriptive name and optional description. The name should reflect the project or team that will use this board.",
-          image: nil
+          image: "/images/resources/guides/board-creation-step-3.png",
+          image_width: 714,
+          image_height: 405
         },
         %{
-          title: "Configure Your Board",
+          title: "Start Using Your Board",
           content:
-            "Your new board is ready! You can now add columns to organize your workflow and invite team members to collaborate.",
-          image: nil
+            "Your AI Optimized board is ready with pre-configured workflow columns (Backlog → Ready → Doing → Review → Done). To invite team members, click the **Edit Board** button and add collaborators in the board settings.",
+          image: "/images/resources/guides/board-creation-step-4.png",
+          image_width: 714,
+          image_height: 317
         }
       ]
     },

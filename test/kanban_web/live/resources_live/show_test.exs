@@ -34,7 +34,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
 
       html = render(view)
       assert html =~ "Creating Your First Board"
-      assert html =~ "Navigate to the Boards Page"
+      assert html =~ "Access Your Boards Dashboard"
     end
 
     test "assigns page_title from how_to title", %{conn: conn} do
@@ -110,19 +110,19 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       # Should have 4 steps (verify by checking step titles which are numbered)
       # The numbers are in div elements with the rounded-full class
       assert html =~ "rounded-full"
-      assert html =~ "Navigate to the Boards Page"
+      assert html =~ "Access Your Boards Dashboard"
       assert html =~ "Click New Board"
       assert html =~ "Enter Board Details"
-      assert html =~ "Configure Your Board"
+      assert html =~ "Start Using Your Board"
     end
 
     test "displays step titles", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/creating-your-first-board")
 
-      assert html =~ "Navigate to the Boards Page"
+      assert html =~ "Access Your Boards Dashboard"
       assert html =~ "Click New Board"
       assert html =~ "Enter Board Details"
-      assert html =~ "Configure Your Board"
+      assert html =~ "Start Using Your Board"
     end
 
     test "displays step content", %{conn: conn} do

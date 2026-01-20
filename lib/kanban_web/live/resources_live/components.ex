@@ -36,13 +36,8 @@ defmodule KanbanWeb.ResourcesLive.Components do
       class="group bg-base-100 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-base-300/50 hover:border-blue-300/50 overflow-hidden flex flex-col transform hover:-translate-y-1"
     >
       <!-- Thumbnail -->
-      <div class="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 relative overflow-hidden">
-        <div class="absolute inset-0 flex items-center justify-center">
-          <.icon
-            name={type_icon(@how_to.content_type)}
-            class="h-16 w-16 text-blue-500/30 dark:text-blue-400/30"
-          />
-        </div>
+      <div class="aspect-video relative overflow-hidden">
+        <.category_illustration tags={@how_to.tags} />
         <!-- Content Type Badge -->
         <div class="absolute top-3 right-3">
           <.content_type_badge type={@how_to.content_type} />
@@ -200,8 +195,16 @@ defmodule KanbanWeb.ResourcesLive.Components do
                   <img
                     src={step.image}
                     alt={"Step #{index}: #{step.title}"}
-                    class="rounded-xl shadow-lg border border-base-300/50 max-w-full"
+                    width={step[:image_width] || 1280}
+                    height={step[:image_height] || 720}
+                    class="rounded-xl shadow-lg border border-base-300/50 max-w-full h-auto"
+                    loading="lazy"
                   />
+                  <%= if String.ends_with?(step.image, ".svg") do %>
+                    <p class="text-xs text-base-content/50 mt-2 italic text-center">
+                      Placeholder image - Replace with actual screenshot ({step[:image_width] || 1280} × {step[:image_height] || 720}px)
+                    </p>
+                  <% end %>
                 </div>
               <% end %>
             </div>
@@ -377,6 +380,75 @@ defmodule KanbanWeb.ResourcesLive.Components do
               </div>
             </.link>
           <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a category-specific illustration with gradient background.
+
+  ## Attributes
+
+    * `:tags` - List of tags to determine the category
+  """
+  attr :tags, :list, required: true
+
+  def category_illustration(assigns) do
+    # Determine category from tags
+    category =
+      cond do
+        "getting-started" in assigns.tags -> :getting_started
+        "developer" in assigns.tags -> :developer
+        "non-developer" in assigns.tags -> :non_developer
+        "best-practices" in assigns.tags -> :best_practices
+        true -> :default
+      end
+
+    assigns = assign(assigns, :category, category)
+
+    ~H"""
+    <div class="absolute inset-0">
+      <!-- Category-specific gradient backgrounds -->
+      <div class={[
+        "absolute inset-0 transition-all",
+        @category == :getting_started && "bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30",
+        @category == :developer && "bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30",
+        @category == :non_developer && "bg-gradient-to-br from-orange-100 to-pink-100 dark:from-orange-900/30 dark:to-pink-900/30",
+        @category == :best_practices && "bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30",
+        @category == :default && "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30"
+      ]} />
+
+      <!-- Category-specific illustrations -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <!-- Getting Started: Rocket launch -->
+        <div :if={@category == :getting_started} class="relative">
+          <.icon name="hero-rocket-launch" class="h-20 w-20 text-green-500/40 dark:text-green-400/40" />
+          <.icon name="hero-sparkles" class="h-8 w-8 text-blue-500/30 dark:text-blue-400/30 absolute -top-2 -right-2" />
+        </div>
+
+        <!-- Developer: Code with terminal -->
+        <div :if={@category == :developer} class="relative">
+          <.icon name="hero-code-bracket-square" class="h-20 w-20 text-purple-500/40 dark:text-purple-400/40" />
+          <.icon name="hero-command-line" class="h-10 w-10 text-indigo-500/30 dark:text-indigo-400/30 absolute -bottom-1 -right-1" />
+        </div>
+
+        <!-- Non-Developer: People with AI -->
+        <div :if={@category == :non_developer} class="relative">
+          <.icon name="hero-users" class="h-20 w-20 text-orange-500/40 dark:text-orange-400/40" />
+          <.icon name="hero-cpu-chip" class="h-10 w-10 text-pink-500/30 dark:text-pink-400/30 absolute -top-1 -right-1" />
+        </div>
+
+        <!-- Best Practices: Star with checklist -->
+        <div :if={@category == :best_practices} class="relative">
+          <.icon name="hero-star" class="h-20 w-20 text-yellow-500/40 dark:text-yellow-400/40" />
+          <.icon name="hero-check-badge" class="h-10 w-10 text-amber-500/30 dark:text-amber-400/30 absolute -bottom-1 -right-1" />
+        </div>
+
+        <!-- Default: Book -->
+        <div :if={@category == :default} class="relative">
+          <.icon name="hero-book-open" class="h-20 w-20 text-blue-500/40 dark:text-blue-400/40" />
         </div>
       </div>
     </div>
