@@ -413,7 +413,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Start with a Clear Title",
           content:
-            "Your task title should describe **what** needs to be done in action-oriented language. Start with a verb like \"Add\", \"Create\", \"Fix\", or \"Update\".\n\n**Good examples:**\n- \"Add user authentication to the login page\"\n- \"Fix the broken image upload feature\"\n- \"Create a dashboard for viewing statistics\"\n\n**Avoid vague titles like:**\n- \"Work on login\" (too vague)\n- \"Bug\" (doesn't describe the problem)",
+            "Your task title should describe **what** needs to be done in action-oriented language. Start with a verb like \"Add\", \"Create\", \"Fix\", or \"Update\".\n\n**Good examples:**\n\n- \"Add user authentication to the login page\"\n- \"Fix the broken image upload feature\"\n- \"Create a dashboard for viewing statistics\"\n\n**Avoid vague titles like:**\n\n- \"Work on login\" (too vague)\n- \"Bug\" (doesn't describe the problem)",
           image: nil
         },
         %{
@@ -431,7 +431,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Choose the Right Priority and Complexity",
           content:
-            "Help the AI agent understand how to prioritize work:\n\n**Priority levels:**\n- **Critical**: Blocking issues, security problems\n- **High**: Important features, significant bugs\n- **Medium**: Normal feature work\n- **Low**: Nice-to-haves, minor improvements\n\n**Complexity:**\n- **Small**: Simple changes, under 2 hours\n- **Medium**: Moderate effort, 2-8 hours\n- **Large**: Significant work, 8+ hours",
+            "Help the AI agent understand how to prioritize work:\n\n**Priority levels:**\n\n- **Critical**: Blocking issues, security problems\n- **High**: Important features, significant bugs\n- **Medium**: Normal feature work\n- **Low**: Nice-to-haves, minor improvements\n\n**Complexity:**\n\n- **Small**: Simple changes, under 2 hours\n- **Medium**: Moderate effort, 2-8 hours\n- **Large**: Significant work, 8+ hours",
           image: nil
         }
       ]
@@ -487,7 +487,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "When to Review",
           content:
-            "Tasks that have **Needs Review** enabled will move to the Review column after completion. You'll be notified when work is ready for your review.\n\nReview is your chance to:\n- Verify the work meets requirements\n- Catch any issues before they're finalized\n- Provide feedback for improvement",
+            "Tasks that have **Needs Review** enabled will move to the Review column after completion. You'll be notified when work is ready for your review.\n\nReview is your chance to:\n\n- Verify the work meets requirements\n- Catch any issues before they're finalized\n- Provide feedback for improvement",
           image: nil
         },
         %{
@@ -525,7 +525,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Understanding Dependencies",
           content:
-            "Dependencies define the order tasks must be completed. If Task B depends on Task A, then Task A must be finished before Task B can start.\n\nThis prevents agents from:\n- Working on tasks before prerequisites are done\n- Creating merge conflicts from parallel changes\n- Building on incomplete foundations",
+            "Dependencies define the order tasks must be completed. If Task B depends on Task A, then Task A must be finished before Task B can start.\n\nThis prevents agents from:\n\n- Working on tasks before prerequisites are done\n- Creating merge conflicts from parallel changes\n- Building on incomplete foundations",
           image: nil
         },
         %{
@@ -543,7 +543,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Dependency Best Practices",
           content:
-            "- **Keep chains short**: Long dependency chains slow down work\n- **Avoid cycles**: A can't depend on B if B depends on A\n- **Group related work**: Use Goals to organize related tasks\n- **Review regularly**: Remove dependencies when no longer needed",
+            "Best practices:\n\n- **Keep chains short**: Long dependency chains slow down work\n- **Avoid cycles**: A can't depend on B if B depends on A\n- **Group related work**: Use Goals to organize related tasks\n- **Review regularly**: Remove dependencies when no longer needed",
           image: nil
         }
       ]
