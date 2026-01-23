@@ -25,7 +25,7 @@ defmodule KanbanWeb.BoardLive.Form do
       board_users = Boards.list_board_users(board)
 
       socket
-      |> assign(:page_title, gettext("Edit Board"))
+      |> assign(:page_title, "Stride - Task Management")
       |> assign(:board, board)
       |> assign(:board_users, board_users)
       |> assign(:field_visibility, board.field_visibility || %{})
@@ -41,7 +41,7 @@ defmodule KanbanWeb.BoardLive.Form do
     ai_optimized = Map.get(params, "ai_optimized") == "true"
 
     socket
-    |> assign(:page_title, gettext("New Board"))
+    |> assign(:page_title, "Stride - Task Management")
     |> assign(:board, %Board{})
     |> assign(:ai_optimized, ai_optimized)
     |> assign(:form, to_form(Boards.change_board(%Board{})))

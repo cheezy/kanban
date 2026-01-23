@@ -16,7 +16,7 @@ defmodule KanbanWeb.BoardLive.Index do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, gettext("Boards"))}
+    {:noreply, assign(socket, :page_title, "Stride - Task Management")}
   end
 
   @impl true

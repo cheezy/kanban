@@ -21,7 +21,7 @@
     </div>
 
     <.header>
-      {@page_title}
+      {if @live_action == :new, do: gettext("New Board"), else: gettext("Edit Board")}
       <:subtitle>{gettext("Use this form to manage board records in your database.")}</:subtitle>
     </.header>
 

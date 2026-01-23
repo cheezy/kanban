@@ -443,7 +443,7 @@
     <.live_component
       module={KanbanWeb.TaskLive.FormComponent}
       id={(@live_action == :new_task && :new) || "edit-#{@task.id}"}
-      title={@page_title}
+      title={(@live_action == :new_task && "New Task") || "Edit Task"}
       action={@live_action}
       board={@board}
       task={(@live_action == :edit_task && @task) || %Kanban.Tasks.Task{}}
