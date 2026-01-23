@@ -102,6 +102,51 @@ defmodule Kanban.BoardsTest do
         Boards.get_board!("#{board.id}abc", user)
       end
     end
+
+    test "non-member can access read-only board" do
+      owner = user_fixture()
+      non_member = user_fixture()
+      board = board_fixture(owner, %{name: "Public Board"})
+
+      # Make the board read-only
+      {:ok, board} = Boards.update_board(board, %{read_only: true})
+
+      # Non-member should be able to access it with user_access: nil
+      fetched_board = Boards.get_board!(board.id, non_member)
+      assert fetched_board.id == board.id
+      assert fetched_board.user_access == nil
+    end
+
+    test "non-member cannot access private board" do
+      owner = user_fixture()
+      non_member = user_fixture()
+      board = board_fixture(owner, %{name: "Private Board"})
+
+      # Board is private by default (read_only: false)
+      assert_raise Ecto.NoResultsError, fn ->
+        Boards.get_board!(board.id, non_member)
+      end
+    end
+
+    test "member gets their user_access regardless of read_only flag" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner, %{name: "Board"})
+
+      # Add member with read_only access
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only)
+
+      # Make board read-only
+      {:ok, board} = Boards.update_board(board, %{read_only: true})
+
+      # Member should get their actual access level
+      fetched_board = Boards.get_board!(board.id, member)
+      assert fetched_board.user_access == :read_only
+
+      # Owner should still be owner
+      owner_board = Boards.get_board!(board.id, owner)
+      assert owner_board.user_access == :owner
+    end
   end
 
   describe "create_board/2" do

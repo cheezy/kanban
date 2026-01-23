@@ -56,6 +56,9 @@ defmodule Kanban.Boards do
 
   Raises `Ecto.NoResultsError` if the Board does not exist or user doesn't have access.
 
+  For read-only boards (read_only: true), non-members can access the board with user_access: nil.
+  For private boards (read_only: false), only members can access.
+
   ## Examples
 
       iex> get_board!(123, user)
@@ -66,10 +69,26 @@ defmodule Kanban.Boards do
 
   """
   def get_board!(id, user) when is_integer(id) do
-    Board
-    |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
-    |> where([b, bu], b.id == ^id and bu.user_id == ^user.id)
-    |> Repo.one!()
+    query =
+      Board
+      |> join(:left, [b], bu in BoardUser, on: bu.board_id == b.id and bu.user_id == ^user.id)
+      |> where([b], b.id == ^id)
+      |> select([b, bu], %{b | user_access: bu.access})
+
+    case Repo.one(query) do
+      nil ->
+        raise Ecto.NoResultsError, queryable: Board
+
+      %Board{user_access: nil} = board ->
+        if board.read_only do
+          board
+        else
+          raise Ecto.NoResultsError, queryable: Board
+        end
+
+      board ->
+        board
+    end
   end
 
   def get_board!(id, user) when is_binary(id) do
