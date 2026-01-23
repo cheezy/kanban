@@ -118,6 +118,7 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/columns/new", BoardLive.Show, :new_column
       live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
       live "/boards/:id/columns/:column_id/tasks/new", BoardLive.Show, :new_task
+      live "/boards/:id/columns/:column_id/tasks/:task_id/edit", BoardLive.Show, :edit_task_in_column
       live "/boards/:id/tasks/:task_id/edit", BoardLive.Show, :edit_task
     end
 

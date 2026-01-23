@@ -110,6 +110,293 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "Show with new task" do
+    setup [:register_and_log_in_user]
+
+    test "navigating to new task displays new task form", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Should show the new task form
+      assert html =~ "New Task"
+    end
+
+    test "navigating to new task loads columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column_fixture(board, %{name: "Column 2"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/new")
+
+      # Verify columns are displayed
+      html = render(show_live)
+      assert html =~ "Column 1"
+      assert html =~ "Column 2"
+    end
+
+    test "navigating to new task shows board name", %{conn: conn, user: user} do
+      board = board_fixture(user, %{name: "My Test Board"})
+      column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Board name should be visible
+      assert html =~ "My Test Board"
+    end
+
+    test "new task from board with multiple columns shows all columns", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column_fixture(board, %{name: "In Progress"})
+      column_fixture(board, %{name: "Done"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/new")
+
+      # All columns should be visible
+      assert html =~ "To Do"
+      assert html =~ "In Progress"
+      assert html =~ "Done"
+    end
+
+    test "new task preserves existing tasks in columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Existing tasks should be visible in the column
+      assert html =~ "Task 1"
+      assert html =~ "Task 2"
+    end
+
+    test "owner can access new task page", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Should successfully load
+      assert html =~ "New Task"
+    end
+
+    test "user with modify access can access new task page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Should successfully load
+      assert html =~ "New Task"
+    end
+
+    test "user with read-only access can access new task page", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      # Add current user with read-only access
+      readonly_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+
+      conn = log_in_user(conn, readonly_user)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # Should load but won't be able to save (tested elsewhere)
+      assert html =~ "New Task"
+    end
+
+    test "assigns column from URL parameter", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Target Column"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+
+      # The column should be assigned for the new task form
+      assert show_live |> has_element?("[data-column-id='#{column.id}']") or
+               render(show_live) =~ "Target Column"
+    end
+  end
+
+  describe "Show with task edit in column context" do
+    setup [:register_and_log_in_user]
+
+    test "navigating to edit task in column displays edit modal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Should show the edit modal
+      assert html =~ "Edit Task"
+      assert html =~ task.title
+    end
+
+    test "navigating to edit task in column loads all columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column_fixture(board, %{name: "Column 2"})
+      task = task_fixture(column1)
+
+      {:ok, show_live, _html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/#{task}/edit")
+
+      # Verify columns are displayed
+      html = render(show_live)
+      assert html =~ "Column 1"
+      assert html =~ "Column 2"
+    end
+
+    test "navigating to edit task in column displays task form with current values", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          title: "Test Task Title",
+          description: "Test Description"
+        })
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Should display task details in the form
+      assert html =~ "Test Task Title"
+      assert html =~ "Test Description"
+    end
+
+    test "navigating to edit task in column shows board name", %{conn: conn, user: user} do
+      board = board_fixture(user, %{name: "My Test Board"})
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Board name should be visible
+      assert html =~ "My Test Board"
+    end
+
+    test "editing task in column from board with multiple columns shows all columns", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "To Do"})
+      column_fixture(board, %{name: "In Progress"})
+      column_fixture(board, %{name: "Done"})
+      task = task_fixture(column1)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/#{task}/edit")
+
+      # All columns should be visible
+      assert html =~ "To Do"
+      assert html =~ "In Progress"
+      assert html =~ "Done"
+    end
+
+    test "editing task in column preserves other tasks in columns", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task1 = task_fixture(column, %{title: "Task 1"})
+      _task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task1}/edit")
+
+      # Both tasks should be visible in the column
+      assert html =~ "Task 1"
+      assert html =~ "Task 2"
+    end
+
+    test "owner can access edit task in column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Should successfully load
+      assert html =~ "Edit Task"
+    end
+
+    test "user with modify access can access edit task in column", %{conn: conn, user: _user} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      # Add current user with modify access
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Should successfully load
+      assert html =~ "Edit Task"
+    end
+
+    test "user with read-only access can access edit task in column page", %{
+      conn: conn,
+      user: _user
+    } do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      # Add current user with read-only access
+      readonly_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+
+      conn = log_in_user(conn, readonly_user)
+
+      {:ok, _show_live, html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Should load but won't be able to save (tested elsewhere)
+      assert html =~ "Edit Task"
+    end
+
+    test "assigns both column and task from URL parameters", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Target Column"})
+      task = task_fixture(column, %{title: "Target Task"})
+
+      {:ok, show_live, _html} =
+        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+
+      # Both column and task should be assigned
+      html = render(show_live)
+      assert html =~ "Target Column"
+      assert html =~ "Target Task"
+    end
+  end
+
   describe "Show with task edit" do
     setup [:register_and_log_in_user]
 
@@ -827,6 +1114,75 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Should succeed
       refute render(show_live) =~ "Failed to move task"
     end
+
+    test "archive_task removes task from column and shows success flash", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Verify task exists in column
+      assert render(show_live) =~ task.title
+
+      # Archive the task
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+
+      # Task should no longer be visible in the column
+      refute html =~ task.title
+      # Success flash should be shown
+      assert html =~ "Task archived successfully"
+    end
+
+    test "archive_task updates task archived_at timestamp", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      assert task.archived_at == nil
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(task.id)})
+
+      # Verify task was archived in database
+      archived_task = Kanban.Tasks.get_task!(task.id)
+      assert archived_task.archived_at != nil
+      assert %DateTime{} = archived_task.archived_at
+    end
+
+    test "archive_task reloads all columns after archiving", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column2 = column_fixture(board, %{name: "Column 2"})
+      task1 = task_fixture(column1, %{title: "Task in Column 1"})
+      task2 = task_fixture(column2, %{title: "Task in Column 2"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Both tasks should be visible
+      html = render(show_live)
+      assert html =~ task1.title
+      assert html =~ task2.title
+
+      # Archive task1
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(task1.id)})
+
+      html = render(show_live)
+
+      # task1 should be gone, task2 should still be visible
+      refute html =~ task1.title
+      assert html =~ task2.title
+    end
+
   end
 
   describe "translate_column_name/1" do

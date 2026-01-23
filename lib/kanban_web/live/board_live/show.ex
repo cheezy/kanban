@@ -663,6 +663,7 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:new_task), do: "New Task"
   defp page_title(:api_tokens), do: "API Tokens"
   defp page_title(:edit_task), do: "Edit Task"
+  defp page_title(:edit_task_in_column), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
     # Load tasks for each column and store in tasks_by_column assign
