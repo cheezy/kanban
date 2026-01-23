@@ -28,6 +28,29 @@
       </:actions>
     </.header>
 
+    <%= if is_nil(@user_access) do %>
+      <div class="mt-4 mb-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0">
+            <.icon
+              name="hero-information-circle"
+              class="h-6 w-6 text-blue-600 dark:text-blue-400"
+            />
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+              {gettext("You are viewing this board in read-only mode")}
+            </p>
+            <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+              {gettext(
+                "This board is shared publicly. You can view all tasks but cannot make any changes."
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
     <div class="mt-2">
       <%= if !@has_columns do %>
         <div class="p-12 bg-gradient-to-br from-base-100 to-base-200 rounded-xl border-2 border-dashed border-base-300 shadow-sm">
