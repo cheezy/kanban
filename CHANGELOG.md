@@ -5,6 +5,16 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-01-23
+
+### Added
+
+#### Read-Only Board Sharing
+
+- **Public Board Sharing** - Board owners can now share boards publicly for read-only access:
+  - **Read-Only Checkbox** - Added "Make board publicly readable" checkbox to board edit form
+  - **Public Access** - Anyone with the direct link can view boards marked as read-only
+
 ## [1.20.0] - 2026-01-19
 
 ### Added

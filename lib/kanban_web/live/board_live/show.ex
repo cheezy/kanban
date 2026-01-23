@@ -665,11 +665,6 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:edit_task), do: "Edit Task"
   defp page_title(:edit_task_in_column), do: "Edit Task"
 
-  defp modal_title(:new_task), do: "New Task"
-  defp modal_title(:edit_task), do: "Edit Task"
-  defp modal_title(:edit_task_in_column), do: "Edit Task"
-  defp modal_title(action), do: page_title(action)
-
   defp load_tasks_for_columns(socket, columns) do
     # Load tasks for each column and store in tasks_by_column assign
     # Update tasks_version to force full re-renders when task positions change

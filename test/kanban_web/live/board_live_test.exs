@@ -82,7 +82,7 @@ defmodule KanbanWeb.BoardLiveTest do
       board = board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Show Board"
+      assert html =~ "Stride - Task Management"
       assert html =~ board.name
     end
 
@@ -1044,7 +1044,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      assert page_title(show_live) =~ "Show Board"
+      assert page_title(show_live) =~ "Stride - Task Management"
     end
 
     test "sets page title for new column action", %{conn: conn, user: user} do
@@ -1070,7 +1070,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
 
-      assert page_title(show_live) =~ "New Task"
+      assert page_title(show_live) =~ "Stride - Task Management"
     end
 
     test "sets page title for edit task action", %{conn: conn, user: user} do
