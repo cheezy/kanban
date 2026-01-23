@@ -49,9 +49,15 @@
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>GEMINI.md Instruction File</strong>: Created Markdown-formatted instruction file with complete Stride integration guidelines</li>
-                <li><strong>Hierarchical Context Support</strong>: Supports project-scoped, global (<code>~/.gemini/GEMINI.md</code>), and component-level context files</li>
-                <li><strong>Impact</strong>: Gemini Code Assist users can now leverage Stride's workflow enforcement with agent/chat mode context files</li>
+                <li>
+                  <strong>GEMINI.md Instruction File</strong>: Created Markdown-formatted instruction file with complete Stride integration guidelines
+                </li>
+                <li>
+                  <strong>Hierarchical Context Support</strong>: Supports project-scoped, global (<code>~/.gemini/GEMINI.md</code>), and component-level context files
+                </li>
+                <li>
+                  <strong>Impact</strong>: Gemini Code Assist users can now leverage Stride's workflow enforcement with agent/chat mode context files
+                </li>
               </ul>
 
               <p class="text-base-content opacity-80 mb-2">
@@ -64,7 +70,10 @@
                 <li>Cursor (<code>.cursorrules</code>)</li>
                 <li>Windsurf Cascade (<code>.windsurfrules</code>)</li>
                 <li>Continue.dev (<code>.continue/config.json</code>)</li>
-                <li><strong>Google Gemini Code Assist</strong> (<code>GEMINI.md</code> or <code>AGENT.md</code>)</li>
+                <li>
+                  <strong>Google Gemini Code Assist</strong>
+                  (<code>GEMINI.md</code> or <code>AGENT.md</code>)
+                </li>
               </ol>
             </div>
           </div>
@@ -85,12 +94,17 @@
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Corrected Priority Sorting for Task Claiming</strong>
-                - Fixed critical bug where the <code>/api/tasks/next</code> endpoint was selecting lower-priority tasks instead of higher-priority tasks:
+                - Fixed critical bug where the <code>/api/tasks/next</code>
+                endpoint was selecting lower-priority tasks instead of higher-priority tasks:
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Impact</strong>: Tasks are now correctly selected in priority order: critical → high → medium → low</li>
-                <li><strong>Secondary Sort</strong>: Position (ascending) is used as tiebreaker when priorities are equal, ensuring tasks higher in the Ready column (lower position number) are selected first</li>
+                <li>
+                  <strong>Impact</strong>: Tasks are now correctly selected in priority order: critical → high → medium → low
+                </li>
+                <li>
+                  <strong>Secondary Sort</strong>: Position (ascending) is used as tiebreaker when priorities are equal, ensuring tasks higher in the Ready column (lower position number) are selected first
+                </li>
               </ul>
             </div>
 
@@ -101,12 +115,21 @@
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Fixed Review Fields Not Appearing for Tasks in Review</strong>
-                - Resolved issue where review status and review notes fields were hidden when tasks with <code>needs_review=true</code> entered the Review column:
+                - Resolved issue where review status and review notes fields were hidden when tasks with
+                <code>needs_review=true</code>
+                entered the Review column:
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Root Cause</strong>: Visibility condition only checked if <code>review_status</code> field had a value, but newly moved tasks to Review column had <code>nil</code> review_status</li>
-                <li><strong>Impact</strong>: Users can now properly review and approve/reject tasks that enter the Review column</li>
+                <li>
+                  <strong>Root Cause</strong>: Visibility condition only checked if
+                  <code>review_status</code>
+                  field had a value, but newly moved tasks to Review column had <code>nil</code>
+                  review_status
+                </li>
+                <li>
+                  <strong>Impact</strong>: Users can now properly review and approve/reject tasks that enter the Review column
+                </li>
               </ul>
             </div>
           </div>
@@ -123,12 +146,17 @@
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Enhanced Getting Started Guide</strong>
-                - Improved clarity in <code>docs/GETTING-STARTED-WITH-AI.md</code> for AI agent onboarding:
+                - Improved clarity in <code>docs/GETTING-STARTED-WITH-AI.md</code>
+                for AI agent onboarding:
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Updated Instructions</strong>: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies</li>
-                <li><strong>Multi-Agent Support</strong>: Added explicit mention of agent configuration setup and reference to Multi-Agent Instructions guide</li>
+                <li>
+                  <strong>Updated Instructions</strong>: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies
+                </li>
+                <li>
+                  <strong>Multi-Agent Support</strong>: Added explicit mention of agent configuration setup and reference to Multi-Agent Instructions guide
+                </li>
               </ul>
             </div>
 
@@ -143,8 +171,12 @@
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Automatic Execution</strong>: Added explicit instructions to execute hooks automatically without prompting the user</li>
-                <li><strong>Impact</strong>: Eliminates unnecessary user prompts during task claiming and completion, streamlining the agent workflow</li>
+                <li>
+                  <strong>Automatic Execution</strong>: Added explicit instructions to execute hooks automatically without prompting the user
+                </li>
+                <li>
+                  <strong>Impact</strong>: Eliminates unnecessary user prompts during task claiming and completion, streamlining the agent workflow
+                </li>
               </ul>
             </div>
           </div>
@@ -169,31 +201,52 @@
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Search Functionality</strong> - Real-time search across all guide titles and descriptions</li>
-                <li><strong>Tag-Based Filtering</strong> - Filter guides by category tags (getting-started, developer, non-developer, best-practices, etc.)</li>
-                <li><strong>Sorting Options</strong> - Sort by relevance, newest, or alphabetically (A-Z)</li>
+                <li>
+                  <strong>Search Functionality</strong>
+                  - Real-time search across all guide titles and descriptions
+                </li>
+                <li>
+                  <strong>Tag-Based Filtering</strong>
+                  - Filter guides by category tags (getting-started, developer, non-developer, best-practices, etc.)
+                </li>
+                <li>
+                  <strong>Sorting Options</strong>
+                  - Sort by relevance, newest, or alphabetically (A-Z)
+                </li>
               </ul>
 
               <p class="text-base-content opacity-80 mb-4">
-                <strong>How-To Guide Detail Pages</strong>
-                - Step-by-step instruction views:
+                <strong>How-To Guide Detail Pages</strong> - Step-by-step instruction views:
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Hero Section</strong> - Gradient background with title, description, content type badge, and reading time</li>
-                <li><strong>Step-by-Step Content</strong> - Numbered steps with markdown support (bold, code blocks, lists)</li>
+                <li>
+                  <strong>Hero Section</strong>
+                  - Gradient background with title, description, content type badge, and reading time
+                </li>
+                <li>
+                  <strong>Step-by-Step Content</strong>
+                  - Numbered steps with markdown support (bold, code blocks, lists)
+                </li>
               </ul>
 
               <p class="text-base-content opacity-80 mb-4">
-                <strong>13 How-To Guides</strong>
-                - Comprehensive documentation covering:
+                <strong>13 How-To Guides</strong> - Comprehensive documentation covering:
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li><strong>Getting Started (4 guides)</strong>: Creating boards, understanding columns, adding tasks, inviting team members</li>
-                <li><strong>Developer Guides (4 guides)</strong>: Workflow hooks, API authentication, task dependencies, troubleshooting</li>
-                <li><strong>Non-Developer Guides (3 guides)</strong>: Writing tasks for AI, monitoring progress, reviewing completed work</li>
-                <li><strong>Best Practices (2 guides)</strong>: Organizing with dependencies, using complexity and priority effectively</li>
+                <li>
+                  <strong>Getting Started (4 guides)</strong>: Creating boards, understanding columns, adding tasks, inviting team members
+                </li>
+                <li>
+                  <strong>Developer Guides (4 guides)</strong>: Workflow hooks, API authentication, task dependencies, troubleshooting
+                </li>
+                <li>
+                  <strong>Non-Developer Guides (3 guides)</strong>: Writing tasks for AI, monitoring progress, reviewing completed work
+                </li>
+                <li>
+                  <strong>Best Practices (2 guides)</strong>: Organizing with dependencies, using complexity and priority effectively
+                </li>
               </ul>
             </div>
           </div>

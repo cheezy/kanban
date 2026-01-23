@@ -71,7 +71,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "What Are Columns?",
           content:
-            "Columns represent stages in your workflow. Tasks move from left to right as they progress through different stages toward completion. Stride offers two types of boards with different column configurations.",
+            "Columns represent stages in your workflow. Tasks move from left to right as they progress through different stages toward completion. Stride offers two types of boards with different column configurations."
         },
         %{
           title: "AI-Optimized Boards: Fixed Columns",
@@ -92,7 +92,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Choosing the Right Board Type",
           content:
-            "When creating a board, select:\n\n- **AI Optimized Board** if you'll be working with AI agents or want a standardized agent-friendly workflow\n- **Empty Board** if you need custom columns tailored to your team's specific process\n\nNote: You cannot convert between board types after creation, so choose carefully based on your workflow needs.",
+            "When creating a board, select:\n\n- **AI Optimized Board** if you'll be working with AI agents or want a standardized agent-friendly workflow\n- **Empty Board** if you need custom columns tailored to your team's specific process\n\nNote: You cannot convert between board types after creation, so choose carefully based on your workflow needs."
         },
         %{
           title: "Column Settings & WIP Limits",

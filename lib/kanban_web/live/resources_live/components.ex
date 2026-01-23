@@ -224,7 +224,9 @@ defmodule KanbanWeb.ResourcesLive.Components do
                   />
                   <%= if String.ends_with?(step.image, ".svg") do %>
                     <p class="text-xs text-base-content/50 mt-2 italic text-center">
-                      Placeholder image - Replace with actual screenshot ({step[:image_width] || 1280} × {step[:image_height] || 720}px)
+                      Placeholder image - Replace with actual screenshot ({step[:image_width] || 1280} × {step[
+                        :image_height
+                      ] || 720}px)
                     </p>
                   <% end %>
                 </div>
@@ -435,40 +437,60 @@ defmodule KanbanWeb.ResourcesLive.Components do
       <!-- Category-specific gradient backgrounds -->
       <div class={[
         "absolute inset-0 transition-all",
-        @category == :getting_started && "bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30",
-        @category == :developer && "bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30",
-        @category == :non_developer && "bg-gradient-to-br from-orange-100 to-pink-100 dark:from-orange-900/30 dark:to-pink-900/30",
-        @category == :best_practices && "bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30",
-        @category == :default && "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30"
+        @category == :getting_started &&
+          "bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30",
+        @category == :developer &&
+          "bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30",
+        @category == :non_developer &&
+          "bg-gradient-to-br from-orange-100 to-pink-100 dark:from-orange-900/30 dark:to-pink-900/30",
+        @category == :best_practices &&
+          "bg-gradient-to-br from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30",
+        @category == :default &&
+          "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30"
       ]} />
-
-      <!-- Category-specific illustrations -->
+      
+    <!-- Category-specific illustrations -->
       <div class="absolute inset-0 flex items-center justify-center">
         <!-- Getting Started: Rocket launch -->
         <div :if={@category == :getting_started} class="relative">
           <.icon name="hero-rocket-launch" class="h-20 w-20 text-green-500/40 dark:text-green-400/40" />
-          <.icon name="hero-sparkles" class="h-8 w-8 text-blue-500/30 dark:text-blue-400/30 absolute -top-2 -right-2" />
+          <.icon
+            name="hero-sparkles"
+            class="h-8 w-8 text-blue-500/30 dark:text-blue-400/30 absolute -top-2 -right-2"
+          />
         </div>
-
-        <!-- Developer: Code with terminal -->
+        
+    <!-- Developer: Code with terminal -->
         <div :if={@category == :developer} class="relative">
-          <.icon name="hero-code-bracket-square" class="h-20 w-20 text-purple-500/40 dark:text-purple-400/40" />
-          <.icon name="hero-command-line" class="h-10 w-10 text-indigo-500/30 dark:text-indigo-400/30 absolute -bottom-1 -right-1" />
+          <.icon
+            name="hero-code-bracket-square"
+            class="h-20 w-20 text-purple-500/40 dark:text-purple-400/40"
+          />
+          <.icon
+            name="hero-command-line"
+            class="h-10 w-10 text-indigo-500/30 dark:text-indigo-400/30 absolute -bottom-1 -right-1"
+          />
         </div>
-
-        <!-- Non-Developer: People with AI -->
+        
+    <!-- Non-Developer: People with AI -->
         <div :if={@category == :non_developer} class="relative">
           <.icon name="hero-users" class="h-20 w-20 text-orange-500/40 dark:text-orange-400/40" />
-          <.icon name="hero-cpu-chip" class="h-10 w-10 text-pink-500/30 dark:text-pink-400/30 absolute -top-1 -right-1" />
+          <.icon
+            name="hero-cpu-chip"
+            class="h-10 w-10 text-pink-500/30 dark:text-pink-400/30 absolute -top-1 -right-1"
+          />
         </div>
-
-        <!-- Best Practices: Star with checklist -->
+        
+    <!-- Best Practices: Star with checklist -->
         <div :if={@category == :best_practices} class="relative">
           <.icon name="hero-star" class="h-20 w-20 text-yellow-500/40 dark:text-yellow-400/40" />
-          <.icon name="hero-check-badge" class="h-10 w-10 text-amber-500/30 dark:text-amber-400/30 absolute -bottom-1 -right-1" />
+          <.icon
+            name="hero-check-badge"
+            class="h-10 w-10 text-amber-500/30 dark:text-amber-400/30 absolute -bottom-1 -right-1"
+          />
         </div>
-
-        <!-- Default: Book -->
+        
+    <!-- Default: Book -->
         <div :if={@category == :default} class="relative">
           <.icon name="hero-book-open" class="h-20 w-20 text-blue-500/40 dark:text-blue-400/40" />
         </div>

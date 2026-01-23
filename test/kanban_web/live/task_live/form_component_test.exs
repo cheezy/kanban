@@ -3143,8 +3143,10 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       review_column = column_fixture(board, %{name: "Review"})
-      task = task_fixture(review_column, %{title: "Test", review_status: nil})
-      |> Kanban.Repo.preload(:column)
+
+      task =
+        task_fixture(review_column, %{title: "Test", review_status: nil})
+        |> Kanban.Repo.preload(:column)
 
       # Verify the task is in Review column which should trigger visibility
       assert task.column.name == "Review"
@@ -3166,8 +3168,10 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test", needs_review: false, review_status: nil})
-      |> Kanban.Repo.preload(:column)
+
+      task =
+        task_fixture(column, %{title: "Test", needs_review: false, review_status: nil})
+        |> Kanban.Repo.preload(:column)
 
       # Verify none of the visibility conditions are met
       assert is_nil(task.review_status)
@@ -3179,8 +3183,10 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       review_column = column_fixture(board, %{name: "Review"})
-      task = task_fixture(review_column, %{title: "Test", needs_review: false, review_status: nil})
-      |> Kanban.Repo.preload(:column)
+
+      task =
+        task_fixture(review_column, %{title: "Test", needs_review: false, review_status: nil})
+        |> Kanban.Repo.preload(:column)
 
       # Even though needs_review is false, being in Review column should show fields
       assert task.column.name == "Review"

@@ -1182,7 +1182,6 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute html =~ task1.title
       assert html =~ task2.title
     end
-
   end
 
   describe "translate_column_name/1" do

@@ -29,6 +29,25 @@
       <.form :let={f} for={@form} id="board-form" phx-change="validate" phx-submit="save">
         <.input field={f[:name]} type="text" label={gettext("Name")} />
         <.input field={f[:description]} type="textarea" label={gettext("Description")} />
+
+        <%= if @live_action == :edit do %>
+          <div class="mt-4">
+            <label class="flex items-start gap-3 cursor-pointer hover:bg-base-200 p-3 rounded-lg">
+              <.input field={f[:read_only]} type="checkbox" class="checkbox mt-1" />
+              <div class="flex-1">
+                <span class="font-medium text-base-content">
+                  {gettext("Make board publicly readable")}
+                </span>
+                <p class="text-sm text-base-content opacity-70 mt-1">
+                  {gettext(
+                    "When enabled, anyone with the direct link can view this board (read-only access). Members retain their assigned permissions."
+                  )}
+                </p>
+              </div>
+            </label>
+          </div>
+        <% end %>
+
         <div class="mt-6 flex items-center gap-4">
           <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Board")}</.button>
           <%= if @live_action == :edit do %>
