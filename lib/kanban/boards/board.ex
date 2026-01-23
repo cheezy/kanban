@@ -6,6 +6,7 @@ defmodule Kanban.Boards.Board do
     field :name, :string
     field :description, :string
     field :ai_optimized_board, :boolean, default: false
+    field :read_only, :boolean, default: false
 
     field :field_visibility, :map,
       default: %{
@@ -35,7 +36,7 @@ defmodule Kanban.Boards.Board do
   @doc false
   def changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :field_visibility])
+    |> cast(attrs, [:name, :description, :field_visibility, :read_only])
     |> validate_required([:name])
     |> validate_length(:name, min: 5, max: 50)
     |> validate_length(:description, max: 255)
