@@ -16,7 +16,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
     {:ok,
      socket
-     |> assign(:page_title, "Stride - Task Management")
+     |> assign(:page_title, "Stride")
      |> assign(:board, board)
      |> assign(:user_access, user_access)
      |> assign(:can_modify, user_access in [:owner, :modify])

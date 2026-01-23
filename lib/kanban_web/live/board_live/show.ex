@@ -564,7 +564,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
     {:noreply,
      socket
-     |> assign(:page_title, "Stride - Task Management")
+     |> assign(:page_title, "Stride")
      |> assign(:board, board)
      |> assign(:user_access, user_access)
      |> assign(:can_modify, user_access in [:owner, :modify])
@@ -657,11 +657,11 @@ defmodule KanbanWeb.BoardLive.Show do
      |> load_tasks_for_columns(columns)}
   end
 
-  defp page_title(:show), do: "Stride - Task Management"
+  defp page_title(:show), do: "Stride"
   defp page_title(:new_column), do: "New Column"
   defp page_title(:edit_column), do: "Edit Column"
-  defp page_title(:new_task), do: "Stride - Task Management"
-  defp page_title(:api_tokens), do: "Stride - Task Management"
+  defp page_title(:new_task), do: "Stride"
+  defp page_title(:api_tokens), do: "Stride"
   defp page_title(:edit_task), do: "Edit Task"
   defp page_title(:edit_task_in_column), do: "Edit Task"
 
