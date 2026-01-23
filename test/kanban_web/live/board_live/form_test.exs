@@ -238,5 +238,78 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
       assert render(lv) =~ "should be at least 5 character(s)"
     end
+
+    test "new board form does not display read-only checkbox", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/boards/new")
+
+      refute html =~ "Make board publicly readable"
+      refute html =~ "anyone with the direct link can view this board"
+    end
+  end
+
+  describe "BoardLive.Form (read-only toggle)" do
+    setup :register_and_log_in_user
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      %{board: board}
+    end
+
+    test "edit form displays read-only checkbox", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/edit")
+
+      assert html =~ "Make board publicly readable"
+      assert html =~ "anyone with the direct link can view this board"
+    end
+
+    test "read-only checkbox is unchecked by default", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      # The checkbox should exist but not be checked
+      assert view |> has_element?("input[name='board[read_only]'][type='checkbox']")
+      refute view |> has_element?("input[name='board[read_only]'][checked]")
+    end
+
+    test "can toggle read-only on via form submission", %{conn: conn, board: board, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      form =
+        form(lv, "#board-form",
+          board: %{name: board.name, description: board.description, read_only: true}
+        )
+
+      assert {:ok, _, html} = form |> render_submit() |> follow_redirect(conn)
+
+      assert html =~ "Board updated successfully"
+
+      # Verify the board was updated
+      updated_board = Kanban.Boards.get_board!(board.id, user)
+      assert updated_board.read_only == true
+    end
+
+    test "can toggle read-only off via form submission", %{conn: conn, user: user} do
+      # Create a board with read_only set to true
+      {:ok, board} =
+        Kanban.Boards.create_board(user, %{
+          name: "Public Board",
+          description: "Test",
+          read_only: true
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      form =
+        form(lv, "#board-form",
+          board: %{name: board.name, description: board.description, read_only: false}
+        )
+
+      assert {:ok, _, html} = form |> render_submit() |> follow_redirect(conn)
+
+      assert html =~ "Board updated successfully"
+
+      # Verify the board was updated
+      updated_board = Kanban.Boards.get_board!(board.id, user)
+      assert updated_board.read_only == false
+    end
   end
 end

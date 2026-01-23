@@ -1372,4 +1372,120 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Unauthorized"
     end
   end
+
+  describe "Read-only board access" do
+    test "non-member can access read-only board", %{conn: conn} do
+      # Create a board with owner
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      # Make the board read-only
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+
+      # Create a non-member user and log them in
+      non_member = user_fixture()
+      conn = log_in_user(conn, non_member)
+
+      # Non-member should be able to access the board
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ board.name
+      assert html =~ board.description
+    end
+
+    test "non-member cannot access private board", %{conn: conn} do
+      # Create a private board (read_only: false)
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      # Ensure the board is NOT read-only
+      assert board.read_only == false
+
+      # Create a non-member user and log them in
+      non_member = user_fixture()
+      conn = log_in_user(conn, non_member)
+
+      # Non-member should NOT be able to access the board
+      # get_board!/2 raises Ecto.NoResultsError for non-members on private boards
+      assert_raise Ecto.NoResultsError, fn ->
+        live(conn, ~p"/boards/#{board}")
+      end
+    end
+
+    test "read-only banner displays for non-members on read-only boards", %{conn: conn} do
+      # Create a read-only board
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+
+      # Create a non-member user and log them in
+      non_member = user_fixture()
+      conn = log_in_user(conn, non_member)
+
+      # Non-member should see the read-only banner
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "You are viewing this board in read-only mode"
+      assert html =~ "This board is shared publicly"
+    end
+
+    test "read-only banner does NOT display for board members", %{conn: conn} do
+      # Create a read-only board
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+
+      # Create a member user and add to board
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :read_only)
+
+      # Log in as the member
+      conn = log_in_user(conn, member)
+
+      # Member should NOT see the read-only banner
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "You are viewing this board in read-only mode"
+      refute html =~ "This board is shared publicly"
+    end
+
+    test "read-only banner does NOT display for board owner", %{conn: conn} do
+      # Create a read-only board
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+
+      # Log in as the owner
+      conn = log_in_user(conn, owner)
+
+      # Owner should NOT see the read-only banner
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "You are viewing this board in read-only mode"
+      refute html =~ "This board is shared publicly"
+    end
+
+    test "non-member cannot edit tasks on read-only board", %{conn: conn} do
+      # Create a read-only board with a task
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      {:ok, _board} = Kanban.Boards.update_board(board, %{read_only: true})
+
+      # Create a non-member user and log them in
+      non_member = user_fixture()
+      conn = log_in_user(conn, non_member)
+
+      # Non-member can view the board but buttons should not be visible
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Verify task is visible
+      assert html =~ task.title
+
+      # Verify edit buttons are not visible (non-members have can_modify=false)
+      refute html =~ "Edit task"
+      refute html =~ "Delete task"
+    end
+  end
 end
