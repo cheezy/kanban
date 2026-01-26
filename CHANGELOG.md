@@ -5,6 +5,19 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-01-26
+
+### Fixed
+
+#### Automatic Task Status Synchronization
+
+- **Task Status Now Syncs Automatically When Moving Between Columns** - Fixed data inconsistency issue where task status could be out of sync with column position:
+  - **Ready/Backlog Columns**: Automatically sets `status: :open` and clears `completed_at`
+  - **Doing/Review Columns**: Automatically sets `status: :in_progress` and clears `completed_at`
+  - **Done Column**: Automatically sets `status: :completed` and sets `completed_at` timestamp
+  - **Preserves Timestamps**: When task already has `completed_at` set, preserves the original timestamp
+  - **Impact**: Eliminates the inconsistency where agents sometimes failed to update status when completing tasks, ensuring column position and status always match
+
 ## [1.21.0] - 2026-01-23
 
 ### Added
