@@ -1003,17 +1003,42 @@ defmodule Kanban.Tasks do
       "Updating task #{task.id} to final position: column_id=#{new_column.id}, position=#{new_position}"
     )
 
+    # Determine status based on column name
+    status_updates = determine_status_for_column(new_column.name, task)
+
+    # Combine column/position updates with status updates
+    updates = Map.merge(%{column_id: new_column.id, position: new_position}, status_updates)
+
     Task
     |> where([t], t.id == ^task.id)
-    |> Repo.update_all(set: [column_id: new_column.id, position: new_position])
+    |> Repo.update_all(set: Map.to_list(updates))
 
-    Logger.info("Task updated successfully")
+    Logger.info("Task updated successfully with status: #{inspect(updates[:status])}")
 
     updated_task = get_task!(task.id)
     Logger.info("Returning updated task: #{inspect(updated_task)}")
 
     # Broadcast will happen AFTER transaction commits (in move_task/3)
     updated_task
+  end
+
+  defp determine_status_for_column(column_name, task) do
+    case column_name do
+      name when name in ["Ready", "Backlog"] ->
+        %{status: :open, completed_at: nil}
+
+      name when name in ["Doing", "Review"] ->
+        %{status: :in_progress, completed_at: nil}
+
+      "Done" ->
+        # Set completed_at only if not already set
+        completed_at = task.completed_at || DateTime.utc_now()
+        %{status: :completed, completed_at: completed_at}
+
+      _ ->
+        # For custom column names, default to in_progress
+        %{status: :in_progress, completed_at: nil}
+    end
   end
 
   defp reorder_after_removal(column, removed_position) do

@@ -948,6 +948,140 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "status synchronization when moving tasks" do
+    test "sets status to :open when moving to Ready column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      doing_column = column_fixture(board, %{name: "Doing"})
+      ready_column = column_fixture(board, %{name: "Ready"})
+
+      # Create task in Doing with in_progress status
+      task = task_fixture(doing_column, %{title: "Test Task", status: :in_progress})
+      assert task.status == :in_progress
+
+      # Move to Ready
+      assert {:ok, moved_task} = Tasks.move_task(task, ready_column, 0)
+
+      assert moved_task.status == :open
+      assert moved_task.completed_at == nil
+    end
+
+    test "sets status to :open when moving to Backlog column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      doing_column = column_fixture(board, %{name: "Doing"})
+      backlog_column = column_fixture(board, %{name: "Backlog"})
+
+      task = task_fixture(doing_column, %{title: "Test Task", status: :in_progress})
+
+      assert {:ok, moved_task} = Tasks.move_task(task, backlog_column, 0)
+
+      assert moved_task.status == :open
+      assert moved_task.completed_at == nil
+    end
+
+    test "sets status to :in_progress when moving to Doing column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready"})
+      doing_column = column_fixture(board, %{name: "Doing"})
+
+      task = task_fixture(ready_column, %{title: "Test Task", status: :open})
+
+      assert {:ok, moved_task} = Tasks.move_task(task, doing_column, 0)
+
+      assert moved_task.status == :in_progress
+      assert moved_task.completed_at == nil
+    end
+
+    test "sets status to :in_progress when moving to Review column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      doing_column = column_fixture(board, %{name: "Doing"})
+      review_column = column_fixture(board, %{name: "Review"})
+
+      task = task_fixture(doing_column, %{title: "Test Task", status: :in_progress})
+
+      assert {:ok, moved_task} = Tasks.move_task(task, review_column, 0)
+
+      assert moved_task.status == :in_progress
+      assert moved_task.completed_at == nil
+    end
+
+    test "sets status to :completed and sets completed_at when moving to Done column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      review_column = column_fixture(board, %{name: "Review"})
+      done_column = column_fixture(board, %{name: "Done"})
+
+      task = task_fixture(review_column, %{title: "Test Task", status: :in_progress})
+      assert task.completed_at == nil
+
+      assert {:ok, moved_task} = Tasks.move_task(task, done_column, 0)
+
+      assert moved_task.status == :completed
+      assert moved_task.completed_at != nil
+    end
+
+    test "preserves completed_at when task already has it set" do
+      user = user_fixture()
+      board = board_fixture(user)
+      review_column = column_fixture(board, %{name: "Review"})
+      done_column = column_fixture(board, %{name: "Done"})
+
+      # Create a task with completed_at already set
+      original_completed_at = DateTime.utc_now() |> DateTime.add(-3600, :second)
+
+      task =
+        task_fixture(review_column, %{
+          title: "Test Task",
+          status: :in_progress,
+          completed_at: original_completed_at
+        })
+
+      assert {:ok, moved_task} = Tasks.move_task(task, done_column, 0)
+
+      assert moved_task.status == :completed
+      # Should preserve the original completed_at (within 2 seconds for database truncation)
+      assert abs(DateTime.diff(moved_task.completed_at, original_completed_at)) <= 2
+    end
+
+    test "clears completed_at when moving from Done back to Doing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      done_column = column_fixture(board, %{name: "Done"})
+      doing_column = column_fixture(board, %{name: "Doing"})
+
+      completed_at = DateTime.utc_now()
+
+      task =
+        task_fixture(done_column, %{
+          title: "Test Task",
+          status: :completed,
+          completed_at: completed_at
+        })
+
+      assert {:ok, moved_task} = Tasks.move_task(task, doing_column, 0)
+
+      assert moved_task.status == :in_progress
+      assert moved_task.completed_at == nil
+    end
+
+    test "defaults to :in_progress for custom column names" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready"})
+      custom_column = column_fixture(board, %{name: "Custom Column"})
+
+      task = task_fixture(ready_column, %{title: "Test Task", status: :open})
+
+      assert {:ok, moved_task} = Tasks.move_task(task, custom_column, 0)
+
+      assert moved_task.status == :in_progress
+      assert moved_task.completed_at == nil
+    end
+  end
+
   describe "scalar AI fields" do
     test "stores and retrieves planning context fields" do
       user = user_fixture()
