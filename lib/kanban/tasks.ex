@@ -1023,21 +1023,26 @@ defmodule Kanban.Tasks do
   end
 
   defp determine_status_for_column(column_name, task) do
-    case column_name do
-      name when name in ["Ready", "Backlog"] ->
-        %{status: :open, completed_at: nil}
+    # Preserve :blocked status - tasks can be blocked in any column
+    if task.status == :blocked do
+      %{completed_at: nil}
+    else
+      case column_name do
+        name when name in ["Ready", "Backlog"] ->
+          %{status: :open, completed_at: nil}
 
-      name when name in ["Doing", "Review"] ->
-        %{status: :in_progress, completed_at: nil}
+        name when name in ["Doing", "Review"] ->
+          %{status: :in_progress, completed_at: nil}
 
-      "Done" ->
-        # Set completed_at only if not already set
-        completed_at = task.completed_at || DateTime.utc_now()
-        %{status: :completed, completed_at: completed_at}
+        "Done" ->
+          # Set completed_at only if not already set
+          completed_at = task.completed_at || DateTime.utc_now()
+          %{status: :completed, completed_at: completed_at}
 
-      _ ->
-        # For custom column names, default to in_progress
-        %{status: :in_progress, completed_at: nil}
+        _ ->
+          # For custom column names, default to in_progress
+          %{status: :in_progress, completed_at: nil}
+      end
     end
   end
 

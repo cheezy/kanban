@@ -50,16 +50,24 @@
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
                 <li>
-                  <strong>Ready/Backlog Columns</strong>: Automatically sets <code>status: :open</code> and clears <code>completed_at</code>
+                  <strong>Ready/Backlog Columns</strong>: Automatically sets
+                  <code>status: :open</code>
+                  and clears <code>completed_at</code>
                 </li>
                 <li>
-                  <strong>Doing/Review Columns</strong>: Automatically sets <code>status: :in_progress</code> and clears <code>completed_at</code>
+                  <strong>Doing/Review Columns</strong>: Automatically sets
+                  <code>status: :in_progress</code>
+                  and clears <code>completed_at</code>
                 </li>
                 <li>
-                  <strong>Done Column</strong>: Automatically sets <code>status: :completed</code> and sets <code>completed_at</code> timestamp
+                  <strong>Done Column</strong>: Automatically sets <code>status: :completed</code>
+                  and sets <code>completed_at</code>
+                  timestamp
                 </li>
                 <li>
-                  <strong>Preserves Timestamps</strong>: When task already has <code>completed_at</code> set, preserves the original timestamp
+                  <strong>Preserves Timestamps</strong>: When task already has
+                  <code>completed_at</code>
+                  set, preserves the original timestamp
                 </li>
                 <li>
                   <strong>Impact</strong>: Eliminates the inconsistency where agents sometimes failed to update status when completing tasks, ensuring column position and status always match

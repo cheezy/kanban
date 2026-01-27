@@ -1080,6 +1080,42 @@ defmodule Kanban.TasksTest do
       assert moved_task.status == :in_progress
       assert moved_task.completed_at == nil
     end
+
+    test "preserves :blocked status when moving between columns" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready"})
+      doing_column = column_fixture(board, %{name: "Doing"})
+      backlog_column = column_fixture(board, %{name: "Backlog"})
+
+      # Create a blocked task in Ready
+      task = task_fixture(ready_column, %{title: "Blocked Task", status: :blocked})
+      assert task.status == :blocked
+
+      # Move to Doing - should stay blocked
+      assert {:ok, moved_task} = Tasks.move_task(task, doing_column, 0)
+      assert moved_task.status == :blocked
+
+      # Move to Backlog - should stay blocked
+      assert {:ok, moved_task} = Tasks.move_task(moved_task, backlog_column, 0)
+      assert moved_task.status == :blocked
+    end
+
+    test "preserves :blocked status even in Done column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready_column = column_fixture(board, %{name: "Ready"})
+      done_column = column_fixture(board, %{name: "Done"})
+
+      # Create a blocked task
+      task = task_fixture(ready_column, %{title: "Blocked Task", status: :blocked})
+
+      # Move blocked task to Done - should stay blocked (unusual but valid)
+      assert {:ok, moved_task} = Tasks.move_task(task, done_column, 0)
+      assert moved_task.status == :blocked
+      # Should still clear completed_at for blocked tasks
+      assert moved_task.completed_at == nil
+    end
   end
 
   describe "scalar AI fields" do
