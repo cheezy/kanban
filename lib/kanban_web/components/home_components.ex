@@ -7,8 +7,8 @@ defmodule KanbanWeb.HomeComponents do
   def hero_badge(assigns) do
     ~H"""
     <div class={[
-      "inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700",
-      "rounded-full text-sm font-medium",
+      "inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
+      "rounded-full text-sm font-medium border border-blue-200/50 dark:border-blue-700/50",
       @class
     ]}>
       {render_slot(@inner_block)}
@@ -37,6 +37,7 @@ defmodule KanbanWeb.HomeComponents do
     ~H"""
     <span class={[
       "block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800",
+      "dark:from-blue-400 dark:via-purple-400 dark:to-pink-400",
       @class
     ]}>
       {render_slot(@inner_block)}
@@ -53,9 +54,8 @@ defmodule KanbanWeb.HomeComponents do
     <.link
       href={@href}
       class={[
-        "inline-flex items-center justify-center px-8 py-4 text-base font-semibold",
-        "text-white bg-gradient-to-r from-blue-600 to-blue-700",
-        "hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg hover:shadow-xl",
+        "btn btn-primary inline-flex items-center justify-center px-8 py-4 text-base font-semibold",
+        "rounded-lg shadow-lg hover:shadow-xl",
         "transition-all transform hover:-translate-y-0.5",
         @class
       ]}
@@ -190,10 +190,10 @@ defmodule KanbanWeb.HomeComponents do
     ]}>
       <div class={[
         "inline-flex items-center justify-center w-14 h-14",
-        "text-white rounded-xl mb-4 shadow-lg",
-        @icon_color == "blue" && "bg-gradient-to-br from-blue-500 to-blue-600",
-        @icon_color == "orange" && "bg-gradient-to-br from-orange-500 to-orange-600",
-        @icon_color == "blue-alt" && "bg-gradient-to-br from-blue-600 to-blue-700"
+        "text-white rounded-xl mb-4 shadow-lg dark:shadow-blue-900/50",
+        @icon_color == "blue" && "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600/70 dark:to-blue-700/70",
+        @icon_color == "orange" && "bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-600/70 dark:to-orange-700/70",
+        @icon_color == "blue-alt" && "bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700/70 dark:to-blue-800/70"
       ]}>
         {render_slot(@icon)}
       </div>

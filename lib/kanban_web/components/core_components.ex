@@ -553,7 +553,7 @@ defmodule KanbanWeb.CoreComponents do
     >
       <div
         id={"#{@id}-bg"}
-        class="bg-zinc-50/90 fixed inset-0 transition-opacity"
+        class="bg-base-200/90 fixed inset-0 transition-opacity"
         aria-hidden="true"
       />
       <div

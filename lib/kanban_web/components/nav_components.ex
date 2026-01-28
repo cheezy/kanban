@@ -38,7 +38,7 @@ defmodule KanbanWeb.NavComponents do
     ~H"""
     <.link
       href={@href}
-      class="text-sm font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+      class="text-base font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
     >
       {render_slot(@inner_block)}
     </.link>
@@ -54,7 +54,7 @@ defmodule KanbanWeb.NavComponents do
     <.link
       href={@href}
       method={@method}
-      class="text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
+      class="btn btn-primary text-sm font-medium px-4 py-2 rounded-lg transition-all"
     >
       {render_slot(@inner_block)}
     </.link>

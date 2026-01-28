@@ -212,3 +212,566 @@
 .sortable-chosen {
   cursor: grabbing !important;
 }
+
+/* Enhanced Boards Page Styling - Light Mode Focus */
+
+/* Atmospheric background with subtle radial gradients */
+.px-4.py-8 {
+  background:
+    radial-gradient(circle at 20% 10%, oklch(99% 0.02 280 / 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, oklch(99% 0.02 50 / 0.2) 0%, transparent 50%),
+    oklch(98.5% 0.005 80);
+  min-height: 100vh;
+}
+
+/* Enhanced board card styling */
+.group.bg-gradient-to-br {
+  background: linear-gradient(135deg,
+    oklch(100% 0.01 280) 0%,
+    oklch(99% 0.008 260) 50%,
+    oklch(98.5% 0.012 50) 100%) !important;
+  border: 1px solid oklch(92% 0.01 260 / 0.6) !important;
+  box-shadow:
+    0 0 0 1px oklch(95% 0.008 280 / 0.3),
+    0 1px 2px oklch(80% 0.02 260 / 0.05),
+    0 4px 12px oklch(85% 0.03 260 / 0.08),
+    0 12px 24px oklch(85% 0.04 260 / 0.04),
+    inset 0 1px 0 oklch(100% 0 0 / 0.6) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(8px);
+  animation: card-entrance 0.6s ease-out backwards;
+}
+
+/* Stagger animation for cards */
+.group.bg-gradient-to-br:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.group.bg-gradient-to-br:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.group.bg-gradient-to-br:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.group.bg-gradient-to-br:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.group.bg-gradient-to-br:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.group.bg-gradient-to-br:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+@keyframes card-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced hover state */
+.group.bg-gradient-to-br:hover {
+  border-color: oklch(70% 0.213 48 / 0.7) !important;
+  box-shadow:
+    0 0 0 1px oklch(70% 0.213 48 / 0.4),
+    0 0 30px oklch(70% 0.213 48 / 0.12),
+    0 8px 16px oklch(70% 0.213 48 / 0.1),
+    0 16px 32px oklch(85% 0.08 260 / 0.08),
+    0 24px 48px oklch(85% 0.1 260 / 0.06),
+    inset 0 1px 0 oklch(100% 0 0 / 0.8) !important;
+  transform: translateY(-6px) !important;
+}
+
+/* Decorative gradient blob inside cards */
+.group .absolute.top-0.right-0 {
+  background: linear-gradient(135deg,
+    oklch(95% 0.06 280 / 0.4) 0%,
+    oklch(95% 0.08 50 / 0.3) 100%) !important;
+  filter: blur(40px);
+  animation: blob-float 8s ease-in-out infinite;
+}
+
+@keyframes blob-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(10px, -10px) scale(1.1);
+  }
+  66% {
+    transform: translate(-10px, 10px) scale(0.9);
+  }
+}
+
+/* Enhanced heading with refined underline */
+.group h2 {
+  transition: color 0.3s ease;
+}
+
+.group:hover h2 {
+  color: oklch(70% 0.213 48) !important;
+}
+
+.group .h-1.w-12 {
+  background: linear-gradient(90deg,
+    oklch(70% 0.213 48) 0%,
+    oklch(60% 0.25 293) 50%,
+    oklch(58% 0.233 277) 100%) !important;
+  box-shadow: 0 0 12px oklch(70% 0.213 48 / 0.4);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease !important;
+}
+
+.group:hover .h-1.w-12 {
+  width: 5rem !important;
+  box-shadow: 0 0 20px oklch(70% 0.213 48 / 0.6);
+}
+
+/* Enhanced badges with subtle glow */
+span.bg-gradient-to-r.from-yellow-50 {
+  box-shadow:
+    0 0 0 1px oklch(90% 0.1 66 / 0.2),
+    0 2px 8px oklch(66% 0.179 58 / 0.15),
+    inset 0 1px 0 oklch(100% 0 0 / 0.5);
+  transition: all 0.3s ease;
+}
+
+span.bg-gradient-to-r.from-yellow-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(66% 0.179 58 / 0.4),
+    0 0 16px oklch(66% 0.179 58 / 0.3),
+    0 4px 12px oklch(66% 0.179 58 / 0.2),
+    inset 0 1px 0 oklch(100% 0 0 / 0.7);
+  transform: translateY(-1px);
+}
+
+span.bg-gradient-to-r.from-blue-50 {
+  box-shadow:
+    0 0 0 1px oklch(75% 0.15 260 / 0.2),
+    0 2px 8px oklch(62% 0.214 260 / 0.15),
+    inset 0 1px 0 oklch(100% 0 0 / 0.5);
+  transition: all 0.3s ease;
+}
+
+span.bg-gradient-to-r.from-blue-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(62% 0.214 260 / 0.4),
+    0 0 16px oklch(62% 0.214 260 / 0.3),
+    0 4px 12px oklch(62% 0.214 260 / 0.2),
+    inset 0 1px 0 oklch(100% 0 0 / 0.7);
+  transform: translateY(-1px);
+}
+
+span.bg-gradient-to-r.from-gray-50 {
+  box-shadow:
+    0 0 0 1px oklch(70% 0.02 260 / 0.2),
+    0 2px 8px oklch(50% 0.02 260 / 0.1),
+    inset 0 1px 0 oklch(100% 0 0 / 0.5);
+  transition: all 0.3s ease;
+}
+
+span.bg-gradient-to-r.from-gray-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(50% 0.02 260 / 0.3),
+    0 0 12px oklch(50% 0.02 260 / 0.2),
+    0 4px 12px oklch(50% 0.02 260 / 0.15),
+    inset 0 1px 0 oklch(100% 0 0 / 0.7);
+  transform: translateY(-1px);
+}
+
+/* Enhanced "View Board" link */
+.group a[href*="/boards/"]:not([href*="/edit"]) {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.group a[href*="/boards/"]:not([href*="/edit"])::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, oklch(70% 0.213 48), oklch(58% 0.233 277));
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group:hover a[href*="/boards/"]:not([href*="/edit"])::after {
+  width: 100%;
+}
+
+/* Icon hover effects */
+.group a .hero-pencil-square,
+.group a .hero-trash {
+  transition: all 0.3s ease;
+}
+
+.group a:hover .hero-pencil-square {
+  transform: rotate(-12deg) scale(1.1);
+}
+
+.group a:hover .hero-trash {
+  transform: rotate(12deg) scale(1.1);
+}
+
+/* Header improvements */
+h1 {
+  font-size: 2.5rem;
+  animation: header-entrance 0.8s ease-out;
+}
+
+@keyframes header-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* New Board button enhancement */
+.btn-primary {
+  box-shadow:
+    0 0 0 1px oklch(70% 0.213 48 / 0.3),
+    0 4px 12px oklch(70% 0.213 48 / 0.2),
+    0 8px 24px oklch(70% 0.213 48 / 0.1),
+    inset 0 1px 0 oklch(100% 0 0 / 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-primary:hover {
+  box-shadow:
+    0 0 0 1px oklch(70% 0.213 48 / 0.5),
+    0 0 20px oklch(70% 0.213 48 / 0.25),
+    0 6px 16px oklch(70% 0.213 48 / 0.25),
+    0 12px 32px oklch(70% 0.213 48 / 0.15),
+    inset 0 1px 0 oklch(100% 0 0 / 0.3) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ===== DARK MODE ENHANCEMENTS ===== */
+
+/* Dark mode atmospheric background with deep space aesthetic */
+[data-theme="dark"] .px-4.py-8,
+[data-theme="dark"] .px-4.py-8 {
+  background:
+    radial-gradient(circle at 15% 15%, oklch(25% 0.08 280 / 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, oklch(25% 0.08 320 / 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, oklch(22% 0.03 260 / 0.5) 0%, transparent 60%),
+    oklch(18% 0.015 252) !important;
+  min-height: 100vh;
+}
+
+/* Dark mode board cards - glassmorphism with glowing borders */
+[data-theme="dark"] .group.bg-gradient-to-br {
+  background: linear-gradient(135deg,
+    oklch(22% 0.03 260) 0%,
+    oklch(20% 0.025 270) 50%,
+    oklch(18% 0.02 280) 100%) !important;
+  border: 1px solid oklch(35% 0.08 280 / 0.5) !important;
+  box-shadow:
+    0 0 0 1px oklch(45% 0.12 280 / 0.2),
+    0 0 20px oklch(58% 0.233 277 / 0.15),
+    0 8px 24px oklch(10% 0.02 260 / 0.6),
+    0 16px 40px oklch(10% 0.02 260 / 0.4),
+    inset 0 1px 0 oklch(60% 0.08 280 / 0.08),
+    inset 0 0 60px oklch(58% 0.233 277 / 0.03) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* Dark mode card hover - dramatic glow effect */
+[data-theme="dark"] .group.bg-gradient-to-br:hover {
+  border-color: oklch(58% 0.233 277 / 0.8) !important;
+  box-shadow:
+    0 0 0 1px oklch(58% 0.233 277 / 0.5),
+    0 0 40px oklch(58% 0.233 277 / 0.35),
+    0 0 60px oklch(60% 0.25 293 / 0.2),
+    0 8px 24px oklch(10% 0.02 260 / 0.7),
+    0 20px 50px oklch(10% 0.02 260 / 0.5),
+    inset 0 1px 0 oklch(70% 0.1 280 / 0.15),
+    inset 0 0 80px oklch(58% 0.233 277 / 0.08) !important;
+}
+
+/* Dark mode gradient blob - more vibrant */
+[data-theme="dark"] .group .absolute.top-0.right-0 {
+  background: linear-gradient(135deg,
+    oklch(35% 0.15 280 / 0.5) 0%,
+    oklch(35% 0.15 320 / 0.4) 100%) !important;
+  filter: blur(50px);
+}
+
+/* Dark mode heading gradient */
+[data-theme="dark"] h1 {
+  background: linear-gradient(135deg,
+    oklch(85% 0.08 280) 0%,
+    oklch(75% 0.15 300) 40%,
+    oklch(80% 0.12 260) 70%,
+    oklch(70% 0.18 320) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Dark mode card heading hover */
+[data-theme="dark"] .group:hover h2 {
+  color: oklch(75% 0.15 280) !important;
+  text-shadow: 0 0 20px oklch(58% 0.233 277 / 0.4);
+}
+
+/* Dark mode decorative underline with glow */
+[data-theme="dark"] .group .h-1.w-12 {
+  background: linear-gradient(90deg,
+    oklch(58% 0.233 277) 0%,
+    oklch(60% 0.25 293) 50%,
+    oklch(55% 0.20 310) 100%) !important;
+  box-shadow:
+    0 0 16px oklch(58% 0.233 277 / 0.6),
+    0 0 30px oklch(60% 0.25 293 / 0.3);
+}
+
+[data-theme="dark"] .group:hover .h-1.w-12 {
+  box-shadow:
+    0 0 24px oklch(58% 0.233 277 / 0.8),
+    0 0 40px oklch(60% 0.25 293 / 0.5),
+    0 0 60px oklch(55% 0.20 310 / 0.3);
+}
+
+/* Dark mode badge enhancements with stronger glows */
+[data-theme="dark"] span.bg-gradient-to-r.from-yellow-50 {
+  box-shadow:
+    0 0 0 1px oklch(66% 0.179 58 / 0.3),
+    0 0 20px oklch(66% 0.179 58 / 0.3),
+    0 4px 16px oklch(66% 0.179 58 / 0.2),
+    inset 0 1px 0 oklch(85% 0.15 58 / 0.1);
+}
+
+[data-theme="dark"] span.bg-gradient-to-r.from-yellow-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(66% 0.179 58 / 0.6),
+    0 0 30px oklch(66% 0.179 58 / 0.5),
+    0 0 50px oklch(66% 0.179 58 / 0.3),
+    0 6px 20px oklch(66% 0.179 58 / 0.3),
+    inset 0 1px 0 oklch(85% 0.15 58 / 0.2);
+}
+
+[data-theme="dark"] span.bg-gradient-to-r.from-blue-50 {
+  box-shadow:
+    0 0 0 1px oklch(62% 0.214 260 / 0.3),
+    0 0 20px oklch(62% 0.214 260 / 0.3),
+    0 4px 16px oklch(62% 0.214 260 / 0.2),
+    inset 0 1px 0 oklch(75% 0.15 260 / 0.1);
+}
+
+[data-theme="dark"] span.bg-gradient-to-r.from-blue-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(62% 0.214 260 / 0.6),
+    0 0 30px oklch(62% 0.214 260 / 0.5),
+    0 0 50px oklch(62% 0.214 260 / 0.3),
+    0 6px 20px oklch(62% 0.214 260 / 0.3),
+    inset 0 1px 0 oklch(75% 0.15 260 / 0.2);
+}
+
+[data-theme="dark"] span.bg-gradient-to-r.from-gray-50 {
+  box-shadow:
+    0 0 0 1px oklch(50% 0.05 260 / 0.3),
+    0 0 16px oklch(50% 0.05 260 / 0.2),
+    0 4px 12px oklch(50% 0.05 260 / 0.15),
+    inset 0 1px 0 oklch(70% 0.05 260 / 0.1);
+}
+
+[data-theme="dark"] span.bg-gradient-to-r.from-gray-50:hover {
+  box-shadow:
+    0 0 0 1px oklch(60% 0.08 260 / 0.5),
+    0 0 24px oklch(60% 0.08 260 / 0.4),
+    0 0 40px oklch(60% 0.08 260 / 0.25),
+    0 6px 16px oklch(50% 0.05 260 / 0.25),
+    inset 0 1px 0 oklch(70% 0.05 260 / 0.15);
+}
+
+/* Dark mode "View Board" link with glowing underline */
+[data-theme="dark"] .group a[href*="/boards/"]:not([href*="/edit"])::after {
+  background: linear-gradient(90deg,
+    oklch(58% 0.233 277),
+    oklch(60% 0.25 293));
+  box-shadow: 0 0 8px oklch(58% 0.233 277 / 0.6);
+}
+
+[data-theme="dark"] .group:hover a[href*="/boards/"]:not([href*="/edit"])::after {
+  box-shadow:
+    0 0 12px oklch(58% 0.233 277 / 0.8),
+    0 0 20px oklch(60% 0.25 293 / 0.5);
+}
+
+/* Dark mode primary button with enhanced glow */
+[data-theme="dark"] .btn-primary {
+  box-shadow:
+    0 0 0 1px oklch(58% 0.233 277 / 0.4),
+    0 0 24px oklch(58% 0.233 277 / 0.3),
+    0 8px 24px oklch(10% 0.02 260 / 0.6),
+    inset 0 1px 0 oklch(70% 0.15 280 / 0.15) !important;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  box-shadow:
+    0 0 0 1px oklch(58% 0.233 277 / 0.7),
+    0 0 40px oklch(58% 0.233 277 / 0.5),
+    0 0 60px oklch(60% 0.25 293 / 0.35),
+    0 12px 32px oklch(10% 0.02 260 / 0.7),
+    inset 0 1px 0 oklch(70% 0.15 280 / 0.25) !important;
+}
+
+/* Dark mode icon glow effects on hover */
+[data-theme="dark"] .group a:hover .hero-pencil-square,
+[data-theme="dark"] .group a:hover .hero-trash {
+  filter: drop-shadow(0 0 8px oklch(58% 0.233 277 / 0.6));
+}
+
+/* Dark mode enhanced text colors for better vibrancy */
+[data-theme="dark"] .group h2 {
+  color: oklch(90% 0.04 260);
+}
+
+/* Dark mode link text enhancement */
+[data-theme="dark"] .group a[href*="/boards/"]:not([href*="/edit"]) {
+  color: oklch(70% 0.18 280) !important;
+  text-shadow: 0 0 10px oklch(58% 0.233 277 / 0.2);
+}
+
+[data-theme="dark"] .group:hover a[href*="/boards/"]:not([href*="/edit"]) {
+  color: oklch(75% 0.20 280) !important;
+  text-shadow: 0 0 16px oklch(58% 0.233 277 / 0.5);
+}
+
+/* ===== HOMEPAGE DARK MODE ENHANCEMENTS ===== */
+
+/* Dark mode hero badge with glow */
+[data-theme="dark"] .bg-blue-100 {
+  box-shadow:
+    0 0 0 1px oklch(62% 0.214 260 / 0.3),
+    0 0 20px oklch(62% 0.214 260 / 0.25),
+    inset 0 1px 0 oklch(75% 0.15 260 / 0.1);
+}
+
+/* Dark mode title gradient with enhanced vibrancy */
+[data-theme="dark"] .from-blue-600 {
+  text-shadow: 0 0 30px oklch(58% 0.233 277 / 0.3);
+}
+
+/* Dark mode mock board gradient blob - more vibrant */
+[data-theme="dark"] .bg-gradient-to-br.from-blue-400 {
+  background: linear-gradient(to right bottom,
+    oklch(60% 0.25 260) 0%,
+    oklch(65% 0.23 320) 50%,
+    oklch(70% 0.21 20) 100%) !important;
+  opacity: 0.35 !important;
+  box-shadow:
+    0 0 80px oklch(58% 0.233 277 / 0.4),
+    0 0 120px oklch(60% 0.25 293 / 0.3);
+}
+
+/* Dark mode mock board container - enhanced depth and glow */
+[data-theme="dark"] .relative.bg-base-100.rounded-2xl.shadow-2xl {
+  border-color: oklch(40% 0.08 280 / 0.6) !important;
+  box-shadow:
+    0 0 0 1px oklch(50% 0.12 280 / 0.3),
+    0 0 30px oklch(58% 0.233 277 / 0.2),
+    0 20px 50px oklch(10% 0.02 260 / 0.7),
+    inset 0 1px 0 oklch(60% 0.08 280 / 0.1),
+    inset 0 0 60px oklch(58% 0.233 277 / 0.05) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Dark mode window control buttons - more vibrant */
+[data-theme="dark"] .bg-red-400 {
+  background: oklch(60% 0.25 25) !important;
+  box-shadow: 0 0 8px oklch(60% 0.25 25 / 0.6);
+}
+
+[data-theme="dark"] .bg-yellow-400 {
+  background: oklch(75% 0.18 85) !important;
+  box-shadow: 0 0 8px oklch(75% 0.18 85 / 0.6);
+}
+
+[data-theme="dark"] .bg-green-400 {
+  background: oklch(65% 0.20 145) !important;
+  box-shadow: 0 0 8px oklch(65% 0.20 145 / 0.6);
+}
+
+/* Dark mode mock board content bars - better visibility */
+[data-theme="dark"] .bg-gray-200 {
+  background: oklch(35% 0.02 260) !important;
+}
+
+/* ===== GOAL CARD STYLING ===== */
+
+/* Light mode goal cards - muted yellow/amber */
+.from-yellow-50.to-amber-100 {
+  background: linear-gradient(135deg,
+    oklch(92% 0.06 85) 0%,
+    oklch(90% 0.08 75) 100%) !important;
+  border-color: oklch(82% 0.12 75 / 0.6) !important;
+  box-shadow:
+    0 0 0 1px oklch(85% 0.10 80 / 0.3),
+    0 2px 8px oklch(80% 0.12 75 / 0.15),
+    0 4px 12px oklch(80% 0.12 75 / 0.08),
+    inset 0 1px 0 oklch(98% 0 0 / 0.4) !important;
+}
+
+.from-yellow-50.to-amber-100:hover {
+  border-color: oklch(78% 0.14 75 / 0.8) !important;
+  box-shadow:
+    0 0 0 1px oklch(78% 0.14 75 / 0.4),
+    0 0 16px oklch(78% 0.12 75 / 0.2),
+    0 4px 14px oklch(78% 0.12 75 / 0.15),
+    inset 0 1px 0 oklch(98% 0 0 / 0.5) !important;
+}
+
+/* Dark mode goal cards - muted yellow/amber */
+[data-theme="dark"] .from-yellow-50.to-amber-100 {
+  background: linear-gradient(135deg,
+    oklch(28% 0.10 75) 0%,
+    oklch(26% 0.08 65) 100%) !important;
+  border-color: oklch(45% 0.12 75 / 0.6) !important;
+  box-shadow:
+    0 0 0 1px oklch(48% 0.14 75 / 0.3),
+    0 0 12px oklch(50% 0.12 65 / 0.2),
+    0 4px 12px oklch(45% 0.12 75 / 0.15),
+    inset 0 1px 0 oklch(55% 0.12 80 / 0.08),
+    inset 0 0 30px oklch(50% 0.10 65 / 0.04) !important;
+}
+
+[data-theme="dark"] .from-yellow-50.to-amber-100:hover {
+  border-color: oklch(52% 0.14 75 / 0.8) !important;
+  box-shadow:
+    0 0 0 1px oklch(52% 0.14 75 / 0.4),
+    0 0 20px oklch(55% 0.12 65 / 0.3),
+    0 0 30px oklch(55% 0.12 65 / 0.2),
+    0 6px 16px oklch(45% 0.12 75 / 0.2),
+    inset 0 1px 0 oklch(58% 0.12 80 / 0.12),
+    inset 0 0 45px oklch(50% 0.10 65 / 0.08) !important;
+}
+
+/* Goal card progress bars */
+.from-green-500.to-emerald-500 {
+  background: linear-gradient(90deg,
+    oklch(65% 0.20 145) 0%,
+    oklch(60% 0.18 165) 100%) !important;
+  box-shadow: 0 0 8px oklch(65% 0.20 145 / 0.4);
+}
+
+[data-theme="dark"] .from-green-500.to-emerald-500 {
+  background: linear-gradient(90deg,
+    oklch(65% 0.20 145) 0%,
+    oklch(60% 0.18 165) 100%) !important;
+  box-shadow: 0 0 12px oklch(65% 0.20 145 / 0.6);
+}

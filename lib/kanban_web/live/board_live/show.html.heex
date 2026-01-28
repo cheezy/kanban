@@ -122,11 +122,11 @@
                         <.link
                           patch={~p"/boards/#{@board}/columns/#{column}/tasks/new"}
                           title={gettext("Add task")}
-                          class="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 hover:from-green-200 hover:to-emerald-200 dark:hover:from-green-800/40 dark:hover:to-emerald-800/40 transition-all hover:scale-110"
+                          class="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-purple-900/30 dark:to-violet-900/30 hover:from-green-200 hover:to-emerald-200 dark:hover:from-purple-800/40 dark:hover:to-violet-800/40 transition-all hover:scale-110"
                         >
                           <.icon
                             name="hero-plus-circle-solid"
-                            class="h-5 w-5 text-green-600 dark:text-green-400"
+                            class="h-5 w-5 text-green-600 dark:text-purple-400"
                           />
                         </.link>
                       <% end %>
@@ -217,7 +217,7 @@
                     "group task-card relative overflow-hidden rounded-lg shadow-md hover:shadow-xl border transition-all duration-200",
                     if task.identifier && String.starts_with?(task.identifier, "G") do
                       # Goal card styling (compact height, yellow background, non-draggable)
-                      "p-1.5 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-blue-900/30 dark:to-indigo-900/30 border-yellow-300/60 dark:border-blue-700/50 hover:border-yellow-400/50 dark:hover:border-blue-600/50 min-h-[45px]"
+                      "p-1.5 bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/40 dark:to-amber-900/40 border-yellow-300/60 dark:border-yellow-700/60 hover:border-yellow-400/70 dark:hover:border-yellow-600/70 min-h-[45px]"
                     else
                       # Regular task card styling
                       "p-3 bg-gradient-to-br from-base-100 to-base-200/50 border-base-300/60 hover:border-blue-300/50 transform hover:-translate-y-0.5"
@@ -312,7 +312,7 @@
                           }) %>
                         <div class="mt-1">
                           <div class="flex items-center gap-2">
-                            <div class="flex-1 h-1.5 bg-yellow-200 dark:bg-yellow-800/50 rounded-full overflow-hidden">
+                            <div class="flex-1 h-1.5 bg-amber-300/80 dark:bg-yellow-900/70 rounded-full overflow-hidden">
                               <div
                                 class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-300"
                                 style={"width: #{progress.percentage}%"}
@@ -326,7 +326,7 @@
                         </div>
                       <% else %>
                         <%= if task.description && task.description != "" do %>
-                          <p class="mt-1.5 text-xs text-base-content opacity-70 line-clamp-2 leading-relaxed">
+                          <p class="mt-1.5 text-sm text-base-content opacity-70 line-clamp-2 leading-relaxed">
                             {task.description}
                           </p>
                         <% end %>
