@@ -5,6 +5,29 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.2] - 2026-02-03
+
+### Added
+
+#### OpenCode & Kimi Code CLI AI Assistant Support
+
+- **Multi-Agent Integration Expansion** - Added comprehensive support for OpenCode and Kimi Code CLI as the sixth supported AI coding assistant format (shared AGENTS.md format):
+  - **AGENTS.md Instruction File**: Created Markdown-formatted instruction file (~15KB, ~400 lines) with complete Stride integration guidelines
+  - **Append-Mode Installation**: Unique installation strategy that appends Stride instructions to existing AGENTS.md files rather than overwriting, preserving project-specific instructions
+  - **Hierarchical File Search**: Supports project-scoped (`./AGENTS.md`) and global (`~/.config/opencode/AGENTS.md`) locations with hierarchical search from current directory upward
+  - **Onboarding Endpoint Integration**: Added OpenCode/Kimi format to `/api/agent/onboarding` multi_agent_instructions section with safe installation commands
+  - **Format Compatibility**: Both OpenCode and Kimi Code CLI (k2.5) use identical AGENTS.md file format and locations
+
+**Multi-Agent Instructions (Now 6 Formats):**
+1. GitHub Copilot (`.github/copilot-instructions.md`)
+2. Cursor (`.cursorrules`)
+3. Windsurf Cascade (`.windsurfrules`)
+4. Continue.dev (`.continue/config.json`)
+5. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
+6. **OpenCode & Kimi Code CLI** (`AGENTS.md`)
+
+*Note: Claude Code uses contextual Skills rather than always-active instructions.*
+
 ## [1.21.1] - 2026-01-26
 
 ### Fixed

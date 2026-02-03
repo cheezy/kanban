@@ -35,7 +35,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
-## Supported AI Assistants (5 Total)
+## Supported AI Assistants (6 Total)
 
 ### 1. GitHub Copilot
 
@@ -166,11 +166,67 @@ curl -o GEMINI.md \
 - Hook execution details
 - Context file hierarchy support (subdirectories override parent)
 
+### 6. OpenCode & Kimi Code CLI
+
+**File:** `AGENTS.md`
+
+**Location:** `docs/multi-agent-instructions/AGENTS.md`
+
+**Compatible Tools:** OpenCode, Kimi Code CLI (k2.5)
+
+**Scope:** Project-scoped with hierarchical search (searches from current directory upward)
+
+**Token Limit:** ~8000-10000 tokens (~400-500 lines)
+
+**Format:** Markdown with headings, lists, code blocks
+
+**Download:**
+```bash
+# Check if AGENTS.md already exists
+[ -f AGENTS.md ] && echo "AGENTS.md exists - will append" || echo "Creating new AGENTS.md"
+
+# Append to existing file (recommended if AGENTS.md exists)
+echo '\n\n# === Stride Integration Instructions ===' >> AGENTS.md
+curl -s https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md
+
+# OR create fresh file (only if no AGENTS.md exists)
+curl -o AGENTS.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md
+```
+
+**Windows (PowerShell):**
+```powershell
+# Check if exists
+if (Test-Path AGENTS.md) { Write-Host "AGENTS.md exists - will append" } else { Write-Host "Creating new AGENTS.md" }
+
+# Append to existing file (recommended if AGENTS.md exists)
+"`n`n# === Stride Integration Instructions ===" | Add-Content AGENTS.md
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md" | Select-Object -ExpandProperty Content | Add-Content AGENTS.md
+
+# OR create fresh file (only if no AGENTS.md exists)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md" -OutFile AGENTS.md
+```
+
+**Alternative Locations:**
+- Project root: `./AGENTS.md` (applies to project and subdirectories)
+- Global: `~/.config/opencode/AGENTS.md` (applies to all projects)
+- Via config: Reference in `opencode.json` or `kimi.toml` instructions field
+
+**IMPORTANT:** Many projects already have `AGENTS.md` files with project-specific instructions. The installation commands above will **append** Stride instructions to existing files rather than overwriting them. Both OpenCode and Kimi Code CLI search hierarchically for AGENTS.md files from the current directory upward and use identical file formats.
+
+**Focus:**
+- Append-mode installation to preserve existing instructions
+- Hierarchical file search pattern
+- Detailed code patterns with Markdown formatting
+- Comprehensive mistake catalog
+- Hook execution details
+- Shared format works with both OpenCode and Kimi Code CLI
+
 ## Content Strategy
 
 ### Core Content (All Formats)
 
-All five instruction formats cover the same essential topics:
+All six instruction formats cover the same essential topics:
 
 1. **Hook Execution Mandate**
    - All four hooks and their purpose
@@ -229,6 +285,13 @@ All five instruction formats cover the same essential topics:
 - Supports hierarchical context (subdirectories override parent)
 - Can use either GEMINI.md or AGENT.md filename
 
+**OpenCode (Markdown):**
+- Rich formatting with headings, lists, code blocks
+- Append-mode installation to preserve existing AGENTS.md files
+- Hierarchical file search from current directory upward
+- Similar depth to Cursor/Windsurf/Gemini formats
+- Can be placed in project root or ~/.config/opencode/
+
 ## Distribution Architecture
 
 ### Onboarding Endpoint Structure
@@ -267,10 +330,11 @@ docs/multi-agent-instructions/
 ├── cursorrules.txt            # 15KB
 ├── windsurfrules.txt          # 15KB
 ├── continue-config.json       # 4KB
-└── GEMINI.md                  # 15KB
+├── GEMINI.md                  # 15KB
+└── AGENTS.md                  # 15KB
 ```
 
-Total size: ~58KB of instruction content
+Total size: ~73KB of instruction content
 
 ### Endpoint Optimization
 
@@ -290,7 +354,7 @@ Total size: ~58KB of instruction content
 When AI agents fetch the onboarding endpoint, they should automatically download the appropriate instruction file based on their type:
 
 1. Agent fetches `/api/agent/onboarding`
-2. Agent identifies its type (Copilot, Cursor, Windsurf, Continue.dev, Gemini)
+2. Agent identifies its type (Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode)
 3. Agent extracts the `download_url` for its format
 4. Agent executes the appropriate `installation_unix` or `installation_windows` command
 5. Instruction file is placed in the correct location
@@ -302,7 +366,7 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md 2>/dev/null
+ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
@@ -314,6 +378,7 @@ ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/con
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
 [ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
 [ -f AGENT.md ] && cp AGENT.md AGENT.md.backup
+[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup
 ```
 
 **Download Stride instructions:**
@@ -362,6 +427,28 @@ curl -o ~/.gemini/GEMINI.md \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
 ```
 
+**OpenCode:**
+```bash
+# IMPORTANT: OpenCode uses AGENTS.md which many projects already have
+# Check if file exists first
+[ -f AGENTS.md ] && echo "AGENTS.md exists - will append Stride instructions"
+
+# Append to existing file (recommended if AGENTS.md exists)
+echo '\n\n# === Stride Integration Instructions ===' >> AGENTS.md
+curl -s https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md
+
+# OR create fresh file (only if no AGENTS.md exists)
+curl -o AGENTS.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md
+```
+
+For global installation (applies to all projects):
+```bash
+mkdir -p ~/.config/opencode
+curl -o ~/.config/opencode/AGENTS.md \
+  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md
+```
+
 **Merging with existing configuration:**
 
 If you have existing custom instructions, you may want to manually merge them:
@@ -389,7 +476,7 @@ If you have existing custom instructions, you may want to manually merge them:
 
 **Check for existing files:**
 ```powershell
-Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md -ErrorAction SilentlyContinue
+Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
 ```
 
 **Backup existing files (recommended):**
@@ -400,6 +487,7 @@ if (Test-Path .windsurfrules) { Copy-Item .windsurfrules .windsurfrules.backup }
 if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
 if (Test-Path GEMINI.md) { Copy-Item GEMINI.md GEMINI.md.backup }
 if (Test-Path AGENT.md) { Copy-Item AGENT.md AGENT.md.backup }
+if (Test-Path AGENTS.md) { Copy-Item AGENTS.md AGENTS.md.backup }
 ```
 
 **Download Stride instructions:**
@@ -426,6 +514,19 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 # For global installation
 New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile $env:USERPROFILE\.gemini\GEMINI.md
+
+# OpenCode (IMPORTANT: appends to existing AGENTS.md if present)
+if (Test-Path AGENTS.md) {
+  Write-Host "AGENTS.md exists - appending Stride instructions"
+  "`n`n# === Stride Integration Instructions ===" | Add-Content AGENTS.md
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md" | Select-Object -ExpandProperty Content | Add-Content AGENTS.md
+} else {
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md" -OutFile AGENTS.md
+}
+
+# For global installation
+New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.config\opencode
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/AGENTS.md" -OutFile $env:USERPROFILE\.config\opencode\AGENTS.md
 ```
 
 **Appending to existing configuration:**
@@ -470,7 +571,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev, Gemini |
+| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Kimi |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 

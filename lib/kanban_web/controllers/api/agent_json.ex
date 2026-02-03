@@ -1974,6 +1974,37 @@ defmodule KanbanWeb.API.AgentJSON do
             ],
             note:
               "Gemini Code Assist supports hierarchical context files - more specific files override or supplement content from parent directories. You can also use AGENT.md as an alternative filename in IntelliJ IDEs."
+          },
+          opencode: %{
+            file_path: "AGENTS.md",
+            description:
+              "OpenCode & Kimi Code CLI instructions (shared AGENTS.md format, hierarchical search)",
+            compatible_tools: ["OpenCode", "Kimi Code CLI (k2.5)"],
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+            installation_unix:
+              "[ -f AGENTS.md ] && echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md || curl -o AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+            installation_windows:
+              "if (Test-Path AGENTS.md) { \"`n`n# === Stride Integration Instructions ===\" | Add-Content AGENTS.md; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md\" | Select-Object -ExpandProperty Content | Add-Content AGENTS.md } else { Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md\" -OutFile AGENTS.md }",
+            token_limit: "~8000-10000 tokens (~400-500 lines)",
+            alternative_locations: [
+              "Project root: ./AGENTS.md (applies to project and subdirectories)",
+              "Global: ~/.config/opencode/AGENTS.md (applies to all projects)",
+              "Via config: Reference in opencode.json/kimi.toml instructions field"
+            ],
+            note:
+              "IMPORTANT: Many projects already have AGENTS.md files. The installation commands above will append Stride instructions to existing files rather than overwriting. Both OpenCode and Kimi Code CLI search hierarchically for AGENTS.md files from current directory upward and use identical file formats.",
+            safe_installation: %{
+              check_existing: "[ -f AGENTS.md ] && echo 'AGENTS.md exists'",
+              backup_first: "[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup",
+              append_mode:
+                "echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md",
+              fresh_install:
+                "curl -o AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+              global_install:
+                "mkdir -p ~/.config/opencode && curl -o ~/.config/opencode/AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+              via_config:
+                "Add to opencode.json: {\"instructions\": [\"AGENTS.md\", \"path/to/stride-instructions.md\"]}"
+            }
           }
         },
         usage_notes: [
@@ -1981,13 +2012,15 @@ defmodule KanbanWeb.API.AgentJSON do
           "Choose the format that matches your AI assistant and download it using the commands above",
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
-          "Claude Code users should ignore this section and use claude_code_skills instead"
+          "Claude Code users should ignore this section and use claude_code_skills instead",
+          "OpenCode & Kimi Code CLI users: If you already have AGENTS.md, the installation command will append Stride instructions rather than overwrite"
         ],
         safe_installation: [
           "RECOMMENDED: Check if config file exists before overwriting: [ -f .cursorrules ] && echo 'File exists, backup first'",
           "RECOMMENDED: Backup existing config: cp .cursorrules .cursorrules.backup",
           "ALTERNATIVE: Append Stride instructions: echo '\\n\\n# Stride Integration' >> .cursorrules && curl -s [url] >> .cursorrules",
           "ALTERNATIVE: Download to temp location and manually merge: curl -o /tmp/stride-instructions.txt [url]",
+          "For OpenCode & Kimi Code CLI: The installation command automatically appends if AGENTS.md exists, or creates new file if not",
           "For more details see: #{@docs_base_url}/docs/MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
         ]
       },
@@ -2067,6 +2100,19 @@ defmodule KanbanWeb.API.AgentJSON do
               "2. Create .stride_auth.md with your API token and add to .gitignore",
               "3. Reference this onboarding URL in your project's README or setup docs"
             ]
+          },
+          opencode: %{
+            description: "For OpenCode & Kimi Code CLI users",
+            steps: [
+              "1. Check if AGENTS.md exists in project root: [ -f AGENTS.md ] && echo 'exists'",
+              "2. If exists: Append Stride instructions: echo '\\n\\n# Stride Integration\\nSee #{base_url}/api/agent/onboarding' >> AGENTS.md",
+              "3. If not exists: Download full AGENTS.md from multi_agent_instructions.formats.opencode",
+              "4. Create .stride.md and .stride_auth.md files from the templates above",
+              "5. Optionally add to ~/.config/opencode/AGENTS.md for global availability",
+              "6. Use /init command (OpenCode) or project scanning (Kimi) to generate context"
+            ],
+            note:
+              "Both OpenCode and Kimi Code CLI search hierarchically for AGENTS.md files using identical formats. Project-level AGENTS.md takes precedence over global ~/.config/opencode/AGENTS.md"
           },
           generic: %{
             description: "For any AI coding agent",
