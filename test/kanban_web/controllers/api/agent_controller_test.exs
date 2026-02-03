@@ -333,14 +333,39 @@ defmodule KanbanWeb.API.AgentControllerTest do
       for {name, format} <- formats do
         assert is_binary(format["file_path"])
         assert is_binary(format["description"])
-        # OpenCode references Claude Code skills, so it doesn't have a download_url
-        if name != "opencode" do
+        # GitHub Copilot and OpenCode reference Claude Code skills, so they don't have a download_url
+        if name not in ["copilot", "opencode"] do
           assert is_binary(format["download_url"])
         end
         assert is_binary(format["installation_unix"])
         assert is_binary(format["installation_windows"])
         assert is_binary(format["token_limit"])
       end
+    end
+
+    test "GitHub Copilot format uses Claude Code skills", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      copilot = response["multi_agent_instructions"]["formats"]["copilot"]
+
+      # Verify basic structure
+      assert copilot["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert copilot["description"] =~ "GitHub Copilot"
+      assert copilot["description"] =~ "Claude Code skills"
+
+      # Verify compatible_tools field includes both
+      assert is_list(copilot["compatible_tools"])
+      assert "GitHub Copilot" in copilot["compatible_tools"]
+      assert "Claude Code" in copilot["compatible_tools"]
+      refute "OpenCode" in copilot["compatible_tools"]
+      refute "Kimi Code CLI (k2.5)" in copilot["compatible_tools"]
+
+      # Verify reference_section points to claude_code_skills
+      assert copilot["reference_section"] == "claude_code_skills"
+
+      # Verify token limit
+      assert copilot["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
     end
 
     test "OpenCode format uses Claude Code skills", %{conn: conn} do
@@ -607,11 +632,6 @@ defmodule KanbanWeb.API.AgentControllerTest do
       response = json_response(conn, 200)
 
       formats = response["multi_agent_instructions"]["formats"]
-
-      # Verify Copilot format
-      copilot = formats["copilot"]
-      assert copilot["file_path"] == ".github/copilot-instructions.md"
-      assert is_binary(copilot["description"])
 
       # Verify Cursor format
       cursor = formats["cursor"]

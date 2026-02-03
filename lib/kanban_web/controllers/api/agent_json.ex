@@ -1915,15 +1915,34 @@ defmodule KanbanWeb.API.AgentJSON do
           "IMPORTANT: The installation commands will overwrite existing configuration files. If you have existing custom configurations, back them up first or append Stride instructions to your existing file. See usage_notes below for safer installation approaches.",
         formats: %{
           copilot: %{
-            file_path: ".github/copilot-instructions.md",
-            description: "GitHub Copilot instructions (repository-scoped, always active)",
-            download_url:
-              "#{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md",
+            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
+            description:
+              "GitHub Copilot automatically discovers Claude Code skills - install the same skills used by Claude Code",
+            compatible_tools: ["GitHub Copilot", "Claude Code"],
+            reference_section: "claude_code_skills",
+            note:
+              "GitHub Copilot automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and GitHub Copilot will find them automatically. See https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/ for details on GitHub Copilot's skill discovery mechanism.",
+            skills_note:
+              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and GitHub Copilot will discover them.",
             installation_unix:
-              "curl -o .github/copilot-instructions.md #{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md",
+              "# GitHub Copilot users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and GitHub Copilot\n# See claude_code_skills.installation_instructions above for details",
             installation_windows:
-              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/copilot-instructions.md\" -OutFile .github/copilot-instructions.md",
-            token_limit: "~4000 tokens (~250 lines)"
+              "# GitHub Copilot users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and GitHub Copilot\n# See claude_code_skills.installation_instructions above for details",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            alternative_locations: [
+              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and GitHub Copilot)",
+              "Global: ~/.claude/skills/<skill-name>/SKILL.md"
+            ],
+            safe_installation: %{
+              check_existing:
+                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
+              backup_first:
+                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
+              install_from_claude_skills:
+                "Refer to claude_code_skills section above for complete installation. The skills work identically for GitHub Copilot since it discovers .claude/skills/ automatically.",
+              usage:
+                "Invoke specific skills in GitHub Copilot when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. GitHub Copilot will automatically find skills in .claude/skills/ directories."
+            }
           },
           cursor: %{
             file_path: ".cursorrules",
@@ -2042,6 +2061,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should use claude_code_skills section above (not this section)",
+          "GitHub Copilot users: Install the Claude Code skills from claude_code_skills section - GitHub Copilot automatically discovers .claude/skills/ directories",
           "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
@@ -2131,6 +2151,19 @@ defmodule KanbanWeb.API.AgentJSON do
               "2. Create .stride_auth.md with your API token and add to .gitignore",
               "3. Reference this onboarding URL in your project's README or setup docs"
             ]
+          },
+          copilot: %{
+            description: "For GitHub Copilot users (uses Claude Code skills)",
+            steps: [
+              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
+              "2. GitHub Copilot automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Invoke skills in GitHub Copilot: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
+              "5. The skills will load Stride integration instructions on-demand",
+              "6. Skills installed to .claude/skills/ work with both Claude Code and GitHub Copilot"
+            ],
+            note:
+              "GitHub Copilot automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and GitHub Copilot will find them. See https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/ for details."
           },
           opencode: %{
             description: "For OpenCode users (uses Claude Code skills)",

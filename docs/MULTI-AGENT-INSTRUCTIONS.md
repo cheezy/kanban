@@ -39,27 +39,36 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 ### 1. GitHub Copilot
 
-**File:** `.github/copilot-instructions.md`
+**Files:** Multiple focused skills (4 total)
 
-**Location:** `docs/multi-agent-instructions/copilot-instructions.md`
+**Location:** `docs/multi-agent-instructions/SKILL.md`
 
-**Scope:** Repository-scoped, always active
+**Compatible Tools:** GitHub Copilot, Claude Code
 
-**Token Limit:** ~4000 tokens (~250 lines)
+**Scope:** On-demand skill loading (invoked when needed)
 
-**Format:** Markdown with headings, lists, code blocks
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+
+**Format:** YAML frontmatter + Markdown content
+
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
 
 **Download:**
 ```bash
-curl -o .github/copilot-instructions.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md
+# Create all skill directories and download (Claude-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
-**Focus:**
-- Very concise due to strict token limits
-- Top 5 critical mistakes
-- Essential code patterns
-- Inline code completion hints
+**IMPORTANT:** GitHub Copilot and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. GitHub Copilot automatically discovers skills in `.claude/skills/` directories, making them compatible across both platforms. See [GitHub Copilot Agent Skills](https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/) for details.
 
 ### 2. Cursor
 
@@ -367,12 +376,14 @@ The `/api/agent/onboarding` endpoint includes the `multi_agent_instructions` sec
     "note": "Claude Code users should use claude_code_skills above...",
     "formats": {
       "copilot": {
-        "file_path": ".github/copilot-instructions.md",
-        "description": "GitHub Copilot instructions",
-        "download_url": "https://raw.githubusercontent.com/.../copilot-instructions.md",
-        "installation_unix": "curl -o .github/copilot-instructions.md [url]",
-        "installation_windows": "Invoke-WebRequest -Uri \"[url]\" -OutFile ...",
-        "token_limit": "~4000 tokens (~250 lines)"
+        "file_path": ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
+        "description": "GitHub Copilot automatically discovers Claude Code skills",
+        "compatible_tools": ["GitHub Copilot", "Claude Code"],
+        "reference_section": "claude_code_skills",
+        "note": "GitHub Copilot automatically discovers skills in .claude/skills/ directories...",
+        "installation_unix": "# GitHub Copilot users: Use Claude Code skill installation...",
+        "installation_windows": "# GitHub Copilot users: Use Claude Code skill installation...",
+        "token_limit": "~2000-3000 tokens per skill (~100-150 lines each)"
       },
       ...
     }
@@ -385,16 +396,15 @@ The `/api/agent/onboarding` endpoint includes the `multi_agent_instructions` sec
 All multi-agent instruction files are stored in:
 ```
 docs/multi-agent-instructions/
-├── copilot-instructions.md    # 9KB
+├── SKILL.md                   # 9KB (shared by GitHub Copilot, Claude Code, OpenCode)
 ├── cursorrules.txt            # 15KB
 ├── windsurfrules.txt          # 15KB
 ├── continue-config.json       # 4KB
 ├── GEMINI.md                  # 15KB
-├── SKILL.md                   # 15KB (OpenCode skill)
 └── AGENTS.md                  # 15KB (Kimi Code CLI k2.5)
 ```
 
-Total size: ~88KB of instruction content
+Total size: ~73KB of instruction content
 
 ### Endpoint Optimization
 
@@ -428,29 +438,34 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .github/copilot-instructions.md .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
-ls -la .opencode/skills/stride/SKILL.md 2>/dev/null
+ls -la .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
+ls -la .claude/skills/stride-*/SKILL.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
 ```bash
 # Backup existing configuration before installing
-[ -f .github/copilot-instructions.md ] && cp .github/copilot-instructions.md .github/copilot-instructions.md.backup
 [ -f .cursorrules ] && cp .cursorrules .cursorrules.backup
 [ -f .windsurfrules ] && cp .windsurfrules .windsurfrules.backup
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
 [ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
 [ -f AGENT.md ] && cp AGENT.md AGENT.md.backup
 [ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup
-[ -f .opencode/skills/stride/SKILL.md ] && cp .opencode/skills/stride/SKILL.md .opencode/skills/stride/SKILL.md.backup
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup
+done
 ```
 
 **Download Stride instructions:**
 
 **GitHub Copilot:**
 ```bash
-curl -o .github/copilot-instructions.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md
+# Install all 4 Stride skills (project-local, Claude-compatible)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **Cursor:**
@@ -526,20 +541,14 @@ curl -o AGENTS.md \
 
 If you have existing custom instructions, you may want to manually merge them:
 
-1. **Download to a temporary location:**
-   ```bash
-   curl -o /tmp/stride-copilot-instructions.md \
-     https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md
-   ```
-
-2. **Manually review and merge** the Stride-specific sections into your existing file, or
-
-3. **Append Stride instructions** to your existing configuration (for formats that support it):
+1. **For text-based formats like Cursor/Windsurf**, append Stride instructions to your existing configuration:
    ```bash
    # For text-based formats like Cursor/Windsurf
    echo "\n\n# === Stride Integration Instructions ===" >> .cursorrules
    curl -s https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt >> .cursorrules
    ```
+
+2. **For skill-based formats like GitHub Copilot/Claude Code**, skills are stored in separate directories and don't conflict with existing configuration
 
 ### Windows Installation
 
@@ -549,26 +558,30 @@ If you have existing custom instructions, you may want to manually merge them:
 
 **Check for existing files:**
 ```powershell
-Get-Item .github/copilot-instructions.md, .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
-Get-Item .opencode/skills/stride/SKILL.md -ErrorAction SilentlyContinue
+Get-Item .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
+Get-Item .claude/skills/stride-*/SKILL.md -ErrorAction SilentlyContinue
 ```
 
 **Backup existing files (recommended):**
 ```powershell
-if (Test-Path .github/copilot-instructions.md) { Copy-Item .github/copilot-instructions.md .github/copilot-instructions.md.backup }
 if (Test-Path .cursorrules) { Copy-Item .cursorrules .cursorrules.backup }
 if (Test-Path .windsurfrules) { Copy-Item .windsurfrules .windsurfrules.backup }
 if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
 if (Test-Path GEMINI.md) { Copy-Item GEMINI.md GEMINI.md.backup }
 if (Test-Path AGENT.md) { Copy-Item AGENT.md AGENT.md.backup }
 if (Test-Path AGENTS.md) { Copy-Item AGENTS.md AGENTS.md.backup }
-if (Test-Path .opencode/skills/stride/SKILL.md) { Copy-Item .opencode/skills/stride/SKILL.md .opencode/skills/stride/SKILL.md.backup }
+foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals')) {
+  if (Test-Path .claude/skills/$skill/SKILL.md) { Copy-Item .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup }
+}
 ```
 
 **Download Stride instructions:**
 ```powershell
-# GitHub Copilot
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md" -OutFile .github/copilot-instructions.md
+# GitHub Copilot (skill-based installation)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .claude/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
+}
 
 # Cursor
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt" -OutFile .cursorrules

@@ -40,13 +40,38 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                OpenCode and Kimi Code CLI AI Assistant Support
+                GitHub Copilot, OpenCode, and Kimi Code CLI AI Assistant Support
               </h4>
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Multi-Agent Integration Expansion</strong>
-                - Added comprehensive support for OpenCode and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
+                - Added comprehensive support for GitHub Copilot agent skills, OpenCode, and Kimi Code CLI (k2.5):
               </p>
+
+              <p class="text-base-content opacity-80 mb-3">
+                <strong>GitHub Copilot (Claude Code Skills Compatible):</strong>
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li>
+                  <strong>Uses Claude Code Skills</strong>: GitHub Copilot now automatically discovers skills in <code>.claude/skills/</code> directories, eliminating the need for separate Copilot-specific content
+                </li>
+                <li>
+                  <strong>4 Stride Skills</strong>: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
+                </li>
+                <li>
+                  <strong>On-Demand Loading</strong>: Skills are loaded when invoked, reducing token usage compared to always-active instructions
+                </li>
+                <li>
+                  <strong>Automatic Discovery</strong>: GitHub Copilot discovers skills in <code>.claude/skills/</code> directories
+                </li>
+                <li>
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, and OpenCode users
+                </li>
+                <li>
+                  <strong>Agent Skills Feature</strong>: Leverages GitHub Copilot's new agent skills capability announced December 2024
+                </li>
+              </ul>
 
               <p class="text-base-content opacity-80 mb-3">
                 <strong>OpenCode (Claude Code Skills Compatible):</strong>
@@ -90,7 +115,7 @@
               </ul>
 
               <p class="text-base-content opacity-80 mb-4">
-                <strong>Onboarding Endpoint Integration</strong>: Added both OpenCode and Kimi formats to <code>/api/agent/onboarding</code> multi_agent_instructions section with appropriate installation commands
+                <strong>Onboarding Endpoint Integration</strong>: Updated GitHub Copilot format and added OpenCode and Kimi formats to <code>/api/agent/onboarding</code> multi_agent_instructions section with appropriate installation commands
               </p>
 
               <p class="text-base-content opacity-80 mb-4">
@@ -98,7 +123,7 @@
               </p>
 
               <ol class="list-decimal list-inside text-base-content opacity-80 mb-4 ml-4">
-                <li>GitHub Copilot (<code>.github/copilot-instructions.md</code>)</li>
+                <li><strong>GitHub Copilot</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li>Cursor (<code>.cursorrules</code>)</li>
                 <li>Windsurf Cascade (<code>.windsurfrules</code>)</li>
                 <li>Continue.dev (<code>.continue/config.json</code>)</li>
@@ -108,7 +133,7 @@
               </ol>
 
               <p class="text-base-content opacity-70 italic">
-                Note: Claude Code and OpenCode share the same skill-based system with on-demand loading. Kimi uses traditional always-active instruction files.
+                Note: Claude Code, GitHub Copilot, and OpenCode share the same skill-based system with on-demand loading. Kimi uses traditional always-active instruction files.
               </p>
             </div>
           </div>
