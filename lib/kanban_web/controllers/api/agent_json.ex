@@ -1976,34 +1976,64 @@ defmodule KanbanWeb.API.AgentJSON do
               "Gemini Code Assist supports hierarchical context files - more specific files override or supplement content from parent directories. You can also use AGENT.md as an alternative filename in IntelliJ IDEs."
           },
           opencode: %{
-            file_path: "AGENTS.md",
+            file_path: ".opencode/skills/stride/SKILL.md",
             description:
-              "OpenCode & Kimi Code CLI instructions (shared AGENTS.md format, hierarchical search)",
-            compatible_tools: ["OpenCode", "Kimi Code CLI (k2.5)"],
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+              "OpenCode instructions (skill-based, on-demand loading)",
+            compatible_tools: ["OpenCode"],
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
             installation_unix:
-              "[ -f AGENTS.md ] && echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md || curl -o AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+              "mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
             installation_windows:
-              "if (Test-Path AGENTS.md) { \"`n`n# === Stride Integration Instructions ===\" | Add-Content AGENTS.md; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md\" | Select-Object -ExpandProperty Content | Add-Content AGENTS.md } else { Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md\" -OutFile AGENTS.md }",
+              "New-Item -ItemType Directory -Force -Path .opencode/skills/stride; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/SKILL.md\" -OutFile .opencode/skills/stride/SKILL.md",
             token_limit: "~8000-10000 tokens (~400-500 lines)",
             alternative_locations: [
-              "Project root: ./AGENTS.md (applies to project and subdirectories)",
-              "Global: ~/.config/opencode/AGENTS.md (applies to all projects)",
-              "Via config: Reference in opencode.json/kimi.toml instructions field"
+              "Project-local: .opencode/skills/stride/SKILL.md (project-specific)",
+              "Global: ~/.config/opencode/skills/stride/SKILL.md (all projects)",
+              "Claude-compatible: .claude/skills/stride/SKILL.md (shared with Claude Code)"
             ],
             note:
-              "IMPORTANT: Many projects already have AGENTS.md files. The installation commands above will append Stride instructions to existing files rather than overwriting. Both OpenCode and Kimi Code CLI search hierarchically for AGENTS.md files from current directory upward and use identical file formats.",
+              "OpenCode uses a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter. The skill name must match the directory name (stride). Skills can be granted different permissions via opencode.json patterns. See https://opencode.ai/docs/skills/ for details.",
+            safe_installation: %{
+              check_existing: "[ -d .opencode/skills/stride ] && echo 'Stride skill exists'",
+              backup_first:
+                "[ -f .opencode/skills/stride/SKILL.md ] && cp .opencode/skills/stride/SKILL.md .opencode/skills/stride/SKILL.md.backup",
+              project_install:
+                "mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+              global_install:
+                "mkdir -p ~/.config/opencode/skills/stride && curl -o ~/.config/opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+              claude_compatible:
+                "mkdir -p .claude/skills/stride && curl -o .claude/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+              usage:
+                "Invoke the skill in OpenCode to load Stride instructions on-demand when working with Stride tasks"
+            }
+          },
+          kimi: %{
+            file_path: "AGENTS.md",
+            description:
+              "Kimi Code CLI (k2.5) instructions (append-mode, always-active)",
+            compatible_tools: ["Kimi Code CLI (k2.5)"],
+            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+            installation_unix:
+              "curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md",
+            installation_windows:
+              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md\" | Select-Object -ExpandProperty Content | Add-Content AGENTS.md",
+            token_limit: "~8000-10000 tokens (~400-500 lines)",
+            alternative_locations: [
+              "Project root: ./AGENTS.md (project-specific)",
+              "Append-mode: Content added to existing AGENTS.md"
+            ],
+            note:
+              "Kimi Code CLI (k2.5) uses AGENTS.md for always-active instructions. If AGENTS.md exists, Stride instructions should be appended. The file is loaded automatically when Kimi starts.",
             safe_installation: %{
               check_existing: "[ -f AGENTS.md ] && echo 'AGENTS.md exists'",
-              backup_first: "[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup",
-              append_mode:
+              backup_first:
+                "[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup",
+              append_install:
                 "echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md",
               fresh_install:
                 "curl -o AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
-              global_install:
-                "mkdir -p ~/.config/opencode && curl -o ~/.config/opencode/AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
-              via_config:
-                "Add to opencode.json: {\"instructions\": [\"AGENTS.md\", \"path/to/stride-instructions.md\"]}"
+              usage:
+                "Kimi automatically loads AGENTS.md when starting. No manual invocation needed."
             }
           }
         },
@@ -2013,14 +2043,16 @@ defmodule KanbanWeb.API.AgentJSON do
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should ignore this section and use claude_code_skills instead",
-          "OpenCode & Kimi Code CLI users: If you already have AGENTS.md, the installation command will append Stride instructions rather than overwrite"
+          "OpenCode users: Install the Stride skill to load instructions on-demand when working with Stride tasks",
+          "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
         safe_installation: [
           "RECOMMENDED: Check if config file exists before overwriting: [ -f .cursorrules ] && echo 'File exists, backup first'",
           "RECOMMENDED: Backup existing config: cp .cursorrules .cursorrules.backup",
           "ALTERNATIVE: Append Stride instructions: echo '\\n\\n# Stride Integration' >> .cursorrules && curl -s [url] >> .cursorrules",
           "ALTERNATIVE: Download to temp location and manually merge: curl -o /tmp/stride-instructions.txt [url]",
-          "For OpenCode & Kimi Code CLI: The installation command automatically appends if AGENTS.md exists, or creates new file if not",
+          "For OpenCode: Skills are installed in .opencode/skills/stride/ directory and loaded on-demand",
+          "For Kimi Code CLI (k2.5): Use append-mode installation to add Stride instructions to existing AGENTS.md",
           "For more details see: #{@docs_base_url}/docs/MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
         ]
       },
@@ -2102,17 +2134,29 @@ defmodule KanbanWeb.API.AgentJSON do
             ]
           },
           opencode: %{
-            description: "For OpenCode & Kimi Code CLI users",
+            description: "For OpenCode users",
             steps: [
-              "1. Check if AGENTS.md exists in project root: [ -f AGENTS.md ] && echo 'exists'",
-              "2. If exists: Append Stride instructions: echo '\\n\\n# Stride Integration\\nSee #{base_url}/api/agent/onboarding' >> AGENTS.md",
-              "3. If not exists: Download full AGENTS.md from multi_agent_instructions.formats.opencode",
-              "4. Create .stride.md and .stride_auth.md files from the templates above",
-              "5. Optionally add to ~/.config/opencode/AGENTS.md for global availability",
-              "6. Use /init command (OpenCode) or project scanning (Kimi) to generate context"
+              "1. Install the Stride skill: mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+              "2. Create .stride.md and .stride_auth.md files from the templates above",
+              "3. Invoke the 'stride' skill in OpenCode when working with Stride tasks",
+              "4. The skill will load Stride integration instructions on-demand",
+              "5. Optionally install globally: mkdir -p ~/.config/opencode/skills/stride && curl -o ~/.config/opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+              "6. For Claude Code compatibility: mkdir -p .claude/skills/stride && cp .opencode/skills/stride/SKILL.md .claude/skills/stride/"
             ],
             note:
-              "Both OpenCode and Kimi Code CLI search hierarchically for AGENTS.md files using identical formats. Project-level AGENTS.md takes precedence over global ~/.config/opencode/AGENTS.md"
+              "OpenCode uses skill-based system for on-demand instruction loading. Skills are discovered from .opencode/skills/, ~/.config/opencode/skills/, and .claude/skills/ directories. See https://opencode.ai/docs/skills/ for details."
+          },
+          kimi: %{
+            description: "For Kimi Code CLI (k2.5) users",
+            steps: [
+              "1. If AGENTS.md exists, append Stride instructions: echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md",
+              "2. If AGENTS.md doesn't exist, create it: curl -o AGENTS.md #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Kimi automatically loads AGENTS.md when starting",
+              "5. No manual invocation needed - instructions are always active"
+            ],
+            note:
+              "Kimi Code CLI (k2.5) uses AGENTS.md for always-active instructions. If you have existing content in AGENTS.md, use append-mode to add Stride instructions."
           },
           generic: %{
             description: "For any AI coding agent",

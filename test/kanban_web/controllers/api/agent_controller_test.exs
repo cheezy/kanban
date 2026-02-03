@@ -314,19 +314,20 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_list(multi_agent["safe_installation"])
     end
 
-    test "multi-agent instructions includes all 6 supported formats", %{conn: conn} do
+    test "multi-agent instructions includes all 7 supported formats", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       formats = response["multi_agent_instructions"]["formats"]
 
-      # Verify all 6 formats are present
+      # Verify all 7 formats are present
       assert is_map(formats["copilot"])
       assert is_map(formats["cursor"])
       assert is_map(formats["windsurf"])
       assert is_map(formats["continue"])
       assert is_map(formats["gemini"])
       assert is_map(formats["opencode"])
+      assert is_map(formats["kimi"])
 
       # Verify each format has required fields
       for {_name, format} <- formats do
@@ -339,30 +340,30 @@ defmodule KanbanWeb.API.AgentControllerTest do
       end
     end
 
-    test "OpenCode format includes Kimi Code CLI compatibility", %{conn: conn} do
+    test "OpenCode format uses skill-based system", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
       # Verify basic structure
-      assert opencode["file_path"] == "AGENTS.md"
-      assert opencode["description"] =~ "OpenCode & Kimi Code CLI"
-      assert opencode["description"] =~ "shared AGENTS.md format"
+      assert opencode["file_path"] == ".opencode/skills/stride/SKILL.md"
+      assert opencode["description"] =~ "OpenCode"
+      assert opencode["description"] =~ "skill-based"
 
       # Verify compatible_tools field
       assert is_list(opencode["compatible_tools"])
       assert "OpenCode" in opencode["compatible_tools"]
-      assert "Kimi Code CLI (k2.5)" in opencode["compatible_tools"]
+      refute "Kimi Code CLI (k2.5)" in opencode["compatible_tools"]
 
       # Verify download URL
-      assert opencode["download_url"] =~ "AGENTS.md"
+      assert opencode["download_url"] =~ "SKILL.md"
 
       # Verify token limit
       assert opencode["token_limit"] == "~8000-10000 tokens (~400-500 lines)"
     end
 
-    test "OpenCode format includes proper alternative locations", %{conn: conn} do
+    test "OpenCode format includes proper alternative skill locations", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -372,46 +373,45 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert length(opencode["alternative_locations"]) == 3
 
       locations = Enum.join(opencode["alternative_locations"], " ")
-      assert locations =~ "./AGENTS.md"
-      assert locations =~ "~/.config/opencode/AGENTS.md"
-      assert locations =~ "opencode.json"
-      assert locations =~ "kimi.toml"
+      assert locations =~ ".opencode/skills/stride/SKILL.md"
+      assert locations =~ "~/.config/opencode/skills/stride/SKILL.md"
+      assert locations =~ ".claude/skills/stride/SKILL.md"
     end
 
-    test "OpenCode format includes append-mode installation commands", %{conn: conn} do
+    test "OpenCode format includes skill installation commands", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
-      # Verify Unix installation command includes append logic
+      # Verify Unix installation command creates skill directory
       unix_install = opencode["installation_unix"]
-      assert unix_install =~ "[ -f AGENTS.md ]"
-      assert unix_install =~ "Stride Integration Instructions"
+      assert unix_install =~ "mkdir -p .opencode/skills/stride"
+      assert unix_install =~ "SKILL.md"
       assert unix_install =~ "curl"
 
-      # Verify Windows installation command includes append logic
+      # Verify Windows installation command creates skill directory
       windows_install = opencode["installation_windows"]
-      assert windows_install =~ "Test-Path AGENTS.md"
-      assert windows_install =~ "Stride Integration Instructions"
+      assert windows_install =~ "New-Item"
+      assert windows_install =~ ".opencode/skills/stride"
+      assert windows_install =~ "SKILL.md"
       assert windows_install =~ "Invoke-WebRequest"
     end
 
-    test "OpenCode format includes important note about existing files", %{conn: conn} do
+    test "OpenCode format includes important note about skills", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
       assert is_binary(opencode["note"])
-      assert opencode["note"] =~ "IMPORTANT"
-      assert opencode["note"] =~ "already have AGENTS.md"
-      assert opencode["note"] =~ "append"
-      assert opencode["note"] =~ "OpenCode and Kimi Code CLI"
-      assert opencode["note"] =~ "identical file formats"
+      assert opencode["note"] =~ "OpenCode"
+      assert opencode["note"] =~ "skill-based"
+      assert opencode["note"] =~ "on-demand"
+      assert opencode["note"] =~ "YAML frontmatter"
     end
 
-    test "OpenCode format includes safe_installation commands", %{conn: conn} do
+    test "OpenCode format includes safe_installation commands for skills", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -422,22 +422,25 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       assert is_binary(safe_install["check_existing"])
       assert is_binary(safe_install["backup_first"])
-      assert is_binary(safe_install["append_mode"])
-      assert is_binary(safe_install["fresh_install"])
+      assert is_binary(safe_install["project_install"])
       assert is_binary(safe_install["global_install"])
-      assert is_binary(safe_install["via_config"])
+      assert is_binary(safe_install["claude_compatible"])
+      assert is_binary(safe_install["usage"])
 
-      # Verify check_existing command
-      assert safe_install["check_existing"] =~ "[ -f AGENTS.md ]"
+      # Verify check_existing command checks for skill directory
+      assert safe_install["check_existing"] =~ "[ -d .opencode/skills/stride ]"
 
-      # Verify backup command
-      assert safe_install["backup_first"] =~ "cp AGENTS.md"
+      # Verify backup command references SKILL.md
+      assert safe_install["backup_first"] =~ "SKILL.md"
 
-      # Verify global install includes config directory creation
-      assert safe_install["global_install"] =~ "~/.config/opencode"
+      # Verify global install includes skill directory creation
+      assert safe_install["global_install"] =~ "~/.config/opencode/skills/stride"
+
+      # Verify Claude compatibility path
+      assert safe_install["claude_compatible"] =~ ".claude/skills/stride"
     end
 
-    test "includes agent_specific_instructions with OpenCode/Kimi support", %{conn: conn} do
+    test "includes agent_specific_instructions with OpenCode skill support", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -451,23 +454,24 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(agent_instructions["opencode"])
 
       opencode_instructions = agent_instructions["opencode"]
-      assert opencode_instructions["description"] =~ "OpenCode & Kimi Code CLI"
+      assert opencode_instructions["description"] =~ "OpenCode"
+      refute opencode_instructions["description"] =~ "Kimi"
       assert is_list(opencode_instructions["steps"])
       assert length(opencode_instructions["steps"]) >= 6
 
       # Verify steps mention key actions
       steps_text = Enum.join(opencode_instructions["steps"], " ")
-      assert steps_text =~ "AGENTS.md"
+      assert steps_text =~ "skill"
       assert steps_text =~ ".stride.md"
       assert steps_text =~ ".stride_auth.md"
 
-      # Verify note mentions both tools
+      # Verify note mentions skills
       assert is_binary(opencode_instructions["note"])
-      assert opencode_instructions["note"] =~ "OpenCode and Kimi Code CLI"
-      assert opencode_instructions["note"] =~ "hierarchically"
+      assert opencode_instructions["note"] =~ "OpenCode"
+      assert opencode_instructions["note"] =~ "skill"
     end
 
-    test "multi-agent instructions usage notes mention OpenCode and Kimi", %{conn: conn} do
+    test "multi-agent instructions usage notes mention OpenCode skills and Kimi", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -475,8 +479,124 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_list(usage_notes)
 
       usage_notes_text = Enum.join(usage_notes, " ")
-      assert usage_notes_text =~ "OpenCode & Kimi Code CLI"
-      assert usage_notes_text =~ "append"
+      assert usage_notes_text =~ "OpenCode"
+      assert usage_notes_text =~ "Kimi"
+      assert usage_notes_text =~ "skill"
+    end
+
+    test "Kimi format uses AGENTS.md with append-mode", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      # Verify basic structure
+      assert kimi["file_path"] == "AGENTS.md"
+      assert kimi["description"] =~ "Kimi Code CLI"
+      assert kimi["description"] =~ "append-mode"
+
+      # Verify compatible_tools field
+      assert is_list(kimi["compatible_tools"])
+      assert "Kimi Code CLI (k2.5)" in kimi["compatible_tools"]
+
+      # Verify download URL
+      assert kimi["download_url"] =~ "AGENTS.md"
+
+      # Verify token limit
+      assert kimi["token_limit"] == "~8000-10000 tokens (~400-500 lines)"
+    end
+
+    test "Kimi format includes proper alternative locations", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      assert is_list(kimi["alternative_locations"])
+      assert length(kimi["alternative_locations"]) == 2
+
+      locations = Enum.join(kimi["alternative_locations"], " ")
+      assert locations =~ "AGENTS.md"
+      assert locations =~ "Append-mode"
+    end
+
+    test "Kimi format includes append-mode installation commands", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      # Verify Unix installation command uses append-mode
+      unix_install = kimi["installation_unix"]
+      assert unix_install =~ "AGENTS.md"
+      assert unix_install =~ ">>"
+
+      # Verify Windows installation command uses append-mode
+      windows_install = kimi["installation_windows"]
+      assert windows_install =~ "AGENTS.md"
+      assert windows_install =~ "Add-Content"
+    end
+
+    test "Kimi format includes important note about AGENTS.md", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      assert is_binary(kimi["note"])
+      assert kimi["note"] =~ "Kimi Code CLI"
+      assert kimi["note"] =~ "AGENTS.md"
+      assert kimi["note"] =~ "always-active"
+    end
+
+    test "Kimi format includes safe_installation commands", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      assert is_map(kimi["safe_installation"])
+      safe_install = kimi["safe_installation"]
+
+      assert is_binary(safe_install["check_existing"])
+      assert is_binary(safe_install["backup_first"])
+      assert is_binary(safe_install["append_install"])
+      assert is_binary(safe_install["fresh_install"])
+      assert is_binary(safe_install["usage"])
+
+      # Verify check_existing command checks for AGENTS.md
+      assert safe_install["check_existing"] =~ "AGENTS.md"
+
+      # Verify append install uses append-mode
+      assert safe_install["append_install"] =~ "AGENTS.md"
+      assert safe_install["append_install"] =~ ">>"
+    end
+
+    test "includes agent_specific_instructions with Kimi support", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      # agent_specific_instructions is nested inside memory_strategy
+      memory_strategy = response["memory_strategy"]
+      agent_instructions = memory_strategy["agent_specific_instructions"]
+
+      assert is_map(agent_instructions["kimi"])
+
+      kimi_instructions = agent_instructions["kimi"]
+      assert kimi_instructions["description"] =~ "Kimi"
+      assert is_list(kimi_instructions["steps"])
+      assert length(kimi_instructions["steps"]) >= 5
+
+      # Verify steps mention key actions
+      steps_text = Enum.join(kimi_instructions["steps"], " ")
+      assert steps_text =~ "AGENTS.md"
+      assert steps_text =~ ".stride.md"
+      assert steps_text =~ ".stride_auth.md"
+
+      # Verify note mentions AGENTS.md
+      assert is_binary(kimi_instructions["note"])
+      assert kimi_instructions["note"] =~ "Kimi"
+      assert kimi_instructions["note"] =~ "AGENTS.md"
     end
 
     test "other formats remain unchanged", %{conn: conn} do

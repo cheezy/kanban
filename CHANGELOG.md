@@ -9,24 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### OpenCode & Kimi Code CLI AI Assistant Support
+#### OpenCode and Kimi Code CLI AI Assistant Support
 
-- **Multi-Agent Integration Expansion** - Added comprehensive support for OpenCode and Kimi Code CLI as the sixth supported AI coding assistant format (shared AGENTS.md format):
-  - **AGENTS.md Instruction File**: Created Markdown-formatted instruction file (~15KB, ~400 lines) with complete Stride integration guidelines
-  - **Append-Mode Installation**: Unique installation strategy that appends Stride instructions to existing AGENTS.md files rather than overwriting, preserving project-specific instructions
-  - **Hierarchical File Search**: Supports project-scoped (`./AGENTS.md`) and global (`~/.config/opencode/AGENTS.md`) locations with hierarchical search from current directory upward
-  - **Onboarding Endpoint Integration**: Added OpenCode/Kimi format to `/api/agent/onboarding` multi_agent_instructions section with safe installation commands
-  - **Format Compatibility**: Both OpenCode and Kimi Code CLI (k2.5) use identical AGENTS.md file format and locations
+- **Multi-Agent Integration Expansion** - Added comprehensive support for OpenCode (skill-based) and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
 
-**Multi-Agent Instructions (Now 6 Formats):**
+  **OpenCode (Skills-Based):**
+  - **SKILL.md Instruction File**: Created YAML-frontmatter + Markdown skill file (~15KB, ~400 lines) with complete Stride integration guidelines
+  - **On-Demand Loading**: Skills are loaded when invoked, reducing token usage compared to always-active instructions
+  - **Skill Directory Structure**: Installed in `.opencode/skills/stride/SKILL.md` (project-local) or `~/.config/opencode/skills/stride/SKILL.md` (global)
+  - **Claude Code Compatibility**: Skills can be shared with Claude Code via `.claude/skills/stride/SKILL.md` path
+  - **YAML Metadata**: Includes structured frontmatter with name, description, license, compatibility, and metadata fields
+
+  **Kimi Code CLI (k2.5):**
+  - **AGENTS.md Instruction File**: Uses existing AGENTS.md file (~15KB, ~400 lines) with complete Stride integration guidelines
+  - **Always-Active Loading**: Instructions are loaded automatically when Kimi starts
+  - **Append-Mode Installation**: Can append Stride instructions to existing AGENTS.md content
+  - **Project-Local**: Installed in project root `./AGENTS.md`
+
+  - **Onboarding Endpoint Integration**: Added both OpenCode and Kimi formats to `/api/agent/onboarding` multi_agent_instructions section with appropriate installation commands
+
+**Multi-Agent Instructions (Now 7 Formats):**
 1. GitHub Copilot (`.github/copilot-instructions.md`)
 2. Cursor (`.cursorrules`)
 3. Windsurf Cascade (`.windsurfrules`)
 4. Continue.dev (`.continue/config.json`)
 5. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
-6. **OpenCode & Kimi Code CLI** (`AGENTS.md`)
+6. **OpenCode** (`.opencode/skills/stride/SKILL.md`)
+7. **Kimi Code CLI (k2.5)** (`AGENTS.md`)
 
-*Note: Claude Code uses contextual Skills rather than always-active instructions.*
+*Note: Claude Code uses contextual Skills rather than always-active instructions. OpenCode's skill-based approach is similar to Claude Code Skills, while Kimi uses traditional always-active instruction files.*
 
 ## [1.21.1] - 2026-01-26
 
