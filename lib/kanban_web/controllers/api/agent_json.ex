@@ -1976,35 +1976,34 @@ defmodule KanbanWeb.API.AgentJSON do
               "Gemini Code Assist supports hierarchical context files - more specific files override or supplement content from parent directories. You can also use AGENT.md as an alternative filename in IntelliJ IDEs."
           },
           opencode: %{
-            file_path: ".opencode/skills/stride/SKILL.md",
+            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "OpenCode instructions (skill-based, on-demand loading)",
-            compatible_tools: ["OpenCode"],
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-            installation_unix:
-              "mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-            installation_windows:
-              "New-Item -ItemType Directory -Force -Path .opencode/skills/stride; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/SKILL.md\" -OutFile .opencode/skills/stride/SKILL.md",
-            token_limit: "~8000-10000 tokens (~400-500 lines)",
-            alternative_locations: [
-              "Project-local: .opencode/skills/stride/SKILL.md (project-specific)",
-              "Global: ~/.config/opencode/skills/stride/SKILL.md (all projects)",
-              "Claude-compatible: .claude/skills/stride/SKILL.md (shared with Claude Code)"
-            ],
+              "OpenCode automatically discovers Claude Code skills - install the same skills used by Claude Code",
+            compatible_tools: ["OpenCode", "Claude Code"],
+            reference_section: "claude_code_skills",
             note:
-              "OpenCode uses a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter. The skill name must match the directory name (stride). Skills can be granted different permissions via opencode.json patterns. See https://opencode.ai/docs/skills/ for details.",
+              "OpenCode automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and OpenCode will find them automatically. See https://opencode.ai/docs/skills/ for details on OpenCode's skill discovery mechanism.",
+            skills_note:
+              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and OpenCode will discover them.",
+            installation_unix:
+              "# OpenCode users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and OpenCode\n# See claude_code_skills.installation_instructions above for details",
+            installation_windows:
+              "# OpenCode users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and OpenCode\n# See claude_code_skills.installation_instructions above for details",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            alternative_locations: [
+              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and OpenCode)",
+              "Project-local: .opencode/skills/<skill-name>/SKILL.md (OpenCode only)",
+              "Global: ~/.claude/skills/<skill-name>/SKILL.md or ~/.config/opencode/skills/<skill-name>/SKILL.md"
+            ],
             safe_installation: %{
-              check_existing: "[ -d .opencode/skills/stride ] && echo 'Stride skill exists'",
+              check_existing:
+                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
               backup_first:
-                "[ -f .opencode/skills/stride/SKILL.md ] && cp .opencode/skills/stride/SKILL.md .opencode/skills/stride/SKILL.md.backup",
-              project_install:
-                "mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-              global_install:
-                "mkdir -p ~/.config/opencode/skills/stride && curl -o ~/.config/opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-              claude_compatible:
-                "mkdir -p .claude/skills/stride && curl -o .claude/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
+                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
+              install_from_claude_skills:
+                "Refer to claude_code_skills section above for complete installation. The skills work identically for OpenCode since it discovers .claude/skills/ automatically.",
               usage:
-                "Invoke the skill in OpenCode to load Stride instructions on-demand when working with Stride tasks"
+                "Invoke specific skills in OpenCode when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. OpenCode will automatically find skills in .claude/skills/ directories."
             }
           },
           kimi: %{
@@ -2042,8 +2041,8 @@ defmodule KanbanWeb.API.AgentJSON do
           "Choose the format that matches your AI assistant and download it using the commands above",
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
-          "Claude Code users should ignore this section and use claude_code_skills instead",
-          "OpenCode users: Install the Stride skill to load instructions on-demand when working with Stride tasks",
+          "Claude Code users should use claude_code_skills section above (not this section)",
+          "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
         safe_installation: [
@@ -2134,17 +2133,17 @@ defmodule KanbanWeb.API.AgentJSON do
             ]
           },
           opencode: %{
-            description: "For OpenCode users",
+            description: "For OpenCode users (uses Claude Code skills)",
             steps: [
-              "1. Install the Stride skill: mkdir -p .opencode/skills/stride && curl -o .opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-              "2. Create .stride.md and .stride_auth.md files from the templates above",
-              "3. Invoke the 'stride' skill in OpenCode when working with Stride tasks",
-              "4. The skill will load Stride integration instructions on-demand",
-              "5. Optionally install globally: mkdir -p ~/.config/opencode/skills/stride && curl -o ~/.config/opencode/skills/stride/SKILL.md #{@docs_base_url}/docs/multi-agent-instructions/SKILL.md",
-              "6. For Claude Code compatibility: mkdir -p .claude/skills/stride && cp .opencode/skills/stride/SKILL.md .claude/skills/stride/"
+              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
+              "2. OpenCode automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Invoke skills in OpenCode: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
+              "5. The skills will load Stride integration instructions on-demand",
+              "6. Skills installed to .claude/skills/ work with both Claude Code and OpenCode"
             ],
             note:
-              "OpenCode uses skill-based system for on-demand instruction loading. Skills are discovered from .opencode/skills/, ~/.config/opencode/skills/, and .claude/skills/ directories. See https://opencode.ai/docs/skills/ for details."
+              "OpenCode automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and OpenCode will find them. See https://opencode.ai/docs/skills/ for details."
           },
           kimi: %{
             description: "For Kimi Code CLI (k2.5) users",

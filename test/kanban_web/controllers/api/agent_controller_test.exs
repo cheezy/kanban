@@ -330,37 +330,41 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(formats["kimi"])
 
       # Verify each format has required fields
-      for {_name, format} <- formats do
+      for {name, format} <- formats do
         assert is_binary(format["file_path"])
         assert is_binary(format["description"])
-        assert is_binary(format["download_url"])
+        # OpenCode references Claude Code skills, so it doesn't have a download_url
+        if name != "opencode" do
+          assert is_binary(format["download_url"])
+        end
         assert is_binary(format["installation_unix"])
         assert is_binary(format["installation_windows"])
         assert is_binary(format["token_limit"])
       end
     end
 
-    test "OpenCode format uses skill-based system", %{conn: conn} do
+    test "OpenCode format uses Claude Code skills", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
       # Verify basic structure
-      assert opencode["file_path"] == ".opencode/skills/stride/SKILL.md"
+      assert opencode["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
       assert opencode["description"] =~ "OpenCode"
-      assert opencode["description"] =~ "skill-based"
+      assert opencode["description"] =~ "Claude Code skills"
 
-      # Verify compatible_tools field
+      # Verify compatible_tools field includes both
       assert is_list(opencode["compatible_tools"])
       assert "OpenCode" in opencode["compatible_tools"]
+      assert "Claude Code" in opencode["compatible_tools"]
       refute "Kimi Code CLI (k2.5)" in opencode["compatible_tools"]
 
-      # Verify download URL
-      assert opencode["download_url"] =~ "SKILL.md"
+      # Verify reference_section points to claude_code_skills
+      assert opencode["reference_section"] == "claude_code_skills"
 
       # Verify token limit
-      assert opencode["token_limit"] == "~8000-10000 tokens (~400-500 lines)"
+      assert opencode["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
     end
 
     test "OpenCode format includes proper alternative skill locations", %{conn: conn} do
@@ -373,32 +377,32 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert length(opencode["alternative_locations"]) == 3
 
       locations = Enum.join(opencode["alternative_locations"], " ")
-      assert locations =~ ".opencode/skills/stride/SKILL.md"
-      assert locations =~ "~/.config/opencode/skills/stride/SKILL.md"
-      assert locations =~ ".claude/skills/stride/SKILL.md"
+      assert locations =~ ".claude/skills/<skill-name>/SKILL.md"
+      assert locations =~ "works with both Claude Code and OpenCode"
+      assert locations =~ ".opencode/skills/<skill-name>/SKILL.md"
+      assert locations =~ "~/.claude/skills/<skill-name>/SKILL.md"
     end
 
-    test "OpenCode format includes skill installation commands", %{conn: conn} do
+    test "OpenCode format references Claude Code skill installation", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
-      # Verify Unix installation command creates skill directory
+      # Verify Unix installation references Claude Code skills
       unix_install = opencode["installation_unix"]
-      assert unix_install =~ "mkdir -p .opencode/skills/stride"
-      assert unix_install =~ "SKILL.md"
-      assert unix_install =~ "curl"
+      assert unix_install =~ "OpenCode users"
+      assert unix_install =~ "Claude Code skill installation"
+      assert unix_install =~ "claude_code_skills section"
 
-      # Verify Windows installation command creates skill directory
+      # Verify Windows installation references Claude Code skills
       windows_install = opencode["installation_windows"]
-      assert windows_install =~ "New-Item"
-      assert windows_install =~ ".opencode/skills/stride"
-      assert windows_install =~ "SKILL.md"
-      assert windows_install =~ "Invoke-WebRequest"
+      assert windows_install =~ "OpenCode users"
+      assert windows_install =~ "Claude Code skill installation"
+      assert windows_install =~ "claude_code_skills section"
     end
 
-    test "OpenCode format includes important note about skills", %{conn: conn} do
+    test "OpenCode format includes important note about Claude Code compatibility", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -406,12 +410,13 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       assert is_binary(opencode["note"])
       assert opencode["note"] =~ "OpenCode"
-      assert opencode["note"] =~ "skill-based"
-      assert opencode["note"] =~ "on-demand"
-      assert opencode["note"] =~ "YAML frontmatter"
+      assert opencode["note"] =~ "automatically discovers"
+      assert opencode["note"] =~ ".claude/skills/"
+      assert opencode["note"] =~ "Claude Code skills"
+      assert opencode["note"] =~ "claude_code_skills section"
     end
 
-    test "OpenCode format includes safe_installation commands for skills", %{conn: conn} do
+    test "OpenCode format includes safe_installation commands referencing Claude Code", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -422,22 +427,20 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       assert is_binary(safe_install["check_existing"])
       assert is_binary(safe_install["backup_first"])
-      assert is_binary(safe_install["project_install"])
-      assert is_binary(safe_install["global_install"])
-      assert is_binary(safe_install["claude_compatible"])
+      assert is_binary(safe_install["install_from_claude_skills"])
       assert is_binary(safe_install["usage"])
 
-      # Verify check_existing command checks for skill directory
-      assert safe_install["check_existing"] =~ "[ -d .opencode/skills/stride ]"
+      # Verify check_existing command checks for .claude/skills directory
+      assert safe_install["check_existing"] =~ ".claude/skills/stride"
 
-      # Verify backup command references SKILL.md
-      assert safe_install["backup_first"] =~ "SKILL.md"
+      # Verify backup command references .claude/skills
+      assert safe_install["backup_first"] =~ ".claude/skills"
 
-      # Verify global install includes skill directory creation
-      assert safe_install["global_install"] =~ "~/.config/opencode/skills/stride"
+      # Verify install_from_claude_skills references claude_code_skills section
+      assert safe_install["install_from_claude_skills"] =~ "claude_code_skills section"
 
-      # Verify Claude compatibility path
-      assert safe_install["claude_compatible"] =~ ".claude/skills/stride"
+      # Verify usage mentions OpenCode finding .claude/skills
+      assert safe_install["usage"] =~ ".claude/skills/"
     end
 
     test "includes agent_specific_instructions with OpenCode skill support", %{conn: conn} do

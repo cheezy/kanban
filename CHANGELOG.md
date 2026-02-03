@@ -11,14 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### OpenCode and Kimi Code CLI AI Assistant Support
 
-- **Multi-Agent Integration Expansion** - Added comprehensive support for OpenCode (skill-based) and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
+- **Multi-Agent Integration Expansion** - Added comprehensive support for OpenCode and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
 
-  **OpenCode (Skills-Based):**
-  - **SKILL.md Instruction File**: Created YAML-frontmatter + Markdown skill file (~15KB, ~400 lines) with complete Stride integration guidelines
+  **OpenCode (Claude Code Skills Compatible):**
+  - **Uses Claude Code Skills**: OpenCode automatically discovers skills in `.claude/skills/` directories, eliminating the need for separate OpenCode-specific content
+  - **4 Stride Skills**: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
   - **On-Demand Loading**: Skills are loaded when invoked, reducing token usage compared to always-active instructions
-  - **Skill Directory Structure**: Installed in `.opencode/skills/stride/SKILL.md` (project-local) or `~/.config/opencode/skills/stride/SKILL.md` (global)
-  - **Claude Code Compatibility**: Skills can be shared with Claude Code via `.claude/skills/stride/SKILL.md` path
-  - **YAML Metadata**: Includes structured frontmatter with name, description, license, compatibility, and metadata fields
+  - **Automatic Discovery**: OpenCode searches `.claude/skills/`, `.opencode/skills/`, and `~/.config/opencode/skills/` directories
+  - **Zero Duplication**: One set of skills works for both Claude Code and OpenCode users
 
   **Kimi Code CLI (k2.5):**
   - **AGENTS.md Instruction File**: Uses existing AGENTS.md file (~15KB, ~400 lines) with complete Stride integration guidelines
@@ -34,10 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. Windsurf Cascade (`.windsurfrules`)
 4. Continue.dev (`.continue/config.json`)
 5. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
-6. **OpenCode** (`.opencode/skills/stride/SKILL.md`)
+6. **OpenCode** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
 7. **Kimi Code CLI (k2.5)** (`AGENTS.md`)
 
-*Note: Claude Code uses contextual Skills rather than always-active instructions. OpenCode's skill-based approach is similar to Claude Code Skills, while Kimi uses traditional always-active instruction files.*
+*Note: Claude Code and OpenCode share the same skill-based system with on-demand loading. Kimi uses traditional always-active instruction files.*
 
 ## [1.21.1] - 2026-01-26
 

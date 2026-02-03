@@ -168,48 +168,60 @@ curl -o GEMINI.md \
 
 ### 6. OpenCode
 
-**File:** `.opencode/skills/stride/SKILL.md`
+**Files:** Multiple focused skills (4 total)
 
 **Location:** `docs/multi-agent-instructions/SKILL.md`
 
-**Compatible Tools:** OpenCode
+**Compatible Tools:** OpenCode, Claude Code
 
 **Scope:** On-demand skill loading (invoked when needed)
 
-**Token Limit:** ~8000-10000 tokens (~400-500 lines)
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
 
 **Format:** YAML frontmatter + Markdown content
 
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
+
 **Download:**
 ```bash
-# Create skill directory and download
-mkdir -p .opencode/skills/stride
-curl -o .opencode/skills/stride/SKILL.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+# Create all skill directories and download (Claude-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **Windows (PowerShell):**
 ```powershell
-# Create skill directory and download
-New-Item -ItemType Directory -Force -Path .opencode/skills/stride
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .opencode/skills/stride/SKILL.md
+# Create all skill directories and download (Claude-compatible paths)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .claude/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
+}
 ```
 
 **Alternative Locations:**
-- Project-local: `.opencode/skills/stride/SKILL.md` (project-specific)
-- Global: `~/.config/opencode/skills/stride/SKILL.md` (all projects)
-- Claude-compatible: `.claude/skills/stride/SKILL.md` (shared with Claude Code)
+- Project-local: `.claude/skills/<skill-name>/SKILL.md` (recommended, works with both Claude Code and OpenCode)
+- OpenCode-specific: `.opencode/skills/<skill-name>/SKILL.md` (OpenCode only)
+- Global: `~/.config/opencode/skills/<skill-name>/SKILL.md` or `~/.claude/skills/<skill-name>/SKILL.md` (all projects)
 
-**IMPORTANT:** OpenCode uses a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (`stride`) must match the directory name. Skills can be granted different permissions via `opencode.json` patterns. See [OpenCode Skills Documentation](https://opencode.ai/docs/skills/) for details.
+**IMPORTANT:** OpenCode and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. OpenCode automatically discovers skills in both `.claude/skills/` and `.opencode/skills/` directories, making them compatible across both platforms. See [OpenCode Skills Documentation](https://opencode.ai/docs/skills/) for details.
 
 **Focus:**
+- Multiple focused skills instead of single monolithic skill (follows Claude Code pattern)
 - On-demand loading reduces token usage (not always-active)
 - YAML frontmatter with structured metadata
-- Hierarchical skill discovery (.opencode → ~/.config/opencode → .claude)
-- Detailed code patterns with Markdown formatting
-- Comprehensive mistake catalog
-- Hook execution details
-- Claude Code compatibility via .claude/skills/ path
+- Hierarchical skill discovery (project → global → .claude)
+- Each skill focuses on specific workflow (creating, claiming, completing, goals)
+- Compatible with both Claude Code and OpenCode via .claude/skills/ path
+- Detailed code patterns with Markdown formatting per skill
+- Comprehensive mistake catalog distributed across relevant skills
 
 ### 7. Kimi Code CLI (k2.5)
 
@@ -479,26 +491,24 @@ curl -o ~/.gemini/GEMINI.md \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
 ```
 
-**OpenCode:**
+**OpenCode / Claude Code:**
 ```bash
-# Install Stride skill (project-local)
-mkdir -p .opencode/skills/stride
-curl -o .opencode/skills/stride/SKILL.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+# Install all 4 Stride skills (project-local, Claude-compatible)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 For global installation (applies to all projects):
 ```bash
-mkdir -p ~/.config/opencode/skills/stride
-curl -o ~/.config/opencode/skills/stride/SKILL.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
-```
-
-For Claude Code compatibility:
-```bash
-mkdir -p .claude/skills/stride
-curl -o .claude/skills/stride/SKILL.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+# Global installation (works with both OpenCode and Claude Code)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p ~/.claude/skills/$skill
+  curl -o ~/.claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **Kimi Code CLI (k2.5):**
@@ -580,17 +590,17 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile $env:USERPROFILE\.gemini\GEMINI.md
 
-# OpenCode (skill-based installation)
-New-Item -ItemType Directory -Force -Path .opencode/skills/stride
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .opencode/skills/stride/SKILL.md
+# OpenCode / Claude Code (skill-based installation)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .claude/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
+}
 
-# For global installation
-New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.config\opencode\skills\stride
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.config\opencode\skills\stride\SKILL.md
-
-# For Claude Code compatibility
-New-Item -ItemType Directory -Force -Path .claude/skills/stride
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/stride/SKILL.md
+# For global installation (works with both OpenCode and Claude Code)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.claude\skills\$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.claude\skills\$_\SKILL.md
+}
 
 # Kimi Code CLI (k2.5)
 # If AGENTS.md exists, append Stride instructions

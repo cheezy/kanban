@@ -45,28 +45,28 @@
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Multi-Agent Integration Expansion</strong>
-                - Added comprehensive support for OpenCode (skill-based) and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
+                - Added comprehensive support for OpenCode and Kimi Code CLI (k2.5) as the sixth and seventh supported AI coding assistant formats:
               </p>
 
               <p class="text-base-content opacity-80 mb-3">
-                <strong>OpenCode (Skills-Based):</strong>
+                <strong>OpenCode (Claude Code Skills Compatible):</strong>
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
                 <li>
-                  <strong>SKILL.md Instruction File</strong>: Created YAML-frontmatter + Markdown skill file (~15KB, ~400 lines) with complete Stride integration guidelines
+                  <strong>Uses Claude Code Skills</strong>: OpenCode automatically discovers skills in <code>.claude/skills/</code> directories, eliminating the need for separate OpenCode-specific content
+                </li>
+                <li>
+                  <strong>4 Stride Skills</strong>: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
                 </li>
                 <li>
                   <strong>On-Demand Loading</strong>: Skills are loaded when invoked, reducing token usage compared to always-active instructions
                 </li>
                 <li>
-                  <strong>Skill Directory Structure</strong>: Installed in <code>.opencode/skills/stride/SKILL.md</code> (project-local) or <code>~/.config/opencode/skills/stride/SKILL.md</code> (global)
+                  <strong>Automatic Discovery</strong>: OpenCode searches <code>.claude/skills/</code>, <code>.opencode/skills/</code>, and <code>~/.config/opencode/skills/</code> directories
                 </li>
                 <li>
-                  <strong>Claude Code Compatibility</strong>: Skills can be shared with Claude Code via <code>.claude/skills/stride/SKILL.md</code> path
-                </li>
-                <li>
-                  <strong>YAML Metadata</strong>: Includes structured frontmatter with name, description, license, compatibility, and metadata fields
+                  <strong>Zero Duplication</strong>: One set of skills works for both Claude Code and OpenCode users
                 </li>
               </ul>
 
@@ -103,12 +103,12 @@
                 <li>Windsurf Cascade (<code>.windsurfrules</code>)</li>
                 <li>Continue.dev (<code>.continue/config.json</code>)</li>
                 <li>Google Gemini Code Assist (<code>GEMINI.md</code> or <code>AGENT.md</code>)</li>
-                <li><strong>OpenCode</strong> (<code>.opencode/skills/stride/SKILL.md</code>)</li>
+                <li><strong>OpenCode</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>Kimi Code CLI (k2.5)</strong> (<code>AGENTS.md</code>)</li>
               </ol>
 
               <p class="text-base-content opacity-70 italic">
-                Note: Claude Code uses contextual Skills rather than always-active instructions. OpenCode's skill-based approach is similar to Claude Code Skills, while Kimi uses traditional always-active instruction files.
+                Note: Claude Code and OpenCode share the same skill-based system with on-demand loading. Kimi uses traditional always-active instruction files.
               </p>
             </div>
           </div>
