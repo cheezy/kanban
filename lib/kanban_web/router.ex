@@ -88,7 +88,10 @@ defmodule KanbanWeb.Router do
       metrics: KanbanWeb.Telemetry,
       metrics_history: {KanbanWeb.Telemetry.MetricsStorage, :metrics_history, []},
       ecto_repos: [Kanban.Repo],
-      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
+      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]],
+      additional_pages: [
+        user_activity: KanbanWeb.Telemetry.UserActivityPage
+      ]
 
     error_tracker_dashboard("/errors",
       on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}]

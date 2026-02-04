@@ -126,7 +126,8 @@ defmodule Kanban.MixProject do
         KanbanWeb.PageHTML,
         KanbanWeb.Plugs.Locale,
         KanbanWeb.Router,
-        KanbanWeb.Telemetry
+        KanbanWeb.Telemetry,
+        KanbanWeb.Telemetry.UserActivityPage
       ]
     ]
   end
