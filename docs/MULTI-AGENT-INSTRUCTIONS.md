@@ -6,9 +6,9 @@
 
 Stride provides enhanced integration support for multiple AI coding assistants beyond Claude Code. While Claude Code uses contextual Skills for workflow enforcement, other AI assistants receive always-active code completion guidance through their native configuration formats.
 
-**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, OpenCode), and provide always-active code completion guidance for other AI assistants.
+**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, OpenCode), and provide always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), OpenCode (Skills), Windsurf Cascade, Continue.dev, Google Gemini Code Assist, Kimi Code CLI (k2.5)
+**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), OpenCode (Skills), Continue.dev, Google Gemini Code Assist, Kimi Code CLI (k2.5)
 
 ## Architecture
 
@@ -105,30 +105,36 @@ done
 
 ### 3. Windsurf Cascade
 
-**File:** `.windsurfrules`
+**Files:** Multiple focused skills (4 total)
 
-**Location:** `docs/multi-agent-instructions/windsurfrules.txt`
+**Location:** `docs/multi-agent-instructions/SKILL.md`
 
-**Scope:** Hierarchical, cascades from parent directories
+**Compatible Tools:** Windsurf, Claude Code
 
-**Token Limit:** ~8000 tokens (~400 lines)
+**Scope:** On-demand skill loading (invoked when needed)
 
-**Format:** Plain text, similar to Cursor
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+
+**Format:** YAML frontmatter + Markdown content
+
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
 
 **Download:**
 ```bash
-curl -o .windsurfrules \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt
+# Create all skill directories and download (Windsurf-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .windsurf/skills/$skill
+  curl -o .windsurf/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
-**Focus:**
-- Same core content as Cursor
-- Can be placed in parent directory for multi-project use
-- Cascading rules inheritance
-
-**Placement Options:**
-- Project root: `./project/.windsurfrules`
-- Parent directory: `/parent/.windsurfrules` (affects all child projects)
+**IMPORTANT:** Windsurf and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Windsurf automatically discovers skills in `.windsurf/skills/` directories, making them compatible with Claude Code. See [Windsurf Skills Documentation](https://docs.windsurf.com/windsurf/cascade/skills) for details.
 
 ### 4. Continue.dev
 
@@ -345,9 +351,13 @@ All seven instruction formats cover the same essential topics:
 - Claude-compatible (shared skill system)
 - Automatic skill discovery
 
-**Windsurf (Plain Text):**
-- Similar to Cursor
-- Can include slightly more context
+**Windsurf (YAML + Markdown Skills):**
+- YAML frontmatter with structured metadata
+- Rich formatting with headings, lists, code blocks in body
+- Skill-based on-demand loading reduces token usage
+- Installed in .windsurf/skills/<skill-name>/ directories
+- Claude-compatible (shared skill system)
+- Automatic skill discovery
 
 **Continue.dev (JSON):**
 - System message with core rules
@@ -412,14 +422,13 @@ The `/api/agent/onboarding` endpoint includes the `multi_agent_instructions` sec
 All multi-agent instruction files are stored in:
 ```
 docs/multi-agent-instructions/
-├── SKILL.md                   # 9KB (shared by Cursor, GitHub Copilot, Claude Code, OpenCode)
-├── windsurfrules.txt          # 15KB
+├── SKILL.md                   # 9KB (shared by Windsurf, Cursor, GitHub Copilot, Claude Code, OpenCode)
 ├── continue-config.json       # 4KB
 ├── GEMINI.md                  # 15KB
 └── AGENTS.md                  # 15KB (Kimi Code CLI k2.5)
 ```
 
-Total size: ~58KB of instruction content
+Total size: ~43KB of instruction content
 
 ### Endpoint Optimization
 
@@ -453,20 +462,20 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
-ls -la .claude/skills/stride-*/SKILL.md 2>/dev/null
+ls -la .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
+ls -la .claude/skills/stride-*/SKILL.md .windsurf/skills/stride-*/SKILL.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
 ```bash
 # Backup existing configuration before installing
-[ -f .windsurfrules ] && cp .windsurfrules .windsurfrules.backup
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
 [ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
 [ -f AGENT.md ] && cp AGENT.md AGENT.md.backup
 [ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
   [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup
+  [ -f .windsurf/skills/$skill/SKILL.md ] && cp .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup
 done
 ```
 
@@ -494,8 +503,12 @@ done
 
 **Windsurf:**
 ```bash
-curl -o .windsurfrules \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt
+# Install all 4 Stride skills (project-local, Windsurf-compatible)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .windsurf/skills/$skill
+  curl -o .windsurf/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **Continue.dev:**
@@ -559,14 +572,9 @@ curl -o AGENTS.md \
 
 If you have existing custom instructions, you may want to manually merge them:
 
-1. **For text-based formats like Cursor/Windsurf**, append Stride instructions to your existing configuration:
-   ```bash
-   # For text-based formats like Cursor/Windsurf
-   echo "\n\n# === Stride Integration Instructions ===" >> .cursorrules
-   curl -s https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt >> .cursorrules
-   ```
+1. **For skill-based formats like GitHub Copilot/Cursor/Windsurf/Claude Code/OpenCode**, skills are stored in separate directories and don't conflict with existing configuration
 
-2. **For skill-based formats like GitHub Copilot/Claude Code**, skills are stored in separate directories and don't conflict with existing configuration
+2. **For Continue.dev (JSON)**, manually merge the Stride instructions into your existing `.continue/config.json` file
 
 ### Windows Installation
 
@@ -576,20 +584,20 @@ If you have existing custom instructions, you may want to manually merge them:
 
 **Check for existing files:**
 ```powershell
-Get-Item .cursorrules, .windsurfrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
-Get-Item .claude/skills/stride-*/SKILL.md -ErrorAction SilentlyContinue
+Get-Item .cursorrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
+Get-Item .claude/skills/stride-*/SKILL.md, .windsurf/skills/stride-*/SKILL.md -ErrorAction SilentlyContinue
 ```
 
 **Backup existing files (recommended):**
 ```powershell
 if (Test-Path .cursorrules) { Copy-Item .cursorrules .cursorrules.backup }
-if (Test-Path .windsurfrules) { Copy-Item .windsurfrules .windsurfrules.backup }
 if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
 if (Test-Path GEMINI.md) { Copy-Item GEMINI.md GEMINI.md.backup }
 if (Test-Path AGENT.md) { Copy-Item AGENT.md AGENT.md.backup }
 if (Test-Path AGENTS.md) { Copy-Item AGENTS.md AGENTS.md.backup }
 foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals')) {
   if (Test-Path .claude/skills/$skill/SKILL.md) { Copy-Item .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup }
+  if (Test-Path .windsurf/skills/$skill/SKILL.md) { Copy-Item .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup }
 }
 ```
 
@@ -601,11 +609,17 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
 }
 
-# Cursor
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt" -OutFile .cursorrules
+# Cursor (skill-based installation)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .claude/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
+}
 
-# Windsurf
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt" -OutFile .windsurfrules
+# Windsurf (skill-based installation)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .windsurf/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .windsurf/skills/$_/SKILL.md
+}
 
 # Continue.dev
 New-Item -ItemType Directory -Force -Path .continue
@@ -644,9 +658,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 
 **Appending to existing configuration:**
 ```powershell
-# For text-based formats like Cursor/Windsurf
-"`n`n# === Stride Integration Instructions ===" | Add-Content .cursorrules
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt" | Select-Object -ExpandProperty Content | Add-Content .cursorrules
+# For skill-based formats like GitHub Copilot/Cursor/Windsurf/Claude Code, skills are stored in separate directories and don't conflict with existing configuration
 ```
 
 ## Maintenance
@@ -684,7 +696,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Kimi |
+| **Target Assistants** | Claude Code only | GitHub Copilot, Cursor, Windsurf, OpenCode (Skills); Continue.dev, Gemini, Kimi (Always-active) |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 

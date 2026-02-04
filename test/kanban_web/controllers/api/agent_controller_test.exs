@@ -333,8 +333,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
       for {name, format} <- formats do
         assert is_binary(format["file_path"])
         assert is_binary(format["description"])
-        # GitHub Copilot, Cursor, and OpenCode reference Claude Code skills, so they don't have a download_url
-        if name not in ["copilot", "cursor", "opencode"] do
+        # GitHub Copilot, Cursor, Windsurf, and OpenCode reference Claude Code skills, so they don't have a download_url
+        if name not in ["copilot", "cursor", "windsurf", "opencode"] do
           assert is_binary(format["download_url"])
         end
         assert is_binary(format["installation_unix"])
@@ -392,6 +392,33 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify token limit
       assert cursor["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
+    end
+
+    test "Windsurf format uses Claude Code skills", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      windsurf = response["multi_agent_instructions"]["formats"]["windsurf"]
+
+      # Verify basic structure
+      assert windsurf["file_path"] == ".windsurf/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert windsurf["description"] =~ "Windsurf"
+      assert windsurf["description"] =~ "Claude Code skills"
+
+      # Verify compatible_tools field includes both
+      assert is_list(windsurf["compatible_tools"])
+      assert "Windsurf" in windsurf["compatible_tools"]
+      assert "Claude Code" in windsurf["compatible_tools"]
+      refute "OpenCode" in windsurf["compatible_tools"]
+      refute "GitHub Copilot" in windsurf["compatible_tools"]
+      refute "Cursor" in windsurf["compatible_tools"]
+      refute "Kimi Code CLI (k2.5)" in windsurf["compatible_tools"]
+
+      # Verify reference_section points to claude_code_skills
+      assert windsurf["reference_section"] == "claude_code_skills"
+
+      # Verify token limit
+      assert windsurf["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
     end
 
     test "OpenCode format uses Claude Code skills", %{conn: conn} do
@@ -658,11 +685,6 @@ defmodule KanbanWeb.API.AgentControllerTest do
       response = json_response(conn, 200)
 
       formats = response["multi_agent_instructions"]["formats"]
-
-      # Verify Windsurf format
-      windsurf = formats["windsurf"]
-      assert windsurf["file_path"] == ".windsurfrules"
-      assert is_binary(windsurf["description"])
 
       # Verify Continue format
       continue = formats["continue"]

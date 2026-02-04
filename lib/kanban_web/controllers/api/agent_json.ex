@@ -1976,15 +1976,34 @@ defmodule KanbanWeb.API.AgentJSON do
             }
           },
           windsurf: %{
-            file_path: ".windsurfrules",
+            file_path: ".windsurf/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "Windsurf Cascade rules (hierarchical, cascades from parent directories)",
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
+              "Windsurf automatically discovers Claude Code skills - install the same skills used by Claude Code",
+            compatible_tools: ["Windsurf", "Claude Code"],
+            reference_section: "claude_code_skills",
+            note:
+              "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Windsurf will find them automatically. See https://docs.windsurf.com/windsurf/cascade/skills for details on Windsurf's skill discovery mechanism.",
+            skills_note:
+              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .windsurf/skills/ and both Claude Code and Windsurf will discover them.",
             installation_unix:
-              "curl -o .windsurfrules #{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt",
+              "# Windsurf users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf\n# See claude_code_skills.installation_instructions above for details",
             installation_windows:
-              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/windsurfrules.txt\" -OutFile .windsurfrules",
-            token_limit: "~8000 tokens (~400 lines)"
+              "# Windsurf users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf\n# See claude_code_skills.installation_instructions above for details",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            alternative_locations: [
+              "Recommended: .windsurf/skills/<skill-name>/SKILL.md (works with both Claude Code and Windsurf)",
+              "Global: ~/.codeium/windsurf/skills/<skill-name>/SKILL.md or ~/.claude/skills/<skill-name>/SKILL.md"
+            ],
+            safe_installation: %{
+              check_existing:
+                "ls -la .windsurf/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
+              backup_first:
+                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .windsurf/skills/$skill/SKILL.md ] && cp .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup; done",
+              install_from_claude_skills:
+                "Refer to claude_code_skills section above for complete installation. The skills work identically for Windsurf since it discovers .windsurf/skills/ automatically.",
+              usage:
+                "Invoke specific skills in Windsurf when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Windsurf will automatically find skills in .windsurf/skills/ directories."
+            }
           },
           continue: %{
             file_path: ".continue/config.json",
@@ -2084,6 +2103,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Claude Code users should use claude_code_skills section above (not this section)",
           "GitHub Copilot users: Install the Claude Code skills from claude_code_skills section - GitHub Copilot automatically discovers .claude/skills/ directories",
           "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
+          "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
           "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
@@ -2156,12 +2176,17 @@ defmodule KanbanWeb.API.AgentJSON do
               "Cursor automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Cursor will find them. See https://cursor.com/docs/context/skills for details."
           },
           windsurf: %{
-            description: "For Windsurf users",
+            description: "For Windsurf users (uses Claude Code skills)",
             steps: [
-              "1. Add Stride workflow documentation to your project's cascade.md or .windsurfrules",
-              "2. Create .stride.md and .stride_auth.md files in your project root",
-              "3. Add the onboarding endpoint URL to your project setup documentation"
-            ]
+              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .windsurf/skills/ directories",
+              "2. Windsurf automatically discovers skills in .windsurf/skills/ - no additional configuration needed",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Invoke skills in Windsurf: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
+              "5. The skills will load Stride integration instructions on-demand",
+              "6. Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf"
+            ],
+            note:
+              "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Windsurf will find them. See https://docs.windsurf.com/windsurf/cascade/skills for details."
           },
           aider: %{
             description: "For Aider users",
