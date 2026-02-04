@@ -40,12 +40,12 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
-                GitHub Copilot, Cursor, Windsurf, OpenCode, and Kimi Code CLI AI Assistant Support
+                GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode, and Kimi Code CLI AI Assistant Support
               </h4>
 
               <p class="text-base-content opacity-80 mb-4">
                 <strong>Multi-Agent Integration Expansion</strong>
-                - Added comprehensive support for GitHub Copilot agent skills, Cursor agent skills, Windsurf agent skills, OpenCode, and Kimi Code CLI (k2.5):
+                - Added comprehensive support for GitHub Copilot agent skills, Cursor agent skills, Windsurf agent skills, Gemini Code Assist skills, OpenCode, and Kimi Code CLI (k2.5):
               </p>
 
               <p class="text-base-content opacity-80 mb-3">
@@ -66,7 +66,7 @@
                   <strong>Automatic Discovery</strong>: GitHub Copilot discovers skills in <code>.claude/skills/</code> directories
                 </li>
                 <li>
-                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode users
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode users
                 </li>
                 <li>
                   <strong>Agent Skills Feature</strong>: Leverages GitHub Copilot's new agent skills capability announced December 2024
@@ -91,7 +91,7 @@
                   <strong>Automatic Discovery</strong>: Cursor discovers skills in <code>.claude/skills/</code> (and <code>.cursor/skills/</code> or <code>.codex/skills/</code>) directories
                 </li>
                 <li>
-                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode users
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode users
                 </li>
                 <li>
                   <strong>Agent Skills Feature</strong>: Leverages Cursor's agent skills capability
@@ -116,10 +116,35 @@
                   <strong>Automatic Discovery</strong>: Windsurf discovers skills in <code>.windsurf/skills/</code> directories
                 </li>
                 <li>
-                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode users
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode users
                 </li>
                 <li>
                   <strong>Agent Skills Feature</strong>: Leverages Windsurf's agent skills capability
+                </li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-3">
+                <strong>Gemini Code Assist (Claude Code Skills Compatible):</strong>
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li>
+                  <strong>Uses Claude Code Skills</strong>: Gemini Code Assist now automatically discovers skills in <code>.gemini/skills/</code> directories, eliminating the need for separate Gemini-specific content
+                </li>
+                <li>
+                  <strong>4 Stride Skills</strong>: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
+                </li>
+                <li>
+                  <strong>On-Demand Loading</strong>: Skills are loaded when invoked, reducing token usage compared to always-active instructions
+                </li>
+                <li>
+                  <strong>Automatic Discovery</strong>: Gemini discovers skills in <code>.gemini/skills/</code> directories with three-tier discovery (workspace, user, extension)
+                </li>
+                <li>
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode users
+                </li>
+                <li>
+                  <strong>Agent Skills Feature</strong>: Leverages Gemini's agent skills capability following the Agent Skills standard
                 </li>
               </ul>
 
@@ -141,7 +166,7 @@
                   <strong>Automatic Discovery</strong>: OpenCode searches <code>.claude/skills/</code>, <code>.opencode/skills/</code>, and <code>~/.config/opencode/skills/</code> directories
                 </li>
                 <li>
-                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode users
+                  <strong>Zero Duplication</strong>: One set of skills works for Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode users
                 </li>
               </ul>
 
@@ -177,14 +202,14 @@
                 <li><strong>GitHub Copilot</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>Cursor</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>Windsurf</strong> (<code>.windsurf/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
-                <li>Continue.dev (<code>.continue/config.json</code>)</li>
-                <li>Google Gemini Code Assist (<code>GEMINI.md</code> or <code>AGENT.md</code>)</li>
+                <li><strong>Gemini Code Assist</strong> (<code>.gemini/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>OpenCode</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
+                <li>Continue.dev (<code>.continue/config.json</code>)</li>
                 <li><strong>Kimi Code CLI (k2.5)</strong> (<code>AGENTS.md</code>)</li>
               </ol>
 
               <p class="text-base-content opacity-70 italic">
-                Note: Claude Code has its own dedicated <code>claude_code_skills</code> section in the onboarding endpoint. The <code>multi_agent_instructions</code> section provides 7 formats for the other assistants. Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode share the same skill-based system with on-demand loading. Continue.dev, Gemini, and Kimi use traditional always-active instruction files.
+                Note: Claude Code has its own dedicated <code>claude_code_skills</code> section in the onboarding endpoint. The <code>multi_agent_instructions</code> section provides 7 formats for the other assistants. Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode share the same skill-based system with on-demand loading. Continue.dev and Kimi use traditional always-active instruction files.
               </p>
             </div>
           </div>

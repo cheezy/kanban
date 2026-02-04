@@ -2017,22 +2017,35 @@ defmodule KanbanWeb.API.AgentJSON do
             token_limit: "Flexible (~100 lines JSON, uses context providers)"
           },
           gemini: %{
-            file_path: "GEMINI.md",
+            file_path: ".gemini/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "Google Gemini Code Assist instructions (project-scoped Markdown for agent/chat mode)",
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md",
-            installation_unix:
-              "curl -o GEMINI.md #{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md",
-            installation_windows:
-              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/GEMINI.md\" -OutFile GEMINI.md",
-            token_limit: "~8000 tokens (~400 lines)",
-            alternative_locations: [
-              "Project root: ./GEMINI.md or ./AGENT.md",
-              "Global: ~/.gemini/GEMINI.md (applies to all projects)",
-              "Component-level: Place in subdirectories for context override"
-            ],
+              "Google Gemini Code Assist automatically discovers Claude Code skills - install the same skills used by Claude Code",
+            compatible_tools: ["Google Gemini Code Assist", "Claude Code"],
+            reference_section: "claude_code_skills",
             note:
-              "Gemini Code Assist supports hierarchical context files - more specific files override or supplement content from parent directories. You can also use AGENT.md as an alternative filename in IntelliJ IDEs."
+              "Gemini Code Assist automatically discovers skills in .gemini/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Gemini will find them automatically. See https://geminicli.com/docs/cli/skills/ for details on Gemini's skill discovery mechanism.",
+            skills_note:
+              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .gemini/skills/ and both Claude Code and Gemini will discover them.",
+            installation_unix:
+              "# Gemini users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .gemini/skills/ work with both Claude Code and Gemini\n# See claude_code_skills.installation_instructions above for details",
+            installation_windows:
+              "# Gemini users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .gemini/skills/ work with both Claude Code and Gemini\n# See claude_code_skills.installation_instructions above for details",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            alternative_locations: [
+              "Recommended: .gemini/skills/<skill-name>/SKILL.md (works with both Claude Code and Gemini)",
+              "User-level: ~/.gemini/skills/<skill-name>/SKILL.md (applies to all projects)",
+              "Extension-bundled: Installed within Gemini extensions"
+            ],
+            safe_installation: %{
+              check_existing:
+                "ls -la .gemini/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
+              backup_first:
+                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .gemini/skills/$skill/SKILL.md ] && cp .gemini/skills/$skill/SKILL.md .gemini/skills/$skill/SKILL.md.backup; done",
+              install_from_claude_skills:
+                "Refer to claude_code_skills section above for complete installation. The skills work identically for Gemini since it discovers .gemini/skills/ automatically.",
+              usage:
+                "Invoke specific skills in Gemini when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Gemini will automatically find skills in .gemini/skills/ directories."
+            }
           },
           opencode: %{
             file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
@@ -2104,6 +2117,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "GitHub Copilot users: Install the Claude Code skills from claude_code_skills section - GitHub Copilot automatically discovers .claude/skills/ directories",
           "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
           "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
+          "Gemini users: Install the Claude Code skills from claude_code_skills section - Gemini automatically discovers .gemini/skills/ directories",
           "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
@@ -2187,6 +2201,19 @@ defmodule KanbanWeb.API.AgentJSON do
             ],
             note:
               "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Windsurf will find them. See https://docs.windsurf.com/windsurf/cascade/skills for details."
+          },
+          gemini: %{
+            description: "For Gemini Code Assist users (uses Claude Code skills)",
+            steps: [
+              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .gemini/skills/ directories",
+              "2. Gemini automatically discovers skills in .gemini/skills/ - no additional configuration needed",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Invoke skills in Gemini: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
+              "5. The skills will load Stride integration instructions on-demand",
+              "6. Skills installed to .gemini/skills/ work with both Claude Code and Gemini"
+            ],
+            note:
+              "Gemini Code Assist automatically discovers skills in .gemini/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Gemini will find them. See https://geminicli.com/docs/cli/skills/ for details."
           },
           aider: %{
             description: "For Aider users",

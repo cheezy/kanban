@@ -333,8 +333,9 @@ defmodule KanbanWeb.API.AgentControllerTest do
       for {name, format} <- formats do
         assert is_binary(format["file_path"])
         assert is_binary(format["description"])
-        # GitHub Copilot, Cursor, Windsurf, and OpenCode reference Claude Code skills, so they don't have a download_url
-        if name not in ["copilot", "cursor", "windsurf", "opencode"] do
+        # GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode reference Claude Code skills,
+        # so they don't have a download_url
+        if name not in ["copilot", "cursor", "windsurf", "gemini", "opencode"] do
           assert is_binary(format["download_url"])
         end
         assert is_binary(format["installation_unix"])
@@ -552,6 +553,139 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert opencode_instructions["note"] =~ "skill"
     end
 
+    test "Gemini format uses Claude Code skills", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
+
+      # Verify basic structure
+      assert gemini["file_path"] == ".gemini/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert gemini["description"] =~ "Gemini"
+      assert gemini["description"] =~ "Claude Code skills"
+
+      # Verify compatible_tools field includes both
+      assert is_list(gemini["compatible_tools"])
+      assert "Google Gemini Code Assist" in gemini["compatible_tools"]
+      assert "Claude Code" in gemini["compatible_tools"]
+      refute "OpenCode" in gemini["compatible_tools"]
+      refute "GitHub Copilot" in gemini["compatible_tools"]
+      refute "Cursor" in gemini["compatible_tools"]
+      refute "Windsurf" in gemini["compatible_tools"]
+      refute "Kimi Code CLI (k2.5)" in gemini["compatible_tools"]
+
+      # Verify reference_section points to claude_code_skills
+      assert gemini["reference_section"] == "claude_code_skills"
+
+      # Verify token limit
+      assert gemini["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
+    end
+
+    test "Gemini format includes proper alternative skill locations", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
+
+      assert is_list(gemini["alternative_locations"])
+      assert length(gemini["alternative_locations"]) == 3
+
+      locations = Enum.join(gemini["alternative_locations"], " ")
+      assert locations =~ ".gemini/skills/<skill-name>/SKILL.md"
+      assert locations =~ "works with both Claude Code and Gemini"
+      assert locations =~ "~/.gemini/skills/<skill-name>/SKILL.md"
+      assert locations =~ "applies to all projects"
+      assert locations =~ "Extension-bundled"
+    end
+
+    test "Gemini format references Claude Code skill installation", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
+
+      # Verify Unix installation references Claude Code skills
+      unix_install = gemini["installation_unix"]
+      assert unix_install =~ "Gemini users"
+      assert unix_install =~ "Claude Code skill installation"
+      assert unix_install =~ "claude_code_skills section"
+
+      # Verify Windows installation references Claude Code skills
+      windows_install = gemini["installation_windows"]
+      assert windows_install =~ "Gemini users"
+      assert windows_install =~ "Claude Code skill installation"
+      assert windows_install =~ "claude_code_skills section"
+    end
+
+    test "Gemini format includes important note about Claude Code compatibility", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
+
+      assert is_binary(gemini["note"])
+      assert gemini["note"] =~ "Gemini"
+      assert gemini["note"] =~ "automatically discovers"
+      assert gemini["note"] =~ ".gemini/skills/"
+      assert gemini["note"] =~ "Claude Code skills"
+      assert gemini["note"] =~ "claude_code_skills section"
+    end
+
+    test "Gemini format includes safe_installation commands referencing Claude Code", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
+
+      assert is_map(gemini["safe_installation"])
+      safe_install = gemini["safe_installation"]
+
+      assert is_binary(safe_install["check_existing"])
+      assert is_binary(safe_install["backup_first"])
+      assert is_binary(safe_install["install_from_claude_skills"])
+      assert is_binary(safe_install["usage"])
+
+      # Verify check_existing command checks for .gemini/skills directory
+      assert safe_install["check_existing"] =~ ".gemini/skills/stride"
+
+      # Verify backup command references .gemini/skills
+      assert safe_install["backup_first"] =~ ".gemini/skills"
+
+      # Verify install_from_claude_skills references claude_code_skills section
+      assert safe_install["install_from_claude_skills"] =~ "claude_code_skills section"
+
+      # Verify usage mentions Gemini finding .gemini/skills
+      assert safe_install["usage"] =~ ".gemini/skills/"
+    end
+
+    test "includes agent_specific_instructions with Gemini skill support", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      # agent_specific_instructions is nested inside memory_strategy
+      memory_strategy = response["memory_strategy"]
+      agent_instructions = memory_strategy["agent_specific_instructions"]
+
+      assert is_map(agent_instructions["gemini"])
+
+      gemini_instructions = agent_instructions["gemini"]
+      assert gemini_instructions["description"] =~ "Gemini"
+      assert gemini_instructions["description"] =~ "Claude Code skills"
+      assert is_list(gemini_instructions["steps"])
+      assert length(gemini_instructions["steps"]) >= 6
+
+      # Verify steps mention key actions
+      steps_text = Enum.join(gemini_instructions["steps"], " ")
+      assert steps_text =~ "skill"
+      assert steps_text =~ ".stride.md"
+      assert steps_text =~ ".stride_auth.md"
+
+      # Verify note mentions skills
+      assert is_binary(gemini_instructions["note"])
+      assert gemini_instructions["note"] =~ "Gemini"
+      assert gemini_instructions["note"] =~ "skill"
+    end
+
     test "multi-agent instructions usage notes mention OpenCode skills and Kimi", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
@@ -680,7 +814,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert kimi_instructions["note"] =~ "AGENTS.md"
     end
 
-    test "other formats remain unchanged", %{conn: conn} do
+    test "Continue format remains unchanged as always-active", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -690,11 +824,6 @@ defmodule KanbanWeb.API.AgentControllerTest do
       continue = formats["continue"]
       assert continue["file_path"] == ".continue/config.json"
       assert is_binary(continue["description"])
-
-      # Verify Gemini format
-      gemini = formats["gemini"]
-      assert gemini["file_path"] =~ "GEMINI.md"
-      assert is_binary(gemini["description"])
     end
   end
 end

@@ -6,9 +6,9 @@
 
 Stride provides enhanced integration support for multiple AI coding assistants beyond Claude Code. While Claude Code uses contextual Skills for workflow enforcement, other AI assistants receive always-active code completion guidance through their native configuration formats.
 
-**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, OpenCode), and provide always-active code completion guidance for other AI assistants.
+**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode), and provide always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), OpenCode (Skills), Continue.dev, Google Gemini Code Assist, Kimi Code CLI (k2.5)
+**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), Gemini Code Assist (Skills), OpenCode (Skills), Continue.dev, Kimi Code CLI (k2.5)
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
-## Supported AI Assistants (7 Total)
+## Supported AI Assistants (6 Skills-Based + 2 Always-Active)
 
 ### 1. GitHub Copilot
 
@@ -163,32 +163,36 @@ curl -o .continue/config.json \
 
 ### 5. Google Gemini Code Assist
 
-**File:** `GEMINI.md` (or `AGENT.md` for IntelliJ)
+**Files:** Multiple focused skills (4 total)
 
-**Location:** `docs/multi-agent-instructions/GEMINI.md`
+**Location:** `docs/multi-agent-instructions/SKILL.md`
 
-**Scope:** Project-scoped with hierarchical context support
+**Compatible Tools:** Gemini Code Assist, Claude Code
 
-**Token Limit:** ~8000 tokens (~400 lines)
+**Scope:** On-demand skill loading (invoked when needed)
 
-**Format:** Markdown with headings, lists, code blocks
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+
+**Format:** YAML frontmatter + Markdown content
+
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
 
 **Download:**
 ```bash
-curl -o GEMINI.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+# Create all skill directories and download (Gemini-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .gemini/skills/$skill
+  curl -o .gemini/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
-**Alternative Locations:**
-- Project root: `./GEMINI.md` or `./AGENT.md` (IntelliJ)
-- Global: `~/.gemini/GEMINI.md` (applies to all projects)
-- Component-level: Place in subdirectories for context override
-
-**Focus:**
-- Detailed code patterns with Markdown formatting
-- Comprehensive mistake catalog
-- Hook execution details
-- Context file hierarchy support (subdirectories override parent)
+**IMPORTANT:** Gemini and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Gemini automatically discovers skills in `.gemini/skills/` directories, making them compatible with Claude Code. See [Gemini Skills Documentation](https://geminicli.com/docs/cli/skills/) for details.
 
 ### 6. OpenCode
 
@@ -364,11 +368,13 @@ All seven instruction formats cover the same essential topics:
 - Custom context provider for external docs
 - Can reference documentation files directly
 
-**Gemini (Markdown):**
-- Rich formatting with headings, lists, code blocks
-- Similar depth to Cursor/Windsurf formats
-- Supports hierarchical context (subdirectories override parent)
-- Can use either GEMINI.md or AGENT.md filename
+**Gemini (YAML + Markdown Skills):**
+- YAML frontmatter with structured metadata
+- Rich formatting with headings, lists, code blocks in body
+- Skill-based on-demand loading reduces token usage
+- Installed in .gemini/skills/<skill-name>/ directories
+- Claude-compatible (shared skill system)
+- Automatic skill discovery
 
 **OpenCode (YAML + Markdown):**
 - YAML frontmatter with structured metadata
@@ -422,13 +428,12 @@ The `/api/agent/onboarding` endpoint includes the `multi_agent_instructions` sec
 All multi-agent instruction files are stored in:
 ```
 docs/multi-agent-instructions/
-├── SKILL.md                   # 9KB (shared by Windsurf, Cursor, GitHub Copilot, Claude Code, OpenCode)
+├── SKILL.md                   # 9KB (shared by Windsurf, Cursor, GitHub Copilot, Gemini, Claude Code, OpenCode)
 ├── continue-config.json       # 4KB
-├── GEMINI.md                  # 15KB
 └── AGENTS.md                  # 15KB (Kimi Code CLI k2.5)
 ```
 
-Total size: ~43KB of instruction content
+Total size: ~28KB of instruction content
 
 ### Endpoint Optimization
 
@@ -462,20 +467,19 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
-ls -la .claude/skills/stride-*/SKILL.md .windsurf/skills/stride-*/SKILL.md 2>/dev/null
+ls -la .continue/config.json AGENTS.md 2>/dev/null
+ls -la .claude/skills/stride-*/SKILL.md .windsurf/skills/stride-*/SKILL.md .gemini/skills/stride-*/SKILL.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
 ```bash
 # Backup existing configuration before installing
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
-[ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
-[ -f AGENT.md ] && cp AGENT.md AGENT.md.backup
 [ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
   [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup
   [ -f .windsurf/skills/$skill/SKILL.md ] && cp .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup
+  [ -f .gemini/skills/$skill/SKILL.md ] && cp .gemini/skills/$skill/SKILL.md .gemini/skills/$skill/SKILL.md.backup
 done
 ```
 
@@ -520,21 +524,21 @@ curl -o .continue/config.json \
 
 **Google Gemini Code Assist:**
 ```bash
-curl -o GEMINI.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+# Create all skill directories and download (Gemini-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .gemini/skills/$skill
+  curl -o .gemini/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
-Alternative for IntelliJ users:
+For user-level installation (applies to all projects):
 ```bash
-curl -o AGENT.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
-```
-
-For global installation (applies to all projects):
-```bash
-mkdir -p ~/.gemini
-curl -o ~/.gemini/GEMINI.md \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p ~/.gemini/skills/$skill
+  curl -o ~/.gemini/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **OpenCode / Claude Code:**
@@ -572,7 +576,7 @@ curl -o AGENTS.md \
 
 If you have existing custom instructions, you may want to manually merge them:
 
-1. **For skill-based formats like GitHub Copilot/Cursor/Windsurf/Claude Code/OpenCode**, skills are stored in separate directories and don't conflict with existing configuration
+1. **For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/Claude Code/OpenCode**, skills are stored in separate directories and don't conflict with existing configuration
 
 2. **For Continue.dev (JSON)**, manually merge the Stride instructions into your existing `.continue/config.json` file
 
@@ -584,20 +588,18 @@ If you have existing custom instructions, you may want to manually merge them:
 
 **Check for existing files:**
 ```powershell
-Get-Item .cursorrules, .continue/config.json, GEMINI.md, AGENT.md, AGENTS.md -ErrorAction SilentlyContinue
-Get-Item .claude/skills/stride-*/SKILL.md, .windsurf/skills/stride-*/SKILL.md -ErrorAction SilentlyContinue
+Get-Item .continue/config.json, AGENTS.md -ErrorAction SilentlyContinue
+Get-Item .claude/skills/stride-*/SKILL.md, .windsurf/skills/stride-*/SKILL.md, .gemini/skills/stride-*/SKILL.md -ErrorAction SilentlyContinue
 ```
 
 **Backup existing files (recommended):**
 ```powershell
-if (Test-Path .cursorrules) { Copy-Item .cursorrules .cursorrules.backup }
 if (Test-Path .continue/config.json) { Copy-Item .continue/config.json .continue/config.json.backup }
-if (Test-Path GEMINI.md) { Copy-Item GEMINI.md GEMINI.md.backup }
-if (Test-Path AGENT.md) { Copy-Item AGENT.md AGENT.md.backup }
 if (Test-Path AGENTS.md) { Copy-Item AGENTS.md AGENTS.md.backup }
 foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals')) {
   if (Test-Path .claude/skills/$skill/SKILL.md) { Copy-Item .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup }
   if (Test-Path .windsurf/skills/$skill/SKILL.md) { Copy-Item .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup }
+  if (Test-Path .gemini/skills/$skill/SKILL.md) { Copy-Item .gemini/skills/$skill/SKILL.md .gemini/skills/$skill/SKILL.md.backup }
 }
 ```
 
@@ -625,15 +627,17 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
 New-Item -ItemType Directory -Force -Path .continue
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json" -OutFile .continue/config.json
 
-# Google Gemini Code Assist
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile GEMINI.md
+# Google Gemini Code Assist (skill-based installation)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path .gemini/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .gemini/skills/$_/SKILL.md
+}
 
-# Or for IntelliJ users
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile AGENT.md
-
-# For global installation
-New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/GEMINI.md" -OutFile $env:USERPROFILE\.gemini\GEMINI.md
+# For user-level installation (applies to all projects)
+@('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
+  New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.gemini\skills\$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.gemini\skills\$_\SKILL.md
+}
 
 # OpenCode / Claude Code (skill-based installation)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
@@ -658,7 +662,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 
 **Appending to existing configuration:**
 ```powershell
-# For skill-based formats like GitHub Copilot/Cursor/Windsurf/Claude Code, skills are stored in separate directories and don't conflict with existing configuration
+# For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/Claude Code/OpenCode, skills are stored in separate directories and don't conflict with existing configuration
 ```
 
 ## Maintenance
@@ -696,7 +700,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | GitHub Copilot, Cursor, Windsurf, OpenCode (Skills); Continue.dev, Gemini, Kimi (Always-active) |
+| **Target Assistants** | Claude Code only | GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
