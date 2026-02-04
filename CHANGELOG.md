@@ -5,7 +5,7 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.21.2] - 2026-02-03
+## [1.21.2] - 2026-02-04
 
 ### Added
 
@@ -52,16 +52,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   - **Onboarding Endpoint Integration**: Updated GitHub Copilot, Cursor, and Windsurf formats, and added OpenCode and Kimi formats to `/api/agent/onboarding` multi_agent_instructions section with appropriate installation commands
 
-**Multi-Agent Instructions (Now 7 Formats):**
-1. **GitHub Copilot** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
-2. **Cursor** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
-3. **Windsurf** (`.windsurf/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
-4. Continue.dev (`.continue/config.json`)
-5. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
-6. **OpenCode** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
-7. **Kimi Code CLI (k2.5)** (`AGENTS.md`)
+**Supported AI Assistants (8 Total):**
+1. **Claude Code** (Skills - `claude_code_skills` section)
+2. **GitHub Copilot** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
+3. **Cursor** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
+4. **Windsurf** (`.windsurf/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
+5. Continue.dev (`.continue/config.json`)
+6. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
+7. **OpenCode** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
+8. **Kimi Code CLI (k2.5)** (`AGENTS.md`)
 
-*Note: Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode share the same skill-based system with on-demand loading. Continue.dev, Gemini, and Kimi use traditional always-active instruction files.*
+*Note: Claude Code has its own dedicated `claude_code_skills` section in the onboarding endpoint. The `multi_agent_instructions` section provides 7 formats for the other assistants. Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode share the same skill-based system with on-demand loading. Continue.dev, Gemini, and Kimi use traditional always-active instruction files.*
 
 ## [1.21.1] - 2026-01-26
 

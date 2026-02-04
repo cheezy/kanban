@@ -169,10 +169,11 @@
               </p>
 
               <p class="text-base-content opacity-80 mb-4">
-                <strong>Multi-Agent Instructions (Now 7 Formats):</strong>
+                <strong>Supported AI Assistants (8 Total):</strong>
               </p>
 
               <ol class="list-decimal list-inside text-base-content opacity-80 mb-4 ml-4">
+                <li><strong>Claude Code</strong> (Skills - <code>claude_code_skills</code> section)</li>
                 <li><strong>GitHub Copilot</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>Cursor</strong> (<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
                 <li><strong>Windsurf</strong> (<code>.windsurf/skills/&lt;skill-name&gt;/SKILL.md</code> - uses Claude Code skills)</li>
@@ -183,7 +184,7 @@
               </ol>
 
               <p class="text-base-content opacity-70 italic">
-                Note: Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode share the same skill-based system with on-demand loading. Continue.dev, Gemini, and Kimi use traditional always-active instruction files.
+                Note: Claude Code has its own dedicated <code>claude_code_skills</code> section in the onboarding endpoint. The <code>multi_agent_instructions</code> section provides 7 formats for the other assistants. Claude Code, GitHub Copilot, Cursor, Windsurf, and OpenCode share the same skill-based system with on-demand loading. Continue.dev, Gemini, and Kimi use traditional always-active instruction files.
               </p>
             </div>
           </div>
