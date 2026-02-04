@@ -9,17 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### GitHub Copilot, OpenCode, and Kimi Code CLI AI Assistant Support
+#### GitHub Copilot, Cursor, OpenCode, and Kimi Code CLI AI Assistant Support
 
-- **Multi-Agent Integration Expansion** - Added comprehensive support for GitHub Copilot agent skills, OpenCode, and Kimi Code CLI (k2.5):
+- **Multi-Agent Integration Expansion** - Added comprehensive support for GitHub Copilot agent skills, Cursor agent skills, OpenCode, and Kimi Code CLI (k2.5):
 
   **GitHub Copilot (Claude Code Skills Compatible):**
   - **Uses Claude Code Skills**: GitHub Copilot now automatically discovers skills in `.claude/skills/` directories, eliminating the need for separate Copilot-specific content
   - **4 Stride Skills**: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
   - **On-Demand Loading**: Skills are loaded when invoked, reducing token usage compared to always-active instructions
   - **Automatic Discovery**: GitHub Copilot discovers skills in `.claude/skills/` directories
-  - **Zero Duplication**: One set of skills works for Claude Code, GitHub Copilot, and OpenCode users
+  - **Zero Duplication**: One set of skills works for Claude Code, GitHub Copilot, Cursor, and OpenCode users
   - **Agent Skills Feature**: Leverages GitHub Copilot's new agent skills capability announced December 2024
+
+  **Cursor (Claude Code Skills Compatible):**
+  - **Uses Claude Code Skills**: Cursor now automatically discovers skills in `.claude/skills/` directories, eliminating the need for separate Cursor-specific content
+  - **4 Stride Skills**: Reuses the same skills as Claude Code (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals)
+  - **On-Demand Loading**: Skills are loaded when invoked, reducing token usage compared to always-active instructions
+  - **Automatic Discovery**: Cursor discovers skills in `.claude/skills/` (and `.cursor/skills/` or `.codex/skills/`) directories
+  - **Zero Duplication**: One set of skills works for Claude Code, GitHub Copilot, Cursor, and OpenCode users
+  - **Agent Skills Feature**: Leverages Cursor's agent skills capability
 
   **OpenCode (Claude Code Skills Compatible):**
   - **Uses Claude Code Skills**: OpenCode automatically discovers skills in `.claude/skills/` directories, eliminating the need for separate OpenCode-specific content
@@ -34,18 +42,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Append-Mode Installation**: Can append Stride instructions to existing AGENTS.md content
   - **Project-Local**: Installed in project root `./AGENTS.md`
 
-  - **Onboarding Endpoint Integration**: Updated GitHub Copilot format and added OpenCode and Kimi formats to `/api/agent/onboarding` multi_agent_instructions section with appropriate installation commands
+  - **Onboarding Endpoint Integration**: Updated GitHub Copilot and Cursor formats, and added OpenCode and Kimi formats to `/api/agent/onboarding` multi_agent_instructions section with appropriate installation commands
 
 **Multi-Agent Instructions (Now 7 Formats):**
 1. **GitHub Copilot** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
-2. Cursor (`.cursorrules`)
+2. **Cursor** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
 3. Windsurf Cascade (`.windsurfrules`)
 4. Continue.dev (`.continue/config.json`)
 5. Google Gemini Code Assist (`GEMINI.md` or `AGENT.md`)
 6. **OpenCode** (`.claude/skills/<skill-name>/SKILL.md` - uses Claude Code skills)
 7. **Kimi Code CLI (k2.5)** (`AGENTS.md`)
 
-*Note: Claude Code, GitHub Copilot, and OpenCode share the same skill-based system with on-demand loading. Kimi uses traditional always-active instruction files.*
+*Note: Claude Code, GitHub Copilot, Cursor, and OpenCode share the same skill-based system with on-demand loading. Windsurf, Continue.dev, Gemini, and Kimi use traditional always-active instruction files.*
 
 ## [1.21.1] - 2026-01-26
 

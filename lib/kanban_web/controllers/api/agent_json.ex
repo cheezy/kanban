@@ -1945,14 +1945,35 @@ defmodule KanbanWeb.API.AgentJSON do
             }
           },
           cursor: %{
-            file_path: ".cursorrules",
-            description: "Cursor rules (project-scoped, always active)",
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt",
+            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
+            description:
+              "Cursor automatically discovers Claude Code skills - install the same skills used by Claude Code",
+            compatible_tools: ["Cursor", "Claude Code"],
+            reference_section: "claude_code_skills",
+            note:
+              "Cursor automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Cursor will find them automatically. See https://cursor.com/docs/context/skills for details on Cursor's skill discovery mechanism.",
+            skills_note:
+              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and Cursor will discover them.",
             installation_unix:
-              "curl -o .cursorrules #{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt",
+              "# Cursor users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and Cursor\n# See claude_code_skills.installation_instructions above for details",
             installation_windows:
-              "Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/cursorrules.txt\" -OutFile .cursorrules",
-            token_limit: "~8000 tokens (~400 lines)"
+              "# Cursor users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and Cursor\n# See claude_code_skills.installation_instructions above for details",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            alternative_locations: [
+              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and Cursor)",
+              "Cursor-specific: .cursor/skills/<skill-name>/SKILL.md (Cursor only)",
+              "Global: ~/.claude/skills/<skill-name>/SKILL.md or ~/.cursor/skills/<skill-name>/SKILL.md"
+            ],
+            safe_installation: %{
+              check_existing:
+                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
+              backup_first:
+                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
+              install_from_claude_skills:
+                "Refer to claude_code_skills section above for complete installation. The skills work identically for Cursor since it discovers .claude/skills/ automatically.",
+              usage:
+                "Invoke specific skills in Cursor when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Cursor will automatically find skills in .claude/skills/ directories."
+            }
           },
           windsurf: %{
             file_path: ".windsurfrules",
@@ -2062,6 +2083,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should use claude_code_skills section above (not this section)",
           "GitHub Copilot users: Install the Claude Code skills from claude_code_skills section - GitHub Copilot automatically discovers .claude/skills/ directories",
+          "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
           "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
@@ -2121,12 +2143,17 @@ defmodule KanbanWeb.API.AgentJSON do
             """
           },
           cursor: %{
-            description: "For Cursor AI users",
+            description: "For Cursor users (uses Claude Code skills)",
             steps: [
-              "1. Add .stride.md and .stride_auth.md references to your .cursorrules file",
-              "2. Create a .cursor/prompts/stride.md file with the essential workflow from this response",
-              "3. Reference the onboarding endpoint (#{base_url}/api/agent/onboarding) in your project documentation"
-            ]
+              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
+              "2. Cursor automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Invoke skills in Cursor: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
+              "5. The skills will load Stride integration instructions on-demand",
+              "6. Skills installed to .claude/skills/ work with Claude Code, GitHub Copilot, Cursor, and OpenCode"
+            ],
+            note:
+              "Cursor automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Cursor will find them. See https://cursor.com/docs/context/skills for details."
           },
           windsurf: %{
             description: "For Windsurf users",

@@ -333,8 +333,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
       for {name, format} <- formats do
         assert is_binary(format["file_path"])
         assert is_binary(format["description"])
-        # GitHub Copilot and OpenCode reference Claude Code skills, so they don't have a download_url
-        if name not in ["copilot", "opencode"] do
+        # GitHub Copilot, Cursor, and OpenCode reference Claude Code skills, so they don't have a download_url
+        if name not in ["copilot", "cursor", "opencode"] do
           assert is_binary(format["download_url"])
         end
         assert is_binary(format["installation_unix"])
@@ -366,6 +366,32 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify token limit
       assert copilot["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
+    end
+
+    test "Cursor format uses Claude Code skills", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      cursor = response["multi_agent_instructions"]["formats"]["cursor"]
+
+      # Verify basic structure
+      assert cursor["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert cursor["description"] =~ "Cursor"
+      assert cursor["description"] =~ "Claude Code skills"
+
+      # Verify compatible_tools field includes both
+      assert is_list(cursor["compatible_tools"])
+      assert "Cursor" in cursor["compatible_tools"]
+      assert "Claude Code" in cursor["compatible_tools"]
+      refute "OpenCode" in cursor["compatible_tools"]
+      refute "GitHub Copilot" in cursor["compatible_tools"]
+      refute "Kimi Code CLI (k2.5)" in cursor["compatible_tools"]
+
+      # Verify reference_section points to claude_code_skills
+      assert cursor["reference_section"] == "claude_code_skills"
+
+      # Verify token limit
+      assert cursor["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
     end
 
     test "OpenCode format uses Claude Code skills", %{conn: conn} do
@@ -632,11 +658,6 @@ defmodule KanbanWeb.API.AgentControllerTest do
       response = json_response(conn, 200)
 
       formats = response["multi_agent_instructions"]["formats"]
-
-      # Verify Cursor format
-      cursor = formats["cursor"]
-      assert cursor["file_path"] == ".cursorrules"
-      assert is_binary(cursor["description"])
 
       # Verify Windsurf format
       windsurf = formats["windsurf"]

@@ -6,9 +6,9 @@
 
 Stride provides enhanced integration support for multiple AI coding assistants beyond Claude Code. While Claude Code uses contextual Skills for workflow enforcement, other AI assistants receive always-active code completion guidance through their native configuration formats.
 
-**Core Principle:** Complement Claude Code Skills (contextual workflow enforcement) with always-active code completion guidance for other AI assistants.
+**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, OpenCode), and provide always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** GitHub Copilot, Cursor, Windsurf Cascade, Continue.dev, Google Gemini Code Assist
+**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), OpenCode (Skills), Windsurf Cascade, Continue.dev, Google Gemini Code Assist, Kimi Code CLI (k2.5)
 
 ## Architecture
 
@@ -72,27 +72,36 @@ done
 
 ### 2. Cursor
 
-**File:** `.cursorrules`
+**Files:** Multiple focused skills (4 total)
 
-**Location:** `docs/multi-agent-instructions/cursorrules.txt`
+**Location:** `docs/multi-agent-instructions/SKILL.md`
 
-**Scope:** Project-scoped, always active
+**Compatible Tools:** Cursor, Claude Code
 
-**Token Limit:** ~8000 tokens (~400 lines)
+**Scope:** On-demand skill loading (invoked when needed)
 
-**Format:** Plain text with clear section headers
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+
+**Format:** YAML frontmatter + Markdown content
+
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
 
 **Download:**
 ```bash
-curl -o .cursorrules \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt
+# Create all skill directories and download (Claude-compatible paths)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
-**Focus:**
-- More examples than Copilot due to higher token limit
-- Detailed code patterns
-- Comprehensive mistake catalog
-- Hook execution details
+**IMPORTANT:** Cursor and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Cursor automatically discovers skills in `.claude/skills/` (and `.cursor/skills/` or `.codex/skills/`) directories, making them compatible across both platforms. See [Cursor Skills Documentation](https://cursor.com/docs/context/skills) for details.
 
 ### 3. Windsurf Cascade
 
@@ -320,14 +329,21 @@ All seven instruction formats cover the same essential topics:
 
 ### Format-Specific Adaptations
 
-**Copilot (Markdown):**
-- Use headings, lists, code blocks
-- Very concise due to token limits
-- Focus on inline code completion hints
+**GitHub Copilot (YAML + Markdown Skills):**
+- YAML frontmatter with structured metadata
+- Rich formatting with headings, lists, code blocks in body
+- Skill-based on-demand loading reduces token usage
+- Installed in .claude/skills/<skill-name>/ directories
+- Claude-compatible (shared skill system)
+- Automatic skill discovery
 
-**Cursor (Plain Text):**
-- Similar to Copilot but can be slightly longer
-- Emphasize patterns for code generation
+**Cursor (YAML + Markdown Skills):**
+- YAML frontmatter with structured metadata
+- Rich formatting with headings, lists, code blocks in body
+- Skill-based on-demand loading reduces token usage
+- Installed in .claude/skills/<skill-name>/ (or .cursor/skills/ or .codex/skills/) directories
+- Claude-compatible (shared skill system)
+- Automatic skill discovery
 
 **Windsurf (Plain Text):**
 - Similar to Cursor
@@ -396,15 +412,14 @@ The `/api/agent/onboarding` endpoint includes the `multi_agent_instructions` sec
 All multi-agent instruction files are stored in:
 ```
 docs/multi-agent-instructions/
-├── SKILL.md                   # 9KB (shared by GitHub Copilot, Claude Code, OpenCode)
-├── cursorrules.txt            # 15KB
+├── SKILL.md                   # 9KB (shared by Cursor, GitHub Copilot, Claude Code, OpenCode)
 ├── windsurfrules.txt          # 15KB
 ├── continue-config.json       # 4KB
 ├── GEMINI.md                  # 15KB
 └── AGENTS.md                  # 15KB (Kimi Code CLI k2.5)
 ```
 
-Total size: ~73KB of instruction content
+Total size: ~58KB of instruction content
 
 ### Endpoint Optimization
 
@@ -438,14 +453,13 @@ Developers can manually download instruction files. **IMPORTANT:** These command
 **Check for existing files first:**
 ```bash
 # Check which files already exist
-ls -la .cursorrules .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
+ls -la .windsurfrules .continue/config.json GEMINI.md AGENT.md AGENTS.md 2>/dev/null
 ls -la .claude/skills/stride-*/SKILL.md 2>/dev/null
 ```
 
 **Backup existing files (recommended):**
 ```bash
 # Backup existing configuration before installing
-[ -f .cursorrules ] && cp .cursorrules .cursorrules.backup
 [ -f .windsurfrules ] && cp .windsurfrules .windsurfrules.backup
 [ -f .continue/config.json ] && cp .continue/config.json .continue/config.json.backup
 [ -f GEMINI.md ] && cp GEMINI.md GEMINI.md.backup
@@ -470,8 +484,12 @@ done
 
 **Cursor:**
 ```bash
-curl -o .cursorrules \
-  https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt
+# Install all 4 Stride skills (project-local, Claude-compatible)
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
 ```
 
 **Windsurf:**
