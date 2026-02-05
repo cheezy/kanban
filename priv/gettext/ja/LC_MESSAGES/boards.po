@@ -4,27 +4,27 @@ msgstr ""
 "Language: ja\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban_web/live/board_live/show.ex:745
+#: lib/kanban_web/live/board_live/show.ex:754
 #, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr "バックログ"
 
-#: lib/kanban_web/live/board_live/show.ex:747
+#: lib/kanban_web/live/board_live/show.ex:756
 #, elixir-autogen, elixir-format
 msgid "Doing"
 msgstr "実行中"
 
-#: lib/kanban_web/live/board_live/show.ex:749
+#: lib/kanban_web/live/board_live/show.ex:758
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "完了"
 
-#: lib/kanban_web/live/board_live/show.ex:746
+#: lib/kanban_web/live/board_live/show.ex:755
 #, elixir-autogen, elixir-format
 msgid "Ready"
 msgstr "準備完了"
 
-#: lib/kanban_web/live/board_live/show.ex:748
+#: lib/kanban_web/live/board_live/show.ex:757
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "レビュー"

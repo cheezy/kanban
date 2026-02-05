@@ -11,9 +11,9 @@ msgstr ""
 "Language: zh\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban_web/components/core_components.ex:422
+#: lib/kanban_web/components/core_components.ex:420
 #: lib/kanban_web/live/archive_live/index.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:595
+#: lib/kanban_web/live/board_live/show.html.heex:621
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "操作"
@@ -34,8 +34,8 @@ msgstr "出错了！"
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
 
-#: lib/kanban_web/components/core_components.ex:80
-#: lib/kanban_web/components/core_components.ex:583
+#: lib/kanban_web/components/core_components.ex:78
+#: lib/kanban_web/components/core_components.ex:581
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "关闭"
@@ -50,7 +50,7 @@ msgstr " · 任务管理"
 msgid "Done"
 msgstr "完成"
 
-#: lib/kanban_web/components/layouts/root.html.heex:79
+#: lib/kanban_web/components/layouts/root.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "开始使用"
@@ -61,20 +61,20 @@ msgid "Get Started Free"
 msgstr "免费开始"
 
 #: lib/kanban_web/controllers/page_html/home.html.heex:98
-#: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/live/task_live/view_component.ex:30
+#: lib/kanban_web/live/task_live/form_component.html.heex:105
+#: lib/kanban_web/live/task_live/view_component.ex:31
 #, elixir-autogen, elixir-format
 msgid "In Progress"
 msgstr "进行中"
 
-#: lib/kanban_web/components/layouts/root.html.heex:76
+#: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/live/user_live/login.ex:75
 #: lib/kanban_web/live/user_live/registration.ex:33
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "登录"
 
-#: lib/kanban_web/components/layouts/root.html.heex:69
+#: lib/kanban_web/components/layouts/root.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "退出"
@@ -181,9 +181,9 @@ msgstr "密码"
 msgid "Save Password"
 msgstr "保存密码"
 
-#: lib/kanban_web/live/board_live/form.html.heex:33
+#: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/task_live/form_component.html.heex:923
+#: lib/kanban_web/live/task_live/form_component.html.heex:925
 #: lib/kanban_web/live/user_live/settings.ex:38
 #: lib/kanban_web/live/user_live/settings.ex:74
 #, elixir-autogen, elixir-format
@@ -236,13 +236,8 @@ msgstr "看板创建成功"
 msgid "Board updated successfully"
 msgstr "看板更新成功"
 
-#: lib/kanban_web/live/board_live/index.ex:19
-#, elixir-autogen, elixir-format
-msgid "Boards"
-msgstr "看板"
-
-#: lib/kanban_web/live/board_live/form.html.heex:39
-#: lib/kanban_web/live/board_live/form.html.heex:46
+#: lib/kanban_web/live/board_live/form.html.heex:58
+#: lib/kanban_web/live/board_live/form.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "取消"
@@ -250,12 +245,12 @@ msgstr "取消"
 #: lib/kanban_web/live/board_live/form.html.heex:31
 #: lib/kanban_web/live/issue_live/form_component.ex:100
 #: lib/kanban_web/live/task_live/form_component.html.heex:45
-#: lib/kanban_web/live/task_live/view_component.ex:259
+#: lib/kanban_web/live/task_live/view_component.ex:284
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "描述"
 
-#: lib/kanban_web/live/board_live/form.ex:28
+#: lib/kanban_web/live/board_live/form.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Edit Board"
 msgstr "编辑看板"
@@ -265,7 +260,7 @@ msgstr "编辑看板"
 msgid "Edit board"
 msgstr "编辑看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:40
+#: lib/kanban_web/live/board_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Get started by creating columns for your board."
 msgstr "通过为看板创建列来开始。"
@@ -276,7 +271,7 @@ msgid "Listing Boards"
 msgstr "看板列表"
 
 #: lib/kanban_web/live/board_live/form.html.heex:30
-#: lib/kanban_web/live/board_live/show.html.heex:592
+#: lib/kanban_web/live/board_live/show.html.heex:618
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/user_live/registration.ex:52
 #: lib/kanban_web/live/user_live/settings.ex:28
@@ -284,18 +279,18 @@ msgstr "看板列表"
 msgid "Name"
 msgstr "名称"
 
-#: lib/kanban_web/live/board_live/form.ex:44
+#: lib/kanban_web/live/board_live/form.html.heex:24
 #: lib/kanban_web/live/board_live/index.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "New Board"
 msgstr "新建看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:38
+#: lib/kanban_web/live/board_live/show.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "No columns yet"
 msgstr "尚无列"
 
-#: lib/kanban_web/live/board_live/form.html.heex:33
+#: lib/kanban_web/live/board_live/form.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Save Board"
 msgstr "保存看板"
@@ -330,7 +325,7 @@ msgstr "列更新成功"
 msgid "Create a new column for your board"
 msgstr "为看板创建新列"
 
-#: lib/kanban_web/live/board_live/show.html.heex:44
+#: lib/kanban_web/live/board_live/show.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Create your first column"
 msgstr "创建您的第一列"
@@ -350,7 +345,7 @@ msgstr "新建列"
 msgid "Save Column"
 msgstr "保存列"
 
-#: lib/kanban_web/live/board_live/show.html.heex:115
+#: lib/kanban_web/live/board_live/show.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Tasks"
 msgstr "任务"
@@ -370,20 +365,20 @@ msgstr "在制品限制"
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "在制品限制。设置为0表示无限制。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:101
+#: lib/kanban_web/live/board_live/show.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Add task"
 msgstr "添加任务"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:87
-#: lib/kanban_web/live/board_live/show.html.heex:251
+#: lib/kanban_web/live/board_live/show.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr "您确定要删除此任务吗？"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:122
-#: lib/kanban_web/live/task_live/view_component.ex:126
-#: lib/kanban_web/live/task_live/view_component.ex:744
+#: lib/kanban_web/live/task_live/form_component.html.heex:124
+#: lib/kanban_web/live/task_live/view_component.ex:148
+#: lib/kanban_web/live/task_live/view_component.ex:773
 #, elixir-autogen, elixir-format
 msgid "Column"
 msgstr "列"
@@ -395,17 +390,17 @@ msgstr "创建新任务"
 
 #: lib/kanban_web/live/archive_live/index.ex:60
 #: lib/kanban_web/live/archive_live/index.ex:71
-#: lib/kanban_web/live/board_live/show.ex:224
+#: lib/kanban_web/live/board_live/show.ex:232
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "删除任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:180
+#: lib/kanban_web/live/board_live/show.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "No tasks yet"
 msgstr "尚无任务"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:923
+#: lib/kanban_web/live/task_live/form_component.html.heex:925
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr "保存任务"
@@ -429,7 +424,7 @@ msgstr "任务更新成功"
 #: lib/kanban_web/live/archive_live/index.html.heex:35
 #: lib/kanban_web/live/issue_live/form_component.ex:59
 #: lib/kanban_web/live/task_live/form_component.html.heex:40
-#: lib/kanban_web/live/task_live/view_component.ex:732
+#: lib/kanban_web/live/task_live/view_component.ex:761
 #, elixir-autogen, elixir-format
 msgid "Title"
 msgstr "标题"
@@ -439,7 +434,7 @@ msgstr "标题"
 msgid "Update task details"
 msgstr "更新任务详情"
 
-#: lib/kanban_web/live/board_live/show.html.heex:90
+#: lib/kanban_web/live/board_live/show.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr "已达到在制品限制"
@@ -456,66 +451,66 @@ msgstr "此列已达到在制品限制"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:628
+#: lib/kanban_web/live/board_live/show.ex:636
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "无法移动任务：列已达到在制品限制"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:949
-#: lib/kanban_web/live/task_live/view_component.ex:808
+#: lib/kanban_web/live/task_live/form_component.html.heex:951
+#: lib/kanban_web/live/task_live/view_component.ex:844
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/board_live/show.html.heex:354
-#: lib/kanban_web/live/task_live/form_component.html.heex:92
-#: lib/kanban_web/live/task_live/view_component.ex:147
+#: lib/kanban_web/live/board_live/show.html.heex:377
+#: lib/kanban_web/live/task_live/form_component.html.heex:94
+#: lib/kanban_web/live/task_live/view_component.ex:170
 #, elixir-autogen, elixir-format
 msgid "Critical"
 msgstr "紧急"
 
-#: lib/kanban_web/live/board_live/show.html.heex:329
+#: lib/kanban_web/live/board_live/show.html.heex:352
 #: lib/kanban_web/live/issue_live/form_component.ex:252
-#: lib/kanban_web/live/task_live/form_component.html.heex:73
-#: lib/kanban_web/live/task_live/view_component.ex:82
-#: lib/kanban_web/live/task_live/view_component.ex:768
+#: lib/kanban_web/live/task_live/form_component.html.heex:75
+#: lib/kanban_web/live/task_live/view_component.ex:98
+#: lib/kanban_web/live/task_live/view_component.ex:802
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr "缺陷"
 
-#: lib/kanban_web/live/board_live/show.ex:637
+#: lib/kanban_web/live/board_live/show.ex:645
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:355
-#: lib/kanban_web/live/task_live/form_component.html.heex:91
-#: lib/kanban_web/live/task_live/view_component.ex:146
+#: lib/kanban_web/live/board_live/show.html.heex:378
+#: lib/kanban_web/live/task_live/form_component.html.heex:93
+#: lib/kanban_web/live/task_live/view_component.ex:169
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "高"
 
-#: lib/kanban_web/live/board_live/show.html.heex:357
-#: lib/kanban_web/live/task_live/form_component.html.heex:89
-#: lib/kanban_web/live/task_live/view_component.ex:144
+#: lib/kanban_web/live/board_live/show.html.heex:380
+#: lib/kanban_web/live/task_live/form_component.html.heex:91
+#: lib/kanban_web/live/task_live/view_component.ex:167
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "低"
 
-#: lib/kanban_web/live/board_live/show.html.heex:356
-#: lib/kanban_web/live/task_live/form_component.html.heex:90
-#: lib/kanban_web/live/task_live/form_component.html.heex:141
-#: lib/kanban_web/live/task_live/form_component.html.heex:883
-#: lib/kanban_web/live/task_live/view_component.ex:97
-#: lib/kanban_web/live/task_live/view_component.ex:145
-#: lib/kanban_web/live/task_live/view_component.ex:609
-#: lib/kanban_web/live/task_live/view_component.ex:616
+#: lib/kanban_web/live/board_live/show.html.heex:379
+#: lib/kanban_web/live/task_live/form_component.html.heex:92
+#: lib/kanban_web/live/task_live/form_component.html.heex:143
+#: lib/kanban_web/live/task_live/form_component.html.heex:885
+#: lib/kanban_web/live/task_live/view_component.ex:118
+#: lib/kanban_web/live/task_live/view_component.ex:168
+#: lib/kanban_web/live/task_live/view_component.ex:636
+#: lib/kanban_web/live/task_live/view_component.ex:643
 #, elixir-autogen, elixir-format
 msgid "Medium"
 msgstr "中"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:982
-#: lib/kanban_web/live/task_live/view_component.ex:810
+#: lib/kanban_web/live/task_live/form_component.html.heex:984
+#: lib/kanban_web/live/task_live/view_component.ex:846
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "已移动"
@@ -525,69 +520,69 @@ msgstr "已移动"
 msgid "My Boards"
 msgstr "我的看板"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:87
-#: lib/kanban_web/live/task_live/view_component.ex:132
+#: lib/kanban_web/live/task_live/form_component.html.heex:89
+#: lib/kanban_web/live/task_live/view_component.ex:155
 #, elixir-autogen, elixir-format
 msgid "Priority"
 msgstr "优先级"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:929
+#: lib/kanban_web/live/task_live/form_component.html.heex:931
 #, elixir-autogen, elixir-format
 msgid "Task History"
 msgstr "任务历史"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:36
 #: lib/kanban_web/live/issue_live/form_component.ex:80
-#: lib/kanban_web/live/task_live/form_component.html.heex:72
-#: lib/kanban_web/live/task_live/view_component.ex:738
+#: lib/kanban_web/live/task_live/form_component.html.heex:74
+#: lib/kanban_web/live/task_live/view_component.ex:767
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr "类型"
 
-#: lib/kanban_web/live/board_live/show.html.heex:81
+#: lib/kanban_web/live/board_live/show.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "WIP limit exceeded"
 msgstr "超出在制品限制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:331
-#: lib/kanban_web/live/task_live/form_component.html.heex:73
-#: lib/kanban_web/live/task_live/view_component.ex:81
-#: lib/kanban_web/live/task_live/view_component.ex:767
+#: lib/kanban_web/live/board_live/show.html.heex:354
+#: lib/kanban_web/live/task_live/form_component.html.heex:75
+#: lib/kanban_web/live/task_live/view_component.ex:97
+#: lib/kanban_web/live/task_live/view_component.ex:801
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr "工作"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:954
-#: lib/kanban_web/live/task_live/form_component.html.heex:974
-#: lib/kanban_web/live/task_live/form_component.html.heex:983
-#: lib/kanban_web/live/task_live/view_component.ex:811
-#: lib/kanban_web/live/task_live/view_component.ex:816
-#: lib/kanban_web/live/task_live/view_component.ex:831
+#: lib/kanban_web/live/task_live/form_component.html.heex:956
+#: lib/kanban_web/live/task_live/form_component.html.heex:976
+#: lib/kanban_web/live/task_live/form_component.html.heex:985
+#: lib/kanban_web/live/task_live/view_component.ex:847
+#: lib/kanban_web/live/task_live/view_component.ex:852
+#: lib/kanban_web/live/task_live/view_component.ex:869
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "从"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:958
-#: lib/kanban_web/live/task_live/form_component.html.heex:976
-#: lib/kanban_web/live/task_live/form_component.html.heex:985
-#: lib/kanban_web/live/task_live/view_component.ex:812
-#: lib/kanban_web/live/task_live/view_component.ex:817
-#: lib/kanban_web/live/task_live/view_component.ex:835
+#: lib/kanban_web/live/task_live/form_component.html.heex:960
+#: lib/kanban_web/live/task_live/form_component.html.heex:978
+#: lib/kanban_web/live/task_live/form_component.html.heex:987
+#: lib/kanban_web/live/task_live/view_component.ex:848
+#: lib/kanban_web/live/task_live/view_component.ex:853
+#: lib/kanban_web/live/task_live/view_component.ex:873
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "到"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1021
+#: lib/kanban_web/live/task_live/form_component.html.heex:1023
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1014
+#: lib/kanban_web/live/task_live/form_component.html.heex:1016
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "添加评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1020
+#: lib/kanban_web/live/task_live/form_component.html.heex:1022
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "正在添加..."
@@ -597,51 +592,51 @@ msgstr "正在添加..."
 msgid "Comment added successfully"
 msgstr "评论添加成功"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1001
-#: lib/kanban_web/live/task_live/view_component.ex:851
+#: lib/kanban_web/live/task_live/form_component.html.heex:1003
+#: lib/kanban_web/live/task_live/view_component.ex:892
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "评论"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1039
+#: lib/kanban_web/live/task_live/form_component.html.heex:1041
 #, elixir-autogen, elixir-format
 msgid "No comments yet. Be the first to comment!"
 msgstr "尚无评论。成为第一个评论的人！"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:1016
+#: lib/kanban_web/live/task_live/form_component.html.heex:1018
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "在此处写下您的评论..."
 
-#: lib/kanban_web/live/board_live/form.html.heex:229
+#: lib/kanban_web/live/board_live/form.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "Add User by Email"
 msgstr "通过电子邮件添加用户"
 
-#: lib/kanban_web/live/board_live/form.html.heex:261
+#: lib/kanban_web/live/board_live/form.html.heex:280
 #, elixir-autogen, elixir-format
 msgid "Add as Read Only"
 msgstr "添加为只读"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:113
-#: lib/kanban_web/live/task_live/view_component.ex:154
+#: lib/kanban_web/live/task_live/form_component.html.heex:115
+#: lib/kanban_web/live/task_live/view_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Assigned To"
 msgstr "分配给"
 
-#: lib/kanban_web/live/board_live/form.html.heex:293
+#: lib/kanban_web/live/board_live/form.html.heex:312
 #: lib/kanban_web/live/board_live/index.html.heex:151
 #: lib/kanban_web/live/board_live/index.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "可编辑"
 
-#: lib/kanban_web/live/board_live/form.html.heex:273
+#: lib/kanban_web/live/board_live/form.html.heex:292
 #, elixir-autogen, elixir-format
 msgid "Current Users"
 msgstr "当前用户"
 
-#: lib/kanban_web/live/board_live/form.html.heex:237
+#: lib/kanban_web/live/board_live/form.html.heex:256
 #, elixir-autogen, elixir-format
 msgid "Enter user email"
 msgstr "输入用户电子邮件"
@@ -656,7 +651,7 @@ msgstr "添加用户到看板失败"
 msgid "Failed to remove user from board"
 msgstr "从看板移除用户失败"
 
-#: lib/kanban_web/live/board_live/form.html.heex:218
+#: lib/kanban_web/live/board_live/form.html.heex:237
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr "管理用户"
@@ -671,52 +666,52 @@ msgstr "只有看板所有者可以删除此看板"
 msgid "Only the board owner can edit this board"
 msgstr "只有看板所有者可以编辑此看板"
 
-#: lib/kanban_web/live/board_live/form.html.heex:291
+#: lib/kanban_web/live/board_live/form.html.heex:310
 #: lib/kanban_web/live/board_live/index.html.heex:143
 #: lib/kanban_web/live/board_live/index.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "所有者"
 
-#: lib/kanban_web/live/board_live/form.html.heex:295
+#: lib/kanban_web/live/board_live/form.html.heex:314
 #: lib/kanban_web/live/board_live/index.html.heex:159
 #: lib/kanban_web/live/board_live/index.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "只读"
 
-#: lib/kanban_web/live/board_live/form.html.heex:305
-#: lib/kanban_web/live/task_live/form_component.html.heex:212
-#: lib/kanban_web/live/task_live/form_component.html.heex:263
-#: lib/kanban_web/live/task_live/form_component.html.heex:329
-#: lib/kanban_web/live/task_live/form_component.html.heex:405
-#: lib/kanban_web/live/task_live/form_component.html.heex:442
-#: lib/kanban_web/live/task_live/form_component.html.heex:483
-#: lib/kanban_web/live/task_live/form_component.html.heex:530
-#: lib/kanban_web/live/task_live/form_component.html.heex:565
-#: lib/kanban_web/live/task_live/form_component.html.heex:600
-#: lib/kanban_web/live/task_live/form_component.html.heex:648
-#: lib/kanban_web/live/task_live/form_component.html.heex:683
-#: lib/kanban_web/live/task_live/form_component.html.heex:718
-#: lib/kanban_web/live/task_live/form_component.html.heex:753
-#: lib/kanban_web/live/task_live/form_component.html.heex:790
-#: lib/kanban_web/live/task_live/form_component.html.heex:851
+#: lib/kanban_web/live/board_live/form.html.heex:324
+#: lib/kanban_web/live/task_live/form_component.html.heex:214
+#: lib/kanban_web/live/task_live/form_component.html.heex:265
+#: lib/kanban_web/live/task_live/form_component.html.heex:331
+#: lib/kanban_web/live/task_live/form_component.html.heex:407
+#: lib/kanban_web/live/task_live/form_component.html.heex:444
+#: lib/kanban_web/live/task_live/form_component.html.heex:485
+#: lib/kanban_web/live/task_live/form_component.html.heex:532
+#: lib/kanban_web/live/task_live/form_component.html.heex:567
+#: lib/kanban_web/live/task_live/form_component.html.heex:602
+#: lib/kanban_web/live/task_live/form_component.html.heex:650
+#: lib/kanban_web/live/task_live/form_component.html.heex:685
+#: lib/kanban_web/live/task_live/form_component.html.heex:720
+#: lib/kanban_web/live/task_live/form_component.html.heex:755
+#: lib/kanban_web/live/task_live/form_component.html.heex:792
+#: lib/kanban_web/live/task_live/form_component.html.heex:853
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr "移除"
 
-#: lib/kanban_web/live/board_live/form.html.heex:241
+#: lib/kanban_web/live/board_live/form.html.heex:260
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr "搜索"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:115
+#: lib/kanban_web/live/task_live/form_component.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Select a user"
 msgstr "选择用户"
 
 #: lib/kanban_web/live/task_live/form_component.ex:599
-#: lib/kanban_web/live/task_live/view_component.ex:160
+#: lib/kanban_web/live/task_live/view_component.ex:183
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "未分配"
@@ -751,7 +746,7 @@ msgstr "未找到邮箱为 %{email} 的用户"
 msgid "User removed successfully"
 msgstr "用户移除成功"
 
-#: lib/kanban_web/live/board_live/form.html.heex:221
+#: lib/kanban_web/live/board_live/form.html.heex:240
 #, elixir-autogen, elixir-format
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "用户必须已在系统中注册才能添加到看板"
@@ -766,17 +761,17 @@ msgstr "您不能将自己添加到看板"
 msgid "Only the board owner can delete columns"
 msgstr "只有看板所有者可以删除列"
 
-#: lib/kanban_web/live/board_live/show.ex:504
+#: lib/kanban_web/live/board_live/show.ex:512
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "只有看板所有者可以管理列"
 
-#: lib/kanban_web/live/board_live/show.ex:522
+#: lib/kanban_web/live/board_live/show.ex:530
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "只有看板所有者可以创建列"
 
-#: lib/kanban_web/live/board_live/show.ex:265
+#: lib/kanban_web/live/board_live/show.ex:273
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "只有看板所有者可以重新排序列"
@@ -786,23 +781,23 @@ msgstr "只有看板所有者可以重新排序列"
 msgid "Back to board"
 msgstr "返回看板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:785
+#: lib/kanban_web/live/task_live/view_component.ex:820
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr "历史"
 
-#: lib/kanban_web/live/task_live/view_component.ex:853
+#: lib/kanban_web/live/task_live/view_component.ex:895
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr "尚无评论"
 
-#: lib/kanban_web/live/task_live/view_component.ex:787
+#: lib/kanban_web/live/task_live/view_component.ex:823
 #, elixir-autogen, elixir-format
 msgid "No history available"
 msgstr "无可用历史"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:100
-#: lib/kanban_web/live/task_live/view_component.ex:654
+#: lib/kanban_web/live/task_live/form_component.html.heex:102
+#: lib/kanban_web/live/task_live/view_component.ex:683
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr "状态"
@@ -827,7 +822,7 @@ msgstr "正在确认您的账户..."
 msgid "Dashboard"
 msgstr "仪表板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:117
+#: lib/kanban_web/live/task_live/view_component.ex:138
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr "编辑"
@@ -853,7 +848,7 @@ msgid "Your account has been confirmed successfully. You can now log in."
 msgstr "您的账户已成功确认。您现在可以登录。"
 
 #: lib/kanban_web/components/layouts/root.html.heex:66
-#: lib/kanban_web/components/layouts/root.html.heex:73
+#: lib/kanban_web/components/layouts/root.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "About"
 msgstr "关于"
@@ -959,12 +954,12 @@ msgstr "不能为空"
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "从数据库设计到用户界面，整个应用程序都是通过与 Claude Code 和 TideWave 的对话开发的。这包括架构、实时更新、拖放功能和国际化支持。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:145
+#: lib/kanban_web/live/board_live/show.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
 msgstr "您确定要删除此列吗？此列中的所有任务也将被删除。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:183
+#: lib/kanban_web/live/board_live/show.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Drag tasks here or click + to add"
 msgstr "将任务拖到此处或点击 + 添加"
@@ -979,12 +974,12 @@ msgstr "通过创建您的第一个看板来组织您的任务和项目。"
 msgid "No boards yet"
 msgstr "尚无看板"
 
-#: lib/kanban_web/live/board_live/show.html.heex:125
+#: lib/kanban_web/live/board_live/show.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "WIP"
 msgstr "在制品"
 
-#: lib/kanban_web/live/board_live/form.html.heex:264
+#: lib/kanban_web/live/board_live/form.html.heex:283
 #, elixir-autogen, elixir-format
 msgid "Add with Edit Access"
 msgstr "添加为可编辑"
@@ -999,26 +994,26 @@ msgstr "前往我的看板"
 msgid "Error Tracker"
 msgstr "错误跟踪器"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:953
-#: lib/kanban_web/live/task_live/view_component.ex:815
+#: lib/kanban_web/live/task_live/form_component.html.heex:955
+#: lib/kanban_web/live/task_live/view_component.ex:851
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority changed"
 msgstr "优先级已更改"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:967
-#: lib/kanban_web/live/task_live/view_component.ex:822
+#: lib/kanban_web/live/task_live/form_component.html.heex:969
+#: lib/kanban_web/live/task_live/view_component.ex:858
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assigned to"
 msgstr "分配给"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:973
-#: lib/kanban_web/live/task_live/view_component.ex:830
+#: lib/kanban_web/live/task_live/form_component.html.heex:975
+#: lib/kanban_web/live/task_live/view_component.ex:868
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:970
-#: lib/kanban_web/live/task_live/view_component.ex:825
+#: lib/kanban_web/live/task_live/form_component.html.heex:972
+#: lib/kanban_web/live/task_live/view_component.ex:863
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unassigned from"
 msgstr "未分配"
@@ -1034,7 +1029,7 @@ msgid "About Tango"
 msgstr "关于Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:17
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:2743
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:3233
 #: lib/kanban_web/controllers/page_html/tango.html.heex:17
 #: lib/kanban_web/controllers/page_html/tango.html.heex:101
 #, elixir-autogen, elixir-format
@@ -1061,29 +1056,29 @@ msgstr "应用背后的团队"
 msgid "Back to App"
 msgstr "返回看板"
 
-#: lib/kanban_web/live/board_live/form.html.heex:69
+#: lib/kanban_web/live/board_live/form.html.heex:88
 #: lib/kanban_web/live/task_live/form_component.html.heex:53
-#: lib/kanban_web/live/task_live/view_component.ex:268
+#: lib/kanban_web/live/task_live/view_component.ex:293
 #, elixir-autogen, elixir-format
 msgid "Acceptance Criteria"
 msgstr "验收标准"
 
-#: lib/kanban_web/live/board_live/show.html.heex:149
+#: lib/kanban_web/live/board_live/show.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Delete column"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:252
+#: lib/kanban_web/live/board_live/show.html.heex:275
 #, elixir-autogen, elixir-format
 msgid "Delete task"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:134
+#: lib/kanban_web/live/board_live/show.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Edit column"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:231
+#: lib/kanban_web/live/board_live/show.html.heex:254
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit task"
 msgstr "编辑"
@@ -1177,78 +1172,78 @@ msgstr ""
 msgid "We'll send you an email with instructions to reset your password."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:880
-#: lib/kanban_web/live/task_live/view_component.ex:604
+#: lib/kanban_web/live/task_live/form_component.html.heex:882
+#: lib/kanban_web/live/task_live/view_component.ex:631
 #, elixir-autogen, elixir-format
 msgid "Actual Complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:891
-#: lib/kanban_web/live/task_live/view_component.ex:627
+#: lib/kanban_web/live/task_live/form_component.html.heex:893
+#: lib/kanban_web/live/task_live/view_component.ex:654
 #, elixir-autogen, elixir-format
 msgid "Actual Files Changed"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:875
+#: lib/kanban_web/live/task_live/form_component.html.heex:877
 #, elixir-autogen, elixir-format
 msgid "Actual Metrics"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:599
+#: lib/kanban_web/live/task_live/view_component.ex:626
 #, elixir-autogen, elixir-format
 msgid "Actual vs Estimated"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:800
+#: lib/kanban_web/live/task_live/form_component.html.heex:802
 #, elixir-autogen, elixir-format
 msgid "Add Dependency"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:222
+#: lib/kanban_web/live/task_live/form_component.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "Add Key File"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:452
+#: lib/kanban_web/live/task_live/form_component.html.heex:454
 #, elixir-autogen, elixir-format
 msgid "Add Out of Scope Item"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:415
+#: lib/kanban_web/live/task_live/form_component.html.heex:417
 #, elixir-autogen, elixir-format
 msgid "Add Pitfall"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:339
+#: lib/kanban_web/live/task_live/form_component.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "Add Technology"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:273
+#: lib/kanban_web/live/task_live/form_component.html.heex:275
 #, elixir-autogen, elixir-format
 msgid "Add Verification Step"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:202
-#: lib/kanban_web/live/task_live/view_component.ex:699
+#: lib/kanban_web/live/task_live/view_component.ex:227
+#: lib/kanban_web/live/task_live/view_component.ex:728
 #, elixir-autogen, elixir-format
 msgid "Agent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:912
-#: lib/kanban_web/live/task_live/view_component.ex:50
+#: lib/kanban_web/live/task_live/form_component.html.heex:914
+#: lib/kanban_web/live/task_live/view_component.ex:52
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:104
-#: lib/kanban_web/live/task_live/view_component.ex:32
+#: lib/kanban_web/live/task_live/form_component.html.heex:106
+#: lib/kanban_web/live/task_live/view_component.ex:33
 #, elixir-autogen, elixir-format
 msgid "Blocked"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:507
-#: lib/kanban_web/live/board_live/show.ex:525
+#: lib/kanban_web/live/board_live/show.ex:515
+#: lib/kanban_web/live/board_live/show.ex:533
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr ""
@@ -1258,229 +1253,229 @@ msgstr ""
 msgid "Cannot delete columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:510
+#: lib/kanban_web/live/board_live/show.ex:518
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:270
+#: lib/kanban_web/live/board_live/show.ex:278
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:913
-#: lib/kanban_web/live/task_live/view_component.ex:51
+#: lib/kanban_web/live/task_live/form_component.html.heex:915
+#: lib/kanban_web/live/task_live/view_component.ex:53
 #, elixir-autogen, elixir-format
 msgid "Changes Requested"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:825
+#: lib/kanban_web/live/task_live/form_component.html.heex:827
 #, elixir-autogen, elixir-format
 msgid "Claim Tracking & Required Capabilities"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:213
+#: lib/kanban_web/live/task_live/view_component.ex:238
 #, elixir-autogen, elixir-format
 msgid "Claim expires"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:208
+#: lib/kanban_web/live/task_live/view_component.ex:233
 #, elixir-autogen, elixir-format
 msgid "Claimed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:242
+#: lib/kanban_web/live/task_live/form_component.html.heex:244
 #, elixir-autogen, elixir-format
 msgid "Command"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:386
+#: lib/kanban_web/live/task_live/form_component.html.heex:388
 #, elixir-autogen, elixir-format
 msgid "Common Pitfalls"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:395
+#: lib/kanban_web/live/task_live/form_component.html.heex:397
 #, elixir-autogen, elixir-format
 msgid "Common pitfall to avoid"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:105
-#: lib/kanban_web/live/task_live/view_component.ex:31
+#: lib/kanban_web/live/task_live/form_component.html.heex:107
+#: lib/kanban_web/live/task_live/view_component.ex:32
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:811
+#: lib/kanban_web/live/task_live/form_component.html.heex:813
 #, elixir-autogen, elixir-format
 msgid "Completed By Agent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:687
+#: lib/kanban_web/live/task_live/view_component.ex:716
 #, elixir-autogen, elixir-format
 msgid "Completed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:693
+#: lib/kanban_web/live/task_live/view_component.ex:722
 #, elixir-autogen, elixir-format
 msgid "Completed by"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:683
+#: lib/kanban_web/live/task_live/view_component.ex:712
 #, elixir-autogen, elixir-format
 msgid "Completion"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:815
+#: lib/kanban_web/live/task_live/form_component.html.heex:817
 #, elixir-autogen, elixir-format
 msgid "Completion Summary"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:138
+#: lib/kanban_web/live/task_live/form_component.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:132
+#: lib/kanban_web/live/task_live/form_component.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Complexity & Planning"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:79
+#: lib/kanban_web/live/board_live/form.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Complexity & Scope"
 msgstr "复杂度与范围"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:159
-#: lib/kanban_web/live/task_live/view_component.ex:225
+#: lib/kanban_web/live/task_live/form_component.html.heex:161
+#: lib/kanban_web/live/task_live/view_component.ex:250
 #, elixir-autogen, elixir-format
 msgid "Context"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:89
+#: lib/kanban_web/live/board_live/form.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Context (Why/What/Where)"
 msgstr "上下文（为什么/是什么/在哪里）"
 
-#: lib/kanban_web/live/board_live/form.html.heex:58
+#: lib/kanban_web/live/board_live/form.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Control which task fields are visible on the board"
 msgstr "控制看板上显示哪些任务字段"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:810
+#: lib/kanban_web/live/task_live/form_component.html.heex:812
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Created By Agent"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/task_live/view_component.ex:196
+#: lib/kanban_web/live/task_live/view_component.ex:221
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Created by"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/task_live/view_component.ex:191
+#: lib/kanban_web/live/task_live/view_component.ex:216
 #, elixir-autogen, elixir-format
 msgid "Creator Info"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:346
+#: lib/kanban_web/live/task_live/view_component.ex:371
 #, elixir-autogen, elixir-format
 msgid "Database Changes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:291
+#: lib/kanban_web/live/task_live/form_component.html.heex:293
 #, elixir-autogen, elixir-format
 msgid "Database/Schema Changes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:771
-#: lib/kanban_web/live/task_live/view_component.ex:452
+#: lib/kanban_web/live/task_live/form_component.html.heex:773
+#: lib/kanban_web/live/task_live/view_component.ex:477
 #, elixir-autogen, elixir-format
 msgid "Dependencies"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:455
+#: lib/kanban_web/live/task_live/view_component.ex:480
 #, elixir-autogen, elixir-format
 msgid "Depends on tasks"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:139
-#: lib/kanban_web/live/task_live/form_component.html.heex:372
-#: lib/kanban_web/live/task_live/view_component.ex:400
+#: lib/kanban_web/live/board_live/form.html.heex:158
+#: lib/kanban_web/live/task_live/form_component.html.heex:374
+#: lib/kanban_web/live/task_live/view_component.ex:425
 #, elixir-autogen, elixir-format
 msgid "Error Handling"
 msgstr "错误处理"
 
-#: lib/kanban_web/live/task_live/view_component.ex:614
-#: lib/kanban_web/live/task_live/view_component.ex:633
+#: lib/kanban_web/live/task_live/view_component.ex:641
+#: lib/kanban_web/live/task_live/view_component.ex:660
 #, elixir-autogen, elixir-format
 msgid "Est"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:149
-#: lib/kanban_web/live/task_live/view_component.ex:181
+#: lib/kanban_web/live/task_live/form_component.html.heex:151
+#: lib/kanban_web/live/task_live/view_component.ex:206
 #, elixir-autogen, elixir-format
 msgid "Estimated Files"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:320
+#: lib/kanban_web/live/task_live/view_component.ex:345
 #, elixir-autogen, elixir-format
 msgid "Expected"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:195
-#: lib/kanban_web/live/board_live/show.ex:313
+#: lib/kanban_web/live/board_live/show.ex:321
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:55
+#: lib/kanban_web/live/board_live/form.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Field Visibility Settings"
 msgstr "字段可见性设置"
 
-#: lib/kanban_web/live/task_live/view_component.ex:332
+#: lib/kanban_web/live/task_live/view_component.ex:357
 #, elixir-autogen, elixir-format
 msgid "Implementation Guidance"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:99
-#: lib/kanban_web/live/task_live/view_component.ex:277
+#: lib/kanban_web/live/board_live/form.html.heex:118
+#: lib/kanban_web/live/task_live/view_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Key Files"
 msgstr "关键文件"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:185
+#: lib/kanban_web/live/task_live/form_component.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Key Files to Read First"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:142
-#: lib/kanban_web/live/task_live/form_component.html.heex:884
-#: lib/kanban_web/live/task_live/view_component.ex:98
-#: lib/kanban_web/live/task_live/view_component.ex:610
-#: lib/kanban_web/live/task_live/view_component.ex:617
+#: lib/kanban_web/live/task_live/form_component.html.heex:144
+#: lib/kanban_web/live/task_live/form_component.html.heex:886
+#: lib/kanban_web/live/task_live/view_component.ex:119
+#: lib/kanban_web/live/task_live/view_component.ex:637
+#: lib/kanban_web/live/task_live/view_component.ex:644
 #, elixir-autogen, elixir-format
 msgid "Large"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:363
-#: lib/kanban_web/live/task_live/view_component.ex:388
+#: lib/kanban_web/live/task_live/form_component.html.heex:365
+#: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Logging Requirements"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:242
+#: lib/kanban_web/live/task_live/form_component.html.heex:244
 #, elixir-autogen, elixir-format
 msgid "Manual"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:357
-#: lib/kanban_web/live/task_live/view_component.ex:380
+#: lib/kanban_web/live/task_live/form_component.html.heex:359
+#: lib/kanban_web/live/task_live/view_component.ex:405
 #, elixir-autogen, elixir-format
 msgid "Metrics to Track"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:62
-#: lib/kanban_web/live/task_live/view_component.ex:167
+#: lib/kanban_web/live/task_live/form_component.html.heex:63
+#: lib/kanban_web/live/task_live/view_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Needs Review"
 msgstr ""
@@ -1495,71 +1490,71 @@ msgstr "新建AI优化看板"
 msgid "New Empty Board"
 msgstr "新建空白看板"
 
-#: lib/kanban_web/live/task_live/view_component.ex:173
+#: lib/kanban_web/live/task_live/view_component.ex:197
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:129
-#: lib/kanban_web/live/task_live/form_component.html.heex:347
-#: lib/kanban_web/live/task_live/view_component.ex:366
+#: lib/kanban_web/live/board_live/form.html.heex:148
+#: lib/kanban_web/live/task_live/form_component.html.heex:349
+#: lib/kanban_web/live/task_live/view_component.ex:391
 #, elixir-autogen, elixir-format
 msgid "Observability"
 msgstr "可观测性"
 
-#: lib/kanban_web/live/task_live/view_component.ex:414
+#: lib/kanban_web/live/task_live/view_component.ex:439
 #, elixir-autogen, elixir-format
 msgid "On Failure"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:377
+#: lib/kanban_web/live/task_live/form_component.html.heex:379
 #, elixir-autogen, elixir-format
 msgid "On Failure (What Happens)"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.ex:192
-#: lib/kanban_web/live/board_live/show.ex:310
-#: lib/kanban_web/live/board_live/show.ex:317
+#: lib/kanban_web/live/board_live/show.ex:318
+#: lib/kanban_web/live/board_live/show.ex:325
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:102
-#: lib/kanban_web/live/task_live/view_component.ex:29
+#: lib/kanban_web/live/task_live/form_component.html.heex:104
+#: lib/kanban_web/live/task_live/view_component.ex:30
 #, elixir-autogen, elixir-format
 msgid "Open"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:169
-#: lib/kanban_web/live/task_live/form_component.html.heex:423
-#: lib/kanban_web/live/task_live/view_component.ex:473
+#: lib/kanban_web/live/board_live/form.html.heex:188
+#: lib/kanban_web/live/task_live/form_component.html.heex:425
+#: lib/kanban_web/live/task_live/view_component.ex:500
 #, elixir-autogen, elixir-format
 msgid "Out of Scope"
 msgstr "范围之外"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:432
+#: lib/kanban_web/live/task_live/form_component.html.heex:434
 #, elixir-autogen, elixir-format
 msgid "Out of scope item"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:285
-#: lib/kanban_web/live/task_live/view_component.ex:338
+#: lib/kanban_web/live/task_live/form_component.html.heex:287
+#: lib/kanban_web/live/task_live/view_component.ex:363
 #, elixir-autogen, elixir-format
 msgid "Patterns to Follow"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:911
-#: lib/kanban_web/live/task_live/view_component.ex:49
+#: lib/kanban_web/live/task_live/form_component.html.heex:913
+#: lib/kanban_web/live/task_live/view_component.ex:51
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:159
+#: lib/kanban_web/live/board_live/form.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
 msgstr "常见陷阱"
 
-#: lib/kanban_web/live/task_live/view_component.ex:462
+#: lib/kanban_web/live/task_live/view_component.ex:488
 #, elixir-autogen, elixir-format
 msgid "Pitfalls to Avoid"
 msgstr ""
@@ -1569,65 +1564,65 @@ msgstr ""
 msgid "Pre-configured for AI workflow"
 msgstr "为AI工作流预配置"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:914
-#: lib/kanban_web/live/task_live/view_component.ex:52
+#: lib/kanban_web/live/task_live/form_component.html.heex:916
+#: lib/kanban_web/live/task_live/view_component.ex:54
 #, elixir-autogen, elixir-format
 msgid "Rejected"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:179
-#: lib/kanban_web/live/task_live/view_component.ex:439
+#: lib/kanban_web/live/board_live/form.html.heex:198
+#: lib/kanban_web/live/task_live/view_component.ex:464
 #, elixir-autogen, elixir-format
 msgid "Required Agent Capabilities"
 msgstr "所需代理能力"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:918
-#: lib/kanban_web/live/task_live/view_component.ex:673
+#: lib/kanban_web/live/task_live/form_component.html.heex:920
+#: lib/kanban_web/live/task_live/view_component.ex:702
 #, elixir-autogen, elixir-format
 msgid "Review Notes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:905
+#: lib/kanban_web/live/task_live/form_component.html.heex:907
 #, elixir-autogen, elixir-format
 msgid "Review Queue"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:909
-#: lib/kanban_web/live/task_live/view_component.ex:651
+#: lib/kanban_web/live/task_live/form_component.html.heex:911
+#: lib/kanban_web/live/task_live/view_component.ex:680
 #, elixir-autogen, elixir-format
 msgid "Review Status"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:667
+#: lib/kanban_web/live/task_live/view_component.ex:696
 #, elixir-autogen, elixir-format
 msgid "Reviewed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:661
+#: lib/kanban_web/live/task_live/view_component.ex:690
 #, elixir-autogen, elixir-format
 msgid "Reviewed by"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:886
+#: lib/kanban_web/live/task_live/form_component.html.heex:888
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Select"
 msgstr "选择用户"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:144
+#: lib/kanban_web/live/task_live/form_component.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Select complexity"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:916
+#: lib/kanban_web/live/task_live/form_component.html.heex:918
 #, elixir-autogen, elixir-format
 msgid "Select status"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:140
-#: lib/kanban_web/live/task_live/form_component.html.heex:882
-#: lib/kanban_web/live/task_live/view_component.ex:96
-#: lib/kanban_web/live/task_live/view_component.ex:608
-#: lib/kanban_web/live/task_live/view_component.ex:615
+#: lib/kanban_web/live/task_live/form_component.html.heex:142
+#: lib/kanban_web/live/task_live/form_component.html.heex:884
+#: lib/kanban_web/live/task_live/view_component.ex:117
+#: lib/kanban_web/live/task_live/view_component.ex:635
+#: lib/kanban_web/live/task_live/view_component.ex:642
 #, elixir-autogen, elixir-format
 msgid "Small"
 msgstr ""
@@ -1637,356 +1632,355 @@ msgstr ""
 msgid "Start with a blank board"
 msgstr "从空白看板开始"
 
-#: lib/kanban_web/live/task_live/view_component.ex:705
+#: lib/kanban_web/live/task_live/view_component.ex:734
 #, elixir-autogen, elixir-format
 msgid "Summary"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:780
+#: lib/kanban_web/live/task_live/form_component.html.heex:782
 #, elixir-autogen, elixir-format
 msgid "Task identifier (e.g., W01A)"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:119
-#: lib/kanban_web/live/task_live/form_component.html.heex:281
+#: lib/kanban_web/live/board_live/form.html.heex:138
+#: lib/kanban_web/live/task_live/form_component.html.heex:283
 #, elixir-autogen, elixir-format
 msgid "Technical Notes"
 msgstr "技术说明"
 
-#: lib/kanban_web/live/board_live/form.html.heex:149
-#: lib/kanban_web/live/task_live/form_component.html.heex:307
-#: lib/kanban_web/live/task_live/view_component.ex:426
+#: lib/kanban_web/live/board_live/form.html.heex:168
+#: lib/kanban_web/live/task_live/form_component.html.heex:309
+#: lib/kanban_web/live/task_live/view_component.ex:451
 #, elixir-autogen, elixir-format
 msgid "Technology Requirements"
 msgstr "技术要求"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:319
+#: lib/kanban_web/live/task_live/form_component.html.heex:321
 #, elixir-autogen, elixir-format
 msgid "Technology/library name"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:351
-#: lib/kanban_web/live/task_live/view_component.ex:372
+#: lib/kanban_web/live/task_live/form_component.html.heex:353
+#: lib/kanban_web/live/task_live/view_component.ex:397
 #, elixir-autogen, elixir-format
 msgid "Telemetry Event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:641
+#: lib/kanban_web/live/task_live/view_component.ex:669
 #, elixir-autogen, elixir-format
 msgid "Time Spent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:896
+#: lib/kanban_web/live/task_live/form_component.html.heex:898
 #, elixir-autogen, elixir-format
 msgid "Time Spent (minutes)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:33
-#: lib/kanban_web/live/task_live/view_component.ex:53
+#: lib/kanban_web/live/task_live/view_component.ex:34
+#: lib/kanban_web/live/task_live/view_component.ex:55
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:373
+#: lib/kanban_web/live/task_live/form_component.html.heex:375
 #, elixir-autogen, elixir-format
 msgid "User Error Message"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:406
+#: lib/kanban_web/live/task_live/view_component.ex:431
 #, elixir-autogen, elixir-format
 msgid "User Message"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:297
-#: lib/kanban_web/live/task_live/view_component.ex:354
+#: lib/kanban_web/live/task_live/form_component.html.heex:299
+#: lib/kanban_web/live/task_live/view_component.ex:379
 #, elixir-autogen, elixir-format
 msgid "Validation Rules"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:109
-#: lib/kanban_web/live/task_live/form_component.html.heex:231
-#: lib/kanban_web/live/task_live/view_component.ex:295
+#: lib/kanban_web/live/board_live/form.html.heex:128
+#: lib/kanban_web/live/task_live/form_component.html.heex:233
+#: lib/kanban_web/live/task_live/view_component.ex:320
 #, elixir-autogen, elixir-format
 msgid "Verification Steps"
 msgstr "验证步骤"
 
-#: lib/kanban_web/live/task_live/view_component.ex:239
+#: lib/kanban_web/live/task_live/view_component.ex:264
 #, elixir-autogen, elixir-format
 msgid "What"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:169
+#: lib/kanban_web/live/task_live/form_component.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "What (Implementation)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:247
+#: lib/kanban_web/live/task_live/view_component.ex:272
 #, elixir-autogen, elixir-format
 msgid "Where"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:175
+#: lib/kanban_web/live/task_live/form_component.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Where (Code Location)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:231
+#: lib/kanban_web/live/task_live/view_component.ex:256
 #, elixir-autogen, elixir-format
 msgid "Why"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:163
+#: lib/kanban_web/live/task_live/form_component.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Why (Problem/Rationale)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:171
+#: lib/kanban_web/live/task_live/view_component.ex:195
 #, elixir-autogen, elixir-format
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:642
+#: lib/kanban_web/live/task_live/view_component.ex:671
 #, elixir-autogen, elixir-format
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:559
 #: lib/kanban_web/live/board_live/show.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "API Tokens"
 msgstr "API令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:458
+#: lib/kanban_web/live/board_live/show.html.heex:482
 #, elixir-autogen, elixir-format
 msgid "API Tokens for %{board_name}"
 msgstr "%{board_name}的API令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:743
+#: lib/kanban_web/live/task_live/form_component.html.heex:745
 #, elixir-autogen, elixir-format
 msgid "API endpoint or service"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:365
+#: lib/kanban_web/live/board_live/show.ex:373
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "API令牌吊销成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:581
+#: lib/kanban_web/live/board_live/show.html.heex:607
 #, elixir-autogen, elixir-format
 msgid "Active Tokens"
 msgstr "活动令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:763
+#: lib/kanban_web/live/task_live/form_component.html.heex:765
 #, elixir-autogen, elixir-format
 msgid "Add External API"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:575
+#: lib/kanban_web/live/task_live/form_component.html.heex:577
 #, elixir-autogen, elixir-format
 msgid "Add Integration Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:610
+#: lib/kanban_web/live/task_live/form_component.html.heex:612
 #, elixir-autogen, elixir-format
 msgid "Add Manual Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:728
+#: lib/kanban_web/live/task_live/form_component.html.heex:730
 #, elixir-autogen, elixir-format
 msgid "Add Phoenix Channel"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:693
+#: lib/kanban_web/live/task_live/form_component.html.heex:695
 #, elixir-autogen, elixir-format
 msgid "Add PubSub Broadcast"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:493
+#: lib/kanban_web/live/task_live/form_component.html.heex:495
 #, elixir-autogen, elixir-format
 msgid "Add Security Consideration"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:658
+#: lib/kanban_web/live/task_live/form_component.html.heex:660
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Telemetry Event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:540
+#: lib/kanban_web/live/task_live/form_component.html.heex:542
 #, elixir-autogen, elixir-format
 msgid "Add Unit Test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:548
+#: lib/kanban_web/live/board_live/show.html.heex:572
 #, elixir-autogen, elixir-format
 msgid "Agent Model (Optional)"
 msgstr "代理模型（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:625
+#: lib/kanban_web/live/board_live/show.html.heex:651
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to revoke this token?"
 msgstr "您确定要删除此看板吗？"
 
-#: lib/kanban_web/live/board_live/show.html.heex:516
-#: lib/kanban_web/live/board_live/show.html.heex:520
+#: lib/kanban_web/live/board_live/show.html.heex:540
+#: lib/kanban_web/live/board_live/show.html.heex:544
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:481
+#: lib/kanban_web/live/board_live/show.html.heex:505
 #, elixir-autogen, elixir-format
 msgid "Copy this token now - you won't be able to see it again:"
 msgstr "立即复制此令牌 - 您将无法再次查看："
 
-#: lib/kanban_web/live/board_live/show.html.heex:571
+#: lib/kanban_web/live/board_live/show.html.heex:597
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Creating..."
 msgstr "正在创建账户..."
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:734
-#: lib/kanban_web/live/task_live/view_component.ex:584
+#: lib/kanban_web/live/task_live/form_component.html.heex:736
+#: lib/kanban_web/live/task_live/view_component.ex:611
 #, elixir-autogen, elixir-format
 msgid "External APIs"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.ex:368
+#: lib/kanban_web/live/board_live/show.ex:376
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to revoke token"
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/board_live/show.html.heex:572
+#: lib/kanban_web/live/board_live/show.html.heex:598
 #, elixir-autogen, elixir-format
 msgid "Generate Token"
 msgstr "生成令牌"
 
-#: lib/kanban_web/live/board_live/form.html.heex:209
-#: lib/kanban_web/live/task_live/form_component.html.heex:620
-#: lib/kanban_web/live/task_live/view_component.ex:542
+#: lib/kanban_web/live/board_live/form.html.heex:228
+#: lib/kanban_web/live/task_live/form_component.html.heex:622
+#: lib/kanban_web/live/task_live/view_component.ex:569
 #, elixir-autogen, elixir-format
 msgid "Integration Points"
 msgstr "集成点"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:546
-#: lib/kanban_web/live/task_live/view_component.ex:514
+#: lib/kanban_web/live/task_live/form_component.html.heex:548
+#: lib/kanban_web/live/task_live/view_component.ex:541
 #, elixir-autogen, elixir-format
 msgid "Integration Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:555
+#: lib/kanban_web/live/task_live/form_component.html.heex:557
 #, elixir-autogen, elixir-format
 msgid "Integration test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:594
+#: lib/kanban_web/live/board_live/show.html.heex:620
 #, elixir-autogen, elixir-format
 msgid "Last Used"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:581
-#: lib/kanban_web/live/task_live/view_component.ex:526
+#: lib/kanban_web/live/task_live/form_component.html.heex:583
+#: lib/kanban_web/live/task_live/view_component.ex:553
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:590
+#: lib/kanban_web/live/task_live/form_component.html.heex:592
 #, elixir-autogen, elixir-format
 msgid "Manual test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:541
+#: lib/kanban_web/live/board_live/show.html.heex:565
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "我的AI代理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:615
+#: lib/kanban_web/live/board_live/show.html.heex:641
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "从未"
 
-#: lib/kanban_web/live/board_live/show.html.heex:585
+#: lib/kanban_web/live/board_live/show.html.heex:611
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "还没有API令牌。请在上方生成一个以开始。"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:699
-#: lib/kanban_web/live/task_live/view_component.ex:572
+#: lib/kanban_web/live/task_live/form_component.html.heex:701
+#: lib/kanban_web/live/task_live/view_component.ex:599
 #, elixir-autogen, elixir-format
 msgid "Phoenix Channels"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:664
-#: lib/kanban_web/live/task_live/view_component.ex:560
+#: lib/kanban_web/live/task_live/form_component.html.heex:666
+#: lib/kanban_web/live/task_live/view_component.ex:587
 #, elixir-autogen, elixir-format
 msgid "PubSub Broadcasts"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:555
+#: lib/kanban_web/live/board_live/show.html.heex:579
 #, elixir-autogen, elixir-format
 msgid "Purpose (Optional)"
 msgstr "用途（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:627
+#: lib/kanban_web/live/board_live/show.html.heex:653
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Revoke"
 msgstr "移除"
 
-#: lib/kanban_web/live/board_live/show.html.heex:630
+#: lib/kanban_web/live/board_live/show.html.heex:656
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "已吊销"
 
-#: lib/kanban_web/live/board_live/form.html.heex:189
-#: lib/kanban_web/live/task_live/form_component.html.heex:461
-#: lib/kanban_web/live/task_live/view_component.ex:485
+#: lib/kanban_web/live/board_live/form.html.heex:208
+#: lib/kanban_web/live/task_live/form_component.html.heex:463
+#: lib/kanban_web/live/task_live/view_component.ex:512
 #, elixir-autogen, elixir-format
 msgid "Security Considerations"
 msgstr "安全注意事项"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:473
+#: lib/kanban_web/live/task_live/form_component.html.heex:475
 #, elixir-autogen, elixir-format
 msgid "Security consideration or requirement"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:629
-#: lib/kanban_web/live/task_live/view_component.ex:548
+#: lib/kanban_web/live/task_live/form_component.html.heex:631
+#: lib/kanban_web/live/task_live/view_component.ex:575
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Telemetry Events"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:199
-#: lib/kanban_web/live/task_live/form_component.html.heex:502
-#: lib/kanban_web/live/task_live/view_component.ex:497
+#: lib/kanban_web/live/board_live/form.html.heex:218
+#: lib/kanban_web/live/task_live/form_component.html.heex:504
+#: lib/kanban_web/live/task_live/view_component.ex:524
 #, elixir-autogen, elixir-format
 msgid "Testing Strategy"
 msgstr "测试策略"
 
-#: lib/kanban_web/live/board_live/show.html.heex:540
+#: lib/kanban_web/live/board_live/show.html.heex:564
 #, elixir-autogen, elixir-format
 msgid "Token Name"
 msgstr "令牌名称"
 
-#: lib/kanban_web/live/board_live/show.html.heex:479
+#: lib/kanban_web/live/board_live/show.html.heex:503
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Token created successfully!"
 msgstr "列创建成功"
 
-#: lib/kanban_web/live/board_live/show.ex:371
-#: lib/kanban_web/live/board_live/show.ex:393
+#: lib/kanban_web/live/board_live/show.ex:379
+#: lib/kanban_web/live/board_live/show.ex:401
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr "未授权"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:511
-#: lib/kanban_web/live/task_live/view_component.ex:502
+#: lib/kanban_web/live/task_live/form_component.html.heex:513
+#: lib/kanban_web/live/task_live/view_component.ex:529
 #, elixir-autogen, elixir-format
 msgid "Unit Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:520
+#: lib/kanban_web/live/task_live/form_component.html.heex:522
 #, elixir-autogen, elixir-format
 msgid "Unit test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:593
+#: lib/kanban_web/live/board_live/show.html.heex:619
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr ""
@@ -1996,28 +1990,28 @@ msgstr ""
 msgid "You don't have permission to manage API tokens"
 msgstr "您没有权限管理API令牌"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:352
-#: lib/kanban_web/live/task_live/form_component.html.heex:638
+#: lib/kanban_web/live/task_live/form_component.html.heex:354
+#: lib/kanban_web/live/task_live/form_component.html.heex:640
 #, elixir-autogen, elixir-format
 msgid "[:kanban, :domain, :action]"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:708
+#: lib/kanban_web/live/task_live/form_component.html.heex:710
 #, elixir-autogen, elixir-format
 msgid "channel:event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:673
+#: lib/kanban_web/live/task_live/form_component.html.heex:675
 #, elixir-autogen, elixir-format
 msgid "topic:event"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:529
+#: lib/kanban_web/live/board_live/show.html.heex:553
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "关闭"
 
-#: lib/kanban_web/live/board_live/show.html.heex:517
+#: lib/kanban_web/live/board_live/show.html.heex:541
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -2052,12 +2046,12 @@ msgstr ""
 msgid " - Tasks specify required capabilities, and agents only see tasks matching their skills"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:122
+#: lib/kanban_web/controllers/page_html/home.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "AI Agent Integration"
 msgstr "AI代理集成"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:124
+#: lib/kanban_web/controllers/page_html/home.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "AI agents can claim and complete tasks using comprehensive REST API with capability matching and workflow hooks."
 msgstr "AI代理可以使用全面的REST API通过能力匹配和工作流钩子来认领和完成任务。"
@@ -2073,17 +2067,17 @@ msgstr "人机协作平台"
 msgid "Atomic Task Claiming"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:145
+#: lib/kanban_web/controllers/page_html/home.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Atomic task claiming with optimistic locking prevents conflicts. Agents match tasks by capability and dependencies."
 msgstr "带乐观锁的原子任务认领防止冲突。代理根据能力和依赖关系匹配任务。"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:143
+#: lib/kanban_web/controllers/page_html/home.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Automated Task Claiming"
 msgstr "自动任务认领"
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:110
+#: lib/kanban_web/controllers/page_html/home.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Built for Human-AI Collaboration"
 msgstr "为人类-AI协作而构建"
@@ -2093,13 +2087,13 @@ msgstr "为人类-AI协作而构建"
 msgid "Capability Matching"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/view_component.ex:716
+#: lib/kanban_web/live/task_live/view_component.ex:745
 #, elixir-autogen, elixir-format
 msgid "Child Tasks"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:59
-#: lib/kanban_web/controllers/page_html/home.html.heex:185
+#: lib/kanban_web/controllers/page_html/home.html.heex:237
 #, elixir-autogen, elixir-format
 msgid "Client-Side Workflow Hooks"
 msgstr "客户端工作流钩子"
@@ -2109,7 +2103,7 @@ msgstr "客户端工作流钩子"
 msgid "Comprehensive API Documentation"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:187
+#: lib/kanban_web/controllers/page_html/home.html.heex:239
 #, elixir-autogen, elixir-format
 msgid "Execute custom client-side code at key workflow moments: before_doing, after_doing, before_review, after_review."
 msgstr "在关键工作流时刻执行自定义客户端代码：before_doing、after_doing、before_review、after_review。"
@@ -2119,21 +2113,21 @@ msgstr "在关键工作流时刻执行自定义客户端代码：before_doing、
 msgid "Getting Started with AI Agents Guide"
 msgstr "AI代理入门指南"
 
-#: lib/kanban_web/live/board_live/show.html.heex:330
-#: lib/kanban_web/live/task_live/form_component.html.heex:73
-#: lib/kanban_web/live/task_live/view_component.ex:83
-#: lib/kanban_web/live/task_live/view_component.ex:769
+#: lib/kanban_web/live/board_live/show.html.heex:353
+#: lib/kanban_web/live/task_live/form_component.html.heex:75
+#: lib/kanban_web/live/task_live/view_component.ex:99
+#: lib/kanban_web/live/task_live/view_component.ex:803
 #, elixir-autogen, elixir-format
 msgid "Goal"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:65
-#: lib/kanban_web/controllers/page_html/home.html.heex:164
+#: lib/kanban_web/controllers/page_html/home.html.heex:216
 #, elixir-autogen, elixir-format
 msgid "Human Review Workflow"
 msgstr "人工审查工作流"
 
-#: lib/kanban_web/live/task_live/view_component.ex:726
+#: lib/kanban_web/live/task_live/view_component.ex:755
 #, elixir-autogen, elixir-format
 msgid "ID"
 msgstr ""
@@ -2148,17 +2142,17 @@ msgstr ""
 msgid "No parent goal"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:166
+#: lib/kanban_web/controllers/page_html/home.html.heex:218
 #, elixir-autogen, elixir-format
 msgid "Optional human review on task completion. Humans can approve or request changes before tasks move to Done."
 msgstr "任务完成时可选的人工审查。人类可以在任务移至完成前批准或请求更改。"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:80
+#: lib/kanban_web/live/task_live/form_component.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Parent Goal"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/home.html.heex:113
+#: lib/kanban_web/controllers/page_html/home.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Powerful features that enable humans and AI agents to work together seamlessly"
 msgstr "强大的功能，使人类和AI代理能够无缝协作"
@@ -2168,7 +2162,7 @@ msgstr "强大的功能，使人类和AI代理能够无缝协作"
 msgid "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:215
+#: lib/kanban_web/live/board_live/show.html.heex:238
 #, elixir-autogen, elixir-format
 msgid "Task is blocked"
 msgstr ""
@@ -2203,17 +2197,17 @@ msgstr "编辑看板"
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:65
+#: lib/kanban_web/live/task_live/form_component.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Check this box if this task requires review before completion"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:252
+#: lib/kanban_web/live/task_live/form_component.html.heex:254
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Expected result"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:201
+#: lib/kanban_web/live/task_live/form_component.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Note about this file"
 msgstr ""
@@ -2224,47 +2218,47 @@ msgstr ""
 msgid "Please fix the errors below"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:556
+#: lib/kanban_web/live/board_live/show.html.heex:580
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "任务自动化"
 
-#: lib/kanban_web/live/board_live/show.html.heex:549
+#: lib/kanban_web/live/board_live/show.html.heex:573
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:150
+#: lib/kanban_web/live/task_live/form_component.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "e.g., 3-5"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:194
+#: lib/kanban_web/live/task_live/form_component.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "lib/kanban/tasks.ex"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:246
+#: lib/kanban_web/live/task_live/form_component.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "mix test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:363
+#: lib/kanban_web/live/board_live/show.html.heex:386
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Created by %{agent}"
 msgstr "创建时间"
 
-#: lib/kanban_web/live/board_live/show.html.heex:518
+#: lib/kanban_web/live/board_live/show.html.heex:542
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:808
+#: lib/kanban_web/live/task_live/form_component.html.heex:810
 #, elixir-autogen, elixir-format
 msgid "Agent Tracking"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:241
+#: lib/kanban_web/live/board_live/show.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Archive task"
 msgstr ""
@@ -2274,7 +2268,6 @@ msgstr ""
 msgid "Archived Date"
 msgstr ""
 
-#: lib/kanban_web/live/archive_live/index.ex:19
 #: lib/kanban_web/live/archive_live/index.html.heex:4
 #: lib/kanban_web/live/board_live/show.html.heex:20
 #, elixir-autogen, elixir-format
@@ -2292,7 +2285,7 @@ msgid "Board:"
 msgstr "看板"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:91
-#: lib/kanban_web/live/board_live/show.html.heex:638
+#: lib/kanban_web/live/board_live/show.html.heex:664
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "删除"
@@ -2350,37 +2343,217 @@ msgstr ""
 msgid "Security error: Invalid column"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:863
+#: lib/kanban_web/live/task_live/form_component.html.heex:865
 #, elixir-autogen, elixir-format
 msgid "Select capability to add..."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:562
+#: lib/kanban_web/live/board_live/show.html.heex:586
 #, elixir-autogen, elixir-format
 msgid "Agent Capabilities"
 msgstr "代理能力"
 
-#: lib/kanban_web/live/board_live/show.html.heex:567
-#, elixir-autogen, elixir-format
-msgid "Comma-separated list. Valid capabilities: code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops. Leave empty to allow all tasks."
-msgstr "逗号分隔列表。有效能力：code_generation、code_review、database_design、testing、documentation、debugging、refactoring、api_design、ui_implementation、performance_optimization、security_analysis、devops。留空以允许所有任务。"
-
-#: lib/kanban_web/live/board_live/show.html.heex:563
+#: lib/kanban_web/live/board_live/show.html.heex:587
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
 
-#: lib/kanban_web/live/board_live/show.ex:387
+#: lib/kanban_web/live/board_live/show.ex:395
 #, elixir-autogen, elixir-format
 msgid "API token deleted successfully"
 msgstr "API令牌删除成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:636
+#: lib/kanban_web/live/board_live/show.html.heex:662
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "您确定要删除此令牌吗？"
 
-#: lib/kanban_web/live/board_live/show.ex:390
+#: lib/kanban_web/live/board_live/show.ex:398
 #, elixir-autogen, elixir-format
 msgid "Failed to delete token"
 msgstr "删除令牌失败"
+
+#: lib/kanban_web/live/resources_live/components.ex:293
+#, elixir-autogen, elixir-format
+msgid "%{count} min read"
+msgid_plural "%{count} min read"
+msgstr[0] ""
+
+#: lib/kanban_web/live/resources_live/index.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "A-Z"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/show.html.heex:13
+#: lib/kanban_web/live/resources_live/show.html.heex:78
+#, elixir-autogen, elixir-format
+msgid "Back to Resources"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/show.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "Back to all resources"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/show.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Browse all guides"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.ex:228
+#, elixir-autogen, elixir-format
+msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:324
+#, elixir-autogen, elixir-format
+msgid "Clear all filters"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/index.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "Clear filters"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:591
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Comma-separated list. Valid capabilities: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
+msgstr "逗号分隔列表。有效能力：code_generation、code_review、database_design、testing、documentation、debugging、refactoring、api_design、ui_implementation、performance_optimization、security_analysis、devops。留空以允许所有任务。"
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:132
+#, elixir-autogen, elixir-format
+msgid "Explore our comprehensive resources section for guides, documentation, and tutorials to help you make the most of Stride."
+msgstr "探索我们全面的资源部分，包括指南、文档和教程，帮助您充分利用Stride。"
+
+#: lib/kanban_web/live/resources_live/show.html.heex:87
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Guide not found"
+msgstr "未找到用户"
+
+#: lib/kanban_web/live/resources_live/index.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Learn how to get the most out of Stride with our guides and tutorials."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/form.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Make board publicly readable"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/index.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Most Relevant"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "Need help getting started?"
+msgstr "需要帮助开始使用吗？"
+
+#: lib/kanban_web/live/resources_live/index.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Newest"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:399
+#, elixir-autogen, elixir-format
+msgid "Next"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:318
+#, elixir-autogen, elixir-format
+msgid "No guides found"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/show.ex:31
+#, elixir-autogen, elixir-format
+msgid "Not Found"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:381
+#, elixir-autogen, elixir-format
+msgid "Previous"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:67
+#, elixir-autogen, elixir-format
+msgid "Read more"
+msgstr ""
+
+#: lib/kanban_web/components/layouts/root.html.heex:69
+#: lib/kanban_web/components/layouts/root.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Resources"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/index.ex:22
+#: lib/kanban_web/live/resources_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Resources & How-Tos"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:98
+#, elixir-autogen, elixir-format
+msgid "Search for help..."
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/index.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Showing %{count} guide"
+msgid_plural "Showing %{count} guides"
+msgstr[0] ""
+
+#: lib/kanban_web/live/resources_live/index.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Sort:"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/view_component.ex:77
+#, elixir-autogen, elixir-format
+msgid "Task Not Found"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/show.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "The guide you're looking for doesn't exist or may have been moved."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "This board is shared publicly. You can view all tasks but cannot make any changes."
+msgstr ""
+
+#: lib/kanban_web/live/task_live/view_component.ex:80
+#, elixir-autogen, elixir-format
+msgid "This task may have been deleted or you may not have permission to view it."
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:321
+#, elixir-autogen, elixir-format
+msgid "Try adjusting your search or filters to find what you're looking for."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/home.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "View Resources"
+msgstr "查看资源"
+
+#: lib/kanban_web/live/board_live/form.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "When enabled, anyone with the direct link can view this board (read-only access). Members retain their assigned permissions."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "You are viewing this board in read-only mode"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:344
+#, elixir-autogen, elixir-format
+msgid "You're all set!"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:347
+#, elixir-autogen, elixir-format
+msgid "You've completed all the steps in this guide."
+msgstr ""
