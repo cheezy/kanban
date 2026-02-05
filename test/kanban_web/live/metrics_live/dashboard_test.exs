@@ -297,6 +297,39 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       assert html =~ "All Time"
     end
+
+    test "filters metrics by today only", %{conn: conn, board: board, column: column} do
+      task_today = task_fixture(column)
+      task_yesterday = task_fixture(column)
+
+      completed_today = DateTime.utc_now()
+      completed_yesterday = DateTime.add(DateTime.utc_now(), -1, :day)
+
+      _task_today =
+        force_update_timestamps(task_today, %{
+          inserted_at: DateTime.add(completed_today, -1, :hour),
+          claimed_at: DateTime.add(completed_today, -30, :minute),
+          completed_at: completed_today
+        })
+
+      _task_yesterday =
+        force_update_timestamps(task_yesterday, %{
+          inserted_at: DateTime.add(completed_yesterday, -1, :hour),
+          claimed_at: DateTime.add(completed_yesterday, -30, :minute),
+          completed_at: completed_yesterday
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "today"})
+
+      assert html =~ "Today"
+      assert html =~ "1"
+      assert html =~ "tasks completed"
+    end
   end
 
   describe "Dashboard - Agent Filters" do

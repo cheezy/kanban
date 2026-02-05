@@ -102,6 +102,29 @@ defmodule Kanban.MetricsTest do
       assert length(throughput_90) == 1
     end
 
+    test "filters by today time range" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task_today = task_fixture(column)
+      task_yesterday = task_fixture(column)
+
+      # Complete one task today
+      completed_today = DateTime.utc_now()
+      {:ok, _} = Tasks.update_task(task_today, %{completed_at: completed_today})
+
+      # Complete another task yesterday
+      completed_yesterday = DateTime.add(DateTime.utc_now(), -1, :day)
+      {:ok, _} = Tasks.update_task(task_yesterday, %{completed_at: completed_yesterday})
+
+      {:ok, throughput_today} = Metrics.get_throughput(board.id, time_range: :today)
+      {:ok, throughput_7_days} = Metrics.get_throughput(board.id, time_range: :last_7_days)
+
+      assert length(throughput_today) == 1
+      assert length(throughput_7_days) == 2
+    end
+
     test "filters by agent_name" do
       user = user_fixture()
       board = board_fixture(user)

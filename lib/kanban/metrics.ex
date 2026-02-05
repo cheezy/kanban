@@ -18,7 +18,7 @@ defmodule Kanban.Metrics do
 
   ## Options
 
-  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
   * `:agent_name` - Filter by agent name (e.g., "Claude Sonnet 4.5")
   * `:exclude_weekends` - Whether to exclude weekend days from calculations (default: `false`)
 
@@ -86,7 +86,7 @@ defmodule Kanban.Metrics do
 
   ## Options
 
-  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
   * `:agent_name` - Filter by agent name
   * `:exclude_weekends` - Whether to exclude weekend days (default: `false`)
 
@@ -141,7 +141,7 @@ defmodule Kanban.Metrics do
 
   ## Options
 
-  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
   * `:agent_name` - Filter by agent name
   * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
 
@@ -200,7 +200,7 @@ defmodule Kanban.Metrics do
 
   ## Options
 
-  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
   * `:agent_name` - Filter by agent name
   * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
 
@@ -260,7 +260,7 @@ defmodule Kanban.Metrics do
 
   ## Options
 
-  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
   * `:agent_name` - Filter by agent name
   * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
 
@@ -352,6 +352,12 @@ defmodule Kanban.Metrics do
   end
 
   # Private helper functions
+
+  defp get_start_date(:today) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> DateTime.new!(~T[00:00:00])
+  end
 
   defp get_start_date(:last_7_days) do
     DateTime.utc_now()
