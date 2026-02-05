@@ -1,0 +1,493 @@
+defmodule Kanban.Metrics do
+  @moduledoc """
+  The Metrics context for querying and aggregating task data for lean metrics calculations.
+
+  Provides functions to calculate throughput, cycle time, lead time, and wait time statistics
+  for kanban boards.
+  """
+
+  import Ecto.Query, warn: false
+
+  alias Kanban.Repo
+  alias Kanban.Tasks.Task
+
+  @doc """
+  Returns a dashboard summary with all key metrics for a board.
+
+  Combines throughput, cycle time, lead time, and wait time stats into a single response.
+
+  ## Options
+
+  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:agent_name` - Filter by agent name (e.g., "Claude Sonnet 4.5")
+  * `:exclude_weekends` - Whether to exclude weekend days from calculations (default: `false`)
+
+  ## Examples
+
+      iex> get_dashboard_summary(board_id)
+      {:ok, %{throughput: [...], cycle_time: %{...}, lead_time: %{...}, wait_time: %{...}}}
+
+      iex> get_dashboard_summary(board_id, time_range: :last_7_days, agent_name: "Claude Sonnet 4.5")
+      {:ok, %{...}}
+
+  """
+  def get_dashboard_summary(board_id, opts \\ []) do
+    with {:ok, throughput} <- get_throughput(board_id, opts),
+         {:ok, cycle_time} <- get_cycle_time_stats(board_id, opts),
+         {:ok, lead_time} <- get_lead_time_stats(board_id, opts),
+         {:ok, wait_time} <- get_wait_time_stats(board_id, opts) do
+      {:ok,
+       %{
+         throughput: throughput,
+         cycle_time: cycle_time,
+         lead_time: lead_time,
+         wait_time: wait_time
+       }}
+    end
+  end
+
+  @doc """
+  Returns throughput data (completed tasks per day) for a board.
+
+  ## Options
+
+  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:agent_name` - Filter by agent name
+  * `:exclude_weekends` - Whether to exclude weekend days (default: `false`)
+
+  ## Examples
+
+      iex> get_throughput(board_id)
+      {:ok, [%{date: ~D[2026-02-05], count: 5}, ...]}
+
+      iex> get_throughput(board_id, time_range: :last_7_days)
+      {:ok, [...]}
+
+  """
+  def get_throughput(board_id, opts \\ []) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
+
+    start_date = get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> maybe_filter_by_agent(agent_name)
+      |> group_by([t], fragment("DATE(?)", t.completed_at))
+      |> select([t], %{
+        date: fragment("DATE(?)", t.completed_at),
+        count: count(t.id)
+      })
+      |> order_by([t], fragment("DATE(?)", t.completed_at))
+
+    results = Repo.all(query)
+
+    filtered_results =
+      if exclude_weekends do
+        Enum.reject(results, fn %{date: date} ->
+          Date.day_of_week(date) in [6, 7]
+        end)
+      else
+        results
+      end
+
+    {:ok, filtered_results}
+  end
+
+  @doc """
+  Returns cycle time statistics for a board.
+
+  Cycle time is measured from `claimed_at` to `completed_at` (time actively working on tasks).
+
+  ## Options
+
+  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:agent_name` - Filter by agent name
+  * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
+
+  ## Examples
+
+      iex> get_cycle_time_stats(board_id)
+      {:ok, %{average_hours: 24.5, median_hours: 20.0, min_hours: 2.0, max_hours: 72.0, count: 50}}
+
+  """
+  def get_cycle_time_stats(board_id, opts \\ []) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
+
+    start_date = get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], not is_nil(t.claimed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> maybe_filter_by_agent(agent_name)
+      |> select([t], %{
+        cycle_time_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.completed_at,
+            t.claimed_at
+          ),
+        completed_at: t.completed_at,
+        claimed_at: t.claimed_at
+      })
+
+    results = Repo.all(query)
+
+    filtered_results =
+      if exclude_weekends do
+        Enum.map(results, fn result ->
+          adjusted_seconds = calculate_business_time(result.claimed_at, result.completed_at)
+          %{result | cycle_time_seconds: adjusted_seconds}
+        end)
+      else
+        results
+      end
+
+    calculate_time_stats(filtered_results)
+  end
+
+  @doc """
+  Returns lead time statistics for a board.
+
+  Lead time is measured from task creation (`inserted_at`) to completion.
+  If `reviewed_at` exists, it's used as the end time; otherwise `completed_at` is used.
+
+  ## Options
+
+  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:agent_name` - Filter by agent name
+  * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
+
+  ## Examples
+
+      iex> get_lead_time_stats(board_id)
+      {:ok, %{average_hours: 48.5, median_hours: 40.0, min_hours: 12.0, max_hours: 120.0, count: 50}}
+
+  """
+  def get_lead_time_stats(board_id, opts \\ []) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
+
+    start_date = get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> maybe_filter_by_agent(agent_name)
+      |> select([t], %{
+        lead_time_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (COALESCE(?, ?) - ?))",
+            t.reviewed_at,
+            t.completed_at,
+            t.inserted_at
+          ),
+        inserted_at: t.inserted_at,
+        end_time: fragment("COALESCE(?, ?)", t.reviewed_at, t.completed_at)
+      })
+
+    results = Repo.all(query)
+
+    filtered_results =
+      if exclude_weekends do
+        Enum.map(results, fn result ->
+          adjusted_seconds = calculate_business_time(result.inserted_at, result.end_time)
+          %{result | lead_time_seconds: adjusted_seconds}
+        end)
+      else
+        results
+      end
+
+    calculate_time_stats(filtered_results)
+  end
+
+  @doc """
+  Returns wait time statistics for a board.
+
+  Wait time is separated into:
+  * Review wait time - Time from `completed_at` to `reviewed_at`
+  * Backlog wait time - Time from creation to being claimed (if applicable)
+
+  ## Options
+
+  * `:time_range` - One of `:last_7_days`, `:last_30_days`, `:last_90_days` (default: `:last_30_days`)
+  * `:agent_name` - Filter by agent name
+  * `:exclude_weekends` - Whether to exclude weekends from calculation (default: `false`)
+
+  ## Examples
+
+      iex> get_wait_time_stats(board_id)
+      {:ok, %{
+        review_wait: %{average_hours: 12.0, ...},
+        backlog_wait: %{average_hours: 18.0, ...}
+      }}
+
+  """
+  def get_wait_time_stats(board_id, opts \\ []) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
+
+    start_date = get_start_date(time_range)
+
+    review_results = fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends)
+    backlog_results = fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends)
+
+    with {:ok, review_stats} <- calculate_wait_time_stats(review_results),
+         {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
+      {:ok,
+       %{
+         review_wait: review_stats,
+         backlog_wait: backlog_stats
+       }}
+    end
+  end
+
+  defp fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends) do
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], not is_nil(t.reviewed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> maybe_filter_by_agent(agent_name)
+      |> select([t], %{
+        wait_time_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.reviewed_at,
+            t.completed_at
+          ),
+        start_time: t.completed_at,
+        end_time: t.reviewed_at
+      })
+
+    query
+    |> Repo.all()
+    |> apply_weekend_filter(exclude_weekends)
+  end
+
+  defp fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends) do
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.claimed_at))
+      |> where([t], t.inserted_at >= ^start_date)
+      |> maybe_filter_by_agent(agent_name)
+      |> select([t], %{
+        wait_time_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.claimed_at,
+            t.inserted_at
+          ),
+        start_time: t.inserted_at,
+        end_time: t.claimed_at
+      })
+
+    query
+    |> Repo.all()
+    |> apply_weekend_filter(exclude_weekends)
+  end
+
+  defp apply_weekend_filter(results, false), do: results
+
+  defp apply_weekend_filter(results, true) do
+    Enum.map(results, fn result ->
+      adjusted_seconds = calculate_business_time(result.start_time, result.end_time)
+      %{result | wait_time_seconds: adjusted_seconds}
+    end)
+  end
+
+  # Private helper functions
+
+  defp get_start_date(:last_7_days) do
+    DateTime.utc_now()
+    |> DateTime.add(-7, :day)
+    |> DateTime.truncate(:second)
+  end
+
+  defp get_start_date(:last_30_days) do
+    DateTime.utc_now()
+    |> DateTime.add(-30, :day)
+    |> DateTime.truncate(:second)
+  end
+
+  defp get_start_date(:last_90_days) do
+    DateTime.utc_now()
+    |> DateTime.add(-90, :day)
+    |> DateTime.truncate(:second)
+  end
+
+  defp get_start_date(:all_time) do
+    # Return a date far in the past to include all records
+    DateTime.new!(~D[2000-01-01], ~T[00:00:00])
+  end
+
+  defp get_start_date(_), do: get_start_date(:last_30_days)
+
+  defp maybe_filter_by_agent(query, nil), do: query
+
+  defp maybe_filter_by_agent(query, agent_name) do
+    where(query, [t], t.completed_by_agent == ^agent_name or t.created_by_agent == ^agent_name)
+  end
+
+  defp calculate_time_stats([]),
+    do: {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
+
+  defp calculate_time_stats(results) when is_list(results) do
+    first_result = List.first(results)
+    time_key = determine_time_key(first_result)
+
+    times_in_hours =
+      results
+      |> extract_time_values(time_key)
+      |> Enum.sort()
+
+    build_stats_response(times_in_hours)
+  end
+
+  defp determine_time_key(first_result) do
+    cond do
+      Map.has_key?(first_result, :cycle_time_seconds) -> :cycle_time_seconds
+      Map.has_key?(first_result, :lead_time_seconds) -> :lead_time_seconds
+      true -> :wait_time_seconds
+    end
+  end
+
+  defp extract_time_values(results, time_key) do
+    results
+    |> Enum.map(fn result -> Map.get(result, time_key) end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.map(&convert_seconds_to_hours/1)
+  end
+
+  defp convert_seconds_to_hours(seconds) do
+    seconds_float =
+      if is_struct(seconds, Decimal), do: Decimal.to_float(seconds), else: seconds
+
+    seconds_float / 3600
+  end
+
+  defp build_stats_response([]) do
+    {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
+  end
+
+  defp build_stats_response(times_in_hours) do
+    count = length(times_in_hours)
+    average = Enum.sum(times_in_hours) / count
+    median = calculate_median(times_in_hours)
+    min = Enum.min(times_in_hours)
+    max = Enum.max(times_in_hours)
+
+    {:ok,
+     %{
+       average_hours: Float.round(average, 2),
+       median_hours: Float.round(median, 2),
+       min_hours: Float.round(min, 2),
+       max_hours: Float.round(max, 2),
+       count: count
+     }}
+  end
+
+  defp calculate_wait_time_stats([]),
+    do: {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
+
+  defp calculate_wait_time_stats(results) when is_list(results) do
+    times_in_hours =
+      results
+      |> Enum.map(fn result -> result.wait_time_seconds end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(fn seconds ->
+        # Convert to float if it's a Decimal
+        seconds_float =
+          if is_struct(seconds, Decimal), do: Decimal.to_float(seconds), else: seconds
+
+        seconds_float / 3600
+      end)
+      |> Enum.sort()
+
+    case times_in_hours do
+      [] ->
+        {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
+
+      _ ->
+        count = length(times_in_hours)
+        average = Enum.sum(times_in_hours) / count
+        median = calculate_median(times_in_hours)
+        min = Enum.min(times_in_hours)
+        max = Enum.max(times_in_hours)
+
+        {:ok,
+         %{
+           average_hours: Float.round(average, 2),
+           median_hours: Float.round(median, 2),
+           min_hours: Float.round(min, 2),
+           max_hours: Float.round(max, 2),
+           count: count
+         }}
+    end
+  end
+
+  defp calculate_median([]), do: 0
+
+  defp calculate_median(sorted_list) do
+    count = length(sorted_list)
+    middle = div(count, 2)
+
+    if rem(count, 2) == 0 do
+      (Enum.at(sorted_list, middle - 1) + Enum.at(sorted_list, middle)) / 2
+    else
+      Enum.at(sorted_list, middle)
+    end
+  end
+
+  # Calculate business time (excluding weekends) between two DateTimes or NaiveDateTimes
+  defp calculate_business_time(start_time, end_time) do
+    # Normalize to DateTime if needed
+    start_dt = normalize_to_datetime(start_time)
+    end_dt = normalize_to_datetime(end_time)
+
+    # Convert to Date for day-of-week checking
+    start_date = DateTime.to_date(start_dt)
+    end_date = DateTime.to_date(end_dt)
+
+    # Calculate total seconds
+    total_seconds = DateTime.diff(end_dt, start_dt, :second)
+
+    # Count weekend days in the range
+    step = if Date.compare(start_date, end_date) == :gt, do: -1, else: 1
+
+    weekend_days =
+      Date.range(start_date, end_date, step)
+      |> Enum.count(fn date -> Date.day_of_week(date) in [6, 7] end)
+
+    # Subtract weekend time (assuming 24-hour days)
+    business_seconds = total_seconds - weekend_days * 86_400
+
+    max(business_seconds, 0)
+  end
+
+  defp normalize_to_datetime(%DateTime{} = dt), do: dt
+
+  defp normalize_to_datetime(%NaiveDateTime{} = ndt) do
+    DateTime.from_naive!(ndt, "Etc/UTC")
+  end
+end
