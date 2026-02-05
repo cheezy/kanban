@@ -103,6 +103,12 @@
             </div>
             <div :if={board.user_access == :owner} class="flex gap-2">
               <.link
+                navigate={~p"/boards/#{board}/metrics"}
+                class="text-base-content opacity-40 hover:text-indigo-600 hover:opacity-100 transition-colors duration-200 p-1 hover:bg-indigo-50 rounded-lg"
+              >
+                <.icon name="hero-chart-bar" class="h-5 w-5" />
+              </.link>
+              <.link
                 navigate={~p"/boards/#{board}/edit"}
                 class="text-base-content opacity-40 hover:text-blue-600 hover:opacity-100 transition-colors duration-200 p-1 hover:bg-blue-50 rounded-lg"
               >
