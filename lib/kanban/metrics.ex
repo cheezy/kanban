@@ -64,12 +64,13 @@ defmodule Kanban.Metrics do
         where: c.board_id == ^board_id,
         where: not is_nil(t.completed_by_agent) or not is_nil(t.created_by_agent),
         select: fragment("? as agent", t.completed_by_agent),
-        union: ^from(t in Task,
-          join: c in assoc(t, :column),
-          where: c.board_id == ^board_id,
-          where: not is_nil(t.created_by_agent),
-          select: fragment("? as agent", t.created_by_agent)
-        )
+        union:
+          ^from(t in Task,
+            join: c in assoc(t, :column),
+            where: c.board_id == ^board_id,
+            where: not is_nil(t.created_by_agent),
+            select: fragment("? as agent", t.created_by_agent)
+          )
 
     agents =
       query

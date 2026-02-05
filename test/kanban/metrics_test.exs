@@ -736,7 +736,11 @@ defmodule Kanban.MetricsTest do
 
       {:ok, throughput} = Metrics.get_throughput(board.id)
 
-      day_count = Enum.find(throughput, fn t -> Date.compare(t.date, DateTime.to_date(completed_at)) == :eq end)
+      day_count =
+        Enum.find(throughput, fn t ->
+          Date.compare(t.date, DateTime.to_date(completed_at)) == :eq
+        end)
+
       assert day_count != nil
       assert day_count.count == 5
     end

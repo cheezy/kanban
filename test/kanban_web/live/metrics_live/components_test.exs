@@ -17,16 +17,17 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.stat_card
-        title={@title}
-        value={@value}
-        subtitle={@subtitle}
-        icon={@icon}
-        link={@link}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.stat_card
+          title={@title}
+          value={@value}
+          subtitle={@subtitle}
+          icon={@icon}
+          link={@link}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Test Metric"
       assert html =~ "42"
@@ -42,16 +43,17 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.stat_card
-        title={@title}
-        value={@value}
-        subtitle={@subtitle}
-        icon={@icon}
-        link={@link}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.stat_card
+          title={@title}
+          value={@value}
+          subtitle={@subtitle}
+          icon={@icon}
+          link={@link}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Cycle Time"
       assert html =~ "24.0h"
@@ -68,16 +70,17 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.stat_card
-        title={@title}
-        value={@value}
-        subtitle={@subtitle}
-        icon={@icon}
-        link={@link}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.stat_card
+          title={@title}
+          value={@value}
+          subtitle={@subtitle}
+          icon={@icon}
+          link={@link}
+          class={@class}
+        />
+        """)
 
       assert html =~ "hero-chart-bar"
       assert html =~ "Throughput"
@@ -93,16 +96,17 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.stat_card
-        title={@title}
-        value={@value}
-        subtitle={@subtitle}
-        icon={@icon}
-        link={@link}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.stat_card
+          title={@title}
+          value={@value}
+          subtitle={@subtitle}
+          icon={@icon}
+          link={@link}
+          class={@class}
+        />
+        """)
 
       assert html =~ "View details"
       assert html =~ "/boards/1/metrics/lead-time"
@@ -118,16 +122,17 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.stat_card
-        title={@title}
-        value={@value}
-        subtitle={@subtitle}
-        icon={@icon}
-        link={@link}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.stat_card
+          title={@title}
+          value={@value}
+          subtitle={@subtitle}
+          icon={@icon}
+          link={@link}
+          class={@class}
+        />
+        """)
 
       assert html =~ "dark:bg-zinc-800"
       assert html =~ "dark:text-gray-100"
@@ -145,9 +150,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       assert html =~ "Throughput by Week"
       assert html =~ "Week 1"
@@ -163,9 +169,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       assert html =~ "Empty Chart"
       assert html =~ "No data available"
@@ -180,9 +187,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       assert html =~ "Zero Values"
       assert html =~ "Week 1"
@@ -198,9 +206,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       assert html =~ "width: 50.0%"
     end
@@ -214,9 +223,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       assert html =~ "role=\"progressbar\""
       assert html =~ "aria-valuenow=\"5\""
@@ -234,9 +244,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.bar_chart title={@title} data={@data} class={@class} />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.bar_chart title={@title} data={@data} class={@class} />
+        """)
 
       refute html =~ "phx-"
       refute html =~ "onclick"
@@ -252,13 +263,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.time_range_filter
-        current_range={@current_range}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.time_range_filter
+          current_range={@current_range}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Time Range"
       assert html =~ "Last 7 Days"
@@ -275,13 +287,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.time_range_filter
-        current_range={@current_range}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.time_range_filter
+          current_range={@current_range}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "selected"
       assert html =~ "last_7_days"
@@ -294,13 +307,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.time_range_filter
-        current_range={@current_range}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.time_range_filter
+          current_range={@current_range}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "aria-label=\"Select time range\""
     end
@@ -315,14 +329,15 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.agent_filter
-        agents={@agents}
-        current_agent={@current_agent}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.agent_filter
+          agents={@agents}
+          current_agent={@current_agent}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Agent Filter"
       assert html =~ "All Agents"
@@ -337,14 +352,15 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.agent_filter
-        agents={@agents}
-        current_agent={@current_agent}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.agent_filter
+          agents={@agents}
+          current_agent={@current_agent}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Claude Sonnet 4.5"
       assert html =~ "GPT-4"
@@ -358,14 +374,15 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.agent_filter
-        agents={@agents}
-        current_agent={@current_agent}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.agent_filter
+          agents={@agents}
+          current_agent={@current_agent}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "selected"
       assert html =~ "Claude Sonnet 4.5"
@@ -380,13 +397,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.weekend_toggle
-        exclude_weekends={@exclude_weekends}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.weekend_toggle
+          exclude_weekends={@exclude_weekends}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "Exclude Weekends"
       assert html =~ "phx-change=\"toggle_weekends\""
@@ -400,13 +418,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.weekend_toggle
-        exclude_weekends={@exclude_weekends}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.weekend_toggle
+          exclude_weekends={@exclude_weekends}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "checked"
     end
@@ -418,13 +437,14 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         class: ""
       }
 
-      html = rendered_to_string(~H"""
-      <Components.weekend_toggle
-        exclude_weekends={@exclude_weekends}
-        on_change={@on_change}
-        class={@class}
-      />
-      """)
+      html =
+        rendered_to_string(~H"""
+        <Components.weekend_toggle
+          exclude_weekends={@exclude_weekends}
+          on_change={@on_change}
+          class={@class}
+        />
+        """)
 
       assert html =~ "aria-label=\"Exclude weekends from calculations\""
     end
