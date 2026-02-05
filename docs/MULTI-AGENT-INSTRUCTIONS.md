@@ -8,7 +8,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode), and provide always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), Gemini Code Assist (Skills), OpenCode (Skills), Continue.dev, Kimi Code CLI (k2.5)
+**Supported AI Assistants:** Claude Code (Skills), GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), Gemini Code Assist (Skills), OpenCode (Skills), Continue.dev, Kimi Code CLI (k2.5)
 
 ## Architecture
 
@@ -35,9 +35,40 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
-## Supported AI Assistants (6 Skills-Based + 2 Always-Active)
+## Supported AI Assistants (7 Skills-Based + 2 Always-Active)
 
-### 1. GitHub Copilot
+### 1. Claude Code
+
+**Files:** Multiple focused skills (4 total)
+
+**Location:** `docs/multi-agent-instructions/SKILL.md`
+
+**Scope:** On-demand skill loading (invoked when needed)
+
+**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+
+**Format:** YAML frontmatter + Markdown content
+
+**Skills:**
+
+1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
+2. **stride-completing-tasks** - Use when completing tasks and marking them done
+3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
+4. **stride-creating-goals** - Use when creating goals with nested tasks
+
+**Download:**
+```bash
+# Create all skill directories and download
+for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
+  mkdir -p .claude/skills/$skill
+  curl -o .claude/skills/$skill/SKILL.md \
+    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
+done
+```
+
+**IMPORTANT:** Claude Code uses a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Claude Code automatically discovers skills in `.claude/skills/` directories. See [Claude Code Skills Documentation](https://docs.anthropic.com/en/docs/claude-code/skills) for details.
+
+### 2. GitHub Copilot
 
 **Files:** Multiple focused skills (4 total)
 
@@ -70,7 +101,7 @@ done
 
 **IMPORTANT:** GitHub Copilot and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. GitHub Copilot automatically discovers skills in `.claude/skills/` directories, making them compatible across both platforms. See [GitHub Copilot Agent Skills](https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/) for details.
 
-### 2. Cursor
+### 3. Cursor
 
 **Files:** Multiple focused skills (4 total)
 
@@ -103,7 +134,7 @@ done
 
 **IMPORTANT:** Cursor and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Cursor automatically discovers skills in `.claude/skills/` (and `.cursor/skills/` or `.codex/skills/`) directories, making them compatible across both platforms. See [Cursor Skills Documentation](https://cursor.com/docs/context/skills) for details.
 
-### 3. Windsurf Cascade
+### 4. Windsurf Cascade
 
 **Files:** Multiple focused skills (4 total)
 
@@ -136,7 +167,7 @@ done
 
 **IMPORTANT:** Windsurf and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Windsurf automatically discovers skills in `.windsurf/skills/` directories, making them compatible with Claude Code. See [Windsurf Skills Documentation](https://docs.windsurf.com/windsurf/cascade/skills) for details.
 
-### 4. Continue.dev
+### 5. Continue.dev
 
 **File:** `.continue/config.json`
 
@@ -161,7 +192,7 @@ curl -o .continue/config.json \
 - Custom slash commands for common workflows
 - Can reference external documentation files
 
-### 5. Google Gemini Code Assist
+### 6. Google Gemini Code Assist
 
 **Files:** Multiple focused skills (4 total)
 
@@ -194,7 +225,7 @@ done
 
 **IMPORTANT:** Gemini and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Gemini automatically discovers skills in `.gemini/skills/` directories, making them compatible with Claude Code. See [Gemini Skills Documentation](https://geminicli.com/docs/cli/skills/) for details.
 
-### 6. OpenCode
+### 7. OpenCode
 
 **Files:** Multiple focused skills (4 total)
 
@@ -251,7 +282,7 @@ done
 - Detailed code patterns with Markdown formatting per skill
 - Comprehensive mistake catalog distributed across relevant skills
 
-### 7. Kimi Code CLI (k2.5)
+### 8. Kimi Code CLI (k2.5)
 
 **File:** `AGENTS.md`
 
@@ -700,7 +731,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
+| **Target Assistants** | Claude Code only | Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
