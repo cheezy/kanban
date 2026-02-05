@@ -1,0 +1,220 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-2 sm:px-6 lg:px-8">
+    <.header>
+      {@board.name} - Metrics Dashboard
+      <:subtitle>Performance metrics and insights for your board</:subtitle>
+      <:actions>
+        <.link navigate={~p"/boards/#{@board}"}>
+          <.button>Back to Board</.button>
+        </.link>
+      </:actions>
+    </.header>
+
+    <div class="mt-6 bg-white dark:bg-zinc-800 shadow rounded-lg p-4">
+      <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Time Range
+          </label>
+          <select
+            phx-change="filter_time_range"
+            name="time_range"
+            class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          >
+            <option value="last_7_days" selected={@time_range == :last_7_days}>
+              Last 7 Days
+            </option>
+            <option value="last_30_days" selected={@time_range == :last_30_days}>
+              Last 30 Days
+            </option>
+            <option value="last_90_days" selected={@time_range == :last_90_days}>
+              Last 90 Days
+            </option>
+            <option value="all_time" selected={@time_range == :all_time}>All Time</option>
+          </select>
+        </div>
+
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Agent Filter
+          </label>
+          <select
+            phx-change="filter_agent"
+            name="agent_name"
+            class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          >
+            <option value="">All Agents</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 mt-6">
+          <input
+            type="checkbox"
+            id="exclude_weekends"
+            phx-change="toggle_weekends"
+            name="exclude_weekends"
+            value={to_string(!@exclude_weekends)}
+            checked={@exclude_weekends}
+            class="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label
+            for="exclude_weekends"
+            class="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Exclude Weekends
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <.icon name="hero-chart-bar" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Throughput
+                </dt>
+                <dd class="flex items-baseline">
+                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <%= length(@throughput) %>
+                  </div>
+                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    tasks completed
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
+          <div class="text-sm">
+            <a
+              href="#"
+              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+            >
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <.icon name="hero-clock" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Cycle Time
+                </dt>
+                <dd class="flex items-baseline">
+                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <%= format_hours(@cycle_time.average_hours) %>
+                  </div>
+                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
+                </dd>
+                <dd class="mt-1 flex items-baseline">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    <%= format_hours(@cycle_time.median_hours) %> median
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
+          <div class="text-sm">
+            <a
+              href="#"
+              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+            >
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <.icon name="hero-arrow-trending-up" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Lead Time
+                </dt>
+                <dd class="flex items-baseline">
+                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <%= format_hours(@lead_time.average_hours) %>
+                  </div>
+                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
+                </dd>
+                <dd class="mt-1 flex items-baseline">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">
+                    <%= format_hours(@lead_time.median_hours) %> median
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
+          <div class="text-sm">
+            <a
+              href="#"
+              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+            >
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <.icon name="hero-pause" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                  Wait Time
+                </dt>
+                <dd class="flex items-baseline">
+                  <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Review: <%= format_hours(@wait_time.review_wait.average_hours) %>
+                  </div>
+                </dd>
+                <dd class="mt-1 flex items-baseline">
+                  <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Backlog: <%= format_hours(@wait_time.backlog_wait.average_hours) %>
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
+          <div class="text-sm">
+            <a
+              href="#"
+              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-400"
+            >
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
