@@ -2,6 +2,8 @@
 
 > An AI-native workflow application built with Phoenix LiveView
 
+Hosted at https://StrideLikeABoss.com
+
 ---
 
 ## 🚀 Quick Start
