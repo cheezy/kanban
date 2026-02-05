@@ -170,6 +170,31 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert created_by_agent == nil
     end
 
+    test "preserves created_by_agent when explicitly provided in task params", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Regular Token"
+        })
+
+      conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
+
+      task_params = %{
+        "title" => "AI Generated Task",
+        "created_by_agent" => "gpt-4"
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+
+      assert %{"id" => _id, "created_by_agent" => created_by_agent} =
+               json_response(conn, 201)["data"]
+
+      assert created_by_agent == "gpt-4"
+    end
+
     test "creates goal with nested child tasks", %{conn: conn, column: _column} do
       goal_params = %{
         "title" => "Test Goal",
@@ -422,6 +447,47 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert %{"goals" => goals} = response
       goal = Enum.at(goals, 0)["goal"]
       assert goal["created_by_agent"] == "ai_agent:claude-sonnet-4-5"
+    end
+
+    test "preserves created_by_agent when explicitly provided in batch creation", %{
+      conn: _conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "Regular Token"
+        })
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      goals_params = [
+        %{
+          "title" => "AI Generated Goal",
+          "type" => "goal",
+          "created_by_agent" => "gpt-4-turbo",
+          "tasks" => [
+            %{
+              "title" => "AI Generated Task",
+              "type" => "work",
+              "created_by_agent" => "gpt-4-turbo"
+            }
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"goals" => goals} = response
+      goal = Enum.at(goals, 0)["goal"]
+      assert goal["created_by_agent"] == "gpt-4-turbo"
+
+      child_task = Enum.at(goals, 0)["child_tasks"] |> Enum.at(0)
+      assert child_task["created_by_agent"] == "gpt-4-turbo"
     end
 
     test "returns 401 without authentication" do

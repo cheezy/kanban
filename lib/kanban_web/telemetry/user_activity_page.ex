@@ -5,6 +5,7 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   """
   use Phoenix.LiveDashboard.PageBuilder
 
+  import Ecto.Query
   alias Kanban.Repo
 
   @impl true
@@ -40,20 +41,13 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   defp fetch_user_activity(params, _node) do
     %{search: search, sort_by: sort_by, sort_dir: sort_dir, limit: limit} = params
 
-    search_clause = build_search_clause(search)
     sort_column = build_sort_column(sort_by)
     sort_direction = build_sort_direction(sort_dir)
 
-    results = query_user_activity(search_clause, sort_column, sort_direction, limit)
-    total = query_user_count(search_clause)
+    results = query_user_activity(search, sort_column, sort_direction, limit)
+    total = query_user_count(search)
 
     {results, total}
-  end
-
-  defp build_search_clause(nil), do: ""
-
-  defp build_search_clause(search) do
-    "AND u.email ILIKE '%#{String.replace(search, "'", "''")}%'"
   end
 
   defp build_sort_column(sort_by) do
@@ -70,52 +64,149 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   defp build_sort_direction(:asc), do: "ASC"
   defp build_sort_direction(_), do: "DESC"
 
-  defp query_user_activity(search_clause, sort_column, sort_direction, limit) do
-    sql = """
-    SELECT
-      u.email,
-      u.id as user_id,
-      COUNT(*) as total_actions,
-      COUNT(*) FILTER (WHERE me.metric_name LIKE 'kanban.api.task_claimed%') as tasks_claimed,
-      COUNT(*) FILTER (WHERE me.metric_name LIKE 'kanban.api.task_completed%') as tasks_completed,
-      COUNT(*) FILTER (WHERE me.metric_name LIKE 'kanban.api.task_created%') as tasks_created,
-      MAX(me.recorded_at) as last_activity
-    FROM metrics_events me
-    JOIN users u ON CAST(me.metadata->>'user_id' AS INTEGER) = u.id
-    WHERE me.metric_name LIKE 'kanban.api.task_%'
-      AND me.metadata->>'user_id' IS NOT NULL
-      #{search_clause}
-    GROUP BY u.id, u.email
-    ORDER BY #{sort_column} #{sort_direction}
-    LIMIT $1
-    """
+  defp query_user_activity(search, sort_column, sort_direction, limit) do
+    base_query =
+      from me in "metrics_events",
+        join: u in "users",
+        on: fragment("CAST(? AS INTEGER)", me.metadata["user_id"]) == u.id,
+        where: like(me.metric_name, "kanban.api.task_%"),
+        where: not is_nil(fragment("?->>'user_id'", me.metadata)),
+        group_by: [u.id, u.email],
+        select: %{
+          email: u.email,
+          user_id: u.id,
+          total_actions: count(me.id),
+          tasks_claimed:
+            fragment(
+              "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_claimed%')",
+              me.metric_name
+            ),
+          tasks_completed:
+            fragment(
+              "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_completed%')",
+              me.metric_name
+            ),
+          tasks_created:
+            fragment(
+              "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_created%')",
+              me.metric_name
+            ),
+          last_activity: max(me.recorded_at)
+        },
+        limit: ^limit
 
-    result = Repo.query!(sql, [limit])
+    query = apply_search_filter(base_query, search)
+    query = apply_sort(query, sort_column, sort_direction)
 
-    Enum.map(result.rows, fn [email, user_id, total_actions, tasks_claimed, tasks_completed, tasks_created, last_activity] ->
-      %{
-        email: email,
-        user_id: user_id,
-        total_actions: total_actions,
-        tasks_claimed: tasks_claimed,
-        tasks_completed: tasks_completed,
-        tasks_created: tasks_created,
-        last_activity: last_activity
-      }
-    end)
+    Repo.all(query)
   end
 
-  defp query_user_count(search_clause) do
-    sql = """
-    SELECT COUNT(DISTINCT u.id)
-    FROM metrics_events me
-    JOIN users u ON CAST(me.metadata->>'user_id' AS INTEGER) = u.id
-    WHERE me.metric_name LIKE 'kanban.api.task_%'
-      AND me.metadata->>'user_id' IS NOT NULL
-      #{search_clause}
-    """
+  defp query_user_count(search) do
+    base_query =
+      from me in "metrics_events",
+        join: u in "users",
+        on: fragment("CAST(? AS INTEGER)", me.metadata["user_id"]) == u.id,
+        where: like(me.metric_name, "kanban.api.task_%"),
+        where: not is_nil(fragment("?->>'user_id'", me.metadata)),
+        select: count(u.id, :distinct)
 
-    Repo.query!(sql, []).rows |> List.first() |> List.first() |> then(&(&1 || 0))
+    query = apply_search_filter(base_query, search)
+
+    Repo.one(query) || 0
+  end
+
+  defp apply_search_filter(query, nil), do: query
+
+  defp apply_search_filter(query, search) do
+    from [me, u] in query,
+      where: ilike(u.email, ^"%#{search}%")
+  end
+
+  defp apply_sort(query, :email, :asc) do
+    from [me, u] in query, order_by: [asc: u.email]
+  end
+
+  defp apply_sort(query, :email, _) do
+    from [me, u] in query, order_by: [desc: u.email]
+  end
+
+  defp apply_sort(query, :total_actions, :asc) do
+    from [me, u] in query, order_by: [asc: count(me.id)]
+  end
+
+  defp apply_sort(query, :total_actions, _) do
+    from [me, u] in query, order_by: [desc: count(me.id)]
+  end
+
+  defp apply_sort(query, :tasks_claimed, :asc) do
+    from [me, u] in query,
+      order_by: [
+        asc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_claimed%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, :tasks_claimed, _) do
+    from [me, u] in query,
+      order_by: [
+        desc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_claimed%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, :tasks_completed, :asc) do
+    from [me, u] in query,
+      order_by: [
+        asc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_completed%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, :tasks_completed, _) do
+    from [me, u] in query,
+      order_by: [
+        desc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_completed%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, :tasks_created, :asc) do
+    from [me, u] in query,
+      order_by: [
+        asc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_created%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, :tasks_created, _) do
+    from [me, u] in query,
+      order_by: [
+        desc:
+          fragment(
+            "COUNT(*) FILTER (WHERE ? LIKE 'kanban.api.task_created%')",
+            me.metric_name
+          )
+      ]
+  end
+
+  defp apply_sort(query, _, _) do
+    # Default to total_actions descending
+    from [me, u] in query, order_by: [desc: count(me.id)]
   end
 
   defp row_attrs(user) do

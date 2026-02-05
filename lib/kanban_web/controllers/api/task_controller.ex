@@ -773,7 +773,8 @@ defmodule KanbanWeb.API.TaskController do
       status: task.status,
       priority: task.priority,
       complexity: task.complexity,
-      dependencies: task.dependencies || []
+      dependencies: task.dependencies || [],
+      created_by_agent: task.created_by_agent
     }
   end
 
@@ -787,9 +788,15 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp maybe_add_created_by_agent(task_params, api_token) do
-    case api_token.agent_model do
-      nil -> task_params
-      agent_model -> Map.put(task_params, "created_by_agent", "ai_agent:#{agent_model}")
+    # If created_by_agent is already in task_params, preserve it
+    # Otherwise, add it from the API token's agent_model if available
+    if Map.has_key?(task_params, "created_by_agent") do
+      task_params
+    else
+      case api_token.agent_model do
+        nil -> task_params
+        agent_model -> Map.put(task_params, "created_by_agent", "ai_agent:#{agent_model}")
+      end
     end
   end
 
