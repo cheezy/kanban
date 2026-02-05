@@ -81,7 +81,7 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    <%= length(@throughput) %>
+                    {length(@throughput)}
                   </div>
                   <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     tasks completed
@@ -116,13 +116,13 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    <%= format_hours(@cycle_time.average_hours) %>
+                    {format_hours(@cycle_time.average_hours)}
                   </div>
                   <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
                 </dd>
                 <dd class="mt-1 flex items-baseline">
                   <div class="text-sm text-gray-900 dark:text-gray-100">
-                    <%= format_hours(@cycle_time.median_hours) %> median
+                    {format_hours(@cycle_time.median_hours)} median
                   </div>
                 </dd>
               </dl>
@@ -145,7 +145,10 @@
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <.icon name="hero-arrow-trending-up" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+              <.icon
+                name="hero-arrow-trending-up"
+                class="h-6 w-6 text-gray-400 dark:text-gray-500"
+              />
             </div>
             <div class="ml-5 w-0 flex-1">
               <dl>
@@ -154,13 +157,13 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    <%= format_hours(@lead_time.average_hours) %>
+                    {format_hours(@lead_time.average_hours)}
                   </div>
                   <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
                 </dd>
                 <dd class="mt-1 flex items-baseline">
                   <div class="text-sm text-gray-900 dark:text-gray-100">
-                    <%= format_hours(@lead_time.median_hours) %> median
+                    {format_hours(@lead_time.median_hours)} median
                   </div>
                 </dd>
               </dl>
@@ -192,12 +195,12 @@
                 </dt>
                 <dd class="flex items-baseline">
                   <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Review: <%= format_hours(@wait_time.review_wait.average_hours) %>
+                    Review: {format_hours(@wait_time.review_wait.average_hours)}
                   </div>
                 </dd>
                 <dd class="mt-1 flex items-baseline">
                   <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Backlog: <%= format_hours(@wait_time.backlog_wait.average_hours) %>
+                    Backlog: {format_hours(@wait_time.backlog_wait.average_hours)}
                   </div>
                 </dd>
               </dl>
