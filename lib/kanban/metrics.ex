@@ -47,6 +47,41 @@ defmodule Kanban.Metrics do
   end
 
   @doc """
+  Returns a list of unique agent names from completed or created tasks for a board.
+
+  Useful for populating agent filter dropdowns.
+
+  ## Examples
+
+      iex> get_agents(board_id)
+      {:ok, ["Claude Sonnet 4.5", "Claude Opus 3", "GPT-4"]}
+
+  """
+  def get_agents(board_id) do
+    query =
+      from t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
+        where: not is_nil(t.completed_by_agent) or not is_nil(t.created_by_agent),
+        select: fragment("? as agent", t.completed_by_agent),
+        union: ^from(t in Task,
+          join: c in assoc(t, :column),
+          where: c.board_id == ^board_id,
+          where: not is_nil(t.created_by_agent),
+          select: fragment("? as agent", t.created_by_agent)
+        )
+
+    agents =
+      query
+      |> Repo.all()
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    {:ok, agents}
+  end
+
+  @doc """
   Returns throughput data (completed tasks per day) for a board.
 
   ## Options

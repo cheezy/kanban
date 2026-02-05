@@ -1,5 +1,5 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="mx-auto max-w-7xl px-4 pt-4 pb-2 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
     <.header>
       {@board.name} - Metrics Dashboard
       <:subtitle>Performance metrics and insights for your board</:subtitle>
@@ -10,211 +10,222 @@
       </:actions>
     </.header>
 
-    <div class="mt-6 bg-white dark:bg-zinc-800 shadow rounded-lg p-4">
-      <div class="flex flex-wrap gap-4 items-center">
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Time Range
-          </label>
-          <select
-            phx-change="filter_time_range"
-            name="time_range"
-            class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="last_7_days" selected={@time_range == :last_7_days}>
-              Last 7 Days
-            </option>
-            <option value="last_30_days" selected={@time_range == :last_30_days}>
-              Last 30 Days
-            </option>
-            <option value="last_90_days" selected={@time_range == :last_90_days}>
-              Last 90 Days
-            </option>
-            <option value="all_time" selected={@time_range == :all_time}>All Time</option>
-          </select>
+    <div class="mt-8 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 shadow-xl rounded-2xl p-6 border-2 border-indigo-100 dark:border-zinc-700 backdrop-blur-sm">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+          <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
         </div>
-
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Agent Filter
-          </label>
-          <select
-            phx-change="filter_agent"
-            name="agent_name"
-            class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            <option value="">All Agents</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-2 mt-6">
-          <input
-            type="checkbox"
-            id="exclude_weekends"
-            phx-change="toggle_weekends"
-            name="exclude_weekends"
-            value={to_string(!@exclude_weekends)}
-            checked={@exclude_weekends}
-            class="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500"
-          />
-          <label
-            for="exclude_weekends"
-            class="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Exclude Weekends
-          </label>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Customize your metrics view
+          </p>
         </div>
       </div>
+      <form phx-change="filter_change">
+        <div class="flex flex-wrap gap-4 items-center">
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
+                <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Time Range</span>
+            </label>
+            <select
+              name="time_range"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="last_7_days" selected={@time_range == :last_7_days}>
+                📅 Last 7 Days
+              </option>
+              <option value="last_30_days" selected={@time_range == :last_30_days}>
+                📅 Last 30 Days
+              </option>
+              <option value="last_90_days" selected={@time_range == :last_90_days}>
+                📅 Last 90 Days
+              </option>
+              <option value="all_time" selected={@time_range == :all_time}>
+                ♾️ All Time
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
+                <.icon
+                  name="hero-user-circle"
+                  class="h-4 w-4 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+            </label>
+            <select
+              name="agent_name"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option
+                :for={agent <- @agents}
+                value={agent}
+                selected={@agent_name == agent}
+              >
+                {agent}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 cursor-pointer group">
+            <input
+              type="checkbox"
+              id="exclude_weekends"
+              name="exclude_weekends"
+              value="true"
+              checked={@exclude_weekends}
+              class="h-5 w-5 rounded-md border-2 border-gray-300 dark:border-zinc-500 text-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            />
+            <label
+              for="exclude_weekends"
+              class="text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2"
+            >
+              <.icon
+                name="hero-calendar-days"
+                class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+              />
+              <span>Exclude Weekends</span>
+            </label>
+          </div>
+        </div>
+      </form>
     </div>
 
-    <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <.icon name="hero-chart-bar" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                <.icon
+                  name="hero-chart-bar-solid"
+                  class="h-5 w-5 text-blue-600 dark:text-blue-400"
+                />
+                Throughput
+              </dt>
+              <dd class="mt-1">
+                <div class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {length(@throughput)}
+                </div>
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  tasks completed
+                </div>
+              </dd>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Throughput
-                </dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    {length(@throughput)}
-                  </div>
-                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                    tasks completed
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
-          <div class="text-sm">
-            <a
-              href="#"
-              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-            >
-              View details
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <.icon name="hero-clock" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Cycle Time
-                </dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    {format_hours(@cycle_time.average_hours)}
-                  </div>
-                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
-                </dd>
-                <dd class="mt-1 flex items-baseline">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">
-                    {format_hours(@cycle_time.median_hours)} median
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
-          <div class="text-sm">
-            <a
-              href="#"
-              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-            >
-              View details
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
+            <div class="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <.icon
-                name="hero-arrow-trending-up"
-                class="h-6 w-6 text-gray-400 dark:text-gray-500"
+                name="hero-chart-bar"
+                class="h-8 w-8 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300"
               />
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Lead Time
-                </dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    {format_hours(@lead_time.average_hours)}
-                  </div>
-                  <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">avg</div>
-                </dd>
-                <dd class="mt-1 flex items-baseline">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">
-                    {format_hours(@lead_time.median_hours)} median
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
-          <div class="text-sm">
-            <a
-              href="#"
-              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-            >
-              View details
-            </a>
           </div>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <.icon name="hero-pause" class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                <.icon name="hero-clock-solid" class="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                Cycle Time
+              </dt>
+              <dd class="mt-1">
+                <div class="flex items-baseline gap-2 mb-2">
+                  <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                    {format_hours(@cycle_time.average_hours)}
+                  </div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">avg</div>
+                </div>
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {format_hours(@cycle_time.median_hours)} median
+                </div>
+              </dd>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Wait Time
-                </dt>
-                <dd class="flex items-baseline">
-                  <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Review: {format_hours(@wait_time.review_wait.average_hours)}
-                  </div>
-                </dd>
-                <dd class="mt-1 flex items-baseline">
-                  <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Backlog: {format_hours(@wait_time.backlog_wait.average_hours)}
-                  </div>
-                </dd>
-              </dl>
+            <div class="flex-shrink-0 p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <.icon
+                name="hero-clock"
+                class="h-8 w-8 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300"
+              />
             </div>
           </div>
         </div>
-        <div class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
-          <div class="text-sm">
-            <a
-              href="#"
-              class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-400"
-            >
-              View details
-            </a>
+      </div>
+
+      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                <.icon
+                  name="hero-arrow-trending-up-solid"
+                  class="h-5 w-5 text-green-600 dark:text-green-400"
+                />
+                Lead Time
+              </dt>
+              <dd class="mt-1">
+                <div class="flex items-baseline gap-2 mb-2">
+                  <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                    {format_hours(@lead_time.average_hours)}
+                  </div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">avg</div>
+                </div>
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {format_hours(@lead_time.median_hours)} median
+                </div>
+              </dd>
+            </div>
+            <div class="flex-shrink-0 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <.icon
+                name="hero-arrow-trending-up"
+                class="h-8 w-8 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                <.icon name="hero-pause-solid" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                Wait Time
+              </dt>
+              <dd class="mt-1 space-y-2">
+                <div class="flex items-center gap-2">
+                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {format_hours(@wait_time.review_wait.average_hours)}
+                  </div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Review
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {format_hours(@wait_time.backlog_wait.average_hours)}
+                  </div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Backlog
+                  </div>
+                </div>
+              </dd>
+            </div>
+            <div class="flex-shrink-0 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <.icon
+                name="hero-pause"
+                class="h-8 w-8 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
           </div>
         </div>
       </div>

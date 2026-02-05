@@ -105,7 +105,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("select[name='time_range']")
+        |> element("form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"
@@ -119,7 +119,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       _html =
         view
-        |> element("select[name='agent_name']")
+        |> element("form")
         |> render_change(%{"agent_name" => ""})
 
       assert view
@@ -132,7 +132,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("#exclude_weekends")
+        |> element("form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
@@ -232,7 +232,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics")
 
       assert html =~ "Wait Time"
-      assert html =~ "Review:"
+      assert html =~ "Review"
     end
 
     test "displays backlog wait time when tasks have claimed_at", %{
@@ -256,7 +256,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics")
 
       assert html =~ "Wait Time"
-      assert html =~ "Backlog:"
+      assert html =~ "Backlog"
     end
   end
 
@@ -271,7 +271,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("select[name='time_range']")
+        |> element("form")
         |> render_change(%{"time_range" => "last_90_days"})
 
       assert html =~ "Last 90 Days"
@@ -292,7 +292,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("select[name='time_range']")
+        |> element("form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "All Time"
@@ -313,7 +313,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       _html =
         view
-        |> element("select[name='agent_name']")
+        |> element("form")
         |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       rendered = render(view)
@@ -348,12 +348,12 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("select[name='agent_name']")
+      |> element("form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       html =
         view
-        |> element("select[name='agent_name']")
+        |> element("form")
         |> render_change(%{"agent_name" => ""})
 
       assert html =~ "All Agents"
@@ -379,14 +379,14 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("#exclude_weekends")
+        |> element("form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
 
       html =
         view
-        |> element("#exclude_weekends")
+        |> element("form")
         |> render_change(%{"exclude_weekends" => "false"})
 
       refute html =~ "checked"
@@ -412,7 +412,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("#exclude_weekends")
+      |> element("form")
       |> render_change(%{"exclude_weekends" => "true"})
 
       html = render(view)
@@ -452,15 +452,15 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("select[name='time_range']")
+      |> element("form")
       |> render_change(%{"time_range" => "last_7_days"})
 
       view
-      |> element("select[name='agent_name']")
+      |> element("form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       view
-      |> element("#exclude_weekends")
+      |> element("form")
       |> render_change(%{"exclude_weekends" => "true"})
 
       html = render(view)
@@ -480,16 +480,16 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("select[name='time_range']")
+      |> element("form")
       |> render_change(%{"time_range" => "last_7_days"})
 
       view
-      |> element("select[name='time_range']")
+      |> element("form")
       |> render_change(%{"time_range" => "last_90_days"})
 
       html =
         view
-        |> element("select[name='time_range']")
+        |> element("form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "All Time"

@@ -20,52 +20,30 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
+    {:ok, agents} = Metrics.get_agents(board.id)
+
     socket =
       socket
       |> assign(:page_title, "Metrics Dashboard")
       |> assign(:board, board)
       |> assign(:user_access, user_access)
+      |> assign(:agents, agents)
       |> load_dashboard_data()
 
     {:noreply, socket}
   end
 
   @impl true
-  def handle_event("filter_time_range", %{"time_range" => time_range}, socket) do
-    time_range_atom = String.to_existing_atom(time_range)
+  def handle_event("filter_change", params, socket) do
+    time_range_atom = String.to_existing_atom(params["time_range"])
+    agent_name = if params["agent_name"] == "", do: nil, else: params["agent_name"]
+    exclude_weekends = Map.get(params, "exclude_weekends") == "true"
 
     socket =
       socket
       |> assign(:time_range, time_range_atom)
-      |> load_dashboard_data()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("filter_agent", %{"agent_name" => ""}, socket) do
-    socket =
-      socket
-      |> assign(:agent_name, nil)
-      |> load_dashboard_data()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("filter_agent", %{"agent_name" => agent_name}, socket) do
-    socket =
-      socket
       |> assign(:agent_name, agent_name)
-      |> load_dashboard_data()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("toggle_weekends", %{"exclude_weekends" => exclude_weekends}, socket) do
-    exclude_weekends_bool = exclude_weekends == "true"
-
-    socket =
-      socket
-      |> assign(:exclude_weekends, exclude_weekends_bool)
+      |> assign(:exclude_weekends, exclude_weekends)
       |> load_dashboard_data()
 
     {:noreply, socket}
