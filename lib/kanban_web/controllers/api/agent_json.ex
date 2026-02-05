@@ -2080,8 +2080,7 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           kimi: %{
             file_path: "AGENTS.md",
-            description:
-              "Kimi Code CLI (k2.5) instructions (append-mode, always-active)",
+            description: "Kimi Code CLI (k2.5) instructions (append-mode, always-active)",
             compatible_tools: ["Kimi Code CLI (k2.5)"],
             download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
             installation_unix:
@@ -2097,8 +2096,7 @@ defmodule KanbanWeb.API.AgentJSON do
               "Kimi Code CLI (k2.5) uses AGENTS.md for always-active instructions. If AGENTS.md exists, Stride instructions should be appended. The file is loaded automatically when Kimi starts.",
             safe_installation: %{
               check_existing: "[ -f AGENTS.md ] && echo 'AGENTS.md exists'",
-              backup_first:
-                "[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup",
+              backup_first: "[ -f AGENTS.md ] && cp AGENTS.md AGENTS.md.backup",
               append_install:
                 "echo '\\n\\n# === Stride Integration Instructions ===' >> AGENTS.md && curl -s #{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md >> AGENTS.md",
               fresh_install:

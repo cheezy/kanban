@@ -191,9 +191,12 @@ defmodule KanbanWeb.HomeComponents do
       <div class={[
         "inline-flex items-center justify-center w-14 h-14",
         "text-white rounded-xl mb-4 shadow-lg dark:shadow-blue-900/50",
-        @icon_color == "blue" && "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600/70 dark:to-blue-700/70",
-        @icon_color == "orange" && "bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-600/70 dark:to-orange-700/70",
-        @icon_color == "blue-alt" && "bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700/70 dark:to-blue-800/70"
+        @icon_color == "blue" &&
+          "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600/70 dark:to-blue-700/70",
+        @icon_color == "orange" &&
+          "bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-600/70 dark:to-orange-700/70",
+        @icon_color == "blue-alt" &&
+          "bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700/70 dark:to-blue-800/70"
       ]}>
         {render_slot(@icon)}
       </div>

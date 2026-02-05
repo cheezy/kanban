@@ -31,8 +31,8 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
       <:col field={:tasks_claimed} header="Tasks Claimed" text_align="right" sortable={:desc} />
       <:col field={:tasks_completed} header="Tasks Completed" text_align="right" sortable={:desc} />
       <:col field={:tasks_created} header="Tasks Created" text_align="right" sortable={:desc} />
-      <:col field={:last_activity} header="Last Activity" :let={user}>
-        <%= format_datetime(user[:last_activity]) %>
+      <:col :let={user} field={:last_activity} header="Last Activity">
+        {format_datetime(user[:last_activity])}
       </:col>
     </.live_table>
     """

@@ -338,6 +338,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
         if name not in ["copilot", "cursor", "windsurf", "gemini", "opencode"] do
           assert is_binary(format["download_url"])
         end
+
         assert is_binary(format["installation_unix"])
         assert is_binary(format["installation_windows"])
         assert is_binary(format["token_limit"])
@@ -495,7 +496,9 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert opencode["note"] =~ "claude_code_skills section"
     end
 
-    test "OpenCode format includes safe_installation commands referencing Claude Code", %{conn: conn} do
+    test "OpenCode format includes safe_installation commands referencing Claude Code", %{
+      conn: conn
+    } do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -631,7 +634,9 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert gemini["note"] =~ "claude_code_skills section"
     end
 
-    test "Gemini format includes safe_installation commands referencing Claude Code", %{conn: conn} do
+    test "Gemini format includes safe_installation commands referencing Claude Code", %{
+      conn: conn
+    } do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
