@@ -53,7 +53,10 @@ defmodule KanbanWeb.MetricsLive.Components do
       </div>
       <div :if={@link} class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
         <div class="text-sm">
-          <a href={@link} class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+          <a
+            href={@link}
+            class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+          >
             View details
           </a>
         </div>
@@ -248,8 +251,10 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   # Helper function to calculate percentage for bar chart
   defp calculate_percentage(_value, 0), do: 0
+
   defp calculate_percentage(value, max) when value > 0 and max > 0 do
     min(Float.round(value / max * 100, 1), 100)
   end
+
   defp calculate_percentage(_, _), do: 0
 end
