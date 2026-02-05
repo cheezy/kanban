@@ -118,6 +118,7 @@ defmodule KanbanWeb.Router do
       live "/boards/:id", BoardLive.Show, :show
       live "/boards/:id/metrics", MetricsLive.Dashboard, :dashboard
       live "/boards/:id/metrics/throughput", MetricsLive.Throughput, :throughput
+      live "/boards/:id/metrics/cycle-time", MetricsLive.CycleTime, :cycle_time
       live "/boards/:id/archive", ArchiveLive.Index, :index
       live "/boards/:id/api_tokens", BoardLive.Show, :api_tokens
       live "/boards/:id/columns/new", BoardLive.Show, :new_column
