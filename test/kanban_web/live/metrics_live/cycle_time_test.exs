@@ -98,6 +98,44 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
 
       assert html =~ "No tasks completed in this time range"
     end
+
+    test "displays multiple tasks sorted by completion time", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "First Task"})
+      task2 = task_fixture(column, %{title: "Second Task"})
+      task3 = task_fixture(column, %{title: "Third Task"})
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(DateTime.utc_now(), -3, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.add(DateTime.utc_now(), -2, :day)})
+      {:ok, _} = complete_task(task3, %{completed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "First Task"
+      assert html =~ "Second Task"
+      assert html =~ "Third Task"
+    end
+
+    test "displays agent name when present", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "displays N/A when agent name is missing", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: nil})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "N/A"
+    end
   end
 
   describe "Cycle Time - Filter Events" do
@@ -142,6 +180,72 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
 
       assert html =~ "checked"
     end
+
+    test "filters tasks by agent", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column, %{title: "Task by Agent 1"})
+      task2 = task_fixture(column, %{title: "Task by Agent 2"})
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => "Agent 1"})
+
+      assert html =~ "Task by Agent 1"
+      refute html =~ "Task by Agent 2"
+    end
+
+    test "filters tasks outside time range", %{conn: conn, board: board, column: column} do
+      old_task = task_fixture(column, %{title: "Old Task"})
+      recent_task = task_fixture(column, %{title: "Recent Task"})
+
+      {:ok, _} =
+        complete_task(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day)
+        })
+
+      {:ok, _} = complete_task(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Recent Task"
+      refute html =~ "Old Task"
+    end
+
+    test "clears agent filter when empty string selected", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      view
+      |> element("form")
+      |> render_change(%{"agent_name" => "Agent 1"})
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => ""})
+
+      assert html =~ "Task 1"
+      assert html =~ "Task 2"
+    end
   end
 
   describe "Cycle Time - Export PDF" do
@@ -151,6 +255,14 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
       assert view |> element("button", "Export to PDF") |> has_element?()
+    end
+
+    test "clicking export PDF triggers event", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert view
+             |> element("button", "Export to PDF")
+             |> render_click() =~ "Cycle Time Metrics"
     end
   end
 

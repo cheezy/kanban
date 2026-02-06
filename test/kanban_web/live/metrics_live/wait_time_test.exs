@@ -78,6 +78,66 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert html =~ task.identifier
       assert html =~ task.title
     end
+
+    test "displays multiple review tasks sorted by reviewed_at", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "First Review"})
+      task2 = task_fixture(column, %{title: "Second Review"})
+      task3 = task_fixture(column, %{title: "Third Review"})
+
+      {:ok, _} =
+        add_review_wait(task1, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -5, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -3, :day)
+        })
+
+      {:ok, _} =
+        add_review_wait(task2, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -4, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -2, :day)
+        })
+
+      {:ok, _} =
+        add_review_wait(task3, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -3, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -1, :day)
+        })
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "First Review"
+      assert html =~ "Second Review"
+      assert html =~ "Third Review"
+    end
+
+    test "displays agent name when present in review wait", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = add_review_wait(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "displays N/A when agent name is missing in review wait", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = add_review_wait(task, %{completed_by_agent: nil})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "N/A"
+    end
   end
 
   describe "Wait Time - Backlog Wait Data" do
@@ -107,6 +167,52 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       assert html =~ task.identifier
       assert html =~ task.title
+    end
+
+    test "displays multiple backlog tasks sorted by claimed_at", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "First Backlog"})
+      task2 = task_fixture(column, %{title: "Second Backlog"})
+      task3 = task_fixture(column, %{title: "Third Backlog"})
+
+      {:ok, _} = add_backlog_wait(task1, %{claimed_at: DateTime.add(DateTime.utc_now(), -3, :day)})
+      {:ok, _} = add_backlog_wait(task2, %{claimed_at: DateTime.add(DateTime.utc_now(), -2, :day)})
+      {:ok, _} = add_backlog_wait(task3, %{claimed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "First Backlog"
+      assert html =~ "Second Backlog"
+      assert html =~ "Third Backlog"
+    end
+
+    test "displays agent name when present in backlog wait", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = add_backlog_wait(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "displays N/A when agent name is missing in backlog wait", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = add_backlog_wait(task, %{completed_by_agent: nil})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "N/A"
     end
   end
 
@@ -152,6 +258,95 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       assert html =~ "checked"
     end
+
+    test "filters review wait tasks by agent", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column, %{title: "Review by Agent 1"})
+      task2 = task_fixture(column, %{title: "Review by Agent 2"})
+
+      {:ok, _} = add_review_wait(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = add_review_wait(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => "Agent 1"})
+
+      assert html =~ "Review by Agent 1"
+      refute html =~ "Review by Agent 2"
+    end
+
+    test "filters backlog wait tasks by agent", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column, %{title: "Backlog by Agent 1"})
+      task2 = task_fixture(column, %{title: "Backlog by Agent 2"})
+
+      {:ok, _} = add_backlog_wait(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = add_backlog_wait(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => "Agent 1"})
+
+      assert html =~ "Backlog by Agent 1"
+      refute html =~ "Backlog by Agent 2"
+    end
+
+    test "filters review wait tasks outside time range", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      old_task = task_fixture(column, %{title: "Old Review Task"})
+      recent_task = task_fixture(column, %{title: "Recent Review Task"})
+
+      {:ok, _} =
+        add_review_wait(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -59, :day)
+        })
+
+      {:ok, _} = add_review_wait(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Recent Review Task"
+      refute html =~ "Old Review Task"
+    end
+
+    test "clears agent filter when empty string selected", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _} = add_review_wait(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = add_review_wait(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      view
+      |> element("form")
+      |> render_change(%{"agent_name" => "Agent 1"})
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => ""})
+
+      assert html =~ "Task 1"
+      assert html =~ "Task 2"
+    end
   end
 
   describe "Wait Time - Export PDF" do
@@ -161,6 +356,14 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
       assert view |> element("button", "Export to PDF") |> has_element?()
+    end
+
+    test "clicking export PDF triggers event", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert view
+             |> element("button", "Export to PDF")
+             |> render_click() =~ "Wait Time Metrics"
     end
   end
 

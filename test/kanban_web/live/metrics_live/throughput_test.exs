@@ -86,6 +86,39 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
       assert html =~ "2"
     end
+
+    test "displays multiple completed tasks", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column, %{title: "First Task"})
+      task2 = task_fixture(column, %{title: "Second Task"})
+      task3 = task_fixture(column, %{title: "Third Task"})
+
+      {:ok, _} = complete_task(task1)
+      {:ok, _} = complete_task(task2)
+      {:ok, _} = complete_task(task3)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "3"
+    end
+
+    test "filters tasks by agent in count", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task3, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => "Agent 1"})
+
+      assert html =~ "2"
+    end
   end
 
   describe "Throughput - Filter Events" do
@@ -130,19 +163,69 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
       assert html =~ "checked"
     end
+
+    test "filters tasks outside time range", %{conn: conn, board: board, column: column} do
+      old_task = task_fixture(column)
+      recent_task = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day)
+        })
+
+      {:ok, _} = complete_task(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "1"
+    end
+
+    test "clears agent filter when empty string selected", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      view
+      |> element("form")
+      |> render_change(%{"agent_name" => "Agent 1"})
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => ""})
+
+      assert html =~ "2"
+    end
   end
 
   describe "Throughput - Export PDF" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
-    test "shows coming soon message when export PDF clicked", %{conn: conn, board: board} do
+    test "export PDF button is clickable", %{conn: conn, board: board} do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
 
-      view
-      |> element("button", "Export to PDF")
-      |> render_click()
+      assert view |> element("button", "Export to PDF") |> has_element?()
+    end
 
-      assert render(view) =~ "PDF export feature coming soon!"
+    test "clicking export PDF triggers event", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert view
+             |> element("button", "Export to PDF")
+             |> render_click() =~ "Throughput Metrics"
     end
   end
 

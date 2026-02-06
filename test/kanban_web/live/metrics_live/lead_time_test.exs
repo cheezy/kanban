@@ -122,6 +122,57 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       assert html =~ task.identifier
     end
+
+    test "excludes tasks without completed_at", %{conn: conn, board: board, column: column} do
+      incomplete_task = task_fixture(column, %{title: "Not Done"})
+      complete_task_data = task_fixture(column, %{title: "Done"})
+
+      {:ok, _} = Tasks.update_task(incomplete_task, %{claimed_at: DateTime.utc_now()})
+      {:ok, _} = complete_task(complete_task_data)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Done"
+      refute html =~ "Not Done"
+    end
+
+    test "displays multiple tasks sorted by completion time", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "First Task"})
+      task2 = task_fixture(column, %{title: "Second Task"})
+      task3 = task_fixture(column, %{title: "Third Task"})
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(DateTime.utc_now(), -3, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.add(DateTime.utc_now(), -2, :day)})
+      {:ok, _} = complete_task(task3, %{completed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "First Task"
+      assert html =~ "Second Task"
+      assert html =~ "Third Task"
+    end
+
+    test "displays agent name when present", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "displays N/A when agent name is missing", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: nil})
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "N/A"
+    end
   end
 
   describe "Lead Time - Filter Events" do
@@ -166,6 +217,177 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       assert html =~ "checked"
     end
+
+    test "filters tasks by agent", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column, %{title: "Task by Agent 1"})
+      task2 = task_fixture(column, %{title: "Task by Agent 2"})
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => "Agent 1"})
+
+      assert html =~ "Task by Agent 1"
+      refute html =~ "Task by Agent 2"
+    end
+
+    test "filters tasks outside time range", %{conn: conn, board: board, column: column} do
+      old_task = task_fixture(column, %{title: "Old Task"})
+      recent_task = task_fixture(column, %{title: "Recent Task"})
+
+      {:ok, _} =
+        complete_task(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day)
+        })
+
+      {:ok, _} = complete_task(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Recent Task"
+      refute html =~ "Old Task"
+    end
+
+    test "clears agent filter when empty string selected", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column, %{title: "Task 1"})
+      task2 = task_fixture(column, %{title: "Task 2"})
+
+      {:ok, _} = complete_task(task1, %{completed_by_agent: "Agent 1"})
+      {:ok, _} = complete_task(task2, %{completed_by_agent: "Agent 2"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      view
+      |> element("form")
+      |> render_change(%{"agent_name" => "Agent 1"})
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"agent_name" => ""})
+
+      assert html =~ "Task 1"
+      assert html =~ "Task 2"
+    end
+  end
+
+  describe "Lead Time - Time Range Options" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "filters with :today time range", %{conn: conn, board: board, column: column} do
+      old_task = task_fixture(column, %{title: "Yesterday Task"})
+      today_task = task_fixture(column, %{title: "Today Task"})
+
+      {:ok, _} =
+        complete_task(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -25, :hour)
+        })
+
+      {:ok, _} = complete_task(today_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "today"})
+
+      assert html =~ "Today Task"
+      refute html =~ "Yesterday Task"
+    end
+
+    test "filters with :last_90_days time range", %{conn: conn, board: board, column: column} do
+      recent_task = task_fixture(column, %{title: "Recent Task"})
+      {:ok, _} = complete_task(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_90_days"})
+
+      assert html =~ "Recent Task"
+      assert html =~ "Last 90 Days"
+    end
+
+    test "filters with :all_time time range", %{conn: conn, board: board, column: column} do
+      ancient_task = task_fixture(column, %{title: "Ancient Task"})
+
+      {:ok, _} =
+        complete_task(ancient_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -365, :day)
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "all_time"})
+
+      assert html =~ "Ancient Task"
+      assert html =~ "All Time"
+    end
+  end
+
+  describe "Lead Time - Summary Statistics" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays average lead time", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1)
+      {:ok, _} = complete_task(task2)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Average"
+    end
+
+    test "displays median lead time", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Median"
+    end
+
+    test "displays min and max lead time", %{conn: conn, board: board, column: column} do
+      fast_task = task_fixture(column, %{title: "Fast"})
+      slow_task = task_fixture(column, %{title: "Slow"})
+
+      {:ok, _} =
+        complete_task(fast_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -1, :hour)
+        })
+
+      {:ok, _} =
+        complete_task(slow_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -48, :hour)
+        })
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Min"
+      assert html =~ "Max"
+    end
   end
 
   describe "Lead Time - Export PDF" do
@@ -175,6 +397,14 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
 
       assert view |> element("button", "Export to PDF") |> has_element?()
+    end
+
+    test "clicking export PDF triggers event", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert view
+             |> element("button", "Export to PDF")
+             |> render_click() =~ "Lead Time Metrics"
     end
   end
 

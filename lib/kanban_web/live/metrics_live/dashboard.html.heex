@@ -103,7 +103,10 @@
     </div>
 
     <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+      <.link
+        navigate={~p"/boards/#{@board}/metrics/throughput"}
+        class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+      >
         <div class="p-6">
           <div class="flex items-start justify-between">
             <div class="flex-1">
@@ -130,9 +133,12 @@
             </div>
           </div>
         </div>
-      </div>
+      </.link>
 
-      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+      <.link
+        navigate={~p"/boards/#{@board}/metrics/cycle-time"}
+        class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+      >
         <div class="p-6">
           <div class="flex items-start justify-between">
             <div class="flex-1">
@@ -162,9 +168,12 @@
             </div>
           </div>
         </div>
-      </div>
+      </.link>
 
-      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+      <.link
+        navigate={~p"/boards/#{@board}/metrics/lead-time"}
+        class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+      >
         <div class="p-6">
           <div class="flex items-start justify-between">
             <div class="flex-1">
@@ -194,9 +203,12 @@
             </div>
           </div>
         </div>
-      </div>
+      </.link>
 
-      <div class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+      <.link
+        navigate={~p"/boards/#{@board}/metrics/wait-time"}
+        class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+      >
         <div class="p-6">
           <div class="flex items-start justify-between">
             <div class="flex-1">
@@ -231,7 +243,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </.link>
     </div>
   </div>
 </Layouts.app>
