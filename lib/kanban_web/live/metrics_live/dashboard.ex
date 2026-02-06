@@ -15,12 +15,16 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   end
 
   @impl true
-  def handle_params(%{"id" => board_id}, _, socket) do
+  def handle_params(%{"id" => board_id} = params, _, socket) do
     user = socket.assigns.current_scope.user
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
     {:ok, agents} = Metrics.get_agents(board.id)
+
+    time_range = parse_time_range(params["time_range"])
+    agent_name = parse_agent_name(params["agent_name"])
+    exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
 
     socket =
       socket
@@ -28,6 +32,9 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
       |> assign(:board, board)
       |> assign(:user_access, user_access)
       |> assign(:agents, agents)
+      |> assign(:time_range, time_range)
+      |> assign(:agent_name, agent_name)
+      |> assign(:exclude_weekends, exclude_weekends)
       |> load_dashboard_data()
 
     {:noreply, socket}
@@ -98,4 +105,23 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   end
 
   defp format_hours(_), do: "N/A"
+
+  defp parse_time_range(nil), do: :last_30_days
+  defp parse_time_range(""), do: :last_30_days
+
+  defp parse_time_range(time_range) when is_binary(time_range) do
+    String.to_existing_atom(time_range)
+  rescue
+    ArgumentError -> :last_30_days
+  end
+
+  defp parse_agent_name(nil), do: nil
+  defp parse_agent_name(""), do: nil
+  defp parse_agent_name(agent_name) when is_binary(agent_name), do: agent_name
+
+  defp parse_exclude_weekends(nil), do: false
+  defp parse_exclude_weekends(""), do: false
+  defp parse_exclude_weekends("true"), do: true
+  defp parse_exclude_weekends("false"), do: false
+  defp parse_exclude_weekends(_), do: false
 end

@@ -408,6 +408,71 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
     end
   end
 
+  describe "Lead Time - Query Parameter Handling" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "applies time_range from query parameters", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?time_range=last_7_days")
+
+      assert html =~ "Last 7 Days"
+    end
+
+    test "applies agent_name from query parameters", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?agent_name=Claude+Sonnet+4.5")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "applies exclude_weekends from query parameters", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?exclude_weekends=true")
+
+      assert html =~ "checked"
+    end
+
+    test "applies multiple filters from query parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _view, html} =
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/lead-time?time_range=last_7_days&agent_name=Claude+Sonnet+4.5&exclude_weekends=true"
+        )
+
+      assert html =~ "Last 7 Days"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "checked"
+    end
+
+    test "handles invalid time_range gracefully", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?time_range=invalid")
+
+      assert html =~ "Last 30 Days"
+    end
+
+    test "handles empty query parameters gracefully", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?time_range=&agent_name=&exclude_weekends=")
+
+      assert html =~ "Last 30 Days"
+      refute html =~ "checked"
+    end
+  end
+
   describe "Lead Time - Access Control" do
     setup [:register_and_log_in_user, :create_board_with_column]
 

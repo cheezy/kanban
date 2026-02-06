@@ -388,6 +388,138 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
     end
   end
 
+  describe "Throughput - Query Parameter Handling" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "applies time_range from query parameters", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?time_range=last_7_days")
+
+      assert html =~ "Last 7 Days"
+    end
+
+    test "applies agent_name from query parameters", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?agent_name=Claude+Sonnet+4.5")
+
+      assert html =~ "Claude Sonnet 4.5"
+    end
+
+    test "applies exclude_weekends from query parameters", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?exclude_weekends=true")
+
+      assert html =~ "checked"
+    end
+
+    test "applies multiple filters from query parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _view, html} =
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/throughput?time_range=last_7_days&agent_name=Claude+Sonnet+4.5&exclude_weekends=true"
+        )
+
+      assert html =~ "Last 7 Days"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "checked"
+    end
+
+    test "handles invalid time_range gracefully", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?time_range=invalid")
+
+      assert html =~ "Last 30 Days"
+    end
+
+    test "handles empty query parameters gracefully", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?time_range=&agent_name=&exclude_weekends=")
+
+      assert html =~ "Last 30 Days"
+      refute html =~ "checked"
+    end
+  end
+
+  describe "Throughput - Edge Cases and Additional Coverage" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "handles today time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "today"})
+
+      assert html =~ "Today"
+    end
+
+    test "handles last_90_days time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_90_days"})
+
+      assert html =~ "Last 90 Days"
+    end
+
+    test "handles all_time time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "all_time"})
+
+      assert html =~ "All Time"
+    end
+
+    test "handles exclude_weekends with false value", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?exclude_weekends=false")
+
+      refute html =~ "checked"
+    end
+
+    test "handles exclude_weekends with unexpected value", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?exclude_weekends=maybe")
+
+      refute html =~ "checked"
+    end
+
+    test "handles non-existent atom in parse_time_range", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/throughput?time_range=nonexistent_range_abc")
+
+      assert html =~ "Last 30 Days"
+    end
+  end
+
   describe "Throughput - Access Control" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
