@@ -38,6 +38,11 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
     """
   end
 
+  @impl true
+  def handle_event("show_details", %{"user-id" => _user_id}, socket) do
+    {:noreply, socket}
+  end
+
   defp fetch_user_activity(params, _node) do
     %{search: search, sort_by: sort_by, sort_dir: sort_dir, limit: limit} = params
 
