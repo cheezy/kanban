@@ -1,8 +1,12 @@
 defmodule KanbanWeb.MetricsLive.Throughput do
   use KanbanWeb, :live_view
 
+  import Ecto.Query
+
   alias Kanban.Boards
   alias Kanban.Metrics
+  alias Kanban.Repo
+  alias Kanban.Tasks.Task
 
   @impl true
   def mount(_params, _session, socket) do
@@ -69,12 +73,56 @@ defmodule KanbanWeb.MetricsLive.Throughput do
 
     {:ok, throughput} = Metrics.get_throughput(socket.assigns.board.id, opts)
     stats = calculate_summary_stats(throughput)
+    tasks = get_throughput_tasks(socket.assigns.board.id, opts)
 
     socket
     |> assign(:throughput, throughput)
     |> assign(:summary_stats, stats)
-    |> assign(:tasks, [])
+    |> assign(:tasks, tasks)
   end
+
+  defp get_throughput_tasks(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> order_by([t], desc: t.completed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        inserted_at: t.inserted_at,
+        claimed_at: t.claimed_at,
+        completed_at: t.completed_at,
+        completed_by_agent: t.completed_by_agent
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp get_start_date(:today) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> DateTime.new!(~T[00:00:00])
+  end
+
+  defp get_start_date(:last_7_days), do: DateTime.add(DateTime.utc_now(), -7, :day)
+  defp get_start_date(:last_30_days), do: DateTime.add(DateTime.utc_now(), -30, :day)
+  defp get_start_date(:last_90_days), do: DateTime.add(DateTime.utc_now(), -90, :day)
+  defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
 
   defp calculate_summary_stats([_ | _] = throughput) do
     total = Enum.reduce(throughput, 0, fn day, acc -> acc + day.count end)
@@ -97,6 +145,12 @@ defmodule KanbanWeb.MetricsLive.Throughput do
 
   defp format_date(date) do
     Calendar.strftime(date, "%b %d, %Y")
+  end
+
+  defp format_datetime(nil), do: "N/A"
+
+  defp format_datetime(datetime) do
+    Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
   end
 
   defp calculate_bar_width(_count, 0), do: 0
