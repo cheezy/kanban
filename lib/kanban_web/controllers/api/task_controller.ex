@@ -670,8 +670,14 @@ defmodule KanbanWeb.API.TaskController do
 
   defp get_task_by_id_or_identifier!(id_or_identifier, board) do
     case get_task_by_id_or_identifier(id_or_identifier, board) do
-      nil -> raise Ecto.NoResultsError, queryable: Kanban.Tasks.Task
-      task -> task
+      nil ->
+        raise Ecto.NoResultsError,
+          queryable: Kanban.Tasks.Task,
+          message:
+            "Task not found with id_or_identifier: #{inspect(id_or_identifier)} in board: #{board.id}"
+
+      task ->
+        task
     end
   end
 
