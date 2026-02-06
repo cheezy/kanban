@@ -1,0 +1,232 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+    <.header>
+      {@board.name} - Throughput Metrics
+      <:subtitle>Tasks completed per day with detailed breakdown</:subtitle>
+      <:actions>
+        <.link navigate={~p"/boards/#{@board}/metrics"}>
+          <.button>Back to Dashboard</.button>
+        </.link>
+        <.button phx-click="export_pdf" class="ml-2">
+          <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
+        </.button>
+      </:actions>
+    </.header>
+
+    <div class="mt-8 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 shadow-xl rounded-2xl p-6 border-2 border-indigo-100 dark:border-zinc-700 backdrop-blur-sm">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+          <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Customize your throughput view
+          </p>
+        </div>
+      </div>
+      <form phx-change="filter_change">
+        <div class="flex flex-wrap gap-4 items-center">
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
+                <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Time Range</span>
+            </label>
+            <select
+              name="time_range"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="today" selected={@time_range == :today}>
+                🌅 Today
+              </option>
+              <option value="last_7_days" selected={@time_range == :last_7_days}>
+                📅 Last 7 Days
+              </option>
+              <option value="last_30_days" selected={@time_range == :last_30_days}>
+                📅 Last 30 Days
+              </option>
+              <option value="last_90_days" selected={@time_range == :last_90_days}>
+                📅 Last 90 Days
+              </option>
+              <option value="all_time" selected={@time_range == :all_time}>
+                ♾️ All Time
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
+                <.icon
+                  name="hero-user-circle"
+                  class="h-4 w-4 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+            </label>
+            <select
+              name="agent_name"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
+                {agent}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 cursor-pointer group">
+            <input
+              type="checkbox"
+              id="exclude_weekends"
+              name="exclude_weekends"
+              value="true"
+              checked={@exclude_weekends}
+              class="h-5 w-5 rounded-md border-2 border-gray-300 dark:border-zinc-500 text-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            />
+            <label
+              for="exclude_weekends"
+              class="text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2"
+            >
+              <.icon
+                name="hero-calendar-days"
+                class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+              />
+              <span>Exclude Weekends</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <.icon name="hero-check-circle" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+            Total Tasks
+          </h3>
+        </div>
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {@summary_stats.total}
+        </div>
+      </div>
+
+      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <.icon
+              name="hero-chart-bar-square"
+              class="h-6 w-6 text-green-600 dark:text-green-400"
+            />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+            Avg Per Day
+          </h3>
+        </div>
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {@summary_stats.avg_per_day}
+        </div>
+      </div>
+
+      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <.icon name="hero-calendar" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+            Peak Day
+          </h3>
+        </div>
+        <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+          {format_date(@summary_stats.peak_day)}
+        </div>
+      </div>
+
+      <div class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+            <.icon name="hero-trophy" class="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+            Peak Count
+          </h3>
+        </div>
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {@summary_stats.peak_count}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg">
+          <.icon name="hero-chart-bar-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+            Daily Completions Bar Chart
+          </h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Tasks completed per day
+          </p>
+        </div>
+      </div>
+
+      <div :if={length(@throughput) == 0} class="text-center py-12">
+        <.icon
+          name="hero-chart-bar"
+          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
+        />
+        <p class="text-gray-500 dark:text-gray-400 text-lg">
+          No tasks completed in this time range
+        </p>
+      </div>
+
+      <div :if={length(@throughput) > 0} class="space-y-2">
+        <div
+          :for={day <- @throughput}
+          class="flex items-center gap-4 p-2 hover:bg-gray-50 dark:hover:bg-zinc-700/50 rounded-lg transition-colors"
+        >
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0">
+            {format_date(day.date)}
+          </div>
+          <div class="flex-1 flex items-center gap-2">
+            <div
+              class="bg-gradient-to-r from-blue-500 to-indigo-600 h-8 rounded-r-lg transition-all duration-300 hover:from-blue-600 hover:to-indigo-700 relative group"
+              style={"width: #{calculate_bar_width(day.count, @summary_stats.peak_count)}%"}
+            >
+              <div class="absolute inset-0 bg-white/20 rounded-r-lg opacity-0 group-hover:opacity-100 transition-opacity">
+              </div>
+            </div>
+            <div class="text-sm font-bold text-gray-900 dark:text-gray-100 ml-2 w-8">
+              {day.count}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg shadow-lg">
+          <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Detailed list of all completed tasks
+          </p>
+        </div>
+      </div>
+
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        Task details will be implemented in the next phase
+      </div>
+    </div>
+  </div>
+</Layouts.app>
