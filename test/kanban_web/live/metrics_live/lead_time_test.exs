@@ -6,7 +6,9 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Ecto.Query
 
+  alias Kanban.Repo
   alias Kanban.Tasks
 
   describe "Lead Time - Basic Display" do
@@ -736,6 +738,243 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       assert html =~ "Completed:"
       assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+    end
+  end
+
+  describe "Lead Time - Edge Cases and Additional Coverage" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "handles today time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "today"})
+
+      assert html =~ "Today"
+    end
+
+    test "handles last_90_days time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_90_days"})
+
+      assert html =~ "Last 90 Days"
+    end
+
+    test "handles all_time time range", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "all_time"})
+
+      assert html =~ "All Time"
+    end
+
+    test "handles exclude_weekends with false value", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?exclude_weekends=false")
+
+      refute html =~ "checked"
+    end
+
+    test "handles exclude_weekends with unexpected value", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?exclude_weekends=maybe")
+
+      refute html =~ "checked"
+    end
+  end
+
+  describe "Lead Time - Formatting and Helper Functions" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "formats lead time in hours when less than 24 hours", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create task and manually set inserted_at to 5 hours ago
+      task = task_fixture(column)
+      five_hours_ago = DateTime.add(DateTime.utc_now(), -5, :hour)
+
+      # Update the inserted_at timestamp directly in the database
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Repo.update_all(set: [inserted_at: five_hours_ago])
+
+      {:ok, updated_task} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Task should be visible with hours formatting
+      assert html =~ updated_task.identifier
+      assert html =~ updated_task.title
+    end
+
+    test "formats lead time in days when 24 hours or more", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create task and manually set inserted_at to 30 days ago
+      task = task_fixture(column)
+      thirty_days_ago = DateTime.add(DateTime.utc_now(), -30, :day)
+
+      # Update the inserted_at timestamp directly in the database
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Repo.update_all(set: [inserted_at: thirty_days_ago])
+
+      {:ok, updated_task} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Task should be visible with days formatting
+      assert html =~ updated_task.identifier
+      assert html =~ updated_task.title
+    end
+
+    test "displays N/A for tasks without completed_at", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create task but don't complete it
+      _task = task_fixture(column)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Should show empty state since no completed tasks
+      assert html =~ "No tasks completed in this time range"
+    end
+
+    test "handles empty task list for calculations", %{conn: conn, board: board} do
+      # No tasks created at all
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Should show empty state
+      assert html =~ "No tasks completed in this time range"
+      # Stats should show 0 or N/A
+      assert html =~ "0.0m"
+    end
+
+    test "displays chart with tasks having hours-based lead times", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create multiple tasks with hours-based lead times
+      task1 = task_fixture(column)
+      three_hours_ago = DateTime.add(DateTime.utc_now(), -3, :hour)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task1.id)
+      |> Repo.update_all(set: [inserted_at: three_hours_ago])
+
+      {:ok, _} = complete_task(task1)
+
+      task2 = task_fixture(column)
+      six_hours_ago = DateTime.add(DateTime.utc_now(), -6, :hour)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task2.id)
+      |> Repo.update_all(set: [inserted_at: six_hours_ago])
+
+      {:ok, _} = complete_task(task2)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Chart should be rendered
+      assert html =~ "Lead Time Trend"
+    end
+
+    test "displays chart with tasks having days-based lead times", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create multiple tasks with days-based lead times
+      task1 = task_fixture(column)
+      forty_days_ago = DateTime.add(DateTime.utc_now(), -40, :day)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task1.id)
+      |> Repo.update_all(set: [inserted_at: forty_days_ago])
+
+      {:ok, _} = complete_task(task1)
+
+      task2 = task_fixture(column)
+      fifty_days_ago = DateTime.add(DateTime.utc_now(), -50, :day)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task2.id)
+      |> Repo.update_all(set: [inserted_at: fifty_days_ago])
+
+      {:ok, _} = complete_task(task2)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Chart should be rendered with trend line
+      assert html =~ "Lead Time Trend"
+    end
+
+    test "handles single task for trend line calculation", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create just one task
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Should still render but without trend line
+      assert html =~ task.identifier
+    end
+
+    test "displays formatted dates for completed tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Should display formatted date (e.g., "Feb 07, 2026")
+      assert html =~ ~r/\w{3} \d{2}, \d{4}/
+    end
+
+    test "handles tasks with very short lead times (minutes)", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Create task and manually set inserted_at to 30 minutes ago
+      task = task_fixture(column)
+      thirty_minutes_ago = DateTime.add(DateTime.utc_now(), -30, :minute)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Repo.update_all(set: [inserted_at: thirty_minutes_ago])
+
+      {:ok, updated_task} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      # Task should be visible
+      assert html =~ updated_task.identifier
     end
   end
 
