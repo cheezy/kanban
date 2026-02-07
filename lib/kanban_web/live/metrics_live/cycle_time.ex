@@ -238,6 +238,33 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
 
   defp format_cycle_time_hours(_), do: "N/A"
 
+  defp calculate_trend_line([]), do: nil
+  defp calculate_trend_line([_single]), do: nil
+
+  defp calculate_trend_line(daily_cycle_times) do
+    n = length(daily_cycle_times)
+
+    {sum_x, sum_y, sum_xy, sum_x_squared} =
+      daily_cycle_times
+      |> Enum.with_index()
+      |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, fn {day, index}, {sx, sy, sxy, sx2} ->
+        x = index * 1.0
+        y = day.average_hours
+
+        {
+          sx + x,
+          sy + y,
+          sxy + x * y,
+          sx2 + x * x
+        }
+      end)
+
+    slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x_squared - sum_x * sum_x)
+    intercept = (sum_y - slope * sum_x) / n
+
+    %{slope: slope, intercept: intercept}
+  end
+
   defp parse_time_range(nil), do: :last_30_days
   defp parse_time_range(""), do: :last_30_days
 

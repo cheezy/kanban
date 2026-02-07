@@ -500,6 +500,46 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       assert html =~ "Cycle Time Trend"
       assert html =~ "<svg"
     end
+
+    test "displays grey dashed trend line with multiple data points", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(today, -2, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.add(today, -1, :day)})
+      {:ok, _} = complete_task(task3, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "stroke=\"#9ca3af\""
+      assert html =~ "stroke-dasharray=\"5,5\""
+      assert html =~ "opacity=\"0.7\""
+    end
+
+    test "does not display trend line with single data point", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      refute html =~ "stroke-dasharray=\"5,5\""
+    end
+
+    test "does not display trend line with empty data", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      refute html =~ "stroke-dasharray=\"5,5\""
+    end
   end
 
   describe "Cycle Time - Task Grouping" do
