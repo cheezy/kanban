@@ -674,10 +674,20 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
         live(conn, ~p"/boards/#{board}/metrics/cycle-time")
       end
     end
+
+    test "redirects non-AI-optimized boards to board page", %{conn: conn, user: user} do
+      regular_board = board_fixture(user)
+
+      assert {:error, {:redirect, %{to: to, flash: flash}}} =
+               live(conn, ~p"/boards/#{regular_board}/metrics/cycle-time")
+
+      assert to == "/boards/#{regular_board.id}"
+      assert flash["error"] == "Metrics are only available for AI-optimized boards."
+    end
   end
 
   defp create_board_with_column(%{user: user}) do
-    board = board_fixture(user)
+    board = ai_optimized_board_fixture(user)
     column = column_fixture(board)
     %{board: board, column: column}
   end

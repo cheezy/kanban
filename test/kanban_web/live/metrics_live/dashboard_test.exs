@@ -954,7 +954,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
   end
 
   defp create_board_with_column(%{user: user}) do
-    board = board_fixture(user)
+    board = ai_optimized_board_fixture(user)
     column = column_fixture(board)
     %{board: board, column: column}
   end
