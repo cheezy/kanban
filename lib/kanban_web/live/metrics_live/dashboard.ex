@@ -106,6 +106,10 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
 
   defp format_hours(_), do: "N/A"
 
+  defp total_throughput(throughput) do
+    Enum.reduce(throughput, 0, fn %{count: count}, acc -> acc + count end)
+  end
+
   defp parse_time_range(nil), do: :last_30_days
   defp parse_time_range(""), do: :last_30_days
 

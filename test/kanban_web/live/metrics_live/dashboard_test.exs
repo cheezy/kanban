@@ -71,6 +71,57 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       assert html =~ "tasks completed"
     end
 
+    test "throughput sums tasks across multiple days, not count of days", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+      task4 = task_fixture(column)
+      task5 = task_fixture(column)
+
+      day1 = DateTime.utc_now()
+      day2 = DateTime.add(DateTime.utc_now(), -1, :day)
+
+      _task1 =
+        force_update_timestamps(task1, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task2 =
+        force_update_timestamps(task2, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task3 =
+        force_update_timestamps(task3, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task4 =
+        force_update_timestamps(task4, %{
+          claimed_at: DateTime.add(day2, -1, :hour),
+          completed_at: day2
+        })
+
+      _task5 =
+        force_update_timestamps(task5, %{
+          claimed_at: DateTime.add(day2, -1, :hour),
+          completed_at: day2
+        })
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "5"
+      assert html =~ "tasks completed"
+      refute html =~ ">2<"
+    end
+
     test "displays cycle time stats", %{conn: conn, board: board, column: column} do
       task = task_fixture(column)
 
@@ -710,6 +761,88 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
         live(conn, ~p"/boards/#{board}/metrics?time_range=nonexistent_range_xyz")
 
       assert html =~ "Last 30 Days"
+    end
+  end
+
+  describe "Dashboard - Throughput Helper" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "total_throughput sums up counts from multiple days", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+      task4 = task_fixture(column)
+      task5 = task_fixture(column)
+      task6 = task_fixture(column)
+      task7 = task_fixture(column)
+      task8 = task_fixture(column)
+
+      day1 = DateTime.utc_now()
+      day2 = DateTime.add(DateTime.utc_now(), -1, :day)
+      day3 = DateTime.add(DateTime.utc_now(), -2, :day)
+
+      _task1 =
+        force_update_timestamps(task1, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task2 =
+        force_update_timestamps(task2, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task3 =
+        force_update_timestamps(task3, %{
+          claimed_at: DateTime.add(day1, -1, :hour),
+          completed_at: day1
+        })
+
+      _task4 =
+        force_update_timestamps(task4, %{
+          claimed_at: DateTime.add(day2, -1, :hour),
+          completed_at: day2
+        })
+
+      _task5 =
+        force_update_timestamps(task5, %{
+          claimed_at: DateTime.add(day2, -1, :hour),
+          completed_at: day2
+        })
+
+      _task6 =
+        force_update_timestamps(task6, %{
+          claimed_at: DateTime.add(day3, -1, :hour),
+          completed_at: day3
+        })
+
+      _task7 =
+        force_update_timestamps(task7, %{
+          claimed_at: DateTime.add(day3, -1, :hour),
+          completed_at: day3
+        })
+
+      _task8 =
+        force_update_timestamps(task8, %{
+          claimed_at: DateTime.add(day3, -1, :hour),
+          completed_at: day3
+        })
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      # Extract the throughput number from the HTML (handles line breaks and whitespace)
+      throughput_match = Regex.run(~r/Throughput.*?text-4xl[^>]*>\s*(\d+)\s*</s, html)
+      throughput_value = if throughput_match, do: Enum.at(throughput_match, 1), else: nil
+
+      assert throughput_value == "8",
+             "Expected throughput to be 8 (total tasks), but got #{inspect(throughput_value)}"
+
+      assert html =~ "tasks completed"
     end
   end
 
