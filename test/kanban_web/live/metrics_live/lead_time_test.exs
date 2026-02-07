@@ -86,7 +86,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       assert html =~ task.title
     end
 
-    test "uses reviewed_at for tasks that went through review", %{
+    test "displays tasks that went through review", %{
       conn: conn,
       board: board,
       column: column
@@ -105,7 +105,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       assert html =~ task.identifier
     end
 
-    test "uses completed_at for tasks without review", %{
+    test "displays tasks without review", %{
       conn: conn,
       board: board,
       column: column
@@ -470,6 +470,272 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       assert html =~ "Last 30 Days"
       refute html =~ "checked"
+    end
+  end
+
+  describe "Lead Time - Trend Chart" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays trend chart section when tasks exist", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "Average lead time per day"
+      assert html =~ "<svg"
+    end
+
+    test "displays empty state for chart when no lead time data", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "No lead time data available"
+    end
+
+    test "chart renders with multiple data points across different days", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+      two_days_ago = DateTime.add(today, -2, :day)
+
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: two_days_ago})
+      {:ok, _} = complete_task(task2, %{completed_at: yesterday})
+      {:ok, _} = complete_task(task3, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "<polyline"
+      assert html =~ "fill=\"none\""
+      assert html =~ "stroke=\"url(#lineGradient)\""
+    end
+
+    test "chart includes data point circles for each day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.utc_now()})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "<circle"
+      assert html =~ "fill=\"rgb(59, 130, 246)\""
+    end
+
+    test "chart displays date labels on x-axis", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "text-anchor=\"middle\""
+      assert html =~ ~r/\d{2}\/\d{2}/
+    end
+
+    test "chart calculates daily averages for multiple tasks on same day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task1, %{
+          completed_at: today
+        })
+
+      {:ok, _} =
+        complete_task(task2, %{
+          completed_at: today
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "<svg"
+    end
+
+    test "displays grey dashed trend line with multiple data points", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(today, -2, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.add(today, -1, :day)})
+      {:ok, _} = complete_task(task3, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "stroke=\"#9ca3af\""
+      assert html =~ "stroke-dasharray=\"5,5\""
+      assert html =~ "opacity=\"0.7\""
+    end
+
+    test "does not display trend line with single data point", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      refute html =~ "stroke-dasharray=\"5,5\""
+    end
+
+    test "does not display trend line with empty data", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      refute html =~ "stroke-dasharray=\"5,5\""
+    end
+  end
+
+  describe "Lead Time - Task Grouping" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "groups tasks by completion date", %{conn: conn, board: board, column: column} do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+
+      task1 = task_fixture(column, %{title: "Today Task"})
+      task2 = task_fixture(column, %{title: "Yesterday Task"})
+
+      {:ok, _} = complete_task(task1, %{completed_at: today})
+      {:ok, _} = complete_task(task2, %{completed_at: yesterday})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Today Task"
+      assert html =~ "Yesterday Task"
+    end
+
+    test "sorts tasks within a date by completion time descending", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column, %{identifier: "W1"})
+      task2 = task_fixture(column, %{identifier: "W2"})
+      task3 = task_fixture(column, %{identifier: "W3"})
+
+      {:ok, _} =
+        complete_task(task1, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[10:00:00])})
+
+      {:ok, _} =
+        complete_task(task2, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[14:00:00])})
+
+      {:ok, _} =
+        complete_task(task3, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[18:00:00])})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      [_before, tasks_section] = String.split(html, "Completed Tasks", parts: 2)
+
+      w3_index = :binary.match(tasks_section, "W3") |> elem(0)
+      w2_index = :binary.match(tasks_section, "W2") |> elem(0)
+      w1_index = :binary.match(tasks_section, "W1") |> elem(0)
+
+      assert w3_index < w2_index
+      assert w2_index < w1_index
+    end
+
+    test "does not display task count in date headers", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: today})
+      {:ok, _} = complete_task(task2, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      refute html =~ "2 tasks"
+      refute html =~ "tasks completed"
+    end
+  end
+
+  describe "Lead Time - Task Display Format" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays Created timestamp before Completed timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+
+      {:ok, _} =
+        complete_task(task, %{
+          completed_at: completed_at
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      [_before_task, task_section] = String.split(html, task.identifier, parts: 2)
+
+      created_index = :binary.match(task_section, "Created:") |> elem(0)
+      completed_index = :binary.match(task_section, "Completed:") |> elem(0)
+
+      assert created_index < completed_index, "Created should appear before Completed"
+    end
+
+    test "displays full datetime for created timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Created:"
+      assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+    end
+
+    test "displays only time for completed timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Completed:"
+      assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
     end
   end
 

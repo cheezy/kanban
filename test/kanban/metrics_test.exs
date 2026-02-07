@@ -318,7 +318,7 @@ defmodule Kanban.MetricsTest do
       assert stats.average_hours >= 47 and stats.average_hours <= 49
     end
 
-    test "uses reviewed_at if available instead of completed_at" do
+    test "always uses completed_at regardless of reviewed_at" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -347,8 +347,8 @@ defmodule Kanban.MetricsTest do
       {:ok, stats} = Metrics.get_lead_time_stats(board.id)
 
       assert stats.count == 1
-      # Should be ~48 hours (to reviewed_at), not ~46 hours (to completed_at)
-      assert stats.average_hours >= 47 and stats.average_hours <= 49
+      # Should be ~46 hours (to completed_at), not ~48 hours (to reviewed_at)
+      assert stats.average_hours >= 45 and stats.average_hours <= 47
     end
 
     test "returns zero stats for empty board" do

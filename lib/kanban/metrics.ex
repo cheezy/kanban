@@ -198,8 +198,7 @@ defmodule Kanban.Metrics do
   @doc """
   Returns lead time statistics for a board.
 
-  Lead time is measured from task creation (`inserted_at`) to completion.
-  If `reviewed_at` exists, it's used as the end time; otherwise `completed_at` is used.
+  Lead time is measured from task creation (`inserted_at`) to completion (`completed_at`).
 
   ## Options
 
@@ -231,13 +230,12 @@ defmodule Kanban.Metrics do
       |> select([t], %{
         lead_time_seconds:
           fragment(
-            "EXTRACT(EPOCH FROM (COALESCE(?, ?) - ?))",
-            t.reviewed_at,
+            "EXTRACT(EPOCH FROM (? - ?))",
             t.completed_at,
             t.inserted_at
           ),
         inserted_at: t.inserted_at,
-        end_time: fragment("COALESCE(?, ?)", t.reviewed_at, t.completed_at)
+        end_time: t.completed_at
       })
 
     results = Repo.all(query)
