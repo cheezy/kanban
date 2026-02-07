@@ -24,24 +24,33 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    {:ok, agents} = Metrics.get_agents(board.id)
+    if board.ai_optimized_board do
+      {:ok, agents} = Metrics.get_agents(board.id)
 
-    time_range = parse_time_range(params["time_range"])
-    agent_name = parse_agent_name(params["agent_name"])
-    exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
+      time_range = parse_time_range(params["time_range"])
+      agent_name = parse_agent_name(params["agent_name"])
+      exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
 
-    socket =
-      socket
-      |> assign(:page_title, "Wait Time Metrics")
-      |> assign(:board, board)
-      |> assign(:user_access, user_access)
-      |> assign(:agents, agents)
-      |> assign(:time_range, time_range)
-      |> assign(:agent_name, agent_name)
-      |> assign(:exclude_weekends, exclude_weekends)
-      |> load_wait_time_data()
+      socket =
+        socket
+        |> assign(:page_title, "Wait Time Metrics")
+        |> assign(:board, board)
+        |> assign(:user_access, user_access)
+        |> assign(:agents, agents)
+        |> assign(:time_range, time_range)
+        |> assign(:agent_name, agent_name)
+        |> assign(:exclude_weekends, exclude_weekends)
+        |> load_wait_time_data()
 
-    {:noreply, socket}
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
+        |> redirect(to: ~p"/boards/#{board}")
+
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -81,12 +90,16 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     {:ok, stats} = Metrics.get_wait_time_stats(socket.assigns.board.id, opts)
     review_tasks = get_review_wait_tasks(socket.assigns.board.id, opts)
     backlog_tasks = get_backlog_wait_tasks(socket.assigns.board.id, opts)
+    grouped_review_tasks = group_review_tasks_by_date(review_tasks)
+    grouped_backlog_tasks = group_backlog_tasks_by_date(backlog_tasks)
 
     socket
     |> assign(:review_wait_stats, stats.review_wait)
     |> assign(:backlog_wait_stats, stats.backlog_wait)
     |> assign(:review_tasks, review_tasks)
     |> assign(:backlog_tasks, backlog_tasks)
+    |> assign(:grouped_review_tasks, grouped_review_tasks)
+    |> assign(:grouped_backlog_tasks, grouped_backlog_tasks)
   end
 
   defp get_review_wait_tasks(board_id, opts) do
@@ -100,7 +113,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.reviewed_at))
-      |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.reviewed_at >= ^start_date)
       |> order_by([t], desc: t.reviewed_at)
       |> select([t], %{
         id: t.id,
@@ -137,7 +150,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
       |> join(:inner, [t], c in assoc(t, :column))
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.claimed_at))
-      |> where([t], t.inserted_at >= ^start_date)
+      |> where([t], t.claimed_at >= ^start_date)
       |> order_by([t], desc: t.claimed_at)
       |> select([t], %{
         id: t.id,
@@ -176,6 +189,12 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
   defp get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
 
+  defp format_wait_time(%Decimal{} = seconds) do
+    seconds
+    |> Decimal.to_float()
+    |> format_wait_time()
+  end
+
   defp format_wait_time(seconds) when is_number(seconds) do
     hours = seconds / 3600
 
@@ -192,6 +211,42 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
 
   defp format_datetime(datetime) do
     Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
+  end
+
+  defp format_date(nil), do: "N/A"
+
+  defp format_date(date) do
+    Calendar.strftime(date, "%b %d, %Y")
+  end
+
+  defp format_time(nil), do: "N/A"
+
+  defp format_time(datetime) do
+    Calendar.strftime(datetime, "%I:%M %p")
+  end
+
+  defp group_review_tasks_by_date(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.reviewed_at
+      |> DateTime.to_date()
+    end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, & &1.reviewed_at, {:desc, DateTime})}
+    end)
+  end
+
+  defp group_backlog_tasks_by_date(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.claimed_at
+      |> DateTime.to_date()
+    end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, & &1.claimed_at, {:desc, DateTime})}
+    end)
   end
 
   defp parse_time_range(nil), do: :last_30_days

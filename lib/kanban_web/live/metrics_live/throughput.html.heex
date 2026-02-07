@@ -301,16 +301,16 @@
                   </div>
                   <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
                     <div class="flex items-center gap-1">
-                      <.icon name="hero-clock" class="h-3.5 w-3.5" />
-                      <span>Completed: {format_time(task.completed_at)}</span>
+                      <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
+                      <span>Created: {format_datetime(task.inserted_at)}</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <.icon name="hero-play" class="h-3.5 w-3.5" />
                       <span>Claimed: {format_datetime(task.claimed_at)}</span>
                     </div>
                     <div class="flex items-center gap-1">
-                      <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
-                      <span>Created: {format_datetime(task.inserted_at)}</span>
+                      <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                      <span>Completed: {format_datetime(task.completed_at)}</span>
                     </div>
                   </div>
                 </div>

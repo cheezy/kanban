@@ -645,13 +645,13 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       task3 = task_fixture(column, %{identifier: "W3"})
 
       {:ok, _} =
-        complete_task(task1, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[10:00:00])})
+        complete_task(task1, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[10:00:00])})
 
       {:ok, _} =
-        complete_task(task2, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[14:00:00])})
+        complete_task(task2, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[14:00:00])})
 
       {:ok, _} =
-        complete_task(task3, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[18:00:00])})
+        complete_task(task3, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[18:00:00])})
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
 

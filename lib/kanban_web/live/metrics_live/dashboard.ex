@@ -20,14 +20,7 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    unless board.ai_optimized_board do
-      socket =
-        socket
-        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
-        |> redirect(to: ~p"/boards/#{board}")
-
-      {:noreply, socket}
-    else
+    if board.ai_optimized_board do
       {:ok, agents} = Metrics.get_agents(board.id)
 
       time_range = parse_time_range(params["time_range"])
@@ -44,6 +37,13 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
         |> assign(:agent_name, agent_name)
         |> assign(:exclude_weekends, exclude_weekends)
         |> load_dashboard_data()
+
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
+        |> redirect(to: ~p"/boards/#{board}")
 
       {:noreply, socket}
     end

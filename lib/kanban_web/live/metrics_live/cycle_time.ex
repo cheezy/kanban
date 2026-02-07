@@ -24,14 +24,7 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    unless board.ai_optimized_board do
-      socket =
-        socket
-        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
-        |> redirect(to: ~p"/boards/#{board}")
-
-      {:noreply, socket}
-    else
+    if board.ai_optimized_board do
       {:ok, agents} = Metrics.get_agents(board.id)
 
       time_range = parse_time_range(params["time_range"])
@@ -48,6 +41,13 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
         |> assign(:agent_name, agent_name)
         |> assign(:exclude_weekends, exclude_weekends)
         |> load_cycle_time_data()
+
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
+        |> redirect(to: ~p"/boards/#{board}")
 
       {:noreply, socket}
     end
@@ -180,12 +180,6 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
     Calendar.strftime(date, "%b %d, %Y")
   end
 
-  defp format_time(nil), do: "N/A"
-
-  defp format_time(datetime) do
-    Calendar.strftime(datetime, "%I:%M %p")
-  end
-
   defp group_tasks_by_date(tasks) do
     tasks
     |> Enum.group_by(fn task ->
@@ -204,22 +198,8 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
       task.completed_at |> DateTime.to_date()
     end)
     |> Enum.map(fn {date, day_tasks} ->
-      cycle_times =
-        day_tasks
-        |> Enum.map(fn task ->
-          case task.cycle_time_seconds do
-            %Decimal{} = seconds -> Decimal.to_float(seconds)
-            seconds when is_number(seconds) -> seconds
-            _ -> 0.0
-          end
-        end)
-
-      average_seconds =
-        if length(cycle_times) > 0 do
-          Enum.sum(cycle_times) / length(cycle_times)
-        else
-          0.0
-        end
+      cycle_times = Enum.map(day_tasks, &extract_time_seconds(&1.cycle_time_seconds))
+      average_seconds = calculate_average(cycle_times)
 
       %{
         date: date,
@@ -228,6 +208,13 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
     end)
     |> Enum.sort_by(& &1.date, Date)
   end
+
+  defp extract_time_seconds(%Decimal{} = seconds), do: Decimal.to_float(seconds)
+  defp extract_time_seconds(seconds) when is_number(seconds), do: seconds
+  defp extract_time_seconds(_), do: 0.0
+
+  defp calculate_average([]), do: 0.0
+  defp calculate_average(values), do: Enum.sum(values) / length(values)
 
   defp get_max_cycle_time([]), do: 0
 
@@ -250,6 +237,7 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   defp calculate_trend_line([]), do: nil
   defp calculate_trend_line([_single]), do: nil
 
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp calculate_trend_line(daily_cycle_times) do
     n = length(daily_cycle_times)
 

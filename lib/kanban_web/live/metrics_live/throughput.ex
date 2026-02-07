@@ -222,12 +222,6 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
   end
 
-  defp format_time(nil), do: "N/A"
-
-  defp format_time(datetime) do
-    Calendar.strftime(datetime, "%I:%M %p")
-  end
-
   defp calculate_bar_width(_count, 0), do: 0
   defp calculate_bar_width(0, _peak), do: 0
 

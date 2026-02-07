@@ -1,95 +1,111 @@
-<.header>
-  Wait Time Metrics
-  <:subtitle>Human bottleneck analysis for {@board.name}</:subtitle>
-  <:actions>
-    <.link
-      navigate={
-        ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
-      }
-    >
-      <.button>← Back to Dashboard</.button>
-    </.link>
-    <.button phx-click="export_pdf" class="ml-2">
-      <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
-    </.button>
-  </:actions>
-</.header>
-
-<div class="space-y-8">
-  <div class="bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3>
-
-    <form phx-change="filter_change" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <label
-          for="time_range"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+    <.header>
+      {@board.name} - Wait Time Metrics
+      <:subtitle>Human bottleneck analysis</:subtitle>
+      <:actions>
+        <.link
+          navigate={
+            ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
+          }
         >
-          Time Range
-        </label>
-        <select
-          id="time_range"
-          name="time_range"
-          class="w-full rounded-md border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        >
-          <option value="today" selected={@time_range == :today}>Today</option>
-          <option value="last_7_days" selected={@time_range == :last_7_days}>Last 7 Days</option>
-          <option value="last_30_days" selected={@time_range == :last_30_days}>
-            Last 30 Days
-          </option>
-          <option value="last_90_days" selected={@time_range == :last_90_days}>
-            Last 90 Days
-          </option>
-          <option value="all_time" selected={@time_range == :all_time}>All Time</option>
-        </select>
-      </div>
+          <.button>Back to Dashboard</.button>
+        </.link>
+        <.button phx-click="export_pdf" class="ml-2">
+          <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
+        </.button>
+      </:actions>
+    </.header>
 
-      <div>
-        <label
-          for="agent_name"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Agent Filter
-        </label>
-        <select
-          id="agent_name"
-          name="agent_name"
-          class="w-full rounded-md border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        >
-          <option value="" selected={is_nil(@agent_name)}>All Agents</option>
-          <option
-            :for={agent <- @agents}
-            value={agent}
-            selected={@agent_name == agent}
-          >
-            {agent}
-          </option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Options
-        </label>
-        <div class="flex items-center h-10">
-          <input
-            type="checkbox"
-            id="exclude_weekends"
-            name="exclude_weekends"
-            value="true"
-            checked={@exclude_weekends}
-            class="rounded border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-          <label for="exclude_weekends" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            Exclude Weekends
-          </label>
+    <div class="mt-8 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 shadow-xl rounded-2xl p-6 border-2 border-indigo-100 dark:border-zinc-700 backdrop-blur-sm">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+          <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Customize your wait time view
+          </p>
         </div>
       </div>
-    </form>
-  </div>
-  
-<!-- Review Wait Time Section -->
-  <div class="bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6 border-l-4 border-amber-500">
+      <form phx-change="filter_change">
+        <div class="flex flex-wrap gap-4 items-center">
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
+                <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Time Range</span>
+            </label>
+            <select
+              name="time_range"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="today" selected={@time_range == :today}>
+                🌅 Today
+              </option>
+              <option value="last_7_days" selected={@time_range == :last_7_days}>
+                📅 Last 7 Days
+              </option>
+              <option value="last_30_days" selected={@time_range == :last_30_days}>
+                📅 Last 30 Days
+              </option>
+              <option value="last_90_days" selected={@time_range == :last_90_days}>
+                📅 Last 90 Days
+              </option>
+              <option value="all_time" selected={@time_range == :all_time}>
+                ♾️ All Time
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
+                <.icon
+                  name="hero-user-circle"
+                  class="h-4 w-4 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+            </label>
+            <select
+              name="agent_name"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
+                {agent}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 cursor-pointer group">
+            <input
+              type="checkbox"
+              id="exclude_weekends"
+              name="exclude_weekends"
+              value="true"
+              checked={@exclude_weekends}
+              class="h-5 w-5 rounded-md border-2 border-gray-300 dark:border-zinc-500 text-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            />
+            <label
+              for="exclude_weekends"
+              class="text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2"
+            >
+              <.icon
+                name="hero-calendar-days"
+                class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+              />
+              <span>Exclude Weekends</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6 border-l-4 border-amber-500">
     <div class="flex items-center mb-6">
       <.icon name="hero-clock" class="h-6 w-6 text-amber-600 dark:text-amber-400 mr-2" />
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -171,79 +187,62 @@
       </div>
     </div>
 
-    <div :if={length(@review_tasks) > 0} class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-        <thead class="bg-gray-50 dark:bg-zinc-700/50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Task
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Review Wait
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Completed At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Reviewed At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Agent
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-          <tr
-            :for={task <- @review_tasks}
-            class="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors"
+    <div :if={length(@grouped_review_tasks) > 0} class="space-y-6">
+      <div :for={{date, day_tasks} <- @grouped_review_tasks} class="space-y-2">
+        <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-amber-500 dark:border-amber-400">
+          <.icon
+            name="hero-calendar"
+            class="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
+          />
+          <div class="flex-1">
+            <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+              {format_date(date)}
+            </h4>
+          </div>
+        </div>
+
+        <div class="ml-4 space-y-2">
+          <div
+            :for={task <- day_tasks}
+            class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
           >
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div>
-                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                     {task.identifier}
-                  </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                  </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                     {task.title}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-check-circle" class="h-3.5 w-3.5" />
+                    <span>Completed: {format_datetime(task.completed_at)}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                    <span>Reviewed: {format_time(task.reviewed_at)}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
+                    <span>{task.completed_by_agent || "N/A"}</span>
                   </div>
                 </div>
               </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300">
-                {format_wait_time(task.review_wait_seconds)}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.completed_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.reviewed_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {task.completed_by_agent || "N/A"}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <div class="flex-shrink-0">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/50 dark:to-yellow-900/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                  {format_wait_time(task.review_wait_seconds)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div :if={length(@review_tasks) == 0} class="text-center py-12">
+    <div :if={length(@grouped_review_tasks) == 0} class="text-center py-12">
       <.icon
         name="hero-clock"
         class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
@@ -253,9 +252,8 @@
       </p>
     </div>
   </div>
-  
-<!-- Backlog Wait Time Section -->
-  <div class="bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6 border-l-4 border-indigo-500">
+
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6 border-l-4 border-indigo-500">
     <div class="flex items-center mb-6">
       <.icon name="hero-queue-list" class="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-2" />
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -337,79 +335,62 @@
       </div>
     </div>
 
-    <div :if={length(@backlog_tasks) > 0} class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-        <thead class="bg-gray-50 dark:bg-zinc-700/50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Task
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Backlog Wait
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Created At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Claimed At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Agent
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-          <tr
-            :for={task <- @backlog_tasks}
-            class="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors"
+    <div :if={length(@grouped_backlog_tasks) > 0} class="space-y-6">
+      <div :for={{date, day_tasks} <- @grouped_backlog_tasks} class="space-y-2">
+        <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-indigo-500 dark:border-indigo-400">
+          <.icon
+            name="hero-calendar"
+            class="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0"
+          />
+          <div class="flex-1">
+            <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+              {format_date(date)}
+            </h4>
+          </div>
+        </div>
+
+        <div class="ml-4 space-y-2">
+          <div
+            :for={task <- day_tasks}
+            class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
           >
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div>
-                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                     {task.identifier}
-                  </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                  </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                     {task.title}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
+                    <span>Created: {format_datetime(task.inserted_at)}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                    <span>Claimed: {format_datetime(task.claimed_at)}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
+                    <span>{task.completed_by_agent || "N/A"}</span>
                   </div>
                 </div>
               </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300">
-                {format_wait_time(task.backlog_wait_seconds)}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.inserted_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.claimed_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {task.completed_by_agent || "N/A"}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <div class="flex-shrink-0">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-indigo-100 to-violet-100 dark:from-indigo-900/50 dark:to-violet-900/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">
+                  {format_wait_time(task.backlog_wait_seconds)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div :if={length(@backlog_tasks) == 0} class="text-center py-12">
+    <div :if={length(@grouped_backlog_tasks) == 0} class="text-center py-12">
       <.icon
         name="hero-queue-list"
         class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
@@ -420,3 +401,4 @@
     </div>
   </div>
 </div>
+</Layouts.app>
