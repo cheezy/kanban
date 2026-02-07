@@ -215,6 +215,45 @@
       </div>
     </div>
 
+    <div
+      :if={length(@completed_goals) > 0}
+      class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700"
+    >
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg shadow-lg">
+          <.icon name="hero-flag-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Goals</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Goals completed in this time range
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div
+          :for={goal <- @completed_goals}
+          class="px-3 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-zinc-700/30 dark:to-zinc-700/20 rounded-lg border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-sm transition-shadow"
+        >
+          <div class="flex items-center gap-3 text-xs">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+              {goal.identifier}
+            </span>
+            <span class="font-semibold text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">
+              {goal.title}
+            </span>
+            <span class="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              Completed: {format_date(goal.completed_at)}
+            </span>
+            <span class="text-gray-500 dark:text-gray-500 whitespace-nowrap">
+              Created: {format_date(goal.inserted_at)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
       <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
         <div class="p-2 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg shadow-lg">
@@ -223,82 +262,71 @@
         <div>
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Detailed list of all completed tasks
+            Grouped by completion date
           </p>
         </div>
       </div>
 
-      <div :if={length(@tasks) > 0} class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-          <thead class="bg-gray-50 dark:bg-zinc-700/50">
-            <tr>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-              >
-                Task
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-              >
-                Created At
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-              >
-                Claimed At
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-              >
-                Completed At
-              </th>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-              >
-                Agent
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-            <tr
-              :for={task <- @tasks}
-              class="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors"
+      <div :if={length(@grouped_tasks) > 0} class="space-y-6">
+        <div :for={{date, day_tasks} <- @grouped_tasks} class="space-y-2">
+          <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-blue-500 dark:border-blue-400">
+            <.icon
+              name="hero-calendar"
+              class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
+            />
+            <div class="flex-1 flex items-center justify-between">
+              <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+                {format_date(date)}
+              </h4>
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {length(day_tasks)} {if length(day_tasks) == 1, do: "task", else: "tasks"}
+              </span>
+            </div>
+          </div>
+
+          <div class="ml-4 space-y-2">
+            <div
+              :for={task <- day_tasks}
+              class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
             >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                       {task.identifier}
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                    </span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {task.title}
+                    </span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                      <span>Completed: {format_time(task.completed_at)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-play" class="h-3.5 w-3.5" />
+                      <span>Claimed: {format_datetime(task.claimed_at)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
+                      <span>Created: {format_datetime(task.inserted_at)}</span>
                     </div>
                   </div>
                 </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format_datetime(task.inserted_at)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format_datetime(task.claimed_at)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format_datetime(task.completed_at)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {task.completed_by_agent || "N/A"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <div class="flex-shrink-0 flex items-center gap-2">
+                  <.icon name="hero-user-circle" class="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {task.completed_by_agent || "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div :if={length(@tasks) == 0} class="text-center py-12">
+      <div :if={length(@grouped_tasks) == 0} class="text-center py-12">
         <.icon
           name="hero-list-bullet"
           class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"

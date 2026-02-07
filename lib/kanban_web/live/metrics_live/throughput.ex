@@ -81,11 +81,15 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     {:ok, throughput} = Metrics.get_throughput(socket.assigns.board.id, opts)
     stats = calculate_summary_stats(throughput)
     tasks = get_throughput_tasks(socket.assigns.board.id, opts)
+    grouped_tasks = group_tasks_by_date(tasks)
+    goals = get_completed_goals(socket.assigns.board.id, opts)
 
     socket
     |> assign(:throughput, throughput)
     |> assign(:summary_stats, stats)
     |> assign(:tasks, tasks)
+    |> assign(:grouped_tasks, grouped_tasks)
+    |> assign(:completed_goals, goals)
   end
 
   defp get_throughput_tasks(board_id, opts) do
@@ -99,6 +103,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> order_by([t], desc: t.completed_at)
       |> select([t], %{
         id: t.id,
@@ -120,17 +125,73 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     Repo.all(query)
   end
 
+  defp get_completed_goals(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], t.type == ^:goal)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> order_by([t], desc: t.completed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        inserted_at: t.inserted_at,
+        completed_at: t.completed_at,
+        completed_by_agent: t.completed_by_agent
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
   defp get_start_date(:today) do
     DateTime.utc_now()
     |> DateTime.to_date()
     |> DateTime.new!(~T[00:00:00])
   end
 
-  defp get_start_date(:last_7_days), do: DateTime.add(DateTime.utc_now(), -7, :day)
-  defp get_start_date(:last_30_days), do: DateTime.add(DateTime.utc_now(), -30, :day)
-  defp get_start_date(:last_90_days), do: DateTime.add(DateTime.utc_now(), -90, :day)
+  defp get_start_date(:last_7_days) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> Date.add(-6)
+    |> DateTime.new!(~T[00:00:00])
+  end
+
+  defp get_start_date(:last_30_days) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> Date.add(-29)
+    |> DateTime.new!(~T[00:00:00])
+  end
+
+  defp get_start_date(:last_90_days) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> Date.add(-89)
+    |> DateTime.new!(~T[00:00:00])
+  end
+
   defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-  defp get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
+
+  defp get_start_date(_) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> Date.add(-29)
+    |> DateTime.new!(~T[00:00:00])
+  end
 
   defp calculate_summary_stats([_ | _] = throughput) do
     total = Enum.reduce(throughput, 0, fn day, acc -> acc + day.count end)
@@ -161,6 +222,12 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
   end
 
+  defp format_time(nil), do: "N/A"
+
+  defp format_time(datetime) do
+    Calendar.strftime(datetime, "%I:%M %p")
+  end
+
   defp calculate_bar_width(_count, 0), do: 0
   defp calculate_bar_width(0, _peak), do: 0
 
@@ -186,4 +253,16 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   defp parse_exclude_weekends("true"), do: true
   defp parse_exclude_weekends("false"), do: false
   defp parse_exclude_weekends(_), do: false
+
+  defp group_tasks_by_date(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.completed_at
+      |> DateTime.to_date()
+    end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
+    end)
+  end
 end

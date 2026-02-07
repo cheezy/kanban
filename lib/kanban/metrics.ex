@@ -113,6 +113,7 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
       |> group_by([t], fragment("DATE(?)", t.completed_at))
       |> select([t], %{
@@ -166,6 +167,7 @@ defmodule Kanban.Metrics do
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.claimed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
       |> select([t], %{
         cycle_time_seconds:
@@ -224,6 +226,7 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
       |> select([t], %{
         lead_time_seconds:
@@ -302,6 +305,7 @@ defmodule Kanban.Metrics do
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.reviewed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
       |> select([t], %{
         wait_time_seconds:
@@ -326,6 +330,7 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.claimed_at))
       |> where([t], t.inserted_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
       |> select([t], %{
         wait_time_seconds:
@@ -362,24 +367,26 @@ defmodule Kanban.Metrics do
 
   defp get_start_date(:last_7_days) do
     DateTime.utc_now()
-    |> DateTime.add(-7, :day)
-    |> DateTime.truncate(:second)
+    |> DateTime.to_date()
+    |> Date.add(-6)
+    |> DateTime.new!(~T[00:00:00])
   end
 
   defp get_start_date(:last_30_days) do
     DateTime.utc_now()
-    |> DateTime.add(-30, :day)
-    |> DateTime.truncate(:second)
+    |> DateTime.to_date()
+    |> Date.add(-29)
+    |> DateTime.new!(~T[00:00:00])
   end
 
   defp get_start_date(:last_90_days) do
     DateTime.utc_now()
-    |> DateTime.add(-90, :day)
-    |> DateTime.truncate(:second)
+    |> DateTime.to_date()
+    |> Date.add(-89)
+    |> DateTime.new!(~T[00:00:00])
   end
 
   defp get_start_date(:all_time) do
-    # Return a date far in the past to include all records
     DateTime.new!(~D[2000-01-01], ~T[00:00:00])
   end
 
