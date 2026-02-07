@@ -80,10 +80,14 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
 
     {:ok, stats} = Metrics.get_cycle_time_stats(socket.assigns.board.id, opts)
     tasks = get_cycle_time_tasks(socket.assigns.board.id, opts)
+    grouped_tasks = group_tasks_by_date(tasks)
+    daily_cycle_times = calculate_daily_cycle_times(tasks)
 
     socket
     |> assign(:summary_stats, stats)
     |> assign(:tasks, tasks)
+    |> assign(:grouped_tasks, grouped_tasks)
+    |> assign(:daily_cycle_times, daily_cycle_times)
   end
 
   defp get_cycle_time_tasks(board_id, opts) do
@@ -98,6 +102,7 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.claimed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
       |> order_by([t], desc: t.completed_at)
       |> select([t], %{
         id: t.id,
@@ -136,6 +141,12 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
   defp get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
 
+  defp format_cycle_time(%Decimal{} = seconds) do
+    seconds
+    |> Decimal.to_float()
+    |> format_cycle_time()
+  end
+
   defp format_cycle_time(seconds) when is_number(seconds) do
     hours = seconds / 3600
 
@@ -153,6 +164,79 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   defp format_datetime(datetime) do
     Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
   end
+
+  defp format_date(nil), do: "N/A"
+
+  defp format_date(date) do
+    Calendar.strftime(date, "%b %d, %Y")
+  end
+
+  defp format_time(nil), do: "N/A"
+
+  defp format_time(datetime) do
+    Calendar.strftime(datetime, "%I:%M %p")
+  end
+
+  defp group_tasks_by_date(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.completed_at
+      |> DateTime.to_date()
+    end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
+    end)
+  end
+
+  defp calculate_daily_cycle_times(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.completed_at |> DateTime.to_date()
+    end)
+    |> Enum.map(fn {date, day_tasks} ->
+      cycle_times =
+        day_tasks
+        |> Enum.map(fn task ->
+          case task.cycle_time_seconds do
+            %Decimal{} = seconds -> Decimal.to_float(seconds)
+            seconds when is_number(seconds) -> seconds
+            _ -> 0.0
+          end
+        end)
+
+      average_seconds =
+        if length(cycle_times) > 0 do
+          Enum.sum(cycle_times) / length(cycle_times)
+        else
+          0.0
+        end
+
+      %{
+        date: date,
+        average_hours: average_seconds / 3600
+      }
+    end)
+    |> Enum.sort_by(& &1.date, Date)
+  end
+
+  defp get_max_cycle_time([]), do: 0
+
+  defp get_max_cycle_time(daily_cycle_times) do
+    daily_cycle_times
+    |> Enum.map(& &1.average_hours)
+    |> Enum.max(fn -> 0 end)
+  end
+
+  defp format_cycle_time_hours(hours) when is_number(hours) do
+    cond do
+      hours < 1 -> "#{Float.round(hours * 60, 1)}m"
+      hours < 24 -> "#{Float.round(hours, 1)}h"
+      true -> "#{Float.round(hours / 24, 1)}d"
+    end
+  end
+
+  defp format_cycle_time_hours(_), do: "N/A"
 
   defp parse_time_range(nil), do: :last_30_days
   defp parse_time_range(""), do: :last_30_days

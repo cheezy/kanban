@@ -1,248 +1,344 @@
-<.header>
-  Cycle Time Metrics
-  <:subtitle>Time from claim to completion for {@board.name}</:subtitle>
-  <:actions>
-    <.link
-      navigate={
-        ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
-      }
-    >
-      <.button>← Back to Dashboard</.button>
-    </.link>
-    <.button phx-click="export_pdf" class="ml-2">
-      <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
-    </.button>
-  </:actions>
-</.header>
-
-<div class="space-y-6">
-  <div class="bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3>
-
-    <form phx-change="filter_change" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <label
-          for="time_range"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+    <.header>
+      {@board.name} - Cycle Time Metrics
+      <:subtitle>Time from claim to completion</:subtitle>
+      <:actions>
+        <.link
+          navigate={
+            ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
+          }
         >
-          Time Range
-        </label>
-        <select
-          id="time_range"
-          name="time_range"
-          class="w-full rounded-md border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        >
-          <option value="today" selected={@time_range == :today}>Today</option>
-          <option value="last_7_days" selected={@time_range == :last_7_days}>Last 7 Days</option>
-          <option value="last_30_days" selected={@time_range == :last_30_days}>
-            Last 30 Days
-          </option>
-          <option value="last_90_days" selected={@time_range == :last_90_days}>
-            Last 90 Days
-          </option>
-          <option value="all_time" selected={@time_range == :all_time}>All Time</option>
-        </select>
-      </div>
+          <.button>Back to Dashboard</.button>
+        </.link>
+        <.button phx-click="export_pdf" class="ml-2">
+          <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
+        </.button>
+      </:actions>
+    </.header>
 
-      <div>
-        <label
-          for="agent_name"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Agent Filter
-        </label>
-        <select
-          id="agent_name"
-          name="agent_name"
-          class="w-full rounded-md border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        >
-          <option value="" selected={is_nil(@agent_name)}>All Agents</option>
-          <option
-            :for={agent <- @agents}
-            value={agent}
-            selected={@agent_name == agent}
-          >
-            {agent}
-          </option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Options
-        </label>
-        <div class="flex items-center h-10">
-          <input
-            type="checkbox"
-            id="exclude_weekends"
-            name="exclude_weekends"
-            value="true"
-            checked={@exclude_weekends}
-            class="rounded border-gray-300 dark:border-zinc-600 dark:bg-zinc-700 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-          <label for="exclude_weekends" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-            Exclude Weekends
-          </label>
+    <div class="mt-8 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 shadow-xl rounded-2xl p-6 border-2 border-indigo-100 dark:border-zinc-700 backdrop-blur-sm">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
+          <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Customize your cycle time view
+          </p>
         </div>
       </div>
-    </form>
-  </div>
+      <form phx-change="filter_change">
+        <div class="flex flex-wrap gap-4 items-center">
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
+                <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Time Range</span>
+            </label>
+            <select
+              name="time_range"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="today" selected={@time_range == :today}>
+                🌅 Today
+              </option>
+              <option value="last_7_days" selected={@time_range == :last_7_days}>
+                📅 Last 7 Days
+              </option>
+              <option value="last_30_days" selected={@time_range == :last_30_days}>
+                📅 Last 30 Days
+              </option>
+              <option value="last_90_days" selected={@time_range == :last_90_days}>
+                📅 Last 90 Days
+              </option>
+              <option value="all_time" selected={@time_range == :all_time}>
+                ♾️ All Time
+              </option>
+            </select>
+          </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg shadow-sm p-6 border border-blue-200 dark:border-blue-700">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
+                <.icon
+                  name="hero-user-circle"
+                  class="h-4 w-4 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+            </label>
+            <select
+              name="agent_name"
+              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
+            >
+              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
+                {agent}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 cursor-pointer group">
+            <input
+              type="checkbox"
+              id="exclude_weekends"
+              name="exclude_weekends"
+              value="true"
+              checked={@exclude_weekends}
+              class="h-5 w-5 rounded-md border-2 border-gray-300 dark:border-zinc-500 text-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            />
+            <label
+              for="exclude_weekends"
+              class="text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2"
+            >
+              <.icon
+                name="hero-calendar-days"
+                class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+              />
+              <span>Exclude Weekends</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <.icon name="hero-clock-solid" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
             Average
-          </p>
-          <p class="mt-2 text-3xl font-bold text-blue-900 dark:text-blue-100">
-            {format_cycle_time(@summary_stats.average_hours * 3600)}
-          </p>
+          </h3>
         </div>
-        <.icon
-          name="hero-clock-solid"
-          class="h-12 w-12 text-blue-500 dark:text-blue-400 opacity-75"
-        />
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {format_cycle_time(@summary_stats.average_hours * 3600)}
+        </div>
       </div>
-    </div>
 
-    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg shadow-sm p-6 border border-purple-200 dark:border-purple-700">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <.icon name="hero-chart-bar-solid" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
             Median
-          </p>
-          <p class="mt-2 text-3xl font-bold text-purple-900 dark:text-purple-100">
-            {format_cycle_time(@summary_stats.median_hours * 3600)}
-          </p>
+          </h3>
         </div>
-        <.icon
-          name="hero-chart-bar-solid"
-          class="h-12 w-12 text-purple-500 dark:text-purple-400 opacity-75"
-        />
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {format_cycle_time(@summary_stats.median_hours * 3600)}
+        </div>
       </div>
-    </div>
 
-    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg shadow-sm p-6 border border-green-200 dark:border-green-700">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
+      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <.icon name="hero-arrow-down-solid" class="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
             Min
-          </p>
-          <p class="mt-2 text-3xl font-bold text-green-900 dark:text-green-100">
-            {format_cycle_time(@summary_stats.min_hours * 3600)}
-          </p>
+          </h3>
         </div>
-        <.icon
-          name="hero-arrow-down-solid"
-          class="h-12 w-12 text-green-500 dark:text-green-400 opacity-75"
-        />
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {format_cycle_time(@summary_stats.min_hours * 3600)}
+        </div>
       </div>
-    </div>
 
-    <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-lg shadow-sm p-6 border border-red-200 dark:border-red-700">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">
+      <div class="group bg-gradient-to-br from-white to-red-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-red-500 hover:shadow-2xl transition-all duration-300 p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+            <.icon name="hero-arrow-up-solid" class="h-6 w-6 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
             Max
-          </p>
-          <p class="mt-2 text-3xl font-bold text-red-900 dark:text-red-100">
-            {format_cycle_time(@summary_stats.max_hours * 3600)}
-          </p>
+          </h3>
         </div>
-        <.icon
-          name="hero-arrow-up-solid"
-          class="h-12 w-12 text-red-500 dark:text-red-400 opacity-75"
-        />
+        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          {format_cycle_time(@summary_stats.max_hours * 3600)}
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="bg-white dark:bg-zinc-800 shadow-sm rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
-      Completed Tasks
-    </h3>
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg shadow-lg">
+          <.icon name="hero-chart-bar-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Cycle Time Trend</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Average cycle time per day
+          </p>
+        </div>
+      </div>
 
-    <div :if={length(@tasks) > 0} class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-        <thead class="bg-gray-50 dark:bg-zinc-700/50">
-          <tr>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+      <div :if={length(@daily_cycle_times) > 0} class="relative">
+        <svg viewBox="0 0 800 400" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:rgb(99, 102, 241);stop-opacity:1" />
+              <stop offset="100%" style="stop-color:rgb(59, 130, 246);stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <%= for i <- 0..4 do %>
+            <line
+              x1="60"
+              y1={50 + i * 75}
+              x2="780"
+              y2={50 + i * 75}
+              stroke="currentColor"
+              class="stroke-gray-200 dark:stroke-zinc-700"
+              stroke-width="1"
+            />
+          <% end %>
+          <%= if length(@daily_cycle_times) > 0 do %>
+            <% max_hours = get_max_cycle_time(@daily_cycle_times) %>
+            <% label_interval = max(1, div(length(@daily_cycle_times), 10)) %>
+            <% points =
+              @daily_cycle_times
+              |> Enum.with_index()
+              |> Enum.map(fn {day, index} ->
+                x = 60 + index * (720 / max(length(@daily_cycle_times) - 1, 1))
+                y = 350 - (day.average_hours / max(max_hours, 1) * 300)
+                "#{x},#{y}"
+              end)
+              |> Enum.join(" ") %>
+            <polyline
+              points={points}
+              fill="none"
+              stroke="url(#lineGradient)"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <%= for {day, index} <- Enum.with_index(@daily_cycle_times) do %>
+              <% x = 60 + index * (720 / max(length(@daily_cycle_times) - 1, 1)) %>
+              <% y = 350 - (day.average_hours / max(max_hours, 1) * 300) %>
+              <% last_index = length(@daily_cycle_times) - 1 %>
+              <% is_last = index == last_index %>
+              <% is_interval_match = rem(index, label_interval) == 0 %>
+              <% distance_from_last = last_index - index %>
+              <% show_label =
+                is_interval_match or (is_last and distance_from_last >= div(label_interval, 2)) %>
+              <circle cx={x} cy={y} r="5" fill="rgb(59, 130, 246)" stroke="white" stroke-width="2" />
+              <%= if show_label do %>
+                <text
+                  x={x}
+                  y="380"
+                  text-anchor="middle"
+                  class="fill-gray-600 dark:fill-gray-400 text-xs"
+                  font-size="12"
+                >
+                  {Calendar.strftime(day.date, "%m/%d")}
+                </text>
+              <% end %>
+            <% end %>
+            <%= for i <- 0..4 do %>
+              <% value = max_hours * (4 - i) / 4 %>
+              <text
+                x="50"
+                y={55 + i * 75}
+                text-anchor="end"
+                class="fill-gray-600 dark:fill-gray-400 text-xs"
+                font-size="12"
+              >
+                {format_cycle_time_hours(value)}
+              </text>
+            <% end %>
+          <% end %>
+        </svg>
+      </div>
+
+      <div :if={length(@daily_cycle_times) == 0} class="text-center py-8">
+        <.icon
+          name="hero-chart-bar"
+          class="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3"
+        />
+        <p class="text-gray-500 dark:text-gray-400">No cycle time data available</p>
+      </div>
+    </div>
+
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg shadow-lg">
+          <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Grouped by completion date with cycle time metrics
+          </p>
+        </div>
+      </div>
+
+      <div :if={length(@grouped_tasks) > 0} class="space-y-6">
+        <div :for={{date, day_tasks} <- @grouped_tasks} class="space-y-2">
+          <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-purple-500 dark:border-purple-400">
+            <.icon
+              name="hero-calendar"
+              class="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0"
+            />
+            <div class="flex-1">
+              <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+                {format_date(date)}
+              </h4>
+            </div>
+          </div>
+
+          <div class="ml-4 space-y-2">
+            <div
+              :for={task <- day_tasks}
+              class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
             >
-              Task
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Cycle Time
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Claimed At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Completed At
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Agent
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-          <tr
-            :for={task <- @tasks}
-            class="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors"
-          >
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div>
-                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {task.identifier}
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                      {task.identifier}
+                    </span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {task.title}
+                    </span>
                   </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {task.title}
+                  <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-play" class="h-3.5 w-3.5" />
+                      <span>Claimed: {format_datetime(task.claimed_at)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-clock" class="h-3.5 w-3.5" />
+                      <span>Completed: {format_time(task.completed_at)}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
+                      <span>{task.completed_by_agent || "N/A"}</span>
+                    </div>
                   </div>
                 </div>
+                <div class="flex-shrink-0">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
+                    {format_cycle_time(task.cycle_time_seconds)}
+                  </span>
+                </div>
               </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300">
-                {format_cycle_time(task.cycle_time_seconds)}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.claimed_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {format_datetime(task.completed_at)}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-              {task.completed_by_agent || "N/A"}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <div :if={length(@tasks) == 0} class="text-center py-12">
-      <.icon
-        name="hero-clock"
-        class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-      />
-      <p class="text-gray-500 dark:text-gray-400 text-lg">
-        No tasks completed in this time range
-      </p>
+      <div :if={length(@grouped_tasks) == 0} class="text-center py-12">
+        <.icon
+          name="hero-clock"
+          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
+        />
+        <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
+          No tasks completed in this time range
+        </p>
+      </div>
     </div>
   </div>
-</div>
+</Layouts.app>

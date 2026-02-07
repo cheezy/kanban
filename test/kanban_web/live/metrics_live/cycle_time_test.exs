@@ -398,6 +398,231 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
     end
   end
 
+  describe "Cycle Time - Trend Chart" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays trend chart section when tasks exist", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "Average cycle time per day"
+      assert html =~ "<svg"
+    end
+
+    test "displays empty state for chart when no cycle time data", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "No cycle time data available"
+    end
+
+    test "chart renders with multiple data points across different days", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+      two_days_ago = DateTime.add(today, -2, :day)
+
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: two_days_ago})
+      {:ok, _} = complete_task(task2, %{completed_at: yesterday})
+      {:ok, _} = complete_task(task3, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "<polyline"
+      assert html =~ "fill=\"none\""
+      assert html =~ "stroke=\"url(#lineGradient)\""
+    end
+
+    test "chart includes data point circles for each day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.utc_now()})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "<circle"
+      assert html =~ "fill=\"rgb(59, 130, 246)\""
+    end
+
+    test "chart displays date labels on x-axis", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "text-anchor=\"middle\""
+      assert html =~ ~r/\d{2}\/\d{2}/
+    end
+
+    test "chart calculates daily averages for multiple tasks on same day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task1, %{
+          claimed_at: DateTime.add(today, -2, :hour),
+          completed_at: today
+        })
+
+      {:ok, _} =
+        complete_task(task2, %{
+          claimed_at: DateTime.add(today, -4, :hour),
+          completed_at: today
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "<svg"
+    end
+  end
+
+  describe "Cycle Time - Task Grouping" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "groups tasks by completion date", %{conn: conn, board: board, column: column} do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+
+      task1 = task_fixture(column, %{title: "Today Task"})
+      task2 = task_fixture(column, %{title: "Yesterday Task"})
+
+      {:ok, _} = complete_task(task1, %{completed_at: today})
+      {:ok, _} = complete_task(task2, %{completed_at: yesterday})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Today Task"
+      assert html =~ "Yesterday Task"
+    end
+
+    test "sorts tasks within a date by completion time descending", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column, %{identifier: "W1"})
+      task2 = task_fixture(column, %{identifier: "W2"})
+      task3 = task_fixture(column, %{identifier: "W3"})
+
+      {:ok, _} = complete_task(task1, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[10:00:00])})
+      {:ok, _} = complete_task(task2, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[14:00:00])})
+      {:ok, _} = complete_task(task3, %{completed_at: DateTime.new!(DateTime.to_date(today), ~T[18:00:00])})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      [_before, tasks_section] = String.split(html, "Completed Tasks", parts: 2)
+
+      w3_index = :binary.match(tasks_section, "W3") |> elem(0)
+      w2_index = :binary.match(tasks_section, "W2") |> elem(0)
+      w1_index = :binary.match(tasks_section, "W1") |> elem(0)
+
+      assert w3_index < w2_index
+      assert w2_index < w1_index
+    end
+
+    test "does not display task count in date headers", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1, %{completed_at: today})
+      {:ok, _} = complete_task(task2, %{completed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      refute html =~ "2 tasks"
+      refute html =~ "tasks completed"
+    end
+  end
+
+  describe "Cycle Time - Task Display Format" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays Claimed timestamp before Completed timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      claimed_at = DateTime.add(DateTime.utc_now(), -24, :hour)
+      completed_at = DateTime.utc_now()
+
+      {:ok, _} =
+        complete_task(task, %{
+          claimed_at: claimed_at,
+          completed_at: completed_at
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      [_before_task, task_section] = String.split(html, task.identifier, parts: 2)
+
+      claimed_index = :binary.match(task_section, "Claimed:") |> elem(0)
+      completed_index = :binary.match(task_section, "Completed:") |> elem(0)
+
+      assert claimed_index < completed_index, "Claimed should appear before Completed"
+    end
+
+    test "displays full datetime for claimed timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Claimed:"
+      assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+    end
+
+    test "displays only time for completed timestamp", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Completed:"
+      assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+    end
+  end
+
   describe "Cycle Time - Access Control" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
