@@ -750,6 +750,23 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
         live(conn, ~p"/boards/#{board}/metrics/lead-time")
       end
     end
+
+    test "redirects non-AI-optimized boards to board page", %{conn: conn, user: user} do
+      regular_board = board_fixture(user)
+
+      assert {:error, {:redirect, %{to: to, flash: flash}}} =
+               live(conn, ~p"/boards/#{regular_board}/metrics/lead-time")
+
+      assert to == "/boards/#{regular_board.id}"
+      assert flash["error"] == "Metrics are only available for AI-optimized boards."
+    end
+
+    test "handles non-existent atom in parse_time_range", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/lead-time?time_range=nonexistent_range_abc")
+
+      assert html =~ "Last 30 Days"
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

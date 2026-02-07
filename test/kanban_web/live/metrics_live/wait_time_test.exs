@@ -442,6 +442,319 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
     end
   end
 
+  describe "Wait Time - Time Range Options" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "filters with :today time range for review wait", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      old_task = task_fixture(column, %{title: "Yesterday Review"})
+      today_task = task_fixture(column, %{title: "Today Review"})
+
+      {:ok, _} =
+        add_review_wait(old_task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -30, :hour),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -29, :hour)
+        })
+
+      {:ok, _} = add_review_wait(today_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "today"})
+
+      assert html =~ "Today Review"
+      refute html =~ "Yesterday Review"
+    end
+
+    test "filters with :last_90_days time range", %{conn: conn, board: board, column: column} do
+      recent_task = task_fixture(column, %{title: "Recent Backlog"})
+      {:ok, _} = add_backlog_wait(recent_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_90_days"})
+
+      assert html =~ "Recent Backlog"
+      assert html =~ "Last 90 Days"
+    end
+
+    test "filters with :all_time time range", %{conn: conn, board: board, column: column} do
+      ancient_task = task_fixture(column, %{title: "Ancient Backlog"})
+
+      {:ok, _} =
+        add_backlog_wait(ancient_task, %{
+          claimed_at: DateTime.add(DateTime.utc_now(), -365, :day)
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "all_time"})
+
+      assert html =~ "Ancient Backlog"
+      assert html =~ "All Time"
+    end
+  end
+
+  describe "Wait Time - Summary Statistics" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays review wait statistics", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = add_review_wait(task1)
+      {:ok, _} = add_review_wait(task2)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Average"
+      assert html =~ "Median"
+    end
+
+    test "displays backlog wait statistics", %{conn: conn, board: board, column: column} do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = add_backlog_wait(task1)
+      {:ok, _} = add_backlog_wait(task2)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Average"
+      assert html =~ "Median"
+    end
+  end
+
+  describe "Wait Time - Task Grouping" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "groups review wait tasks by reviewed date", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+
+      task1 = task_fixture(column, %{title: "Today Review"})
+      task2 = task_fixture(column, %{title: "Yesterday Review"})
+
+      {:ok, _} =
+        add_review_wait(task1, %{
+          completed_at: DateTime.add(today, -12, :hour),
+          reviewed_at: today
+        })
+
+      {:ok, _} =
+        add_review_wait(task2, %{
+          completed_at: DateTime.add(yesterday, -12, :hour),
+          reviewed_at: yesterday
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Today Review"
+      assert html =~ "Yesterday Review"
+    end
+
+    test "groups backlog wait tasks by claimed date", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      yesterday = DateTime.add(today, -1, :day)
+
+      task1 = task_fixture(column, %{title: "Today Claimed"})
+      task2 = task_fixture(column, %{title: "Yesterday Claimed"})
+
+      {:ok, _} = add_backlog_wait(task1, %{claimed_at: today})
+      {:ok, _} = add_backlog_wait(task2, %{claimed_at: yesterday})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Today Claimed"
+      assert html =~ "Yesterday Claimed"
+    end
+
+    test "sorts review tasks within a date by reviewed time descending", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column, %{identifier: "W1"})
+      task2 = task_fixture(column, %{identifier: "W2"})
+      task3 = task_fixture(column, %{identifier: "W3"})
+
+      {:ok, _} =
+        add_review_wait(task1, %{
+          completed_at: DateTime.add(today, -24, :hour),
+          reviewed_at: today |> DateTime.to_date() |> DateTime.new!(~T[10:00:00])
+        })
+
+      {:ok, _} =
+        add_review_wait(task2, %{
+          completed_at: DateTime.add(today, -24, :hour),
+          reviewed_at: today |> DateTime.to_date() |> DateTime.new!(~T[14:00:00])
+        })
+
+      {:ok, _} =
+        add_review_wait(task3, %{
+          completed_at: DateTime.add(today, -24, :hour),
+          reviewed_at: today |> DateTime.to_date() |> DateTime.new!(~T[18:00:00])
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      [_before, review_section] = String.split(html, "Review Wait Time", parts: 2)
+      [tasks_section, _after] = String.split(review_section, "Backlog Wait Time", parts: 2)
+
+      w3_index = :binary.match(tasks_section, "W3") |> elem(0)
+      w2_index = :binary.match(tasks_section, "W2") |> elem(0)
+      w1_index = :binary.match(tasks_section, "W1") |> elem(0)
+
+      assert w3_index < w2_index
+      assert w2_index < w1_index
+    end
+
+    test "sorts backlog tasks within a date by claimed time descending", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column, %{identifier: "W1"})
+      task2 = task_fixture(column, %{identifier: "W2"})
+      task3 = task_fixture(column, %{identifier: "W3"})
+
+      {:ok, _} =
+        add_backlog_wait(task1, %{
+          claimed_at: today |> DateTime.to_date() |> DateTime.new!(~T[10:00:00])
+        })
+
+      {:ok, _} =
+        add_backlog_wait(task2, %{
+          claimed_at: today |> DateTime.to_date() |> DateTime.new!(~T[14:00:00])
+        })
+
+      {:ok, _} =
+        add_backlog_wait(task3, %{
+          claimed_at: today |> DateTime.to_date() |> DateTime.new!(~T[18:00:00])
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      [_before, backlog_section] = String.split(html, "Backlog Wait Time", parts: 2)
+
+      w3_index = :binary.match(backlog_section, "W3") |> elem(0)
+      w2_index = :binary.match(backlog_section, "W2") |> elem(0)
+      w1_index = :binary.match(backlog_section, "W1") |> elem(0)
+
+      assert w3_index < w2_index
+      assert w2_index < w1_index
+    end
+
+    test "does not display task count in date headers", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      today = DateTime.utc_now()
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = add_review_wait(task1, %{reviewed_at: today})
+      {:ok, _} = add_review_wait(task2, %{reviewed_at: today})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      refute html =~ "2 tasks"
+      refute html =~ "tasks waiting"
+    end
+  end
+
+  describe "Wait Time - Task Display Format" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "displays Completed before Reviewed in review wait tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.add(DateTime.utc_now(), -24, :hour)
+      reviewed_at = DateTime.utc_now()
+
+      {:ok, _} =
+        add_review_wait(task, %{
+          completed_at: completed_at,
+          reviewed_at: reviewed_at
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      [_before_task, task_section] = String.split(html, task.identifier, parts: 2)
+
+      completed_index = :binary.match(task_section, "Completed:") |> elem(0)
+      reviewed_index = :binary.match(task_section, "Reviewed:") |> elem(0)
+
+      assert completed_index < reviewed_index, "Completed should appear before Reviewed"
+    end
+
+    test "displays Created before Claimed in backlog wait tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      claimed_at = DateTime.utc_now()
+
+      {:ok, _} = add_backlog_wait(task, %{claimed_at: claimed_at})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      [_before_task, task_section] = String.split(html, task.identifier, parts: 2)
+
+      created_index = :binary.match(task_section, "Created:") |> elem(0)
+      claimed_index = :binary.match(task_section, "Claimed:") |> elem(0)
+
+      assert created_index < claimed_index, "Created should appear before Claimed"
+    end
+
+    test "displays full datetime for all timestamps", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      review_task = task_fixture(column, %{title: "Review Task"})
+      backlog_task = task_fixture(column, %{title: "Backlog Task"})
+
+      {:ok, _} = add_review_wait(review_task)
+      {:ok, _} = add_backlog_wait(backlog_task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Completed:"
+      assert html =~ "Reviewed:"
+      assert html =~ "Created:"
+      assert html =~ "Claimed:"
+      assert html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+    end
+  end
+
   describe "Wait Time - Access Control" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
@@ -452,6 +765,13 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert_raise Ecto.NoResultsError, fn ->
         live(conn, ~p"/boards/#{board}/metrics/wait-time")
       end
+    end
+
+    test "handles non-existent atom in parse_time_range", %{conn: conn, board: board} do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics/wait-time?time_range=nonexistent_range_abc")
+
+      assert html =~ "Last 30 Days"
     end
   end
 
