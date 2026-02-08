@@ -9,29 +9,129 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     |> IO.iodata_to_binary()
   end
 
-  describe "throughput/1 template" do
-    test "renders throughput template with complete data" do
-      assigns = %{
+  # -------------------------------------------------------------------
+  # Test assign helpers – each returns a complete assigns map with sane
+  # defaults.  Pass an override map to replace any top-level key.
+  # -------------------------------------------------------------------
+
+  defp base_assigns(overrides) do
+    Map.merge(
+      %{
         board: %{name: "Test Board", id: 1},
-        metric: "throughput",
         time_range: :last_30_days,
         agent_name: nil,
         exclude_weekends: false,
-        agents: ["Agent 1", "Agent 2"],
-        data: %{
-          throughput: [
-            %{date: ~D[2024-01-01], count: 5},
-            %{date: ~D[2024-01-02], count: 3}
-          ],
-          summary_stats: %{
-            total: 8,
-            avg_per_day: 4.0,
-            peak_day: ~D[2024-01-01],
-            peak_count: 5
+        agents: [],
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      },
+      overrides
+    )
+  end
+
+  defp throughput_assigns(overrides \\ %{}) do
+    base_assigns(
+      Map.merge(
+        %{
+          metric: "throughput",
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
           }
         },
-        generated_at: ~U[2024-01-15 10:30:00Z]
-      }
+        overrides
+      )
+    )
+  end
+
+  defp cycle_time_assigns(overrides \\ %{}) do
+    base_assigns(
+      Map.merge(
+        %{
+          metric: "cycle-time",
+          data: %{
+            summary_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            }
+          }
+        },
+        overrides
+      )
+    )
+  end
+
+  defp lead_time_assigns(overrides \\ %{}) do
+    base_assigns(
+      Map.merge(
+        %{
+          metric: "lead-time",
+          data: %{
+            summary_stats: %{
+              average_hours: 72.0,
+              median_hours: 48.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 5
+            }
+          }
+        },
+        overrides
+      )
+    )
+  end
+
+  defp wait_time_assigns(overrides \\ %{}) do
+    base_assigns(
+      Map.merge(
+        %{
+          metric: "wait-time",
+          data: %{
+            review_wait_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            backlog_wait_stats: %{
+              average_hours: 72.0,
+              median_hours: 60.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 10
+            }
+          }
+        },
+        overrides
+      )
+    )
+  end
+
+  # -------------------------------------------------------------------
+  # Throughput template
+  # -------------------------------------------------------------------
+
+  describe "throughput/1 template" do
+    test "renders throughput template with complete data" do
+      assigns =
+        throughput_assigns(%{
+          agents: ["Agent 1", "Agent 2"],
+          data: %{
+            throughput: [
+              %{date: ~D[2024-01-01], count: 5},
+              %{date: ~D[2024-01-02], count: 3}
+            ],
+            summary_stats: %{
+              total: 8,
+              avg_per_day: 4.0,
+              peak_day: ~D[2024-01-01],
+              peak_count: 5
+            }
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -44,19 +144,12 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders throughput template with agent filter" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_7_days,
-        agent_name: "Claude Sonnet 4.5",
-        exclude_weekends: true,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
-        },
-        generated_at: ~U[2024-01-15 10:30:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          time_range: :last_7_days,
+          agent_name: "Claude Sonnet 4.5",
+          exclude_weekends: true
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -66,19 +159,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders throughput template with nil values" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :today,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
-        },
-        generated_at: nil
-      }
+      assigns = throughput_assigns(%{time_range: :today, generated_at: nil})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -87,26 +168,26 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Cycle time template
+  # -------------------------------------------------------------------
+
   describe "cycle_time/1 template" do
     test "renders cycle_time template with complete data" do
-      assigns = %{
-        board: %{name: "My Board", id: 2},
-        metric: "cycle-time",
-        time_range: :last_90_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 48.5,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 10
+      assigns =
+        cycle_time_assigns(%{
+          board: %{name: "My Board", id: 2},
+          time_range: :last_90_days,
+          data: %{
+            summary_stats: %{
+              average_hours: 48.5,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 10
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 14:45:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -117,24 +198,22 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders cycle_time template with agent filter" do
-      assigns = %{
-        board: %{name: "My Board", id: 2},
-        metric: "cycle-time",
-        time_range: :all_time,
-        agent_name: "GPT-4",
-        exclude_weekends: true,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 0,
-            median_hours: 0,
-            min_hours: 0,
-            max_hours: 0,
-            count: 0
+      assigns =
+        cycle_time_assigns(%{
+          board: %{name: "My Board", id: 2},
+          time_range: :all_time,
+          agent_name: "GPT-4",
+          exclude_weekends: true,
+          data: %{
+            summary_stats: %{
+              average_hours: 0,
+              median_hours: 0,
+              min_hours: 0,
+              max_hours: 0,
+              count: 0
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 14:45:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -144,26 +223,25 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Lead time template
+  # -------------------------------------------------------------------
+
   describe "lead_time/1 template" do
     test "renders lead_time template with complete data" do
-      assigns = %{
-        board: %{name: "Project Board", id: 3},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 120.0,
-            median_hours: 96.0,
-            min_hours: 24.0,
-            max_hours: 240.0,
-            count: 15
+      assigns =
+        lead_time_assigns(%{
+          board: %{name: "Project Board", id: 3},
+          data: %{
+            summary_stats: %{
+              average_hours: 120.0,
+              median_hours: 96.0,
+              min_hours: 24.0,
+              max_hours: 240.0,
+              count: 15
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 09:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -174,24 +252,21 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders lead_time template with custom time range" do
-      assigns = %{
-        board: %{name: "Project Board", id: 3},
-        metric: "lead-time",
-        time_range: :custom_range,
-        agent_name: "Agent X",
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 0,
-            median_hours: 0,
-            min_hours: 0,
-            max_hours: 0,
-            count: 0
+      assigns =
+        lead_time_assigns(%{
+          board: %{name: "Project Board", id: 3},
+          time_range: :custom_range,
+          agent_name: "Agent X",
+          data: %{
+            summary_stats: %{
+              average_hours: 0,
+              median_hours: 0,
+              min_hours: 0,
+              max_hours: 0,
+              count: 0
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 09:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -202,30 +277,24 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "lead_time template - line chart rendering" do
     test "renders line chart when daily_lead_times are present" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          },
-          daily_lead_times: [
-            %{date: ~D[2024-01-01], average_hours: 48.0},
-            %{date: ~D[2024-01-02], average_hours: 72.0},
-            %{date: ~D[2024-01-03], average_hours: 96.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 72.0,
+              median_hours: 48.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 5
+            },
+            daily_lead_times: [
+              %{date: ~D[2024-01-01], average_hours: 48.0},
+              %{date: ~D[2024-01-02], average_hours: 72.0},
+              %{date: ~D[2024-01-03], average_hours: 96.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -239,28 +308,23 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders line chart with single data point" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_7_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 36.0,
-            median_hours: 36.0,
-            min_hours: 36.0,
-            max_hours: 36.0,
-            count: 1
-          },
-          daily_lead_times: [
-            %{date: ~D[2024-01-05], average_hours: 36.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          time_range: :last_7_days,
+          data: %{
+            summary_stats: %{
+              average_hours: 36.0,
+              median_hours: 36.0,
+              min_hours: 36.0,
+              max_hours: 36.0,
+              count: 1
+            },
+            daily_lead_times: [
+              %{date: ~D[2024-01-05], average_hours: 36.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -270,26 +334,20 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides line chart when daily_lead_times is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          },
-          daily_lead_times: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 72.0,
+              median_hours: 48.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 5
+            },
+            daily_lead_times: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -298,24 +356,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides line chart when daily_lead_times key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = lead_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -323,29 +364,23 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders line chart with zero average_hours" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 0.0,
-            median_hours: 0.0,
-            min_hours: 0.0,
-            max_hours: 0.0,
-            count: 1
-          },
-          daily_lead_times: [
-            %{date: ~D[2024-01-01], average_hours: 0.0},
-            %{date: ~D[2024-01-02], average_hours: 0.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 0.0,
+              median_hours: 0.0,
+              min_hours: 0.0,
+              max_hours: 0.0,
+              count: 1
+            },
+            daily_lead_times: [
+              %{date: ~D[2024-01-01], average_hours: 0.0},
+              %{date: ~D[2024-01-02], average_hours: 0.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -356,46 +391,40 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "lead_time template - completed tasks section" do
     test "renders completed tasks grouped by date" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 3
-          },
-          daily_lead_times: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W42",
-                 title: "Implement auth module",
-                 inserted_at: ~U[2024-01-05 08:00:00Z],
-                 completed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: "Claude Sonnet 4.5",
-                 lead_time_seconds: 453_600.0
-               },
-               %{
-                 identifier: "W43",
-                 title: "Add tests for auth",
-                 inserted_at: ~U[2024-01-06 09:00:00Z],
-                 completed_at: ~U[2024-01-10 16:00:00Z],
-                 completed_by_agent: "GPT-4",
-                 lead_time_seconds: 370_800.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 72.0,
+              median_hours: 48.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 3
+            },
+            daily_lead_times: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W42",
+                   title: "Implement auth module",
+                   inserted_at: ~U[2024-01-05 08:00:00Z],
+                   completed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: "Claude Sonnet 4.5",
+                   lead_time_seconds: 453_600.0
+                 },
+                 %{
+                   identifier: "W43",
+                   title: "Add tests for auth",
+                   inserted_at: ~U[2024-01-06 09:00:00Z],
+                   completed_at: ~U[2024-01-10 16:00:00Z],
+                   completed_by_agent: "GPT-4",
+                   lead_time_seconds: 370_800.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -412,38 +441,32 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders lead time badge for each task" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 48.0,
-            median_hours: 48.0,
-            min_hours: 48.0,
-            max_hours: 48.0,
-            count: 1
-          },
-          daily_lead_times: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W50",
-                 title: "Quick task",
-                 inserted_at: ~U[2024-01-08 08:00:00Z],
-                 completed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: nil,
-                 lead_time_seconds: 194_400.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 48.0,
+              median_hours: 48.0,
+              min_hours: 48.0,
+              max_hours: 48.0,
+              count: 1
+            },
+            daily_lead_times: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W50",
+                   title: "Quick task",
+                   inserted_at: ~U[2024-01-08 08:00:00Z],
+                   completed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: nil,
+                   lead_time_seconds: 194_400.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -452,26 +475,20 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed tasks when grouped_tasks is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          },
-          daily_lead_times: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        lead_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 72.0,
+              median_hours: 48.0,
+              min_hours: 24.0,
+              max_hours: 120.0,
+              count: 5
+            },
+            daily_lead_times: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -479,24 +496,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed tasks when grouped_tasks key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = lead_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -506,24 +506,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "lead_time template - stat card icons" do
     test "renders colored stat card icons" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 10
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = lead_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -554,33 +537,18 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Wait time template
+  # -------------------------------------------------------------------
+
   describe "wait_time/1 template" do
     test "renders wait_time template with complete data" do
-      assigns = %{
-        board: %{name: "Wait Board", id: 4},
-        metric: "wait-time",
-        time_range: :last_7_days,
-        agent_name: nil,
-        exclude_weekends: true,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 8
-          },
-          backlog_wait_stats: %{
-            average_hours: 72.0,
-            median_hours: 60.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 12
-          }
-        },
-        generated_at: ~U[2024-01-15 16:20:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          board: %{name: "Wait Board", id: 4},
+          time_range: :last_7_days,
+          exclude_weekends: true
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -592,19 +560,17 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders wait_time template with nil generated_at" do
-      assigns = %{
-        board: %{name: "Wait Board", id: 4},
-        metric: "wait-time",
-        time_range: :today,
-        agent_name: "Test Agent",
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0},
-          backlog_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}
-        },
-        generated_at: nil
-      }
+      assigns =
+        wait_time_assigns(%{
+          board: %{name: "Wait Board", id: 4},
+          time_range: :today,
+          agent_name: "Test Agent",
+          generated_at: nil,
+          data: %{
+            review_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0},
+            backlog_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -612,6 +578,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "Test Agent"
     end
   end
+
+  # -------------------------------------------------------------------
+  # Helper function behavior through templates
+  # -------------------------------------------------------------------
 
   describe "helper function behavior through templates" do
     test "format_time_range handles all time range atoms" do
@@ -625,16 +595,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       ]
 
       for {time_range, expected_text} <- time_ranges do
-        assigns = %{
-          board: %{name: "Test", id: 1},
-          metric: "throughput",
-          time_range: time_range,
-          agent_name: nil,
-          exclude_weekends: false,
-          agents: [],
-          data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-          generated_at: ~U[2024-01-15 10:00:00Z]
-        }
+        assigns = throughput_assigns(%{time_range: time_range})
 
         html = render_to_string(MetricsPdfHTML.throughput(assigns))
         assert html =~ expected_text, "Expected '#{expected_text}' for time_range :#{time_range}"
@@ -642,144 +603,89 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "format_date handles dates correctly" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [
-            %{date: ~D[2024-12-25], count: 1}
-          ],
-          summary_stats: %{
-            total: 1,
-            avg_per_day: 1.0,
-            peak_day: ~D[2024-12-25],
-            peak_count: 1
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [%{date: ~D[2024-12-25], count: 1}],
+            summary_stats: %{
+              total: 1,
+              avg_per_day: 1.0,
+              peak_day: ~D[2024-12-25],
+              peak_count: 1
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "Dec 25, 2024"
     end
 
     test "format_datetime handles datetimes correctly" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-03-15 14:30:45Z]
-      }
+      assigns = throughput_assigns(%{generated_at: ~U[2024-03-15 14:30:45Z]})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "Mar 15, 2024"
     end
 
     test "agent_filter_label shows agent name when present" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: "Custom Agent Name",
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns(%{agent_name: "Custom Agent Name"})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "Custom Agent Name"
     end
 
     test "agent_filter_label shows 'All Agents' when nil" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "All Agents"
     end
 
     test "weekend_filter_label shows correct text for true" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: true,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns(%{exclude_weekends: true})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "Weekends Excluded"
     end
 
     test "weekend_filter_label shows correct text for false" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert html =~ "Weekends Included"
     end
   end
 
+  # -------------------------------------------------------------------
+  # Throughput template - completed goals
+  # -------------------------------------------------------------------
+
   describe "throughput template - completed goals section" do
     test "renders completed goals when present" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [
-            %{
-              identifier: "G1",
-              title: "Major Feature Release",
-              inserted_at: ~U[2024-01-01 08:00:00Z],
-              completed_at: ~U[2024-01-10 16:00:00Z],
-              completed_by_agent: "Claude Sonnet 4.5"
-            },
-            %{
-              identifier: "G2",
-              title: "Infrastructure Overhaul",
-              inserted_at: ~U[2024-01-05 10:00:00Z],
-              completed_at: ~U[2024-01-12 14:00:00Z],
-              completed_by_agent: nil
-            }
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [
+              %{
+                identifier: "G1",
+                title: "Major Feature Release",
+                inserted_at: ~U[2024-01-01 08:00:00Z],
+                completed_at: ~U[2024-01-10 16:00:00Z],
+                completed_by_agent: "Claude Sonnet 4.5"
+              },
+              %{
+                identifier: "G2",
+                title: "Infrastructure Overhaul",
+                inserted_at: ~U[2024-01-05 10:00:00Z],
+                completed_at: ~U[2024-01-12 14:00:00Z],
+                completed_by_agent: nil
+              }
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -792,21 +698,15 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed goals section when empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -814,19 +714,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed goals section when key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -834,43 +722,41 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Throughput template - grouped tasks
+  # -------------------------------------------------------------------
+
   describe "throughput template - grouped tasks section" do
     test "renders grouped tasks with full details" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W42",
-                 title: "Implement auth module",
-                 inserted_at: ~U[2024-01-05 09:00:00Z],
-                 claimed_at: ~U[2024-01-10 10:00:00Z],
-                 completed_at: ~U[2024-01-10 15:00:00Z],
-                 completed_by_agent: "Claude Sonnet 4.5"
-               },
-               %{
-                 identifier: "W43",
-                 title: "Add tests for auth",
-                 inserted_at: ~U[2024-01-06 09:00:00Z],
-                 claimed_at: ~U[2024-01-10 11:00:00Z],
-                 completed_at: ~U[2024-01-10 16:00:00Z],
-                 completed_by_agent: "GPT-4"
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W42",
+                   title: "Implement auth module",
+                   inserted_at: ~U[2024-01-05 09:00:00Z],
+                   claimed_at: ~U[2024-01-10 10:00:00Z],
+                   completed_at: ~U[2024-01-10 15:00:00Z],
+                   completed_by_agent: "Claude Sonnet 4.5"
+                 },
+                 %{
+                   identifier: "W43",
+                   title: "Add tests for auth",
+                   inserted_at: ~U[2024-01-06 09:00:00Z],
+                   claimed_at: ~U[2024-01-10 11:00:00Z],
+                   completed_at: ~U[2024-01-10 16:00:00Z],
+                   completed_by_agent: "GPT-4"
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -887,33 +773,27 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders task without claimed_at" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W50",
-                 title: "Quick fix",
-                 inserted_at: ~U[2024-01-10 08:00:00Z],
-                 claimed_at: nil,
-                 completed_at: ~U[2024-01-10 09:00:00Z],
-                 completed_by_agent: nil
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W50",
+                   title: "Quick fix",
+                   inserted_at: ~U[2024-01-10 08:00:00Z],
+                   claimed_at: nil,
+                   completed_at: ~U[2024-01-10 09:00:00Z],
+                   completed_by_agent: nil
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -924,33 +804,27 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders single task with singular label" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W60",
-                 title: "Solo task",
-                 inserted_at: ~U[2024-01-09 09:00:00Z],
-                 claimed_at: ~U[2024-01-10 10:00:00Z],
-                 completed_at: ~U[2024-01-10 12:00:00Z],
-                 completed_by_agent: "Agent A"
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W60",
+                   title: "Solo task",
+                   inserted_at: ~U[2024-01-09 09:00:00Z],
+                   claimed_at: ~U[2024-01-10 10:00:00Z],
+                   completed_at: ~U[2024-01-10 12:00:00Z],
+                   completed_by_agent: "Agent A"
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -959,21 +833,15 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides grouped tasks section when empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -981,27 +849,25 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Throughput template - bar chart rendering
+  # -------------------------------------------------------------------
+
   describe "throughput template - bar chart rendering" do
     test "calculates correct bar widths" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [
-            %{date: ~D[2024-01-03], count: 10},
-            %{date: ~D[2024-01-02], count: 5},
-            %{date: ~D[2024-01-01], count: 1}
-          ],
-          summary_stats: %{total: 16, avg_per_day: 5.3, peak_day: ~D[2024-01-03], peak_count: 10},
-          completed_goals: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [
+              %{date: ~D[2024-01-03], count: 10},
+              %{date: ~D[2024-01-02], count: 5},
+              %{date: ~D[2024-01-01], count: 1}
+            ],
+            summary_stats: %{total: 16, avg_per_day: 5.3, peak_day: ~D[2024-01-03], peak_count: 10},
+            completed_goals: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -1011,23 +877,15 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "handles nil peak count in bar width calculation" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [
-            %{date: ~D[2024-01-01], count: 3}
-          ],
-          summary_stats: %{total: 3, avg_per_day: 3.0, peak_day: ~D[2024-01-01], peak_count: nil},
-          completed_goals: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [%{date: ~D[2024-01-01], count: 3}],
+            summary_stats: %{total: 3, avg_per_day: 3.0, peak_day: ~D[2024-01-01], peak_count: nil},
+            completed_goals: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -1035,23 +893,15 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "handles zero peak count in bar width calculation" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [
-            %{date: ~D[2024-01-01], count: 0}
-          ],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
-          completed_goals: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [%{date: ~D[2024-01-01], count: 0}],
+            summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+            completed_goals: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -1060,18 +910,13 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # No data branches
+  # -------------------------------------------------------------------
+
   describe "cycle_time template - no data branch" do
     test "renders no-data message when stats are nil" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{summary_stats: nil},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = cycle_time_assigns(%{data: %{summary_stats: nil}})
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1082,16 +927,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "lead_time template - no data branch" do
     test "renders no-data message when stats are nil" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{summary_stats: nil},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = lead_time_assigns(%{data: %{summary_stats: nil}})
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -1102,24 +938,18 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "wait_time template - partial data branches" do
     test "renders no-data for nil review wait stats only" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: nil,
-          backlog_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 2.0,
-            max_hours: 72.0
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: nil,
+            backlog_wait_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 2.0,
+              max_hours: 72.0
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1128,24 +958,18 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders no-data for nil backlog wait stats only" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 4.0,
-            median_hours: 3.0,
-            min_hours: 1.0,
-            max_hours: 12.0
-          },
-          backlog_wait_stats: nil
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: %{
+              average_hours: 4.0,
+              median_hours: 3.0,
+              min_hours: 1.0,
+              max_hours: 12.0
+            },
+            backlog_wait_stats: nil
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1154,19 +978,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders no-data for both nil stats" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: nil,
-          backlog_wait_stats: nil
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{review_wait_stats: nil, backlog_wait_stats: nil}
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1175,32 +990,30 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Cycle time template - line chart rendering
+  # -------------------------------------------------------------------
+
   describe "cycle_time template - line chart rendering" do
     test "renders line chart when daily_cycle_times are present" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          daily_cycle_times: [
-            %{date: ~D[2024-01-01], average_hours: 12.0},
-            %{date: ~D[2024-01-02], average_hours: 18.0},
-            %{date: ~D[2024-01-03], average_hours: 24.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            daily_cycle_times: [
+              %{date: ~D[2024-01-01], average_hours: 12.0},
+              %{date: ~D[2024-01-02], average_hours: 18.0},
+              %{date: ~D[2024-01-03], average_hours: 24.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1212,28 +1025,23 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders line chart with single data point" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_7_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 10.0,
-            median_hours: 10.0,
-            min_hours: 10.0,
-            max_hours: 10.0,
-            count: 1
-          },
-          daily_cycle_times: [
-            %{date: ~D[2024-01-05], average_hours: 10.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          time_range: :last_7_days,
+          data: %{
+            summary_stats: %{
+              average_hours: 10.0,
+              median_hours: 10.0,
+              min_hours: 10.0,
+              max_hours: 10.0,
+              count: 1
+            },
+            daily_cycle_times: [
+              %{date: ~D[2024-01-05], average_hours: 10.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1243,26 +1051,20 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides line chart when daily_cycle_times is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          daily_cycle_times: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            daily_cycle_times: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1271,24 +1073,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides line chart when daily_cycle_times key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = cycle_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1296,29 +1081,23 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders line chart with zero average_hours" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 0.0,
-            median_hours: 0.0,
-            min_hours: 0.0,
-            max_hours: 0.0,
-            count: 1
-          },
-          daily_cycle_times: [
-            %{date: ~D[2024-01-01], average_hours: 0.0},
-            %{date: ~D[2024-01-02], average_hours: 0.0}
-          ],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 0.0,
+              median_hours: 0.0,
+              min_hours: 0.0,
+              max_hours: 0.0,
+              count: 1
+            },
+            daily_cycle_times: [
+              %{date: ~D[2024-01-01], average_hours: 0.0},
+              %{date: ~D[2024-01-02], average_hours: 0.0}
+            ],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1327,48 +1106,46 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Cycle time template - completed tasks
+  # -------------------------------------------------------------------
+
   describe "cycle_time template - completed tasks section" do
     test "renders completed tasks grouped by date" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 3
-          },
-          daily_cycle_times: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W42",
-                 title: "Implement auth module",
-                 claimed_at: ~U[2024-01-10 08:00:00Z],
-                 completed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: "Claude Sonnet 4.5",
-                 cycle_time_seconds: 21_600.0
-               },
-               %{
-                 identifier: "W43",
-                 title: "Add tests for auth",
-                 claimed_at: ~U[2024-01-10 09:00:00Z],
-                 completed_at: ~U[2024-01-10 16:00:00Z],
-                 completed_by_agent: "GPT-4",
-                 cycle_time_seconds: 25_200.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 3
+            },
+            daily_cycle_times: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W42",
+                   title: "Implement auth module",
+                   claimed_at: ~U[2024-01-10 08:00:00Z],
+                   completed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: "Claude Sonnet 4.5",
+                   cycle_time_seconds: 21_600.0
+                 },
+                 %{
+                   identifier: "W43",
+                   title: "Add tests for auth",
+                   claimed_at: ~U[2024-01-10 09:00:00Z],
+                   completed_at: ~U[2024-01-10 16:00:00Z],
+                   completed_by_agent: "GPT-4",
+                   cycle_time_seconds: 25_200.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1385,38 +1162,32 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders cycle time badge for each task" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 6.0,
-            median_hours: 6.0,
-            min_hours: 6.0,
-            max_hours: 6.0,
-            count: 1
-          },
-          daily_cycle_times: [],
-          grouped_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W50",
-                 title: "Quick task",
-                 claimed_at: ~U[2024-01-10 08:00:00Z],
-                 completed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: nil,
-                 cycle_time_seconds: 21_600.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 6.0,
+              median_hours: 6.0,
+              min_hours: 6.0,
+              max_hours: 6.0,
+              count: 1
+            },
+            daily_cycle_times: [],
+            grouped_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W50",
+                   title: "Quick task",
+                   claimed_at: ~U[2024-01-10 08:00:00Z],
+                   completed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: nil,
+                   cycle_time_seconds: 21_600.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1425,26 +1196,20 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed tasks when grouped_tasks is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          daily_cycle_times: [],
-          grouped_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            daily_cycle_times: [],
+            grouped_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1452,24 +1217,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides completed tasks when grouped_tasks key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = cycle_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1477,26 +1225,24 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Stat card icons
+  # -------------------------------------------------------------------
+
   describe "cycle_time template - stat card icons" do
     test "renders colored stat card icons" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 48.5,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 10
+      assigns =
+        cycle_time_assigns(%{
+          data: %{
+            summary_stats: %{
+              average_hours: 48.5,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 10
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1529,19 +1275,13 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   describe "throughput template - stat card icons" do
     test "renders colored stat card icons" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 10, avg_per_day: 2.5, peak_day: ~D[2024-01-01], peak_count: 5}
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        throughput_assigns(%{
+          data: %{
+            throughput: [],
+            summary_stats: %{total: 10, avg_per_day: 2.5, peak_day: ~D[2024-01-01], peak_count: 5}
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -1572,21 +1312,13 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Page footer
+  # -------------------------------------------------------------------
+
   describe "page footer" do
     test "throughput template includes Generated by Stride in page CSS" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
@@ -1595,24 +1327,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "cycle_time template includes Generated by Stride in page CSS" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "cycle-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = cycle_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
@@ -1621,31 +1336,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "wait_time template includes Generated by Stride in page CSS" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          backlog_wait_stats: %{
-            average_hours: 72.0,
-            median_hours: 60.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 10
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = wait_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1655,24 +1346,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "lead_time template includes Generated by Stride in page CSS" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "lead-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          summary_stats: %{
-            average_hours: 72.0,
-            median_hours: 48.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 5
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = lead_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
@@ -1681,33 +1355,13 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Wait time template - stat card icons
+  # -------------------------------------------------------------------
+
   describe "wait_time template - stat card icons" do
     test "renders colored stat card icons for review wait section" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          backlog_wait_stats: %{
-            average_hours: 72.0,
-            median_hours: 60.0,
-            min_hours: 24.0,
-            max_hours: 120.0,
-            count: 10
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = wait_time_assigns()
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1738,49 +1392,47 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Wait time template - review tasks
+  # -------------------------------------------------------------------
+
   describe "wait_time template - review tasks section" do
     test "renders review tasks grouped by date" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 2
-          },
-          backlog_wait_stats: nil,
-          grouped_review_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W42",
-                 title: "Implement auth module",
-                 completed_at: ~U[2024-01-08 14:00:00Z],
-                 reviewed_at: ~U[2024-01-10 10:00:00Z],
-                 completed_by_agent: "Claude Sonnet 4.5",
-                 review_wait_seconds: 158_400.0
-               },
-               %{
-                 identifier: "W43",
-                 title: "Add tests for auth",
-                 completed_at: ~U[2024-01-09 16:00:00Z],
-                 reviewed_at: ~U[2024-01-10 12:00:00Z],
-                 completed_by_agent: "GPT-4",
-                 review_wait_seconds: 72_000.0
-               }
-             ]}
-          ],
-          grouped_backlog_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 2
+            },
+            backlog_wait_stats: nil,
+            grouped_review_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W42",
+                   title: "Implement auth module",
+                   completed_at: ~U[2024-01-08 14:00:00Z],
+                   reviewed_at: ~U[2024-01-10 10:00:00Z],
+                   completed_by_agent: "Claude Sonnet 4.5",
+                   review_wait_seconds: 158_400.0
+                 },
+                 %{
+                   identifier: "W43",
+                   title: "Add tests for auth",
+                   completed_at: ~U[2024-01-09 16:00:00Z],
+                   reviewed_at: ~U[2024-01-10 12:00:00Z],
+                   completed_by_agent: "GPT-4",
+                   review_wait_seconds: 72_000.0
+                 }
+               ]}
+            ],
+            grouped_backlog_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1798,27 +1450,21 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides review tasks when grouped_review_tasks is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          backlog_wait_stats: nil,
-          grouped_review_tasks: [],
-          grouped_backlog_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            backlog_wait_stats: nil,
+            grouped_review_tasks: [],
+            grouped_backlog_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1826,25 +1472,19 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides review tasks when grouped_review_tasks key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 24.0,
-            median_hours: 18.0,
-            min_hours: 6.0,
-            max_hours: 48.0,
-            count: 5
-          },
-          backlog_wait_stats: nil
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: %{
+              average_hours: 24.0,
+              median_hours: 18.0,
+              min_hours: 6.0,
+              max_hours: 48.0,
+              count: 5
+            },
+            backlog_wait_stats: nil
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1852,49 +1492,47 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Wait time template - backlog tasks
+  # -------------------------------------------------------------------
+
   describe "wait_time template - backlog tasks section" do
     test "renders backlog tasks grouped by date" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: nil,
-          backlog_wait_stats: %{
-            average_hours: 48.0,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 2
-          },
-          grouped_review_tasks: [],
-          grouped_backlog_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W55",
-                 title: "Build dashboard",
-                 inserted_at: ~U[2024-01-05 08:00:00Z],
-                 claimed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: "Claude Sonnet 4.5",
-                 backlog_wait_seconds: 453_600.0
-               },
-               %{
-                 identifier: "W56",
-                 title: "Fix login bug",
-                 inserted_at: ~U[2024-01-08 09:00:00Z],
-                 claimed_at: ~U[2024-01-10 11:00:00Z],
-                 completed_by_agent: nil,
-                 backlog_wait_seconds: 180_000.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: nil,
+            backlog_wait_stats: %{
+              average_hours: 48.0,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 2
+            },
+            grouped_review_tasks: [],
+            grouped_backlog_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W55",
+                   title: "Build dashboard",
+                   inserted_at: ~U[2024-01-05 08:00:00Z],
+                   claimed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: "Claude Sonnet 4.5",
+                   backlog_wait_seconds: 453_600.0
+                 },
+                 %{
+                   identifier: "W56",
+                   title: "Fix login bug",
+                   inserted_at: ~U[2024-01-08 09:00:00Z],
+                   claimed_at: ~U[2024-01-10 11:00:00Z],
+                   completed_by_agent: nil,
+                   backlog_wait_seconds: 180_000.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1911,27 +1549,21 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides backlog tasks when grouped_backlog_tasks is empty" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: nil,
-          backlog_wait_stats: %{
-            average_hours: 48.0,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 5
-          },
-          grouped_review_tasks: [],
-          grouped_backlog_tasks: []
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: nil,
+            backlog_wait_stats: %{
+              average_hours: 48.0,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 5
+            },
+            grouped_review_tasks: [],
+            grouped_backlog_tasks: []
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1939,25 +1571,19 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "hides backlog tasks when grouped_backlog_tasks key is missing" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: nil,
-          backlog_wait_stats: %{
-            average_hours: 48.0,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 5
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: nil,
+            backlog_wait_stats: %{
+              average_hours: 48.0,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 5
+            }
           }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -1965,57 +1591,51 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
 
     test "renders both review and backlog tasks together" do
-      assigns = %{
-        board: %{name: "Test Board", id: 1},
-        metric: "wait-time",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          review_wait_stats: %{
-            average_hours: 12.0,
-            median_hours: 8.0,
-            min_hours: 2.0,
-            max_hours: 24.0,
-            count: 1
-          },
-          backlog_wait_stats: %{
-            average_hours: 48.0,
-            median_hours: 36.0,
-            min_hours: 12.0,
-            max_hours: 96.0,
-            count: 1
-          },
-          grouped_review_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W70",
-                 title: "Review task",
-                 completed_at: ~U[2024-01-09 10:00:00Z],
-                 reviewed_at: ~U[2024-01-10 10:00:00Z],
-                 completed_by_agent: "Agent A",
-                 review_wait_seconds: 86_400.0
-               }
-             ]}
-          ],
-          grouped_backlog_tasks: [
-            {~D[2024-01-10],
-             [
-               %{
-                 identifier: "W71",
-                 title: "Backlog task",
-                 inserted_at: ~U[2024-01-07 08:00:00Z],
-                 claimed_at: ~U[2024-01-10 14:00:00Z],
-                 completed_by_agent: "Agent B",
-                 backlog_wait_seconds: 280_800.0
-               }
-             ]}
-          ]
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns =
+        wait_time_assigns(%{
+          data: %{
+            review_wait_stats: %{
+              average_hours: 12.0,
+              median_hours: 8.0,
+              min_hours: 2.0,
+              max_hours: 24.0,
+              count: 1
+            },
+            backlog_wait_stats: %{
+              average_hours: 48.0,
+              median_hours: 36.0,
+              min_hours: 12.0,
+              max_hours: 96.0,
+              count: 1
+            },
+            grouped_review_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W70",
+                   title: "Review task",
+                   completed_at: ~U[2024-01-09 10:00:00Z],
+                   reviewed_at: ~U[2024-01-10 10:00:00Z],
+                   completed_by_agent: "Agent A",
+                   review_wait_seconds: 86_400.0
+                 }
+               ]}
+            ],
+            grouped_backlog_tasks: [
+              {~D[2024-01-10],
+               [
+                 %{
+                   identifier: "W71",
+                   title: "Backlog task",
+                   inserted_at: ~U[2024-01-07 08:00:00Z],
+                   claimed_at: ~U[2024-01-10 14:00:00Z],
+                   completed_by_agent: "Agent B",
+                   backlog_wait_seconds: 280_800.0
+                 }
+               ]}
+            ]
+          }
+        })
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
@@ -2028,58 +1648,27 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  # -------------------------------------------------------------------
+  # Edge cases
+  # -------------------------------------------------------------------
+
   describe "edge cases" do
     test "handles nil peak_day in throughput stats" do
-      assigns = %{
-        board: %{name: "Test", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{
-          throughput: [],
-          summary_stats: %{
-            total: 0,
-            avg_per_day: 0.0,
-            peak_day: nil,
-            peak_count: 0
-          }
-        },
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert is_binary(html)
     end
 
     test "handles empty board name" do
-      assigns = %{
-        board: %{name: "", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns(%{board: %{name: "", id: 1}})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert is_binary(html)
     end
 
     test "handles special characters in board name" do
-      assigns = %{
-        board: %{name: "Board & Co. <Test>", id: 1},
-        metric: "throughput",
-        time_range: :last_30_days,
-        agent_name: nil,
-        exclude_weekends: false,
-        agents: [],
-        data: %{throughput: [], summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}},
-        generated_at: ~U[2024-01-15 10:00:00Z]
-      }
+      assigns = throughput_assigns(%{board: %{name: "Board & Co. <Test>", id: 1}})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert is_binary(html)

@@ -955,7 +955,7 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
       column: column
     } do
       goal = task_fixture(column, %{title: "Test Goal", type: :goal})
-      {:ok, updated_goal} = complete_task(goal, %{completed_by_agent: "Claude Sonnet 4.5"})
+      {:ok, _updated_goal} = complete_task(goal, %{completed_by_agent: "Claude Sonnet 4.5"})
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
 
@@ -964,8 +964,10 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
       assert html =~ "Test Goal"
 
       # Agent name should not appear in the goals section
-      # We'll check by looking for the goal identifier followed by agent name
-      refute html =~ ~r/#{updated_goal.identifier}.*Claude Sonnet 4\.5/s
+      # Extract the goals section and verify agent name is absent
+      [_, goals_section | _] = String.split(html, "Completed Goals")
+      [goals_section | _] = String.split(goals_section, "Completed Tasks")
+      refute goals_section =~ "Claude Sonnet 4.5"
     end
 
     test "filters goals by time range", %{

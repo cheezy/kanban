@@ -31,6 +31,229 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.22.0] - 2026-02-08</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Lean Metrics Dashboard System
+              </h4>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>Comprehensive Metrics Dashboard</strong>
+                  - AI-optimized boards now feature a complete lean metrics tracking system for measuring and optimizing workflow performance:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Metrics Dashboard</strong>
+                      (<code>/boards/:id/metrics</code>) - Centralized overview displaying all key performance indicators with real-time data
+                    </li>
+                    <li>
+                      <strong>Summary Cards</strong>
+                      - Four metric categories with at-a-glance statistics (average, median, P90)
+                    </li>
+                    <li>
+                      <strong>Quick Navigation</strong>
+                      - Jump to detailed views for each metric category
+                    </li>
+                    <li>
+                      <strong>Board Navigation</strong>
+                      - Easy return to kanban board from metrics views
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>Throughput Metrics</strong>
+                  - Track task completion velocity over time:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Daily Completion Count</strong>
+                      - Number of tasks completed each day
+                    </li>
+                    <li>
+                      <strong>Completion Trend Visualization</strong>
+                      - Line chart showing throughput patterns
+                    </li>
+                    <li>
+                      <strong>Day-by-Day Breakdown</strong>
+                      - Expandable list of completed tasks grouped by date
+                    </li>
+                    <li>
+                      <strong>Task Details</strong>
+                      - View identifier, title, complexity, agent, and completion time
+                    </li>
+                    <li>
+                      <strong>Statistics</strong>
+                      - Average, median, and 90th percentile throughput calculations
+                    </li>
+                    <li>
+                      <strong>Empty State Handling</strong>
+                      - Informative message when no completions exist
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>Cycle Time Metrics</strong>
+                  - Measure time from work start to completion:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Doing → Done Duration</strong>
+                      - Track how long tasks spend in active development
+                    </li>
+                    <li>
+                      <strong>Distribution Analysis</strong>
+                      - Understand typical cycle time patterns
+                    </li>
+                    <li>
+                      <strong>Task-Level Details</strong>
+                      - View claimed time, completed time, and total duration
+                    </li>
+                    <li>
+                      <strong>Agent Attribution</strong>
+                      - See which agent worked on each task
+                    </li>
+                    <li>
+                      <strong>Statistics</strong>
+                      - Average, median, and P90 cycle time in hours/days
+                    </li>
+                    <li>
+                      <strong>Grouped Display</strong>
+                      - Tasks organized by completion date
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>Lead Time Metrics</strong>
+                  - Track total time from creation to completion:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Created → Done Duration</strong>
+                      - Full lifecycle tracking from backlog to done
+                    </li>
+                    <li>
+                      <strong>End-to-End Visibility</strong>
+                      - Understand complete workflow efficiency
+                    </li>
+                    <li>
+                      <strong>Task Timeline</strong>
+                      - View creation time, completion time, and total duration
+                    </li>
+                    <li>
+                      <strong>Agent Tracking</strong>
+                      - Identify which agent completed each task
+                    </li>
+                    <li>
+                      <strong>Statistics</strong>
+                      - Average, median, and P90 lead time calculations
+                    </li>
+                    <li>
+                      <strong>Date Grouping</strong>
+                      - Tasks organized by completion date
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>Wait Time Metrics</strong>
+                  - Identify human bottlenecks in the workflow:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Review Wait Time</strong>
+                      - Time tasks spend waiting for human review after completion
+                    </li>
+                    <li>
+                      <strong>Backlog Wait Time</strong>
+                      - Time tasks spend in backlog before being claimed
+                    </li>
+                    <li>
+                      <strong>Bottleneck Identification</strong>
+                      - Pinpoint where tasks wait for human intervention
+                    </li>
+                    <li>
+                      <strong>Dual Wait Type Tracking</strong>
+                      - Separate views for review delays vs backlog delays
+                    </li>
+                    <li>
+                      <strong>Task Details</strong>
+                      - View timestamps, durations, and responsible agents
+                    </li>
+                    <li>
+                      <strong>Statistics</strong>
+                      - Average, median, and P90 wait times for each category
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <strong>Advanced Filtering System</strong>
+                  - Flexible data analysis across all metrics:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Time Range Filter</strong>
+                      - Today, last 7 days, last 30 days, last 90 days, or all time
+                    </li>
+                    <li>
+                      <strong>Agent Filter</strong>
+                      - Filter metrics by specific AI agent (e.g., "Claude Sonnet 4.5")
+                    </li>
+                    <li>
+                      <strong>Weekend Exclusion</strong>
+                      - Toggle to exclude weekends from calculations
+                    </li>
+                    <li>
+                      <strong>Persistent Filters</strong>
+                      - Filter selections maintained across metric views
+                    </li>
+                    <li>
+                      <strong>Agent Dropdown</strong>
+                      - Auto-populated with agents who have completed or created tasks
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                PDF Export for Metrics
+              </h4>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>Print-Optimized PDF Export</strong>
+                  - Export all metrics to professionally formatted PDF documents:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <strong>Data Tables</strong>
+                      - Structured tables with all task details and metrics
+                    </li>
+                    <li>
+                      <strong>Statistics Summary</strong>
+                      - Summary statistics prominently displayed in reports
+                    </li>
+                    <li>
+                      <strong>Filter Preservation</strong>
+                      - Applied filters reflected in exported data
+                    </li>
+                    <li>
+                      <strong>One-Click Export</strong>
+                      - Simple export button on each metrics page
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.21.2] - 2026-02-03</h2>
 
           <div class="mb-8">

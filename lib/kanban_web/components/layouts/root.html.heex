@@ -62,21 +62,21 @@
               <.nav_link href={~p"/users/settings"}>
                 {gettext("Settings")}
               </.nav_link>
-              <.nav_link href={~p"/about"}>
-                {gettext("About")}
-              </.nav_link>
               <.nav_link href={~p"/resources"}>
                 {gettext("Resources")}
+              </.nav_link>
+              <.nav_link href={~p"/about"}>
+                {gettext("About")}
               </.nav_link>
               <.nav_btn_primary href={~p"/users/log-out"} method="delete">
                 {gettext("Log out")}
               </.nav_btn_primary>
             <% else %>
-              <.nav_link href={~p"/about"}>
-                {gettext("About")}
-              </.nav_link>
               <.nav_link href={~p"/resources"}>
                 {gettext("Resources")}
+              </.nav_link>
+              <.nav_link href={~p"/about"}>
+                {gettext("About")}
               </.nav_link>
               <.nav_link href={~p"/users/log-in"}>
                 {gettext("Log in")}

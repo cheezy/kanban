@@ -5,6 +5,65 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-02-08
+
+### Added
+
+#### Lean Metrics Dashboard System
+
+- **Comprehensive Metrics Dashboard** - AI-optimized boards now feature a complete lean metrics tracking system for measuring and optimizing workflow performance:
+  - **Metrics Dashboard** (`/boards/:id/metrics`) - Centralized overview displaying all key performance indicators with real-time data
+  - **Summary Cards** - Four metric categories with at-a-glance statistics (average, median, P90)
+  - **Quick Navigation** - Jump to detailed views for each metric category
+  - **Board Navigation** - Easy return to kanban board from metrics views
+
+- **Throughput Metrics** - Track task completion velocity over time:
+  - **Daily Completion Count** - Number of tasks completed each day
+  - **Completion Trend Visualization** - Line chart showing throughput patterns
+  - **Day-by-Day Breakdown** - Expandable list of completed tasks grouped by date
+  - **Task Details** - View identifier, title, complexity, agent, and completion time
+  - **Statistics** - Average, median, and 90th percentile throughput calculations
+  - **Empty State Handling** - Informative message when no completions exist
+
+- **Cycle Time Metrics** - Measure time from work start to completion:
+  - **Doing → Done Duration** - Track how long tasks spend in active development
+  - **Distribution Analysis** - Understand typical cycle time patterns
+  - **Task-Level Details** - View claimed time, completed time, and total duration
+  - **Agent Attribution** - See which agent worked on each task
+  - **Statistics** - Average, median, and P90 cycle time in hours/days
+  - **Grouped Display** - Tasks organized by completion date
+
+- **Lead Time Metrics** - Track total time from creation to completion:
+  - **Created → Done Duration** - Full lifecycle tracking from backlog to done
+  - **End-to-End Visibility** - Understand complete workflow efficiency
+  - **Task Timeline** - View creation time, completion time, and total duration
+  - **Agent Tracking** - Identify which agent completed each task
+  - **Statistics** - Average, median, and P90 lead time calculations
+  - **Date Grouping** - Tasks organized by completion date
+
+- **Wait Time Metrics** - Identify human bottlenecks in the workflow:
+  - **Review Wait Time** - Time tasks spend waiting for human review after completion
+  - **Backlog Wait Time** - Time tasks spend in backlog before being claimed
+  - **Bottleneck Identification** - Pinpoint where tasks wait for human intervention
+  - **Dual Wait Type Tracking** - Separate views for review delays vs backlog delays
+  - **Task Details** - View timestamps, durations, and responsible agents
+  - **Statistics** - Average, median, and P90 wait times for each category
+
+- **Advanced Filtering System** - Flexible data analysis across all metrics:
+  - **Time Range Filter** - Today, last 7 days, last 30 days, last 90 days, or all time
+  - **Agent Filter** - Filter metrics by specific AI agent (e.g., "Claude Sonnet 4.5")
+  - **Weekend Exclusion** - Toggle to exclude weekends from calculations
+  - **Persistent Filters** - Filter selections maintained across metric views
+  - **Agent Dropdown** - Auto-populated with agents who have completed or created tasks
+
+#### PDF Export for Metrics
+
+- **Print-Optimized PDF Export** - Export all metrics to professionally formatted PDF documents:
+  - **Data Tables** - Structured tables with all task details and metrics
+  - **Statistics Summary** - Summary statistics prominently displayed in reports
+  - **Filter Preservation** - Applied filters reflected in exported data
+  - **One-Click Export** - Simple export button on each metrics page
+
 ## [1.21.2] - 2026-02-04
 
 ### Added
