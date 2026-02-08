@@ -821,6 +821,452 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  describe "cycle_time template - line chart rendering" do
+    test "renders line chart when daily_cycle_times are present" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          },
+          daily_cycle_times: [
+            %{date: ~D[2024-01-01], average_hours: 12.0},
+            %{date: ~D[2024-01-02], average_hours: 18.0},
+            %{date: ~D[2024-01-03], average_hours: 24.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "<svg"
+      assert html =~ "<polyline"
+      assert html =~ "Jan 01"
+      assert html =~ "Jan 03"
+    end
+
+    test "renders line chart with single data point" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_7_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 10.0,
+            median_hours: 10.0,
+            min_hours: 10.0,
+            max_hours: 10.0,
+            count: 1
+          },
+          daily_cycle_times: [
+            %{date: ~D[2024-01-05], average_hours: 10.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "<svg"
+      assert html =~ "<circle"
+    end
+
+    test "hides line chart when daily_cycle_times is empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          },
+          daily_cycle_times: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      refute html =~ "Cycle Time Trend"
+      refute html =~ "<polyline"
+    end
+
+    test "hides line chart when daily_cycle_times key is missing" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      refute html =~ "Cycle Time Trend"
+    end
+
+    test "renders line chart with zero average_hours" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 0.0,
+            median_hours: 0.0,
+            min_hours: 0.0,
+            max_hours: 0.0,
+            count: 1
+          },
+          daily_cycle_times: [
+            %{date: ~D[2024-01-01], average_hours: 0.0},
+            %{date: ~D[2024-01-02], average_hours: 0.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Cycle Time Trend"
+      assert html =~ "<svg"
+    end
+  end
+
+  describe "cycle_time template - completed tasks section" do
+    test "renders completed tasks grouped by date" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 3
+          },
+          daily_cycle_times: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W42",
+                 title: "Implement auth module",
+                 claimed_at: ~U[2024-01-10 08:00:00Z],
+                 completed_at: ~U[2024-01-10 14:00:00Z],
+                 completed_by_agent: "Claude Sonnet 4.5",
+                 cycle_time_seconds: 21_600.0
+               },
+               %{
+                 identifier: "W43",
+                 title: "Add tests for auth",
+                 claimed_at: ~U[2024-01-10 09:00:00Z],
+                 completed_at: ~U[2024-01-10 16:00:00Z],
+                 completed_by_agent: "GPT-4",
+                 cycle_time_seconds: 25_200.0
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Completed Tasks"
+      assert html =~ "Jan 10, 2024"
+      assert html =~ "W42"
+      assert html =~ "Implement auth module"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "W43"
+      assert html =~ "Add tests for auth"
+      assert html =~ "GPT-4"
+      assert html =~ "Claimed:"
+      assert html =~ "Completed:"
+    end
+
+    test "renders cycle time badge for each task" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 6.0,
+            median_hours: 6.0,
+            min_hours: 6.0,
+            max_hours: 6.0,
+            count: 1
+          },
+          daily_cycle_times: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W50",
+                 title: "Quick task",
+                 claimed_at: ~U[2024-01-10 08:00:00Z],
+                 completed_at: ~U[2024-01-10 14:00:00Z],
+                 completed_by_agent: nil,
+                 cycle_time_seconds: 21_600.0
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "task-cycle-time"
+      assert html =~ "W50"
+    end
+
+    test "hides completed tasks when grouped_tasks is empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          },
+          daily_cycle_times: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      refute html =~ "Completed Tasks"
+    end
+
+    test "hides completed tasks when grouped_tasks key is missing" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      refute html =~ "Completed Tasks"
+    end
+  end
+
+  describe "cycle_time template - stat card icons" do
+    test "renders colored stat card icons" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 48.5,
+            median_hours: 36.0,
+            min_hours: 12.0,
+            max_hours: 96.0,
+            count: 10
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      # Check stat card color classes
+      assert html =~ "stat-card-blue"
+      assert html =~ "stat-card-purple"
+      assert html =~ "stat-card-green"
+      assert html =~ "stat-card-red"
+
+      # Check icon background classes
+      assert html =~ "stat-icon-blue"
+      assert html =~ "stat-icon-purple"
+      assert html =~ "stat-icon-green"
+      assert html =~ "stat-icon-red"
+
+      # Check SVG icons are present
+      assert html =~ "<svg"
+      assert html =~ "fill=\"#2563eb\""
+      assert html =~ "fill=\"#9333ea\""
+      assert html =~ "fill=\"#16a34a\""
+      assert html =~ "fill=\"#dc2626\""
+
+      # Check stat labels
+      assert html =~ "Average"
+      assert html =~ "Median"
+      assert html =~ "Minimum"
+      assert html =~ "Maximum"
+    end
+  end
+
+  describe "throughput template - stat card icons" do
+    test "renders colored stat card icons" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 10, avg_per_day: 2.5, peak_day: ~D[2024-01-01], peak_count: 5}
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      # Check stat card color classes
+      assert html =~ "stat-card-blue"
+      assert html =~ "stat-card-green"
+      assert html =~ "stat-card-purple"
+      assert html =~ "stat-card-amber"
+
+      # Check icon background classes
+      assert html =~ "stat-icon-blue"
+      assert html =~ "stat-icon-green"
+      assert html =~ "stat-icon-purple"
+      assert html =~ "stat-icon-amber"
+
+      # Check SVG icons are present with correct colors
+      assert html =~ "<svg"
+      assert html =~ "stroke=\"#2563eb\""
+      assert html =~ "stroke=\"#16a34a\""
+      assert html =~ "stroke=\"#9333ea\""
+      assert html =~ "stroke=\"#d97706\""
+
+      # Check stat labels
+      assert html =~ "Total Tasks"
+      assert html =~ "Avg Per Day"
+      assert html =~ "Peak Day"
+      assert html =~ "Peak Count"
+    end
+  end
+
+  describe "page footer" do
+    test "throughput template includes Generated by Stride in page CSS" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "@bottom-center"
+      assert html =~ "Generated by Stride"
+    end
+
+    test "cycle_time template includes Generated by Stride in page CSS" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 6.0,
+            max_hours: 48.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "@bottom-center"
+      assert html =~ "Generated by Stride"
+    end
+  end
+
   describe "edge cases" do
     test "handles nil peak_day in throughput stats" do
       assigns = %{

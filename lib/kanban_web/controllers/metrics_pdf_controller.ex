@@ -103,9 +103,15 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp load_metric_data("cycle-time", board_id, opts) do
     {:ok, stats} = Metrics.get_cycle_time_stats(board_id, opts)
+    tasks = get_cycle_time_tasks(board_id, opts)
+    grouped_tasks = Helpers.group_tasks_by_completion_date(tasks)
+    daily_cycle_times = Helpers.calculate_daily_times(tasks, :cycle_time_seconds)
 
     %{
-      summary_stats: stats
+      summary_stats: stats,
+      tasks: tasks,
+      grouped_tasks: grouped_tasks,
+      daily_cycle_times: daily_cycle_times
     }
   end
 
@@ -275,6 +281,45 @@ defmodule KanbanWeb.MetricsPdfController do
         inserted_at: t.inserted_at,
         completed_at: t.completed_at,
         completed_by_agent: t.completed_by_agent
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp get_cycle_time_tasks(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = Helpers.get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], not is_nil(t.claimed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
+      |> order_by([t], desc: t.completed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        claimed_at: t.claimed_at,
+        completed_at: t.completed_at,
+        completed_by_agent: t.completed_by_agent,
+        cycle_time_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.completed_at,
+            t.claimed_at
+          )
       })
 
     query =
