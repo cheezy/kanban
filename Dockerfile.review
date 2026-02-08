@@ -77,13 +77,12 @@ FROM ${RUNNER_IMAGE} AS final
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates \
-     wget gnupg \
+     wget \
   && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
   && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-  && ln -sf /usr/bin/google-chrome-stable /usr/bin/google-chrome \
   && rm google-chrome-stable_current_amd64.deb \
-  && apt-get purge -y wget gnupg \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && google-chrome-stable --version
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
