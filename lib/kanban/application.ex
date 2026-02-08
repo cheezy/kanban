@@ -36,8 +36,8 @@ defmodule Kanban.Application do
 
   defp chromic_pdf_options do
     [
-      # Use default Chrome/Chromium browser discovery
-      # In production, ensure Chrome/Chromium is available
+      no_sandbox: true,
+      session_pool: [timeout: 30_000]
     ]
   end
 end
