@@ -9,59 +9,75 @@ defmodule KanbanWeb.MetricsPdfController do
     user = conn.assigns.current_scope.user
     board = Boards.get_board!(board_id, user)
 
-    unless board.ai_optimized_board do
+    if board.ai_optimized_board do
+      generate_and_send_pdf(conn, board, metric, params)
+    else
       conn
       |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
       |> redirect(to: ~p"/boards/#{board}")
-    else
-      time_range = Helpers.parse_time_range(params["time_range"])
-      agent_name = Helpers.parse_agent_name(params["agent_name"])
-      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
-
-      opts = [
-        time_range: time_range,
-        exclude_weekends: exclude_weekends
-      ]
-
-      opts =
-        if agent_name do
-          Keyword.put(opts, :agent_name, agent_name)
-        else
-          opts
-        end
-
-      {:ok, agents} = Metrics.get_agents(board.id)
-
-      data = load_metric_data(metric, board.id, opts)
-
-      assigns = %{
-        board: board,
-        metric: metric,
-        time_range: time_range,
-        agent_name: agent_name,
-        exclude_weekends: exclude_weekends,
-        agents: agents,
-        data: data,
-        generated_at: DateTime.utc_now()
-      }
-
-      html_content = render_metric_html(metric, assigns)
-
-      case ChromicPDF.print_to_pdf({:html, html_content}) do
-        {:ok, pdf_binary} ->
-          filename = generate_filename(board, metric, time_range)
-
-          conn
-          |> put_resp_content_type("application/pdf")
-          |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
-          |> send_resp(200, pdf_binary)
-
-        {:error, reason} ->
-          conn
-          |> put_flash(:error, "Failed to generate PDF: #{inspect(reason)}")
-          |> redirect(to: get_redirect_path(conn, board_id, metric))
-      end
     end
+  end
+
+  defp generate_and_send_pdf(conn, board, metric, params) do
+    opts = build_metric_options(params)
+    {:ok, agents} = Metrics.get_agents(board.id)
+    data = load_metric_data(metric, board.id, opts)
+
+    assigns = build_assigns(board, metric, opts, agents, data)
+    html_content = render_metric_html(metric, assigns)
+
+    case ChromicPDF.print_to_pdf({:html, html_content}) do
+      {:ok, pdf_binary} ->
+        send_pdf_response(conn, board, metric, opts[:time_range], pdf_binary)
+
+      {:error, reason} ->
+        handle_pdf_error(conn, board.id, metric, reason)
+    end
+  end
+
+  defp build_metric_options(params) do
+    time_range = Helpers.parse_time_range(params["time_range"])
+    agent_name = Helpers.parse_agent_name(params["agent_name"])
+    exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
+
+    opts = [
+      time_range: time_range,
+      exclude_weekends: exclude_weekends
+    ]
+
+    if agent_name do
+      Keyword.put(opts, :agent_name, agent_name)
+    else
+      opts
+    end
+  end
+
+  defp build_assigns(board, metric, opts, agents, data) do
+    %{
+      board: board,
+      metric: metric,
+      time_range: opts[:time_range],
+      agent_name: opts[:agent_name],
+      exclude_weekends: opts[:exclude_weekends],
+      agents: agents,
+      data: data,
+      generated_at: DateTime.utc_now()
+    }
+  end
+
+  defp send_pdf_response(conn, board, metric, time_range, pdf_binary) do
+    filename = generate_filename(board, metric, time_range)
+
+    conn
+    |> put_resp_content_type("application/pdf")
+    |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
+    |> send_resp(200, pdf_binary)
+  end
+
+  defp handle_pdf_error(conn, board_id, metric, reason) do
+    conn
+    |> put_flash(:error, "Failed to generate PDF: #{inspect(reason)}")
+    |> redirect(to: get_redirect_path(conn, board_id, metric))
   end
 
   defp load_metric_data("throughput", board_id, opts) do
