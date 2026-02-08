@@ -14,6 +14,8 @@ defmodule Kanban.Application do
       {Phoenix.PubSub, name: Kanban.PubSub},
       # Start a worker by calling: Kanban.Worker.start_link(arg)
       # {Kanban.Worker, arg},
+      # ChromicPDF for server-side PDF generation
+      {ChromicPDF, chromic_pdf_options()},
       # Start to serve requests, typically the last entry
       KanbanWeb.Endpoint
     ]
@@ -30,5 +32,12 @@ defmodule Kanban.Application do
   def config_change(changed, _new, removed) do
     KanbanWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp chromic_pdf_options do
+    [
+      # Use default Chrome/Chromium browser discovery
+      # In production, ensure Chrome/Chromium is available
+    ]
   end
 end

@@ -63,6 +63,7 @@ defmodule Kanban.MixProject do
       {:swoosh, "~> 1.16"},
       {:gen_smtp, "~> 1.3"},
       {:castore, "~> 1.0"},
+      {:chromic_pdf, "~> 1.17"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
