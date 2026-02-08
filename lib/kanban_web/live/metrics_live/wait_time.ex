@@ -2,11 +2,13 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   use KanbanWeb, :live_view
 
   import Ecto.Query
+  import KanbanWeb.MetricsLive.Components
 
   alias Kanban.Boards
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias KanbanWeb.MetricsLive.Helpers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -27,9 +29,9 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     if board.ai_optimized_board do
       {:ok, agents} = Metrics.get_agents(board.id)
 
-      time_range = parse_time_range(params["time_range"])
-      agent_name = parse_agent_name(params["agent_name"])
-      exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
+      time_range = Helpers.parse_time_range(params["time_range"])
+      agent_name = Helpers.parse_agent_name(params["agent_name"])
+      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
 
       socket =
         socket
@@ -105,7 +107,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp get_review_wait_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = get_start_date(time_range)
+    start_date = Helpers.get_start_date(time_range)
 
     query =
       Task
@@ -143,7 +145,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp get_backlog_wait_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = get_start_date(time_range)
+    start_date = Helpers.get_start_date(time_range)
 
     query =
       Task
@@ -177,53 +179,10 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     Repo.all(query)
   end
 
-  defp get_start_date(:today) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_7_days), do: DateTime.add(DateTime.utc_now(), -7, :day)
-  defp get_start_date(:last_30_days), do: DateTime.add(DateTime.utc_now(), -30, :day)
-  defp get_start_date(:last_90_days), do: DateTime.add(DateTime.utc_now(), -90, :day)
-  defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-  defp get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
-
-  defp format_wait_time(%Decimal{} = seconds) do
-    seconds
-    |> Decimal.to_float()
-    |> format_wait_time()
-  end
-
-  defp format_wait_time(seconds) when is_number(seconds) do
-    hours = seconds / 3600
-
-    cond do
-      hours < 1 -> "#{Float.round(hours * 60, 1)}m"
-      hours < 24 -> "#{Float.round(hours, 1)}h"
-      true -> "#{Float.round(hours / 24, 1)}d"
-    end
-  end
-
-  defp format_wait_time(_), do: "N/A"
-
-  defp format_datetime(nil), do: "N/A"
-
-  defp format_datetime(datetime) do
-    Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
-  end
-
-  defp format_date(nil), do: "N/A"
-
-  defp format_date(date) do
-    Calendar.strftime(date, "%b %d, %Y")
-  end
-
-  defp format_time(nil), do: "N/A"
-
-  defp format_time(datetime) do
-    Calendar.strftime(datetime, "%I:%M %p")
-  end
+  defp format_wait_time(seconds), do: Helpers.format_time(seconds)
+  defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
+  defp format_date(date), do: Helpers.format_date(date)
+  defp format_time(datetime), do: Helpers.format_time_only(datetime)
 
   defp group_review_tasks_by_date(tasks) do
     tasks
@@ -248,23 +207,4 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
       {date, Enum.sort_by(day_tasks, & &1.claimed_at, {:desc, DateTime})}
     end)
   end
-
-  defp parse_time_range(nil), do: :last_30_days
-  defp parse_time_range(""), do: :last_30_days
-
-  defp parse_time_range(time_range) when is_binary(time_range) do
-    String.to_existing_atom(time_range)
-  rescue
-    ArgumentError -> :last_30_days
-  end
-
-  defp parse_agent_name(nil), do: nil
-  defp parse_agent_name(""), do: nil
-  defp parse_agent_name(agent_name) when is_binary(agent_name), do: agent_name
-
-  defp parse_exclude_weekends(nil), do: false
-  defp parse_exclude_weekends(""), do: false
-  defp parse_exclude_weekends("true"), do: true
-  defp parse_exclude_weekends("false"), do: false
-  defp parse_exclude_weekends(_), do: false
 end

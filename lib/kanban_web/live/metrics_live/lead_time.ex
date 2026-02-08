@@ -2,11 +2,13 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
   use KanbanWeb, :live_view
 
   import Ecto.Query
+  import KanbanWeb.MetricsLive.Components
 
   alias Kanban.Boards
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias KanbanWeb.MetricsLive.Helpers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -27,9 +29,9 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
     if board.ai_optimized_board do
       {:ok, agents} = Metrics.get_agents(board.id)
 
-      time_range = parse_time_range(params["time_range"])
-      agent_name = parse_agent_name(params["agent_name"])
-      exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
+      time_range = Helpers.parse_time_range(params["time_range"])
+      agent_name = Helpers.parse_agent_name(params["agent_name"])
+      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
 
       socket =
         socket
@@ -102,7 +104,7 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
   defp get_lead_time_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = get_start_date(time_range)
+    start_date = Helpers.get_start_date(time_range)
 
     query =
       Task
@@ -137,146 +139,14 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
     Repo.all(query)
   end
 
-  defp get_start_date(:today) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> DateTime.new!(~T[00:00:00])
-  end
+  defp format_lead_time(seconds), do: Helpers.format_time(seconds)
+  defp format_lead_time_hours(hours), do: Helpers.format_time_hours(hours)
+  defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
+  defp format_date(date), do: Helpers.format_date(date)
 
-  defp get_start_date(:last_7_days), do: DateTime.add(DateTime.utc_now(), -7, :day)
-  defp get_start_date(:last_30_days), do: DateTime.add(DateTime.utc_now(), -30, :day)
-  defp get_start_date(:last_90_days), do: DateTime.add(DateTime.utc_now(), -90, :day)
-  defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-  defp get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
-
-  defp format_lead_time(%Decimal{} = seconds) do
-    seconds
-    |> Decimal.to_float()
-    |> format_lead_time()
-  end
-
-  defp format_lead_time(seconds) when is_number(seconds) do
-    hours = seconds / 3600
-
-    cond do
-      hours < 1 -> "#{Float.round(hours * 60, 1)}m"
-      hours < 24 -> "#{Float.round(hours, 1)}h"
-      true -> "#{Float.round(hours / 24, 1)}d"
-    end
-  end
-
-  defp format_lead_time(_), do: "N/A"
-
-  defp format_datetime(nil), do: "N/A"
-
-  defp format_datetime(datetime) do
-    Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
-  end
-
-  defp format_date(nil), do: "N/A"
-
-  defp format_date(date) do
-    Calendar.strftime(date, "%b %d, %Y")
-  end
-
-  defp group_tasks_by_date(tasks) do
-    tasks
-    |> Enum.group_by(fn task ->
-      task.completed_at
-      |> DateTime.to_date()
-    end)
-    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
-    |> Enum.map(fn {date, day_tasks} ->
-      {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
-    end)
-  end
+  defp group_tasks_by_date(tasks), do: Helpers.group_tasks_by_completion_date(tasks)
 
   defp calculate_daily_lead_times(tasks) do
-    tasks
-    |> Enum.group_by(fn task ->
-      task.completed_at |> DateTime.to_date()
-    end)
-    |> Enum.map(fn {date, day_tasks} ->
-      lead_times = Enum.map(day_tasks, &extract_time_seconds(&1.lead_time_seconds))
-      average_seconds = calculate_average(lead_times)
-
-      %{
-        date: date,
-        average_hours: average_seconds / 3600
-      }
-    end)
-    |> Enum.sort_by(& &1.date, Date)
+    Helpers.calculate_daily_times(tasks, :lead_time_seconds)
   end
-
-  defp extract_time_seconds(%Decimal{} = seconds), do: Decimal.to_float(seconds)
-  defp extract_time_seconds(seconds) when is_number(seconds), do: seconds
-  defp extract_time_seconds(_), do: 0.0
-
-  defp calculate_average([]), do: 0.0
-  defp calculate_average(values), do: Enum.sum(values) / length(values)
-
-  defp get_max_lead_time([]), do: 0
-
-  defp get_max_lead_time(daily_lead_times) do
-    daily_lead_times
-    |> Enum.map(& &1.average_hours)
-    |> Enum.max(fn -> 0 end)
-  end
-
-  defp format_lead_time_hours(hours) when is_number(hours) do
-    cond do
-      hours < 1 -> "#{Float.round(hours * 60, 1)}m"
-      hours < 24 -> "#{Float.round(hours, 1)}h"
-      true -> "#{Float.round(hours / 24, 1)}d"
-    end
-  end
-
-  defp format_lead_time_hours(_), do: "N/A"
-
-  defp calculate_trend_line([]), do: nil
-  defp calculate_trend_line([_single]), do: nil
-
-  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
-  defp calculate_trend_line(daily_lead_times) do
-    n = length(daily_lead_times)
-
-    {sum_x, sum_y, sum_xy, sum_x_squared} =
-      daily_lead_times
-      |> Enum.with_index()
-      |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, fn {day, index}, {sx, sy, sxy, sx2} ->
-        x = index * 1.0
-        y = day.average_hours
-
-        {
-          sx + x,
-          sy + y,
-          sxy + x * y,
-          sx2 + x * x
-        }
-      end)
-
-    slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x_squared - sum_x * sum_x)
-    intercept = (sum_y - slope * sum_x) / n
-
-    %{slope: slope, intercept: intercept}
-  end
-
-  defp parse_time_range(nil), do: :last_30_days
-  defp parse_time_range(""), do: :last_30_days
-
-  defp parse_time_range(time_range) when is_binary(time_range) do
-    String.to_existing_atom(time_range)
-  rescue
-    ArgumentError -> :last_30_days
-  end
-
-  defp parse_agent_name(nil), do: nil
-  defp parse_agent_name(""), do: nil
-  defp parse_agent_name(agent_name) when is_binary(agent_name), do: agent_name
-
-  defp parse_exclude_weekends(nil), do: false
-  defp parse_exclude_weekends(""), do: false
-  defp parse_exclude_weekends("true"), do: true
-  defp parse_exclude_weekends("false"), do: false
-  defp parse_exclude_weekends(_), do: false
 end
