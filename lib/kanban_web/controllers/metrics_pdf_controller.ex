@@ -131,10 +131,16 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp load_metric_data("wait-time", board_id, opts) do
     {:ok, stats} = Metrics.get_wait_time_stats(board_id, opts)
+    review_tasks = get_review_wait_tasks(board_id, opts)
+    backlog_tasks = get_backlog_wait_tasks(board_id, opts)
+    grouped_review_tasks = group_tasks_by_field(review_tasks, :reviewed_at)
+    grouped_backlog_tasks = group_tasks_by_field(backlog_tasks, :claimed_at)
 
     %{
       review_wait_stats: stats.review_wait,
-      backlog_wait_stats: stats.backlog_wait
+      backlog_wait_stats: stats.backlog_wait,
+      grouped_review_tasks: grouped_review_tasks,
+      grouped_backlog_tasks: grouped_backlog_tasks
     }
   end
 
@@ -374,6 +380,90 @@ defmodule KanbanWeb.MetricsPdfController do
       end
 
     Repo.all(query)
+  end
+
+  defp get_review_wait_tasks(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = Helpers.get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], not is_nil(t.reviewed_at))
+      |> where([t], t.reviewed_at >= ^start_date)
+      |> order_by([t], desc: t.reviewed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        completed_at: t.completed_at,
+        reviewed_at: t.reviewed_at,
+        completed_by_agent: t.completed_by_agent,
+        review_wait_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.reviewed_at,
+            t.completed_at
+          )
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp get_backlog_wait_tasks(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = Helpers.get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.claimed_at))
+      |> where([t], t.claimed_at >= ^start_date)
+      |> order_by([t], desc: t.claimed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        inserted_at: t.inserted_at,
+        claimed_at: t.claimed_at,
+        completed_by_agent: t.completed_by_agent,
+        backlog_wait_seconds:
+          fragment(
+            "EXTRACT(EPOCH FROM (? - ?))",
+            t.claimed_at,
+            t.inserted_at
+          )
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp group_tasks_by_field(tasks, field) do
+    tasks
+    |> Enum.group_by(fn task -> Map.get(task, field) |> DateTime.to_date() end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, &Map.get(&1, field), {:desc, DateTime})}
+    end)
   end
 
   defp group_tasks_by_date(tasks) do
