@@ -324,7 +324,10 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
 
     test "handles empty query parameters gracefully", %{conn: conn, board: board} do
       {:ok, _view, html} =
-        live(conn, ~p"/boards/#{board}/metrics/cycle-time?time_range=&agent_name=&exclude_weekends=")
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/cycle-time?time_range=&agent_name=&exclude_weekends="
+        )
 
       assert html =~ "Last 30 Days"
       refute html =~ "checked"
@@ -571,9 +574,20 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       task2 = task_fixture(column, %{identifier: "W2"})
       task3 = task_fixture(column, %{identifier: "W3"})
 
-      {:ok, _} = complete_task(task1, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[10:00:00])})
-      {:ok, _} = complete_task(task2, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[14:00:00])})
-      {:ok, _} = complete_task(task3, %{completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[18:00:00])})
+      {:ok, _} =
+        complete_task(task1, %{
+          completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[10:00:00])
+        })
+
+      {:ok, _} =
+        complete_task(task2, %{
+          completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[14:00:00])
+        })
+
+      {:ok, _} =
+        complete_task(task3, %{
+          completed_at: today |> DateTime.to_date() |> DateTime.new!(~T[18:00:00])
+        })
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 

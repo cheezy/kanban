@@ -4,11 +4,9 @@
       {@board.name} - Throughput Metrics
       <:subtitle>Tasks completed per day with detailed breakdown</:subtitle>
       <:actions>
-        <.link
-          navigate={
-            ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
-          }
-        >
+        <.link navigate={
+          ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
+        }>
           <.button>Back to Dashboard</.button>
         </.link>
         <.button phx-click="export_pdf" class="ml-2">

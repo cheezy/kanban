@@ -188,9 +188,14 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       task2 = task_fixture(column, %{title: "Second Backlog"})
       task3 = task_fixture(column, %{title: "Third Backlog"})
 
-      {:ok, _} = add_backlog_wait(task1, %{claimed_at: DateTime.add(DateTime.utc_now(), -3, :day)})
-      {:ok, _} = add_backlog_wait(task2, %{claimed_at: DateTime.add(DateTime.utc_now(), -2, :day)})
-      {:ok, _} = add_backlog_wait(task3, %{claimed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+      {:ok, _} =
+        add_backlog_wait(task1, %{claimed_at: DateTime.add(DateTime.utc_now(), -3, :day)})
+
+      {:ok, _} =
+        add_backlog_wait(task2, %{claimed_at: DateTime.add(DateTime.utc_now(), -2, :day)})
+
+      {:ok, _} =
+        add_backlog_wait(task3, %{claimed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
@@ -435,7 +440,10 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
     test "handles empty query parameters gracefully", %{conn: conn, board: board} do
       {:ok, _view, html} =
-        live(conn, ~p"/boards/#{board}/metrics/wait-time?time_range=&agent_name=&exclude_weekends=")
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/wait-time?time_range=&agent_name=&exclude_weekends="
+        )
 
       assert html =~ "Last 30 Days"
       refute html =~ "checked"

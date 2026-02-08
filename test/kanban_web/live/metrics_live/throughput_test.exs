@@ -446,7 +446,10 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
     test "handles empty query parameters gracefully", %{conn: conn, board: board} do
       {:ok, _view, html} =
-        live(conn, ~p"/boards/#{board}/metrics/throughput?time_range=&agent_name=&exclude_weekends=")
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/throughput?time_range=&agent_name=&exclude_weekends="
+        )
 
       assert html =~ "Last 30 Days"
       refute html =~ "checked"
