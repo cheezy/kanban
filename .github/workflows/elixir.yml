@@ -55,6 +55,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Step: Install Chrome for ChromicPDF (PDF generation tests)
+    - name: Install Chrome
+      uses: browser-actions/setup-chrome@v1
+
     # Step: Define how to cache deps. Restores existing cache if present.
     - name: Cache deps
       id: cache-deps
