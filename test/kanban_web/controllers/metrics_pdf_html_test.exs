@@ -200,6 +200,360 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  describe "lead_time template - line chart rendering" do
+    test "renders line chart when daily_lead_times are present" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          },
+          daily_lead_times: [
+            %{date: ~D[2024-01-01], average_hours: 48.0},
+            %{date: ~D[2024-01-02], average_hours: 72.0},
+            %{date: ~D[2024-01-03], average_hours: 96.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "<svg"
+      assert html =~ "<polyline"
+      assert html =~ "Jan 01"
+      assert html =~ "Jan 03"
+      # Uses green theme for lead time
+      assert html =~ "stroke=\"#10b981\""
+    end
+
+    test "renders line chart with single data point" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_7_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 36.0,
+            median_hours: 36.0,
+            min_hours: 36.0,
+            max_hours: 36.0,
+            count: 1
+          },
+          daily_lead_times: [
+            %{date: ~D[2024-01-05], average_hours: 36.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "<svg"
+      assert html =~ "<circle"
+    end
+
+    test "hides line chart when daily_lead_times is empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          },
+          daily_lead_times: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      refute html =~ "Lead Time Trend"
+      refute html =~ "<polyline"
+    end
+
+    test "hides line chart when daily_lead_times key is missing" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      refute html =~ "Lead Time Trend"
+    end
+
+    test "renders line chart with zero average_hours" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 0.0,
+            median_hours: 0.0,
+            min_hours: 0.0,
+            max_hours: 0.0,
+            count: 1
+          },
+          daily_lead_times: [
+            %{date: ~D[2024-01-01], average_hours: 0.0},
+            %{date: ~D[2024-01-02], average_hours: 0.0}
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "Lead Time Trend"
+      assert html =~ "<svg"
+    end
+  end
+
+  describe "lead_time template - completed tasks section" do
+    test "renders completed tasks grouped by date" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 3
+          },
+          daily_lead_times: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W42",
+                 title: "Implement auth module",
+                 inserted_at: ~U[2024-01-05 08:00:00Z],
+                 completed_at: ~U[2024-01-10 14:00:00Z],
+                 completed_by_agent: "Claude Sonnet 4.5",
+                 lead_time_seconds: 453_600.0
+               },
+               %{
+                 identifier: "W43",
+                 title: "Add tests for auth",
+                 inserted_at: ~U[2024-01-06 09:00:00Z],
+                 completed_at: ~U[2024-01-10 16:00:00Z],
+                 completed_by_agent: "GPT-4",
+                 lead_time_seconds: 370_800.0
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "Completed Tasks"
+      assert html =~ "Jan 10, 2024"
+      assert html =~ "W42"
+      assert html =~ "Implement auth module"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "W43"
+      assert html =~ "Add tests for auth"
+      assert html =~ "GPT-4"
+      assert html =~ "Created:"
+      assert html =~ "Completed:"
+    end
+
+    test "renders lead time badge for each task" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 48.0,
+            median_hours: 48.0,
+            min_hours: 48.0,
+            max_hours: 48.0,
+            count: 1
+          },
+          daily_lead_times: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W50",
+                 title: "Quick task",
+                 inserted_at: ~U[2024-01-08 08:00:00Z],
+                 completed_at: ~U[2024-01-10 14:00:00Z],
+                 completed_by_agent: nil,
+                 lead_time_seconds: 194_400.0
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "task-lead-time"
+      assert html =~ "W50"
+    end
+
+    test "hides completed tasks when grouped_tasks is empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          },
+          daily_lead_times: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      refute html =~ "Completed Tasks"
+    end
+
+    test "hides completed tasks when grouped_tasks key is missing" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      refute html =~ "Completed Tasks"
+    end
+  end
+
+  describe "lead_time template - stat card icons" do
+    test "renders colored stat card icons" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 10
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      # Check stat card color classes
+      assert html =~ "stat-card-blue"
+      assert html =~ "stat-card-purple"
+      assert html =~ "stat-card-green"
+      assert html =~ "stat-card-red"
+
+      # Check icon background classes
+      assert html =~ "stat-icon-blue"
+      assert html =~ "stat-icon-purple"
+      assert html =~ "stat-icon-green"
+      assert html =~ "stat-icon-red"
+
+      # Check SVG icons are present with correct fill colors
+      assert html =~ "<svg"
+      assert html =~ "fill=\"#2563eb\""
+      assert html =~ "fill=\"#9333ea\""
+      assert html =~ "fill=\"#16a34a\""
+      assert html =~ "fill=\"#dc2626\""
+
+      # Check stat labels
+      assert html =~ "Average"
+      assert html =~ "Median"
+      assert html =~ "Minimum"
+      assert html =~ "Maximum"
+    end
+  end
+
   describe "wait_time/1 template" do
     test "renders wait_time template with complete data" do
       assigns = %{
@@ -1261,6 +1615,32 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       }
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "@bottom-center"
+      assert html =~ "Generated by Stride"
+    end
+
+    test "lead_time template includes Generated by Stride in page CSS" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          summary_stats: %{
+            average_hours: 72.0,
+            median_hours: 48.0,
+            min_hours: 24.0,
+            max_hours: 120.0,
+            count: 5
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
       assert html =~ "@bottom-center"
       assert html =~ "Generated by Stride"
