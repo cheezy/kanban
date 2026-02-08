@@ -37,7 +37,7 @@ defmodule Kanban.Application do
   defp chromic_pdf_options do
     base = [
       no_sandbox: true,
-      discard_stderr: false,
+      discard_stderr: true,
       chrome_args: "--disable-dev-shm-usage --disable-gpu",
       session_pool: [timeout: 30_000, init_timeout: 30_000, checkout_timeout: 30_000]
     ]
