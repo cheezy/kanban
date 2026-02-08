@@ -93,7 +93,11 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
 WORKDIR "/app"
-RUN chown nobody /app
+RUN chown nobody /app \
+  && mkdir -p /home/nobody/.cache/fontconfig \
+  && chown -R nobody:nogroup /home/nobody \
+  && chmod -R 755 /var/cache/fontconfig
+ENV HOME=/home/nobody
 
 # set runner ENV
 ENV MIX_ENV="prod"
