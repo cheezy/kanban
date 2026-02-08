@@ -136,7 +136,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert html =~ "Claude Sonnet 4.5"
     end
 
-    test "displays N/A when agent name is missing in review wait", %{
+    test "displays Agent Unknown when agent name is missing in review wait", %{
       conn: conn,
       board: board,
       column: column
@@ -146,7 +146,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
-      assert html =~ "N/A"
+      assert html =~ "Agent Unknown"
     end
   end
 
@@ -217,7 +217,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert html =~ "Claude Sonnet 4.5"
     end
 
-    test "displays N/A when agent name is missing in backlog wait", %{
+    test "displays Agent Unknown when agent name is missing in backlog wait", %{
       conn: conn,
       board: board,
       column: column
@@ -227,7 +227,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
-      assert html =~ "N/A"
+      assert html =~ "Agent Unknown"
     end
   end
 
