@@ -43,3 +43,6 @@ TOKENS
 
 .stride_auth.md
 priv/repo/seed_metrics_data.exs
+package.json
+package-lock.json
+node_modules

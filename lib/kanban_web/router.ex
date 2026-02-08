@@ -134,6 +134,7 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/tasks/:task_id/edit", BoardLive.Show, :edit_task
     end
 
+    get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export
     post "/users/update-password", UserSessionController, :update_password
   end
 
