@@ -35,11 +35,16 @@ defmodule Kanban.Application do
   end
 
   defp chromic_pdf_options do
-    [
+    base = [
       no_sandbox: true,
       discard_stderr: false,
       chrome_args: "--disable-dev-shm-usage --disable-gpu",
       session_pool: [timeout: 30_000, init_timeout: 30_000, checkout_timeout: 30_000]
     ]
+
+    case System.find_executable("google-chrome-stable") do
+      nil -> base
+      path -> [{:chrome_executable, path} | base]
+    end
   end
 end
