@@ -37,6 +37,7 @@ defmodule Kanban.Application do
   defp chromic_pdf_options do
     [
       no_sandbox: true,
+      chrome_args: "--disable-dev-shm-usage",
       session_pool: [timeout: 30_000, init_timeout: 30_000, checkout_timeout: 30_000]
     ]
   end
