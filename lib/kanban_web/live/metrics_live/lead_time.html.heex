@@ -9,9 +9,16 @@
         }>
           <.button>Back to Dashboard</.button>
         </.link>
-        <.button phx-click="export_pdf" class="ml-2">
-          <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
-        </.button>
+        <a
+          href={
+            ~p"/boards/#{@board}/metrics/lead-time/export?time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
+          }
+          target="_blank"
+        >
+          <.button class="ml-2">
+            <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
+          </.button>
+        </a>
       </:actions>
     </.header>
 

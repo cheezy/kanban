@@ -71,11 +71,6 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("export_pdf", _params, socket) do
-    {:noreply, put_flash(socket, :info, "PDF export feature coming soon!")}
-  end
-
   defp load_lead_time_data(socket) do
     opts = [
       time_range: socket.assigns.time_range,

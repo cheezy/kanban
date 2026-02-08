@@ -31,4 +31,11 @@ defmodule KanbanWeb.MetricsPdfHTML do
 
   defp weekend_filter_label(true), do: "Weekends Excluded"
   defp weekend_filter_label(false), do: "Weekends Included"
+
+  defp calculate_bar_width(_count, 0), do: 0
+  defp calculate_bar_width(_count, nil), do: 0
+
+  defp calculate_bar_width(count, peak) when peak > 0 do
+    Float.round(count / peak * 100, 1)
+  end
 end

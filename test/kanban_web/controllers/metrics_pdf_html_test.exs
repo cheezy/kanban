@@ -394,6 +394,433 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     end
   end
 
+  describe "throughput template - completed goals section" do
+    test "renders completed goals when present" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [
+            %{
+              identifier: "G1",
+              title: "Major Feature Release",
+              inserted_at: ~U[2024-01-01 08:00:00Z],
+              completed_at: ~U[2024-01-10 16:00:00Z],
+              completed_by_agent: "Claude Sonnet 4.5"
+            },
+            %{
+              identifier: "G2",
+              title: "Infrastructure Overhaul",
+              inserted_at: ~U[2024-01-05 10:00:00Z],
+              completed_at: ~U[2024-01-12 14:00:00Z],
+              completed_by_agent: nil
+            }
+          ],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "Completed Goals"
+      assert html =~ "G1"
+      assert html =~ "Major Feature Release"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "G2"
+      assert html =~ "Infrastructure Overhaul"
+    end
+
+    test "hides completed goals section when empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      refute html =~ "Completed Goals"
+    end
+
+    test "hides completed goals section when key is missing" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      refute html =~ "Completed Goals"
+    end
+  end
+
+  describe "throughput template - grouped tasks section" do
+    test "renders grouped tasks with full details" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W42",
+                 title: "Implement auth module",
+                 inserted_at: ~U[2024-01-05 09:00:00Z],
+                 claimed_at: ~U[2024-01-10 10:00:00Z],
+                 completed_at: ~U[2024-01-10 15:00:00Z],
+                 completed_by_agent: "Claude Sonnet 4.5"
+               },
+               %{
+                 identifier: "W43",
+                 title: "Add tests for auth",
+                 inserted_at: ~U[2024-01-06 09:00:00Z],
+                 claimed_at: ~U[2024-01-10 11:00:00Z],
+                 completed_at: ~U[2024-01-10 16:00:00Z],
+                 completed_by_agent: "GPT-4"
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "Completed Tasks"
+      assert html =~ "Jan 10, 2024"
+      assert html =~ "2 tasks"
+      assert html =~ "W42"
+      assert html =~ "Implement auth module"
+      assert html =~ "Claude Sonnet 4.5"
+      assert html =~ "W43"
+      assert html =~ "Add tests for auth"
+      assert html =~ "GPT-4"
+      assert html =~ "Claimed:"
+    end
+
+    test "renders task without claimed_at" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W50",
+                 title: "Quick fix",
+                 inserted_at: ~U[2024-01-10 08:00:00Z],
+                 claimed_at: nil,
+                 completed_at: ~U[2024-01-10 09:00:00Z],
+                 completed_by_agent: nil
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "W50"
+      assert html =~ "Quick fix"
+      assert html =~ "1 task"
+      refute html =~ "Claimed:"
+    end
+
+    test "renders single task with singular label" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: [
+            {~D[2024-01-10],
+             [
+               %{
+                 identifier: "W60",
+                 title: "Solo task",
+                 inserted_at: ~U[2024-01-09 09:00:00Z],
+                 claimed_at: ~U[2024-01-10 10:00:00Z],
+                 completed_at: ~U[2024-01-10 12:00:00Z],
+                 completed_by_agent: "Agent A"
+               }
+             ]}
+          ]
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "1 task"
+      refute html =~ "1 tasks"
+    end
+
+    test "hides grouped tasks section when empty" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      refute html =~ "Completed Tasks"
+    end
+  end
+
+  describe "throughput template - bar chart rendering" do
+    test "calculates correct bar widths" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [
+            %{date: ~D[2024-01-03], count: 10},
+            %{date: ~D[2024-01-02], count: 5},
+            %{date: ~D[2024-01-01], count: 1}
+          ],
+          summary_stats: %{total: 16, avg_per_day: 5.3, peak_day: ~D[2024-01-03], peak_count: 10},
+          completed_goals: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "width: 100.0%"
+      assert html =~ "width: 50.0%"
+      assert html =~ "width: 10.0%"
+    end
+
+    test "handles nil peak count in bar width calculation" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [
+            %{date: ~D[2024-01-01], count: 3}
+          ],
+          summary_stats: %{total: 3, avg_per_day: 3.0, peak_day: ~D[2024-01-01], peak_count: nil},
+          completed_goals: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "width: 0%"
+    end
+
+    test "handles zero peak count in bar width calculation" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "throughput",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          throughput: [
+            %{date: ~D[2024-01-01], count: 0}
+          ],
+          summary_stats: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0},
+          completed_goals: [],
+          grouped_tasks: []
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+
+      assert html =~ "width: 0%"
+      assert html =~ "0 tasks"
+    end
+  end
+
+  describe "cycle_time template - no data branch" do
+    test "renders no-data message when stats are nil" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "cycle-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{summary_stats: nil},
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "No cycle time data available"
+      refute html =~ "Average"
+    end
+  end
+
+  describe "lead_time template - no data branch" do
+    test "renders no-data message when stats are nil" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "lead-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{summary_stats: nil},
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.lead_time(assigns))
+
+      assert html =~ "No lead time data available"
+      refute html =~ "Average"
+    end
+  end
+
+  describe "wait_time template - partial data branches" do
+    test "renders no-data for nil review wait stats only" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "wait-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          review_wait_stats: nil,
+          backlog_wait_stats: %{
+            average_hours: 24.0,
+            median_hours: 18.0,
+            min_hours: 2.0,
+            max_hours: 72.0
+          }
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.wait_time(assigns))
+
+      assert html =~ "No review wait time data available"
+      refute html =~ "No backlog wait time data available"
+    end
+
+    test "renders no-data for nil backlog wait stats only" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "wait-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          review_wait_stats: %{
+            average_hours: 4.0,
+            median_hours: 3.0,
+            min_hours: 1.0,
+            max_hours: 12.0
+          },
+          backlog_wait_stats: nil
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.wait_time(assigns))
+
+      refute html =~ "No review wait time data available"
+      assert html =~ "No backlog wait time data available"
+    end
+
+    test "renders no-data for both nil stats" do
+      assigns = %{
+        board: %{name: "Test Board", id: 1},
+        metric: "wait-time",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false,
+        agents: [],
+        data: %{
+          review_wait_stats: nil,
+          backlog_wait_stats: nil
+        },
+        generated_at: ~U[2024-01-15 10:00:00Z]
+      }
+
+      html = render_to_string(MetricsPdfHTML.wait_time(assigns))
+
+      assert html =~ "No review wait time data available"
+      assert html =~ "No backlog wait time data available"
+    end
+  end
+
   describe "edge cases" do
     test "handles nil peak_day in throughput stats" do
       assigns = %{

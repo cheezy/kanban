@@ -401,12 +401,11 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       assert view |> element("button", "Export to PDF") |> has_element?()
     end
 
-    test "clicking export PDF triggers event", %{conn: conn, board: board} do
-      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+    test "export PDF link exists with correct parameters", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
 
-      assert view
-             |> element("button", "Export to PDF")
-             |> render_click() =~ "Lead Time Metrics"
+      assert html =~ "Export to PDF"
+      assert html =~ ~r|/boards/#{board.id}/metrics/lead-time/export\?|
     end
   end
 

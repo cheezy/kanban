@@ -1,8 +1,12 @@
 defmodule KanbanWeb.MetricsPdfController do
   use KanbanWeb, :controller
 
+  import Ecto.Query
+
   alias Kanban.Boards
   alias Kanban.Metrics
+  alias Kanban.Repo
+  alias Kanban.Tasks.Task
   alias KanbanWeb.MetricsLive.Helpers
 
   def export(conn, %{"id" => board_id, "metric" => metric} = params) do
@@ -26,8 +30,9 @@ defmodule KanbanWeb.MetricsPdfController do
     assigns = build_assigns(board, metric, opts, agents, data)
     html_content = render_metric_html(metric, assigns)
 
-    case ChromicPDF.print_to_pdf({:html, html_content}) do
-      {:ok, pdf_binary} ->
+    case ChromicPDF.print_to_pdf({:html, html_content}, print_to_pdf: %{printBackground: true}) do
+      {:ok, pdf_base64} ->
+        pdf_binary = Base.decode64!(pdf_base64)
         send_pdf_response(conn, board, metric, opts[:time_range], pdf_binary)
 
       {:error, reason} ->
@@ -83,10 +88,16 @@ defmodule KanbanWeb.MetricsPdfController do
   defp load_metric_data("throughput", board_id, opts) do
     {:ok, throughput} = Metrics.get_throughput(board_id, opts)
     stats = calculate_throughput_stats(throughput)
+    tasks = get_throughput_tasks(board_id, opts)
+    grouped_tasks = group_tasks_by_date(tasks)
+    goals = get_completed_goals(board_id, opts)
 
     %{
       throughput: throughput,
-      summary_stats: stats
+      summary_stats: stats,
+      tasks: tasks,
+      grouped_tasks: grouped_tasks,
+      completed_goals: goals
     }
   end
 
@@ -118,19 +129,31 @@ defmodule KanbanWeb.MetricsPdfController do
   defp load_metric_data(_metric, _board_id, _opts), do: %{}
 
   defp render_metric_html("throughput", assigns) do
-    KanbanWeb.MetricsPdfHTML.throughput(assigns)
+    assigns
+    |> KanbanWeb.MetricsPdfHTML.throughput()
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 
   defp render_metric_html("cycle-time", assigns) do
-    KanbanWeb.MetricsPdfHTML.cycle_time(assigns)
+    assigns
+    |> KanbanWeb.MetricsPdfHTML.cycle_time()
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 
   defp render_metric_html("lead-time", assigns) do
-    KanbanWeb.MetricsPdfHTML.lead_time(assigns)
+    assigns
+    |> KanbanWeb.MetricsPdfHTML.lead_time()
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 
   defp render_metric_html("wait-time", assigns) do
-    KanbanWeb.MetricsPdfHTML.wait_time(assigns)
+    assigns
+    |> KanbanWeb.MetricsPdfHTML.wait_time()
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
   end
 
   defp render_metric_html(_metric, _assigns),
@@ -198,4 +221,81 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp calculate_throughput_stats(_),
     do: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
+
+  defp get_throughput_tasks(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = Helpers.get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
+      |> order_by([t], desc: t.completed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        inserted_at: t.inserted_at,
+        claimed_at: t.claimed_at,
+        completed_at: t.completed_at,
+        completed_by_agent: t.completed_by_agent
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp get_completed_goals(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    agent_name = Keyword.get(opts, :agent_name)
+    start_date = Helpers.get_start_date(time_range)
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], t.type == ^:goal)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> order_by([t], desc: t.completed_at)
+      |> select([t], %{
+        id: t.id,
+        identifier: t.identifier,
+        title: t.title,
+        inserted_at: t.inserted_at,
+        completed_at: t.completed_at,
+        completed_by_agent: t.completed_by_agent
+      })
+
+    query =
+      if agent_name do
+        where(query, [t], t.completed_by_agent == ^agent_name)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  defp group_tasks_by_date(tasks) do
+    tasks
+    |> Enum.group_by(fn task ->
+      task.completed_at
+      |> DateTime.to_date()
+    end)
+    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
+    |> Enum.map(fn {date, day_tasks} ->
+      {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
+    end)
+  end
 end
