@@ -915,6 +915,133 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  describe "get_agents/1" do
+    test "returns list of agents who completed tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} =
+        complete_task_with_timestamps(task1, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _} = complete_task_with_timestamps(task2, %{completed_by_agent: "GPT-4"})
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      assert "Claude Sonnet 4.5" in agents
+      assert "GPT-4" in agents
+      assert length(agents) == 2
+    end
+
+    test "returns list of agents who created tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          created_by_agent: "Claude Sonnet 4.5",
+          completed_at: DateTime.utc_now()
+        })
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      assert "Claude Sonnet 4.5" in agents
+    end
+
+    test "returns unique sorted list of agents" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create multiple tasks by same agents
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+      task3 = task_fixture(column)
+
+      {:ok, _} =
+        complete_task_with_timestamps(task1, %{completed_by_agent: "GPT-4"})
+
+      {:ok, _} =
+        complete_task_with_timestamps(task2, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _} =
+        complete_task_with_timestamps(task3, %{completed_by_agent: "GPT-4"})
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      # Should be sorted alphabetically and unique
+      assert agents == ["Claude Sonnet 4.5", "GPT-4"]
+    end
+
+    test "returns empty list for board with no agent activity" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task_fixture(column)
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      assert agents == []
+    end
+
+    test "includes agents from both created_by_agent and completed_by_agent" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      # Task1 created by one agent, completed by another
+      {:ok, _} =
+        Tasks.update_task(task1, %{
+          created_by_agent: "Claude Opus",
+          claimed_at: DateTime.add(DateTime.utc_now(), -24, :hour),
+          completed_at: DateTime.utc_now(),
+          completed_by_agent: "Claude Sonnet 4.5"
+        })
+
+      # Task2 only created by agent
+      {:ok, _} = Tasks.update_task(task2, %{created_by_agent: "GPT-4"})
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      assert "Claude Opus" in agents
+      assert "Claude Sonnet 4.5" in agents
+      assert "GPT-4" in agents
+      assert length(agents) == 3
+    end
+
+    test "only returns agents from specified board" do
+      user = user_fixture()
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      column1 = column_fixture(board1)
+      column2 = column_fixture(board2)
+
+      task1 = task_fixture(column1)
+      task2 = task_fixture(column2)
+
+      {:ok, _} =
+        complete_task_with_timestamps(task1, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _} = complete_task_with_timestamps(task2, %{completed_by_agent: "GPT-4"})
+
+      {:ok, agents1} = Metrics.get_agents(board1.id)
+      {:ok, agents2} = Metrics.get_agents(board2.id)
+
+      assert agents1 == ["Claude Sonnet 4.5"]
+      assert agents2 == ["GPT-4"]
+    end
+  end
+
   # Helper functions
 
   defp complete_task_with_timestamps(task, attrs \\ %{}) do
