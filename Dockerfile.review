@@ -80,6 +80,7 @@ RUN apt-get update \
      wget gnupg \
   && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
   && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+  && ln -sf /usr/bin/google-chrome-stable /usr/bin/google-chrome \
   && rm google-chrome-stable_current_amd64.deb \
   && apt-get purge -y wget gnupg \
   && rm -rf /var/lib/apt/lists/*
