@@ -57,7 +57,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             href={@link}
             class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
           >
-            View details
+            {gettext("View details")}
           </a>
         </div>
       </div>
@@ -113,7 +113,7 @@ defmodule KanbanWeb.MetricsLive.Components do
           </div>
         </div>
         <div :if={Enum.empty?(@data)} class="text-center py-8 text-gray-500 dark:text-gray-400">
-          No data available
+          {gettext("No data available")}
         </div>
       </div>
     </div>
@@ -138,7 +138,7 @@ defmodule KanbanWeb.MetricsLive.Components do
     ~H"""
     <div class={["flex-1 min-w-[200px]", @class]}>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Time Range
+        {gettext("Time Range")}
       </label>
       <select
         phx-change={@on_change}
@@ -147,15 +147,15 @@ defmodule KanbanWeb.MetricsLive.Components do
         aria-label="Select time range"
       >
         <option value="last_7_days" selected={@current_range == :last_7_days}>
-          Last 7 Days
+          {gettext("Last 7 Days")}
         </option>
         <option value="last_30_days" selected={@current_range == :last_30_days}>
-          Last 30 Days
+          {gettext("Last 30 Days")}
         </option>
         <option value="last_90_days" selected={@current_range == :last_90_days}>
-          Last 90 Days
+          {gettext("Last 90 Days")}
         </option>
-        <option value="all_time" selected={@current_range == :all_time}>All Time</option>
+        <option value="all_time" selected={@current_range == :all_time}>{gettext("All Time")}</option>
       </select>
     </div>
     """
@@ -181,7 +181,7 @@ defmodule KanbanWeb.MetricsLive.Components do
     ~H"""
     <div class={["flex-1 min-w-[200px]", @class]}>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Agent Filter
+        {gettext("Agent Filter")}
       </label>
       <select
         phx-change={@on_change}
@@ -189,7 +189,7 @@ defmodule KanbanWeb.MetricsLive.Components do
         class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         aria-label="Filter by agent"
       >
-        <option value="" selected={is_nil(@current_agent)}>All Agents</option>
+        <option value="" selected={is_nil(@current_agent)}>{gettext("All Agents")}</option>
         <option
           :for={agent <- @agents}
           value={agent}
@@ -233,7 +233,7 @@ defmodule KanbanWeb.MetricsLive.Components do
         for="exclude_weekends"
         class="text-sm font-medium text-gray-700 dark:text-gray-300"
       >
-        Exclude Weekends
+        {gettext("Exclude Weekends")}
       </label>
     </div>
     """
@@ -267,9 +267,9 @@ defmodule KanbanWeb.MetricsLive.Components do
           <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Filters")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Customize your {@view_name} view
+            {gettext("Customize your %{view_name} view", view_name: @view_name)}
           </p>
         </div>
       </div>
@@ -280,26 +280,26 @@ defmodule KanbanWeb.MetricsLive.Components do
               <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
                 <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span class="uppercase tracking-wide text-xs">Time Range</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Time Range")}</span>
             </label>
             <select
               name="time_range"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
             >
               <option value="today" selected={@time_range == :today}>
-                🌅 Today
+                {"🌅 " <> gettext("Today")}
               </option>
               <option value="last_7_days" selected={@time_range == :last_7_days}>
-                📅 Last 7 Days
+                {"📅 " <> gettext("Last 7 Days")}
               </option>
               <option value="last_30_days" selected={@time_range == :last_30_days}>
-                📅 Last 30 Days
+                {"📅 " <> gettext("Last 30 Days")}
               </option>
               <option value="last_90_days" selected={@time_range == :last_90_days}>
-                📅 Last 90 Days
+                {"📅 " <> gettext("Last 90 Days")}
               </option>
               <option value="all_time" selected={@time_range == :all_time}>
-                ♾️ All Time
+                {"♾️ " <> gettext("All Time")}
               </option>
             </select>
           </div>
@@ -315,13 +315,13 @@ defmodule KanbanWeb.MetricsLive.Components do
                   class="h-4 w-4 text-purple-600 dark:text-purple-400"
                 />
               </div>
-              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Agent Filter")}</span>
             </label>
             <select
               name="agent_name"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
             >
-              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option value="" selected={is_nil(@agent_name)}>{"🤖 " <> gettext("All Agents")}</option>
               <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
                 {agent}
               </option>
@@ -345,7 +345,7 @@ defmodule KanbanWeb.MetricsLive.Components do
                 name="hero-calendar-days"
                 class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
               />
-              <span>Exclude Weekends</span>
+              <span>{gettext("Exclude Weekends")}</span>
             </label>
           </div>
         </div>
@@ -369,7 +369,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             <.icon name="hero-clock-solid" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Average
+            {gettext("Average")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -383,7 +383,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             <.icon name="hero-chart-bar-solid" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Median
+            {gettext("Median")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -397,7 +397,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             <.icon name="hero-arrow-down-solid" class="h-6 w-6 text-green-600 dark:text-green-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Min
+            {gettext("Min")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -411,7 +411,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             <.icon name="hero-arrow-up-solid" class="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Max
+            {gettext("Max")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">

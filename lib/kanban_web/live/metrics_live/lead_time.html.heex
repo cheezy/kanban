@@ -1,13 +1,13 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
     <.header>
-      {@board.name} - Lead Time Metrics
-      <:subtitle>Time from creation to completion</:subtitle>
+      {@board.name} - {gettext("Lead Time Metrics")}
+      <:subtitle>{gettext("Time from creation to completion")}</:subtitle>
       <:actions>
         <.link navigate={
           ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }>
-          <.button>Back to Dashboard</.button>
+          <.button>{gettext("Back to Dashboard")}</.button>
         </.link>
         <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
           <button
@@ -15,7 +15,7 @@
             data-dropdown-toggle
             class="btn btn-primary btn-soft inline-flex items-center gap-2"
           >
-            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> Export
+            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> {gettext("Export")}
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
@@ -36,7 +36,7 @@
               target="_blank"
               class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
             >
-              <.icon name="hero-document" class="h-4 w-4" /> PDF
+              <.icon name="hero-document" class="h-4 w-4" /> {gettext("PDF")}
             </a>
             <a
               href={
@@ -44,7 +44,7 @@
               }
               class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
             >
-              <.icon name="hero-table-cells" class="h-4 w-4" /> Excel
+              <.icon name="hero-table-cells" class="h-4 w-4" /> {gettext("Excel")}
             </a>
           </div>
         </div>
@@ -76,9 +76,9 @@
           <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Tasks")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Grouped by completion date with lead time metrics
+            {gettext("Grouped by completion date with lead time metrics")}
           </p>
         </div>
       </div>
@@ -115,15 +115,15 @@
                   <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
                     <div class="flex items-center gap-1">
                       <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
-                      <span>Created: {format_datetime(task.inserted_at)}</span>
+                      <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <.icon name="hero-clock" class="h-3.5 w-3.5" />
-                      <span>Completed: {format_datetime(task.completed_at)}</span>
+                      <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
                     </div>
                     <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
                       <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
-                      <span>{task.completed_by_agent || "Agent Unknown"}</span>
+                      <span>{task.completed_by_agent || gettext("Agent Unknown")}</span>
                     </div>
                   </div>
                 </div>
@@ -144,7 +144,7 @@
           class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
         />
         <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
-          No tasks completed in this time range
+          {gettext("No tasks completed in this time range")}
         </p>
       </div>
     </div>

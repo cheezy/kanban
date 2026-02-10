@@ -19,7 +19,7 @@
         <.link navigate={~p"/boards/#{@board}/archive"}>
           <.button>{gettext("Archived Tasks")}</.button>
         </.link>
-        <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/metrics"}>
+        <.link navigate={~p"/boards/#{@board}/metrics"}>
           <.button>{gettext("Metrics")}</.button>
         </.link>
         <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>

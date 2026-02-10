@@ -2259,6 +2259,7 @@ msgid "Archived Tasks"
 msgstr ""
 
 #: lib/kanban_web/live/archive_live/index.html.heex:10
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
 msgstr ""
@@ -2552,4 +2553,440 @@ msgstr ""
 #: lib/kanban_web/live/board_live/show.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "Metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:184
+#: lib/kanban_web/live/metrics_live/components.ex:318
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:67
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "Agent Filter"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:134
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:126
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:360
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:124
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:210
+#, elixir-autogen, elixir-format
+msgid "Agent Unknown"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:192
+#: lib/kanban_web/live/metrics_live/components.ex:324
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:73
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "All Agents"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:158
+#: lib/kanban_web/live/metrics_live/components.ex:302
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:51
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "All Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:372
+#, elixir-autogen, elixir-format
+msgid "Average"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:169
+#, elixir-autogen, elixir-format
+msgid "Avg Per Day"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:14
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:10
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:10
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Back to Dashboard"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:244
+#, elixir-autogen, elixir-format
+msgid "Backlog"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:154
+#, elixir-autogen, elixir-format
+msgid "Backlog Wait Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:123
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:346
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Claimed:"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:264
+#, elixir-autogen, elixir-format
+msgid "Completed Goals"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:83
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:79
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:300
+#, elixir-autogen, elixir-format
+msgid "Completed Tasks"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:130
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:122
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:284
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:350
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:116
+#, elixir-autogen, elixir-format
+msgid "Completed:"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:118
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:287
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:342
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:198
+#, elixir-autogen, elixir-format
+msgid "Created:"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:272
+#, elixir-autogen, elixir-format
+msgid "Customize your %{view_name} view"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Customize your metrics view"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:62
+#, elixir-autogen, elixir-format
+msgid "Customize your throughput view"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "Cycle Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Cycle Time Metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:213
+#, elixir-autogen, elixir-format
+msgid "Daily Completions Bar Chart"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:51
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:47
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:47
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "Excel"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:236
+#: lib/kanban_web/live/metrics_live/components.ex:348
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:101
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:138
+#, elixir-autogen, elixir-format
+msgid "Exclude Weekends"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:22
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:18
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:18
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Export"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:270
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:19
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Filters"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:266
+#, elixir-autogen, elixir-format
+msgid "Goals completed in this time range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:302
+#, elixir-autogen, elixir-format
+msgid "Grouped by completion date"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Grouped by completion date with cycle time metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
+#, elixir-autogen, elixir-format
+msgid "Grouped by completion date with lead time metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Human bottleneck analysis"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:153
+#: lib/kanban_web/live/metrics_live/components.ex:296
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:45
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:86
+#, elixir-autogen, elixir-format
+msgid "Last 30 Days"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:150
+#: lib/kanban_web/live/metrics_live/components.ex:293
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:42
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:83
+#, elixir-autogen, elixir-format
+msgid "Last 7 Days"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:156
+#: lib/kanban_web/live/metrics_live/components.ex:299
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:48
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "Last 90 Days"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Lead Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Lead Time Metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:414
+#, elixir-autogen, elixir-format
+msgid "Max"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:386
+#, elixir-autogen, elixir-format
+msgid "Median"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Metrics Dashboard"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:400
+#, elixir-autogen, elixir-format
+msgid "Min"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:116
+#, elixir-autogen, elixir-format
+msgid "No data available"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "No tasks claimed in this time range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:155
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:147
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:227
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:375
+#, elixir-autogen, elixir-format
+msgid "No tasks completed in this time range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:233
+#, elixir-autogen, elixir-format
+msgid "No tasks started in this time range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
+#, elixir-autogen, elixir-format
+msgid "No tasks waiting for review in this time range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:43
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:39
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:39
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "PDF"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:197
+#, elixir-autogen, elixir-format
+msgid "Peak Count"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:183
+#, elixir-autogen, elixir-format
+msgid "Peak Day"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Performance metrics and insights for your board"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:244
+#, elixir-autogen, elixir-format
+msgid "Queue"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:154
+#, elixir-autogen, elixir-format
+msgid "Queue Wait Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Queue and wait time analysis"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:236
+#, elixir-autogen, elixir-format
+msgid "Review"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Review Wait Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "Reviewed:"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:123
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Started:"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:216
+#, elixir-autogen, elixir-format
+msgid "Tasks completed per day"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Tasks completed per day with detailed breakdown"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Throughput"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Throughput Metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:141
+#: lib/kanban_web/live/metrics_live/components.ex:283
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:32
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:73
+#, elixir-autogen, elixir-format
+msgid "Time Range"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Time from claim to completion"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Time from creation to completion"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Time from start to completion"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Time tasks spend in the backlog before being claimed"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:161
+#, elixir-autogen, elixir-format
+msgid "Time tasks spend in the queue before work begins"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Time tasks spend waiting for human review after completion"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:290
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:39
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:80
+#, elixir-autogen, elixir-format
+msgid "Today"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:152
+#, elixir-autogen, elixir-format
+msgid "Total Tasks"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/components.ex:60
+#, elixir-autogen, elixir-format
+msgid "View details"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:228
+#, elixir-autogen, elixir-format
+msgid "Wait Time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Wait Time Metrics"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:163
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:200
+#, elixir-autogen, elixir-format
+msgid "avg"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:166
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "median"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:319
+#, elixir-autogen, elixir-format
+msgid "task"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:319
+#, elixir-autogen, elixir-format
+msgid "tasks"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "tasks completed"
 msgstr ""

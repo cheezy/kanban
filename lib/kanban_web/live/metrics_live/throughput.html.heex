@@ -1,13 +1,13 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
     <.header>
-      {@board.name} - Throughput Metrics
-      <:subtitle>Tasks completed per day with detailed breakdown</:subtitle>
+      {@board.name} - {gettext("Throughput Metrics")}
+      <:subtitle>{gettext("Tasks completed per day with detailed breakdown")}</:subtitle>
       <:actions>
         <.link navigate={
           ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }>
-          <.button>Back to Dashboard</.button>
+          <.button>{gettext("Back to Dashboard")}</.button>
         </.link>
         <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
           <button
@@ -15,7 +15,7 @@
             data-dropdown-toggle
             class="btn btn-primary btn-soft inline-flex items-center gap-2"
           >
-            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> Export
+            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> {gettext("Export")}
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
@@ -36,7 +36,7 @@
               target="_blank"
               class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
             >
-              <.icon name="hero-document" class="h-4 w-4" /> PDF
+              <.icon name="hero-document" class="h-4 w-4" /> {gettext("PDF")}
             </a>
             <a
               href={
@@ -44,7 +44,7 @@
               }
               class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
             >
-              <.icon name="hero-table-cells" class="h-4 w-4" /> Excel
+              <.icon name="hero-table-cells" class="h-4 w-4" /> {gettext("Excel")}
             </a>
           </div>
         </div>
@@ -57,9 +57,9 @@
           <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Filters")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Customize your throughput view
+            {gettext("Customize your throughput view")}
           </p>
         </div>
       </div>
@@ -70,26 +70,26 @@
               <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
                 <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span class="uppercase tracking-wide text-xs">Time Range</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Time Range")}</span>
             </label>
             <select
               name="time_range"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
             >
               <option value="today" selected={@time_range == :today}>
-                🌅 Today
+                {"🌅 " <> gettext("Today")}
               </option>
               <option value="last_7_days" selected={@time_range == :last_7_days}>
-                📅 Last 7 Days
+                {"📅 " <> gettext("Last 7 Days")}
               </option>
               <option value="last_30_days" selected={@time_range == :last_30_days}>
-                📅 Last 30 Days
+                {"📅 " <> gettext("Last 30 Days")}
               </option>
               <option value="last_90_days" selected={@time_range == :last_90_days}>
-                📅 Last 90 Days
+                {"📅 " <> gettext("Last 90 Days")}
               </option>
               <option value="all_time" selected={@time_range == :all_time}>
-                ♾️ All Time
+                {"♾️ " <> gettext("All Time")}
               </option>
             </select>
           </div>
@@ -105,13 +105,13 @@
                   class="h-4 w-4 text-purple-600 dark:text-purple-400"
                 />
               </div>
-              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Agent Filter")}</span>
             </label>
             <select
               name="agent_name"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
             >
-              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option value="" selected={is_nil(@agent_name)}>{"🤖 " <> gettext("All Agents")}</option>
               <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
                 {agent}
               </option>
@@ -135,7 +135,7 @@
                 name="hero-calendar-days"
                 class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
               />
-              <span>Exclude Weekends</span>
+              <span>{gettext("Exclude Weekends")}</span>
             </label>
           </div>
         </div>
@@ -149,7 +149,7 @@
             <.icon name="hero-check-circle" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Total Tasks
+            {gettext("Total Tasks")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -166,7 +166,7 @@
             />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Avg Per Day
+            {gettext("Avg Per Day")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -180,7 +180,7 @@
             <.icon name="hero-calendar" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Peak Day
+            {gettext("Peak Day")}
           </h3>
         </div>
         <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -194,7 +194,7 @@
             <.icon name="hero-trophy" class="h-6 w-6 text-amber-600 dark:text-amber-400" />
           </div>
           <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            Peak Count
+            {gettext("Peak Count")}
           </h3>
         </div>
         <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -210,10 +210,10 @@
         </div>
         <div>
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-            Daily Completions Bar Chart
+            {gettext("Daily Completions Bar Chart")}
           </h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Tasks completed per day
+            {gettext("Tasks completed per day")}
           </p>
         </div>
       </div>
@@ -224,7 +224,7 @@
           class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
         />
         <p class="text-gray-500 dark:text-gray-400 text-lg">
-          No tasks completed in this time range
+          {gettext("No tasks completed in this time range")}
         </p>
       </div>
 
@@ -261,9 +261,9 @@
           <.icon name="hero-flag-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Goals</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Goals")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Goals completed in this time range
+            {gettext("Goals completed in this time range")}
           </p>
         </div>
       </div>
@@ -281,10 +281,10 @@
               {goal.title}
             </span>
             <span class="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-              Completed: {format_date(goal.completed_at)}
+              {gettext("Completed:")} {format_date(goal.completed_at)}
             </span>
             <span class="text-gray-500 dark:text-gray-500 whitespace-nowrap">
-              Created: {format_date(goal.inserted_at)}
+              {gettext("Created:")} {format_date(goal.inserted_at)}
             </span>
           </div>
         </div>
@@ -297,9 +297,9 @@
           <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Tasks")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Grouped by completion date
+            {gettext("Grouped by completion date")}
           </p>
         </div>
       </div>
@@ -316,7 +316,7 @@
                 {format_date(date)}
               </h4>
               <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {length(day_tasks)} {if length(day_tasks) == 1, do: "task", else: "tasks"}
+                {length(day_tasks)} {if length(day_tasks) == 1, do: gettext("task"), else: gettext("tasks")}
               </span>
             </div>
           </div>
@@ -339,15 +339,15 @@
                   <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-2">
                     <div class="flex items-center gap-1">
                       <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
-                      <span>Created: {format_datetime(task.inserted_at)}</span>
+                      <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
                     </div>
                     <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
                       <.icon name="hero-play" class="h-3.5 w-3.5" />
-                      <span>Claimed: {format_datetime(task.claimed_at)}</span>
+                      <span>{gettext("Claimed:")} {format_datetime(task.claimed_at)}</span>
                     </div>
                     <div class="flex items-center gap-1">
                       <.icon name="hero-clock" class="h-3.5 w-3.5" />
-                      <span>Completed: {format_datetime(task.completed_at)}</span>
+                      <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
                     </div>
                   </div>
                 </div>
@@ -357,7 +357,7 @@
                 >
                   <.icon name="hero-user-circle" class="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {task.completed_by_agent || "Agent Unknown"}
+                    {task.completed_by_agent || gettext("Agent Unknown")}
                   </span>
                 </div>
               </div>
@@ -372,7 +372,7 @@
           class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
         />
         <p class="text-gray-500 dark:text-gray-400 text-lg">
-          No tasks completed in this time range
+          {gettext("No tasks completed in this time range")}
         </p>
       </div>
     </div>

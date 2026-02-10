@@ -1,11 +1,11 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
     <.header>
-      {@board.name} - Metrics Dashboard
-      <:subtitle>Performance metrics and insights for your board</:subtitle>
+      {@board.name <> " - " <> gettext("Metrics Dashboard")}
+      <:subtitle>{gettext("Performance metrics and insights for your board")}</:subtitle>
       <:actions>
         <.link navigate={~p"/boards/#{@board}"}>
-          <.button>Back to Board</.button>
+          <.button>{gettext("Back to Board")}</.button>
         </.link>
       </:actions>
     </.header>
@@ -16,9 +16,9 @@
           <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Filters</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Filters")}</h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
-            Customize your metrics view
+            {gettext("Customize your metrics view")}
           </p>
         </div>
       </div>
@@ -29,26 +29,26 @@
               <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
                 <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span class="uppercase tracking-wide text-xs">Time Range</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Time Range")}</span>
             </label>
             <select
               name="time_range"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
             >
               <option value="today" selected={@time_range == :today}>
-                🌅 Today
+                {"🌅 " <> gettext("Today")}
               </option>
               <option value="last_7_days" selected={@time_range == :last_7_days}>
-                📅 Last 7 Days
+                {"📅 " <> gettext("Last 7 Days")}
               </option>
               <option value="last_30_days" selected={@time_range == :last_30_days}>
-                📅 Last 30 Days
+                {"📅 " <> gettext("Last 30 Days")}
               </option>
               <option value="last_90_days" selected={@time_range == :last_90_days}>
-                📅 Last 90 Days
+                {"📅 " <> gettext("Last 90 Days")}
               </option>
               <option value="all_time" selected={@time_range == :all_time}>
-                ♾️ All Time
+                {"♾️ " <> gettext("All Time")}
               </option>
             </select>
           </div>
@@ -64,13 +64,13 @@
                   class="h-4 w-4 text-purple-600 dark:text-purple-400"
                 />
               </div>
-              <span class="uppercase tracking-wide text-xs">Agent Filter</span>
+              <span class="uppercase tracking-wide text-xs">{gettext("Agent Filter")}</span>
             </label>
             <select
               name="agent_name"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
             >
-              <option value="" selected={is_nil(@agent_name)}>🤖 All Agents</option>
+              <option value="" selected={is_nil(@agent_name)}>{"🤖 " <> gettext("All Agents")}</option>
               <option
                 :for={agent <- @agents}
                 value={agent}
@@ -98,7 +98,7 @@
                 name="hero-calendar-days"
                 class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
               />
-              <span>Exclude Weekends</span>
+              <span>{gettext("Exclude Weekends")}</span>
             </label>
           </div>
         </div>
@@ -119,14 +119,14 @@
                 <.icon
                   name="hero-chart-bar-solid"
                   class="h-5 w-5 text-blue-600 dark:text-blue-400"
-                /> Throughput
+                /> {gettext("Throughput")}
               </dt>
               <dd class="mt-1">
                 <div class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                   {total_throughput(@throughput)}
                 </div>
                 <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  tasks completed
+                  {gettext("tasks completed")}
                 </div>
               </dd>
             </div>
@@ -153,17 +153,17 @@
                 <.icon
                   name="hero-clock-solid"
                   class="h-5 w-5 text-purple-600 dark:text-purple-400"
-                /> Cycle Time
+                /> {gettext("Cycle Time")}
               </dt>
               <dd class="mt-1">
                 <div class="flex items-baseline gap-2 mb-2">
                   <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
                     {format_hours(@cycle_time.average_hours)}
                   </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">avg</div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">{gettext("avg")}</div>
                 </div>
                 <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {format_hours(@cycle_time.median_hours)} median
+                  {format_hours(@cycle_time.median_hours)} {gettext("median")}
                 </div>
               </dd>
             </div>
@@ -190,17 +190,17 @@
                 <.icon
                   name="hero-arrow-trending-up-solid"
                   class="h-5 w-5 text-green-600 dark:text-green-400"
-                /> Lead Time
+                /> {gettext("Lead Time")}
               </dt>
               <dd class="mt-1">
                 <div class="flex items-baseline gap-2 mb-2">
                   <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
                     {format_hours(@lead_time.average_hours)}
                   </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">avg</div>
+                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">{gettext("avg")}</div>
                 </div>
                 <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {format_hours(@lead_time.median_hours)} median
+                  {format_hours(@lead_time.median_hours)} {gettext("median")}
                 </div>
               </dd>
             </div>
@@ -225,7 +225,7 @@
             <div class="flex-1">
               <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
                 <.icon name="hero-pause-solid" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                Wait Time
+                {gettext("Wait Time")}
               </dt>
               <dd class="mt-1 space-y-2">
                 <div :if={@board.ai_optimized_board} class="flex items-center gap-2">
@@ -233,7 +233,7 @@
                     {format_hours(@wait_time.review_wait.average_hours)}
                   </div>
                   <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Review
+                    {gettext("Review")}
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -241,7 +241,7 @@
                     {format_hours(@wait_time.backlog_wait.average_hours)}
                   </div>
                   <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {if @board.ai_optimized_board, do: "Backlog", else: "Queue"}
+                    {if @board.ai_optimized_board, do: gettext("Backlog"), else: gettext("Queue")}
                   </div>
                 </div>
               </dd>
