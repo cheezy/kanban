@@ -9,16 +9,45 @@
         }>
           <.button>Back to Dashboard</.button>
         </.link>
-        <a
-          href={
-            ~p"/boards/#{@board}/metrics/throughput/export?time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
-          }
-          target="_blank"
-        >
-          <.button class="ml-2">
-            <.icon name="hero-arrow-down-tray" class="h-4 w-4 mr-2" /> Export to PDF
-          </.button>
-        </a>
+        <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
+          <button
+            type="button"
+            data-dropdown-toggle
+            class="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-700 active:text-white/80"
+          >
+            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> Export
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div
+            data-dropdown-menu
+            class="hidden absolute right-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+          >
+            <a
+              href={
+                ~p"/boards/#{@board}/metrics/throughput/export?time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
+              }
+              target="_blank"
+              class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+            >
+              <.icon name="hero-document" class="h-4 w-4" /> PDF
+            </a>
+            <a
+              href={
+                ~p"/boards/#{@board}/metrics/throughput/export?format=excel&time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
+              }
+              class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+            >
+              <.icon name="hero-table-cells" class="h-4 w-4" /> Excel
+            </a>
+          </div>
+        </div>
       </:actions>
     </.header>
 

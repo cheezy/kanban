@@ -45,10 +45,13 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       assert html =~ "Exclude Weekends"
     end
 
-    test "displays export PDF button", %{conn: conn, board: board} do
+    test "displays export dropdown with PDF and Excel options", %{conn: conn, board: board} do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
-      assert html =~ "Export to PDF"
+      assert html =~ "Export"
+      assert html =~ "PDF"
+      assert html =~ "Excel"
+      assert html =~ "format=excel"
     end
 
     test "displays empty state when no tasks completed", %{conn: conn, board: board} do
@@ -252,20 +255,23 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
     end
   end
 
-  describe "Cycle Time - Export PDF" do
+  describe "Cycle Time - Export Dropdown" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
-    test "export PDF button is clickable", %{conn: conn, board: board} do
+    test "export dropdown button exists", %{conn: conn, board: board} do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
-      assert view |> element("button", "Export to PDF") |> has_element?()
+      assert view |> element("button", "Export") |> has_element?()
     end
 
-    test "export PDF link exists with correct parameters", %{conn: conn, board: board} do
+    test "export dropdown contains PDF and Excel options", %{conn: conn, board: board} do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
-      assert html =~ "Export to PDF"
+      assert html =~ "Export"
+      assert html =~ "PDF"
+      assert html =~ "Excel"
       assert html =~ ~r|/boards/#{board.id}/metrics/cycle-time/export\?|
+      assert html =~ "format=excel"
     end
   end
 
