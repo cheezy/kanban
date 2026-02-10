@@ -763,4 +763,241 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert disposition =~ "custom_metric"
     end
   end
+
+  describe "export/2 - Excel format (AI-optimized board)" do
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      %{board: board, column: column}
+    end
+
+    test "exports throughput as Excel when format=excel", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      complete_task(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".xlsx"
+      assert disposition =~ "throughput"
+      assert byte_size(conn.resp_body) > 0
+    end
+
+    test "exports cycle-time as Excel when format=excel", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      complete_task(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/cycle-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".xlsx"
+      assert disposition =~ "cycle_time"
+    end
+
+    test "exports lead-time as Excel when format=excel", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      complete_task(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/lead-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".xlsx"
+      assert disposition =~ "lead_time"
+    end
+
+    test "exports wait-time as Excel when format=excel", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      add_review_wait(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/wait-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".xlsx"
+      assert disposition =~ "wait_time"
+    end
+
+    test "defaults to PDF when no format specified", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      complete_task(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".pdf"
+    end
+
+    test "defaults to PDF when format is invalid", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      complete_task(task)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=csv")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "Excel export respects filter params", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      conn =
+        get(
+          conn,
+          ~p"/boards/#{board}/metrics/throughput/export?format=excel&time_range=last_7_days&agent_name=Claude+Sonnet+4.5&exclude_weekends=true"
+        )
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ "last_7_days"
+    end
+
+    test "Excel export with empty data", %{conn: conn, board: board} do
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+  end
+
+  describe "export/2 - Excel format (regular board)" do
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{board: board, column: column}
+    end
+
+    test "exports throughput as Excel for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ ".xlsx"
+    end
+
+    test "exports cycle-time as Excel for regular board with TaskHistory", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      create_move_history(task, column)
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/cycle-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+
+    test "exports lead-time as Excel for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/lead-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+
+    test "exports wait-time as Excel for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      create_move_history(task, column)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/wait-time/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+
+    test "exports Excel for regular board with empty data", %{conn: conn, board: board} do
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+
+      assert content_type =~
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    end
+  end
 end

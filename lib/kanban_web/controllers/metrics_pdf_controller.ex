@@ -8,6 +8,7 @@ defmodule KanbanWeb.MetricsPdfController do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias KanbanWeb.MetricsExcelExport
   alias KanbanWeb.MetricsLive.Helpers
 
   @metric_templates %{
@@ -22,7 +23,11 @@ defmodule KanbanWeb.MetricsPdfController do
   def export(conn, %{"id" => board_id, "metric" => metric} = params) do
     user = conn.assigns.current_scope.user
     board = Boards.get_board!(board_id, user)
-    generate_and_send_pdf(conn, board, metric, params)
+
+    case params["format"] do
+      "excel" -> generate_and_send_excel(conn, board, metric, params)
+      _ -> generate_and_send_pdf(conn, board, metric, params)
+    end
   end
 
   defp generate_and_send_pdf(conn, board, metric, params) do
@@ -37,6 +42,26 @@ defmodule KanbanWeb.MetricsPdfController do
       {:ok, pdf_base64} ->
         pdf_binary = Base.decode64!(pdf_base64)
         send_pdf_response(conn, board, metric, opts[:time_range], pdf_binary)
+
+      {:error, reason} ->
+        handle_pdf_error(conn, board.id, metric, reason)
+    end
+  end
+
+  defp generate_and_send_excel(conn, board, metric, params) do
+    opts = build_metric_options(params)
+    data = load_metric_data(metric, board.id, opts)
+
+    case MetricsExcelExport.generate(board, metric, opts, data) do
+      {:ok, excel_binary} ->
+        filename = generate_filename(board, metric, opts[:time_range], ".xlsx")
+
+        conn
+        |> put_resp_content_type(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
+        |> send_resp(200, excel_binary)
 
       {:error, reason} ->
         handle_pdf_error(conn, board.id, metric, reason)
@@ -161,13 +186,13 @@ defmodule KanbanWeb.MetricsPdfController do
     end
   end
 
-  defp generate_filename(board, metric, time_range) do
+  defp generate_filename(board, metric, time_range, extension \\ ".pdf") do
     board_name = String.replace(board.name, ~r/[^a-zA-Z0-9_-]/, "_")
     date_str = Date.to_string(Date.utc_today())
     metric_name = String.replace(metric, "-", "_")
     time_range_str = Atom.to_string(time_range)
 
-    "#{board_name}_#{metric_name}_#{time_range_str}_#{date_str}.pdf"
+    "#{board_name}_#{metric_name}_#{time_range_str}_#{date_str}#{extension}"
   end
 
   defp get_redirect_path(conn, board_id, metric) when metric in @valid_metrics do
