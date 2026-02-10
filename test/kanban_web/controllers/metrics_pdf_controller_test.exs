@@ -15,15 +15,18 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   end
 
   describe "export/2 - access control" do
-    test "redirects when board is not AI-optimized", %{conn: conn, user: user} do
+    test "exports PDF for regular (non-AI-optimized) board", %{conn: conn, user: user} do
       board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
 
       conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
 
-      assert redirected_to(conn) == ~p"/boards/#{board}"
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
-               "Metrics are only available for AI-optimized boards"
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
     end
 
     test "redirects when user does not have access to board", %{conn: conn} do
@@ -387,6 +390,119 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert conn.status == 200
       assert byte_size(conn.resp_body) > 0
     end
+  end
+
+  describe "export/2 - regular board metrics" do
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{board: board, column: column}
+    end
+
+    test "exports throughput PDF for regular board", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ "throughput"
+    end
+
+    test "exports cycle-time PDF for regular board with task history", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      create_move_history(task, column)
+
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/cycle-time/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "exports lead-time PDF for regular board", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/lead-time/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "exports wait-time PDF for regular board with task history", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      create_move_history(task, column)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/wait-time/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "exports throughput PDF for regular board with empty data", %{
+      conn: conn,
+      board: board
+    } do
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "exports cycle-time PDF for regular board with empty data", %{
+      conn: conn,
+      board: board
+    } do
+      conn = get(conn, ~p"/boards/#{board}/metrics/cycle-time/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+
+    test "exports wait-time PDF for regular board with empty data", %{
+      conn: conn,
+      board: board
+    } do
+      conn = get(conn, ~p"/boards/#{board}/metrics/wait-time/export")
+
+      assert conn.status == 200
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/pdf"
+    end
+  end
+
+  defp create_move_history(task, column) do
+    inserted_at =
+      DateTime.utc_now()
+      |> DateTime.add(-24, :hour)
+      |> DateTime.to_naive()
+      |> NaiveDateTime.truncate(:second)
+
+    Kanban.Repo.insert!(%Kanban.Tasks.TaskHistory{
+      task_id: task.id,
+      type: :move,
+      from_column: column.name,
+      to_column: "In Progress",
+      inserted_at: inserted_at
+    })
   end
 
   defp complete_task(task, attrs \\ %{}) do

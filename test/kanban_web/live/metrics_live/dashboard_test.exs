@@ -953,8 +953,94 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
     end
   end
 
+  describe "Dashboard - Regular Board" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "loads dashboard for regular board without redirect", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Metrics Dashboard"
+      assert html =~ board.name
+    end
+
+    test "does not show agent filter for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      refute html =~ "Agent Filter"
+    end
+
+    test "shows all four metric cards for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Throughput"
+      assert html =~ "Cycle Time"
+      assert html =~ "Lead Time"
+      assert html =~ "Wait Time"
+    end
+
+    test "shows Queue label instead of Backlog for wait time", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Queue"
+      refute html =~ "Backlog"
+    end
+
+    test "does not show Review wait time for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      refute html =~ "Review"
+    end
+
+    test "displays throughput for regular board with completed tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+
+      force_update_timestamps(task, %{
+        completed_at: DateTime.utc_now()
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "1"
+      assert html =~ "tasks completed"
+    end
+
+    test "displays time range filter for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Time Range"
+      assert html =~ "Last 30 Days"
+    end
+
+    test "displays exclude weekends filter for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Exclude Weekends"
+    end
+
+    test "handles filter changes for regular board", %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Last 7 Days"
+    end
+  end
+
   defp create_board_with_column(%{user: user}) do
     board = ai_optimized_board_fixture(user)
+    column = column_fixture(board)
+    %{board: board, column: column}
+  end
+
+  defp create_regular_board_with_column(%{user: user}) do
+    board = board_fixture(user)
     column = column_fixture(board)
     %{board: board, column: column}
   end
