@@ -9,6 +9,10 @@ const Dropdown = {
         this.toggle()
       })
 
+      this.menu.addEventListener("click", () => {
+        this.close()
+      })
+
       document.addEventListener("click", (e) => {
         if (!this.el.contains(e.target)) {
           this.close()
