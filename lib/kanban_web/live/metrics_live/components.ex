@@ -257,6 +257,7 @@ defmodule KanbanWeb.MetricsLive.Components do
   attr :exclude_weekends, :boolean, required: true
   attr :agents, :list, required: true
   attr :view_name, :string, required: true
+  attr :show_agent_filter, :boolean, default: true
 
   def metric_filters(assigns) do
     ~H"""
@@ -303,7 +304,10 @@ defmodule KanbanWeb.MetricsLive.Components do
             </select>
           </div>
 
-          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]">
+          <div
+            :if={@show_agent_filter}
+            class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]"
+          >
             <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
               <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
                 <.icon

@@ -26,33 +26,24 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    if board.ai_optimized_board do
-      {:ok, agents} = Metrics.get_agents(board.id)
+    {:ok, agents} = Metrics.get_agents(board.id)
 
-      time_range = Helpers.parse_time_range(params["time_range"])
-      agent_name = Helpers.parse_agent_name(params["agent_name"])
-      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
+    time_range = Helpers.parse_time_range(params["time_range"])
+    agent_name = Helpers.parse_agent_name(params["agent_name"])
+    exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
 
-      socket =
-        socket
-        |> assign(:page_title, "Lead Time Metrics")
-        |> assign(:board, board)
-        |> assign(:user_access, user_access)
-        |> assign(:agents, agents)
-        |> assign(:time_range, time_range)
-        |> assign(:agent_name, agent_name)
-        |> assign(:exclude_weekends, exclude_weekends)
-        |> load_lead_time_data()
+    socket =
+      socket
+      |> assign(:page_title, "Lead Time Metrics")
+      |> assign(:board, board)
+      |> assign(:user_access, user_access)
+      |> assign(:agents, agents)
+      |> assign(:time_range, time_range)
+      |> assign(:agent_name, agent_name)
+      |> assign(:exclude_weekends, exclude_weekends)
+      |> load_lead_time_data()
 
-      {:noreply, socket}
-    else
-      socket =
-        socket
-        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
-        |> redirect(to: ~p"/boards/#{board}")
-
-      {:noreply, socket}
-    end
+    {:noreply, socket}
   end
 
   @impl true

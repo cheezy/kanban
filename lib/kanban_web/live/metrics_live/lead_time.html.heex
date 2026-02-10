@@ -28,6 +28,7 @@
       exclude_weekends={@exclude_weekends}
       agents={@agents}
       view_name="lead time"
+      show_agent_filter={@board.ai_optimized_board}
     />
 
     <.summary_stats stats={@summary_stats} format_fn={&format_lead_time/1} />
@@ -91,7 +92,7 @@
                       <.icon name="hero-clock" class="h-3.5 w-3.5" />
                       <span>Completed: {format_datetime(task.completed_at)}</span>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
                       <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
                       <span>{task.completed_by_agent || "Agent Unknown"}</span>
                     </div>

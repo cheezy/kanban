@@ -1002,16 +1002,6 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       end
     end
 
-    test "redirects non-AI-optimized boards to board page", %{conn: conn, user: user} do
-      regular_board = board_fixture(user)
-
-      assert {:error, {:redirect, %{to: to, flash: flash}}} =
-               live(conn, ~p"/boards/#{regular_board}/metrics/lead-time")
-
-      assert to == "/boards/#{regular_board.id}"
-      assert flash["error"] == "Metrics are only available for AI-optimized boards."
-    end
-
     test "handles non-existent atom in parse_time_range", %{conn: conn, board: board} do
       {:ok, _view, html} =
         live(conn, ~p"/boards/#{board}/metrics/lead-time?time_range=nonexistent_range_abc")
@@ -1020,8 +1010,115 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
     end
   end
 
+  describe "Lead Time - Regular Board" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "loads lead time page successfully for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Lead Time Metrics"
+      assert html =~ board.name
+    end
+
+    test "does not show agent filter for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      refute html =~ "Agent Filter"
+    end
+
+    test "does not show agent info in task details for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Regular Board Task"})
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Regular Board Task"
+      refute html =~ "Agent Unknown"
+    end
+
+    test "displays summary stats for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "Average"
+      assert html =~ "Median"
+      assert html =~ "Min"
+      assert html =~ "Max"
+    end
+
+    test "calculates lead time from inserted_at to completed_at for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      # Set inserted_at to 2 days ago via direct DB update
+      two_days_ago = DateTime.add(DateTime.utc_now(), -2, :day)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Repo.update_all(set: [inserted_at: two_days_ago])
+
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ task.identifier
+      assert html =~ "Created:"
+      assert html =~ "Completed:"
+    end
+
+    test "displays empty state for regular board with no completed tasks", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      assert html =~ "No tasks completed in this time range"
+    end
+
+    test "time range filter works for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Last 7 Days"
+    end
+  end
+
   defp create_board_with_column(%{user: user}) do
     board = ai_optimized_board_fixture(user)
+    column = column_fixture(board)
+    %{board: board, column: column}
+  end
+
+  defp create_regular_board_with_column(%{user: user}) do
+    board = board_fixture(user)
     column = column_fixture(board)
     %{board: board, column: column}
   end
