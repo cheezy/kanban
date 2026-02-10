@@ -45,6 +45,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
   """
   def render_markdown(content) when is_binary(content) do
     content
+    |> escape_html()
     |> convert_bold()
     |> convert_inline_code()
     |> convert_links()
@@ -54,6 +55,12 @@ defmodule KanbanWeb.ResourcesLive.Show do
   end
 
   def render_markdown(nil), do: ""
+
+  defp escape_html(content) do
+    content
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
+  end
 
   defp convert_bold(content) do
     String.replace(content, ~r/\*\*([^*]+)\*\*/, "<strong>\\1</strong>")
@@ -68,11 +75,18 @@ defmodule KanbanWeb.ResourcesLive.Show do
   end
 
   defp convert_links(content) do
-    String.replace(
-      content,
-      ~r/\[([^\]]+)\]\(([^)]+)\)/,
-      "<a href=\"\\2\" class=\"text-blue-600 dark:text-blue-400 hover:underline\" target=\"_blank\" rel=\"noopener noreferrer\">\\1</a>"
-    )
+    Regex.replace(~r/\[([^\]]+)\]\(([^)]+)\)/, content, fn _, text, url ->
+      if safe_url?(url) do
+        "<a href=\"#{url}\" class=\"text-blue-600 dark:text-blue-400 hover:underline\" target=\"_blank\" rel=\"noopener noreferrer\">#{text}</a>"
+      else
+        text
+      end
+    end)
+  end
+
+  defp safe_url?(url) do
+    normalized = url |> String.trim() |> String.downcase()
+    not String.starts_with?(normalized, ["javascript:", "data:", "vbscript:"])
   end
 
   defp convert_code_blocks(content) do

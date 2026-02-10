@@ -206,6 +206,88 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert result =~ "<p>First paragraph.</p>"
       assert result =~ "<p>Second paragraph.</p>"
     end
+
+    test "converts links" do
+      result = Show.render_markdown("[Stride](https://example.com)")
+      assert result =~ ~s(href="https://example.com")
+      assert result =~ ">Stride</a>"
+    end
+  end
+
+  describe "render_markdown/1 XSS prevention" do
+    test "escapes script tags in plain text" do
+      result = Show.render_markdown("<script>alert('xss')</script>")
+      refute result =~ "<script>"
+      assert result =~ "&lt;script&gt;"
+    end
+
+    test "escapes script tags inside bold" do
+      result = Show.render_markdown("**<script>alert(1)</script>**")
+      refute result =~ "<script>"
+      assert result =~ "<strong>&lt;script&gt;"
+    end
+
+    test "escapes HTML inside inline code" do
+      result = Show.render_markdown("`<img onerror=alert(1)>`")
+      refute result =~ "<img"
+      assert result =~ "&lt;img"
+    end
+
+    test "escapes HTML inside code blocks" do
+      result = Show.render_markdown("```\n<script>alert(1)</script>\n```")
+      refute result =~ "<script>alert"
+      assert result =~ "&lt;script&gt;"
+    end
+
+    test "escapes HTML inside list items" do
+      result = Show.render_markdown("- <img src=x onerror=alert(1)>")
+      refute result =~ "<img"
+      assert result =~ "&lt;img"
+    end
+
+    test "escapes event handler attributes" do
+      result = Show.render_markdown("<div onmouseover=\"alert(1)\">hover</div>")
+      refute result =~ "<div"
+      assert result =~ "&lt;div"
+    end
+
+    test "blocks javascript: protocol in links" do
+      result = Show.render_markdown("[click](javascript:alert(1))")
+      refute result =~ "javascript:"
+      refute result =~ "<a"
+    end
+
+    test "blocks data: protocol in links" do
+      result = Show.render_markdown("[click](data:text/html,<script>alert(1)</script>)")
+      refute result =~ ~s(href="data:)
+      refute result =~ "<a"
+    end
+
+    test "blocks vbscript: protocol in links" do
+      result = Show.render_markdown("[click](vbscript:msgbox(1))")
+      refute result =~ "vbscript:"
+      refute result =~ "<a"
+    end
+
+    test "blocks case-insensitive javascript: protocol" do
+      result = Show.render_markdown("[click](JaVaScRiPt:alert(1))")
+      refute result =~ "<a"
+    end
+
+    test "allows safe URL protocols" do
+      result = Show.render_markdown("[link](https://example.com)")
+      assert result =~ ~s(href="https://example.com")
+    end
+
+    test "escapes ampersands" do
+      result = Show.render_markdown("AT&T")
+      assert result =~ "&amp;T"
+    end
+
+    test "escapes quotes in text" do
+      result = Show.render_markdown("He said \"hello\"")
+      assert result =~ "&quot;hello&quot;"
+    end
   end
 
   describe "type_icon/1" do
