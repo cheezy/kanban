@@ -189,7 +189,7 @@ defmodule Kanban.MetricsTest do
   describe "get_cycle_time_stats/2" do
     test "calculates average cycle time from claimed_at to completed_at" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -241,7 +241,7 @@ defmodule Kanban.MetricsTest do
 
     test "calculates median correctly" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       # Create 5 tasks with different cycle times
@@ -266,7 +266,7 @@ defmodule Kanban.MetricsTest do
 
     test "filters by time_range" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -364,7 +364,7 @@ defmodule Kanban.MetricsTest do
   describe "get_wait_time_stats/2" do
     test "calculates review wait time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -386,7 +386,7 @@ defmodule Kanban.MetricsTest do
 
     test "calculates backlog wait time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -413,7 +413,7 @@ defmodule Kanban.MetricsTest do
 
     test "returns separate stats for review and backlog wait" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task1 = task_fixture(column)
@@ -459,7 +459,7 @@ defmodule Kanban.MetricsTest do
   describe "get_cycle_time_stats/2 with weekend exclusion" do
     test "excludes weekend time from cycle time calculation" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -487,7 +487,7 @@ defmodule Kanban.MetricsTest do
 
     test "handles tasks completed on weekends with exclusion" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -545,7 +545,7 @@ defmodule Kanban.MetricsTest do
   describe "get_wait_time_stats/2 with weekend exclusion" do
     test "excludes weekends from review wait time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -571,7 +571,7 @@ defmodule Kanban.MetricsTest do
 
     test "excludes weekends from backlog wait time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -622,7 +622,7 @@ defmodule Kanban.MetricsTest do
 
     test "get_cycle_time_stats includes tasks from any date" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -747,7 +747,7 @@ defmodule Kanban.MetricsTest do
 
     test "calculates stats correctly with multiple tasks" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       # Create 10 tasks with varying cycle times
@@ -811,7 +811,7 @@ defmodule Kanban.MetricsTest do
   describe "Decimal seconds conversion" do
     test "handles Decimal type from database for cycle time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -835,7 +835,7 @@ defmodule Kanban.MetricsTest do
 
     test "handles Decimal type for wait time stats" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -860,7 +860,7 @@ defmodule Kanban.MetricsTest do
   describe "min and max hours in stats" do
     test "returns correct min and max for cycle time" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       # Create tasks with 1h, 5h, and 10h cycle times
@@ -918,7 +918,7 @@ defmodule Kanban.MetricsTest do
   describe "get_agents/1" do
     test "returns list of agents who completed tasks" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task1 = task_fixture(column)
@@ -938,7 +938,7 @@ defmodule Kanban.MetricsTest do
 
     test "returns list of agents who created tasks" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
@@ -956,7 +956,7 @@ defmodule Kanban.MetricsTest do
 
     test "returns unique sorted list of agents" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       # Create multiple tasks by same agents
@@ -993,7 +993,7 @@ defmodule Kanban.MetricsTest do
 
     test "includes agents from both created_by_agent and completed_by_agent" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task1 = task_fixture(column)
@@ -1021,8 +1021,8 @@ defmodule Kanban.MetricsTest do
 
     test "only returns agents from specified board" do
       user = user_fixture()
-      board1 = board_fixture(user)
-      board2 = board_fixture(user)
+      board1 = ai_optimized_board_fixture(user)
+      board2 = ai_optimized_board_fixture(user)
       column1 = column_fixture(board1)
       column2 = column_fixture(board2)
 
@@ -1042,7 +1042,369 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  describe "regular board metrics - cycle time from TaskHistory" do
+    test "derives cycle time from first TaskHistory move" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Simulate first move (work started) 24 hours ago
+      started_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", started_at)
+
+      # Complete the task now
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, stats} = Metrics.get_cycle_time_stats(board.id)
+
+      assert stats.count == 1
+      assert stats.average_hours >= 23 and stats.average_hours <= 25
+    end
+
+    test "uses earliest move as start time when multiple moves exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # First move 48 hours ago
+      first_move_at =
+        DateTime.add(DateTime.utc_now(), -48, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      # Second move 24 hours ago
+      second_move_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", first_move_at)
+      create_move_history(task, "Doing", "Review", second_move_at)
+
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, stats} = Metrics.get_cycle_time_stats(board.id)
+
+      assert stats.count == 1
+      # Should use first move (48h ago), not second move (24h ago)
+      assert stats.average_hours >= 47 and stats.average_hours <= 49
+    end
+
+    test "returns zero stats when no TaskHistory moves exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, stats} = Metrics.get_cycle_time_stats(board.id)
+
+      assert stats.count == 0
+    end
+
+    test "excludes incomplete tasks from cycle time" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      started_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", started_at)
+      # Don't set completed_at
+
+      {:ok, stats} = Metrics.get_cycle_time_stats(board.id)
+
+      assert stats.count == 0
+    end
+
+    test "filters cycle time by time_range for regular boards" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Move happened 60 days ago
+      started_at =
+        DateTime.add(DateTime.utc_now(), -60, :day)
+        |> DateTime.add(-24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", started_at)
+
+      completed_at = DateTime.add(DateTime.utc_now(), -60, :day)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+
+      {:ok, stats_30} = Metrics.get_cycle_time_stats(board.id, time_range: :last_30_days)
+      {:ok, stats_90} = Metrics.get_cycle_time_stats(board.id, time_range: :last_90_days)
+
+      assert stats_30.count == 0
+      assert stats_90.count == 1
+    end
+
+    test "calculates stats correctly with multiple regular board tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      for hours <- [10, 20, 30] do
+        task = task_fixture(column)
+
+        started_at =
+          DateTime.add(DateTime.utc_now(), -hours, :hour)
+          |> DateTime.to_naive()
+          |> NaiveDateTime.truncate(:second)
+
+        create_move_history(task, "Backlog", "Doing", started_at)
+        {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+      end
+
+      {:ok, stats} = Metrics.get_cycle_time_stats(board.id)
+
+      assert stats.count == 3
+      assert stats.median_hours >= 19.9 and stats.median_hours <= 20.1
+      assert stats.min_hours >= 9.9 and stats.min_hours <= 10.1
+      assert stats.max_hours >= 29.9 and stats.max_hours <= 30.1
+    end
+  end
+
+  describe "regular board metrics - wait time from TaskHistory" do
+    test "returns empty review_wait and calculates backlog_wait from TaskHistory" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Set inserted_at to 18 hours ago
+      inserted_at =
+        DateTime.add(DateTime.utc_now(), -18, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+        |> Kanban.Repo.update()
+
+      # First move happened now (18 hours of waiting)
+      first_moved_at = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      create_move_history(task, "Backlog", "Doing", first_moved_at)
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      # Review wait should always be empty for regular boards
+      assert stats.review_wait.count == 0
+      assert stats.review_wait.average_hours == 0
+
+      # Backlog wait should reflect time from inserted_at to first move
+      assert stats.backlog_wait.count == 1
+      assert stats.backlog_wait.average_hours >= 17 and stats.backlog_wait.average_hours <= 19
+    end
+
+    test "returns zero stats when no TaskHistory moves exist for wait time" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      assert stats.review_wait.count == 0
+      assert stats.backlog_wait.count == 0
+    end
+
+    test "backlog wait uses earliest move per task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      inserted_at =
+        DateTime.add(DateTime.utc_now(), -48, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+        |> Kanban.Repo.update()
+
+      # First move 24 hours ago
+      first_move_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      # Second move 12 hours ago
+      second_move_at =
+        DateTime.add(DateTime.utc_now(), -12, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", first_move_at)
+      create_move_history(task, "Doing", "Review", second_move_at)
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      # Backlog wait should be ~24 hours (inserted_at to first move)
+      assert stats.backlog_wait.count == 1
+      assert stats.backlog_wait.average_hours >= 23 and stats.backlog_wait.average_hours <= 25
+    end
+
+    test "filters backlog wait by time_range for regular boards" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Task created 60 days ago
+      inserted_at =
+        DateTime.add(DateTime.utc_now(), -60, :day)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+        |> Kanban.Repo.update()
+
+      first_moved_at =
+        DateTime.add(DateTime.utc_now(), -59, :day)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", first_moved_at)
+
+      {:ok, stats_30} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+      {:ok, stats_90} = Metrics.get_wait_time_stats(board.id, time_range: :last_90_days)
+
+      assert stats_30.backlog_wait.count == 0
+      assert stats_90.backlog_wait.count == 1
+    end
+  end
+
+  describe "regular board metrics - agents" do
+    test "returns empty list for regular boards" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_by_agent: "Claude Sonnet 4.5",
+          completed_at: DateTime.utc_now()
+        })
+
+      {:ok, agents} = Metrics.get_agents(board.id)
+
+      # Regular boards should always return empty agent list
+      assert agents == []
+    end
+  end
+
+  describe "regular board metrics - throughput works without changes" do
+    test "throughput works for regular boards using completed_at" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, throughput} = Metrics.get_throughput(board.id)
+
+      refute Enum.empty?(throughput)
+      assert hd(throughput).count == 1
+    end
+  end
+
+  describe "regular board metrics - lead time works without changes" do
+    test "lead time works for regular boards using inserted_at to completed_at" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      inserted_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+        |> Kanban.Repo.update()
+
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, stats} = Metrics.get_lead_time_stats(board.id)
+
+      assert stats.count == 1
+      assert stats.average_hours >= 23 and stats.average_hours <= 25
+    end
+  end
+
+  describe "regular board metrics - dashboard summary" do
+    test "dashboard summary works for regular boards" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Create TaskHistory move and complete the task
+      started_at =
+        DateTime.add(DateTime.utc_now(), -24, :hour)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", started_at)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, summary} = Metrics.get_dashboard_summary(board.id)
+
+      assert Map.has_key?(summary, :throughput)
+      assert Map.has_key?(summary, :cycle_time)
+      assert Map.has_key?(summary, :lead_time)
+      assert Map.has_key?(summary, :wait_time)
+
+      # Regular board should have zero review_wait
+      assert summary.wait_time.review_wait.count == 0
+    end
+  end
+
   # Helper functions
+
+  defp create_move_history(task, from_column, to_column, inserted_at) do
+    %Kanban.Tasks.TaskHistory{}
+    |> Kanban.Tasks.TaskHistory.changeset(%{
+      type: :move,
+      task_id: task.id,
+      from_column: from_column,
+      to_column: to_column
+    })
+    |> Ecto.Changeset.force_change(:inserted_at, inserted_at)
+    |> Kanban.Repo.insert!()
+  end
 
   defp complete_task_with_timestamps(task, attrs \\ %{}) do
     claimed_at = DateTime.add(DateTime.utc_now(), -24, :hour)

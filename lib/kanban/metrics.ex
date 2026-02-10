@@ -8,8 +8,10 @@ defmodule Kanban.Metrics do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Boards.Board
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskHistory
 
   @doc """
   Returns a dashboard summary with all key metrics for a board.
@@ -58,28 +60,32 @@ defmodule Kanban.Metrics do
 
   """
   def get_agents(board_id) do
-    query =
-      from t in Task,
-        join: c in assoc(t, :column),
-        where: c.board_id == ^board_id,
-        where: not is_nil(t.completed_by_agent) or not is_nil(t.created_by_agent),
-        select: fragment("? as agent", t.completed_by_agent),
-        union:
-          ^from(t in Task,
-            join: c in assoc(t, :column),
-            where: c.board_id == ^board_id,
-            where: not is_nil(t.created_by_agent),
-            select: fragment("? as agent", t.created_by_agent)
-          )
+    if board_ai_optimized?(board_id) do
+      query =
+        from t in Task,
+          join: c in assoc(t, :column),
+          where: c.board_id == ^board_id,
+          where: not is_nil(t.completed_by_agent) or not is_nil(t.created_by_agent),
+          select: fragment("? as agent", t.completed_by_agent),
+          union:
+            ^from(t in Task,
+              join: c in assoc(t, :column),
+              where: c.board_id == ^board_id,
+              where: not is_nil(t.created_by_agent),
+              select: fragment("? as agent", t.created_by_agent)
+            )
 
-    agents =
-      query
-      |> Repo.all()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.uniq()
-      |> Enum.sort()
+      agents =
+        query
+        |> Repo.all()
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+        |> Enum.sort()
 
-    {:ok, agents}
+      {:ok, agents}
+    else
+      {:ok, []}
+    end
   end
 
   @doc """
@@ -155,11 +161,18 @@ defmodule Kanban.Metrics do
   """
   def get_cycle_time_stats(board_id, opts \\ []) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
-    agent_name = Keyword.get(opts, :agent_name)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
-
     start_date = get_start_date(time_range)
 
+    if board_ai_optimized?(board_id) do
+      agent_name = Keyword.get(opts, :agent_name)
+      get_cycle_time_stats_ai(board_id, start_date, agent_name, exclude_weekends)
+    else
+      get_cycle_time_stats_from_history(board_id, start_date, exclude_weekends)
+    end
+  end
+
+  defp get_cycle_time_stats_ai(board_id, start_date, agent_name, exclude_weekends) do
     query =
       Task
       |> join(:inner, [t], c in assoc(t, :column))
@@ -186,6 +199,44 @@ defmodule Kanban.Metrics do
       if exclude_weekends do
         Enum.map(results, fn result ->
           adjusted_seconds = calculate_business_time(result.claimed_at, result.completed_at)
+          %{result | cycle_time_seconds: adjusted_seconds}
+        end)
+      else
+        results
+      end
+
+    calculate_time_stats(filtered_results)
+  end
+
+  defp get_cycle_time_stats_from_history(board_id, start_date, exclude_weekends) do
+    first_move_subquery =
+      from th in TaskHistory,
+        where: th.type == :move,
+        group_by: th.task_id,
+        select: %{task_id: th.task_id, started_at: min(th.inserted_at)}
+
+    query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], not is_nil(t.completed_at))
+      |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
+      |> select([t, _c, fm], %{
+        cycle_time_seconds:
+          fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, fm.started_at),
+        completed_at: t.completed_at,
+        claimed_at: fm.started_at
+      })
+
+    results = Repo.all(query)
+
+    filtered_results =
+      if exclude_weekends do
+        Enum.map(results, fn result ->
+          claimed_at = normalize_to_datetime(result.claimed_at)
+          adjusted_seconds = calculate_business_time(claimed_at, result.completed_at)
           %{result | cycle_time_seconds: adjusted_seconds}
         end)
       else
@@ -277,21 +328,28 @@ defmodule Kanban.Metrics do
   """
   def get_wait_time_stats(board_id, opts \\ []) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
-    agent_name = Keyword.get(opts, :agent_name)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
-
     start_date = get_start_date(time_range)
 
-    review_results = fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends)
-    backlog_results = fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends)
+    if board_ai_optimized?(board_id) do
+      agent_name = Keyword.get(opts, :agent_name)
 
-    with {:ok, review_stats} <- calculate_wait_time_stats(review_results),
-         {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
-      {:ok,
-       %{
-         review_wait: review_stats,
-         backlog_wait: backlog_stats
-       }}
+      review_results =
+        fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends)
+
+      backlog_results =
+        fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends)
+
+      with {:ok, review_stats} <- calculate_wait_time_stats(review_results),
+           {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
+        {:ok,
+         %{
+           review_wait: review_stats,
+           backlog_wait: backlog_stats
+         }}
+      end
+    else
+      get_wait_time_stats_from_history(board_id, start_date, exclude_weekends)
     end
   end
 
@@ -355,7 +413,53 @@ defmodule Kanban.Metrics do
     end)
   end
 
+  defp get_wait_time_stats_from_history(board_id, start_date, exclude_weekends) do
+    first_move_subquery =
+      from th in TaskHistory,
+        where: th.type == :move,
+        group_by: th.task_id,
+        select: %{task_id: th.task_id, first_moved_at: min(th.inserted_at)}
+
+    backlog_query =
+      Task
+      |> join(:inner, [t], c in assoc(t, :column))
+      |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
+      |> where([t, c], c.board_id == ^board_id)
+      |> where([t], t.inserted_at >= ^start_date)
+      |> where([t], t.type != ^:goal)
+      |> select([t, _c, fm], %{
+        wait_time_seconds:
+          fragment("EXTRACT(EPOCH FROM (? - ?))", fm.first_moved_at, t.inserted_at),
+        start_time: t.inserted_at,
+        end_time: fm.first_moved_at
+      })
+
+    backlog_results =
+      backlog_query
+      |> Repo.all()
+      |> Enum.map(fn result ->
+        %{
+          result
+          | start_time: normalize_to_datetime(result.start_time),
+            end_time: normalize_to_datetime(result.end_time)
+        }
+      end)
+      |> apply_weekend_filter(exclude_weekends)
+
+    empty_stats = %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}
+
+    with {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
+      {:ok, %{review_wait: empty_stats, backlog_wait: backlog_stats}}
+    end
+  end
+
   # Private helper functions
+
+  defp board_ai_optimized?(board_id) do
+    from(b in Board, where: b.id == ^board_id, select: b.ai_optimized_board)
+    |> Repo.one()
+    |> Kernel.||(false)
+  end
 
   defp get_start_date(:today) do
     DateTime.utc_now()
