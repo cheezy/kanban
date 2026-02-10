@@ -567,8 +567,20 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
           agent_name: "Test Agent",
           generated_at: nil,
           data: %{
-            review_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0},
-            backlog_wait_stats: %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}
+            review_wait_stats: %{
+              average_hours: 0,
+              median_hours: 0,
+              min_hours: 0,
+              max_hours: 0,
+              count: 0
+            },
+            backlog_wait_stats: %{
+              average_hours: 0,
+              median_hours: 0,
+              min_hours: 0,
+              max_hours: 0,
+              count: 0
+            }
           }
         })
 
@@ -863,7 +875,12 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
               %{date: ~D[2024-01-02], count: 5},
               %{date: ~D[2024-01-01], count: 1}
             ],
-            summary_stats: %{total: 16, avg_per_day: 5.3, peak_day: ~D[2024-01-03], peak_count: 10},
+            summary_stats: %{
+              total: 16,
+              avg_per_day: 5.3,
+              peak_day: ~D[2024-01-03],
+              peak_count: 10
+            },
             completed_goals: [],
             grouped_tasks: []
           }
@@ -881,7 +898,12 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
         throughput_assigns(%{
           data: %{
             throughput: [%{date: ~D[2024-01-01], count: 3}],
-            summary_stats: %{total: 3, avg_per_day: 3.0, peak_day: ~D[2024-01-01], peak_count: nil},
+            summary_stats: %{
+              total: 3,
+              avg_per_day: 3.0,
+              peak_day: ~D[2024-01-01],
+              peak_count: nil
+            },
             completed_goals: [],
             grouped_tasks: []
           }

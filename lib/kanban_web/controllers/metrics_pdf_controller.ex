@@ -216,6 +216,7 @@ defmodule KanbanWeb.MetricsPdfController do
       opts
       |> Keyword.get(:time_range, :last_30_days)
       |> Helpers.get_start_date()
+
     agent_name = Keyword.get(opts, :agent_name)
 
     query =
@@ -287,8 +288,7 @@ defmodule KanbanWeb.MetricsPdfController do
       claimed_at: t.claimed_at,
       completed_at: t.completed_at,
       completed_by_agent: t.completed_by_agent,
-      cycle_time_seconds:
-        fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.claimed_at)
+      cycle_time_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.claimed_at)
     })
     |> Repo.all()
   end
@@ -308,8 +308,7 @@ defmodule KanbanWeb.MetricsPdfController do
       inserted_at: t.inserted_at,
       completed_at: t.completed_at,
       completed_by_agent: t.completed_by_agent,
-      lead_time_seconds:
-        fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at)
+      lead_time_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at)
     })
     |> Repo.all()
   end
@@ -328,8 +327,7 @@ defmodule KanbanWeb.MetricsPdfController do
       completed_at: t.completed_at,
       reviewed_at: t.reviewed_at,
       completed_by_agent: t.completed_by_agent,
-      review_wait_seconds:
-        fragment("EXTRACT(EPOCH FROM (? - ?))", t.reviewed_at, t.completed_at)
+      review_wait_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.reviewed_at, t.completed_at)
     })
     |> Repo.all()
   end
@@ -348,8 +346,7 @@ defmodule KanbanWeb.MetricsPdfController do
       inserted_at: t.inserted_at,
       claimed_at: t.claimed_at,
       completed_by_agent: t.completed_by_agent,
-      backlog_wait_seconds:
-        fragment("EXTRACT(EPOCH FROM (? - ?))", t.claimed_at, t.inserted_at)
+      backlog_wait_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.claimed_at, t.inserted_at)
     })
     |> Repo.all()
   end
@@ -362,5 +359,4 @@ defmodule KanbanWeb.MetricsPdfController do
       {date, Enum.sort_by(day_tasks, &Map.get(&1, field), {:desc, DateTime})}
     end)
   end
-
 end

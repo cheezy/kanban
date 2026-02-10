@@ -167,7 +167,11 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       assert html =~ "Claude Sonnet 4.5"
     end
 
-    test "displays Agent Unknown when agent name is missing", %{conn: conn, board: board, column: column} do
+    test "displays Agent Unknown when agent name is missing", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       {:ok, _} = complete_task(task, %{completed_by_agent: nil})
 

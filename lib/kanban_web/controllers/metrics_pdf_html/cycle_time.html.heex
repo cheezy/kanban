@@ -97,7 +97,11 @@
           <div class="stat-header">
             <div class="stat-icon stat-icon-blue">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2563eb">
-                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </div>
             <div class="stat-label">Average</div>
@@ -119,7 +123,11 @@
           <div class="stat-header">
             <div class="stat-icon stat-icon-green">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#16a34a">
-                <path fill-rule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v16.19l6.22-6.22a.75.75 0 1 1 1.06 1.06l-7.5 7.5a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 1 1 1.06-1.06l6.22 6.22V3a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M12 2.25a.75.75 0 0 1 .75.75v16.19l6.22-6.22a.75.75 0 1 1 1.06 1.06l-7.5 7.5a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 1 1 1.06-1.06l6.22 6.22V3a.75.75 0 0 1 .75-.75Z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </div>
             <div class="stat-label">Minimum</div>
@@ -130,7 +138,11 @@
           <div class="stat-header">
             <div class="stat-icon stat-icon-red">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#dc2626">
-                <path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06l-6.22-6.22V21a.75.75 0 0 1-1.5 0V4.81l-6.22 6.22a.75.75 0 1 1-1.06-1.06l7.5-7.5Z" clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M11.47 2.47a.75.75 0 0 1 1.06 0l7.5 7.5a.75.75 0 1 1-1.06 1.06l-6.22-6.22V21a.75.75 0 0 1-1.5 0V4.81l-6.22 6.22a.75.75 0 1 1-1.06-1.06l7.5-7.5Z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </div>
             <div class="stat-label">Maximum</div>
@@ -146,41 +158,61 @@
 
     <%= if Map.get(@data, :daily_cycle_times, []) != [] do %>
       <h2 class="section-title">Cycle Time Trend</h2>
-      <%
-        chart_w = 560
-        chart_h = 200
-        sorted_times = Enum.sort_by(@data.daily_cycle_times, & &1.date, Date)
-        max_hours = sorted_times |> Enum.map(& &1.average_hours) |> Enum.max(fn -> 0 end)
-        max_val = if max_hours == 0, do: 1.0, else: max_hours * 1.1
-        points = line_chart_points(sorted_times, chart_w, chart_h, max_val)
-        polyline = points_to_polyline(points)
-        y_labels = line_chart_y_labels(max_val, 5)
-        x_label_count = min(length(sorted_times), 8)
-        x_step = if length(sorted_times) > 1, do: div(length(sorted_times) - 1, x_label_count - 1), else: 1
-        x_label_indices = if length(sorted_times) > 1,
+      <% chart_w = 560
+      chart_h = 200
+      sorted_times = Enum.sort_by(@data.daily_cycle_times, & &1.date, Date)
+      max_hours = sorted_times |> Enum.map(& &1.average_hours) |> Enum.max(fn -> 0 end)
+      max_val = if max_hours == 0, do: 1.0, else: max_hours * 1.1
+      points = line_chart_points(sorted_times, chart_w, chart_h, max_val)
+      polyline = points_to_polyline(points)
+      y_labels = line_chart_y_labels(max_val, 5)
+      x_label_count = min(length(sorted_times), 8)
+
+      x_step =
+        if length(sorted_times) > 1, do: div(length(sorted_times) - 1, x_label_count - 1), else: 1
+
+      x_label_indices =
+        if length(sorted_times) > 1,
           do: Enum.take_every(0..(length(sorted_times) - 1), x_step) |> Enum.take(x_label_count),
-          else: [0]
-      %>
+          else: [0] %>
       <div class="chart-container">
-        <svg width="620" height={"#{chart_h + 30}"} viewBox={"0 0 620 #{chart_h + 30}"} xmlns="http://www.w3.org/2000/svg">
+        <svg
+          width="620"
+          height={"#{chart_h + 30}"}
+          viewBox={"0 0 620 #{chart_h + 30}"}
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <g transform="translate(45, 5)">
             <!-- Y-axis grid lines and labels -->
             <%= for val <- y_labels do %>
               <% y = chart_h - val / max_val * chart_h %>
-              <line x1="0" y1={Float.round(y * 1.0, 1)} x2={chart_w} y2={Float.round(y * 1.0, 1)} stroke="#e5e7eb" stroke-width="1" />
-              <text x="-8" y={Float.round(y * 1.0 + 3, 1)} text-anchor="end" font-size="7pt" fill="#6b7280">
+              <line
+                x1="0"
+                y1={Float.round(y * 1.0, 1)}
+                x2={chart_w}
+                y2={Float.round(y * 1.0, 1)}
+                stroke="#e5e7eb"
+                stroke-width="1"
+              />
+              <text
+                x="-8"
+                y={Float.round(y * 1.0 + 3, 1)}
+                text-anchor="end"
+                font-size="7pt"
+                fill="#6b7280"
+              >
                 {format_time(val * 3600)}
               </text>
             <% end %>
-
-            <!-- Area fill under the line -->
+            
+<!-- Area fill under the line -->
             <polygon
               points={"0,#{chart_h} #{polyline} #{elem(List.last(points), 0)},#{chart_h}"}
               fill="#8b5cf6"
               fill-opacity="0.1"
             />
-
-            <!-- The line itself -->
+            
+<!-- The line itself -->
             <polyline
               points={polyline}
               fill="none"
@@ -189,8 +221,8 @@
               stroke-linejoin="round"
               stroke-linecap="round"
             />
-
-            <!-- Data points -->
+            
+<!-- Data points -->
             <%= for {x, y} <- points do %>
               <circle cx={x} cy={y} r="3" fill="#8b5cf6" />
             <% end %>

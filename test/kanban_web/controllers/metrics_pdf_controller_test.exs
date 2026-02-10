@@ -21,8 +21,9 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
 
       assert redirected_to(conn) == ~p"/boards/#{board}"
+
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
-        "Metrics are only available for AI-optimized boards"
+               "Metrics are only available for AI-optimized boards"
     end
 
     test "redirects when user does not have access to board", %{conn: conn} do
@@ -42,7 +43,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "exports throughput PDF with default parameters", %{conn: conn, board: board, column: column} do
+    test "exports throughput PDF with default parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -58,7 +63,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert byte_size(conn.resp_body) > 0
     end
 
-    test "exports throughput PDF with time range filter", %{conn: conn, board: board, column: column} do
+    test "exports throughput PDF with time range filter", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -75,14 +84,19 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       task = task_fixture(column)
       complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
 
-      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?agent_name=Claude+Sonnet+4.5")
+      conn =
+        get(conn, ~p"/boards/#{board}/metrics/throughput/export?agent_name=Claude+Sonnet+4.5")
 
       assert conn.status == 200
       assert [content_type] = get_resp_header(conn, "content-type")
       assert content_type =~ "application/pdf"
     end
 
-    test "exports throughput PDF with exclude weekends", %{conn: conn, board: board, column: column} do
+    test "exports throughput PDF with exclude weekends", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -93,11 +107,19 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert content_type =~ "application/pdf"
     end
 
-    test "exports throughput PDF with all filters combined", %{conn: conn, board: board, column: column} do
+    test "exports throughput PDF with all filters combined", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
 
-      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?time_range=last_7_days&agent_name=Claude+Sonnet+4.5&exclude_weekends=true")
+      conn =
+        get(
+          conn,
+          ~p"/boards/#{board}/metrics/throughput/export?time_range=last_7_days&agent_name=Claude+Sonnet+4.5&exclude_weekends=true"
+        )
 
       assert conn.status == 200
       assert [content_type] = get_resp_header(conn, "content-type")
@@ -120,7 +142,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "exports cycle-time PDF with default parameters", %{conn: conn, board: board, column: column} do
+    test "exports cycle-time PDF with default parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -133,7 +159,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert disposition =~ "cycle_time"
     end
 
-    test "exports cycle-time PDF with time range filter", %{conn: conn, board: board, column: column} do
+    test "exports cycle-time PDF with time range filter", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -171,7 +201,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "exports lead-time PDF with default parameters", %{conn: conn, board: board, column: column} do
+    test "exports lead-time PDF with default parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       complete_task(task)
 
@@ -188,7 +222,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       task = task_fixture(column)
       complete_task(task)
 
-      conn = get(conn, ~p"/boards/#{board}/metrics/lead-time/export?time_range=all_time&exclude_weekends=false")
+      conn =
+        get(
+          conn,
+          ~p"/boards/#{board}/metrics/lead-time/export?time_range=all_time&exclude_weekends=false"
+        )
 
       assert conn.status == 200
       assert [disposition] = get_resp_header(conn, "content-disposition")
@@ -203,7 +241,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "exports wait-time PDF with default parameters", %{conn: conn, board: board, column: column} do
+    test "exports wait-time PDF with default parameters", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       add_review_wait(task)
 
@@ -241,7 +283,10 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   end
 
   describe "export/2 - filename generation" do
-    test "generates filename with board name, metric, time range, and date", %{conn: conn, user: user} do
+    test "generates filename with board name, metric, time range, and date", %{
+      conn: conn,
+      user: user
+    } do
       board = ai_optimized_board_fixture(user, %{name: "Test Board 123"})
       column = column_fixture(board)
       task = task_fixture(column)
@@ -311,7 +356,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "includes summary statistics in throughput export", %{conn: conn, board: board, column: column} do
+    test "includes summary statistics in throughput export", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task1 = task_fixture(column)
       task2 = task_fixture(column)
       task3 = task_fixture(column)
@@ -380,7 +429,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "includes completed goals in throughput export", %{conn: conn, board: board, column: column} do
+    test "includes completed goals in throughput export", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       goal = task_fixture(column, %{type: :goal, title: "Big Feature Goal"})
       complete_task(goal, %{completed_by_agent: "Claude Sonnet 4.5"})
 
@@ -402,7 +455,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       %{board: board, column: column}
     end
 
-    test "groups multiple tasks completed on the same day", %{conn: conn, board: board, column: column} do
+    test "groups multiple tasks completed on the same day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       now = DateTime.utc_now()
 
       task1 = task_fixture(column)
@@ -410,7 +467,12 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       task3 = task_fixture(column)
 
       complete_task(task1, %{completed_at: now, completed_by_agent: "Agent A"})
-      complete_task(task2, %{completed_at: DateTime.add(now, -1, :hour), completed_by_agent: "Agent B"})
+
+      complete_task(task2, %{
+        completed_at: DateTime.add(now, -1, :hour),
+        completed_by_agent: "Agent B"
+      })
+
       complete_task(task3, %{completed_at: DateTime.add(now, -25, :hour)})
 
       conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
@@ -419,7 +481,11 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert byte_size(conn.resp_body) > 0
     end
 
-    test "includes tasks without claimed_at in export", %{conn: conn, board: board, column: column} do
+    test "includes tasks without claimed_at in export", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
       task = task_fixture(column)
       # Complete without claimed_at
       Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
