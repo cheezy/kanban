@@ -33,16 +33,6 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert html =~ "Backlog Wait Time"
     end
 
-    test "redirects non-AI-optimized boards to board page", %{conn: conn, user: user} do
-      regular_board = board_fixture(user)
-
-      assert {:error, {:redirect, %{to: to, flash: flash}}} =
-               live(conn, ~p"/boards/#{regular_board}/metrics/wait-time")
-
-      assert to == "/boards/#{regular_board.id}"
-      assert flash["error"] == "Metrics are only available for AI-optimized boards."
-    end
-
     test "displays filter controls", %{conn: conn, board: board} do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
@@ -780,6 +770,160 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       assert html =~ "Last 30 Days"
     end
+  end
+
+  describe "Wait Time - Regular Board" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "loads wait time page for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Wait Time Metrics"
+      assert html =~ board.name
+    end
+
+    test "displays 'Queue and wait time analysis' subtitle for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Queue and wait time analysis"
+      refute html =~ "Human bottleneck analysis"
+    end
+
+    test "does not show Review Wait section for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      refute html =~ "Review Wait Time"
+    end
+
+    test "shows Queue Wait Time label instead of Backlog Wait Time for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Queue Wait Time"
+      refute html =~ "Backlog Wait Time"
+    end
+
+    test "does not show agent filter for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      refute html =~ "Agent Filter"
+    end
+
+    test "does not show agent info for regular board tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      first_moved = DateTime.add(DateTime.utc_now(), -2, :hour)
+      create_move_history(task, "Backlog", "In Progress", first_moved)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      refute html =~ "Agent Unknown"
+    end
+
+    test "derives queue wait from TaskHistory move events", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      first_moved = DateTime.add(DateTime.utc_now(), -2, :hour)
+      create_move_history(task, "Backlog", "In Progress", first_moved)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ task.identifier
+      assert html =~ task.title
+      refute html =~ "No tasks started in this time range"
+    end
+
+    test "shows 'Started:' label instead of 'Claimed:' for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      first_moved = DateTime.add(DateTime.utc_now(), -2, :hour)
+      create_move_history(task, "Backlog", "In Progress", first_moved)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "Started:"
+      refute html =~ "Claimed:"
+    end
+
+    test "shows empty state when no move history exists for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ "No tasks started in this time range"
+    end
+
+    test "time range filter works for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      first_moved = DateTime.add(DateTime.utc_now(), -1, :hour)
+      create_move_history(task, "Backlog", "In Progress", first_moved)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Last 7 Days"
+    end
+
+    test "uses earliest move timestamp when multiple moves exist", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      first_move = DateTime.add(DateTime.utc_now(), -5, :hour)
+      second_move = DateTime.add(DateTime.utc_now(), -2, :hour)
+      create_move_history(task, "Backlog", "In Progress", first_move)
+      create_move_history(task, "In Progress", "Review", second_move)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ task.identifier
+      refute html =~ "No tasks started in this time range"
+    end
+  end
+
+  defp create_regular_board_with_column(%{user: user}) do
+    board = board_fixture(user)
+    column = column_fixture(board)
+    %{board: board, column: column}
+  end
+
+  defp create_move_history(task, from_column, to_column, inserted_at) do
+    %Kanban.Tasks.TaskHistory{}
+    |> Kanban.Tasks.TaskHistory.changeset(%{
+      type: :move,
+      task_id: task.id,
+      from_column: from_column,
+      to_column: to_column
+    })
+    |> Ecto.Changeset.force_change(
+      :inserted_at,
+      inserted_at |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+    )
+    |> Kanban.Repo.insert!()
   end
 
   defp create_board_with_column(%{user: user}) do

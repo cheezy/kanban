@@ -8,6 +8,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskHistory
   alias KanbanWeb.MetricsLive.Helpers
 
   @impl true
@@ -26,33 +27,24 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    if board.ai_optimized_board do
-      {:ok, agents} = Metrics.get_agents(board.id)
+    {:ok, agents} = Metrics.get_agents(board.id)
 
-      time_range = Helpers.parse_time_range(params["time_range"])
-      agent_name = Helpers.parse_agent_name(params["agent_name"])
-      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
+    time_range = Helpers.parse_time_range(params["time_range"])
+    agent_name = Helpers.parse_agent_name(params["agent_name"])
+    exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
 
-      socket =
-        socket
-        |> assign(:page_title, "Wait Time Metrics")
-        |> assign(:board, board)
-        |> assign(:user_access, user_access)
-        |> assign(:agents, agents)
-        |> assign(:time_range, time_range)
-        |> assign(:agent_name, agent_name)
-        |> assign(:exclude_weekends, exclude_weekends)
-        |> load_wait_time_data()
+    socket =
+      socket
+      |> assign(:page_title, "Wait Time Metrics")
+      |> assign(:board, board)
+      |> assign(:user_access, user_access)
+      |> assign(:agents, agents)
+      |> assign(:time_range, time_range)
+      |> assign(:agent_name, agent_name)
+      |> assign(:exclude_weekends, exclude_weekends)
+      |> load_wait_time_data()
 
-      {:noreply, socket}
-    else
-      socket =
-        socket
-        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
-        |> redirect(to: ~p"/boards/#{board}")
-
-      {:noreply, socket}
-    end
+    {:noreply, socket}
   end
 
   @impl true
@@ -100,6 +92,16 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   end
 
   defp get_review_wait_tasks(board_id, opts) do
+    board = Repo.get!(Kanban.Boards.Board, board_id)
+
+    if board.ai_optimized_board do
+      get_review_wait_tasks_ai(board_id, opts)
+    else
+      []
+    end
+  end
+
+  defp get_review_wait_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
     start_date = Helpers.get_start_date(time_range)
@@ -138,6 +140,16 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   end
 
   defp get_backlog_wait_tasks(board_id, opts) do
+    board = Repo.get!(Kanban.Boards.Board, board_id)
+
+    if board.ai_optimized_board do
+      get_backlog_wait_tasks_ai(board_id, opts)
+    else
+      get_backlog_wait_tasks_regular(board_id, opts)
+    end
+  end
+
+  defp get_backlog_wait_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
     start_date = Helpers.get_start_date(time_range)
@@ -174,6 +186,40 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     Repo.all(query)
   end
 
+  defp get_backlog_wait_tasks_regular(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    start_date = Helpers.get_start_date(time_range)
+
+    first_move_subquery =
+      from th in TaskHistory,
+        where: th.type == :move,
+        group_by: th.task_id,
+        select: %{task_id: th.task_id, first_moved_at: min(th.inserted_at)}
+
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
+    |> where([t, c], c.board_id == ^board_id)
+    |> where([t], t.type != ^:goal)
+    |> order_by([t, _c, fm], desc: fm.first_moved_at)
+    |> where([t, _c, fm], fm.first_moved_at >= ^start_date)
+    |> select([t, _c, fm], %{
+      id: t.id,
+      identifier: t.identifier,
+      title: t.title,
+      inserted_at: t.inserted_at,
+      claimed_at: fm.first_moved_at,
+      completed_by_agent: t.completed_by_agent,
+      backlog_wait_seconds:
+        fragment(
+          "EXTRACT(EPOCH FROM (? - ?))",
+          fm.first_moved_at,
+          t.inserted_at
+        )
+    })
+    |> Repo.all()
+  end
+
   defp format_wait_time(seconds), do: Helpers.format_time(seconds)
   defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
   defp format_date(date), do: Helpers.format_date(date)
@@ -195,11 +241,14 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     tasks
     |> Enum.group_by(fn task ->
       task.claimed_at
-      |> DateTime.to_date()
+      |> to_date()
     end)
     |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
     |> Enum.map(fn {date, day_tasks} ->
-      {date, Enum.sort_by(day_tasks, & &1.claimed_at, {:desc, DateTime})}
+      {date, Enum.sort_by(day_tasks, & &1.claimed_at, :desc)}
     end)
   end
+
+  defp to_date(%DateTime{} = dt), do: DateTime.to_date(dt)
+  defp to_date(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_date(ndt)
 end
