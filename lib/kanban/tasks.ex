@@ -2477,10 +2477,19 @@ defmodule Kanban.Tasks do
       |> Repo.update_all(set: [position: task.position + 1])
     end)
 
-    # Place the goal at the target position
+    # Place the goal at the target position and update completed_at
+    is_done = String.downcase(target_column.name) == "done"
+
+    updates =
+      if is_done do
+        [position: target_position, completed_at: DateTime.utc_now(), status: :completed]
+      else
+        [position: target_position, completed_at: nil, status: :open]
+      end
+
     Task
     |> where([t], t.id == ^parent_goal.id)
-    |> Repo.update_all(set: [position: target_position])
+    |> Repo.update_all(set: updates)
 
     Logger.info("Goal #{parent_goal.identifier} placed at position #{target_position}")
 

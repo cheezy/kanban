@@ -130,15 +130,21 @@ defmodule KanbanWeb.MetricsLive.Throughput do
       |> join(:inner, [t], c in assoc(t, :column))
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], t.type == ^:goal)
-      |> where([t], not is_nil(t.completed_at))
-      |> where([t], t.completed_at >= ^start_date)
-      |> order_by([t], desc: t.completed_at)
+      |> where(
+        [t, c],
+        not is_nil(t.completed_at) or fragment("lower(?)", c.name) == "done"
+      )
+      |> where(
+        [t],
+        coalesce(t.completed_at, t.updated_at) >= ^start_date
+      )
+      |> order_by([t], desc: coalesce(t.completed_at, t.updated_at))
       |> select([t], %{
         id: t.id,
         identifier: t.identifier,
         title: t.title,
         inserted_at: t.inserted_at,
-        completed_at: t.completed_at,
+        completed_at: coalesce(t.completed_at, t.updated_at),
         completed_by_agent: t.completed_by_agent
       })
 
