@@ -1115,6 +1115,138 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
     end
   end
 
+  describe "Throughput - Regular Board" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "loads throughput page successfully for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "Throughput Metrics"
+      assert html =~ board.name
+    end
+
+    test "does not show agent filter for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      refute html =~ "Agent Filter"
+    end
+
+    test "does not show agent column in task details for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Regular Board Task"})
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "Regular Board Task"
+      refute html =~ "Agent Unknown"
+    end
+
+    test "does not show Claimed timestamp for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "Created:"
+      assert html =~ "Completed:"
+      refute html =~ "Claimed:"
+    end
+
+    test "displays summary stats for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task1 = task_fixture(column)
+      task2 = task_fixture(column)
+
+      {:ok, _} = complete_task(task1)
+      {:ok, _} = complete_task(task2)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "Total Tasks"
+      assert html =~ "Avg Per Day"
+      assert html =~ "Peak Day"
+      assert html =~ "Peak Count"
+    end
+
+    test "displays empty state for regular board with no completed tasks", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "No tasks completed in this time range"
+    end
+
+    test "time range filter works for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Last 7 Days"
+    end
+
+    test "exclude weekends filter works for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"exclude_weekends" => "true"})
+
+      assert html =~ "checked"
+    end
+
+    test "displays completed goals for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      goal = task_fixture(column, %{title: "Regular Board Goal", type: :goal})
+      {:ok, _} = complete_task(goal)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
+
+      assert html =~ "Completed Goals"
+      assert html =~ "Regular Board Goal"
+    end
+  end
+
+  defp create_regular_board_with_column(%{user: user}) do
+    board = board_fixture(user)
+    column = column_fixture(board)
+    %{board: board, column: column}
+  end
+
   defp complete_task(task, attrs \\ %{}) do
     claimed_at = DateTime.add(DateTime.utc_now(), -24, :hour)
     completed_at = DateTime.utc_now()
