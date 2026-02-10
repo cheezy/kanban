@@ -691,16 +691,161 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
         live(conn, ~p"/boards/#{board}/metrics/cycle-time")
       end
     end
+  end
 
-    test "redirects non-AI-optimized boards to board page", %{conn: conn, user: user} do
-      regular_board = board_fixture(user)
+  describe "Cycle Time - Regular Board" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
 
-      assert {:error, {:redirect, %{to: to, flash: flash}}} =
-               live(conn, ~p"/boards/#{regular_board}/metrics/cycle-time")
+    test "loads cycle time page for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
-      assert to == "/boards/#{regular_board.id}"
-      assert flash["error"] == "Metrics are only available for AI-optimized boards."
+      assert html =~ "Cycle Time Metrics"
+      assert html =~ board.name
     end
+
+    test "displays 'Time from start to completion' subtitle for regular board", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Time from start to completion"
+      refute html =~ "Time from claim to completion"
+    end
+
+    test "does not show agent filter for regular board", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      refute html =~ "Agent Filter"
+      refute html =~ "select[name=\"agent_name\"]"
+    end
+
+    test "does not show agent info for regular board tasks", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+      started_at = DateTime.add(completed_at, -2, :hour)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+      create_move_history(task, "Backlog", "In Progress", started_at)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      refute html =~ "Agent Unknown"
+      refute html =~ "completed_by_agent"
+    end
+
+    test "displays 'Started:' label instead of 'Claimed:' for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+      started_at = DateTime.add(completed_at, -2, :hour)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+      create_move_history(task, "Backlog", "In Progress", started_at)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "Started:"
+      refute html =~ "Claimed:"
+    end
+
+    test "derives cycle time from TaskHistory move events", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+      started_at = DateTime.add(completed_at, -3, :hour)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+      create_move_history(task, "Backlog", "In Progress", started_at)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ task.identifier
+      assert html =~ task.title
+      assert html =~ "Completed Tasks"
+      refute html =~ "No tasks completed in this time range"
+    end
+
+    test "shows empty state when no move history exists for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ "No tasks completed in this time range"
+    end
+
+    test "time range filter works for regular board", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+      started_at = DateTime.add(completed_at, -1, :hour)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+      create_move_history(task, "Backlog", "In Progress", started_at)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      assert html =~ "Last 7 Days"
+    end
+
+    test "uses earliest move timestamp when multiple moves exist", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      completed_at = DateTime.utc_now()
+      first_move = DateTime.add(completed_at, -5, :hour)
+      second_move = DateTime.add(completed_at, -2, :hour)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+      create_move_history(task, "Backlog", "In Progress", first_move)
+      create_move_history(task, "In Progress", "Review", second_move)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
+
+      assert html =~ task.identifier
+      refute html =~ "No tasks completed in this time range"
+    end
+  end
+
+  defp create_regular_board_with_column(%{user: user}) do
+    board = board_fixture(user)
+    column = column_fixture(board)
+    %{board: board, column: column}
+  end
+
+  defp create_move_history(task, from_column, to_column, inserted_at) do
+    %Kanban.Tasks.TaskHistory{}
+    |> Kanban.Tasks.TaskHistory.changeset(%{
+      type: :move,
+      task_id: task.id,
+      from_column: from_column,
+      to_column: to_column
+    })
+    |> Ecto.Changeset.force_change(
+      :inserted_at,
+      inserted_at |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+    )
+    |> Kanban.Repo.insert!()
   end
 
   defp create_board_with_column(%{user: user}) do

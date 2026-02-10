@@ -8,6 +8,7 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskHistory
   alias KanbanWeb.MetricsLive.Helpers
 
   @impl true
@@ -26,33 +27,24 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
     board = Boards.get_board!(board_id, user)
     user_access = Boards.get_user_access(board.id, user.id)
 
-    if board.ai_optimized_board do
-      {:ok, agents} = Metrics.get_agents(board.id)
+    {:ok, agents} = Metrics.get_agents(board.id)
 
-      time_range = Helpers.parse_time_range(params["time_range"])
-      agent_name = Helpers.parse_agent_name(params["agent_name"])
-      exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
+    time_range = Helpers.parse_time_range(params["time_range"])
+    agent_name = Helpers.parse_agent_name(params["agent_name"])
+    exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
 
-      socket =
-        socket
-        |> assign(:page_title, "Cycle Time Metrics")
-        |> assign(:board, board)
-        |> assign(:user_access, user_access)
-        |> assign(:agents, agents)
-        |> assign(:time_range, time_range)
-        |> assign(:agent_name, agent_name)
-        |> assign(:exclude_weekends, exclude_weekends)
-        |> load_cycle_time_data()
+    socket =
+      socket
+      |> assign(:page_title, "Cycle Time Metrics")
+      |> assign(:board, board)
+      |> assign(:user_access, user_access)
+      |> assign(:agents, agents)
+      |> assign(:time_range, time_range)
+      |> assign(:agent_name, agent_name)
+      |> assign(:exclude_weekends, exclude_weekends)
+      |> load_cycle_time_data()
 
-      {:noreply, socket}
-    else
-      socket =
-        socket
-        |> put_flash(:error, "Metrics are only available for AI-optimized boards.")
-        |> redirect(to: ~p"/boards/#{board}")
-
-      {:noreply, socket}
-    end
+    {:noreply, socket}
   end
 
   @impl true
@@ -97,6 +89,16 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   end
 
   defp get_cycle_time_tasks(board_id, opts) do
+    board = Repo.get!(Kanban.Boards.Board, board_id)
+
+    if board.ai_optimized_board do
+      get_cycle_time_tasks_ai(board_id, opts)
+    else
+      get_cycle_time_tasks_regular(board_id, opts)
+    end
+  end
+
+  defp get_cycle_time_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
     start_date = Helpers.get_start_date(time_range)
@@ -133,6 +135,41 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
       end
 
     Repo.all(query)
+  end
+
+  defp get_cycle_time_tasks_regular(board_id, opts) do
+    time_range = Keyword.get(opts, :time_range, :last_30_days)
+    start_date = Helpers.get_start_date(time_range)
+
+    first_move_subquery =
+      from th in TaskHistory,
+        where: th.type == :move,
+        group_by: th.task_id,
+        select: %{task_id: th.task_id, started_at: min(th.inserted_at)}
+
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
+    |> where([t, c], c.board_id == ^board_id)
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.completed_at >= ^start_date)
+    |> where([t], t.type != ^:goal)
+    |> order_by([t], desc: t.completed_at)
+    |> select([t, _c, fm], %{
+      id: t.id,
+      identifier: t.identifier,
+      title: t.title,
+      claimed_at: fm.started_at,
+      completed_at: t.completed_at,
+      completed_by_agent: t.completed_by_agent,
+      cycle_time_seconds:
+        fragment(
+          "EXTRACT(EPOCH FROM (? - ?))",
+          t.completed_at,
+          fm.started_at
+        )
+    })
+    |> Repo.all()
   end
 
   defp format_cycle_time(seconds), do: Helpers.format_time(seconds)
