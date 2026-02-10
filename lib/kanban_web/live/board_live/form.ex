@@ -66,7 +66,7 @@ defmodule KanbanWeb.BoardLive.Form do
          socket
          |> assign(:searched_user, nil)
          |> assign(:search_email, email)
-         |> put_flash(:error, gettext("User not found with email: %{email}", email: email))}
+         |> put_flash(:error, gettext("Could not find a user with that email address"))}
 
       user ->
         current_user_id = socket.assigns.current_scope.user.id

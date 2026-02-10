@@ -140,7 +140,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       |> form("form[phx-submit='search_user']", %{email: "nonexistent@example.com"})
       |> render_submit()
 
-      assert render(lv) =~ "User not found with email"
+      assert render(lv) =~ "Could not find a user with that email address"
     end
 
     test "prevents adding yourself to board", %{conn: conn, board: board, user: user} do
