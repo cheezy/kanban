@@ -64,8 +64,13 @@ defmodule Kanban.ApiTokens do
         where: t.token_hash == ^token_hash,
         preload: [:user, :board]
 
+    # Dummy query used to normalize timing across all code paths,
+    # preventing side-channel attacks that distinguish token states.
+    timing_query = from t in ApiToken, where: t.id == -1, select: count()
+
     case Repo.one(query) do
       nil ->
+        Repo.one(timing_query)
         {:error, :not_found}
 
       %ApiToken{revoked_at: nil} = api_token ->
@@ -73,6 +78,7 @@ defmodule Kanban.ApiTokens do
         {:ok, api_token}
 
       %ApiToken{} ->
+        Repo.one(timing_query)
         {:error, :revoked}
     end
   end
