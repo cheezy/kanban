@@ -550,10 +550,10 @@ defmodule Kanban.Metrics do
 
     {:ok,
      %{
-       average_hours: Float.round(average, 2),
-       median_hours: Float.round(median, 2),
-       min_hours: Float.round(min, 2),
-       max_hours: Float.round(max, 2),
+       average_hours: Float.round(average, 4),
+       median_hours: Float.round(median, 4),
+       min_hours: Float.round(min, 4),
+       max_hours: Float.round(max, 4),
        count: count
      }}
   end
@@ -588,10 +588,10 @@ defmodule Kanban.Metrics do
 
         {:ok,
          %{
-           average_hours: Float.round(average, 2),
-           median_hours: Float.round(median, 2),
-           min_hours: Float.round(min, 2),
-           max_hours: Float.round(max, 2),
+           average_hours: Float.round(average, 4),
+           median_hours: Float.round(median, 4),
+           min_hours: Float.round(min, 4),
+           max_hours: Float.round(max, 4),
            count: count
          }}
     end

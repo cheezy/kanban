@@ -473,7 +473,7 @@ defmodule KanbanWeb.MetricsLive.Components do
               |> Enum.with_index()
               |> Enum.map(fn {day, index} ->
                 x = 60 + index * (720 / max(length(@daily_times) - 1, 1))
-                y = 350 - day.average_hours / max(max_hours, 1) * 300
+                y = 350 - day.average_hours / max(max_hours, 0.001) * 300
                 "#{x},#{y}"
               end)
               |> Enum.join(" ") %>
@@ -491,7 +491,7 @@ defmodule KanbanWeb.MetricsLive.Components do
                 |> Enum.map(fn index ->
                   x = 60 + index * (720 / max(length(@daily_times) - 1, 1))
                   trend_y = trend.slope * index + trend.intercept
-                  y = 350 - trend_y / max(max_hours, 1) * 300
+                  y = 350 - trend_y / max(max_hours, 0.001) * 300
                   "#{x},#{y}"
                 end)
                 |> Enum.join(" ") %>
@@ -507,7 +507,7 @@ defmodule KanbanWeb.MetricsLive.Components do
             <% end %>
             <%= for {day, index} <- Enum.with_index(@daily_times) do %>
               <% x = 60 + index * (720 / max(length(@daily_times) - 1, 1)) %>
-              <% y = 350 - day.average_hours / max(max_hours, 1) * 300 %>
+              <% y = 350 - day.average_hours / max(max_hours, 0.001) * 300 %>
               <% last_index = length(@daily_times) - 1 %>
               <% is_last = index == last_index %>
               <% is_interval_match = rem(index, label_interval) == 0 %>
