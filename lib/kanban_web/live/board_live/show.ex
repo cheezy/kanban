@@ -698,7 +698,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
     {:noreply,
      socket
-     |> stream(:columns, columns, reset: true)
+     |> stream(:columns, columns)
      |> load_tasks_for_columns(columns)}
   end
 
