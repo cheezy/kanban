@@ -81,7 +81,7 @@
 
       <.summary_stats stats={@review_wait_stats} format_fn={&format_wait_time/1} />
 
-      <div :if={length(@grouped_review_tasks) > 0} class="space-y-6">
+      <div :if={length(@grouped_review_tasks) > 0} class="mt-8 space-y-6">
         <div :for={{date, day_tasks} <- @grouped_review_tasks} class="space-y-2">
           <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-amber-500 dark:border-amber-400">
             <.icon
@@ -163,7 +163,7 @@
 
       <.summary_stats stats={@backlog_wait_stats} format_fn={&format_wait_time/1} />
 
-      <div :if={length(@grouped_backlog_tasks) > 0} class="space-y-6">
+      <div :if={length(@grouped_backlog_tasks) > 0} class="mt-8 space-y-6">
         <div :for={{date, day_tasks} <- @grouped_backlog_tasks} class="space-y-2">
           <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-indigo-500 dark:border-indigo-400">
             <.icon

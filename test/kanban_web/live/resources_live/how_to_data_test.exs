@@ -411,11 +411,16 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         HowToData.all_how_tos()
         |> Enum.filter(&("best-practices" in &1.tags))
 
-      assert length(best_practices_guides) == 2
+      assert length(best_practices_guides) == 7
 
       guide_ids = Enum.map(best_practices_guides, & &1.id)
       assert "organizing-with-dependencies" in guide_ids
       assert "using-complexity-priority" in guide_ids
+      assert "metrics-dashboard" in guide_ids
+      assert "throughput-metrics" in guide_ids
+      assert "cycle-time-metrics" in guide_ids
+      assert "lead-time-metrics" in guide_ids
+      assert "wait-time-metrics" in guide_ids
     end
 
     test "organizing-with-dependencies guide has complete content" do
@@ -499,9 +504,9 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 13 guides" do
-      # 4 getting-started + 4 developer + 3 non-developer + 2 best-practices = 13
-      assert length(HowToData.all_how_tos()) == 13
+    test "has all 18 guides" do
+      # 4 getting-started + 4 developer + 3 non-developer + 2 best-practices + 5 metrics = 18
+      assert length(HowToData.all_how_tos()) == 18
     end
   end
 end

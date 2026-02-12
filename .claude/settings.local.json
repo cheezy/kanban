@@ -123,7 +123,9 @@
       "mcp__Tidewave__execute_sql_query",
       "mcp__Tidewave__project_eval",
       "mcp__Tidewave__get_docs",
-      "mcp__Tidewave-Web__browser_eval"
+      "mcp__Tidewave-Web__browser_eval",
+      "WebFetch(domain:gofastmcp.com)",
+      "WebFetch(domain:modelcontextprotocol.info)"
     ],
     "deny": [],
     "ask": []
