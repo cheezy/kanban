@@ -36,7 +36,7 @@ npm-debug.log
 /assets/node_modules/
 
 .expert/
-.claude/
+
 .mcp.json
 
 TOKENS
@@ -46,3 +46,7 @@ priv/repo/seed_metrics_data.exs
 package.json
 package-lock.json
 node_modules
+.claude/skills/stride-claiming-tasks/SKILL.md
+.claude/skills/stride-completing-tasks/SKILL.md
+.claude/skills/stride-creating-goals/SKILL.md
+.claude/skills/stride-creating-tasks/SKILL.md
