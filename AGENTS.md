@@ -177,17 +177,17 @@ During this session, the following dark mode fixes were applied:
 
 ### Quality guidelines  
 
-**ALWAYS** run follow these quality guidelines:
+**ALWAYS** follow these quality guidelines:
 
 - **IMPORTANT**: When you complete a task that has new functions write unit tests for the new function
 - **IMPORTANT**: When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
-- Each time you write or update a unit tests run them with `mix test` and ensure they pass
+- Each time you write or update a unit test run them with `mix test` and ensure they pass
 - **IMPORTANT**: When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
 - **IMPORTANT**: When you complete a task run `mix credo --strict` to check for code quality issues and fix them
 
 ### Security guidelines
 
-**ALWAYS** run follow these security guidelines:
+**ALWAYS** follow these security guidelines:
 
 - **IMPORTANT**: When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
 - **IMPORTANT**: When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
