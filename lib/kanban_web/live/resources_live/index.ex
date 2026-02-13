@@ -15,29 +15,33 @@ defmodule KanbanWeb.ResourcesLive.Index do
     locale = session["locale"] || "en"
     Gettext.put_locale(KanbanWeb.Gettext, locale)
 
-    how_tos = HowToData.all_how_tos()
+    {:ok, assign(socket, :page_title, gettext("Resources & How-Tos"))}
+  end
 
-    {:ok,
+  @impl true
+  def handle_params(params, _uri, socket) do
+    how_tos = HowToData.all_how_tos()
+    search_query = params["search"] || ""
+    selected_tags = parse_tags(params["tags"])
+    sort_by = params["sort_by"] || "relevance"
+
+    filtered =
+      filter_how_tos(how_tos, search_query, selected_tags)
+      |> sort_how_tos(sort_by)
+
+    {:noreply,
      socket
-     |> assign(:page_title, gettext("Resources & How-Tos"))
      |> assign(:all_how_tos, how_tos)
-     |> assign(:filtered_how_tos, how_tos)
      |> assign(:all_tags, HowToData.all_tags())
-     |> assign(:search_query, "")
-     |> assign(:selected_tags, [])
-     |> assign(:sort_by, "relevance")}
+     |> assign(:search_query, search_query)
+     |> assign(:selected_tags, selected_tags)
+     |> assign(:sort_by, sort_by)
+     |> assign(:filtered_how_tos, filtered)}
   end
 
   @impl true
   def handle_event("search", %{"value" => query}, socket) do
-    filtered =
-      filter_how_tos(socket.assigns.all_how_tos, query, socket.assigns.selected_tags)
-      |> sort_how_tos(socket.assigns.sort_by)
-
-    {:noreply,
-     socket
-     |> assign(:search_query, query)
-     |> assign(:filtered_how_tos, filtered)}
+    {:noreply, push_filter_params(socket, search: query)}
   end
 
   @impl true
@@ -49,36 +53,17 @@ defmodule KanbanWeb.ResourcesLive.Index do
         [tag | socket.assigns.selected_tags]
       end
 
-    filtered =
-      filter_how_tos(socket.assigns.all_how_tos, socket.assigns.search_query, selected_tags)
-      |> sort_how_tos(socket.assigns.sort_by)
-
-    {:noreply,
-     socket
-     |> assign(:selected_tags, selected_tags)
-     |> assign(:filtered_how_tos, filtered)}
+    {:noreply, push_filter_params(socket, tags: selected_tags)}
   end
 
   @impl true
   def handle_event("sort", %{"sort_by" => sort_by}, socket) do
-    filtered = sort_how_tos(socket.assigns.filtered_how_tos, sort_by)
-
-    {:noreply,
-     socket
-     |> assign(:sort_by, sort_by)
-     |> assign(:filtered_how_tos, filtered)}
+    {:noreply, push_filter_params(socket, sort_by: sort_by)}
   end
 
   @impl true
   def handle_event("clear_filters", _params, socket) do
-    how_tos = HowToData.all_how_tos()
-
-    {:noreply,
-     socket
-     |> assign(:search_query, "")
-     |> assign(:selected_tags, [])
-     |> assign(:sort_by, "relevance")
-     |> assign(:filtered_how_tos, how_tos)}
+    {:noreply, push_patch(socket, to: ~p"/resources")}
   end
 
   @doc """
@@ -114,6 +99,39 @@ defmodule KanbanWeb.ResourcesLive.Index do
   defp sort_how_tos(how_tos, "relevance"), do: how_tos
   defp sort_how_tos(how_tos, "newest"), do: Enum.sort_by(how_tos, & &1.created_at, {:desc, Date})
   defp sort_how_tos(how_tos, "a-z"), do: Enum.sort_by(how_tos, & &1.title)
+
+  defp parse_tags(nil), do: []
+  defp parse_tags(""), do: []
+
+  defp parse_tags(tags_string) do
+    tags_string
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+  end
+
+  defp push_filter_params(socket, overrides) do
+    search = Keyword.get(overrides, :search, socket.assigns.search_query)
+    tags = Keyword.get(overrides, :tags, socket.assigns.selected_tags)
+    sort_by = Keyword.get(overrides, :sort_by, socket.assigns.sort_by)
+
+    query_params =
+      %{}
+      |> then(fn params -> if search != "", do: Map.put(params, "search", search), else: params end)
+      |> then(fn params ->
+        if tags != [], do: Map.put(params, "tags", Enum.join(tags, ",")), else: params
+      end)
+      |> then(fn params ->
+        if sort_by != "relevance", do: Map.put(params, "sort_by", sort_by), else: params
+      end)
+
+    path =
+      case URI.encode_query(query_params) do
+        "" -> ~p"/resources"
+        query -> ~p"/resources" <> "?" <> query
+      end
+
+    push_patch(socket, to: path)
+  end
 
   # Delegate to shared module for consistency
   defdelegate type_icon(content_type), to: HowToData

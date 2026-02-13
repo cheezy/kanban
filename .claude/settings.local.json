@@ -125,7 +125,8 @@
       "mcp__Tidewave__get_docs",
       "mcp__Tidewave-Web__browser_eval",
       "WebFetch(domain:gofastmcp.com)",
-      "WebFetch(domain:modelcontextprotocol.info)"
+      "WebFetch(domain:modelcontextprotocol.info)",
+      "mcp__Tidewave__get_source_location"
     ],
     "deny": [],
     "ask": []
