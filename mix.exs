@@ -12,7 +12,8 @@ defmodule Kanban.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      test_coverage: test_coverage()
+      test_coverage: test_coverage(),
+      usage_rules: usage_rules()
     ]
   end
 
@@ -75,7 +76,8 @@ defmodule Kanban.MixProject do
       {:ecto_psql_extras, "~> 0.8"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
-      {:usage_rules, "~> 0.1"},
+      {:usage_rules, "~> 1.0", only: [:dev]},
+      {:igniter, "~> 0.6", only: [:dev]},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:tidewave, "~> 0.2", only: :dev},
       {:error_tracker, "~> 0.7"}
@@ -130,6 +132,30 @@ defmodule Kanban.MixProject do
         KanbanWeb.Router,
         KanbanWeb.Telemetry,
         KanbanWeb.Telemetry.UserActivityPage
+      ]
+    ]
+  end
+
+    defp usage_rules do
+    [
+      file: "AGENTS.md",
+
+      usage_rules:
+      [
+        ~r/^usage_rules/
+      ],
+
+      # or use skills
+      skills: [
+        location: ".claude/skills",
+        # build skills that combine multiple usage rules
+        build: [
+          "phoenix-framework": [
+            description: "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
+            # Include all Phoenix dependencies
+            usage_rules: [:phoenix, ~r/^phoenix_/]
+          ]
+        ]
       ]
     ]
   end
