@@ -1057,10 +1057,11 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
 
-      # Find positions of goal identifiers
-      g1_index = :binary.match(html, "G1") |> elem(0)
-      g2_index = :binary.match(html, "G2") |> elem(0)
-      g3_index = :binary.match(html, "G3") |> elem(0)
+      # Find positions of goal titles (using titles avoids false matches
+      # against short identifiers like "G2" appearing in Base64 tokens)
+      g1_index = :binary.match(html, "Goal Today") |> elem(0)
+      g2_index = :binary.match(html, "Goal Yesterday") |> elem(0)
+      g3_index = :binary.match(html, "Goal Two Days Ago") |> elem(0)
 
       # Most recent should appear first
       assert g1_index < g2_index
