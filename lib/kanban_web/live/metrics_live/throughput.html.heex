@@ -111,7 +111,9 @@
               name="agent_name"
               class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
             >
-              <option value="" selected={is_nil(@agent_name)}>{"🤖 " <> gettext("All Agents")}</option>
+              <option value="" selected={is_nil(@agent_name)}>
+                {"🤖 " <> gettext("All Agents")}
+              </option>
               <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
                 {agent}
               </option>
@@ -261,7 +263,9 @@
           <.icon name="hero-flag-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Goals")}</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {gettext("Completed Goals")}
+          </h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             {gettext("Goals completed in this time range")}
           </p>
@@ -297,7 +301,9 @@
           <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Tasks")}</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {gettext("Completed Tasks")}
+          </h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             {gettext("Grouped by completion date")}
           </p>
@@ -316,7 +322,9 @@
                 {format_date(date)}
               </h4>
               <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {length(day_tasks)} {if length(day_tasks) == 1, do: gettext("task"), else: gettext("tasks")}
+                {length(day_tasks)} {if length(day_tasks) == 1,
+                  do: gettext("task"),
+                  else: gettext("tasks")}
               </span>
             </div>
           </div>

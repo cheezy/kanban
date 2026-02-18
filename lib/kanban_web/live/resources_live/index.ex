@@ -116,7 +116,9 @@ defmodule KanbanWeb.ResourcesLive.Index do
 
     query_params =
       %{}
-      |> then(fn params -> if search != "", do: Map.put(params, "search", search), else: params end)
+      |> then(fn params ->
+        if search != "", do: Map.put(params, "search", search), else: params
+      end)
       |> then(fn params ->
         if tags != [], do: Map.put(params, "tags", Enum.join(tags, ",")), else: params
       end)

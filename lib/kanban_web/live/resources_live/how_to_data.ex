@@ -646,13 +646,13 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Navigate to Throughput",
           content:
             "From the metrics dashboard, click **Throughput** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Throughput**.",
-          image: "/images/resources/guides/throughput-summary.png",
+          image: "/images/resources/guides/throughput-summary.png"
         },
         %{
           title: "Reading the Chart",
           content:
             "The throughput chart shows completed tasks over your selected time range. Look for:\n\n- **Upward trends**: Team is delivering more over time\n- **Flat lines**: Consistent delivery rate\n- **Dips**: Potential blockers, holidays, or capacity changes\n\nUse the agent filter to compare individual agent throughput.",
-          image: "/images/resources/guides/throughput-chart.png",
+          image: "/images/resources/guides/throughput-chart.png"
         },
         %{
           title: "Using Throughput Effectively",
@@ -683,13 +683,13 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Navigate to Cycle Time",
           content:
             "From the metrics dashboard, click **Cycle Time** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Cycle Time**.",
-          image: "/images/resources/guides/cycle-time-summary.png",
+          image: "/images/resources/guides/cycle-time-summary.png"
         },
         %{
           title: "Reading the Chart",
           content:
             "The cycle time chart shows how long completed tasks took. Look for:\n\n- **Average cycle time**: Your typical delivery speed\n- **Outliers**: Tasks that took much longer than usual may indicate blockers or unclear requirements\n- **Trends**: Is cycle time improving, stable, or getting worse over time?\n\nFilter by agent to identify differences in working speed across your team.",
-          image: "/images/resources/guides/cycle-time-chart.png",
+          image: "/images/resources/guides/cycle-time-chart.png"
         },
         %{
           title: "Reducing Cycle Time",
@@ -720,13 +720,13 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Navigate to Lead Time",
           content:
             "From the metrics dashboard, click **Lead Time** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Lead Time**.",
-          image: "/images/resources/guides/lead-time-summary.png",
+          image: "/images/resources/guides/lead-time-summary.png"
         },
         %{
           title: "Lead Time vs. Cycle Time",
           content:
             "Understanding the difference is key:\n\n- **Lead Time** = Wait time in backlog + Cycle time + Review time\n- **Cycle Time** = Only the active working time\n\nA large gap between lead time and cycle time means tasks are spending a lot of time waiting. This is an opportunity to improve prioritization or increase capacity.",
-          image: "/images/resources/guides/lead-time-chart.png",
+          image: "/images/resources/guides/lead-time-chart.png"
         },
         %{
           title: "Reducing Lead Time",
@@ -763,7 +763,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           title: "Reading the Tables",
           content:
             "The wait time tables show both backlog wait and review wait. Look for:\n\n- **High backlog wait**: Tasks are created but not being picked up — you may need more agents or better prioritization\n- **High review wait**: Completed work is stuck waiting for approval — reviewers may be a bottleneck\n- **Trends**: Are wait times improving or getting worse over time?",
-                    images: [
+          images: [
             %{
               url: "/images/resources/guides/review-wait-time.png",
               alt: "Review Wait Time"

@@ -80,7 +80,9 @@
           <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Completed Tasks")}</h3>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {gettext("Completed Tasks")}
+          </h3>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             {gettext("Grouped by completion date with cycle time metrics")}
           </p>
@@ -120,9 +122,9 @@
                     <div class="flex items-center gap-1">
                       <.icon name="hero-play" class="h-3.5 w-3.5" />
                       <span>
-                        {if @board.ai_optimized_board, do: gettext("Claimed:"), else: gettext("Started:")} {format_datetime(
-                          task.claimed_at
-                        )}
+                        {if @board.ai_optimized_board,
+                          do: gettext("Claimed:"),
+                          else: gettext("Started:")} {format_datetime(task.claimed_at)}
                       </span>
                     </div>
                     <div class="flex items-center gap-1">

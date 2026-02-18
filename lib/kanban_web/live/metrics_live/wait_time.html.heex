@@ -151,7 +151,9 @@
       <div class="flex items-center mb-6">
         <.icon name="hero-queue-list" class="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-2" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {if @board.ai_optimized_board, do: gettext("Backlog Wait Time"), else: gettext("Queue Wait Time")}
+          {if @board.ai_optimized_board,
+            do: gettext("Backlog Wait Time"),
+            else: gettext("Queue Wait Time")}
         </h3>
       </div>
 
@@ -200,9 +202,9 @@
                     <div class="flex items-center gap-1">
                       <.icon name="hero-clock" class="h-3.5 w-3.5" />
                       <span>
-                        {if @board.ai_optimized_board, do: gettext("Claimed:"), else: gettext("Started:")} {format_datetime(
-                          task.claimed_at
-                        )}
+                        {if @board.ai_optimized_board,
+                          do: gettext("Claimed:"),
+                          else: gettext("Started:")} {format_datetime(task.claimed_at)}
                       </span>
                     </div>
                     <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
