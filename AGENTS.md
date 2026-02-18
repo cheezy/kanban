@@ -5,7 +5,7 @@
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 - Use the HexDoc mcp server to read the documentation about project dependencies
-- When you add a new dependency or update an existing dependency run `mix usage_rules.sync AGENTS.md --all --link-to-folder deps --inline usage_rules:all` to update the AGENTS.md file
+- When you add a new dependency or update an existing dependency run `mix usage_rules.sync` to update the AGENTS.md file and phoenix-framework Skill
 - Always provide translations of all text that is visible in the UI
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 
