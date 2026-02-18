@@ -836,10 +836,14 @@ defmodule KanbanWeb.API.TaskController do
   defp translate_changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Enum.reduce(opts, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
+        String.replace(acc, "%{#{key}}", stringify_value(value))
       end)
     end)
   end
+
+  defp stringify_value(value) when is_binary(value), do: value
+  defp stringify_value(value) when is_atom(value) or is_number(value), do: to_string(value)
+  defp stringify_value(value), do: inspect(value)
 
   defp process_batch_goals(goals, column, user, api_token, conn) do
     goals
