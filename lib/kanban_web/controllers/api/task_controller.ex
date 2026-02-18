@@ -349,36 +349,41 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
+  # credo:disable-for-lines:40 Credo.Check.Refactor.ABCSize
+  # credo:disable-for-lines:40 Credo.Check.Refactor.Nesting
   def complete(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
     api_token = conn.assigns.api_token
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
-    agent_name = params["agent_name"] || "Unknown"
-    after_doing_result = params["after_doing_result"]
-    before_review_result = params["before_review_result"]
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      with :ok <-
-             Kanban.Hooks.Validator.validate_hook_execution(after_doing_result, "after_doing",
-               blocking: true
-             ),
-           :ok <-
-             Kanban.Hooks.Validator.validate_hook_execution(before_review_result, "before_review",
-               blocking: true
-             ) do
-        proceed_with_complete(conn, task, user, params, api_token, agent_name)
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      agent_name = params["agent_name"] || "Unknown"
+      after_doing_result = params["after_doing_result"]
+      before_review_result = params["before_review_result"]
+
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
       else
-        {:error, reason} ->
-          hook_name =
-            if String.contains?(reason, "after_doing"), do: "after_doing", else: "before_review"
+        with :ok <-
+               Kanban.Hooks.Validator.validate_hook_execution(after_doing_result, "after_doing",
+                 blocking: true
+               ),
+             :ok <-
+               Kanban.Hooks.Validator.validate_hook_execution(
+                 before_review_result,
+                 "before_review",
+                 blocking: true
+               ) do
+          proceed_with_complete(conn, task, user, params, api_token, agent_name)
+        else
+          {:error, reason} ->
+            hook_name =
+              if String.contains?(reason, "after_doing"), do: "after_doing", else: "before_review"
 
-          handle_hook_validation_error(conn, hook_name, reason)
+            handle_hook_validation_error(conn, hook_name, reason)
+        end
       end
     end
   end
@@ -424,48 +429,51 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  # credo:disable-for-lines:47 Credo.Check.Refactor.ABCSize
   def unclaim(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
-    reason = params["reason"]
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      case Tasks.unclaim_task(task, user, reason) do
-        {:ok, task} ->
-          emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
-          render(conn, :show, task: task)
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      reason = params["reason"]
 
-        {:error, :not_authorized} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "You can only unclaim tasks that you claimed"},
-              :not_authorized_to_unclaim
-            )
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        case Tasks.unclaim_task(task, user, reason) do
+          {:ok, task} ->
+            emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
+            render(conn, :show, task: task)
 
-          conn
-          |> put_status(:forbidden)
-          |> json(error_response)
+          {:error, :not_authorized} ->
+            error_response =
+              ErrorDocs.add_docs_to_error(
+                %{error: "You can only unclaim tasks that you claimed"},
+                :not_authorized_to_unclaim
+              )
 
-        {:error, :not_claimed} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "Task is not currently claimed"},
-              :task_not_claimed
-            )
+            conn
+            |> put_status(:forbidden)
+            |> json(error_response)
 
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
+          {:error, :not_claimed} ->
+            error_response =
+              ErrorDocs.add_docs_to_error(
+                %{error: "Task is not currently claimed"},
+                :task_not_claimed
+              )
 
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(error_response)
+
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> render(:error, changeset: changeset)
+        end
       end
     end
   end
@@ -474,22 +482,24 @@ defmodule KanbanWeb.API.TaskController do
   def mark_reviewed(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
-    after_review_result = params["after_review_result"]
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      case Kanban.Hooks.Validator.validate_hook_execution(after_review_result, "after_review",
-             blocking: true
-           ) do
-        :ok ->
-          proceed_with_mark_reviewed(conn, task, user)
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      after_review_result = params["after_review_result"]
 
-        {:error, reason} ->
-          handle_hook_validation_error(conn, "after_review", reason)
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        case Kanban.Hooks.Validator.validate_hook_execution(after_review_result, "after_review",
+               blocking: true
+             ) do
+          :ok ->
+            proceed_with_mark_reviewed(conn, task, user)
+
+          {:error, reason} ->
+            handle_hook_validation_error(conn, "after_review", reason)
+        end
       end
     end
   end
@@ -564,92 +574,96 @@ defmodule KanbanWeb.API.TaskController do
   def mark_done(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      case Tasks.mark_done(task, user) do
-        {:ok, task} ->
-          emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
-          render(conn, :show, task: task)
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        case Tasks.mark_done(task, user) do
+          {:ok, task} ->
+            emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
+            render(conn, :show, task: task)
 
-        {:error, :invalid_column} ->
-          error_response =
-            ErrorDocs.add_docs_to_error(
-              %{error: "Task must be in Review column to mark as done"},
-              :invalid_column_for_mark_done
-            )
+          {:error, :invalid_column} ->
+            error_response =
+              ErrorDocs.add_docs_to_error(
+                %{error: "Task must be in Review column to mark as done"},
+                :invalid_column_for_mark_done
+              )
 
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(error_response)
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(error_response)
 
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> render(:error, changeset: changeset)
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> render(:error, changeset: changeset)
+        end
       end
     end
   end
 
   def dependencies(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      dependency_tree = Tasks.get_dependency_tree(task)
-      emit_telemetry(conn, :dependencies_fetched, %{task_id: task.id})
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        dependency_tree = Tasks.get_dependency_tree(task)
+        emit_telemetry(conn, :dependencies_fetched, %{task_id: task.id})
 
-      json(conn, %{
-        task: render_task_summary(task),
-        dependencies: render_dependency_tree(dependency_tree.dependencies)
-      })
+        json(conn, %{
+          task: render_task_summary(task),
+          dependencies: render_dependency_tree(dependency_tree.dependencies)
+        })
+      end
     end
   end
 
   def dependents(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      dependent_tasks = Tasks.get_dependent_tasks(task)
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        dependent_tasks = Tasks.get_dependent_tasks(task)
 
-      emit_telemetry(conn, :dependents_fetched, %{
-        task_id: task.id,
-        count: length(dependent_tasks)
-      })
+        emit_telemetry(conn, :dependents_fetched, %{
+          task_id: task.id,
+          count: length(dependent_tasks)
+        })
 
-      json(conn, %{
-        task: render_task_summary(task),
-        dependents: Enum.map(dependent_tasks, &render_task_summary/1)
-      })
+        json(conn, %{
+          task: render_task_summary(task),
+          dependents: Enum.map(dependent_tasks, &render_task_summary/1)
+        })
+      end
     end
   end
 
   def tree(conn, %{"id" => id_or_identifier}) do
     board = conn.assigns.current_board
-    task = get_task_by_id_or_identifier!(id_or_identifier, board)
 
-    if task.column.board_id != board.id do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Task does not belong to this board"})
-    else
-      tree_data = Tasks.get_task_tree(task.id)
-      emit_telemetry(conn, :task_tree_fetched, %{task_id: task.id})
+    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board) do
+      if task.column.board_id != board.id do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Task does not belong to this board"})
+      else
+        tree_data = Tasks.get_task_tree(task.id)
+        emit_telemetry(conn, :task_tree_fetched, %{task_id: task.id})
 
-      render(conn, :tree, tree: tree_data)
+        render(conn, :tree, tree: tree_data)
+      end
     end
   end
 
@@ -668,16 +682,10 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp get_task_by_id_or_identifier!(id_or_identifier, board) do
+  defp fetch_task_by_id_or_identifier(id_or_identifier, board) do
     case get_task_by_id_or_identifier(id_or_identifier, board) do
-      nil ->
-        raise Ecto.NoResultsError,
-          queryable: Kanban.Tasks.Task,
-          message:
-            "Task not found with id_or_identifier: #{inspect(id_or_identifier)} in board: #{board.id}"
-
-      task ->
-        task
+      nil -> {:error, :not_found}
+      task -> {:ok, task}
     end
   end
 

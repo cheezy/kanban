@@ -1601,6 +1601,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert response["completed_by_agent"] == nil
     end
+
+    test "returns 404 for nonexistent task", %{conn: conn} do
+      conn = patch(conn, ~p"/api/tasks/999999/complete")
+      assert json_response(conn, 404)
+    end
+
+    test "returns 404 for nonexistent identifier", %{conn: conn} do
+      conn = patch(conn, ~p"/api/tasks/NONEXISTENT99/complete")
+      assert json_response(conn, 404)
+    end
   end
 
   describe "dependency filtering" do
@@ -2262,6 +2272,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+
+    test "returns 404 for nonexistent task", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/999999/dependencies")
+      assert json_response(conn, 404)
     end
   end
 
