@@ -136,12 +136,10 @@ defmodule Kanban.MixProject do
     ]
   end
 
-    defp usage_rules do
+  defp usage_rules do
     [
       file: "AGENTS.md",
-
-      usage_rules:
-      [
+      usage_rules: [
         ~r/^usage_rules/
       ],
 
@@ -151,7 +149,8 @@ defmodule Kanban.MixProject do
         # build skills that combine multiple usage rules
         build: [
           "phoenix-framework": [
-            description: "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
+            description:
+              "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
             # Include all Phoenix dependencies
             usage_rules: [:phoenix, ~r/^phoenix_/]
           ]
