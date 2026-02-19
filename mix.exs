@@ -152,7 +152,7 @@ defmodule Kanban.MixProject do
             description:
               "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
             # Include all Phoenix dependencies
-            usage_rules: [:phoenix, ~r/^phoenix_/]
+            usage_rules: [:phoenix, ~r/^phoenix\//]
           ]
         ]
       ]

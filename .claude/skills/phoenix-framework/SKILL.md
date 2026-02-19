@@ -13,17 +13,11 @@ metadata:
 - [html](references/html.md)
 - [liveview](references/liveview.md)
 - [phoenix](references/phoenix.md)
-- [phoenix](references/phoenix.md)
-- [phoenix_live_view](references/phoenix_live_view.md)
-- [phoenix_live_reload](references/phoenix_live_reload.md)
-- [phoenix_html](references/phoenix_html.md)
-- [phoenix_ecto](references/phoenix_ecto.md)
-- [phoenix_live_dashboard](references/phoenix_live_dashboard.md)
 
 ## Searching Documentation
 
 ```sh
-mix usage_rules.search_docs "search term" -p phoenix -p phoenix_live_view -p phoenix_live_reload -p phoenix_html -p phoenix_ecto -p phoenix_live_dashboard
+mix usage_rules.search_docs "search term" -p phoenix
 ```
 
 ## Available Mix Tasks
@@ -52,6 +46,4 @@ mix usage_rules.search_docs "search term" -p phoenix -p phoenix_live_view -p pho
 - `mix phx.gen.socket` - Generates a Phoenix socket handler
 - `mix phx.routes` - Prints all routes
 - `mix phx.server` - Starts applications and their servers
-- `mix compile.phoenix_live_view`
-- `mix phoenix_live_view.upgrade`
 <!-- usage-rules-skill-end -->
