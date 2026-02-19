@@ -914,5 +914,64 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_binary(response["skills_version"])
       assert response["skills_version"] != ""
     end
+
+    test "stride-creating-tasks skill contains field quick reference and footer", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+      skill = Enum.find(skills, &(&1["name"] == "stride-creating-tasks"))
+
+      assert skill["content"] =~ "Field Quick Reference"
+      assert skill["content"] =~ "work"
+      assert skill["content"] =~ "defect"
+      assert skill["content"] =~ "Embedded Object Formats"
+      assert skill["content"] =~ "WRONG"
+      assert skill["content"] =~ "RIGHT"
+      assert skill["content"] =~ "api_schema"
+      assert skill["content"] =~ "API Reference"
+    end
+
+    test "stride-creating-goals skill contains field quick reference and footer", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+      skill = Enum.find(skills, &(&1["name"] == "stride-creating-goals"))
+
+      assert skill["content"] =~ "Field Quick Reference"
+      assert skill["content"] =~ "goals"
+      assert skill["content"] =~ "api_schema"
+      assert skill["content"] =~ "API Reference"
+    end
+
+    test "stride-claiming-tasks skill contains hook result format and footer", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+      skill = Enum.find(skills, &(&1["name"] == "stride-claiming-tasks"))
+
+      assert skill["content"] =~ "Hook Result Format"
+      assert skill["content"] =~ "exit_code"
+      assert skill["content"] =~ "Claim Request Checklist"
+      assert skill["content"] =~ "api_schema"
+      assert skill["content"] =~ "API Reference"
+    end
+
+    test "stride-completing-tasks skill contains completion request format and footer",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+      skill = Enum.find(skills, &(&1["name"] == "stride-completing-tasks"))
+
+      assert skill["content"] =~ "Completion Request Field Reference"
+      assert skill["content"] =~ "Hook Result Format Reminder"
+      assert skill["content"] =~ "actual_files_changed"
+      assert skill["content"] =~ "api_schema"
+      assert skill["content"] =~ "API Reference"
+    end
   end
 end
