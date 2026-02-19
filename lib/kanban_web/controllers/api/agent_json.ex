@@ -1676,6 +1676,29 @@ defmodule KanbanWeb.API.AgentJSON do
             - 95% of nested tasks had full specifications
 
             **Time savings: 40 minutes per goal (90% reduction in format errors)**
+
+            ## Field Quick Reference
+
+            Use these exact values — any other value will be rejected.
+
+            | Field | Type | Valid Values | Required |
+            |-------|------|-------------|----------|
+            | `type` | enum | `"work"`, `"defect"`, `"goal"` | Yes |
+            | `priority` | enum | `"low"`, `"medium"`, `"high"`, `"critical"` | Yes |
+            | `complexity` | enum | `"small"`, `"medium"`, `"large"` | No |
+            | `needs_review` | boolean | `true`, `false` | No (default: false) |
+
+            ### Batch Endpoint Root Key
+
+            ```json
+            ❌ WRONG: {"tasks": [...]}
+            ✅ RIGHT: {"goals": [...]}
+            ```
+
+            The `POST /api/tasks/batch` endpoint requires `"goals"` as the root key, NOT `"tasks"`.
+
+            ---
+            **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
             """
           }
         ]
