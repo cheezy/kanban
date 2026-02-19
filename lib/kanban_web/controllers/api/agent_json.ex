@@ -877,6 +877,91 @@ defmodule KanbanWeb.API.AgentJSON do
             - Rework required: 5% of tasks
 
             **Time savings: 3.4 hours per task (72% reduction)**
+
+            ## Field Quick Reference
+
+            Use these exact values — any other value will be rejected.
+
+            | Field | Type | Valid Values | Required |
+            |-------|------|-------------|----------|
+            | `type` | enum | `"work"`, `"defect"`, `"goal"` | Yes |
+            | `priority` | enum | `"low"`, `"medium"`, `"high"`, `"critical"` | Yes |
+            | `complexity` | enum | `"small"`, `"medium"`, `"large"` | No |
+            | `needs_review` | boolean | `true`, `false` | No (default: false) |
+            | `acceptance_criteria` | string | Newline-separated text | No |
+            | `patterns_to_follow` | string | Newline-separated text | No |
+            | `dependencies` | array | Task identifiers `["W45", "W46"]` | No |
+            | `pitfalls` | array | Strings `["Don't do X", "Avoid Y"]` | No |
+
+            ## Embedded Object Formats — WRONG vs RIGHT
+
+            ### verification_steps
+
+            ```json
+            ❌ WRONG (strings — will be rejected):
+            "verification_steps": ["mix test", "mix credo --strict"]
+
+            ❌ WRONG (missing required fields):
+            "verification_steps": [{"step_text": "mix test"}]
+
+            ✅ RIGHT (objects with all required fields):
+            "verification_steps": [
+              {
+                "step_type": "command",
+                "step_text": "mix test",
+                "expected_result": "All tests pass",
+                "position": 0
+              }
+            ]
+            ```
+
+            **Required fields:** `step_type` (`"command"` or `"manual"` only), `step_text`, `position` (integer >= 0)
+            **Optional fields:** `expected_result`
+
+            ### key_files
+
+            ```json
+            ❌ WRONG (strings):
+            "key_files": ["lib/my_app/tasks.ex"]
+
+            ❌ WRONG (absolute path):
+            "key_files": [{"file_path": "/lib/my_app/tasks.ex", "position": 0}]
+
+            ✅ RIGHT:
+            "key_files": [
+              {
+                "file_path": "lib/my_app/tasks.ex",
+                "note": "Add query function",
+                "position": 0
+              }
+            ]
+            ```
+
+            **Required fields:** `file_path` (relative, no leading `/` or `..`), `position` (integer >= 0)
+            **Optional fields:** `note`
+
+            ### testing_strategy
+
+            ```json
+            ❌ WRONG (string values for test arrays):
+            "testing_strategy": {
+              "unit_tests": "Test login with valid credentials"
+            }
+
+            ✅ RIGHT (arrays of strings):
+            "testing_strategy": {
+              "unit_tests": ["Test valid login", "Test invalid login"],
+              "integration_tests": ["Full auth flow"],
+              "edge_cases": ["Empty password", "SQL injection"],
+              "coverage_target": "100% for auth module"
+            }
+            ```
+
+            **Valid keys:** `unit_tests`, `integration_tests`, `manual_tests`, `edge_cases`, `coverage_target`
+            **All values** must be strings or arrays of strings.
+
+            ---
+            **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
             """
           },
           %{
