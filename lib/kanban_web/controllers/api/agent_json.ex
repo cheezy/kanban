@@ -124,7 +124,10 @@ defmodule KanbanWeb.API.AgentJSON do
               always_overwrite: "YES - always create/update to get latest version"
             }
           ],
-          verification: "Use Bash to verify all 4 files exist: ls -la ~/.claude/skills/*/SKILL.md"
+          verification:
+            "Use Bash to verify all 4 files exist: ls -la ~/.claude/skills/*/SKILL.md",
+          note_skills_version:
+            "After installing skills, note the skills_version from the SKILL.md frontmatter. Send this value with claim and complete API calls for automatic staleness detection."
         },
         STEP_8_NOTIFY_USER: %{
           order: 8,
@@ -318,6 +321,7 @@ defmodule KanbanWeb.API.AgentJSON do
             ---
             name: stride-claiming-tasks
             description: Use when you want to claim a task from Stride, before making any API calls to /api/tasks/claim. After successful claiming, immediately begin implementation.
+            skills_version: 1.0
             ---
 
             # Stride: Claiming Tasks
@@ -603,6 +607,7 @@ defmodule KanbanWeb.API.AgentJSON do
             REQUIRED BODY: {
               "identifier": "W47",
               "agent_name": "Claude Sonnet 4.5",
+              "skills_version": "1.0",
               "before_doing_result": {
                 "exit_code": 0,
                 "output": "...",
@@ -614,6 +619,7 @@ defmodule KanbanWeb.API.AgentJSON do
             HOOK TIMING: before_doing executes BEFORE claim request
             BLOCKING: Hook is blocking - non-zero exit code prevents claim
             NEXT STEP: Immediately begin working on the task after successful claim
+            VERSION: Send skills_version from your SKILL.md frontmatter with every claim request
             ```
 
             ## Real-World Impact
@@ -663,7 +669,29 @@ defmodule KanbanWeb.API.AgentJSON do
             |-------|------|---------|
             | `identifier` | string | `"W47"` |
             | `agent_name` | string | `"Claude Opus 4.6"` |
+            | `skills_version` | string (optional) | `"1.0"` (from SKILL.md frontmatter) |
             | `before_doing_result` | object | See hook result format above |
+
+            ## Handling Stale Skills
+
+            The API response may include a `skills_update_required` field when your skills are outdated:
+
+            ```json
+            {
+              "data": { ... },
+              "skills_update_required": {
+                "current_version": "1.1",
+                "your_version": "1.0",
+                "action": "Call GET /api/agent/onboarding and re-install all skills",
+                "reason": "Your local skills are outdated."
+              }
+            }
+            ```
+
+            **When you see `skills_update_required`:**
+            1. Call `GET /api/agent/onboarding`
+            2. Re-install all skills from `claude_code_skills.available_skills`
+            3. Retry your original action
 
             ---
             **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
@@ -679,6 +707,7 @@ defmodule KanbanWeb.API.AgentJSON do
             ---
             name: stride-creating-tasks
             description: Use when creating a new Stride task or defect, before calling POST /api/tasks. Prevents 3+ hour exploration failures from minimal task specifications.
+            skills_version: 1.0
             ---
 
             # Stride: Creating Tasks
@@ -1017,6 +1046,7 @@ defmodule KanbanWeb.API.AgentJSON do
             ---
             name: stride-completing-tasks
             description: Use when you've finished work on a Stride task and need to mark it complete, before calling /api/tasks/:id/complete. Enforces proper hook execution order.
+            skills_version: 1.0
             ---
 
             # Stride: Completing Tasks
@@ -1334,6 +1364,7 @@ defmodule KanbanWeb.API.AgentJSON do
               "agent_name": "Claude Sonnet 4.5",
               "time_spent_minutes": 45,
               "completion_notes": "...",
+              "skills_version": "1.0",
               "after_doing_result": {
                 "exit_code": 0,
                 "output": "...",
@@ -1349,6 +1380,7 @@ defmodule KanbanWeb.API.AgentJSON do
             CRITICAL: Execute BOTH after_doing AND before_review BEFORE calling complete
             HOOK ORDER: after_doing → before_review → complete (with both results) → after_review
             BLOCKING: All hooks are blocking - non-zero exit codes will cause API rejection
+            VERSION: Send skills_version from your SKILL.md frontmatter with every complete request
             ```
 
             ## Real-World Impact
@@ -1379,6 +1411,7 @@ defmodule KanbanWeb.API.AgentJSON do
             | `actual_files_changed` | string | Yes | Comma-separated file paths (NOT an array) |
             | `after_doing_result` | object | Yes | Hook result (see format below) |
             | `before_review_result` | object | Yes | Hook result (see format below) |
+            | `skills_version` | string | No | Your skills version from SKILL.md frontmatter |
 
             **WRONG — actual_files_changed as array:**
             ```json
@@ -1414,6 +1447,15 @@ defmodule KanbanWeb.API.AgentJSON do
             }
             ```
 
+            ## Handling Stale Skills
+
+            The API response may include a `skills_update_required` field when your skills are outdated:
+
+            **When you see `skills_update_required`:**
+            1. Call `GET /api/agent/onboarding`
+            2. Re-install all skills from `claude_code_skills.available_skills`
+            3. Retry your original action
+
             ---
             **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
             """
@@ -1429,6 +1471,7 @@ defmodule KanbanWeb.API.AgentJSON do
             ---
             name: stride-creating-goals
             description: Use when creating a Stride goal with nested tasks or using batch creation, before calling POST /api/tasks or POST /api/tasks/batch. Ensures proper structure and dependencies.
+            skills_version: 1.0
             ---
 
             # Stride: Creating Goals
