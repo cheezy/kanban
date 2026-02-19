@@ -161,13 +161,61 @@ Add these sections:
 - Update the skill content strings in `AgentJSON` to match the updated SKILL.md files
 - Write/update tests for the onboarding response to verify updated skills are served
 
+### Goal 3: Add Skill Versioning and Staleness Detection
+
+Once onboarded, agents use whatever SKILL.md files are on disk and never re-check for updates. When skills are enhanced (Goal 2), previously onboarded agents keep using stale content. This goal adds a lightweight versioning mechanism so agents automatically detect and update stale skills during normal workflow.
+
+#### Design
+
+**Server side:**
+- Add a `skills_version` string (e.g., `"1.0"`) to the onboarding response alongside the existing `version` field
+- Bump `skills_version` whenever skill content changes
+- Include `current_skills_version` in task API responses (`/api/tasks/next`, `/api/tasks/claim`, `/api/tasks/:id/complete`)
+- When the agent provides its `skills_version` (via query param or request body) and it doesn't match the server's current version, include a `skills_update_required` object in the response with instructions
+
+**Agent side (skills update):**
+- Each Stride skill stores its version locally (in the SKILL.md frontmatter or a companion file)
+- When claiming/completing tasks, the agent sends its `skills_version`
+- If the response contains `skills_update_required`, the agent calls `GET /api/agent/onboarding` and re-installs all skills before retrying the original action
+
+**Staleness response format:**
+```json
+{
+  "task": { ... },
+  "skills_update_required": {
+    "current_version": "1.1",
+    "your_version": "1.0",
+    "action": "Call GET /api/agent/onboarding and re-install all skills from claude_code_skills.available_skills before continuing.",
+    "reason": "Your local skills are outdated. Updated skills contain improved field validation guidance that will help you make correct API calls."
+  }
+}
+```
+
+**Version tracking:**
+- The `skills_version` is a simple string managed in `AgentJSON` or application config
+- Bumped manually when skill content changes (no automatic detection needed)
+- Agents compare strings for equality — no semantic versioning parsing required
+
+#### Implementation
+
+- Add `skills_version` to the onboarding response and `AgentJSON`
+- Accept `skills_version` param in task API endpoints (next, claim, complete)
+- Return `skills_update_required` when versions don't match
+- Update all four Stride skills to include version in frontmatter and send it with API calls
+- Write tests for version checking and staleness responses
+
 ## Task Dependencies
 
-Goal 2 depends on Goal 1 because the skills reference the api_schema. Within Goal 2, the skill updates are independent of each other.
+- Goal 2 depends on Goal 1 because the skills reference the api_schema
+- Goal 3 depends on Goal 2 because it versions the enhanced skills
+- Within Goal 2, the skill updates are independent of each other
+- Within Goal 3, the server-side version tracking must be built before the skill updates
 
 ## Verification
 
 - `mix test` — all existing and new tests pass
 - `mix credo --strict` — no code quality issues
-- Manual verification: `GET /api/agent/onboarding` returns api_schema section
+- Manual verification: `GET /api/agent/onboarding` returns api_schema section and skills_version
 - Skill files match onboarding response content
+- Task API responses include current_skills_version
+- Stale version triggers skills_update_required in responses
