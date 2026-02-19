@@ -2,6 +2,7 @@ defmodule KanbanWeb.API.AgentJSON do
   alias Kanban.Hooks
 
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main"
+  @skills_version "1.0"
 
   def onboarding(%{base_url: base_url}) do
     %{
@@ -156,6 +157,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "User must edit .stride_auth.md to add their API token before you can use the API"
       },
       version: "1.0",
+      skills_version: @skills_version,
       api_schema: api_schema(),
       api_base_url: base_url,
       overview: %{

@@ -906,5 +906,13 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(hook_format["fields"]["duration_ms"])
       assert is_map(hook_format["example"])
     end
+
+    test "includes skills_version as a non-empty string", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      assert is_binary(response["skills_version"])
+      assert response["skills_version"] != ""
+    end
   end
 end
