@@ -625,6 +625,44 @@ defmodule KanbanWeb.API.AgentJSON do
             - 2% required troubleshooting
 
             **Time savings: 1.5+ hours per task (87% reduction in setup time)**
+
+            ## Hook Result Format
+
+            Every hook result MUST be a map with these exact fields:
+
+            | Field | Type | Required | Description |
+            |-------|------|----------|-------------|
+            | `exit_code` | integer | Yes | `0` for success, non-zero for failure |
+            | `output` | string | Yes | stdout/stderr from hook execution |
+            | `duration_ms` | integer | Yes | Execution time in milliseconds |
+
+            ```json
+            ❌ WRONG (missing fields):
+            {"exit_code": 0}
+
+            ❌ WRONG (wrong types):
+            {"exit_code": "0", "output": "", "duration_ms": "100"}
+
+            ✅ RIGHT:
+            {
+              "exit_code": 0,
+              "output": "Already up to date.\\nAll dependencies are up to date",
+              "duration_ms": 450
+            }
+            ```
+
+            ## Claim Request Checklist
+
+            The `POST /api/tasks/claim` body MUST include:
+
+            | Field | Type | Example |
+            |-------|------|---------|
+            | `identifier` | string | `"W47"` |
+            | `agent_name` | string | `"Claude Opus 4.6"` |
+            | `before_doing_result` | object | See hook result format above |
+
+            ---
+            **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
             """
           },
           %{
