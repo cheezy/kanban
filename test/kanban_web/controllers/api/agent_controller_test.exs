@@ -830,5 +830,81 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert continue["file_path"] == ".continue/config.json"
       assert is_binary(continue["description"])
     end
+
+    test "includes api_schema with all required sections", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      schema = response["api_schema"]
+      assert is_map(schema)
+      assert is_binary(schema["description"])
+      assert is_map(schema["request_formats"])
+      assert is_map(schema["hook_result_format"])
+      assert is_map(schema["task_fields"])
+      assert is_map(schema["embedded_objects"])
+      assert is_list(schema["valid_capabilities"])
+    end
+
+    test "api_schema request_formats covers all endpoints", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      formats = schema["request_formats"]
+      assert is_map(formats["create_task"])
+      assert formats["create_task"]["root_key"] == "task"
+      assert is_map(formats["batch_create"])
+      assert formats["batch_create"]["root_key"] == "goals"
+      assert is_map(formats["claim_task"])
+      assert is_map(formats["claim_task"]["required_body"])
+      assert is_map(formats["complete_task"])
+      assert is_map(formats["complete_task"]["required_body"])
+    end
+
+    test "api_schema task_fields contains correct enum values", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      fields = schema["task_fields"]
+
+      assert fields["type"]["values"] == ["work", "defect", "goal"]
+      assert fields["type"]["required"] == true
+
+      assert fields["priority"]["values"] == ["low", "medium", "high", "critical"]
+      assert fields["priority"]["required"] == true
+
+      assert fields["complexity"]["values"] == ["small", "medium", "large"]
+      assert fields["complexity"]["required"] == false
+    end
+
+    test "api_schema embedded_objects documents verification_steps as objects not strings",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      vs = schema["embedded_objects"]["verification_steps"]
+      assert vs["type"] == "array_of_objects"
+      assert is_binary(vs["⚠️_NOT_strings"])
+      assert is_map(vs["required_fields"])
+      assert is_map(vs["example"])
+    end
+
+    test "api_schema valid_capabilities matches Task.valid_capabilities", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      assert schema["valid_capabilities"] == Kanban.Tasks.Task.valid_capabilities()
+    end
+
+    test "api_schema hook_result_format documents required fields", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      hook_format = schema["hook_result_format"]
+      assert is_map(hook_format["fields"])
+      assert is_map(hook_format["fields"]["exit_code"])
+      assert is_map(hook_format["fields"]["output"])
+      assert is_map(hook_format["fields"]["duration_ms"])
+      assert is_map(hook_format["example"])
+    end
   end
 end

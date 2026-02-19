@@ -126,7 +126,8 @@
       "mcp__Tidewave-Web__browser_eval",
       "WebFetch(domain:gofastmcp.com)",
       "WebFetch(domain:modelcontextprotocol.info)",
-      "mcp__Tidewave__get_source_location"
+      "mcp__Tidewave__get_source_location",
+      "Bash(mix deps.unlock:*)"
     ],
     "deny": [],
     "ask": []

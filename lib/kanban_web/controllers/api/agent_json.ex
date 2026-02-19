@@ -156,6 +156,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "User must edit .stride_auth.md to add their API token before you can use the API"
       },
       version: "1.0",
+      api_schema: api_schema(),
       api_base_url: base_url,
       overview: %{
         description:
@@ -2445,6 +2446,144 @@ defmodule KanbanWeb.API.AgentJSON do
           "8. IF needs_review=true: Wait for approval, then execute after_review (blocking, 60s) and call /mark_reviewed WITH after_review_result"
         ]
       }
+    }
+  end
+
+  defp api_schema do
+    %{
+      description:
+        "Field reference for Stride API. Consult this before constructing API requests to avoid validation errors.",
+      request_formats: %{
+        create_task: %{
+          endpoint: "POST /api/tasks",
+          root_key: "task",
+          example: %{task: %{title: "Add login endpoint", type: "work", priority: "medium"}}
+        },
+        batch_create: %{
+          endpoint: "POST /api/tasks/batch",
+          root_key: "goals",
+          note: "Root key MUST be 'goals', NOT 'tasks'",
+          example: %{
+            goals: [
+              %{title: "Auth System", type: "goal", tasks: [%{title: "Schema", type: "work"}]}
+            ]
+          }
+        },
+        claim_task: %{
+          endpoint: "POST /api/tasks/claim",
+          required_body: %{
+            identifier: "string (e.g. 'W47')",
+            agent_name: "string",
+            before_doing_result: "hook_result_format (see below)"
+          }
+        },
+        complete_task: %{
+          endpoint: "PATCH /api/tasks/:id/complete",
+          required_body: %{
+            agent_name: "string",
+            time_spent_minutes: "integer",
+            completion_notes: "string",
+            after_doing_result: "hook_result_format (see below)",
+            before_review_result: "hook_result_format (see below)"
+          }
+        }
+      },
+      hook_result_format: %{
+        description: "Required format for all hook execution results",
+        fields: %{
+          exit_code: %{
+            type: "integer",
+            required: true,
+            description: "0 for success, non-zero for failure"
+          },
+          output: %{
+            type: "string",
+            required: true,
+            description: "stdout/stderr output from hook execution"
+          },
+          duration_ms: %{
+            type: "integer",
+            required: true,
+            description: "How long the hook took to execute in milliseconds"
+          }
+        },
+        example: %{exit_code: 0, output: "All tests passed", duration_ms: 1234}
+      },
+      task_fields: %{
+        title: %{type: "string", required: true, description: "Short task description"},
+        type: %{type: "enum", values: ["work", "defect", "goal"], required: true},
+        priority: %{type: "enum", values: ["low", "medium", "high", "critical"], required: true},
+        complexity: %{type: "enum", values: ["small", "medium", "large"], required: false},
+        needs_review: %{type: "boolean", required: false, default: false},
+        description: %{type: "string", required: false, description: "WHY + WHAT + WHERE"},
+        acceptance_criteria: %{
+          type: "string",
+          required: false,
+          description: "Newline-separated string"
+        },
+        patterns_to_follow: %{
+          type: "string",
+          required: false,
+          description: "Newline-separated string"
+        },
+        why: %{type: "string", required: false},
+        what: %{type: "string", required: false},
+        where_context: %{type: "string", required: false},
+        dependencies: %{
+          type: "array_of_strings",
+          required: false,
+          description:
+            "Task identifiers like [\"W45\", \"W46\"] for existing tasks, or array indices [0, 1] within a goal"
+        },
+        pitfalls: %{type: "array_of_strings", required: false},
+        technology_requirements: %{type: "array_of_strings", required: false},
+        security_considerations: %{type: "array_of_strings", required: false},
+        out_of_scope: %{type: "array_of_strings", required: false}
+      },
+      embedded_objects: %{
+        key_files: %{
+          type: "array_of_objects",
+          required_fields: %{
+            file_path: "string (relative path, no leading / or ..)",
+            position: "integer >= 0"
+          },
+          optional_fields: %{note: "string"},
+          example: %{file_path: "lib/kanban/tasks.ex", note: "Add query function", position: 0}
+        },
+        verification_steps: %{
+          type: "array_of_objects",
+          "⚠️_NOT_strings": "This MUST be an array of objects, NOT an array of strings",
+          required_fields: %{
+            step_type: "string ('command' or 'manual' only)",
+            step_text: "string (the command or instruction)",
+            position: "integer >= 0"
+          },
+          optional_fields: %{expected_result: "string"},
+          example: %{
+            step_type: "command",
+            step_text: "mix test",
+            expected_result: "All tests pass",
+            position: 0
+          }
+        },
+        testing_strategy: %{
+          type: "object",
+          description: "JSON object with string or array-of-strings values",
+          valid_keys: [
+            "unit_tests",
+            "integration_tests",
+            "manual_tests",
+            "edge_cases",
+            "coverage_target"
+          ],
+          example: %{
+            unit_tests: ["Test valid login", "Test invalid login"],
+            edge_cases: ["Empty password", "SQL injection attempt"],
+            coverage_target: "100% for auth module"
+          }
+        }
+      },
+      valid_capabilities: Kanban.Tasks.Task.valid_capabilities()
     }
   end
 
