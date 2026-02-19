@@ -2509,5 +2509,25 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert response["skills_update_required"]["your_version"] == "0.1"
     end
+
+    test "GET /api/tasks/next with empty string skills_version does not trigger update",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next?skills_version=")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"]
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "GET /api/tasks/next with future version triggers skills_update_required",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next?skills_version=99.0")
+      response = json_response(conn, 200)
+
+      assert response["skills_update_required"]["your_version"] == "99.0"
+
+      assert response["skills_update_required"]["current_version"] ==
+               KanbanWeb.API.AgentJSON.skills_version()
+    end
   end
 end

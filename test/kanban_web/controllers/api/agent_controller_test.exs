@@ -973,5 +973,40 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert skill["content"] =~ "api_schema"
       assert skill["content"] =~ "API Reference"
     end
+
+    test "all four skills include skills_version in frontmatter", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+
+      for skill_name <- [
+            "stride-claiming-tasks",
+            "stride-completing-tasks",
+            "stride-creating-tasks",
+            "stride-creating-goals"
+          ] do
+        skill = Enum.find(skills, &(&1["name"] == skill_name))
+        assert skill["content"] =~ "skills_version: 1.0", "#{skill_name} missing skills_version"
+      end
+    end
+
+    test "claiming and completing skills include staleness handling instructions",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      skills = response["claude_code_skills"]["available_skills"]
+
+      for skill_name <- ["stride-claiming-tasks", "stride-completing-tasks"] do
+        skill = Enum.find(skills, &(&1["name"] == skill_name))
+
+        assert skill["content"] =~ "Handling Stale Skills",
+               "#{skill_name} missing staleness handling"
+
+        assert skill["content"] =~ "skills_update_required",
+               "#{skill_name} missing skills_update_required reference"
+      end
+    end
   end
 end

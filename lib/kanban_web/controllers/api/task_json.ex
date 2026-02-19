@@ -123,6 +123,9 @@ defmodule KanbanWeb.API.TaskJSON do
       nil ->
         response
 
+      "" ->
+        response
+
       version when version == current ->
         response
 
