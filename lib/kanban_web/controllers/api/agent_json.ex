@@ -4,6 +4,8 @@ defmodule KanbanWeb.API.AgentJSON do
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main"
   @skills_version "1.0"
 
+  def skills_version, do: @skills_version
+
   def onboarding(%{base_url: base_url}) do
     %{
       "⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️": %{

@@ -274,7 +274,7 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  def next(conn, _params) do
+  def next(conn, params) do
     board = conn.assigns.current_board
     api_token = conn.assigns.api_token
     agent_capabilities = api_token.agent_capabilities || []
@@ -287,7 +287,11 @@ defmodule KanbanWeb.API.TaskController do
 
       task ->
         emit_telemetry(conn, :next_task_fetched, %{task_id: task.id, priority: task.priority})
-        render(conn, :show, task: task)
+
+        render(conn, :show,
+          task: task,
+          agent_skills_version: params["skills_version"]
+        )
     end
   end
 
@@ -299,6 +303,7 @@ defmodule KanbanWeb.API.TaskController do
     task_identifier = params["identifier"]
     agent_name = params["agent_name"] || "Unknown"
     before_doing_result = params["before_doing_result"]
+    agent_skills_version = params["skills_version"]
 
     case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing",
            blocking: true
@@ -311,7 +316,8 @@ defmodule KanbanWeb.API.TaskController do
           board,
           task_identifier,
           agent_name,
-          api_token
+          api_token,
+          agent_skills_version
         )
 
       {:error, reason} ->
@@ -326,7 +332,8 @@ defmodule KanbanWeb.API.TaskController do
          board,
          task_identifier,
          agent_name,
-         api_token
+         api_token,
+         agent_skills_version
        ) do
     case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier, agent_name) do
       {:ok, task, hook_info} ->
@@ -337,7 +344,11 @@ defmodule KanbanWeb.API.TaskController do
           specific_task: !!task_identifier
         })
 
-        render(conn, :show, task: task, hook: hook_info)
+        render(conn, :show,
+          task: task,
+          hook: hook_info,
+          agent_skills_version: agent_skills_version
+        )
 
       {:error, :no_tasks_available} ->
         handle_no_tasks_available(conn, task_identifier)
@@ -376,7 +387,15 @@ defmodule KanbanWeb.API.TaskController do
                  "before_review",
                  blocking: true
                ) do
-          proceed_with_complete(conn, task, user, params, api_token, agent_name)
+          proceed_with_complete(
+            conn,
+            task,
+            user,
+            params,
+            api_token,
+            agent_name,
+            params["skills_version"]
+          )
         else
           {:error, reason} ->
             hook_name =
@@ -388,7 +407,15 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp proceed_with_complete(conn, task, user, params, api_token, agent_name) do
+  defp proceed_with_complete(
+         conn,
+         task,
+         user,
+         params,
+         api_token,
+         agent_name,
+         agent_skills_version
+       ) do
     params_with_agent = maybe_add_completed_by_agent(params, api_token)
 
     case Tasks.complete_task(task, user, params_with_agent, agent_name) do
@@ -398,7 +425,11 @@ defmodule KanbanWeb.API.TaskController do
           time_spent_minutes: task.time_spent_minutes
         })
 
-        render(conn, :show, task: task, hooks: hooks)
+        render(conn, :show,
+          task: task,
+          hooks: hooks,
+          agent_skills_version: agent_skills_version
+        )
 
       {:error, :invalid_status} ->
         error_response =

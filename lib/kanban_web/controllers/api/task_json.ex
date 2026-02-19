@@ -6,16 +6,19 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: for(task <- tasks, do: data(task))}
   end
 
-  def show(%{task: task, hook: hook}) do
+  def show(%{task: task, hook: hook} = assigns) do
     %{data: data(task), hook: hook}
+    |> maybe_add_skills_version(assigns)
   end
 
-  def show(%{task: task, hooks: hooks}) do
+  def show(%{task: task, hooks: hooks} = assigns) do
     %{data: data(task), hooks: hooks}
+    |> maybe_add_skills_version(assigns)
   end
 
-  def show(%{task: task}) do
+  def show(%{task: task} = assigns) do
     %{data: data(task)}
+    |> maybe_add_skills_version(assigns)
   end
 
   def tree(%{tree: tree}) do
@@ -111,6 +114,29 @@ defmodule KanbanWeb.API.TaskJSON do
   end
 
   defp render_verification_steps(_), do: []
+
+  defp maybe_add_skills_version(response, assigns) do
+    current = KanbanWeb.API.AgentJSON.skills_version()
+    response = Map.put(response, :current_skills_version, current)
+
+    case assigns[:agent_skills_version] do
+      nil ->
+        response
+
+      version when version == current ->
+        response
+
+      stale_version ->
+        Map.put(response, :skills_update_required, %{
+          current_version: current,
+          your_version: stale_version,
+          action:
+            "Call GET /api/agent/onboarding and re-install all skills from claude_code_skills.available_skills before continuing.",
+          reason:
+            "Your local skills are outdated. Updated skills contain improved field validation guidance that will help you make correct API calls."
+        })
+    end
+  end
 
   def error(%{changeset: changeset}) do
     errors =

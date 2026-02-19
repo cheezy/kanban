@@ -2379,4 +2379,135 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
     end
   end
+
+  describe "skills version in task API responses" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, ready_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Skills Version Test Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, doing_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "In Progress Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => false
+        })
+
+      %{
+        ready_column: ready_column,
+        doing_column: doing_column,
+        ready_task: ready_task,
+        doing_task: doing_task
+      }
+    end
+
+    test "GET /api/tasks/next includes current_skills_version", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+    end
+
+    test "GET /api/tasks/next with matching skills_version does not include skills_update_required",
+         %{conn: conn} do
+      current = KanbanWeb.API.AgentJSON.skills_version()
+      conn = get(conn, ~p"/api/tasks/next?skills_version=#{current}")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"] == current
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "GET /api/tasks/next with stale skills_version includes skills_update_required",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next?skills_version=0.1")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+
+      assert response["skills_update_required"]["current_version"] ==
+               KanbanWeb.API.AgentJSON.skills_version()
+
+      assert response["skills_update_required"]["your_version"] == "0.1"
+      assert response["skills_update_required"]["action"] =~ "GET /api/agent/onboarding"
+      assert response["skills_update_required"]["reason"] =~ "outdated"
+    end
+
+    test "GET /api/tasks/next without skills_version does not include skills_update_required",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"]
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "POST /api/tasks/claim includes current_skills_version", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      response = json_response(conn, 200)
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+    end
+
+    test "POST /api/tasks/claim with stale version includes skills_update_required",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{
+          "before_doing_result" => valid_before_doing_result(),
+          "skills_version" => "0.1"
+        })
+
+      response = json_response(conn, 200)
+      assert response["skills_update_required"]["your_version"] == "0.1"
+    end
+
+    test "PATCH /api/tasks/:id/complete includes current_skills_version",
+         %{conn: conn, doing_task: task} do
+      completion_params = %{
+        "completion_summary" => "Done",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1",
+        "time_spent_minutes" => 10,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+    end
+
+    test "PATCH /api/tasks/:id/complete with stale version includes skills_update_required",
+         %{conn: conn, doing_task: task} do
+      completion_params = %{
+        "completion_summary" => "Done",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1",
+        "time_spent_minutes" => 10,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result(),
+        "skills_version" => "0.1"
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)
+
+      assert response["skills_update_required"]["your_version"] == "0.1"
+    end
+  end
 end
