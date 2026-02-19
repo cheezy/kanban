@@ -1360,6 +1360,58 @@ defmodule KanbanWeb.API.AgentJSON do
             - 5% required rework
 
             **Time savings: 2+ hours per task (90% reduction in post-completion rework)**
+
+            ---
+
+            ## Completion Request Field Reference
+
+            | Field | Type | Required | Description |
+            |-------|------|----------|-------------|
+            | `agent_name` | string | Yes | Name of the completing agent |
+            | `time_spent_minutes` | integer | Yes | Actual time spent on the task |
+            | `completion_notes` | string | Yes | Summary of what was done |
+            | `completion_summary` | string | Yes | Brief summary for tracking |
+            | `actual_complexity` | enum | Yes | `"small"`, `"medium"`, or `"large"` |
+            | `actual_files_changed` | string | Yes | Comma-separated file paths (NOT an array) |
+            | `after_doing_result` | object | Yes | Hook result (see format below) |
+            | `before_review_result` | object | Yes | Hook result (see format below) |
+
+            **WRONG — actual_files_changed as array:**
+            ```json
+            "actual_files_changed": ["lib/foo.ex", "lib/bar.ex"]
+            ```
+
+            **RIGHT — actual_files_changed as comma-separated string:**
+            ```json
+            "actual_files_changed": "lib/foo.ex, lib/bar.ex"
+            ```
+
+            ## Hook Result Format Reminder
+
+            Both `after_doing_result` and `before_review_result` use the same format:
+
+            | Field | Type | Required | Description |
+            |-------|------|----------|-------------|
+            | `exit_code` | integer | Yes | 0 for success, non-zero for failure |
+            | `output` | string | Yes | stdout/stderr output from hook execution |
+            | `duration_ms` | integer | Yes | How long the hook took in milliseconds |
+
+            **WRONG — missing required fields:**
+            ```json
+            "after_doing_result": {"output": "tests passed"}
+            ```
+
+            **RIGHT — all three fields present:**
+            ```json
+            "after_doing_result": {
+              "exit_code": 0,
+              "output": "All 230 tests passed\\nmix credo --strict: no issues",
+              "duration_ms": 45678
+            }
+            ```
+
+            ---
+            **References:** For the full field reference, see `api_schema` in the onboarding response (`GET /api/agent/onboarding`). For endpoint details, see the [API Reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md).
             """
           },
           %{
