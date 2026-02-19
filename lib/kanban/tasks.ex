@@ -665,7 +665,8 @@ defmodule Kanban.Tasks do
 
   """
   def archive_task(%Task{} = task) do
-    changeset = Task.changeset(task, %{archived_at: DateTime.utc_now()})
+    changeset =
+      Ecto.Changeset.change(task, archived_at: DateTime.utc_now() |> DateTime.truncate(:second))
 
     case Repo.update(changeset) do
       {:ok, updated_task} ->
@@ -695,7 +696,7 @@ defmodule Kanban.Tasks do
 
   """
   def unarchive_task(%Task{} = task) do
-    changeset = Task.changeset(task, %{archived_at: nil})
+    changeset = Ecto.Changeset.change(task, archived_at: nil)
 
     case Repo.update(changeset) do
       {:ok, updated_task} ->

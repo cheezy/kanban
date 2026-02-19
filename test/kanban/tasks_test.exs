@@ -5483,6 +5483,48 @@ defmodule Kanban.TasksTest do
 
       :telemetry.detach("test-archive-handler")
     end
+
+    test "archives a task with review_status set but reviewed_by_id nil" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      # Simulate agent-created task with incomplete review metadata
+      reviewed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task.id)
+      |> Kanban.Repo.update_all(
+        set: [review_status: :approved, reviewed_at: reviewed_at, reviewed_by_id: nil]
+      )
+
+      task = Tasks.get_task!(task.id)
+      assert task.review_status == :approved
+      assert is_nil(task.reviewed_by_id)
+
+      assert {:ok, archived_task} = Tasks.archive_task(task)
+      assert archived_task.archived_at != nil
+    end
+
+    test "archives a task with status completed but completed_at nil" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      # Simulate task with incomplete completion metadata
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: [status: :completed, completed_at: nil])
+
+      task = Tasks.get_task!(task.id)
+      assert task.status == :completed
+      assert is_nil(task.completed_at)
+
+      assert {:ok, archived_task} = Tasks.archive_task(task)
+      assert archived_task.archived_at != nil
+    end
   end
 
   describe "unarchive_task/1" do

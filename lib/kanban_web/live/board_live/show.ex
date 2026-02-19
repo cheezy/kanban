@@ -188,6 +188,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("archive_task", %{"id" => id}, socket) do
+    require Logger
     task = Tasks.get_task!(id)
 
     case Tasks.archive_task(task) do
@@ -200,9 +201,15 @@ defmodule KanbanWeb.BoardLive.Show do
          |> stream(:columns, columns, reset: true)
          |> load_tasks_for_columns(columns)}
 
-      {:error, _changeset} ->
+      {:error, changeset} ->
+        Logger.error("Failed to archive task #{id}: #{inspect(changeset.errors)}")
         {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
     end
+  rescue
+    e ->
+      require Logger
+      Logger.error("Archive task crashed for task #{id}: #{Exception.message(e)}")
+      {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
   end
 
   @impl true
