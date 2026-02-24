@@ -713,69 +713,13 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_no_circular_dependencies(changeset, deps) do
-    task_id = get_field(changeset, :id)
     task_identifier = get_field(changeset, :identifier)
 
-    cond do
-      is_nil(task_id) && is_nil(task_identifier) ->
-        changeset
-
-      task_identifier && task_identifier in deps ->
-        add_error(changeset, :dependencies, "cannot depend on itself")
-
-      task_id ->
-        if has_circular_dependency?(task_id, deps) do
-          add_error(changeset, :dependencies, "creates a circular dependency")
-        else
-          changeset
-        end
-
-      true ->
-        changeset
-    end
-  end
-
-  defp has_circular_dependency?(task_id, dependency_identifiers) do
-    alias Kanban.Repo
-
-    task = Repo.get(__MODULE__, task_id)
-
-    if is_nil(task) do
-      false
+    if task_identifier && task_identifier in deps do
+      add_error(changeset, :dependencies, "cannot depend on itself")
     else
-      visited = MapSet.new()
-      check_circular_dependency(task.identifier, dependency_identifiers, visited)
+      changeset
     end
-  end
-
-  defp check_circular_dependency(_current_identifier, [], _visited), do: false
-
-  defp check_circular_dependency(current_identifier, dependency_identifiers, visited) do
-    alias Kanban.Repo
-    import Ecto.Query
-
-    tasks =
-      from(t in __MODULE__,
-        where: t.identifier in ^dependency_identifiers,
-        select: {t.identifier, t.dependencies}
-      )
-      |> Repo.all()
-
-    Enum.any?(tasks, fn {identifier, deps} ->
-      deps = deps || []
-
-      cond do
-        current_identifier in deps ->
-          true
-
-        identifier in visited ->
-          false
-
-        true ->
-          visited = MapSet.put(visited, identifier)
-          check_circular_dependency(current_identifier, deps, visited)
-      end
-    end)
   end
 
   defp validate_claim_expiration(changeset) do

@@ -3660,6 +3660,99 @@ defmodule Kanban.TasksTest do
       assert {:ok, task_w27} = result
       assert task_w27.dependencies == [task_w26.identifier]
     end
+
+    test "cross-board duplicate identifiers do not cause false circular dependency", %{
+      column: column,
+      user: user
+    } do
+      # Board 1: task_a (W1), task_b (W2) — no deps between them
+      {:ok, task_a} = Tasks.create_task(column, %{"title" => "Task A"})
+      {:ok, task_b} = Tasks.create_task(column, %{"title" => "Task B"})
+
+      # Board 2: identifiers auto-generated to W1, W2 (same as Board 1)
+      other_board = board_fixture(user, %{name: "Other Board"})
+      other_column = column_fixture(other_board)
+      {:ok, other_w1} = Tasks.create_task(other_column, %{"title" => "Other W1"})
+      {:ok, other_w2} = Tasks.create_task(other_column, %{"title" => "Other W2"})
+
+      # Verify identifiers collide across boards
+      assert other_w1.identifier == task_a.identifier
+      assert other_w2.identifier == task_b.identifier
+
+      # Create a dependency on Board 2: other_w2 -> other_w1
+      {:ok, _} = Tasks.update_task(other_w2, %{dependencies: [other_w1.identifier]})
+
+      # Now on Board 1, task_a (W1) depending on task_b (W2) should NOT be circular
+      # The W2->W1 dependency exists only on Board 2
+      result = Tasks.update_task(task_a, %{dependencies: [task_b.identifier]})
+
+      assert {:ok, updated_task} = result
+      assert updated_task.dependencies == [task_b.identifier]
+    end
+
+    test "cross-board deps in goals do not cause false circular dependency", %{
+      column: column,
+      user: user
+    } do
+      # Board 1: Goal A with child tasks, Goal B with child task
+      {:ok, %{child_tasks: [child_a1, child_a2]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Goal A", priority: :medium},
+          [
+            %{title: "Child A1", priority: :medium},
+            %{title: "Child A2", priority: :medium}
+          ]
+        )
+
+      {:ok, %{child_tasks: [child_b1]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Goal B", priority: :medium},
+          [%{title: "Child B1", priority: :medium}]
+        )
+
+      # Board 2: create matching goal structure to get same identifiers
+      other_board = board_fixture(user, %{name: "Other Board 2"})
+      other_column = column_fixture(other_board)
+
+      {:ok, %{child_tasks: [dup_a1, dup_a2]}} =
+        Tasks.create_goal_with_tasks(
+          other_column,
+          %{title: "Dup Goal A", priority: :medium},
+          [
+            %{title: "Dup A1", priority: :medium},
+            %{title: "Dup A2", priority: :medium}
+          ]
+        )
+
+      {:ok, %{child_tasks: [dup_b1]}} =
+        Tasks.create_goal_with_tasks(
+          other_column,
+          %{title: "Dup Goal B", priority: :medium},
+          [%{title: "Dup B1", priority: :medium}]
+        )
+
+      # Verify identifiers match across boards
+      assert dup_a1.identifier == child_a1.identifier
+      assert dup_a2.identifier == child_a2.identifier
+      assert dup_b1.identifier == child_b1.identifier
+
+      # Create cross-board dependencies that point back to child_a1's identifier
+      {:ok, _} = Tasks.update_task(dup_a2, %{dependencies: [dup_a1.identifier]})
+      {:ok, _} = Tasks.update_task(dup_b1, %{dependencies: [dup_a1.identifier]})
+
+      # On Board 1, child_a1 depending on both child_a2 (same goal) and child_b1 (diff goal)
+      # should succeed — the "cycles" only exist cross-board
+      result =
+        Tasks.update_task(child_a1, %{
+          dependencies: [child_a2.identifier, child_b1.identifier]
+        })
+
+      assert {:ok, updated} = result
+      assert child_a2.identifier in updated.dependencies
+      assert child_b1.identifier in updated.dependencies
+    end
   end
 
   describe "auto-blocking on task creation" do
