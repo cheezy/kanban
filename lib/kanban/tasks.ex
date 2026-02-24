@@ -603,7 +603,8 @@ defmodule Kanban.Tasks do
 
         # If task was completed, unblock any dependent tasks
         if status_changed? && updated_task.status == :completed do
-          unblock_dependent_tasks(updated_task.identifier)
+          updated_task = Repo.preload(updated_task, :column)
+          unblock_dependent_tasks(updated_task.identifier, updated_task.column.board_id)
         end
 
         # Broadcast specific event based on what changed
@@ -1380,9 +1381,11 @@ defmodule Kanban.Tasks do
   def get_next_task(agent_capabilities \\ [], board_id) do
     now = DateTime.utc_now()
 
-    # Subquery to find completed task identifiers
+    # Subquery to find completed task identifiers scoped to this board
     completed_task_identifiers =
       from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
         where: t.status == :completed,
         select: t.identifier
       )
@@ -1537,6 +1540,8 @@ defmodule Kanban.Tasks do
 
     completed_task_identifiers =
       from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
         where: t.status == :completed,
         select: t.identifier
       )
@@ -1850,7 +1855,7 @@ defmodule Kanban.Tasks do
                     {:task_completed, final_task}
                   )
 
-                  unblock_dependent_tasks(final_task.identifier)
+                  unblock_dependent_tasks(final_task.identifier, board_id)
 
                   {:ok, after_review_hook} =
                     Hooks.get_hook_info(final_task, board, "after_review", agent_name)
@@ -1959,7 +1964,7 @@ defmodule Kanban.Tasks do
           {:task_completed, updated_task}
         )
 
-        unblock_dependent_tasks(updated_task.identifier)
+        unblock_dependent_tasks(updated_task.identifier, board_id)
 
         {:ok, after_review_hook} =
           Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
@@ -2086,7 +2091,7 @@ defmodule Kanban.Tasks do
             {:task_completed, updated_task}
           )
 
-          unblock_dependent_tasks(updated_task.identifier)
+          unblock_dependent_tasks(updated_task.identifier, board_id)
 
           {:ok, updated_task}
 
@@ -2110,13 +2115,14 @@ defmodule Kanban.Tasks do
   """
   def update_task_blocking_status(task) do
     task = Repo.preload(task, [:column])
+    board_id = task.column.board_id
 
     dependencies = task.dependencies || []
 
     if Enum.empty?(dependencies) do
       {:ok, task}
     else
-      incomplete_deps = get_incomplete_dependencies(dependencies)
+      incomplete_deps = get_incomplete_dependencies(dependencies, board_id)
 
       new_status =
         if Enum.empty?(incomplete_deps) do
@@ -2161,9 +2167,11 @@ defmodule Kanban.Tasks do
       :ok
 
   """
-  def unblock_dependent_tasks(completed_task_identifier) do
+  def unblock_dependent_tasks(completed_task_identifier, board_id) do
     dependent_tasks =
       from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
         where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^completed_task_identifier),
         where: t.status == :blocked,
         preload: [:column]
@@ -2177,9 +2185,11 @@ defmodule Kanban.Tasks do
     :ok
   end
 
-  defp get_incomplete_dependencies(dependency_identifiers) do
+  defp get_incomplete_dependencies(dependency_identifiers, board_id) do
     completed_tasks =
       from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
         where: t.identifier in ^dependency_identifiers,
         where: t.status == :completed,
         select: t.identifier
@@ -2317,7 +2327,12 @@ defmodule Kanban.Tasks do
 
   """
   def get_dependent_tasks(task) do
+    task = Repo.preload(task, :column)
+    board_id = task.column.board_id
+
     from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
       where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^task.identifier),
       preload: [:column, :assigned_to]
     )
