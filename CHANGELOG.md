@@ -5,6 +5,12 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-02-25
+
+### Added
+
+- **Promote Goal to Ready** - Goals in the Backlog column that have child tasks also in the Backlog now display a right-pointing arrow icon next to the priority badge. Clicking the arrow moves the goal and all of its backlog children to the Ready column in a single action, with proper status updates and move history tracking.
+
 ## [1.22.0] - 2026-02-08
 
 ### Added

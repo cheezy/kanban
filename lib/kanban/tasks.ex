@@ -2415,6 +2415,85 @@ defmodule Kanban.Tasks do
     |> Repo.all()
   end
 
+  @doc """
+  Moves a goal and all of its children that are in the Backlog column to the Ready column.
+
+  Returns `{:ok, count}` with the number of tasks moved, or `{:error, reason}` on failure.
+
+  ## Examples
+
+      iex> promote_goal_to_ready(goal, board_id)
+      {:ok, 3}
+
+  """
+  def promote_goal_to_ready(%Task{type: :goal} = goal, board_id) do
+    with {:ok, backlog_column} <- find_column_by_name(board_id, "Backlog"),
+         {:ok, ready_column} <- find_column_by_name(board_id, "Ready") do
+      tasks_to_move = collect_backlog_tasks(goal, backlog_column)
+      execute_promotion(tasks_to_move, ready_column)
+    end
+  end
+
+  def promote_goal_to_ready(%Task{}, _board_id), do: {:error, :not_a_goal}
+
+  defp collect_backlog_tasks(goal, backlog_column) do
+    children =
+      from(t in Task,
+        where: t.parent_id == ^goal.id and t.column_id == ^backlog_column.id,
+        where: is_nil(t.archived_at),
+        order_by: [asc: t.position]
+      )
+      |> Repo.all()
+
+    if goal.column_id == backlog_column.id do
+      [goal | children]
+    else
+      children
+    end
+  end
+
+  defp execute_promotion(tasks_to_move, ready_column) do
+    result =
+      Repo.transaction(fn ->
+        Enum.each(tasks_to_move, &move_task_to_column(&1, ready_column))
+        length(tasks_to_move)
+      end)
+
+    case result do
+      {:ok, count} ->
+        Enum.each(tasks_to_move, fn task ->
+          broadcast_task_change(%{task | column_id: ready_column.id}, :task_moved)
+        end)
+
+        {:ok, count}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp move_task_to_column(task, target_column) do
+    next_pos = get_next_position(target_column)
+    status_updates = determine_status_for_column(target_column.name, task)
+    updates = Map.merge(%{column_id: target_column.id, position: next_pos}, status_updates)
+
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: Map.to_list(updates))
+
+    old_column = Columns.get_column!(task.column_id)
+    create_move_history(get_task!(task.id), old_column.name, target_column.name)
+  end
+
+  defp find_column_by_name(board_id, name) do
+    from(c in Column, where: c.board_id == ^board_id and c.name == ^name)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :column_not_found}
+      column -> {:ok, column}
+    end
+  end
+
   defp update_parent_goal_position(moving_task, _task_old_column_id, _task_new_column_id) do
     with {:ok, parent_goal} <- get_parent_goal(moving_task),
          {:ok, goal_context} <- build_goal_context(parent_goal),

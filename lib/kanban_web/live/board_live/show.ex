@@ -241,6 +241,37 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("promote_goal_to_ready", %{"id" => id}, socket) do
+    goal = Tasks.get_task!(id)
+
+    case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
+      {:ok, count} ->
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           dngettext(
+             "tasks",
+             "Moved 1 task to Ready",
+             "Moved %{count} tasks to Ready",
+             count,
+             count: count
+           )
+         )
+         |> stream(:columns, columns, reset: true)
+         |> load_tasks_for_columns(columns)}
+
+      {:error, :not_a_goal} ->
+        {:noreply, put_flash(socket, :error, gettext("Only goals can be promoted"))}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move goal to Ready"))}
+    end
+  end
+
+  @impl true
   def handle_event(
         "move_task",
         %{
@@ -673,31 +704,55 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:edit_task_in_column), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
-    # Load tasks for each column and store in tasks_by_column assign
-    # Update tasks_version to force full re-renders when task positions change
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
-        tasks = Tasks.list_tasks(column)
-        {column.id, tasks}
+        {column.id, Tasks.list_tasks(column)}
       end)
 
-    # Calculate progress for each goal task
-    goal_progress =
-      tasks_by_column
-      |> Enum.flat_map(fn {_column_id, tasks} -> tasks end)
-      |> Enum.filter(&(&1.type == :goal))
-      |> Enum.into(%{}, fn goal ->
-        children = Tasks.get_task_children(goal.id)
-        total = length(children)
-        completed = Enum.count(children, &(&1.status == :completed))
-        percentage = if total > 0, do: round(completed / total * 100), else: 0
-        {goal.id, %{total: total, completed: completed, percentage: percentage}}
-      end)
+    goal_progress = compute_goal_progress(tasks_by_column)
+    backlog_goals_with_children = compute_backlog_promotable_goals(columns, tasks_by_column)
 
     socket
     |> assign(:tasks_by_column, tasks_by_column)
     |> assign(:goal_progress, goal_progress)
+    |> assign(:backlog_goals_with_children, backlog_goals_with_children)
     |> assign(:tasks_version, :os.system_time(:millisecond))
+  end
+
+  defp compute_goal_progress(tasks_by_column) do
+    tasks_by_column
+    |> Enum.flat_map(fn {_column_id, tasks} -> tasks end)
+    |> Enum.filter(&(&1.type == :goal))
+    |> Enum.into(%{}, fn goal ->
+      children = Tasks.get_task_children(goal.id)
+      total = length(children)
+      completed = Enum.count(children, &(&1.status == :completed))
+      percentage = if total > 0, do: round(completed / total * 100), else: 0
+      {goal.id, %{total: total, completed: completed, percentage: percentage}}
+    end)
+  end
+
+  defp compute_backlog_promotable_goals(columns, tasks_by_column) do
+    case Enum.find(columns, fn col -> col.name == "Backlog" end) do
+      nil ->
+        MapSet.new()
+
+      backlog_col ->
+        backlog_tasks = Map.get(tasks_by_column, backlog_col.id, [])
+
+        backlog_child_parent_ids =
+          backlog_tasks
+          |> Enum.reject(&is_nil(&1.parent_id))
+          |> Enum.map(& &1.parent_id)
+          |> MapSet.new()
+
+        backlog_tasks
+        |> Enum.filter(fn t ->
+          t.type == :goal and MapSet.member?(backlog_child_parent_ids, t.id)
+        end)
+        |> Enum.map(& &1.id)
+        |> MapSet.new()
+    end
   end
 
   defp reload_board_data(socket) do

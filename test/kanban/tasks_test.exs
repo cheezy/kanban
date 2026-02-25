@@ -5671,4 +5671,104 @@ defmodule Kanban.TasksTest do
       :telemetry.detach("test-unarchive-handler")
     end
   end
+
+  describe "promote_goal_to_ready/2" do
+    test "moves goal and its backlog children to the Ready column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{type: :goal, title: "Test Goal"})
+      child1 = task_fixture(backlog, %{title: "Child 1", parent_id: goal.id})
+      child2 = task_fixture(backlog, %{title: "Child 2", parent_id: goal.id})
+
+      assert {:ok, 3} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_child1 = Tasks.get_task!(child1.id)
+      updated_child2 = Tasks.get_task!(child2.id)
+
+      assert updated_goal.column_id == ready.id
+      assert updated_child1.column_id == ready.id
+      assert updated_child2.column_id == ready.id
+    end
+
+    test "only moves children that are in the backlog column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      goal = task_fixture(backlog, %{type: :goal, title: "Test Goal"})
+      backlog_child = task_fixture(backlog, %{title: "Backlog Child", parent_id: goal.id})
+      doing_child = task_fixture(doing, %{title: "Doing Child", parent_id: goal.id})
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      updated_backlog_child = Tasks.get_task!(backlog_child.id)
+      updated_doing_child = Tasks.get_task!(doing_child.id)
+
+      assert updated_backlog_child.column_id == ready.id
+      assert updated_doing_child.column_id == doing.id
+    end
+
+    test "returns error when task is not a goal" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+
+      task = task_fixture(backlog, %{type: :work, title: "Regular Task"})
+
+      assert {:error, :not_a_goal} = Tasks.promote_goal_to_ready(task, board.id)
+    end
+
+    test "returns error when Backlog column does not exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(ready, %{type: :goal, title: "Test Goal"})
+
+      assert {:error, :column_not_found} = Tasks.promote_goal_to_ready(goal, board.id)
+    end
+
+    test "sets status to open for moved tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{type: :goal, title: "Test Goal"})
+      child = task_fixture(backlog, %{title: "Child Task", parent_id: goal.id})
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      updated_goal = Tasks.get_task!(goal.id)
+      updated_child = Tasks.get_task!(child.id)
+
+      assert updated_goal.status == :open
+      assert updated_child.status == :open
+    end
+
+    test "creates move history records for moved tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{type: :goal, title: "Test Goal"})
+      _child = task_fixture(backlog, %{title: "Child Task", parent_id: goal.id})
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      goal_with_history = Tasks.get_task_with_history!(goal.id)
+
+      assert Enum.any?(goal_with_history.task_histories, fn h ->
+               h.from_column == "Backlog" and h.to_column == "Ready"
+             end)
+    end
+  end
 end
