@@ -5771,4 +5771,1236 @@ defmodule Kanban.TasksTest do
              end)
     end
   end
+
+  describe "get_tasks_with_automated_verification/0" do
+    test "finds tasks with command-based verification steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task_with_commands} =
+        Tasks.create_task(column, %{
+          title: "Task with commands",
+          verification_steps: [
+            %{
+              step_type: "command",
+              step_text: "mix test",
+              expected_result: "All pass",
+              position: 0
+            }
+          ]
+        })
+
+      {:ok, _task_with_manual} =
+        Tasks.create_task(column, %{
+          title: "Task with manual steps",
+          verification_steps: [
+            %{
+              step_type: "manual",
+              step_text: "Check the UI",
+              expected_result: "Looks good",
+              position: 0
+            }
+          ]
+        })
+
+      results = Tasks.get_tasks_with_automated_verification()
+
+      assert length(results) == 1
+      assert hd(results).id == task_with_commands.id
+    end
+
+    test "returns empty list when no tasks have command verification" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, _task} =
+        Tasks.create_task(column, %{
+          title: "Task without verification",
+          verification_steps: []
+        })
+
+      results = Tasks.get_tasks_with_automated_verification()
+
+      assert results == []
+    end
+
+    test "finds tasks with mixed verification steps including commands" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, mixed_task} =
+        Tasks.create_task(column, %{
+          title: "Task with mixed steps",
+          verification_steps: [
+            %{
+              step_type: "manual",
+              step_text: "Review code",
+              expected_result: "Looks correct",
+              position: 0
+            },
+            %{
+              step_type: "command",
+              step_text: "mix credo --strict",
+              expected_result: "No issues",
+              position: 1
+            }
+          ]
+        })
+
+      results = Tasks.get_tasks_with_automated_verification()
+
+      assert length(results) == 1
+      assert hd(results).id == mixed_task.id
+    end
+  end
+
+  describe "claim_next_task/5 with specific identifier" do
+    setup do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      %{user: user, board: board, ready_column: ready_column, doing_column: doing_column}
+    end
+
+    test "claims a specific task by identifier", %{
+      ready_column: column,
+      board: board,
+      user: user,
+      doing_column: doing_column
+    } do
+      {:ok, task1} =
+        Tasks.create_task(column, %{
+          "title" => "First Task",
+          "status" => "open",
+          "priority" => "low",
+          "created_by_id" => user.id
+        })
+
+      {:ok, task2} =
+        Tasks.create_task(column, %{
+          "title" => "Second Task",
+          "status" => "open",
+          "priority" => "critical",
+          "created_by_id" => user.id
+        })
+
+      # Claim the lower-priority task by identifier (not the next one by priority)
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], user, board.id, task1.identifier)
+
+      assert result.id == task1.id
+      assert result.status == :in_progress
+      assert result.column_id == doing_column.id
+
+      # Verify task2 (higher priority) is still available
+      next = Tasks.get_next_task([], board.id)
+      assert next.id == task2.id
+    end
+
+    test "returns error for non-existent identifier", %{board: board, user: user} do
+      result = Tasks.claim_next_task([], user, board.id, "W99999")
+
+      assert result == {:error, :no_tasks_available}
+    end
+
+    test "respects capability requirements when claiming by identifier", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "DevOps Task",
+          "status" => "open",
+          "required_capabilities" => ["devops"],
+          "created_by_id" => user.id
+        })
+
+      # Agent without devops capability can't claim
+      result = Tasks.claim_next_task(["code_generation"], user, board.id, task.identifier)
+
+      assert result == {:error, :no_tasks_available}
+    end
+
+    test "respects dependency requirements when claiming by identifier", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, dep_task} =
+        Tasks.create_task(column, %{
+          "title" => "Dependency",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, blocked_task} =
+        Tasks.create_task(column, %{
+          "title" => "Blocked Task",
+          "status" => "open",
+          "dependencies" => [dep_task.identifier],
+          "created_by_id" => user.id
+        })
+
+      # Can't claim blocked task even by identifier
+      result = Tasks.claim_next_task([], user, board.id, blocked_task.identifier)
+
+      assert result == {:error, :no_tasks_available}
+    end
+
+    test "claims task by identifier with empty capabilities", %{
+      ready_column: column,
+      board: board,
+      user: user,
+      doing_column: doing_column
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Any Agent Task",
+          "status" => "open",
+          "required_capabilities" => ["testing"],
+          "created_by_id" => user.id
+        })
+
+      # Empty capabilities means any task can be claimed
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], user, board.id, task.identifier)
+
+      assert result.id == task.id
+      assert result.column_id == doing_column.id
+    end
+  end
+
+  describe "get_next_task/2 key_file conflict edge cases" do
+    setup do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      %{
+        user: user,
+        board: board,
+        ready_column: ready_column,
+        doing_column: doing_column,
+        review_column: review_column
+      }
+    end
+
+    test "excludes tasks with key_file conflicts in Review column", %{
+      ready_column: ready_column,
+      review_column: review_column,
+      board: board,
+      user: user
+    } do
+      {:ok, _review_task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Review Task",
+          "status" => "in_progress",
+          "key_files" => [
+            %{"file_path" => "lib/shared.ex", "note" => "Shared module", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      {:ok, _conflicting} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicting Ready Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/shared.ex", "note" => "Same module", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      {:ok, safe_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Safe Task",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/unique.ex", "note" => "Different file", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == safe_task.id
+    end
+
+    test "returns task with nil key_files (no conflict possible)", %{
+      ready_column: ready_column,
+      doing_column: doing_column,
+      board: board,
+      user: user
+    } do
+      {:ok, _doing_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Doing Task",
+          "status" => "in_progress",
+          "key_files" => [
+            %{"file_path" => "lib/test.ex", "note" => "Test file", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      {:ok, task_no_files} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Task without key_files",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result.id == task_no_files.id
+    end
+
+    test "returns nil when all ready tasks conflict with doing tasks", %{
+      ready_column: ready_column,
+      doing_column: doing_column,
+      board: board,
+      user: user
+    } do
+      {:ok, _doing_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Active Task",
+          "status" => "in_progress",
+          "key_files" => [
+            %{"file_path" => "lib/a.ex", "note" => "File A", "position" => 0},
+            %{"file_path" => "lib/b.ex", "note" => "File B", "position" => 1}
+          ],
+          "created_by_id" => user.id
+        })
+
+      {:ok, _ready1} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicts with A",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/a.ex", "note" => "Overlaps with A", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      {:ok, _ready2} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Conflicts with B",
+          "status" => "open",
+          "key_files" => [
+            %{"file_path" => "lib/b.ex", "note" => "Overlaps with B", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      assert result == nil
+    end
+
+    test "skips conflicting task and returns next non-conflicting one", %{
+      ready_column: ready_column,
+      doing_column: doing_column,
+      board: board,
+      user: user
+    } do
+      {:ok, _doing_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Active Task",
+          "status" => "in_progress",
+          "key_files" => [
+            %{"file_path" => "lib/conflict.ex", "note" => "Conflict file", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      # Higher priority but conflicts
+      {:ok, _conflicting} =
+        Tasks.create_task(ready_column, %{
+          "title" => "High Priority Conflicting",
+          "status" => "open",
+          "priority" => "critical",
+          "key_files" => [
+            %{"file_path" => "lib/conflict.ex", "note" => "Same file", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      # Lower priority but safe
+      {:ok, safe_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Low Priority Safe",
+          "status" => "open",
+          "priority" => "low",
+          "key_files" => [
+            %{"file_path" => "lib/safe.ex", "note" => "Different file", "position" => 0}
+          ],
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+
+      # Should skip the critical one (conflict) and return the low priority one
+      assert result.id == safe_task.id
+    end
+  end
+
+  describe "Tasks facade delegation" do
+    test "get_tasks_modifying_file delegates to AgentQueries" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Task with files",
+          key_files: [
+            %{file_path: "lib/kanban/facade_test.ex", position: 0}
+          ]
+        })
+
+      # Verify both facades return same result
+      via_facade = Tasks.get_tasks_modifying_file("lib/kanban/facade_test.ex")
+      via_direct = Kanban.Tasks.AgentQueries.get_tasks_modifying_file("lib/kanban/facade_test.ex")
+
+      assert length(via_facade) == 1
+      assert hd(via_facade).id == task.id
+      assert Enum.map(via_facade, & &1.id) == Enum.map(via_direct, & &1.id)
+    end
+
+    test "get_tasks_requiring_technology delegates to AgentQueries" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Task with tech",
+          technology_requirements: ["graphql", "absinthe"]
+        })
+
+      via_facade = Tasks.get_tasks_requiring_technology("graphql")
+      via_direct = Kanban.Tasks.AgentQueries.get_tasks_requiring_technology("graphql")
+
+      assert length(via_facade) == 1
+      assert hd(via_facade).id == task.id
+      assert Enum.map(via_facade, & &1.id) == Enum.map(via_direct, & &1.id)
+    end
+
+    test "get_tasks_with_automated_verification delegates to AgentQueries" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Task with verification",
+          verification_steps: [
+            %{step_type: "command", step_text: "mix test", expected_result: "Pass", position: 0}
+          ]
+        })
+
+      via_facade = Tasks.get_tasks_with_automated_verification()
+      via_direct = Kanban.Tasks.AgentQueries.get_tasks_with_automated_verification()
+
+      assert via_facade != []
+      assert Enum.any?(via_facade, &(&1.id == task.id))
+      assert Enum.map(via_facade, & &1.id) == Enum.map(via_direct, & &1.id)
+    end
+
+    test "get_next_task delegates to AgentQueries" do
+      user = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Delegation Test Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      via_facade = Tasks.get_next_task([], board.id)
+      via_direct = Kanban.Tasks.AgentQueries.get_next_task([], board.id)
+
+      assert via_facade.id == task.id
+      assert via_facade.id == via_direct.id
+    end
+  end
+
+  describe "complete_task/4" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Task to Complete",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => true
+        })
+
+      completion_params = %{
+        "completion_summary" => "Implemented the feature",
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "3 files",
+        "time_spent_minutes" => 45
+      }
+
+      %{
+        user: user,
+        board: board,
+        ready_column: ready_column,
+        doing_column: doing_column,
+        review_column: review_column,
+        done_column: done_column,
+        task: task,
+        completion_params: completion_params
+      }
+    end
+
+    test "moves task to Review column with completion details", %{
+      task: task,
+      user: user,
+      review_column: review_column,
+      completion_params: params
+    } do
+      {:ok, result, hooks} = Tasks.complete_task(task, user, params)
+
+      assert result.column_id == review_column.id
+      assert result.status == :in_progress
+      assert result.completion_summary == "Implemented the feature"
+      assert result.actual_complexity == :medium
+      assert result.actual_files_changed == "3 files"
+      assert result.time_spent_minutes == 45
+      assert result.completed_by_id == user.id
+      assert is_list(hooks)
+    end
+
+    test "returns hooks for after_doing and before_review", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, _result, hooks} = Tasks.complete_task(task, user, params)
+
+      assert is_list(hooks)
+      assert length(hooks) == 2
+
+      hook_names = Enum.map(hooks, fn hook -> hook.name end)
+      assert "after_doing" in hook_names
+      assert "before_review" in hook_names
+    end
+
+    test "auto-moves to Done when needs_review is false", %{
+      doing_column: doing_column,
+      done_column: done_column,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Auto-complete Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => false
+        })
+
+      {:ok, result, hooks} = Tasks.complete_task(task, user, params)
+
+      assert result.column_id == done_column.id
+      assert result.status == :completed
+      assert result.completed_at != nil
+      assert length(hooks) == 3
+
+      hook_names = Enum.map(hooks, fn hook -> hook.name end)
+      assert "after_doing" in hook_names
+      assert "before_review" in hook_names
+      assert "after_review" in hook_names
+    end
+
+    test "returns error when task status is not in_progress or blocked", %{
+      ready_column: ready_column,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, open_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Open Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :invalid_status} = Tasks.complete_task(open_task, user, params)
+    end
+
+    test "returns error when user is not the assignee", %{
+      task: task,
+      completion_params: params
+    } do
+      other_user = user_fixture()
+      assert {:error, :not_authorized} = Tasks.complete_task(task, other_user, params)
+    end
+
+    test "returns error when required params are missing", %{
+      task: task,
+      user: user
+    } do
+      incomplete_params = %{"completion_summary" => "Done"}
+      assert {:error, changeset} = Tasks.complete_task(task, user, incomplete_params)
+      assert changeset.valid? == false
+    end
+
+    test "validates actual_complexity inclusion", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      bad_params = Map.put(params, "actual_complexity", "huge")
+      assert {:error, changeset} = Tasks.complete_task(task, user, bad_params)
+
+      assert {"is invalid", _} =
+               Keyword.get(changeset.errors, :actual_complexity)
+    end
+
+    test "validates time_spent_minutes is non-negative", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      bad_params = Map.put(params, "time_spent_minutes", -5)
+      assert {:error, changeset} = Tasks.complete_task(task, user, bad_params)
+
+      assert {"must be greater than or equal to %{number}",
+              [validation: :number, kind: :greater_than_or_equal_to, number: 0]} =
+               Keyword.get(changeset.errors, :time_spent_minutes)
+    end
+
+    test "stores agent name when provided", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      params_with_agent = Map.put(params, "completed_by_agent", "Claude")
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params_with_agent, "Claude")
+
+      assert result.completed_by_agent == "Claude"
+    end
+
+    test "broadcasts task_moved_to_review", %{
+      task: task,
+      user: user,
+      board: board,
+      completion_params: params
+    } do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params)
+
+      assert_received {:task_moved_to_review, received_task}
+      assert received_task.id == result.id
+    end
+  end
+
+  describe "mark_reviewed/2" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      %{
+        user: user,
+        board: board,
+        review_column: review_column,
+        doing_column: doing_column,
+        done_column: done_column
+      }
+    end
+
+    test "moves approved task to Done", %{
+      review_column: review_column,
+      done_column: done_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Approved Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, result, _hook} = Tasks.mark_reviewed(task, user)
+
+      assert result.column_id == done_column.id
+      assert result.status == :completed
+      assert result.completed_at != nil
+      assert result.reviewed_by_id == user.id
+    end
+
+    test "returns after_review hook on approval", %{
+      review_column: review_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Approved Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, _result, hook} = Tasks.mark_reviewed(task, user)
+
+      assert hook.name == "after_review"
+    end
+
+    test "moves changes_requested task back to Doing", %{
+      review_column: review_column,
+      doing_column: doing_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Needs Changes Task",
+          "status" => "in_progress",
+          "review_status" => "changes_requested",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, result} = Tasks.mark_reviewed(task, user)
+
+      assert result.column_id == doing_column.id
+      assert result.status == :in_progress
+      assert result.reviewed_by_id == user.id
+    end
+
+    test "moves rejected task back to Doing", %{
+      review_column: review_column,
+      doing_column: doing_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Rejected Task",
+          "status" => "in_progress",
+          "review_status" => "rejected",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, result} = Tasks.mark_reviewed(task, user)
+
+      assert result.column_id == doing_column.id
+      assert result.status == :in_progress
+    end
+
+    test "returns error when task is not in Review column", %{
+      doing_column: doing_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Doing Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :invalid_column} = Tasks.mark_reviewed(task, user)
+    end
+
+    test "returns error when review_status is nil", %{
+      review_column: review_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "No Review Status",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :review_not_performed} = Tasks.mark_reviewed(task, user)
+    end
+
+    test "unblocks dependent tasks when approved", %{
+      review_column: review_column,
+      user: user
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Dependency Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      board_columns = Kanban.Columns.list_columns(%{id: review_column.board_id})
+      ready_column = Enum.find(board_columns, &(&1.name == "Ready"))
+
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "dependencies" => [task.identifier],
+          "created_by_id" => user.id
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      {:ok, _result, _hook} = Tasks.mark_reviewed(task, user)
+
+      assert Tasks.get_task!(blocked_task.id).status == :open
+    end
+
+    test "broadcasts task_completed on approval", %{
+      review_column: review_column,
+      user: user,
+      board: board
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Broadcast Test Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      {:ok, result, _hook} = Tasks.mark_reviewed(task, user)
+
+      assert_received {:task_completed, received_task}
+      assert received_task.id == result.id
+    end
+
+    test "broadcasts task_returned_to_doing on rejection", %{
+      review_column: review_column,
+      user: user,
+      board: board
+    } do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Rejection Broadcast Test",
+          "status" => "in_progress",
+          "review_status" => "rejected",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      {:ok, result} = Tasks.mark_reviewed(task, user)
+
+      assert_received {:task_returned_to_doing, received_task}
+      assert received_task.id == result.id
+    end
+  end
+
+  describe "list_archived_tasks_for_board/1" do
+    test "returns all archived tasks across all columns for a board" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column2 = column_fixture(board, %{name: "Column 2"})
+
+      task1 = task_fixture(column1, %{title: "Task in Column 1"})
+      task2 = task_fixture(column2, %{title: "Task in Column 2"})
+      _active_task = task_fixture(column1, %{title: "Active Task"})
+
+      {:ok, _} = Tasks.archive_task(task1)
+      {:ok, _} = Tasks.archive_task(task2)
+
+      archived = Tasks.list_archived_tasks_for_board(board.id)
+
+      assert length(archived) == 2
+      ids = Enum.map(archived, & &1.id)
+      assert task1.id in ids
+      assert task2.id in ids
+    end
+
+    test "returns empty list when no archived tasks exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _task = task_fixture(column)
+
+      assert Tasks.list_archived_tasks_for_board(board.id) == []
+    end
+
+    test "does not return archived tasks from other boards" do
+      user = user_fixture()
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      column1 = column_fixture(board1)
+      column2 = column_fixture(board2)
+
+      task1 = task_fixture(column1, %{title: "Board 1 Task"})
+      task2 = task_fixture(column2, %{title: "Board 2 Task"})
+
+      {:ok, _} = Tasks.archive_task(task1)
+      {:ok, _} = Tasks.archive_task(task2)
+
+      archived = Tasks.list_archived_tasks_for_board(board1.id)
+
+      assert length(archived) == 1
+      assert hd(archived).id == task1.id
+    end
+
+    test "orders by archived_at descending" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "First Archived"})
+      task2 = task_fixture(column, %{title: "Second Archived"})
+
+      earlier = ~U[2025-01-01 00:00:00Z]
+      later = ~U[2025-01-02 00:00:00Z]
+
+      {:ok, _} = Tasks.archive_task(task1)
+      {:ok, _} = Tasks.archive_task(task2)
+
+      task1.id |> Tasks.get_task!() |> Ecto.Changeset.change(archived_at: earlier) |> Kanban.Repo.update!()
+      task2.id |> Tasks.get_task!() |> Ecto.Changeset.change(archived_at: later) |> Kanban.Repo.update!()
+
+      archived = Tasks.list_archived_tasks_for_board(board.id)
+
+      assert length(archived) == 2
+      assert hd(archived).id == task2.id
+    end
+  end
+
+  describe "get_task_for_view!/1" do
+    test "returns task with all associations preloaded" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "View Task",
+          "created_by_id" => user.id,
+          "assigned_to_id" => user.id
+        })
+
+      result = Tasks.get_task_for_view!(task.id)
+
+      assert result.id == task.id
+      assert result.column != nil
+      assert result.column.id == column.id
+      assert result.created_by != nil
+      assert result.created_by.id == user.id
+      assert result.assigned_to != nil
+      assert result.assigned_to.id == user.id
+      assert is_list(result.task_histories)
+      assert is_list(result.comments)
+    end
+
+    test "preloads children for goal type tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [child | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Test Goal", "type" => "goal", "created_by_id" => user.id},
+          [%{"title" => "Child Task", "type" => "work"}]
+        )
+
+      result = Tasks.get_task_for_view!(goal.id)
+
+      assert result.type == :goal
+      assert is_list(result.children)
+      assert length(result.children) == 1
+      assert hd(result.children).id == child.id
+    end
+
+    test "does not preload children for work type tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column, %{created_by_id: user.id})
+
+      result = Tasks.get_task_for_view!(task.id)
+
+      assert result.type == :work
+      refute Ecto.assoc_loaded?(result.children)
+    end
+
+    test "raises when task does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Tasks.get_task_for_view!(0)
+      end
+    end
+  end
+
+  describe "get_task_for_view/1" do
+    test "returns task with all associations preloaded" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "View Task",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_task_for_view(task.id)
+
+      assert result != nil
+      assert result.id == task.id
+      assert result.column != nil
+      assert is_list(result.task_histories)
+      assert is_list(result.comments)
+    end
+
+    test "returns nil when task does not exist" do
+      assert Tasks.get_task_for_view(0) == nil
+    end
+
+    test "preloads children for goal type tasks" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Test Goal", "type" => "goal", "created_by_id" => user.id},
+          [%{"title" => "Child", "type" => "work"}]
+        )
+
+      result = Tasks.get_task_for_view(goal.id)
+
+      assert result.type == :goal
+      assert is_list(result.children)
+      assert length(result.children) == 1
+    end
+  end
+
+  describe "get_task_by_identifier_for_view!/2" do
+    test "returns task by identifier scoped to columns" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Identifier Task",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_task_by_identifier_for_view!(task.identifier, [column.id])
+
+      assert result != nil
+      assert result.id == task.id
+      assert result.identifier == task.identifier
+      assert result.column != nil
+      assert is_list(result.task_histories)
+    end
+
+    test "returns nil when identifier not found" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert Tasks.get_task_by_identifier_for_view!("NONEXISTENT", [column.id]) == nil
+    end
+
+    test "returns nil when task is in a different column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column2 = column_fixture(board, %{name: "Column 2"})
+
+      {:ok, task} =
+        Tasks.create_task(column1, %{
+          "title" => "Column 1 Task",
+          "created_by_id" => user.id
+        })
+
+      assert Tasks.get_task_by_identifier_for_view!(task.identifier, [column2.id]) == nil
+    end
+
+    test "finds task when searching across multiple columns" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column2 = column_fixture(board, %{name: "Column 2"})
+
+      {:ok, task} =
+        Tasks.create_task(column1, %{
+          "title" => "Multi Column Search Task",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_task_by_identifier_for_view!(task.identifier, [column1.id, column2.id])
+
+      assert result != nil
+      assert result.id == task.id
+    end
+  end
+
+  describe "mark_done/2" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+
+      %{user: user, board: board, review_column: review_column, done_column: done_column}
+    end
+
+    test "moves task from Review to Done with completed status", %{
+      review_column: review_column,
+      done_column: done_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Review Task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, result} = Tasks.mark_done(task, user)
+
+      assert result.column_id == done_column.id
+      assert result.status == :completed
+      assert result.completed_at != nil
+    end
+
+    test "returns error when task is not in Review column", %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Doing Task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :invalid_column} = Tasks.mark_done(task, user)
+    end
+
+    test "broadcasts task_completed", %{
+      review_column: review_column,
+      board: board,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Broadcast Done Task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      {:ok, result} = Tasks.mark_done(task, user)
+
+      assert_received {:task_completed, received_task}
+      assert received_task.id == result.id
+    end
+
+    test "unblocks dependent tasks", %{
+      review_column: review_column,
+      user: user
+    } do
+      board_columns = Kanban.Columns.list_columns(%{id: review_column.board_id})
+      ready_column = Enum.find(board_columns, &(&1.name == "Ready"))
+
+      {:ok, dep_task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Dep in Review",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked by Dep",
+          "dependencies" => [dep_task.identifier],
+          "created_by_id" => user.id
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      {:ok, _} = Tasks.mark_done(dep_task, user)
+
+      assert Tasks.get_task!(blocked_task.id).status == :open
+    end
+  end
 end
