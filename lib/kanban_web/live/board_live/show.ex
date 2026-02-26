@@ -224,13 +224,15 @@ defmodule KanbanWeb.BoardLive.Show do
 
     case Tasks.delete_task(task) do
       {:ok, _deleted_task} ->
-        # Reload columns and tasks from database
         columns = Columns.list_columns(socket.assigns.board)
+
+        Process.send_after(self(), :clear_skip_reload, 100)
 
         {:noreply,
          socket
          |> put_flash(:info, gettext("Task deleted successfully"))
-         |> stream(:columns, columns, reset: true)
+         |> assign(:skip_next_reload, true)
+         |> stream(:columns, columns)
          |> load_tasks_for_columns(columns)}
 
       {:error, :has_dependents} ->
@@ -504,9 +506,9 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
-    # Reload all tasks when a task is deleted
-    # This is simpler and ensures consistency
-    reload_board_data(socket)
+    if socket.assigns[:skip_next_reload],
+      do: {:noreply, socket},
+      else: reload_board_data(socket)
   end
 
   @impl true
