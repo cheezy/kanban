@@ -127,6 +127,7 @@ defmodule Kanban.Tasks.Dependencies do
     from(t in Task,
       join: c in assoc(t, :column),
       where: c.board_id == ^board_id,
+      where: is_nil(t.archived_at),
       where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^task.identifier),
       preload: [:column, :assigned_to]
     )

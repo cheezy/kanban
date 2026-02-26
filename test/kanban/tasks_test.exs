@@ -4291,6 +4291,24 @@ defmodule Kanban.TasksTest do
       end
     end
 
+    test "allows deletion when only dependent task is archived", %{column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Dep Target",
+          "identifier" => "W260"
+        })
+
+      {:ok, dependent} =
+        Tasks.create_task(column, %{
+          "title" => "Archived Dependent",
+          "dependencies" => [task.identifier]
+        })
+
+      {:ok, _archived} = Tasks.archive_task(dependent)
+
+      assert {:ok, _deleted} = Tasks.delete_task(task)
+    end
+
     test "allows deletion of task that depends on other tasks", %{column: column} do
       {:ok, dep_task} =
         Tasks.create_task(column, %{
