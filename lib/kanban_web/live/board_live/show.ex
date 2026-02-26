@@ -128,7 +128,13 @@ defmodule KanbanWeb.BoardLive.Show do
 
     case check_new_column_authorization(socket.assigns.live_action, user_access, board) do
       :ok ->
-        assign_board_state(socket, board, user_access)
+        if socket.assigns.live_action == :show and
+             Map.get(socket.assigns, :board) != nil and
+             socket.assigns.board.id == board.id do
+          refresh_board_tasks(socket, board)
+        else
+          assign_board_state(socket, board, user_access)
+        end
 
       {:error, message} ->
         {:noreply,
@@ -467,14 +473,8 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_info({KanbanWeb.TaskLive.FormComponent, {:saved, _task}}, socket) do
-    # Reload columns with full reset since we need to update task lists
-    # This is necessary when tasks are added/edited via the modal
-    columns = Columns.list_columns(socket.assigns.board)
-
-    {:noreply,
-     socket
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+    Process.send_after(self(), :clear_skip_reload, 100)
+    {:noreply, assign(socket, :skip_next_reload, true)}
   end
 
   @impl true
@@ -485,8 +485,9 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_info({Kanban.Tasks, :task_updated, _task}, socket) do
-    # Reload board when a task is updated
-    reload_board_data(socket)
+    if socket.assigns[:skip_next_reload],
+      do: {:noreply, socket},
+      else: reload_board_data(socket)
   end
 
   @impl true
@@ -510,8 +511,9 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_info({Kanban.Tasks, :task_status_changed, _task}, socket) do
-    # Reload all tasks when a task status changes
-    reload_board_data(socket)
+    if socket.assigns[:skip_next_reload],
+      do: {:noreply, socket},
+      else: reload_board_data(socket)
   end
 
   @impl true
@@ -534,13 +536,19 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_info({Kanban.Tasks, :task_reviewed, _task}, socket) do
-    # Reload board when a task review status changes
-    reload_board_data(socket)
+    if socket.assigns[:skip_next_reload],
+      do: {:noreply, socket},
+      else: reload_board_data(socket)
   end
 
   @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
+  end
+
+  @impl true
+  def handle_info(:clear_skip_reload, socket) do
+    {:noreply, assign(socket, :skip_next_reload, false)}
   end
 
   defp check_column_action_authorization(live_action, user_access, board)
@@ -761,6 +769,17 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply,
      socket
      |> stream(:columns, columns)
+     |> load_tasks_for_columns(columns)}
+  end
+
+  defp refresh_board_tasks(socket, board) do
+    columns = Columns.list_columns(board)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:viewing_task_id, nil)
+     |> assign(:show_task_modal, false)
      |> load_tasks_for_columns(columns)}
   end
 
