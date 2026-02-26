@@ -127,7 +127,8 @@
       "WebFetch(domain:gofastmcp.com)",
       "WebFetch(domain:modelcontextprotocol.info)",
       "mcp__Tidewave__get_source_location",
-      "Bash(mix deps.unlock:*)"
+      "Bash(mix deps.unlock:*)",
+      "mcp__filesystem__list_allowed_directories"
     ],
     "deny": [],
     "ask": []
