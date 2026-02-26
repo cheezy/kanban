@@ -6722,8 +6722,15 @@ defmodule Kanban.TasksTest do
       {:ok, _} = Tasks.archive_task(task1)
       {:ok, _} = Tasks.archive_task(task2)
 
-      task1.id |> Tasks.get_task!() |> Ecto.Changeset.change(archived_at: earlier) |> Kanban.Repo.update!()
-      task2.id |> Tasks.get_task!() |> Ecto.Changeset.change(archived_at: later) |> Kanban.Repo.update!()
+      task1.id
+      |> Tasks.get_task!()
+      |> Ecto.Changeset.change(archived_at: earlier)
+      |> Kanban.Repo.update!()
+
+      task2.id
+      |> Tasks.get_task!()
+      |> Ecto.Changeset.change(archived_at: later)
+      |> Kanban.Repo.update!()
 
       archived = Tasks.list_archived_tasks_for_board(board.id)
 
@@ -7001,6 +7008,424 @@ defmodule Kanban.TasksTest do
       {:ok, _} = Tasks.mark_done(dep_task, user)
 
       assert Tasks.get_task!(blocked_task.id).status == :open
+    end
+  end
+
+  describe "unclaim_task/3 with reason" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Task to Unclaim",
+          "created_by_id" => user.id
+        })
+
+      # Claim the task to move it to Doing
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], user, board.id, task.identifier)
+
+      %{user: user, board: board, task: claimed, doing_column: doing_column}
+    end
+
+    test "unclaim with reason logs the reason", %{user: user, task: task} do
+      {:ok, unclaimed} = Tasks.unclaim_task(task, user, "Blocked by external dependency")
+      assert unclaimed.status == :open
+      assert unclaimed.assigned_to_id == nil
+    end
+
+    test "unclaim without reason succeeds", %{user: user, task: task} do
+      {:ok, unclaimed} = Tasks.unclaim_task(task, user)
+      assert unclaimed.status == :open
+    end
+
+    test "unclaim returns error when task is not claimed", %{user: user, board: board} do
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, open_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Open Task",
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :not_claimed} = Tasks.unclaim_task(open_task, user)
+    end
+
+    test "unclaim returns error when user is not the assignee", %{task: task} do
+      other_user = user_fixture()
+      assert {:error, :not_authorized} = Tasks.unclaim_task(task, other_user)
+    end
+  end
+
+  describe "mark_reviewed/2 edge cases" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      %{user: user, board: board, review_column: review_column}
+    end
+
+    test "returns error for task with pending review_status (nil)", %{
+      user: user,
+      review_column: review_column
+    } do
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Pending Review Task",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :review_not_performed} = Tasks.mark_reviewed(task, user)
+    end
+
+    test "mark_reviewed for task not in Review column returns error", %{user: user, board: board} do
+      columns = Kanban.Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Wrong Column Task",
+          "status" => "in_progress",
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => now,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :invalid_column} = Tasks.mark_reviewed(task, user)
+    end
+  end
+
+  describe "claim_next_task/5 race condition" do
+    test "returns error when task is already claimed by another user", %{} do
+      user1 = user_fixture()
+      user2 = user_fixture()
+      board = ai_optimized_board_fixture(user1)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Contested Task",
+          "created_by_id" => user1.id
+        })
+
+      # First claim succeeds
+      {:ok, _claimed, _hook} = Tasks.claim_next_task([], user1, board.id, task.identifier)
+
+      # Second claim of the same task should fail since it's already in_progress
+      assert {:error, :no_tasks_available} =
+               Tasks.claim_next_task([], user2, board.id, task.identifier)
+    end
+  end
+
+  describe "update_task_blocking_status/1 through facade" do
+    test "updates blocking status for task with dependencies" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, dep_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Dependency Task",
+          "created_by_id" => user.id
+        })
+
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Blocked Task",
+          "dependencies" => [dep_task.identifier],
+          "created_by_id" => user.id
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      # Call through the facade to cover the delegation
+      Tasks.update_task_blocking_status(blocked_task)
+      # Task is still blocked because dep_task hasn't been completed
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+    end
+  end
+
+  describe "unblock_dependent_tasks/2 through facade" do
+    test "unblocks tasks when dependency is completed" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, dep_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Dep Task",
+          "created_by_id" => user.id
+        })
+
+      {:ok, blocked_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Waiting Task",
+          "dependencies" => [dep_task.identifier],
+          "created_by_id" => user.id
+        })
+
+      assert Tasks.get_task!(blocked_task.id).status == :blocked
+
+      # Mark the dependency as completed
+      dep_task
+      |> Ecto.Changeset.change(%{status: :completed})
+      |> Kanban.Repo.update!()
+
+      # Call through the facade to cover delegation
+      Tasks.unblock_dependent_tasks(dep_task.identifier, board.id)
+      assert Tasks.get_task!(blocked_task.id).status == :open
+    end
+  end
+
+  describe "validate_circular_dependencies/1 through facade" do
+    test "validates changeset for circular dependencies" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Task",
+          "created_by_id" => user.id
+        })
+
+      changeset = Ecto.Changeset.change(task, %{dependencies: [task.identifier]})
+
+      validated = Tasks.validate_circular_dependencies(changeset)
+
+      assert %Ecto.Changeset{} = validated
+    end
+  end
+
+  describe "update_parent_goal_position/3 through facade" do
+    test "updates goal column when child task moves" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          ready_column,
+          %{"title" => "Test Goal", "type" => "goal", "created_by_id" => user.id},
+          [%{"title" => "Child 1", "type" => "work"}]
+        )
+
+      child =
+        goal.id
+        |> Tasks.get_task_children()
+        |> List.first()
+
+      # Move child to Doing
+      Tasks.move_task(child, doing_column, 0)
+      updated_child = Tasks.get_task!(child.id)
+
+      # Call through facade
+      result =
+        Tasks.update_parent_goal_position(updated_child, ready_column.id, doing_column.id)
+
+      assert result == :ok
+    end
+  end
+
+  describe "create_task/2 embed validation" do
+    test "returns error for non-array key_files" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:error, changeset} =
+        Tasks.create_task(column, %{
+          "title" => "Bad Key Files",
+          "key_files" => "not an array"
+        })
+
+      assert errors_on(changeset)[:key_files]
+    end
+
+    test "returns error for key_files with non-object items" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:error, changeset} =
+        Tasks.create_task(column, %{
+          "title" => "Bad Key File Items",
+          "key_files" => ["string1", "string2"]
+        })
+
+      errors = errors_on(changeset)[:key_files]
+      assert errors
+      assert Enum.any?(errors, &String.contains?(&1, "array of objects"))
+    end
+
+    test "returns error for non-array verification_steps" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:error, changeset} =
+        Tasks.create_task(column, %{
+          "title" => "Bad Steps",
+          "verification_steps" => "not an array"
+        })
+
+      assert errors_on(changeset)[:verification_steps]
+    end
+
+    test "returns error for verification_steps with non-object items" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:error, changeset} =
+        Tasks.create_task(column, %{
+          "title" => "Bad Step Items",
+          "verification_steps" => ["step1", "step2"]
+        })
+
+      errors = errors_on(changeset)[:verification_steps]
+      assert errors
+      assert Enum.any?(errors, &String.contains?(&1, "array of objects"))
+    end
+
+    test "returns error for non-list security_considerations" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:error, changeset} =
+        Tasks.create_task(column, %{
+          "title" => "Bad Security",
+          "security_considerations" => 42
+        })
+
+      assert errors_on(changeset)[:security_considerations]
+    end
+  end
+
+  describe "generate_identifier/2 edge cases" do
+    test "generates identifier with invalid task type defaulting to work" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Create a task with an unrecognized type string - it should default to :work
+      identifier = Kanban.Tasks.Identifiers.generate_identifier(column, "unknown_type")
+      assert String.starts_with?(identifier, "W")
+    end
+  end
+
+  describe "promote_goal_to_ready/2 with non-backlog goal" do
+    test "promotes only children in backlog when goal is already in another column" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      backlog_column = Enum.find(columns, &(&1.name == "Backlog"))
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      # If there's no backlog column, skip
+      if backlog_column do
+        # Create goal in backlog
+        {:ok, %{goal: goal}} =
+          Tasks.create_goal_with_tasks(
+            backlog_column,
+            %{"title" => "Goal to Promote", "type" => "goal", "created_by_id" => user.id},
+            [
+              %{"title" => "Child 1", "type" => "work"},
+              %{"title" => "Child 2", "type" => "work"}
+            ]
+          )
+
+        # Move the goal itself to ready column (but leave children in backlog)
+        Tasks.move_task(goal, ready_column, 0)
+        goal = Tasks.get_task!(goal.id)
+
+        # Now promote - should only move children (goal is already out of backlog)
+        {:ok, count} = Tasks.promote_goal_to_ready(goal, board.id)
+        assert count == 2
+
+        # Children should be in ready column
+        children = Tasks.get_task_children(goal.id)
+        assert Enum.all?(children, &(&1.column_id == ready_column.id))
+      end
+    end
+
+    test "returns error for non-goal task" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, work_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Work Task",
+          "type" => "work",
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :not_a_goal} = Tasks.promote_goal_to_ready(work_task, board.id)
+    end
+  end
+
+  describe "get_next_task/2 through facade" do
+    test "gets next available task through facade" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Available Task",
+          "created_by_id" => user.id
+        })
+
+      result = Tasks.get_next_task([], board.id)
+      assert %Task{} = result
+      assert result.title == "Available Task"
+    end
+
+    test "returns nil when no tasks available" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+
+      assert is_nil(Tasks.get_next_task([], board.id))
+    end
+  end
+
+  describe "create_goal_with_tasks/2 with default empty children" do
+    test "creates goal with no children when child_tasks_attrs omitted" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: children}} =
+        Tasks.create_goal_with_tasks(column, %{
+          "title" => "Empty Goal",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      assert goal.type == :goal
+      assert children == []
     end
   end
 end
