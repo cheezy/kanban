@@ -128,7 +128,8 @@
       "WebFetch(domain:modelcontextprotocol.info)",
       "mcp__Tidewave__get_source_location",
       "Bash(mix deps.unlock:*)",
-      "mcp__filesystem__list_allowed_directories"
+      "mcp__filesystem__list_allowed_directories",
+      "Bash(gh auth:*)"
     ],
     "deny": [],
     "ask": []
