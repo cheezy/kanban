@@ -2440,7 +2440,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
                KanbanWeb.API.AgentJSON.skills_version()
 
       assert response["skills_update_required"]["your_version"] == "0.1"
-      assert response["skills_update_required"]["action"] =~ "GET /api/agent/onboarding"
+      assert response["skills_update_required"]["action"] =~ "/plugin update stride"
       assert response["skills_update_required"]["reason"] =~ "outdated"
     end
 

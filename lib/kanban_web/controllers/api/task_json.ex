@@ -133,10 +133,8 @@ defmodule KanbanWeb.API.TaskJSON do
         Map.put(response, :skills_update_required, %{
           current_version: current,
           your_version: stale_version,
-          action:
-            "Call GET /api/agent/onboarding and re-install all skills from claude_code_skills.available_skills before continuing.",
-          reason:
-            "Your local skills are outdated. Updated skills contain improved field validation guidance that will help you make correct API calls."
+          action: "Run /plugin update stride to get the latest skills",
+          reason: "Your local skills are outdated."
         })
     end
   end
