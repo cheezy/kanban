@@ -156,10 +156,11 @@ defmodule Kanban.MetricsTest do
       saturday = ~U[2026-01-31 10:00:00Z]
       {:ok, _} = Tasks.update_task(task, %{completed_at: saturday})
 
-      {:ok, throughput_with_weekends} = Metrics.get_throughput(board.id, exclude_weekends: false)
+      {:ok, throughput_with_weekends} =
+        Metrics.get_throughput(board.id, exclude_weekends: false, time_range: :all_time)
 
       {:ok, throughput_without_weekends} =
-        Metrics.get_throughput(board.id, exclude_weekends: true)
+        Metrics.get_throughput(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert [_] = throughput_with_weekends
       assert throughput_without_weekends == []
@@ -502,7 +503,8 @@ defmodule Kanban.MetricsTest do
           completed_at: completed_at
         })
 
-      {:ok, stats} = Metrics.get_cycle_time_stats(board.id, exclude_weekends: true)
+      {:ok, stats} =
+        Metrics.get_cycle_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert stats.count == 1
       # Weekend time should be excluded
@@ -533,10 +535,11 @@ defmodule Kanban.MetricsTest do
 
       {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
 
-      {:ok, stats_with_weekends} = Metrics.get_lead_time_stats(board.id, exclude_weekends: false)
+      {:ok, stats_with_weekends} =
+        Metrics.get_lead_time_stats(board.id, exclude_weekends: false, time_range: :all_time)
 
       {:ok, stats_without_weekends} =
-        Metrics.get_lead_time_stats(board.id, exclude_weekends: true)
+        Metrics.get_lead_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert stats_without_weekends.average_hours < stats_with_weekends.average_hours - 40
     end
@@ -560,10 +563,11 @@ defmodule Kanban.MetricsTest do
           reviewed_at: reviewed_at
         })
 
-      {:ok, stats_with_weekends} = Metrics.get_wait_time_stats(board.id, exclude_weekends: false)
+      {:ok, stats_with_weekends} =
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: false, time_range: :all_time)
 
       {:ok, stats_without_weekends} =
-        Metrics.get_wait_time_stats(board.id, exclude_weekends: true)
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert stats_without_weekends.review_wait.average_hours <
                stats_with_weekends.review_wait.average_hours - 40
@@ -591,10 +595,11 @@ defmodule Kanban.MetricsTest do
 
       {:ok, _} = Tasks.update_task(task, %{claimed_at: claimed_at})
 
-      {:ok, stats_with_weekends} = Metrics.get_wait_time_stats(board.id, exclude_weekends: false)
+      {:ok, stats_with_weekends} =
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: false, time_range: :all_time)
 
       {:ok, stats_without_weekends} =
-        Metrics.get_wait_time_stats(board.id, exclude_weekends: true)
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert stats_without_weekends.backlog_wait.average_hours <
                stats_with_weekends.backlog_wait.average_hours - 40
