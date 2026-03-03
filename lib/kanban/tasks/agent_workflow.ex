@@ -72,11 +72,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :not_authorized}
 
       true ->
-        ready_column =
-          from(c in Column,
-            where: c.board_id == ^task.column.board_id and c.name == "Ready"
-          )
-          |> Repo.one()
+        ready_column = get_column_by_name(task.column.board_id, "Ready")
 
         next_position = Positioning.get_next_position(ready_column)
 
@@ -120,7 +116,6 @@ defmodule Kanban.Tasks.AgentWorkflow do
   and moves the task from Doing to Review. Status remains "in_progress" - final
   completion (moving to Done with status="completed") is handled by mark_done.
   """
-  # credo:disable-for-lines:128
   def complete_task(task, user, params, agent_name \\ "Unknown") do
     task = Repo.preload(task, [:column, :assigned_to])
     board_id = task.column.board_id
@@ -134,11 +129,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :not_authorized}
 
       true ->
-        review_column =
-          from(c in Column,
-            where: c.board_id == ^board_id and c.name == "Review"
-          )
-          |> Repo.one()
+        review_column = get_column_by_name(board_id, "Review")
 
         next_position = Positioning.get_next_position(review_column)
 
@@ -231,12 +222,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     if task.column.name != "Review" do
       {:error, :invalid_column}
     else
-      done_column =
-        from(c in Column,
-          where: c.board_id == ^board_id and c.name == "Done"
-        )
-        |> Repo.one()
-
+      done_column = get_column_by_name(board_id, "Done")
       next_position = Positioning.get_next_position(done_column)
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -251,25 +237,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
       case Repo.update(changeset) do
         {:ok, _updated_task} ->
-          updated_task = Queries.get_task_for_view!(task.id)
-
-          Logger.info("Task #{task.id} marked as done by user #{user.id}")
-
-          :telemetry.execute(
-            [:kanban, :task, :completed],
-            %{task_id: updated_task.id},
-            %{completed_by: user.id}
-          )
-
-          Phoenix.PubSub.broadcast(
-            Kanban.PubSub,
-            "board:#{board_id}",
-            {:task_completed, updated_task}
-          )
-
-          Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
-
-          {:ok, updated_task}
+          {:ok, finalize_completion(task, user, board_id, done_column)}
 
         {:error, changeset} ->
           {:error, changeset}
@@ -279,14 +247,40 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   # Private functions
 
+  defp get_column_by_name(board_id, name) do
+    from(c in Column, where: c.board_id == ^board_id and c.name == ^name)
+    |> Repo.one()
+  end
+
+  defp finalize_completion(task, user, board_id, done_column) do
+    updated_task = Queries.get_task_for_view!(task.id)
+    old_column_id = task.column_id
+
+    Goals.update_parent_goal_position(updated_task, old_column_id, done_column.id)
+
+    Logger.info("Task #{task.id} completed and moved to Done by user #{user.id}")
+
+    :telemetry.execute(
+      [:kanban, :task, :completed],
+      %{task_id: updated_task.id},
+      %{completed_by: user.id}
+    )
+
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{board_id}",
+      {:task_completed, updated_task}
+    )
+
+    Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
+
+    updated_task
+  end
+
   defp perform_claim(task, user, board_id, agent_name) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
 
-    doing_column =
-      from(c in Column,
-        where: c.board_id == ^board_id and c.name == "Doing"
-      )
-      |> Repo.one()
+    doing_column = get_column_by_name(board_id, "Doing")
 
     now = DateTime.utc_now()
     expires_at = now |> DateTime.add(60 * 60, :second)
@@ -374,7 +368,6 @@ defmodule Kanban.Tasks.AgentWorkflow do
         updated_task,
         user,
         board,
-        review_column,
         after_doing_hook,
         before_review_hook,
         agent_name
@@ -386,19 +379,12 @@ defmodule Kanban.Tasks.AgentWorkflow do
          updated_task,
          user,
          board,
-         review_column,
          after_doing_hook,
          before_review_hook,
          agent_name
        ) do
     board_id = board.id
-
-    done_column =
-      from(c in Column,
-        where: c.board_id == ^board_id and c.name == "Done"
-      )
-      |> Repo.one()
-
+    done_column = get_column_by_name(board_id, "Done")
     next_position = Positioning.get_next_position(done_column)
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -413,25 +399,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     case Repo.update(done_changeset) do
       {:ok, _final_task} ->
-        final_task = Queries.get_task_for_view!(updated_task.id)
-
-        Goals.update_parent_goal_position(final_task, review_column.id, done_column.id)
-
-        Logger.info("Task #{updated_task.id} auto-moved to Done (needs_review=false)")
-
-        :telemetry.execute(
-          [:kanban, :task, :completed],
-          %{task_id: final_task.id},
-          %{completed_by: user.id}
-        )
-
-        Phoenix.PubSub.broadcast(
-          Kanban.PubSub,
-          "board:#{board_id}",
-          {:task_completed, final_task}
-        )
-
-        Dependencies.unblock_dependent_tasks(final_task.identifier, board_id)
+        final_task = finalize_completion(updated_task, user, board_id, done_column)
 
         {:ok, after_review_hook} =
           Hooks.get_hook_info(final_task, board, "after_review", agent_name)
@@ -448,13 +416,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   defp move_to_done(task, user, board_id) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
-
-    done_column =
-      from(c in Column,
-        where: c.board_id == ^board_id and c.name == "Done"
-      )
-      |> Repo.one()
-
+    done_column = get_column_by_name(board_id, "Done")
     next_position = Positioning.get_next_position(done_column)
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -470,26 +432,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     case Repo.update(changeset) do
       {:ok, _updated_task} ->
-        updated_task = Queries.get_task_for_view!(task.id)
-        old_column_id = task.column_id
-
-        Goals.update_parent_goal_position(updated_task, old_column_id, done_column.id)
-
-        Logger.info("Task #{task.id} approved and moved to Done by user #{user.id}")
-
-        :telemetry.execute(
-          [:kanban, :task, :completed],
-          %{task_id: updated_task.id},
-          %{completed_by: user.id}
-        )
-
-        Phoenix.PubSub.broadcast(
-          Kanban.PubSub,
-          "board:#{board_id}",
-          {:task_completed, updated_task}
-        )
-
-        Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
+        updated_task = finalize_completion(task, user, board_id, done_column)
 
         {:ok, after_review_hook} =
           Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
@@ -502,11 +445,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   end
 
   defp move_to_doing(task, user, board_id) do
-    doing_column =
-      from(c in Column,
-        where: c.board_id == ^board_id and c.name == "Doing"
-      )
-      |> Repo.one()
+    doing_column = get_column_by_name(board_id, "Doing")
 
     next_position = Positioning.get_next_position(doing_column)
 

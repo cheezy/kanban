@@ -587,20 +587,23 @@ defmodule KanbanWeb.BoardLive.Show do
 
   defp check_new_column_authorization(_live_action, _user_access, _board), do: :ok
 
+  defp assign_common_board_state(socket, board, user_access, columns) do
+    socket
+    |> assign(:page_title, page_title(socket.assigns.live_action))
+    |> assign(:board, board)
+    |> assign(:user_access, user_access)
+    |> assign(:can_modify, user_access in [:owner, :modify])
+    |> assign(:is_owner, user_access == :owner)
+    |> assign(:field_visibility, board.field_visibility || %{})
+    |> assign(:has_columns, not Enum.empty?(columns))
+    |> stream(:columns, columns, reset: true)
+    |> load_tasks_for_columns(columns)
+  end
+
   defp assign_board_state(socket, board, user_access) do
     columns = Columns.list_columns(board)
 
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:field_visibility, board.field_visibility || %{})
-     |> assign(:has_columns, not Enum.empty?(columns))
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+    {:noreply, assign_common_board_state(socket, board, user_access, columns)}
   end
 
   defp assign_api_tokens_state(socket, board, user_access) do
@@ -612,20 +615,13 @@ defmodule KanbanWeb.BoardLive.Show do
 
     {:noreply,
      socket
+     |> assign_common_board_state(board, user_access, columns)
      |> assign(:page_title, "Stride")
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:field_visibility, board.field_visibility || %{})
-     |> assign(:has_columns, not Enum.empty?(columns))
      |> assign(:api_tokens, api_tokens)
      |> assign(:token_form, to_form(token_changeset))
      |> assign(:new_token, new_token)
      |> assign(:viewing_task_id, nil)
-     |> assign(:show_task_modal, false)
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+     |> assign(:show_task_modal, false)}
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
@@ -814,17 +810,9 @@ defmodule KanbanWeb.BoardLive.Show do
 
     {:noreply,
      socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign_common_board_state(board, user_access, columns)
      |> assign(:column, column)
-     |> assign(:column_id, column.id)
-     |> assign(:has_columns, not Enum.empty?(columns))
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+     |> assign(:column_id, column.id)}
   end
 
   @doc """

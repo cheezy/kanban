@@ -624,23 +624,7 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_technology_requirements(changeset) do
-    case get_field(changeset, :technology_requirements) do
-      nil ->
-        changeset
-
-      [] ->
-        changeset
-
-      techs when is_list(techs) ->
-        if Enum.all?(techs, &is_binary/1) do
-          changeset
-        else
-          add_error(changeset, :technology_requirements, "must be a list of strings")
-        end
-
-      _ ->
-        add_error(changeset, :technology_requirements, "must be a list")
-    end
+    validate_string_list_field(changeset, :technology_requirements)
   end
 
   defp validate_required_capabilities(changeset) do
@@ -791,7 +775,11 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_security_considerations(changeset) do
-    case get_field(changeset, :security_considerations) do
+    validate_string_list_field(changeset, :security_considerations)
+  end
+
+  defp validate_string_list_field(changeset, field) do
+    case get_field(changeset, field) do
       nil ->
         changeset
 
@@ -802,11 +790,11 @@ defmodule Kanban.Tasks.Task do
         if Enum.all?(items, &is_binary/1) do
           changeset
         else
-          add_error(changeset, :security_considerations, "must be a list of strings")
+          add_error(changeset, field, "must be a list of strings")
         end
 
       _ ->
-        add_error(changeset, :security_considerations, "must be a list")
+        add_error(changeset, field, "must be a list")
     end
   end
 
@@ -832,22 +820,7 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_testing_strategy_values(changeset, strategy) do
-    invalid_values =
-      Enum.reject(strategy, fn {_key, value} ->
-        is_binary(value) or (is_list(value) and Enum.all?(value, &is_binary/1))
-      end)
-
-    if Enum.empty?(invalid_values) do
-      changeset
-    else
-      invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
-
-      add_error(
-        changeset,
-        :testing_strategy,
-        "all values must be strings or arrays of strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
-      )
-    end
+    validate_string_or_string_list_map(changeset, :testing_strategy, strategy)
   end
 
   defp validate_integration_points(changeset) do
@@ -872,20 +845,24 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_integration_points_values(changeset, points) do
+    validate_string_or_string_list_map(changeset, :integration_points, points)
+  end
+
+  defp validate_string_or_string_list_map(changeset, field, map) do
     invalid_values =
-      Enum.reject(points, fn {_key, value} ->
+      Enum.reject(map, fn {_key, value} ->
         is_binary(value) or (is_list(value) and Enum.all?(value, &is_binary/1))
       end)
 
     if Enum.empty?(invalid_values) do
       changeset
     else
-      invalid_keys = Enum.map(invalid_values, fn {key, _value} -> key end)
+      invalid_keys = Enum.map_join(invalid_values, ", ", fn {key, _value} -> key end)
 
       add_error(
         changeset,
-        :integration_points,
-        "all values must be strings or arrays of strings. Invalid keys: #{Enum.join(invalid_keys, ", ")}"
+        field,
+        "all values must be strings or arrays of strings. Invalid keys: #{invalid_keys}"
       )
     end
   end

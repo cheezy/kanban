@@ -461,38 +461,18 @@ defmodule Kanban.Metrics do
     |> Kernel.||(false)
   end
 
-  defp get_start_date(:today) do
+  @date_range_days %{today: 0, last_7_days: 6, last_30_days: 29, last_90_days: 89}
+
+  defp get_start_date(:all_time), do: DateTime.new!(~D[2000-01-01], ~T[00:00:00])
+
+  defp get_start_date(range) do
+    days_back = Map.get(@date_range_days, range, 29)
+
     DateTime.utc_now()
     |> DateTime.to_date()
+    |> Date.add(-days_back)
     |> DateTime.new!(~T[00:00:00])
   end
-
-  defp get_start_date(:last_7_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-6)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_30_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-29)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_90_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-89)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:all_time) do
-    DateTime.new!(~D[2000-01-01], ~T[00:00:00])
-  end
-
-  defp get_start_date(_), do: get_start_date(:last_30_days)
 
   defp maybe_filter_by_agent(query, nil), do: query
 
@@ -504,9 +484,14 @@ defmodule Kanban.Metrics do
     do: {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
 
   defp calculate_time_stats(results) when is_list(results) do
-    first_result = List.first(results)
-    time_key = determine_time_key(first_result)
+    time_key = determine_time_key(List.first(results))
+    calculate_time_stats_for_key(results, time_key)
+  end
 
+  defp calculate_time_stats_for_key([], _key),
+    do: {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
+
+  defp calculate_time_stats_for_key(results, time_key) do
     times_in_hours =
       results
       |> extract_time_values(time_key)
@@ -558,43 +543,8 @@ defmodule Kanban.Metrics do
      }}
   end
 
-  defp calculate_wait_time_stats([]),
-    do: {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
-
-  defp calculate_wait_time_stats(results) when is_list(results) do
-    times_in_hours =
-      results
-      |> Enum.map(fn result -> result.wait_time_seconds end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.map(fn seconds ->
-        # Convert to float if it's a Decimal
-        seconds_float =
-          if is_struct(seconds, Decimal), do: Decimal.to_float(seconds), else: seconds
-
-        seconds_float / 3600
-      end)
-      |> Enum.sort()
-
-    case times_in_hours do
-      [] ->
-        {:ok, %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}}
-
-      _ ->
-        count = length(times_in_hours)
-        average = Enum.sum(times_in_hours) / count
-        median = calculate_median(times_in_hours)
-        min = Enum.min(times_in_hours)
-        max = Enum.max(times_in_hours)
-
-        {:ok,
-         %{
-           average_hours: Float.round(average, 4),
-           median_hours: Float.round(median, 4),
-           min_hours: Float.round(min, 4),
-           max_hours: Float.round(max, 4),
-           count: count
-         }}
-    end
+  defp calculate_wait_time_stats(results) do
+    calculate_time_stats_for_key(results, :wait_time_seconds)
   end
 
   defp calculate_median([]), do: 0
