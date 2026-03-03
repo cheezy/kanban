@@ -84,50 +84,18 @@ defmodule KanbanWeb.API.AgentJSON do
         },
         STEP_7_INSTALL_SKILLS: %{
           order: 7,
-          action: "Install Claude Code skills (IF you are Claude Code)",
+          action: "Install Stride skills plugin",
           condition: "ONLY for Claude Code. Other AI assistants skip this step.",
-          how_to_check_if_claude_code:
-            "You are Claude Code if you are running inside the Claude Code CLI tool",
           if_not_claude_code: "Skip to STEP_8_NOTIFY_USER",
-          if_claude_code: "Create ALL 4 skill files (ALWAYS overwrite existing)",
-          skills_to_create: [
-            %{
-              skill_name: "stride-claiming-tasks",
-              file_path: "~/.claude/skills/stride-claiming-tasks/SKILL.md",
-              tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source:
-                "claude_code_skills.available_skills[0].content (scroll down to find)",
-              always_overwrite: "YES - always create/update to get latest version"
-            },
-            %{
-              skill_name: "stride-completing-tasks",
-              file_path: "~/.claude/skills/stride-completing-tasks/SKILL.md",
-              tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source:
-                "claude_code_skills.available_skills[1].content (scroll down to find)",
-              always_overwrite: "YES - always create/update to get latest version"
-            },
-            %{
-              skill_name: "stride-creating-tasks",
-              file_path: "~/.claude/skills/stride-creating-tasks/SKILL.md",
-              tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source:
-                "claude_code_skills.available_skills[2].content (scroll down to find)",
-              always_overwrite: "YES - always create/update to get latest version"
-            },
-            %{
-              skill_name: "stride-creating-goals",
-              file_path: "~/.claude/skills/stride-creating-goals/SKILL.md",
-              tool_to_use: "Write tool (use absolute path expansion for ~)",
-              content_source:
-                "claude_code_skills.available_skills[3].content (scroll down to find)",
-              always_overwrite: "YES - always create/update to get latest version"
-            }
+          if_claude_code: "Install the Stride marketplace and plugin using slash commands",
+          installation_steps: [
+            "1. Run: /plugin marketplace add cheezy/stride-marketplace",
+            "2. Run: /plugin install stride@stride-marketplace",
+            "3. The 4 Stride skills will be automatically available"
           ],
           verification:
-            "Use Bash to verify all 4 files exist: ls -la ~/.claude/skills/*/SKILL.md",
-          note_skills_version:
-            "After installing skills, note the skills_version from the SKILL.md frontmatter. Send this value with claim and complete API calls for automatic staleness detection."
+            "The skills will appear in your skill list automatically after installation",
+          note_skills_version: "Plugin version tracks skill versions automatically"
         },
         STEP_8_NOTIFY_USER: %{
           order: 8,
@@ -153,10 +121,7 @@ defmodule KanbanWeb.API.AgentJSON do
           ".stride_auth.md (with API token placeholder)",
           ".stride.md (with hook definitions)",
           ".gitignore (containing .stride_auth.md)",
-          "~/.claude/skills/stride-claiming-tasks/SKILL.md (Claude Code only)",
-          "~/.claude/skills/stride-completing-tasks/SKILL.md (Claude Code only)",
-          "~/.claude/skills/stride-creating-tasks/SKILL.md (Claude Code only)",
-          "~/.claude/skills/stride-creating-goals/SKILL.md (Claude Code only)"
+          "Stride plugin installed (Claude Code only - via /plugin install stride@stride-marketplace)"
         ],
         USER_ACTION_REQUIRED:
           "User must edit .stride_auth.md to add their API token before you can use the API"
