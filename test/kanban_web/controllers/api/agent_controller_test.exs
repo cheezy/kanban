@@ -915,98 +915,32 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert response["skills_version"] != ""
     end
 
-    test "stride-creating-tasks skill contains field quick reference and footer", %{conn: conn} do
+    test "claude_code_skills contains compact plugin reference", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
-      skills = response["claude_code_skills"]["available_skills"]
-      skill = Enum.find(skills, &(&1["name"] == "stride-creating-tasks"))
+      skills = response["claude_code_skills"]
 
-      assert skill["content"] =~ "Field Quick Reference"
-      assert skill["content"] =~ "work"
-      assert skill["content"] =~ "defect"
-      assert skill["content"] =~ "Embedded Object Formats"
-      assert skill["content"] =~ "WRONG"
-      assert skill["content"] =~ "RIGHT"
-      assert skill["content"] =~ "api_schema"
-      assert skill["content"] =~ "API Reference"
+      assert is_binary(skills["description"])
+      assert skills["description"] =~ "marketplace plugin"
+      assert is_binary(skills["installation"])
+      assert skills["installation"] =~ "plugin marketplace add cheezy/stride-marketplace"
+      assert skills["installation"] =~ "plugin install stride@stride-marketplace"
+      assert skills["plugin_repository"] == "https://github.com/cheezy/stride"
+      assert skills["marketplace_repository"] == "https://github.com/cheezy/stride-marketplace"
     end
 
-    test "stride-creating-goals skill contains field quick reference and footer", %{conn: conn} do
+    test "claude_code_skills lists all four skill names", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
-      skills = response["claude_code_skills"]["available_skills"]
-      skill = Enum.find(skills, &(&1["name"] == "stride-creating-goals"))
+      skills_included = response["claude_code_skills"]["skills_included"]
 
-      assert skill["content"] =~ "Field Quick Reference"
-      assert skill["content"] =~ "goals"
-      assert skill["content"] =~ "api_schema"
-      assert skill["content"] =~ "API Reference"
-    end
-
-    test "stride-claiming-tasks skill contains hook result format and footer", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      skills = response["claude_code_skills"]["available_skills"]
-      skill = Enum.find(skills, &(&1["name"] == "stride-claiming-tasks"))
-
-      assert skill["content"] =~ "Hook Result Format"
-      assert skill["content"] =~ "exit_code"
-      assert skill["content"] =~ "Claim Request Checklist"
-      assert skill["content"] =~ "api_schema"
-      assert skill["content"] =~ "API Reference"
-    end
-
-    test "stride-completing-tasks skill contains completion request format and footer",
-         %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      skills = response["claude_code_skills"]["available_skills"]
-      skill = Enum.find(skills, &(&1["name"] == "stride-completing-tasks"))
-
-      assert skill["content"] =~ "Completion Request Field Reference"
-      assert skill["content"] =~ "Hook Result Format Reminder"
-      assert skill["content"] =~ "actual_files_changed"
-      assert skill["content"] =~ "api_schema"
-      assert skill["content"] =~ "API Reference"
-    end
-
-    test "all four skills include skills_version in frontmatter", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      skills = response["claude_code_skills"]["available_skills"]
-
-      for skill_name <- [
-            "stride-claiming-tasks",
-            "stride-completing-tasks",
-            "stride-creating-tasks",
-            "stride-creating-goals"
-          ] do
-        skill = Enum.find(skills, &(&1["name"] == skill_name))
-        assert skill["content"] =~ "skills_version: 1.0", "#{skill_name} missing skills_version"
-      end
-    end
-
-    test "claiming and completing skills include staleness handling instructions",
-         %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      skills = response["claude_code_skills"]["available_skills"]
-
-      for skill_name <- ["stride-claiming-tasks", "stride-completing-tasks"] do
-        skill = Enum.find(skills, &(&1["name"] == skill_name))
-
-        assert skill["content"] =~ "Handling Stale Skills",
-               "#{skill_name} missing staleness handling"
-
-        assert skill["content"] =~ "skills_update_required",
-               "#{skill_name} missing skills_update_required reference"
-      end
+      assert is_list(skills_included)
+      assert "stride-claiming-tasks" in skills_included
+      assert "stride-completing-tasks" in skills_included
+      assert "stride-creating-tasks" in skills_included
+      assert "stride-creating-goals" in skills_included
     end
   end
 end
