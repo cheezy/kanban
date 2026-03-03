@@ -617,4 +617,182 @@ defmodule Kanban.BoardsTest do
       assert other_board.id in board_ids
     end
   end
+
+  describe "create_ai_optimized_board/2" do
+    test "creates board with ai_optimized_board flag set" do
+      user = user_fixture()
+      {:ok, board} = Boards.create_ai_optimized_board(user, %{name: "AI Board"})
+
+      assert board.ai_optimized_board == true
+      assert board.name == "AI Board"
+    end
+
+    test "creates five default columns in correct order" do
+      user = user_fixture()
+      {:ok, board} = Boards.create_ai_optimized_board(user, %{name: "AI Board"})
+
+      column_names = Enum.map(board.columns, & &1.name)
+      assert column_names == ["Backlog", "Ready", "Doing", "Review", "Done"]
+    end
+
+    test "sets user as owner" do
+      user = user_fixture()
+      {:ok, board} = Boards.create_ai_optimized_board(user, %{name: "AI Board"})
+
+      assert Boards.owner?(board, user)
+      assert Boards.get_user_access(board.id, user.id) == :owner
+    end
+
+    test "returns error when name is missing" do
+      user = user_fixture()
+      assert {:error, %Ecto.Changeset{}} = Boards.create_ai_optimized_board(user, %{})
+    end
+
+    test "returns error when name is too long" do
+      user = user_fixture()
+      long_name = String.duplicate("a", 256)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Boards.create_ai_optimized_board(user, %{name: long_name})
+    end
+
+    test "works with default empty attrs" do
+      user = user_fixture()
+      assert {:error, %Ecto.Changeset{}} = Boards.create_ai_optimized_board(user)
+    end
+  end
+
+  describe "list_board_users/1" do
+    test "returns users with their access levels" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      users = Boards.list_board_users(board)
+
+      assert length(users) == 1
+      assert hd(users).access == :owner
+      assert hd(users).user.id == owner.id
+    end
+
+    test "returns multiple users sorted by access priority" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      modify_user = user_fixture()
+      read_only_user = user_fixture()
+
+      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify)
+
+      users = Boards.list_board_users(board)
+
+      assert length(users) == 3
+      access_levels = Enum.map(users, & &1.access)
+      assert access_levels == [:owner, :modify, :read_only]
+    end
+
+    test "sorts alphabetically by email within same access level" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      user_b = user_fixture(%{email: "bravo@example.com"})
+      user_a = user_fixture(%{email: "alpha@example.com"})
+
+      {:ok, _} = Boards.add_user_to_board(board, user_b, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, user_a, :read_only)
+
+      users = Boards.list_board_users(board)
+      read_only_users = Enum.filter(users, &(&1.access == :read_only))
+
+      emails = Enum.map(read_only_users, & &1.user.email)
+      assert emails == ["alpha@example.com", "bravo@example.com"]
+    end
+
+    test "returns only users for the specified board" do
+      owner = user_fixture()
+      board1 = board_fixture(owner)
+      board2 = board_fixture(owner)
+      other_user = user_fixture()
+
+      {:ok, _} = Boards.add_user_to_board(board2, other_user, :modify)
+
+      users = Boards.list_board_users(board1)
+      assert length(users) == 1
+      assert hd(users).user.id == owner.id
+    end
+  end
+
+  describe "update_field_visibility/3" do
+    test "owner can update field visibility" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      new_visibility =
+        Map.put(board.field_visibility, "complexity", false)
+
+      assert {:ok, updated_board} =
+               Boards.update_field_visibility(board, new_visibility, owner)
+
+      assert updated_board.field_visibility["complexity"] == false
+    end
+
+    test "persists changes to the database" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      new_visibility =
+        board.field_visibility
+        |> Map.put("complexity", false)
+        |> Map.put("key_files", false)
+
+      {:ok, _} = Boards.update_field_visibility(board, new_visibility, owner)
+
+      reloaded = Boards.get_board!(board.id, owner)
+      assert reloaded.field_visibility["complexity"] == false
+      assert reloaded.field_visibility["key_files"] == false
+    end
+
+    test "returns unauthorized for non-owner" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      other_user = user_fixture()
+
+      {:ok, _} = Boards.add_user_to_board(board, other_user, :modify)
+
+      assert {:error, :unauthorized} =
+               Boards.update_field_visibility(board, %{"complexity" => false}, other_user)
+    end
+
+    test "returns unauthorized for read-only user" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      reader = user_fixture()
+
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+
+      assert {:error, :unauthorized} =
+               Boards.update_field_visibility(board, %{"complexity" => false}, reader)
+    end
+
+    test "returns unauthorized for user with no access" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      stranger = user_fixture()
+
+      assert {:error, :unauthorized} =
+               Boards.update_field_visibility(board, %{"complexity" => false}, stranger)
+    end
+
+    test "broadcasts field_visibility_updated via PubSub" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      new_visibility = Map.put(board.field_visibility, "complexity", false)
+      {:ok, _} = Boards.update_field_visibility(board, new_visibility, owner)
+
+      assert_receive {:field_visibility_updated, received_visibility}
+      assert received_visibility["complexity"] == false
+    end
+  end
 end

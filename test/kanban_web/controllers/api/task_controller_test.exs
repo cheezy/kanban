@@ -2530,4 +2530,268 @@ defmodule KanbanWeb.API.TaskControllerTest do
                KanbanWeb.API.AgentJSON.skills_version()
     end
   end
+
+  describe "missing 401 tests" do
+    test "PATCH /api/tasks/:id/complete returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = patch(conn, ~p"/api/tasks/123/complete", %{})
+      assert json_response(conn, 401)
+    end
+
+    test "PATCH /api/tasks/:id/mark_reviewed returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = patch(conn, ~p"/api/tasks/123/mark_reviewed", %{})
+      assert json_response(conn, 401)
+    end
+
+    test "PATCH /api/tasks/:id/mark_done returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = patch(conn, ~p"/api/tasks/123/mark_done", %{})
+      assert json_response(conn, 401)
+    end
+
+    test "GET /api/tasks/:id/dependencies returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = get(conn, ~p"/api/tasks/123/dependencies")
+      assert json_response(conn, 401)
+    end
+
+    test "GET /api/tasks/:id/dependents returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = get(conn, ~p"/api/tasks/123/dependents")
+      assert json_response(conn, 401)
+    end
+
+    test "GET /api/tasks/:id/tree returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = get(conn, ~p"/api/tasks/123/tree")
+      assert json_response(conn, 401)
+    end
+  end
+
+  describe "missing 404 tests" do
+    test "PATCH /api/tasks/:id/mark_reviewed returns 404 for nonexistent task",
+         %{conn: conn} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/mark_reviewed", %{
+          "review_status" => "approved",
+          "after_review_result" => valid_after_review_result()
+        })
+
+      assert json_response(conn, 404)
+    end
+
+    test "PATCH /api/tasks/:id/mark_done returns 404 for nonexistent task",
+         %{conn: conn} do
+      conn = patch(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/mark_done", %{})
+      assert json_response(conn, 404)
+    end
+
+    test "GET /api/tasks/:id/dependents returns 404 for nonexistent task",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/dependents")
+      assert json_response(conn, 404)
+    end
+
+    test "POST /api/tasks/:id/unclaim returns 404 for nonexistent task",
+         %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/unclaim", %{})
+      assert json_response(conn, 404)
+    end
+  end
+
+  describe "missing 403 tests" do
+    test "PATCH /api/tasks/:id updates task from different board returns 403",
+         %{conn: conn, user: user} do
+      other_board = ai_optimized_board_fixture(user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} =
+        Tasks.create_task(other_column, %{title: "Other board task", position: 0})
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}", %{
+          task: %{title: "Updated"}
+        })
+
+      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+    end
+  end
+
+  describe "GET /api/tasks/:id/tree" do
+    test "returns tree for goal with children", %{conn: conn, column: column} do
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Test Goal"},
+          [%{title: "Child 1"}, %{title: "Child 2"}]
+        )
+
+      conn = get(conn, ~p"/api/tasks/#{goal.id}/tree")
+      response = json_response(conn, 200)
+
+      assert response["data"]["task"]["title"] == "Test Goal"
+      assert length(response["data"]["children"]) == 2
+    end
+
+    test "returns tree for task with no children", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Leaf Task", position: 0})
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/tree")
+      response = json_response(conn, 200)
+
+      assert response["data"]["task"]["title"] == "Leaf Task"
+      assert response["data"]["children"] == []
+    end
+
+    test "returns 404 for nonexistent task", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/tree")
+      assert json_response(conn, 404)
+    end
+
+    test "returns tree using task identifier", %{conn: conn, column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "ID Task", position: 0})
+
+      conn = get(conn, ~p"/api/tasks/#{task.identifier}/tree")
+      response = json_response(conn, 200)
+
+      assert response["data"]["task"]["title"] == "ID Task"
+    end
+
+    test "returns 403 for task on different board", %{conn: conn, user: user} do
+      other_board = ai_optimized_board_fixture(user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} =
+        Tasks.create_task(other_column, %{title: "Other board task", position: 0})
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/tree")
+      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+    end
+  end
+
+  describe "hook validation failures" do
+    test "POST /api/tasks/claim with failed before_doing hook returns 422",
+         %{conn: conn, column: column} do
+      {:ok, _task} =
+        Tasks.create_task(column, %{title: "Hook Test Task", position: 0})
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{
+          "agent_name" => "Test Agent",
+          "before_doing_result" => %{
+            "exit_code" => 1,
+            "output" => "Tests failed",
+            "duration_ms" => 500
+          }
+        })
+
+      response = json_response(conn, 422)
+      assert response["error"] =~ "before_doing"
+    end
+
+    test "PATCH /api/tasks/:id/complete with failed after_doing hook returns 422",
+         %{conn: conn, board: board, user: user} do
+      ready_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Complete Hook Test",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      # Claim via API to get task in progress
+      claim_conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", conn |> get_req_header("authorization") |> hd())
+        |> post(~p"/api/tasks/claim", %{
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      claimed_task_id = json_response(claim_conn, 200)["data"]["id"]
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{claimed_task_id}/complete", %{
+          "completion_summary" => "Done",
+          "actual_complexity" => "small",
+          "time_spent_minutes" => 30,
+          "after_doing_result" => %{
+            "exit_code" => 1,
+            "output" => "Build failed",
+            "duration_ms" => 5000
+          },
+          "before_review_result" => valid_before_review_result()
+        })
+
+      response = json_response(conn, 422)
+      assert response["error"] =~ "after_doing"
+    end
+
+    test "PATCH /api/tasks/:id/mark_reviewed with failed after_review hook returns 422",
+         %{conn: conn, board: board, user: user} do
+      ready_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Review Hook Test",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      # Claim via API
+      claim_conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", conn |> get_req_header("authorization") |> hd())
+        |> post(~p"/api/tasks/claim", %{
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      claimed_task_id = json_response(claim_conn, 200)["data"]["id"]
+
+      # Complete via API
+      complete_conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", conn |> get_req_header("authorization") |> hd())
+        |> patch(~p"/api/tasks/#{claimed_task_id}/complete", %{
+          "completion_summary" => "Done",
+          "actual_complexity" => "small",
+          "time_spent_minutes" => 30,
+          "actual_files_changed" => "lib/test.ex",
+          "after_doing_result" => valid_after_doing_result(),
+          "before_review_result" => valid_before_review_result()
+        })
+
+      assert json_response(complete_conn, 200)
+
+      # Task is now in Review column; hook validation happens before review_status check
+      conn =
+        patch(conn, ~p"/api/tasks/#{claimed_task_id}/mark_reviewed", %{
+          "review_status" => "approved",
+          "after_review_result" => %{
+            "exit_code" => 1,
+            "output" => "Deploy failed",
+            "duration_ms" => 3000
+          }
+        })
+
+      response = json_response(conn, 422)
+      assert response["error"] =~ "after_review"
+    end
+  end
 end

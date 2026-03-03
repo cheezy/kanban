@@ -1488,4 +1488,93 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute html =~ "Delete task"
     end
   end
+
+  describe "promote_goal_to_ready" do
+    setup [:register_and_log_in_user]
+
+    test "promotes goal children from Backlog to Ready", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      backlog = Kanban.Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, %{goal: goal, child_tasks: child_tasks}} =
+        Kanban.Tasks.create_goal_with_tasks(
+          backlog,
+          %{title: "Test Goal"},
+          [%{title: "Child Task 1"}, %{title: "Child Task 2"}]
+        )
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("promote_goal_to_ready", %{"id" => to_string(goal.id)})
+
+      # Verify children moved to Ready column
+      ready = Kanban.Columns.list_columns(board) |> Enum.find(&(&1.name == "Ready"))
+      ready_tasks = Kanban.Tasks.list_tasks(ready)
+      child_ids = Enum.map(child_tasks, & &1.id)
+
+      assert Enum.all?(child_ids, fn id ->
+               Enum.any?(ready_tasks, &(&1.id == id))
+             end)
+    end
+
+    test "shows error when promoting a non-goal task", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      backlog = Kanban.Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} =
+        Kanban.Tasks.create_task(backlog, %{title: "Regular Task", position: 0})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("promote_goal_to_ready", %{"id" => to_string(task.id)})
+
+      assert render(show_live) =~ "Only goals can be promoted"
+    end
+  end
+
+  describe "archive_task and delete_task authorization" do
+    setup [:register_and_log_in_user]
+
+    test "non-owner with modify access can archive tasks", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+      assert html =~ "Task archived successfully"
+      refute html =~ task.title
+    end
+
+    test "non-owner with modify access can delete tasks", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      modify_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+
+      conn = log_in_user(conn, modify_user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("delete_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+      assert html =~ "Task deleted successfully"
+      refute html =~ task.title
+    end
+  end
 end
