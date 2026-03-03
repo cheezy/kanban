@@ -50,3 +50,5 @@ node_modules
 .claude/skills/stride-completing-tasks/SKILL.md
 .claude/skills/stride-creating-goals/SKILL.md
 .claude/skills/stride-creating-tasks/SKILL.md
+
+stride/
