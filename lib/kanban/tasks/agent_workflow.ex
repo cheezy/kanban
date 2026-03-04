@@ -230,7 +230,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
         task
         |> Ecto.Changeset.change(%{
           status: :completed,
-          completed_at: now,
+          completed_at: task.completed_at || now,
           column_id: done_column.id,
           position: next_position
         })
@@ -392,7 +392,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       updated_task
       |> Ecto.Changeset.change(%{
         status: :completed,
-        completed_at: now,
+        completed_at: updated_task.completed_at || now,
         column_id: done_column.id,
         position: next_position
       })
@@ -424,7 +424,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       task
       |> Ecto.Changeset.change(%{
         status: :completed,
-        completed_at: now,
+        completed_at: task.completed_at || now,
         reviewed_by_id: user.id,
         column_id: done_column.id,
         position: next_position

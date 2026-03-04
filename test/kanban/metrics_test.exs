@@ -455,6 +455,60 @@ defmodule Kanban.MetricsTest do
       assert stats.review_wait.count == 0
       assert stats.backlog_wait.count == 0
     end
+
+    test "clamps review wait time to zero when reviewed_at is before completed_at" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Simulate data inconsistency: reviewed_at is before completed_at
+      reviewed_at = DateTime.add(DateTime.utc_now(), -6, :hour)
+      completed_at = DateTime.utc_now()
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_at: completed_at,
+          reviewed_at: reviewed_at
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      assert stats.review_wait.count == 1
+      assert stats.review_wait.average_hours >= 0
+      assert stats.review_wait.min_hours >= 0
+    end
+
+    test "clamps backlog wait time to zero when claimed_at is before inserted_at" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      task = task_fixture(column)
+
+      # Simulate data inconsistency: claimed_at is before inserted_at
+      # Set inserted_at to now and claimed_at to 6 hours ago
+      inserted_at =
+        DateTime.utc_now()
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      claimed_at = DateTime.add(DateTime.utc_now(), -6, :hour)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+        |> Kanban.Repo.update()
+
+      {:ok, _} = Tasks.update_task(task, %{claimed_at: claimed_at})
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      assert stats.backlog_wait.count == 1
+      assert stats.backlog_wait.average_hours >= 0
+      assert stats.backlog_wait.min_hours >= 0
+    end
   end
 
   describe "get_cycle_time_stats/2 with weekend exclusion" do
@@ -475,10 +529,11 @@ defmodule Kanban.MetricsTest do
           completed_at: completed_at
         })
 
-      {:ok, stats_with_weekends} = Metrics.get_cycle_time_stats(board.id, exclude_weekends: false)
+      {:ok, stats_with_weekends} =
+        Metrics.get_cycle_time_stats(board.id, exclude_weekends: false, time_range: :all_time)
 
       {:ok, stats_without_weekends} =
-        Metrics.get_cycle_time_stats(board.id, exclude_weekends: true)
+        Metrics.get_cycle_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
 
       assert stats_with_weekends.count == 1
       assert stats_without_weekends.count == 1

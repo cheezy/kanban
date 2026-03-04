@@ -366,7 +366,7 @@ defmodule Kanban.Metrics do
       |> select([t], %{
         wait_time_seconds:
           fragment(
-            "EXTRACT(EPOCH FROM (? - ?))",
+            "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
             t.reviewed_at,
             t.completed_at
           ),
@@ -391,7 +391,7 @@ defmodule Kanban.Metrics do
       |> select([t], %{
         wait_time_seconds:
           fragment(
-            "EXTRACT(EPOCH FROM (? - ?))",
+            "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
             t.claimed_at,
             t.inserted_at
           ),
@@ -429,7 +429,7 @@ defmodule Kanban.Metrics do
       |> where([t], t.type != ^:goal)
       |> select([t, _c, fm], %{
         wait_time_seconds:
-          fragment("EXTRACT(EPOCH FROM (? - ?))", fm.first_moved_at, t.inserted_at),
+          fragment("GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))", fm.first_moved_at, t.inserted_at),
         start_time: t.inserted_at,
         end_time: fm.first_moved_at
       })

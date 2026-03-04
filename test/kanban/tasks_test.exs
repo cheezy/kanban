@@ -6674,6 +6674,38 @@ defmodule Kanban.TasksTest do
       assert_received {:task_returned_to_doing, received_task}
       assert received_task.id == result.id
     end
+
+    test "preserves original completed_at when approving a reviewed task", %{
+      review_column: review_column,
+      user: user
+    } do
+      original_completed_at =
+        DateTime.utc_now()
+        |> DateTime.add(-2, :hour)
+        |> DateTime.truncate(:second)
+
+      reviewed_at =
+        DateTime.utc_now()
+        |> DateTime.add(-1, :hour)
+        |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Already Completed Task",
+          "status" => "in_progress",
+          "completed_at" => original_completed_at,
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => reviewed_at,
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, result, _hook} = Tasks.mark_reviewed(task, user)
+
+      assert result.status == :completed
+      assert DateTime.compare(result.completed_at, original_completed_at) == :eq
+    end
   end
 
   describe "list_archived_tasks_for_board/1" do

@@ -123,7 +123,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
         completed_by_agent: t.completed_by_agent,
         review_wait_seconds:
           fragment(
-            "EXTRACT(EPOCH FROM (? - ?))",
+            "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
             t.reviewed_at,
             t.completed_at
           )
@@ -170,7 +170,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
         completed_by_agent: t.completed_by_agent,
         backlog_wait_seconds:
           fragment(
-            "EXTRACT(EPOCH FROM (? - ?))",
+            "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
             t.claimed_at,
             t.inserted_at
           )
@@ -212,7 +212,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
       completed_by_agent: t.completed_by_agent,
       backlog_wait_seconds:
         fragment(
-          "EXTRACT(EPOCH FROM (? - ?))",
+          "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
           fm.first_moved_at,
           t.inserted_at
         )
