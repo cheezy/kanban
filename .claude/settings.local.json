@@ -131,7 +131,8 @@
       "mcp__filesystem__list_allowed_directories",
       "Bash(gh auth:*)",
       "Bash(gh api:*)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "WebFetch(domain:www.stridelikeaboss.com)"
     ],
     "deny": [],
     "ask": []
