@@ -54,21 +54,21 @@ defmodule Kanban.Boards do
   @doc """
   Gets a single board with authorization check.
 
-  Raises `Ecto.NoResultsError` if the Board does not exist or user doesn't have access.
+  Returns `{:ok, board}` if found and accessible, `{:error, :not_found}` otherwise.
 
   For read-only boards (read_only: true), non-members can access the board with user_access: nil.
   For private boards (read_only: false), only members can access.
 
   ## Examples
 
-      iex> get_board!(123, user)
-      %Board{}
+      iex> get_board(123, user)
+      {:ok, %Board{}}
 
-      iex> get_board!(456, user)
-      ** (Ecto.NoResultsError)
+      iex> get_board(456, user)
+      {:error, :not_found}
 
   """
-  def get_board!(id, user) when is_integer(id) do
+  def get_board(id, user) when is_integer(id) do
     query =
       Board
       |> join(:left, [b], bu in BoardUser, on: bu.board_id == b.id and bu.user_id == ^user.id)
@@ -77,24 +77,30 @@ defmodule Kanban.Boards do
 
     case Repo.one(query) do
       nil ->
-        raise Ecto.NoResultsError, queryable: Board
+        {:error, :not_found}
 
       %Board{user_access: nil} = board ->
-        if board.read_only do
-          board
-        else
-          raise Ecto.NoResultsError, queryable: Board
-        end
+        if board.read_only, do: {:ok, board}, else: {:error, :not_found}
 
       board ->
-        board
+        {:ok, board}
     end
   end
 
-  def get_board!(id, user) when is_binary(id) do
+  def get_board(id, user) when is_binary(id) do
     case Integer.parse(id) do
-      {int_id, ""} -> get_board!(int_id, user)
-      _ -> raise Ecto.NoResultsError, queryable: Board
+      {int_id, ""} -> get_board(int_id, user)
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Same as `get_board/2` but raises `Ecto.NoResultsError` if not found.
+  """
+  def get_board!(id, user) do
+    case get_board(id, user) do
+      {:ok, board} -> board
+      {:error, :not_found} -> raise Ecto.NoResultsError, queryable: Board
     end
   end
 

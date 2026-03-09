@@ -19,21 +19,10 @@ defmodule KanbanWeb.BoardLive.Form do
 
   defp apply_action(socket, :edit, %{"id" => id}) do
     user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
 
-    if Boards.owner?(board, user) do
-      board_users = Boards.list_board_users(board)
-
-      socket
-      |> assign(:page_title, "Stride")
-      |> assign(:board, board)
-      |> assign(:board_users, board_users)
-      |> assign(:field_visibility, board.field_visibility || %{})
-      |> assign(:form, to_form(Boards.change_board(board)))
-    else
-      socket
-      |> put_flash(:error, gettext("Only the board owner can edit this board"))
-      |> push_navigate(to: ~p"/boards")
+    case Boards.get_board(id, user) do
+      {:ok, board} -> apply_edit_action(socket, board, user)
+      {:error, :not_found} -> board_not_found(socket)
     end
   end
 
@@ -230,5 +219,28 @@ defmodule KanbanWeb.BoardLive.Form do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
     end
+  end
+
+  defp apply_edit_action(socket, board, user) do
+    if Boards.owner?(board, user) do
+      board_users = Boards.list_board_users(board)
+
+      socket
+      |> assign(:page_title, "Stride")
+      |> assign(:board, board)
+      |> assign(:board_users, board_users)
+      |> assign(:field_visibility, board.field_visibility || %{})
+      |> assign(:form, to_form(Boards.change_board(board)))
+    else
+      socket
+      |> put_flash(:error, gettext("Only the board owner can edit this board"))
+      |> push_navigate(to: ~p"/boards")
+    end
+  end
+
+  defp board_not_found(socket) do
+    socket
+    |> put_flash(:error, gettext("Board not found"))
+    |> push_navigate(to: ~p"/boards")
   end
 end

@@ -765,9 +765,8 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       other_user = user_fixture()
       conn = log_in_user(conn, other_user)
 
-      assert_raise Ecto.NoResultsError, fn ->
+      {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
         live(conn, ~p"/boards/#{board}/metrics/wait-time")
-      end
     end
 
     test "handles non-existent atom in parse_time_range", %{conn: conn, board: board} do

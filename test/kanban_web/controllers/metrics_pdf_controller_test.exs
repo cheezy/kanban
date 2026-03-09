@@ -33,9 +33,8 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       other_user = user_fixture()
       board = ai_optimized_board_fixture(other_user)
 
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/boards/#{board}/metrics/throughput/export")
-      end
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
+      assert json_response(conn, 404)["error"] == "Board not found"
     end
   end
 

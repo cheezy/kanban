@@ -46,6 +46,71 @@ defmodule Kanban.BoardsTest do
     end
   end
 
+  describe "get_board/2" do
+    test "returns {:ok, board} when board belongs to the user" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert {:ok, fetched_board} = Boards.get_board(board.id, user)
+      assert fetched_board.id == board.id
+      assert fetched_board.name == board.name
+    end
+
+    test "returns {:error, :not_found} when board does not exist" do
+      user = user_fixture()
+
+      assert {:error, :not_found} = Boards.get_board(999_999, user)
+    end
+
+    test "returns {:error, :not_found} when board belongs to a different user" do
+      user1 = user_fixture()
+      user2 = user_fixture()
+      board = board_fixture(user1)
+
+      assert {:error, :not_found} = Boards.get_board(board.id, user2)
+    end
+
+    test "accepts string ID and converts to integer" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert {:ok, fetched_board} = board.id |> Integer.to_string() |> Boards.get_board(user)
+      assert fetched_board.id == board.id
+    end
+
+    test "returns {:error, :not_found} for invalid string ID" do
+      user = user_fixture()
+
+      assert {:error, :not_found} = Boards.get_board("not_a_number", user)
+    end
+
+    test "returns {:error, :not_found} for string ID with trailing characters" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert {:error, :not_found} = Boards.get_board("#{board.id}abc", user)
+    end
+
+    test "non-member can access read-only board" do
+      owner = user_fixture()
+      non_member = user_fixture()
+      board = board_fixture(owner, %{name: "Public Board"})
+      {:ok, board} = Boards.update_board(board, %{read_only: true})
+
+      assert {:ok, fetched_board} = Boards.get_board(board.id, non_member)
+      assert fetched_board.id == board.id
+      assert fetched_board.user_access == nil
+    end
+
+    test "non-member cannot access private board" do
+      owner = user_fixture()
+      non_member = user_fixture()
+      board = board_fixture(owner, %{name: "Private Board"})
+
+      assert {:error, :not_found} = Boards.get_board(board.id, non_member)
+    end
+  end
+
   describe "get_board!/2" do
     test "returns the board when it belongs to the user" do
       user = user_fixture()

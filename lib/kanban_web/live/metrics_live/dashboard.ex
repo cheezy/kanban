@@ -17,27 +17,18 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   @impl true
   def handle_params(%{"id" => board_id} = params, _, socket) do
     user = socket.assigns.current_scope.user
-    board = Boards.get_board!(board_id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
 
-    {:ok, agents} = Metrics.get_agents(board.id)
+    case Boards.get_board(board_id, user) do
+      {:ok, board} ->
+        {:noreply,
+         assign_metrics_state(socket, board, params, "Metrics Dashboard", &load_dashboard_data/1)}
 
-    time_range = parse_time_range(params["time_range"])
-    agent_name = parse_agent_name(params["agent_name"])
-    exclude_weekends = parse_exclude_weekends(params["exclude_weekends"])
-
-    socket =
-      socket
-      |> assign(:page_title, "Metrics Dashboard")
-      |> assign(:board, board)
-      |> assign(:user_access, user_access)
-      |> assign(:agents, agents)
-      |> assign(:time_range, time_range)
-      |> assign(:agent_name, agent_name)
-      |> assign(:exclude_weekends, exclude_weekends)
-      |> load_dashboard_data()
-
-    {:noreply, socket}
+      {:error, :not_found} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Board not found"))
+         |> push_navigate(to: ~p"/boards")}
+    end
   end
 
   @impl true
@@ -108,6 +99,23 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
 
   defp total_throughput(throughput) do
     Enum.reduce(throughput, 0, fn %{count: count}, acc -> acc + count end)
+  end
+
+  defp assign_metrics_state(socket, board, params, page_title, load_data_fn) do
+    {:ok, agents} = Metrics.get_agents(board.id)
+
+    socket
+    |> assign(:page_title, page_title)
+    |> assign(:board, board)
+    |> assign(
+      :user_access,
+      Boards.get_user_access(board.id, socket.assigns.current_scope.user.id)
+    )
+    |> assign(:agents, agents)
+    |> assign(:time_range, parse_time_range(params["time_range"]))
+    |> assign(:agent_name, parse_agent_name(params["agent_name"]))
+    |> assign(:exclude_weekends, parse_exclude_weekends(params["exclude_weekends"]))
+    |> load_data_fn.()
   end
 
   defp parse_time_range(nil), do: :last_30_days

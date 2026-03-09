@@ -18,130 +18,112 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_params(%{"id" => id, "column_id" => column_id, "task_id" => task_id}, _, socket) do
-    user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
-    columns = Columns.list_columns(board)
-    column = Columns.get_column!(column_id)
-    task = Tasks.get_task!(task_id)
+    with_board(socket, id, fn board, user_access ->
+      columns = Columns.list_columns(board)
+      column = Columns.get_column!(column_id)
+      task = Tasks.get_task!(task_id)
 
-    subscribe_to_board_updates(socket, board.id)
-
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:field_visibility, board.field_visibility || %{})
-     |> assign(:column, column)
-     |> assign(:task, task)
-     |> assign(:has_columns, not Enum.empty?(columns))
-     |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+      {:noreply,
+       socket
+       |> assign(:page_title, page_title(socket.assigns.live_action))
+       |> assign(:board, board)
+       |> assign(:user_access, user_access)
+       |> assign(:can_modify, user_access in [:owner, :modify])
+       |> assign(:is_owner, user_access == :owner)
+       |> assign(:field_visibility, board.field_visibility || %{})
+       |> assign(:column, column)
+       |> assign(:task, task)
+       |> assign(:has_columns, not Enum.empty?(columns))
+       |> stream(:columns, columns, reset: true)
+       |> load_tasks_for_columns(columns)}
+    end)
   end
 
   def handle_params(%{"id" => id, "column_id" => column_id}, _, socket) do
-    user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
+    with_board(socket, id, fn board, user_access ->
+      case check_column_action_authorization(socket.assigns.live_action, user_access, board) do
+        :ok ->
+          assign_board_with_column(socket, board, user_access, column_id)
 
-    subscribe_to_board_updates(socket, board.id)
-
-    case check_column_action_authorization(socket.assigns.live_action, user_access, board) do
-      :ok ->
-        assign_board_with_column(socket, board, user_access, column_id)
-
-      {:error, message} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, message)
-         |> push_patch(to: ~p"/boards/#{board}")}
-    end
+        {:error, message} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, message)
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
+    end)
   end
 
   def handle_params(%{"id" => id, "task_id" => task_id}, _, socket) do
-    user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
-    columns = Columns.list_columns(board)
-    task = Tasks.get_task!(task_id)
+    with_board(socket, id, fn board, user_access ->
+      columns = Columns.list_columns(board)
+      task = Tasks.get_task!(task_id)
 
-    subscribe_to_board_updates(socket, board.id)
-
-    socket =
-      socket
-      |> assign(:page_title, page_title(socket.assigns.live_action))
-      |> assign(:board, board)
-      |> assign(:user_access, user_access)
-      |> assign(:can_modify, user_access in [:owner, :modify])
-      |> assign(:is_owner, user_access == :owner)
-      |> assign(:field_visibility, board.field_visibility || %{})
-      |> assign(:task, task)
-      |> assign(:has_columns, not Enum.empty?(columns))
-      |> assign(:viewing_task_id, nil)
-      |> assign(:show_task_modal, false)
-      |> stream(:columns, columns, reset: true)
-
-    socket =
-      if Map.has_key?(socket.assigns, :tasks_by_column) do
+      socket =
         socket
-      else
-        load_tasks_for_columns(socket, columns)
-      end
+        |> assign(:page_title, page_title(socket.assigns.live_action))
+        |> assign(:board, board)
+        |> assign(:user_access, user_access)
+        |> assign(:can_modify, user_access in [:owner, :modify])
+        |> assign(:is_owner, user_access == :owner)
+        |> assign(:field_visibility, board.field_visibility || %{})
+        |> assign(:task, task)
+        |> assign(:has_columns, not Enum.empty?(columns))
+        |> assign(:viewing_task_id, nil)
+        |> assign(:show_task_modal, false)
+        |> stream(:columns, columns, reset: true)
 
-    {:noreply, socket}
+      socket =
+        if Map.has_key?(socket.assigns, :tasks_by_column) do
+          socket
+        else
+          load_tasks_for_columns(socket, columns)
+        end
+
+      {:noreply, socket}
+    end)
   end
 
   def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :api_tokens do
-    user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
+    with_board(socket, id, fn board, user_access ->
+      cond do
+        not board.ai_optimized_board ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("API tokens are only available for AI Optimized boards"))
+           |> push_patch(to: ~p"/boards/#{board}")}
 
-    subscribe_to_board_updates(socket, board.id)
+        user_access in [:owner, :modify] ->
+          assign_api_tokens_state(socket, board, user_access)
 
-    cond do
-      not board.ai_optimized_board ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("API tokens are only available for AI Optimized boards"))
-         |> push_patch(to: ~p"/boards/#{board}")}
-
-      user_access in [:owner, :modify] ->
-        assign_api_tokens_state(socket, board, user_access)
-
-      true ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
-         |> push_patch(to: ~p"/boards/#{board}")}
-    end
+        true ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
+    end)
   end
 
   def handle_params(%{"id" => id}, _, socket) do
-    user = socket.assigns.current_scope.user
-    board = Boards.get_board!(id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
+    with_board(socket, id, fn board, user_access ->
+      case check_new_column_authorization(socket.assigns.live_action, user_access, board) do
+        :ok ->
+          if socket.assigns.live_action == :show and
+               Map.get(socket.assigns, :board) != nil and
+               socket.assigns.board.id == board.id do
+            refresh_board_tasks(socket, board)
+          else
+            assign_board_state(socket, board, user_access)
+          end
 
-    subscribe_to_board_updates(socket, board.id)
-
-    case check_new_column_authorization(socket.assigns.live_action, user_access, board) do
-      :ok ->
-        if socket.assigns.live_action == :show and
-             Map.get(socket.assigns, :board) != nil and
-             socket.assigns.board.id == board.id do
-          refresh_board_tasks(socket, board)
-        else
-          assign_board_state(socket, board, user_access)
-        end
-
-      {:error, message} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, message)
-         |> push_patch(to: ~p"/boards/#{board}")}
-    end
+        {:error, message} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, message)
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
+    end)
   end
 
   @impl true
@@ -813,6 +795,27 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign_common_board_state(board, user_access, columns)
      |> assign(:column, column)
      |> assign(:column_id, column.id)}
+  end
+
+  defp with_board(socket, id, fun) do
+    user = socket.assigns.current_scope.user
+
+    case Boards.get_board(id, user) do
+      {:ok, board} ->
+        user_access = Boards.get_user_access(board.id, user.id)
+        subscribe_to_board_updates(socket, board.id)
+        fun.(board, user_access)
+
+      {:error, :not_found} ->
+        handle_board_not_found(socket)
+    end
+  end
+
+  defp handle_board_not_found(socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, gettext("Board not found"))
+     |> push_navigate(to: ~p"/boards")}
   end
 
   @doc """

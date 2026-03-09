@@ -1405,11 +1405,9 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       non_member = user_fixture()
       conn = log_in_user(conn, non_member)
 
-      # Non-member should NOT be able to access the board
-      # get_board!/2 raises Ecto.NoResultsError for non-members on private boards
-      assert_raise Ecto.NoResultsError, fn ->
+      # Non-member should be redirected to boards list
+      {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
         live(conn, ~p"/boards/#{board}")
-      end
     end
 
     test "read-only banner displays for non-members on read-only boards", %{conn: conn} do

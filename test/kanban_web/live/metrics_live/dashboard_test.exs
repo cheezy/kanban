@@ -193,9 +193,8 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       other_user = user_fixture()
       conn = log_in_user(conn, other_user)
 
-      assert_raise Ecto.NoResultsError, fn ->
+      {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
         live(conn, ~p"/boards/#{board}/metrics")
-      end
     end
 
     test "handles board with no completed tasks gracefully", %{conn: conn, board: board} do

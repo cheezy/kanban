@@ -208,9 +208,8 @@ defmodule KanbanWeb.ArchiveLiveTest do
       other_user = user_fixture()
       other_board = board_fixture(other_user)
 
-      assert_raise Ecto.NoResultsError, fn ->
+      {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
         live(conn, ~p"/boards/#{other_board}/archive")
-      end
     end
 
     test "handles task_updated PubSub event", %{conn: conn, board: board, column: column} do

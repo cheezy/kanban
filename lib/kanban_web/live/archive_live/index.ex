@@ -7,22 +7,31 @@ defmodule KanbanWeb.ArchiveLive.Index do
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
     user = socket.assigns.current_scope.user
-    board = Boards.get_board!(board_id, user)
-    user_access = Boards.get_user_access(board.id, user.id)
 
-    subscribe_to_board_updates(socket, board.id)
+    case Boards.get_board(board_id, user) do
+      {:ok, board} ->
+        user_access = Boards.get_user_access(board.id, user.id)
 
-    archived_tasks = Tasks.list_archived_tasks_for_board(board.id)
+        subscribe_to_board_updates(socket, board.id)
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Stride")
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:has_archived_tasks, archived_tasks != [])
-     |> stream(:archived_tasks, archived_tasks)}
+        archived_tasks = Tasks.list_archived_tasks_for_board(board.id)
+
+        {:ok,
+         socket
+         |> assign(:page_title, "Stride")
+         |> assign(:board, board)
+         |> assign(:user_access, user_access)
+         |> assign(:can_modify, user_access in [:owner, :modify])
+         |> assign(:is_owner, user_access == :owner)
+         |> assign(:has_archived_tasks, archived_tasks != [])
+         |> stream(:archived_tasks, archived_tasks)}
+
+      {:error, :not_found} ->
+        {:ok,
+         socket
+         |> put_flash(:error, gettext("Board not found"))
+         |> push_navigate(to: ~p"/boards")}
+    end
   end
 
   @impl true

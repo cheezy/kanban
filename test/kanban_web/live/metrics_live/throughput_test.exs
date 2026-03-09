@@ -539,9 +539,8 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
       other_user = user_fixture()
       conn = log_in_user(conn, other_user)
 
-      assert_raise Ecto.NoResultsError, fn ->
+      {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
         live(conn, ~p"/boards/#{board}/metrics/throughput")
-      end
     end
   end
 
