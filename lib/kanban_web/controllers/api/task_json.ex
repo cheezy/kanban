@@ -80,6 +80,7 @@ defmodule KanbanWeb.API.TaskJSON do
       actual_complexity: task.actual_complexity,
       actual_files_changed: task.actual_files_changed,
       time_spent_minutes: task.time_spent_minutes,
+      human_task: task.human_task,
       needs_review: task.needs_review,
       review_status: task.review_status,
       review_notes: task.review_notes,

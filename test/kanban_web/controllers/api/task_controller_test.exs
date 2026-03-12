@@ -2794,4 +2794,55 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] =~ "after_review"
     end
   end
+
+  describe "human_task field in API responses" do
+    test "task JSON includes human_task field defaulting to false", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Agent Task",
+          "created_by_id" => user.id
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["human_task"] == false
+    end
+
+    test "task JSON includes human_task=true when explicitly set", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Human Only Task",
+          "human_task" => true,
+          "created_by_id" => user.id
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["human_task"] == true
+    end
+
+    test "API-created task defaults human_task to false", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks", %{
+          "task" => %{
+            "title" => "API Created Task",
+            "type" => "work"
+          }
+        })
+
+      response = json_response(conn, 201)["data"]
+
+      assert response["human_task"] == false
+    end
+  end
 end
