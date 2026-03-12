@@ -345,6 +345,10 @@ defmodule Kanban.Tasks.Task do
     # Time spent in minutes - Validated: >= 0, Example: 45, 120, 360
     field :time_spent_minutes, :integer
 
+    # Human Task
+    # When true, task is for human workers only and cannot be claimed by agents
+    field :human_task, :boolean, default: false
+
     # Review Workflow
     # Requires human approval - Default: false
     field :needs_review, :boolean, default: false
@@ -440,6 +444,8 @@ defmodule Kanban.Tasks.Task do
       :actual_complexity,
       :actual_files_changed,
       :time_spent_minutes,
+      # Human task flag
+      :human_task,
       # Review queue (02)
       :needs_review,
       :review_status,
