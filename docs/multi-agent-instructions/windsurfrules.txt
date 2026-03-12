@@ -6,10 +6,10 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 
 - before_doing (60s, blocking) - Execute before starting work (pull code, setup)
 - after_doing (120s, blocking) - Execute after work, BEFORE calling complete endpoint (tests, lint)
-- before_review (60s, non-blocking) - Execute when entering review (create PR, docs)
-- after_review (60s, non-blocking) - Execute after approval (merge, deploy)
+- before_review (60s, blocking) - Execute after after_doing, BEFORE calling complete endpoint (create PR, docs)
+- after_review (60s, blocking) - Execute after approval (merge, deploy)
 
-CRITICAL: Always execute the after_doing hook BEFORE calling the task completion endpoint. Hook validation failures must prevent task completion.
+CRITICAL: Always execute BOTH the after_doing hook AND the before_review hook BEFORE calling the task completion endpoint. Hook validation failures must prevent task completion.
 
 TOP 5 CRITICAL MISTAKES
 
@@ -92,19 +92,21 @@ DO THIS:
 
 WHY: type must be exactly "work", "defect", or "goal" as strings.
 
-5. Calling Complete Endpoint Before Executing after_doing Hook
+5. Calling Complete Endpoint Before Executing BOTH Hooks
 
 DON'T DO THIS:
 1. Finish work
 2. Call PATCH /api/tasks/:id/complete
 3. Execute after_doing hook
+4. Execute before_review hook
 
 DO THIS:
 1. Finish work
 2. Execute after_doing hook (tests, lint, build)
-3. Only if hook succeeds, call PATCH /api/tasks/:id/complete
+3. Execute before_review hook (create PR, docs)
+4. Only if both hooks succeed, call PATCH /api/tasks/:id/complete with both after_doing_result AND before_review_result
 
-WHY: Hook validation failures must prevent task completion. Calling complete first bypasses quality gates.
+WHY: The API REQUIRES both after_doing_result AND before_review_result parameters. Hook validation failures must prevent task completion. Calling complete first bypasses quality gates.
 
 ESSENTIAL TASK FIELDS
 
@@ -136,11 +138,25 @@ CODE PATTERN: Claiming a Task
 curl -H "Authorization: Bearer $TOKEN" \
   https://www.stridelikeaboss.com/api/tasks/next
 
-# 2. Claim task (returns before_doing hook)
+# 2. Execute before_doing hook
+# Set environment variables from hook.env
+# Execute hook.command with timeout
+# Check exit code (blocking hook must succeed)
+
+# 3. Claim task WITH before_doing result
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"task_id": 123, "agent_name": "Your Name"}' \
+  -d '{
+    "identifier": "W47",
+    "agent_name": "Your Name",
+    "skills_version": "1.0.0",
+    "before_doing_result": {
+      "exit_code": 0,
+      "output": "Already up to date.\nResolving Hex...",
+      "duration_ms": 3200
+    }
+  }' \
   https://www.stridelikeaboss.com/api/tasks/claim
 
 Response includes:
@@ -160,11 +176,6 @@ Response includes:
   }
 }
 
-# 3. Execute before_doing hook
-# Set environment variables from hook.env
-# Execute hook.command with timeout
-# Check exit code (blocking hook must succeed)
-
 # 4. Begin work
 
 CODE PATTERN: Completing a Task
@@ -177,21 +188,37 @@ CODE PATTERN: Completing a Task
 # Execute hook command with 120s timeout
 # Check exit code - if non-zero, stop here and fix issues
 
-# 3. Only if hook succeeds, call complete endpoint
+# 3. Execute before_review hook SECOND
+# Parse hook metadata from .stride.md
+# Set environment variables
+# Execute hook command with 60s timeout
+# Check exit code - if non-zero, stop here and fix issues
+
+# 4. Only if BOTH hooks succeed, call complete endpoint with both results
 curl -X PATCH \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_name": "Your Name",
     "time_spent_minutes": 45,
-    "completion_notes": "Implemented feature X. All tests passing."
+    "completion_notes": "Implemented feature X. All tests passing.",
+    "completion_summary": "Added JWT authentication with refresh token support and comprehensive test coverage.",
+    "actual_complexity": "medium",
+    "actual_files_changed": "lib/myapp_web/plugs/auth.ex,lib/myapp_web/controllers/session_controller.ex,test/myapp_web/plugs/auth_test.exs",
+    "after_doing_result": {
+      "exit_code": 0,
+      "output": "All 42 tests passed. Credo: no issues found.",
+      "duration_ms": 15000
+    },
+    "before_review_result": {
+      "exit_code": 0,
+      "output": "PR #123 created successfully.",
+      "duration_ms": 5000
+    }
   }' \
   https://www.stridelikeaboss.com/api/tasks/123/complete
 
-Response includes before_review, after_doing, and after_review hooks
-
-# 4. Execute before_review hook (non-blocking)
-# Continue even if it fails
+Response includes after_review hook
 
 CODE PATTERN: Creating a Simple Task
 
@@ -499,10 +526,10 @@ Always use object format with step_type, step_text, expected_result, position.
 unit_tests, integration_tests, manual_tests MUST be arrays.
 
 5. Skipping Hook Execution
-Hooks enforce quality standards. Don't skip them.
+Hooks enforce quality standards. Don't skip them. Both after_doing and before_review hooks must be executed before calling complete.
 
 6. Wrong Completion Order
-Always: work → after_doing hook → complete endpoint → before_review hook
+Always: Execute before_doing hook → Claim WITH result → Work → Execute after_doing hook → Execute before_review hook → Complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
 
 DOCUMENTATION LINKS
 

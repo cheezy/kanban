@@ -827,7 +827,7 @@ defmodule KanbanWeb.API.AgentJSON do
 
             **Setup:** Fetch onboarding at #{base_url}/api/agent/onboarding
 
-            **Workflow:** claim → before_doing hook → work → after_doing hook → complete → [if needs_review=false: claim next, else: stop]
+            **Workflow:** before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
 
             **Files:** .stride.md (hooks), .stride_auth.md (token, gitignored)
 
@@ -1006,7 +1006,7 @@ defmodule KanbanWeb.API.AgentJSON do
           ],
           time_estimate: "2-3 minutes for context refresh",
           workflow_reminder:
-            "claim → before_doing hook → work → after_doing hook → complete → if needs_review=false then claim next, else stop"
+            "before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → if needs_review=false then after_review hook → claim next, else stop"
         }
       },
       common_mistakes_agents_make: %{
@@ -1069,9 +1069,9 @@ defmodule KanbanWeb.API.AgentJSON do
         description: "Ultra-condensed reference for experienced agents - the essentials only",
         onboarding_url: "#{base_url}/api/agent/onboarding",
         critical_requirement:
-          "Hook validation is MANDATORY - must include before_doing_result when claiming, after_doing_result when completing",
+          "Hook validation is MANDATORY - must include before_doing_result when claiming, both after_doing_result AND before_review_result when completing",
         workflow:
-          "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → complete WITH result → [if needs_review=false: claim next, else: stop]",
+          "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → EXECUTE before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]",
         required_files: [".stride.md (hooks)", ".stride_auth.md (token, gitignored)"],
         task_creation_musts: [
           "key_files",
@@ -1084,7 +1084,8 @@ defmodule KanbanWeb.API.AgentJSON do
         auth_header: "Authorization: Bearer <token_from_.stride_auth.md>",
         key_endpoints: %{
           claim: "POST /api/tasks/claim (REQUIRES before_doing_result parameter)",
-          complete: "PATCH /api/tasks/:id/complete (REQUIRES after_doing_result parameter)",
+          complete:
+            "PATCH /api/tasks/:id/complete (REQUIRES after_doing_result AND before_review_result parameters)",
           mark_reviewed: "PATCH /api/tasks/:id/mark_reviewed",
           unclaim: "POST /api/tasks/:id/unclaim"
         },
@@ -1142,6 +1143,10 @@ defmodule KanbanWeb.API.AgentJSON do
             agent_name: "string",
             time_spent_minutes: "integer",
             completion_notes: "string",
+            completion_summary: "string (brief summary for tracking)",
+            actual_complexity: "enum: 'small', 'medium', 'large'",
+            actual_files_changed:
+              "string (comma-separated file paths, NOT an array — e.g. 'lib/foo.ex, lib/bar.ex')",
             after_doing_result: "hook_result_format (see below)",
             before_review_result: "hook_result_format (see below)"
           }

@@ -10,10 +10,10 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 
 - **before_doing** (60s, blocking) - Execute before starting work (pull code, setup)
 - **after_doing** (120s, blocking) - Execute after work, BEFORE calling complete endpoint (tests, lint)
-- **before_review** (60s, non-blocking) - Execute when entering review (create PR, docs)
-- **after_review** (60s, non-blocking) - Execute after approval (merge, deploy)
+- **before_review** (60s, blocking) - Execute BEFORE calling complete endpoint (create PR, docs)
+- **after_review** (60s, blocking) - Execute after approval (merge, deploy)
 
-**CRITICAL:** Always execute the `after_doing` hook BEFORE calling the task completion endpoint. Hook validation failures must prevent task completion.
+**CRITICAL:** Execute BOTH `after_doing` AND `before_review` hooks BEFORE calling the task completion endpoint. The API requires both `after_doing_result` and `before_review_result` in the completion request. Hook validation failures must prevent task completion.
 
 ## Top 5 Critical Mistakes to Avoid
 
@@ -95,19 +95,20 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 
 **WHY:** `type` must be exactly `"work"`, `"defect"`, or `"goal"` as strings.
 
-### 5. Calling Complete Endpoint Before Executing after_doing Hook
+### 5. Calling Complete Endpoint Before Executing BOTH Hooks
 
 **DON'T:**
 1. Finish work
 2. Call `PATCH /api/tasks/:id/complete`
-3. Execute `after_doing` hook
+3. Execute hooks afterward
 
 **DO:**
 1. Finish work
-2. Execute `after_doing` hook (tests, lint, build)
-3. Only if hook succeeds, call `PATCH /api/tasks/:id/complete`
+2. Execute `after_doing` hook (tests, lint, build) — capture result
+3. Execute `before_review` hook (create PR, docs) — capture result
+4. Only if BOTH hooks succeed, call `PATCH /api/tasks/:id/complete` WITH both results
 
-**WHY:** Hook validation failures must prevent task completion. Calling complete first bypasses quality gates.
+**WHY:** The API REQUIRES both `after_doing_result` and `before_review_result` parameters. Requests without them are rejected with 422 errors.
 
 ## Essential Task Fields
 
@@ -142,26 +143,25 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 curl -X GET https://www.stridelikeaboss.com/api/tasks/next \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-# 2. Claim the task (returns before_doing hook)
+# 2. Execute before_doing hook FIRST (from .stride.md ## before_doing section)
+# Capture exit_code, output, and duration_ms
+
+# 3. Only if before_doing succeeds, claim the task WITH hook result
 curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "task_id": 123,
+    "identifier": "W47",
     "agent_name": "OpenCode",
+    "skills_version": "1.0",
     "before_doing_result": {
       "exit_code": 0,
-      "stdout": "Pulled latest code",
-      "stderr": "",
+      "output": "Already up to date.\nAll dependencies are up to date",
       "duration_ms": 1500
     }
   }'
 
-# 3. Execute before_doing hook FIRST
-# Read hook from .stride.md under ## before_doing section
-# Execute with environment variables from claim response
-
-# 4. Begin implementation work
+# 4. Begin implementation work immediately
 ```
 
 ### Completing a Task
@@ -169,10 +169,15 @@ curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
 ```bash
 # 1. Finish your work
 
-# 2. Execute after_doing hook FIRST (from .stride.md)
-# If hook fails, DO NOT proceed to step 3
+# 2. Execute after_doing hook (from .stride.md ## after_doing section)
+# Capture exit_code, output, duration_ms
+# If hook fails, DO NOT proceed — fix issues and retry
 
-# 3. Only if after_doing succeeds, mark complete
+# 3. Execute before_review hook (from .stride.md ## before_review section)
+# Capture exit_code, output, duration_ms
+# If hook fails, DO NOT proceed — fix issues and retry
+
+# 4. Only if BOTH hooks succeed, mark complete WITH both results
 curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
@@ -180,14 +185,32 @@ curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
     "agent_name": "OpenCode",
     "time_spent_minutes": 45,
     "completion_notes": "Implemented feature. All tests passing.",
+    "completion_summary": "Added JWT auth with refresh tokens",
+    "actual_complexity": "medium",
+    "actual_files_changed": "lib/my_app/auth.ex, test/my_app/auth_test.exs",
+    "skills_version": "1.0",
     "after_doing_result": {
       "exit_code": 0,
-      "stdout": "Tests passed",
-      "stderr": "",
-      "duration_ms": 30000
+      "output": "Running tests...\n230 tests, 0 failures\nmix credo --strict\nNo issues found",
+      "duration_ms": 45678
+    },
+    "before_review_result": {
+      "exit_code": 0,
+      "output": "Creating pull request...\nPR #123 created",
+      "duration_ms": 2340
     }
   }'
 ```
+
+**Complete endpoint required fields:**
+- `agent_name` (string) - Name of the completing agent
+- `time_spent_minutes` (integer) - Actual time spent
+- `completion_notes` (string) - Summary of what was done
+- `completion_summary` (string) - Brief summary for tracking
+- `actual_complexity` (enum) - `"small"`, `"medium"`, or `"large"`
+- `actual_files_changed` (string) - Comma-separated file paths (NOT an array)
+- `after_doing_result` (object) - Hook result with `exit_code`, `output`, `duration_ms`
+- `before_review_result` (object) - Hook result with `exit_code`, `output`, `duration_ms`
 
 ### Creating a Task
 
@@ -286,7 +309,7 @@ Your project should have these files:
 
 ## Quick Reference
 
-**Workflow:** claim → before_doing hook → work → after_doing hook → complete → [if needs_review=false: claim next, else: stop]
+**Workflow:** before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
 
 **API Base:** https://www.stridelikeaboss.com
 
