@@ -28,7 +28,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp prepare_task_data(task, board, action, assigns) do
     columns = Columns.list_columns(board)
     column_id = get_column_id(assigns, task)
-    changeset = build_changeset(task, column_id)
+    changeset = build_changeset(task, column_id, action)
     column_options = build_column_options(columns, task)
 
     board_users = Kanban.Boards.list_board_users(board)
@@ -557,13 +557,24 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp get_column_id(%{column_id: col_id}, _task) when not is_nil(col_id), do: col_id
   defp get_column_id(_assigns, task), do: task.column_id
 
-  defp build_changeset(task, nil), do: Tasks.Task.changeset(task, %{})
+  defp build_changeset(task, nil, action) do
+    task
+    |> Tasks.Task.changeset(%{})
+    |> maybe_default_human_task(action)
+  end
 
-  defp build_changeset(task, column_id) do
+  defp build_changeset(task, column_id, action) do
     task
     |> Tasks.Task.changeset(%{})
     |> Ecto.Changeset.put_change(:column_id, column_id)
+    |> maybe_default_human_task(action)
   end
+
+  defp maybe_default_human_task(changeset, :new_task) do
+    Ecto.Changeset.put_change(changeset, :human_task, true)
+  end
+
+  defp maybe_default_human_task(changeset, _action), do: changeset
 
   defp build_column_options(columns, task) do
     columns

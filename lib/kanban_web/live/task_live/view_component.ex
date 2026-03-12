@@ -200,6 +200,19 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             </div>
           <% end %>
 
+          <div>
+            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+              {gettext("Human Task")}
+            </h4>
+            <p class="text-base-content">
+              <%= if @task.human_task do %>
+                {gettext("Yes")}
+              <% else %>
+                {gettext("No")}
+              <% end %>
+            </p>
+          </div>
+
           <%= if @task.estimated_files do %>
             <div>
               <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
