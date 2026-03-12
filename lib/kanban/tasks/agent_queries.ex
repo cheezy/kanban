@@ -101,6 +101,7 @@ defmodule Kanban.Tasks.AgentQueries do
         where: c.name == "Ready",
         where: c.board_id == ^board_id,
         where: t.type in [:work, :defect],
+        where: t.human_task == false,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
         order_by: [
           desc:
@@ -168,6 +169,7 @@ defmodule Kanban.Tasks.AgentQueries do
         where: c.board_id == ^board_id,
         where: c.name == "Ready",
         where: t.type in [:work, :defect],
+        where: t.human_task == false,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
         preload: [:column, :assigned_to, :created_by]
       )
