@@ -56,6 +56,114 @@
                 </li>
               </ul>
             </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Plugin (Claude Code Marketplace)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Stride's Claude Code skills have been extracted from the project's <code>.claude/skills/</code>
+                directory into a standalone plugin distributed via the Claude Code marketplace (<code>cheezy/stride-marketplace</code>).
+                This enables any project using Stride to install the skills with two commands instead of manually copying files.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>6 Skills</strong>
+                  — The plugin ships with six mandatory workflow skills:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <code>stride-claiming-tasks</code>
+                      — Task discovery and claiming with <code>before_doing</code>
+                      hook execution and <code>before_doing_result</code> capture
+                    </li>
+                    <li>
+                      <code>stride-completing-tasks</code>
+                      — Dual-hook completion workflow (<code>after_doing</code>
+                      + <code>before_review</code>) with all required API fields
+                    </li>
+                    <li>
+                      <code>stride-creating-tasks</code>
+                      — Comprehensive task creation with validated field formats (verification_steps as objects, key_files as objects, testing_strategy with arrays)
+                    </li>
+                    <li>
+                      <code>stride-creating-goals</code>
+                      — Goal and batch creation with correct <code>"goals"</code>
+                      root key and dependency management
+                    </li>
+                    <li>
+                      <code>stride-enriching-tasks</code>
+                      — 4-phase codebase exploration that transforms minimal task specs into full implementation-ready specifications
+                    </li>
+                    <li>
+                      <code>stride-subagent-workflow</code>
+                      — Decision matrix for dispatching exploration, planning, review, and decomposition agents based on task complexity
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>4 Custom Agents</strong>
+                  (Claude Code only) — Specialized subagents that handle focused tasks autonomously:
+                  <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>
+                      <code>stride:task-explorer</code>
+                      — Reads key_files, finds related tests, searches for patterns, returns structured codebase context before implementation
+                    </li>
+                    <li>
+                      <code>stride:task-reviewer</code>
+                      — Reviews git diff against acceptance criteria, pitfalls, and patterns; categorizes issues as Critical/Important/Minor
+                    </li>
+                    <li>
+                      <code>stride:task-decomposer</code>
+                      — Breaks goals and large tasks into dependency-ordered child tasks with full specifications
+                    </li>
+                    <li>
+                      <code>stride:hook-diagnostician</code>
+                      — Parses hook failure output across 6 failure categories and returns a prioritized fix plan
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Mandatory skill chain</strong>
+                  — Skills enforce a strict invocation order: <code>claiming → subagent-workflow → [implementation] → completing</code>.
+                  Each skill documents the exact API fields and hook results required at that lifecycle point. Skipping a skill results in API rejections or hours of rework.
+                </li>
+                <li>
+                  <strong>Skills version tracking</strong>
+                  — All claim and complete API requests now include a <code>skills_version</code>
+                  field. The API returns <code>skills_update_required</code>
+                  when the agent's skills are outdated, prompting automatic plugin updates.
+                </li>
+                <li>
+                  <strong>All hooks now blocking</strong>
+                  — <code>before_review</code>
+                  and <code>after_review</code>
+                  hooks are now blocking (previously non-blocking). All four hooks must succeed before their associated API calls proceed.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Changed
+            </h3>
+
+            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <li>
+                <strong>Onboarding endpoint updated</strong>
+                — <code>GET /api/agent/onboarding</code>
+                now reflects the current skill requirements: <code>identifier</code>
+                field (not <code>task_id</code>) for claims, <code>output</code>
+                field (not <code>stdout</code>/<code>stderr</code>) for hook results, and all required completion fields (<code>completion_summary</code>, <code>actual_complexity</code>, <code>actual_files_changed</code>, <code>after_doing_result</code>, <code>before_review_result</code>).
+              </li>
+              <li>
+                <strong>Multi-agent instruction files updated</strong>
+                — All 7 flat instruction files in <code>docs/multi-agent-instructions/</code>
+                (SKILL.md, AGENTS.md, copilot-instructions.md, GEMINI.md, cursorrules.txt, windsurfrules.txt, continue-config.json) synced with the current skill definitions: blocking hooks, correct claim/complete request formats, and all required fields.
+              </li>
+            </ul>
           </div>
         </section>
 

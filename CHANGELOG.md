@@ -15,6 +15,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Agent query filtering** - AI agent task discovery (`GET /api/tasks/next`) now automatically excludes tasks marked as `human_task: true`, ensuring agents only claim work appropriate for automated processing. Both `get_next_task` and `get_specific_task_for_claim` queries enforce this filter.
 
+#### Stride Plugin (Claude Code Marketplace)
+
+Stride's Claude Code skills have been extracted from the project's `.claude/skills/` directory into a standalone plugin distributed via the Claude Code marketplace (`cheezy/stride-marketplace`). This enables any project using Stride to install the skills with two commands instead of manually copying files.
+
+- **6 Skills** — The plugin ships with six mandatory workflow skills:
+  - `stride-claiming-tasks` — Task discovery and claiming with `before_doing` hook execution and `before_doing_result` capture
+  - `stride-completing-tasks` — Dual-hook completion workflow (`after_doing` + `before_review`) with all required API fields
+  - `stride-creating-tasks` — Comprehensive task creation with validated field formats (verification_steps as objects, key_files as objects, testing_strategy with arrays)
+  - `stride-creating-goals` — Goal and batch creation with correct `"goals"` root key and dependency management
+  - `stride-enriching-tasks` — 4-phase codebase exploration that transforms minimal task specs into full implementation-ready specifications
+  - `stride-subagent-workflow` — Decision matrix for dispatching exploration, planning, review, and decomposition agents based on task complexity
+
+- **4 Custom Agents** (Claude Code only) — Specialized subagents that handle focused tasks autonomously:
+  - `stride:task-explorer` — Reads key_files, finds related tests, searches for patterns, returns structured codebase context before implementation
+  - `stride:task-reviewer` — Reviews git diff against acceptance criteria, pitfalls, and patterns; categorizes issues as Critical/Important/Minor
+  - `stride:task-decomposer` — Breaks goals and large tasks into dependency-ordered child tasks with full specifications
+  - `stride:hook-diagnostician` — Parses hook failure output across 6 failure categories and returns a prioritized fix plan
+
+- **Mandatory skill chain** — Skills enforce a strict invocation order: `claiming → subagent-workflow → [implementation] → completing`. Each skill documents the exact API fields and hook results required at that lifecycle point. Skipping a skill results in API rejections or hours of rework.
+
+### Changed
+
+- **Onboarding endpoint updated** — `GET /api/agent/onboarding` now reflects the current skill requirements: `identifier` field (not `task_id`) for claims, `output` field (not `stdout`/`stderr`) for hook results, and all required completion fields (`completion_summary`, `actual_complexity`, `actual_files_changed`, `after_doing_result`, `before_review_result`).
+
+- **Multi-agent instruction files updated** — All 7 flat instruction files in `docs/multi-agent-instructions/` (SKILL.md, AGENTS.md, copilot-instructions.md, GEMINI.md, cursorrules.txt, windsurfrules.txt, continue-config.json) synced with the current skill definitions: blocking hooks, correct claim/complete request formats, and all required fields.
+
 ## [1.23.0] - 2026-02-25
 
 ### Added
