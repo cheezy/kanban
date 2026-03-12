@@ -5,6 +5,16 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-03-12
+
+### Added
+
+#### Human Task Field
+
+- **Human Task database field** - Added `human_task` boolean column to the tasks table (default: `false`), allowing tasks to be explicitly marked as requiring human workers rather than AI agents.
+
+- **Agent query filtering** - AI agent task discovery (`GET /api/tasks/next`) now automatically excludes tasks marked as `human_task: true`, ensuring agents only claim work appropriate for automated processing. Both `get_next_task` and `get_specific_task_for_claim` queries enforce this filter.
+
 ## [1.23.0] - 2026-02-25
 
 ### Added
