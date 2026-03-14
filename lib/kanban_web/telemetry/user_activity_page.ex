@@ -46,36 +46,24 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   defp fetch_user_activity(params, _node) do
     %{search: search, sort_by: sort_by, sort_dir: sort_dir, limit: limit} = params
 
-    sort_column = build_sort_column(sort_by)
-    sort_direction = build_sort_direction(sort_dir)
-
-    results = query_user_activity(search, sort_column, sort_direction, limit)
+    results = query_user_activity(search, sort_by, sort_dir, limit)
     total = query_user_count(search)
 
     {results, total}
   end
 
-  defp build_sort_column(sort_by) do
-    case sort_by do
-      :email -> "u.email"
-      :total_actions -> "total_actions"
-      :tasks_claimed -> "tasks_claimed"
-      :tasks_completed -> "tasks_completed"
-      :tasks_created -> "tasks_created"
-      _ -> "total_actions"
-    end
-  end
-
-  defp build_sort_direction(:asc), do: "ASC"
-  defp build_sort_direction(_), do: "DESC"
-
-  defp query_user_activity(search, sort_column, sort_direction, limit) do
+  defp query_user_activity(search, sort_by, sort_dir, limit) do
     base_query =
       from me in "metrics_events",
         join: u in "users",
-        on: fragment("CAST(? AS INTEGER)", me.metadata["user_id"]) == u.id,
+        on:
+          fragment(
+            "CASE WHEN ?->>'user_id' ~ '^[0-9]+$' THEN (?->>'user_id')::integer END",
+            me.metadata,
+            me.metadata
+          ) == u.id,
         where: like(me.metric_name, "kanban.api.task_%"),
-        where: not is_nil(fragment("?->>'user_id'", me.metadata)),
+        where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
         group_by: [u.id, u.email],
         select: %{
           email: u.email,
@@ -101,7 +89,7 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
         limit: ^limit
 
     query = apply_search_filter(base_query, search)
-    query = apply_sort(query, sort_column, sort_direction)
+    query = apply_sort(query, sort_by, sort_dir)
 
     Repo.all(query)
   end
@@ -110,9 +98,14 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
     base_query =
       from me in "metrics_events",
         join: u in "users",
-        on: fragment("CAST(? AS INTEGER)", me.metadata["user_id"]) == u.id,
+        on:
+          fragment(
+            "CASE WHEN ?->>'user_id' ~ '^[0-9]+$' THEN (?->>'user_id')::integer END",
+            me.metadata,
+            me.metadata
+          ) == u.id,
         where: like(me.metric_name, "kanban.api.task_%"),
-        where: not is_nil(fragment("?->>'user_id'", me.metadata)),
+        where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
         select: count(u.id, :distinct)
 
     query = apply_search_filter(base_query, search)
