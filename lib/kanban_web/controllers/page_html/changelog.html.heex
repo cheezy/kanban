@@ -61,7 +61,8 @@
                 <li>
                   <strong>API JSON serializer</strong>
                   - Added <code>review_report</code>
-                  to the task JSON response in <code>task_json.ex</code>, placed between <code>review_notes</code>
+                  to the task JSON response in <code>task_json.ex</code>, placed between
+                  <code>review_notes</code>
                   and <code>reviewed_at</code>
                   for consistent grouping with other review fields. The field is returned in all task API responses (<code>GET /api/tasks</code>, <code>GET /api/tasks/:id</code>, <code>GET /api/tasks/next</code>, <code>PATCH /api/tasks/:id/complete</code>, etc.).
                 </li>
@@ -69,7 +70,8 @@
                   <strong>Complete endpoint accepts review_report</strong>
                   - The <code>PATCH /api/tasks/:id/complete</code>
                   endpoint now accepts an optional <code>review_report</code>
-                  parameter, allowing agents to submit structured review findings at task completion time. Backward compatible — existing completions without <code>review_report</code>
+                  parameter, allowing agents to submit structured review findings at task completion time. Backward compatible — existing completions without
+                  <code>review_report</code>
                   continue to work.
                 </li>
                 <li>
