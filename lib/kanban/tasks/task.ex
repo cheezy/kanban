@@ -360,6 +360,9 @@ defmodule Kanban.Tasks.Task do
     # Reviewer feedback - Example: "Great work! Minor: add error handling for edge case X"
     field :review_notes, :string
 
+    # Structured review report from task-reviewer agent
+    field :review_report, :string
+
     # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
@@ -450,6 +453,7 @@ defmodule Kanban.Tasks.Task do
       :needs_review,
       :review_status,
       :review_notes,
+      :review_report,
       :reviewed_by_id,
       :reviewed_at,
       # Archive tracking

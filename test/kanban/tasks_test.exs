@@ -2449,6 +2449,30 @@ defmodule Kanban.TasksTest do
       assert DateTime.compare(task.reviewed_at, reviewed_at) == :eq
     end
 
+    test "creates task with review_report field", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        review_report: "## Review Report\n\nAll acceptance criteria met. No issues found."
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.review_report ==
+               "## Review Report\n\nAll acceptance criteria met. No issues found."
+    end
+
+    test "review_report is optional (changeset valid without it)", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert is_nil(task.review_report)
+    end
+
     test "validates reviewed_at must be set when review_status is not pending", %{
       column: column,
       user: user
@@ -2597,6 +2621,7 @@ defmodule Kanban.TasksTest do
         time_spent_minutes: nil,
         review_status: nil,
         review_notes: nil,
+        review_report: nil,
         reviewed_by_id: nil,
         reviewed_at: nil
       }
@@ -2616,6 +2641,7 @@ defmodule Kanban.TasksTest do
       assert is_nil(task.time_spent_minutes)
       assert is_nil(task.review_status)
       assert is_nil(task.review_notes)
+      assert is_nil(task.review_report)
       assert is_nil(task.reviewed_by_id)
       assert is_nil(task.reviewed_at)
     end
@@ -6309,6 +6335,32 @@ defmodule Kanban.TasksTest do
       assert result.time_spent_minutes == 45
       assert result.completed_by_id == user.id
       assert is_list(hooks)
+    end
+
+    test "accepts review_report as optional parameter", %{
+      task: task,
+      user: user,
+      review_column: review_column,
+      completion_params: params
+    } do
+      params_with_report =
+        Map.put(params, "review_report", "## Review\n\nAll criteria met.")
+
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params_with_report)
+
+      assert result.column_id == review_column.id
+      assert result.review_report == "## Review\n\nAll criteria met."
+    end
+
+    test "succeeds without review_report (backward compatible)", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params)
+
+      assert is_nil(result.review_report)
+      assert result.completion_summary == "Implemented the feature"
     end
 
     test "returns hooks for after_doing and before_review", %{
