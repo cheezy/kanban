@@ -50,6 +50,7 @@ Returns the next available task that:
     "completed_by_agent": null,
     "time_spent_minutes": null,
     "review_status": null,
+    "review_report": null,
     "parent_goal_id": null,
     "parent_goal_identifier": null,
     "dependencies": [],

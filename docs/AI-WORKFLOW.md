@@ -32,6 +32,7 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 **Review Workflow:**
 - review_status (enum: approved, changes_requested, rejected) - Review decision
+- review_report (text) - Structured review report from task-reviewer agent (optional, set at completion time)
 - needs_review (boolean) - Whether task requires human review
 
 **Dependencies & Relationships:**

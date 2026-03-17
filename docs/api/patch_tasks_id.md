@@ -114,6 +114,7 @@ All parameters are optional. Only include the fields you want to update.
 |-----------|------|-------------|
 | `review_status` | string | Review status: `pending`, `approved`, `changes_requested`, `rejected` |
 | `review_notes` | string | Notes from reviewer |
+| `review_report` | string | Structured review report from task-reviewer agent |
 
 ### Request Body Example
 
@@ -225,6 +226,7 @@ Returns the updated task with all fields:
     "actual_files_changed": null,
     "review_status": null,
     "review_notes": null,
+    "review_report": null,
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T11:30:00Z",
     "completed_at": null

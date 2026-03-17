@@ -92,6 +92,7 @@ Returns an array of tasks:
       "time_spent_minutes": null,
       "review_status": null,
       "review_notes": null,
+      "review_report": null,
       "reviewed_at": null,
       "reviewed_by_id": null,
       "inserted_at": "2025-12-28T10:00:00Z",
@@ -218,6 +219,7 @@ Column doesn't belong to the current board:
 |-------|------|-------------|
 | `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
 | `review_notes` | string | Reviewer's notes and feedback |
+| `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
 | `reviewed_at` | string | When review was completed (ISO 8601) |
 | `reviewed_by_id` | integer | User ID who reviewed the task |
 

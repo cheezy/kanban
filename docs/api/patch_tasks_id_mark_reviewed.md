@@ -73,6 +73,7 @@ The behavior depends on the review status:
     "board_id": 1,
     "board_name": "Main Board",
     "review_status": "approved",
+    "review_report": null,
     "completed_at": "2025-12-28T12:00:00Z",
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T12:00:00Z"

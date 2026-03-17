@@ -49,6 +49,7 @@ Authorization: Bearer <your_api_token>
     "time_spent_minutes": null,
     "completion_notes": null,
     "review_status": null,
+    "review_report": null,
     "parent_goal_id": 120,
     "parent_goal_identifier": "G10",
     "parent_goal_title": "User Management System",
@@ -106,6 +107,7 @@ Task not found:
 | `time_spent_minutes` | integer | Time spent on task in minutes |
 | `completion_notes` | string | Notes provided when completing the task |
 | `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
+| `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
 | `parent_goal_id` | integer | ID of parent goal (null if no parent) |
 | `parent_goal_identifier` | string | Identifier of parent goal |
 | `parent_goal_title` | string | Title of parent goal |

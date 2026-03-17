@@ -299,6 +299,35 @@ needs_review?     needs_review?
        └──────► (back to step 1)
 ```
 
+## Review Report
+
+The `review_report` field allows agents to persist structured review findings on a task. This field is:
+
+- **Optional** — set during task completion via the `PATCH /api/tasks/:id/complete` endpoint
+- **Text field** — can store long-form structured reports (e.g., markdown-formatted review findings)
+- **Visible in UI** — displayed in the task detail view when present, with whitespace-preserving formatting
+- **Returned in API** — included in all task JSON responses (`GET /api/tasks/:id`, etc.)
+
+### How It Works
+
+When a task-reviewer agent reviews code changes, it produces a structured report covering acceptance criteria status, pitfall verification, and pattern compliance. This report can be included in the completion request:
+
+```json
+PATCH /api/tasks/:id/complete
+{
+  "agent_name": "Claude Opus 4.6",
+  "review_report": "## Review Summary\n\nApproved -- 0 issues found.\n\n### Acceptance Criteria\n| # | Criterion | Status |\n|---|-----------|--------|\n| 1 | Feature works | Met |",
+  "completion_summary": "Feature implemented",
+  "actual_complexity": "small",
+  "actual_files_changed": "lib/foo.ex, test/foo_test.exs",
+  "time_spent_minutes": 15,
+  "after_doing_result": { "exit_code": 0, "output": "...", "duration_ms": 1000 },
+  "before_review_result": { "exit_code": 0, "output": "...", "duration_ms": 0 }
+}
+```
+
+The report is then visible to human reviewers in the task detail view, providing traceability for code review findings.
+
 ## Benefits
 
 ### For AI Agents

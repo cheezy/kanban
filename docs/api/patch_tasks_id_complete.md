@@ -34,6 +34,7 @@ Authorization: Bearer <your_api_token>
 | `completion_summary` | string | No | JSON-encoded summary of changes made |
 | `actual_complexity` | string | No | Actual complexity experienced ("small", "medium", "large") |
 | `actual_files_changed` | string | No | Actual number of files changed |
+| `review_report` | string | No | Structured review report from task-reviewer agent (persisted on the task for traceability) |
 
 **IMPORTANT:** You must execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling this endpoint and include both execution results in your request.
 
