@@ -31,6 +31,57 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.25.0] - 2026-03-17</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Review Report Field for Task-Reviewer Agent Traceability
+              </h4>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>Review Report database field</strong>
+                  - Added <code>review_report</code>
+                  text column to the tasks table via Ecto migration, enabling structured review findings from the task-reviewer agent to be persisted on task records.
+                </li>
+                <li>
+                  <strong>Task schema and changeset</strong>
+                  - Added <code>field :review_report, :string</code>
+                  to the Task schema near existing review fields (<code>review_notes</code>, <code>review_status</code>).
+                  Included in both the general changeset cast list in <code>task.ex</code>
+                  and the <code>complete_task</code>
+                  cast list in <code>agent_workflow.ex</code>
+                  as an optional field (not in <code>validate_required</code>).
+                </li>
+                <li>
+                  <strong>API JSON serializer</strong>
+                  - Added <code>review_report</code>
+                  to the task JSON response in <code>task_json.ex</code>, placed between <code>review_notes</code>
+                  and <code>reviewed_at</code>
+                  for consistent grouping with other review fields. The field is returned in all task API responses (<code>GET /api/tasks</code>, <code>GET /api/tasks/:id</code>, <code>GET /api/tasks/next</code>, <code>PATCH /api/tasks/:id/complete</code>, etc.).
+                </li>
+                <li>
+                  <strong>Complete endpoint accepts review_report</strong>
+                  - The <code>PATCH /api/tasks/:id/complete</code>
+                  endpoint now accepts an optional <code>review_report</code>
+                  parameter, allowing agents to submit structured review findings at task completion time. Backward compatible — existing completions without <code>review_report</code>
+                  continue to work.
+                </li>
+                <li>
+                  <strong>Task detail UI display</strong>
+                  - Added a conditional review report section to the task detail <code>ViewComponent</code>, rendered between the Review Status and Completion sections.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.24.0] - 2026-03-12</h2>
 
           <div class="mb-8">

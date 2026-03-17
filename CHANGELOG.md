@@ -5,6 +5,22 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-03-17
+
+### Added
+
+#### Review Report Field for Task-Reviewer Agent Traceability
+
+- **Review Report database field** - Added `review_report` text column to the tasks table via Ecto migration, enabling structured review findings from the task-reviewer agent to be persisted on task records.
+
+- **Task schema and changeset** - Added `field :review_report, :string` to the Task schema near existing review fields (`review_notes`, `review_status`). Included in both the general changeset cast list in `task.ex` and the `complete_task` cast list in `agent_workflow.ex` as an optional field (not in `validate_required`).
+
+- **API JSON serializer** - Added `review_report` to the task JSON response in `task_json.ex`, placed between `review_notes` and `reviewed_at` for consistent grouping with other review fields. The field is returned in all task API responses (`GET /api/tasks`, `GET /api/tasks/:id`, `GET /api/tasks/next`, `PATCH /api/tasks/:id/complete`, etc.).
+
+- **Complete endpoint accepts review_report** - The `PATCH /api/tasks/:id/complete` endpoint now accepts an optional `review_report` parameter, allowing agents to submit structured review findings at task completion time. Backward compatible — existing completions without `review_report` continue to work.
+
+- **Task detail UI display** - Added a conditional review report section to the task detail `ViewComponent`, rendered between the Review Status and Completion sections. Features:
+
 ## [1.24.0] - 2026-03-12
 
 ### Added
