@@ -51,8 +51,10 @@
                 </li>
                 <li>
                   <strong>Agent query filtering</strong>
-                  - AI agent task discovery (<code>GET /api/tasks/next</code>) now automatically excludes tasks marked as <code>human_task: true</code>, ensuring agents only claim work appropriate for automated processing. Both <code>get_next_task</code>
-                  and <code>get_specific_task_for_claim</code> queries enforce this filter.
+                  - AI agent task discovery (<code>GET /api/tasks/next</code>) now automatically excludes tasks marked as <code>human_task: true</code>, ensuring agents only claim work appropriate for automated processing. Both
+                  <code>get_next_task</code>
+                  and <code>get_specific_task_for_claim</code>
+                  queries enforce this filter.
                 </li>
               </ul>
             </div>
@@ -63,7 +65,8 @@
               </h4>
 
               <p class="text-base-content opacity-80 mb-4 ml-4">
-                Stride's Claude Code skills have been extracted from the project's <code>.claude/skills/</code>
+                Stride's Claude Code skills have been extracted from the project's
+                <code>.claude/skills/</code>
                 directory into a standalone plugin distributed via the Claude Code marketplace (<code>cheezy/stride-marketplace</code>).
                 This enables any project using Stride to install the skills with two commands instead of manually copying files.
               </p>
@@ -76,12 +79,12 @@
                     <li>
                       <code>stride-claiming-tasks</code>
                       — Task discovery and claiming with <code>before_doing</code>
-                      hook execution and <code>before_doing_result</code> capture
+                      hook execution and <code>before_doing_result</code>
+                      capture
                     </li>
                     <li>
                       <code>stride-completing-tasks</code>
-                      — Dual-hook completion workflow (<code>after_doing</code>
-                      + <code>before_review</code>) with all required API fields
+                      — Dual-hook completion workflow (<code>after_doing</code> + <code>before_review</code>) with all required API fields
                     </li>
                     <li>
                       <code>stride-creating-tasks</code>
