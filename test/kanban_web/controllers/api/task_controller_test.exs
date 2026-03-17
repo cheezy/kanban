@@ -690,6 +690,26 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = get(conn, ~p"/api/tasks/#{task.id}")
       assert json_response(conn, 401)
     end
+
+    test "returns review_report in task response", %{conn: conn, column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task with review report",
+          "review_report" => "## Review\n\nApproved with no issues."
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["review_report"] == "## Review\n\nApproved with no issues."
+    end
+
+    test "returns review_report as null when not set", %{conn: conn, task: task} do
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert is_nil(response["review_report"])
+    end
   end
 
   describe "PATCH /api/tasks/:id" do
@@ -1610,6 +1630,47 @@ defmodule KanbanWeb.API.TaskControllerTest do
     test "returns 404 for nonexistent identifier", %{conn: conn} do
       conn = patch(conn, ~p"/api/tasks/NONEXISTENT99/complete")
       assert json_response(conn, 404)
+    end
+
+    test "accepts and persists review_report in complete endpoint", %{
+      conn: conn,
+      task: task
+    } do
+      completion_params = %{
+        "completion_summary" => "Implemented feature",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1 file",
+        "time_spent_minutes" => 10,
+        "review_report" => "## Review\n\nAll acceptance criteria met. No issues found.",
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["review_report"] ==
+               "## Review\n\nAll acceptance criteria met. No issues found."
+    end
+
+    test "complete endpoint works without review_report (backward compatible)", %{
+      conn: conn,
+      task: task
+    } do
+      completion_params = %{
+        "completion_summary" => "Implemented feature",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1 file",
+        "time_spent_minutes" => 10,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert is_nil(response["review_report"])
+      assert response["completion_summary"] == "Implemented feature"
     end
   end
 

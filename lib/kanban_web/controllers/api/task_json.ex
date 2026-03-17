@@ -84,6 +84,7 @@ defmodule KanbanWeb.API.TaskJSON do
       needs_review: task.needs_review,
       review_status: task.review_status,
       review_notes: task.review_notes,
+      review_report: task.review_report,
       reviewed_at: task.reviewed_at,
       reviewed_by_id: task.reviewed_by_id,
       inserted_at: task.inserted_at,
