@@ -720,6 +720,17 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           </div>
         <% end %>
 
+        <%= if @task.review_report && @task.review_report != "" do %>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-700/50">
+            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
+              {gettext("Review Report")}
+            </h4>
+            <div class="text-blue-900 dark:text-blue-100 whitespace-pre-wrap text-sm max-h-96 overflow-y-auto">
+              {@task.review_report}
+            </div>
+          </div>
+        <% end %>
+
         <%= if @task.status == :completed && (@task.completed_at || @task.completed_by || @task.completed_by_agent || @task.completion_summary) do %>
           <div class="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 class="text-sm font-semibold text-green-900 mb-2">{gettext("Completion")}</h4>

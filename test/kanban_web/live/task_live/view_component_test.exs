@@ -1102,6 +1102,53 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Implemented OAuth with Google and GitHub providers"
     end
 
+    test "displays review_report section when review_report is present", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          review_report: "## Review\n\nAll acceptance criteria met.\nNo issues found."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Review Report"
+      assert result =~ "bg-blue-50"
+      assert result =~ "All acceptance criteria met."
+      assert result =~ "No issues found."
+    end
+
+    test "does not display review_report section when review_report is nil", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Review Report"
+    end
+
+    test "does not display review_report section when review_report is empty string",
+         %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{review_report: ""})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Review Report"
+    end
+
     test "does not display creator info section when no creator data", %{task: task} do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,

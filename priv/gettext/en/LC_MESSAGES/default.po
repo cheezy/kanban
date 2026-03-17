@@ -1566,6 +1566,11 @@ msgstr ""
 msgid "Review Notes"
 msgstr ""
 
+#: lib/kanban_web/live/task_live/view_component.ex:724
+#, elixir-autogen, elixir-format
+msgid "Review Report"
+msgstr ""
+
 #: lib/kanban_web/live/task_live/form_component.html.heex:907
 #, elixir-autogen, elixir-format
 msgid "Review Queue"
