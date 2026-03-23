@@ -114,6 +114,21 @@ Capabilities determine which tasks an agent can see and claim. When creating an 
 
 AI agents need two configuration files in their working directory to operate with Stride.
 
+### Install the Stride Plugin (Claude Code)
+
+> **🔌 REQUIRED FOR CLAUDE CODE USERS:** You must install the Stride plugin before claiming or working on tasks. The plugin provides skills that enforce the correct workflow, prevent common API errors, and guide your agent through each lifecycle step. **Without the plugin, your agent will not follow the Stride workflow correctly.**
+
+Run these two commands in Claude Code:
+
+```
+/plugin marketplace add cheezy/stride-marketplace
+/plugin install stride@stride-marketplace
+```
+
+After installation, verify the plugin is active by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list.
+
+For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide — the plugin is Claude Code specific.
+
 ### Agent Onboarding Endpoint
 
 Before configuring files, have your AI agent read and execute the commands from the onboarding endpoint:
