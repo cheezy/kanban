@@ -56,12 +56,7 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
     base_query =
       from me in "metrics_events",
         join: u in "users",
-        on:
-          fragment(
-            "CASE WHEN ?->>'user_id' ~ '^[0-9]+$' THEN (?->>'user_id')::integer END",
-            me.metadata,
-            me.metadata
-          ) == u.id,
+        on: fragment("(?->>'user_id')::integer", me.metadata) == u.id,
         where: like(me.metric_name, "kanban.api.task_%"),
         where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
         group_by: [u.id, u.email],
@@ -98,12 +93,7 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
     base_query =
       from me in "metrics_events",
         join: u in "users",
-        on:
-          fragment(
-            "CASE WHEN ?->>'user_id' ~ '^[0-9]+$' THEN (?->>'user_id')::integer END",
-            me.metadata,
-            me.metadata
-          ) == u.id,
+        on: fragment("(?->>'user_id')::integer", me.metadata) == u.id,
         where: like(me.metric_name, "kanban.api.task_%"),
         where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
         select: count(u.id, :distinct)
