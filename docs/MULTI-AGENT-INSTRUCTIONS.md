@@ -39,34 +39,23 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 ### 1. Claude Code
 
-**Files:** Multiple focused skills (4 total)
-
-**Location:** `docs/multi-agent-instructions/SKILL.md`
+**Installation Method:** Stride Marketplace Plugin
 
 **Scope:** On-demand skill loading (invoked when needed)
 
-**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-completing-tasks`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
-**Format:** YAML frontmatter + Markdown content
+> **🔌 REQUIRED: Install the Stride plugin from the marketplace.** Do NOT manually download skill files for Claude Code — use the plugin instead. The plugin provides the most up-to-date skills and is the only supported installation method.
 
-**Skills:**
-
-1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
-2. **stride-completing-tasks** - Use when completing tasks and marking them done
-3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
-4. **stride-creating-goals** - Use when creating goals with nested tasks
-
-**Download:**
-```bash
-# Create all skill directories and download
-for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
-  mkdir -p .claude/skills/$skill
-  curl -o .claude/skills/$skill/SKILL.md \
-    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
-done
+**Installation:**
+```
+/plugin marketplace add cheezy/stride-marketplace
+/plugin install stride@stride-marketplace
 ```
 
-**IMPORTANT:** Claude Code uses a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Claude Code automatically discovers skills in `.claude/skills/` directories. See [Claude Code Skills Documentation](https://docs.anthropic.com/en/docs/claude-code/skills) for details.
+**Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list.
+
+**IMPORTANT:** Claude Code users must install the Stride plugin rather than manually downloading skill files. The plugin manages skill installation, updates, and versioning automatically. Manual `.claude/skills/` downloads are for other compatible tools (GitHub Copilot, Cursor, OpenCode) that don't support the plugin system.
 
 ### 2. GitHub Copilot
 
@@ -572,7 +561,11 @@ for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks
 done
 ```
 
-**OpenCode / Claude Code:**
+**Claude Code:**
+
+> Claude Code users should install the Stride plugin instead of manually downloading skills. See [Section 1: Claude Code](#1-claude-code) for plugin installation instructions.
+
+**OpenCode:**
 ```bash
 # Install all 4 Stride skills (project-local, Claude-compatible)
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
@@ -584,7 +577,7 @@ done
 
 For global installation (applies to all projects):
 ```bash
-# Global installation (works with both OpenCode and Claude Code)
+# Global installation (works with OpenCode)
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
   mkdir -p ~/.claude/skills/$skill
   curl -o ~/.claude/skills/$skill/SKILL.md \
@@ -607,7 +600,7 @@ curl -o AGENTS.md \
 
 If you have existing custom instructions, you may want to manually merge them:
 
-1. **For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/Claude Code/OpenCode**, skills are stored in separate directories and don't conflict with existing configuration
+1. **For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/OpenCode**, skills are stored in separate directories and don't conflict with existing configuration. **Claude Code users** should use the Stride plugin instead (see [Section 1](#1-claude-code))
 
 2. **For Continue.dev (JSON)**, manually merge the Stride instructions into your existing `.continue/config.json` file
 
@@ -670,13 +663,17 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.gemini\skills\$_\SKILL.md
 }
 
-# OpenCode / Claude Code (skill-based installation)
+# Claude Code: Use the plugin instead (see Section 1: Claude Code)
+# /plugin marketplace add cheezy/stride-marketplace
+# /plugin install stride@stride-marketplace
+
+# OpenCode (skill-based installation)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
   New-Item -ItemType Directory -Force -Path .claude/skills/$_
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
 }
 
-# For global installation (works with both OpenCode and Claude Code)
+# For global installation (works with OpenCode)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
   New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.claude\skills\$_
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.claude\skills\$_\SKILL.md
@@ -693,7 +690,8 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
 
 **Appending to existing configuration:**
 ```powershell
-# For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/Claude Code/OpenCode, skills are stored in separate directories and don't conflict with existing configuration
+# For skill-based formats like GitHub Copilot/Cursor/Windsurf/Gemini/OpenCode, skills are stored in separate directories and don't conflict with existing configuration
+# For Claude Code, use the Stride plugin instead of manual skill downloads
 ```
 
 ## Maintenance
@@ -731,7 +729,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code only | Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
+| **Target Assistants** | Claude Code (via plugin) | GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
