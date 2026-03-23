@@ -53,12 +53,12 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   end
 
   defp query_user_activity(search, sort_by, sort_dir, limit) do
+    task_events = task_events_subquery()
+
     base_query =
-      from me in "metrics_events",
+      from me in subquery(task_events),
         join: u in "users",
-        on: fragment("(?->>'user_id')::integer", me.metadata) == u.id,
-        where: like(me.metric_name, "kanban.api.task_%"),
-        where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
+        on: me.user_id == u.id,
         group_by: [u.id, u.email],
         select: %{
           email: u.email,
@@ -90,17 +90,29 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
   end
 
   defp query_user_count(search) do
+    task_events = task_events_subquery()
+
     base_query =
-      from me in "metrics_events",
+      from me in subquery(task_events),
         join: u in "users",
-        on: fragment("(?->>'user_id')::integer", me.metadata) == u.id,
-        where: like(me.metric_name, "kanban.api.task_%"),
-        where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
+        on: me.user_id == u.id,
         select: count(u.id, :distinct)
 
     query = apply_search_filter(base_query, search)
 
     Repo.one(query) || 0
+  end
+
+  defp task_events_subquery do
+    from me in "metrics_events",
+      where: like(me.metric_name, "kanban.api.task_%"),
+      where: fragment("?->>'user_id' ~ '^[0-9]+$'", me.metadata),
+      select: %{
+        id: me.id,
+        metric_name: me.metric_name,
+        recorded_at: me.recorded_at,
+        user_id: fragment("(?->>'user_id')::integer", me.metadata)
+      }
   end
 
   defp apply_search_filter(query, nil), do: query
