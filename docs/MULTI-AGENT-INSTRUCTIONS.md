@@ -1,6 +1,6 @@
 # Multi-Agent Instructions
 
-*Last Updated: January 9, 2026*
+*Last Updated: March 24, 2026*
 
 ## Overview
 
@@ -176,38 +176,27 @@ curl -o .continue/config.json \
 - Custom slash commands for common workflows
 - Can reference external documentation files
 
-### 6. Google Gemini Code Assist
+### 6. Google Gemini CLI
 
-**Files:** Multiple focused skills (4 total)
+**Installation Method:** Stride Gemini Extension (install from GitHub)
 
-**Location:** `docs/multi-agent-instructions/SKILL.md`
+**Scope:** On-demand skill loading (activated when needed) + custom agents
 
-**Compatible Tools:** Gemini Code Assist, Claude Code
+**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
-**Scope:** On-demand skill loading (invoked when needed)
+**Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
 
-**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+> **🔌 RECOMMENDED: Install the Stride Gemini extension.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The extension includes enrichment, subagent workflow orchestration, custom agents, and a GEMINI.md bridge file that the manual download does not.
 
-**Format:** YAML frontmatter + Markdown content
+**Installation:**
 
-**Skills:**
-
-1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
-2. **stride-completing-tasks** - Use when completing tasks and marking them done
-3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
-4. **stride-creating-goals** - Use when creating goals with nested tasks
-
-**Download:**
 ```bash
-# Create all skill directories and download (Gemini-compatible paths)
-for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
-  mkdir -p .gemini/skills/$skill
-  curl -o .gemini/skills/$skill/SKILL.md \
-    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
-done
+gemini extensions install https://github.com/cheezy/stride-gemini
 ```
 
-**IMPORTANT:** Gemini and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. Gemini automatically discovers skills in `.gemini/skills/` directories, making them compatible with Claude Code. See [Gemini Skills Documentation](https://geminicli.com/docs/cli/skills/) for details.
+**Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are accessible.
+
+**IMPORTANT:** The stride-gemini extension provides Gemini-adapted versions of all Stride skills with Gemini CLI tool names (grep_search, read_file, glob, etc.). It also includes a `GEMINI.md` bridge file that ensures Gemini reliably activates the right skill at each workflow point. For manual installation as a fallback, see the Manual Installation section below.
 
 ### 7. OpenCode
 
@@ -383,13 +372,13 @@ All seven instruction formats cover the same essential topics:
 - Custom context provider for external docs
 - Can reference documentation files directly
 
-**Gemini (YAML + Markdown Skills):**
-- YAML frontmatter with structured metadata
+**Gemini CLI (Extension with Skills + Custom Agents):**
+- YAML frontmatter with name and description fields
 - Rich formatting with headings, lists, code blocks in body
-- Skill-based on-demand loading reduces token usage
-- Installed in .gemini/skills/<skill-name>/ directories
-- Claude-compatible (shared skill system)
-- Automatic skill discovery
+- 6 skills + 4 custom agents via stride-gemini extension
+- Custom agents for exploration, review, decomposition, and diagnostics
+- GEMINI.md bridge file for reliable skill activation
+- Installed via `gemini extensions install https://github.com/cheezy/stride-gemini`
 
 **OpenCode (YAML + Markdown):**
 - YAML frontmatter with structured metadata
@@ -542,9 +531,14 @@ curl -o .continue/config.json \
   https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json
 ```
 
-**Google Gemini Code Assist:**
+**Google Gemini CLI (Recommended — use the extension):**
+
+> Install the stride-gemini extension for the full set of 6 skills + 4 custom agents. See [Section 6: Google Gemini CLI](#6-google-gemini-cli) for instructions.
+
+**Google Gemini CLI (Fallback — manual download of 4 generic skills):**
+
 ```bash
-# Create all skill directories and download (Gemini-compatible paths)
+# Install 4 basic Stride skills (Gemini-compatible paths)
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
   mkdir -p .gemini/skills/$skill
   curl -o .gemini/skills/$skill/SKILL.md \
@@ -655,7 +649,10 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
 New-Item -ItemType Directory -Force -Path .continue
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json" -OutFile .continue/config.json
 
-# Google Gemini Code Assist (skill-based installation)
+# Google Gemini CLI: Use the extension (recommended)
+# gemini extensions install https://github.com/cheezy/stride-gemini
+
+# Google Gemini CLI (fallback — manual download of 4 generic skills)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
   New-Item -ItemType Directory -Force -Path .gemini/skills/$_
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .gemini/skills/$_/SKILL.md
