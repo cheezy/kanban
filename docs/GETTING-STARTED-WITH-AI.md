@@ -127,7 +127,24 @@ Run these two commands in Claude Code:
 
 After installation, verify the plugin is active by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list.
 
-For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide — the plugin is Claude Code specific.
+For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+
+### Install the Stride Plugin (GitHub Copilot)
+
+> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Clone the stride-copilot plugin to get the full set of 6 Copilot-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, and custom agents that the generic manual download does not include.
+
+Clone the repo and copy the files into your project:
+
+```bash
+git clone https://github.com/cheezy/stride-copilot.git stride-copilot
+cp -r stride-copilot/.github/skills/ .github/skills/
+cp -r stride-copilot/.github/agents/ .github/agents/
+cp stride-copilot/.github/copilot-instructions.md .github/copilot-instructions.md
+```
+
+After installation, verify that Stride skills exist in `.github/skills/` (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) and custom agents exist in `.github/agents/` (e.g., `task-explorer`, `task-reviewer`).
+
+For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
 ### Agent Onboarding Endpoint
 
