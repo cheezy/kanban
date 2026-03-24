@@ -5,6 +5,52 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-03-24
+
+### Added
+
+#### Stride Copilot Extension (GitHub Copilot)
+
+Stride skills have been ported to GitHub Copilot's agent mode, distributed as a `.github/copilot-instructions.md` configuration with prompt files. This enables Copilot-powered agents to follow the full Stride workflow (claim → implement → complete) with proper hook execution and API field formats.
+
+- **6 Prompt Files** — All six Stride workflow skills adapted for Copilot's prompt file system:
+  - `stride-claiming-tasks` — Task discovery and claiming with `before_doing` hook execution
+  - `stride-completing-tasks` — Dual-hook completion workflow (`after_doing` + `before_review`)
+  - `stride-creating-tasks` — Task creation with validated field formats
+  - `stride-creating-goals` — Goal and batch creation with correct `"goals"` root key
+  - `stride-enriching-tasks` — 4-phase codebase exploration for task enrichment
+  - `stride-subagent-workflow` — Decision matrix for exploration, planning, and review phases
+
+- **Copilot instructions file** — `.github/copilot-instructions.md` bridge file with mandatory skill activation rules, workflow sequence, API authorization, and hook execution guidelines.
+
+#### Stride Gemini Extension (Google Gemini CLI)
+
+Stride skills and custom agents have been ported to Google Gemini CLI's extension format, distributed as a standalone repository installable via `gemini extensions install`. This brings full Stride workflow support — including custom agents for codebase exploration, code review, goal decomposition, and hook failure diagnosis — to Gemini CLI users.
+
+- **6 Skills** — All six Stride workflow skills adapted for Gemini CLI conventions:
+  - `stride-claiming-tasks` — Task discovery and claiming with `before_doing` hook execution
+  - `stride-completing-tasks` — Dual-hook completion workflow (`after_doing` + `before_review`) with optional `review_report` field
+  - `stride-creating-tasks` — Task creation with validated field formats
+  - `stride-creating-goals` — Goal and batch creation with correct `"goals"` root key
+  - `stride-enriching-tasks` — 4-phase codebase exploration for task enrichment
+  - `stride-subagent-workflow` — Decision matrix for dispatching custom agents based on task complexity
+
+- **4 Custom Agents** — Specialized Gemini CLI agents for task lifecycle support:
+  - `task-explorer` — Reads key_files, finds related tests, searches for patterns before implementation
+  - `task-reviewer` — Reviews changes against acceptance criteria and pitfalls; produces structured review reports
+  - `task-decomposer` — Breaks goals and large tasks into dependency-ordered child tasks
+  - `hook-diagnostician` — Parses hook failure output and returns prioritized fix plans
+
+- **`GEMINI.md` bridge file** — Always-on context with skill activation rules, custom agent references, workflow sequence, API authorization, and tool name mapping table.
+
+- **Extension repository** — Published at `cheezy/stride-gemini` with README, LICENSE (MIT), and CHANGELOG.
+
+### Changed
+
+- **Multi-agent instructions updated** — `docs/MULTI-AGENT-INSTRUCTIONS.md` updated with Google Gemini CLI extension installation instructions, 6 skills and 4 custom agents listing, and format-specific adaptation notes for the Gemini extension.
+
+- **Getting started guide updated** — `docs/GETTING-STARTED-WITH-AI.md` updated with a new "Install the Stride Extension (Gemini CLI)" subsection including `gemini extensions install` command and verification instructions.
+
 ## [1.25.0] - 2026-03-17
 
 ### Added

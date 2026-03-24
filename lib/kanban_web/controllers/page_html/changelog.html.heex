@@ -31,6 +31,100 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.26.0] - 2026-03-24</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Copilot Extension (GitHub Copilot)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Stride skills have been ported to GitHub Copilot's agent mode, distributed as a
+                <code>.github/copilot-instructions.md</code>
+                configuration with prompt files. This enables Copilot-powered agents to follow the full Stride workflow (claim → implement → complete) with proper hook execution and API field formats.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>6 Prompt Files</strong>
+                  — All six Stride workflow skills adapted for Copilot's prompt file system:
+                  <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>,
+                  <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>,
+                  <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
+                </li>
+                <li>
+                  <strong>Copilot instructions file</strong>
+                  — <code>.github/copilot-instructions.md</code>
+                  bridge file with mandatory skill activation rules, workflow sequence, API authorization, and hook execution guidelines.
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Gemini Extension (Google Gemini CLI)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Stride skills and custom agents have been ported to Google Gemini CLI's extension format, distributed as a standalone repository installable via
+                <code>gemini extensions install</code>. This brings full Stride workflow support — including custom agents for codebase exploration, code review, goal decomposition, and hook failure diagnosis — to Gemini CLI users.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>6 Skills</strong>
+                  — All six Stride workflow skills adapted for Gemini CLI conventions:
+                  <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>,
+                  <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>,
+                  <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
+                </li>
+                <li>
+                  <strong>4 Custom Agents</strong>
+                  — Specialized Gemini CLI agents for task lifecycle support:
+                  <code>task-explorer</code>, <code>task-reviewer</code>,
+                  <code>task-decomposer</code>, and <code>hook-diagnostician</code>.
+                </li>
+                <li>
+                  <strong><code>GEMINI.md</code> bridge file</strong>
+                  — Always-on context with skill activation rules, custom agent references, workflow sequence, API authorization, and tool name mapping table.
+                </li>
+                <li>
+                  <strong>Extension repository</strong>
+                  — Published at <code>cheezy/stride-gemini</code>
+                  with README, LICENSE (MIT), and CHANGELOG.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Changed
+            </h3>
+
+            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <li>
+                <strong>Multi-agent instructions updated</strong>
+                — <code>docs/MULTI-AGENT-INSTRUCTIONS.md</code>
+                updated with Google Gemini CLI extension installation instructions, 6 skills and 4 custom agents listing, and format-specific adaptation notes for the Gemini extension.
+              </li>
+              <li>
+                <strong>Getting started guide updated</strong>
+                — <code>docs/GETTING-STARTED-WITH-AI.md</code>
+                updated with a new "Install the Stride Extension (Gemini CLI)" subsection including
+                <code>gemini extensions install</code>
+                command and verification instructions.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.25.0] - 2026-03-17</h2>
 
           <div class="mb-8">
