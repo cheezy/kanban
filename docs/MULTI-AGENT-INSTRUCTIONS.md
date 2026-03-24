@@ -59,36 +59,31 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 ### 2. GitHub Copilot
 
-**Files:** Multiple focused skills (4 total)
+**Installation Method:** Stride Copilot Plugin (clone from GitHub)
 
-**Location:** `docs/multi-agent-instructions/SKILL.md`
+**Scope:** On-demand skill loading (activated when needed) + custom agents
 
-**Compatible Tools:** GitHub Copilot, Claude Code
+**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
-**Scope:** On-demand skill loading (invoked when needed)
+**Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
 
-**Token Limit:** ~2000-3000 tokens per skill (~100-150 lines each)
+> **🔌 RECOMMENDED: Clone the Stride Copilot plugin repo.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The plugin includes enrichment, subagent workflow orchestration, and custom agents that the manual download does not.
 
-**Format:** YAML frontmatter + Markdown content
+**Installation:**
 
-**Skills:**
-
-1. **stride-creating-tasks** - Use when creating new Stride tasks or defects
-2. **stride-completing-tasks** - Use when completing tasks and marking them done
-3. **stride-claiming-tasks** - Use when claiming tasks from Stride boards
-4. **stride-creating-goals** - Use when creating goals with nested tasks
-
-**Download:**
 ```bash
-# Create all skill directories and download (Claude-compatible paths)
-for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
-  mkdir -p .claude/skills/$skill
-  curl -o .claude/skills/$skill/SKILL.md \
-    https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
-done
+# Clone the stride-copilot repo into your project
+git clone https://github.com/cheezy/stride-copilot.git stride-copilot
+
+# Copy skills and agents into your project's .github directory
+cp -r stride-copilot/.github/skills/ .github/skills/
+cp -r stride-copilot/.github/agents/ .github/agents/
+cp stride-copilot/.github/copilot-instructions.md .github/copilot-instructions.md
 ```
 
-**IMPORTANT:** GitHub Copilot and Claude Code use a skill-based system for on-demand instruction loading. Skills are reusable instruction sets with YAML frontmatter metadata. The skill name (e.g., `stride-creating-tasks`) must match the directory name. GitHub Copilot automatically discovers skills in `.claude/skills/` directories, making them compatible across both platforms. See [GitHub Copilot Agent Skills](https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/) for details.
+**Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) exist in `.github/skills/` and custom agents exist in `.github/agents/`.
+
+**IMPORTANT:** The stride-copilot plugin provides Copilot-adapted versions of all Stride skills with tool-agnostic language (no Claude Code-specific tool references). It also includes a `copilot-instructions.md` bridge file that ensures Copilot reliably activates the right skill at each workflow point. For manual installation as a fallback, see the Manual Installation section below.
 
 ### 3. Cursor
 
@@ -505,12 +500,17 @@ done
 
 **Download Stride instructions:**
 
-**GitHub Copilot:**
+**GitHub Copilot (Recommended — use the plugin):**
+
+> Clone the stride-copilot plugin for the full set of 6 skills + 4 custom agents. See [Section 2: GitHub Copilot](#2-github-copilot) for instructions.
+
+**GitHub Copilot (Fallback — manual download of 4 generic skills):**
+
 ```bash
-# Install all 4 Stride skills (project-local, Claude-compatible)
+# Install 4 basic Stride skills (project-local, .github/skills/ paths)
 for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks stride-creating-goals; do
-  mkdir -p .claude/skills/$skill
-  curl -o .claude/skills/$skill/SKILL.md \
+  mkdir -p .github/skills/$skill
+  curl -o .github/skills/$skill/SKILL.md \
     https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
 done
 ```
@@ -629,10 +629,14 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
 
 **Download Stride instructions:**
 ```powershell
-# GitHub Copilot (skill-based installation)
+# GitHub Copilot: Use the stride-copilot plugin (recommended)
+# git clone https://github.com/cheezy/stride-copilot.git stride-copilot
+# Then copy .github/skills/, .github/agents/, and .github/copilot-instructions.md
+
+# GitHub Copilot (fallback — manual download of 4 generic skills)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
-  New-Item -ItemType Directory -Force -Path .claude/skills/$_
-  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .claude/skills/$_/SKILL.md
+  New-Item -ItemType Directory -Force -Path .github/skills/$_
+  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile .github/skills/$_/SKILL.md
 }
 
 # Cursor (skill-based installation)
