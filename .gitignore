@@ -48,3 +48,4 @@ package-lock.json
 node_modules
 
 stride/
+stride-copilot/
