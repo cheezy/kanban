@@ -133,7 +133,8 @@
       "Bash(gh api:*)",
       "Bash(gh repo:*)",
       "WebFetch(domain:www.stridelikeaboss.com)",
-      "Bash(curl -s:*)"
+      "Bash(curl -s:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
