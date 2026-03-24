@@ -134,7 +134,12 @@
       "Bash(gh repo:*)",
       "WebFetch(domain:www.stridelikeaboss.com)",
       "Bash(curl -s:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(for dir:*)",
+      "Bash(do touch:*)",
+      "Bash(done)",
+      "Bash(touch /Users/cheezy/dev/stride-copilot/.github/agents/.gitkeep)",
+      "Bash(git -C /Users/cheezy/dev/stride-copilot log --oneline -5)"
     ],
     "deny": [],
     "ask": []
