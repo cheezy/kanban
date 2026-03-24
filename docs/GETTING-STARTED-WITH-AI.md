@@ -146,6 +146,20 @@ After installation, verify that Stride skills exist in `.github/skills/` (e.g., 
 
 For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
+### Install the Stride Extension (Gemini CLI)
+
+> **🔌 RECOMMENDED FOR GEMINI CLI USERS:** Install the Stride Gemini extension to get the full set of 6 Gemini-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, custom agents, and a GEMINI.md bridge file that the generic manual download does not include.
+
+Install the extension with a single command:
+
+```bash
+gemini extensions install https://github.com/cheezy/stride-gemini
+```
+
+After installation, verify that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are accessible.
+
+For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+
 ### Agent Onboarding Endpoint
 
 Before configuring files, have your AI agent read and execute the commands from the onboarding endpoint:
