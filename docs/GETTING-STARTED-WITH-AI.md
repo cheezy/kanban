@@ -127,6 +127,8 @@ Run these two commands in Claude Code:
 
 After installation, verify the plugin is active by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list.
 
+> **Automatic Hook Execution (v1.5.0+):** The Stride plugin includes Claude Code hooks that automatically execute your `.stride.md` commands without permission prompts. When the plugin is enabled, Stride API calls are detected and the corresponding hook section runs as a shell process on the harness — bypassing the CLI's tool permission layer entirely. No configuration needed beyond installing the plugin. See the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150) for details.
+
 For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
 ### Install the Stride Plugin (GitHub Copilot)
@@ -760,6 +762,8 @@ See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
 - Check hook output in agent logs
 - Test hooks manually before using with agents
 - Simplify hooks initially, add complexity gradually
+
+**Claude Code users (v1.5.0+):** If you're using the Stride plugin's automatic hook execution and a hook fails, the `stride:hook-diagnostician` agent can parse the structured JSON output and return a prioritized fix plan. The failure JSON includes the exact command that failed, which commands completed, and which commands didn't run yet.
 
 ### Tasks Stuck in Review
 

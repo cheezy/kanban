@@ -707,6 +707,103 @@ else
 fi
 ```
 
+## Automatic Hook Execution via Claude Code Hooks (Stride Plugin v1.5.0)
+
+Starting with Stride Plugin v1.5.0, Claude Code users can have `.stride.md` hooks execute **automatically without permission prompts**. This is an alternative to the manual agent-executed approach described above.
+
+### The Problem
+
+When agents execute hook commands through Claude's Bash tool, the CLI's permission system prompts the user for every command — `git pull`, `mix test`, `mix credo`, `git commit`, etc. This happens regardless of CLAUDE.md instructions because the prompting occurs in the CLI harness, not in the LLM.
+
+### The Solution
+
+The Stride plugin ships Claude Code hooks (`hooks/hooks.json` and `hooks/stride-hook.sh`) that detect Stride API calls in Bash tool commands and automatically execute the corresponding `.stride.md` section as a shell process on the harness. No tool call means no permission prompt.
+
+### How It Works
+
+The plugin registers PreToolUse and PostToolUse hooks on Bash commands. When a Stride API call is detected, the `stride-hook.sh` script:
+
+1. Reads the Bash command from the Claude Code hook JSON input
+2. Determines which `.stride.md` section to execute based on the API endpoint
+3. Parses that section with `awk` and executes each uncommented command
+4. Exits 2 on failure to block the tool call (in PreToolUse context)
+
+**Hook routing:**
+
+| Claude Code Event | API Pattern | Stride Hook |
+|---|---|---|
+| PostToolUse (Bash) | `/api/tasks/claim` | `before_doing` |
+| PreToolUse (Bash) | `/api/tasks/:id/complete` | `after_doing` (blocks completion on failure) |
+| PostToolUse (Bash) | `/api/tasks/:id/complete` | `before_review` |
+| PostToolUse (Bash) | `/api/tasks/:id/mark_reviewed` | `after_review` |
+
+### Environment Variables
+
+When the `before_doing` hook runs after a successful claim, the script extracts task metadata from the API response and caches it to `.stride-env-cache`. All subsequent hooks load this cache, so commands in `.stride.md` can reference `$TASK_IDENTIFIER`, `$TASK_TITLE`, `$TASK_ID`, `$TASK_STATUS`, `$TASK_COMPLEXITY`, and `$TASK_PRIORITY`.
+
+The cache is cleaned up automatically after the `after_review` hook completes. Add `.stride-env-cache` to your `.gitignore`.
+
+### Structured JSON Diagnostics
+
+On failure, the script emits structured JSON to stdout:
+
+```json
+{
+  "hook": "after_doing",
+  "status": "failed",
+  "failed_command": "mix test --cover",
+  "command_index": 0,
+  "exit_code": 1,
+  "stdout": "...",
+  "stderr": "...",
+  "commands_completed": [],
+  "commands_remaining": ["mix credo --strict", "mix sobelow --config"]
+}
+```
+
+On success, a summary is emitted:
+
+```json
+{
+  "hook": "after_doing",
+  "status": "success",
+  "commands_completed": ["mix test --cover", "mix credo --strict"],
+  "duration_seconds": 45
+}
+```
+
+The `stride:hook-diagnostician` agent accepts both this structured JSON format and the raw text output from the manual execution approach described earlier in this guide.
+
+### Setup
+
+Install or update the Stride plugin:
+
+```
+/plugin marketplace add cheezy/stride-marketplace
+/plugin install stride@stride-marketplace
+```
+
+Or update an existing installation:
+
+```
+/plugin update stride
+```
+
+The hooks activate automatically when the plugin is enabled. No changes to your `.claude/settings.json` are needed.
+
+### Comparing the Two Approaches
+
+| Aspect | Manual (Agent-Executed) | Automatic (Claude Code Hooks) |
+|---|---|---|
+| Permission prompts | Yes, per command | None |
+| Visibility | Each command as a tool call | Command output on stderr |
+| Failure diagnosis | Agent sees full output | Structured JSON + diagnostician |
+| Environment variables | Agent sets via `export` | Cached from API response |
+| Blocking semantics | Agent decides to proceed or not | PreToolUse exit 2 blocks deterministically |
+| Platform support | All platforms | Claude Code only |
+
+The automatic approach is recommended for Claude Code users. Other platforms (Copilot, Gemini CLI, Cursor, etc.) should continue using the manual agent-executed approach documented above.
+
 ## See Also
 
 - [API Documentation](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md) - Complete API reference
