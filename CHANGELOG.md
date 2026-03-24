@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Automatic Stride Hook Execution via Claude Code Hooks (Stride Plugin v1.5.0)
+
+Stride `.stride.md` hooks now execute automatically through Claude Code's hook system, eliminating all permission prompts. Previously, every hook command (`git pull`, `mix test`, `mix credo`, `git commit`, etc.) triggered a CLI permission dialog because commands ran through Claude's Bash tool. The new system runs hooks as shell processes on the harness, bypassing the tool permission layer entirely.
+
+- **`hooks/stride-hook.sh`** — Generic bridge script that parses any user's `.stride.md` file, detects Stride API calls in Bash tool commands, routes to the correct hook section, and executes each uncommented command sequentially. Exits 2 on failure to block tool calls in PreToolUse context.
+
+- **`hooks/hooks.json`** — Plugin hook configuration that activates automatically when the Stride plugin is enabled. No user settings changes needed.
+
+- **Environment variable caching** — Task metadata (`$TASK_IDENTIFIER`, `$TASK_TITLE`, `$TASK_ID`, etc.) is extracted from the claim API response and cached for use by all subsequent hooks in the lifecycle. Cache is cleaned up after the `after_review` hook.
+
+- **Structured JSON diagnostics** — On both success and failure, the hook script emits structured JSON with hook name, command sequence, exit codes, and stdout/stderr. On failure, includes `commands_completed`, `commands_remaining`, and the specific `failed_command` for precise diagnosis.
+
+- **Hook-diagnostician update** — The `stride:hook-diagnostician` agent now accepts both structured JSON from Claude Code hooks and raw text from the legacy agent-executed flow, with command sequence context (PASSED/FAILED/SKIPPED) in its fix plans.
+
+**Hook routing:**
+
+| Claude Code Event | API Pattern | Stride Hook |
+|---|---|---|
+| PostToolUse (Bash) | `/api/tasks/claim` | `before_doing` |
+| PreToolUse (Bash) | `/api/tasks/:id/complete` | `after_doing` (blocks on failure) |
+| PostToolUse (Bash) | `/api/tasks/:id/complete` | `before_review` |
+| PostToolUse (Bash) | `/api/tasks/:id/mark_reviewed` | `after_review` |
+
 #### Stride Copilot Extension (GitHub Copilot)
 
 Stride skills have been ported to GitHub Copilot's agent mode, distributed as a `.github/copilot-instructions.md` configuration with prompt files. This enables Copilot-powered agents to follow the full Stride workflow (claim → implement → complete) with proper hook execution and API field formats.

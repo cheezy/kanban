@@ -40,6 +40,73 @@
 
             <div class="mb-6">
               <h4 class="text-xl font-semibold text-base-content mb-3">
+                Automatic Stride Hook Execution via Claude Code Hooks (Stride Plugin v1.5.0)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Stride <code>.stride.md</code> hooks now execute automatically through Claude Code's hook system, eliminating all permission prompts. Previously, every hook command (<code>git pull</code>, <code>mix test</code>, <code>mix credo</code>, <code>git commit</code>, etc.) triggered a CLI permission dialog because commands ran through Claude's Bash tool. The new system runs hooks as shell processes on the harness, bypassing the tool permission layer entirely.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong><code>hooks/stride-hook.sh</code></strong>
+                  — Generic bridge script that parses any user's <code>.stride.md</code> file, detects Stride API calls in Bash tool commands, routes to the correct hook section, and executes each uncommented command sequentially. Exits 2 on failure to block tool calls in PreToolUse context.
+                </li>
+                <li>
+                  <strong><code>hooks/hooks.json</code></strong>
+                  — Plugin hook configuration that activates automatically when the Stride plugin is enabled. No user settings changes needed.
+                </li>
+                <li>
+                  <strong>Environment variable caching</strong>
+                  — Task metadata (<code>$TASK_IDENTIFIER</code>, <code>$TASK_TITLE</code>, <code>$TASK_ID</code>, etc.) is extracted from the claim API response and cached for use by all subsequent hooks in the lifecycle. Cache is cleaned up after the <code>after_review</code> hook.
+                </li>
+                <li>
+                  <strong>Structured JSON diagnostics</strong>
+                  — On both success and failure, the hook script emits structured JSON with hook name, command sequence, exit codes, and stdout/stderr. On failure, includes <code>commands_completed</code>, <code>commands_remaining</code>, and the specific <code>failed_command</code> for precise diagnosis.
+                </li>
+                <li>
+                  <strong>Hook-diagnostician update</strong>
+                  — The <code>stride:hook-diagnostician</code> agent now accepts both structured JSON from Claude Code hooks and raw text from the legacy agent-executed flow, with command sequence context (PASSED/FAILED/SKIPPED) in its fix plans.
+                </li>
+              </ul>
+
+              <div class="overflow-x-auto ml-4 mb-4">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th class="text-base-content">Claude Code Event</th>
+                      <th class="text-base-content">API Pattern</th>
+                      <th class="text-base-content">Stride Hook</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
+                      <td class="text-base-content opacity-80"><code>/api/tasks/claim</code></td>
+                      <td class="text-base-content opacity-80"><code>before_doing</code></td>
+                    </tr>
+                    <tr>
+                      <td class="text-base-content opacity-80">PreToolUse (Bash)</td>
+                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/complete</code></td>
+                      <td class="text-base-content opacity-80"><code>after_doing</code> (blocks on failure)</td>
+                    </tr>
+                    <tr>
+                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
+                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/complete</code></td>
+                      <td class="text-base-content opacity-80"><code>before_review</code></td>
+                    </tr>
+                    <tr>
+                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
+                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/mark_reviewed</code></td>
+                      <td class="text-base-content opacity-80"><code>after_review</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
                 Stride Copilot Extension (GitHub Copilot)
               </h4>
 
