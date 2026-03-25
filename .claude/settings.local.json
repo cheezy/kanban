@@ -173,7 +173,10 @@
       "Bash(/tmp/stderr_out echo:*)",
       "Bash(SCRIPT=/Users/cheezy/dev/elixir/kanban/stride/hooks/stride-hook.sh __NEW_LINE_49382dd4039b4d7b__ cat EOF)",
       "Bash(CLAUDE_PROJECT_DIR=/tmp PATH=/usr/bin $SCRIPT pre 2)",
-      "Bash(/dev/null echo:*)"
+      "Bash(/dev/null echo:*)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:geminicli.com)",
+      "WebFetch(domain:opencode.ai)"
     ],
     "deny": [],
     "ask": []
