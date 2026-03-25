@@ -351,8 +351,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
       # Verify plugin-based structure
       assert copilot["description"] =~ "Stride Copilot Plugin"
       assert copilot["plugin_repo"] == "https://github.com/cheezy/stride-copilot"
-      assert copilot["installation_unix"] == "copilot plugin install cheezy/stride-copilot"
-      assert copilot["installation_windows"] == "copilot plugin install cheezy/stride-copilot"
+      assert copilot["installation_unix"] == "copilot plugin install https://github.com/cheezy/stride-copilot"
+      assert copilot["installation_windows"] == "copilot plugin install https://github.com/cheezy/stride-copilot"
 
       # Verify skills and agents lists
       assert is_list(copilot["skills_provided"])

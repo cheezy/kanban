@@ -592,8 +592,8 @@ defmodule KanbanWeb.API.AgentJSON do
               "task-decomposer",
               "hook-diagnostician"
             ],
-            installation_unix: "copilot plugin install cheezy/stride-copilot",
-            installation_windows: "copilot plugin install cheezy/stride-copilot",
+            installation_unix: "copilot plugin install https://github.com/cheezy/stride-copilot",
+            installation_windows: "copilot plugin install https://github.com/cheezy/stride-copilot",
             update: "copilot plugin update stride-copilot",
             uninstall: "copilot plugin uninstall stride-copilot",
             note:
@@ -765,7 +765,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should use claude_code_skills section above (not this section)",
-          "GitHub Copilot users: RECOMMENDED: copilot plugin install cheezy/stride-copilot (6 skills + 4 agents). Fallback: install Claude Code skills to .claude/skills/",
+          "GitHub Copilot users: RECOMMENDED: copilot plugin install https://github.com/cheezy/stride-copilot (6 skills + 4 agents). Fallback: install Claude Code skills to .claude/skills/",
           "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
           "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
           "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (6 skills + 4 agents). Fallback: install Claude Code skills to .gemini/skills/",
@@ -886,7 +886,7 @@ defmodule KanbanWeb.API.AgentJSON do
             description:
               "For GitHub Copilot CLI users — install the Stride Copilot plugin (recommended) or use generic skills as fallback",
             steps: [
-              "1. RECOMMENDED: Install the Stride Copilot plugin: copilot plugin install cheezy/stride-copilot",
+              "1. RECOMMENDED: Install the Stride Copilot plugin: copilot plugin install https://github.com/cheezy/stride-copilot",
               "2. This provides 6 Copilot-adapted skills + 4 custom agents",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
               "4. Skills activate automatically when Stride API calls are made",

@@ -138,7 +138,7 @@ For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Mult
 Install via the Copilot CLI:
 
 ```bash
-copilot plugin install cheezy/stride-copilot
+copilot plugin install https://github.com/cheezy/stride-copilot
 ```
 
 Manage the plugin:

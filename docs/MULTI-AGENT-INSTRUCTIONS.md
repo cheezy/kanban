@@ -72,7 +72,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 **Installation:**
 
 ```bash
-copilot plugin install cheezy/stride-copilot
+copilot plugin install https://github.com/cheezy/stride-copilot
 ```
 
 **Plugin management:**
@@ -492,7 +492,7 @@ done
 **GitHub Copilot (Recommended — use the plugin):**
 
 ```bash
-copilot plugin install cheezy/stride-copilot
+copilot plugin install https://github.com/cheezy/stride-copilot
 ```
 
 > This installs the full set of 6 skills + 4 custom agents. See [Section 2: GitHub Copilot](#2-github-copilot) for details.
@@ -628,7 +628,7 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
 **Download Stride instructions:**
 ```powershell
 # GitHub Copilot: Use the plugin (recommended)
-# copilot plugin install cheezy/stride-copilot
+# copilot plugin install https://github.com/cheezy/stride-copilot
 
 # GitHub Copilot (fallback — manual download of 4 generic skills)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {
