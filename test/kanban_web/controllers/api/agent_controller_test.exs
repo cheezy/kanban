@@ -331,43 +331,41 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify each format has required fields
       for {name, format} <- formats do
-        assert is_binary(format["file_path"])
-        assert is_binary(format["description"])
-        # GitHub Copilot, Cursor, Windsurf, Gemini, and OpenCode reference Claude Code skills,
-        # so they don't have a download_url
-        if name not in ["copilot", "cursor", "windsurf", "gemini", "opencode"] do
-          assert is_binary(format["download_url"])
-        end
+        assert is_binary(format["description"]),
+               "#{name} format missing description"
 
-        assert is_binary(format["installation_unix"])
-        assert is_binary(format["installation_windows"])
-        assert is_binary(format["token_limit"])
+        assert is_binary(format["installation_unix"]),
+               "#{name} format missing installation_unix"
+
+        assert is_binary(format["installation_windows"]),
+               "#{name} format missing installation_windows"
       end
     end
 
-    test "GitHub Copilot format uses Claude Code skills", %{conn: conn} do
+    test "GitHub Copilot format references stride-copilot plugin", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       copilot = response["multi_agent_instructions"]["formats"]["copilot"]
 
-      # Verify basic structure
-      assert copilot["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
-      assert copilot["description"] =~ "GitHub Copilot"
-      assert copilot["description"] =~ "Claude Code skills"
+      # Verify plugin-based structure
+      assert copilot["description"] =~ "Stride Copilot Plugin"
+      assert copilot["plugin_repo"] == "https://github.com/cheezy/stride-copilot"
+      assert copilot["installation_unix"] == "copilot plugin install cheezy/stride-copilot"
+      assert copilot["installation_windows"] == "copilot plugin install cheezy/stride-copilot"
 
-      # Verify compatible_tools field includes both
-      assert is_list(copilot["compatible_tools"])
-      assert "GitHub Copilot" in copilot["compatible_tools"]
-      assert "Claude Code" in copilot["compatible_tools"]
-      refute "OpenCode" in copilot["compatible_tools"]
-      refute "Kimi Code CLI (k2.5)" in copilot["compatible_tools"]
+      # Verify skills and agents lists
+      assert is_list(copilot["skills_provided"])
+      assert length(copilot["skills_provided"]) == 6
+      assert "stride-claiming-tasks" in copilot["skills_provided"]
 
-      # Verify reference_section points to claude_code_skills
-      assert copilot["reference_section"] == "claude_code_skills"
+      assert is_list(copilot["custom_agents"])
+      assert length(copilot["custom_agents"]) == 4
+      assert "task-explorer" in copilot["custom_agents"]
 
-      # Verify token limit
-      assert copilot["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
+      # Verify update and uninstall commands
+      assert copilot["update"] == "copilot plugin update stride-copilot"
+      assert copilot["uninstall"] == "copilot plugin uninstall stride-copilot"
     end
 
     test "Cursor format uses Claude Code skills", %{conn: conn} do
@@ -556,114 +554,34 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert opencode_instructions["note"] =~ "skill"
     end
 
-    test "Gemini format uses Claude Code skills", %{conn: conn} do
+    test "Gemini format references stride-gemini extension", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       gemini = response["multi_agent_instructions"]["formats"]["gemini"]
 
-      # Verify basic structure
-      assert gemini["file_path"] == ".gemini/skills/<skill-name>/SKILL.md (4 skills total)"
-      assert gemini["description"] =~ "Gemini"
-      assert gemini["description"] =~ "Claude Code skills"
+      # Verify extension-based structure
+      assert gemini["description"] =~ "Stride Gemini Extension"
+      assert gemini["extension_repo"] == "https://github.com/cheezy/stride-gemini"
+      assert gemini["installation_unix"] =~ "gemini extensions install"
+      assert gemini["installation_windows"] =~ "gemini extensions install"
 
-      # Verify compatible_tools field includes both
-      assert is_list(gemini["compatible_tools"])
-      assert "Google Gemini Code Assist" in gemini["compatible_tools"]
-      assert "Claude Code" in gemini["compatible_tools"]
-      refute "OpenCode" in gemini["compatible_tools"]
-      refute "GitHub Copilot" in gemini["compatible_tools"]
-      refute "Cursor" in gemini["compatible_tools"]
-      refute "Windsurf" in gemini["compatible_tools"]
-      refute "Kimi Code CLI (k2.5)" in gemini["compatible_tools"]
+      # Verify skills and agents lists
+      assert is_list(gemini["skills_provided"])
+      assert length(gemini["skills_provided"]) == 6
+      assert "stride-claiming-tasks" in gemini["skills_provided"]
 
-      # Verify reference_section points to claude_code_skills
-      assert gemini["reference_section"] == "claude_code_skills"
+      assert is_list(gemini["custom_agents"])
+      assert length(gemini["custom_agents"]) == 4
+      assert "task-explorer" in gemini["custom_agents"]
 
-      # Verify token limit
-      assert gemini["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
-    end
-
-    test "Gemini format includes proper alternative skill locations", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
-
-      assert is_list(gemini["alternative_locations"])
-      assert length(gemini["alternative_locations"]) == 3
-
-      locations = Enum.join(gemini["alternative_locations"], " ")
-      assert locations =~ ".gemini/skills/<skill-name>/SKILL.md"
-      assert locations =~ "works with both Claude Code and Gemini"
-      assert locations =~ "~/.gemini/skills/<skill-name>/SKILL.md"
-      assert locations =~ "applies to all projects"
-      assert locations =~ "Extension-bundled"
-    end
-
-    test "Gemini format references Claude Code skill installation", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
-
-      # Verify Unix installation references Claude Code skills
-      unix_install = gemini["installation_unix"]
-      assert unix_install =~ "Gemini users"
-      assert unix_install =~ "Claude Code skill installation"
-      assert unix_install =~ "claude_code_skills section"
-
-      # Verify Windows installation references Claude Code skills
-      windows_install = gemini["installation_windows"]
-      assert windows_install =~ "Gemini users"
-      assert windows_install =~ "Claude Code skill installation"
-      assert windows_install =~ "claude_code_skills section"
-    end
-
-    test "Gemini format includes important note about Claude Code compatibility", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
-
+      # Verify note references the extension
       assert is_binary(gemini["note"])
       assert gemini["note"] =~ "Gemini"
-      assert gemini["note"] =~ "automatically discovers"
-      assert gemini["note"] =~ ".gemini/skills/"
-      assert gemini["note"] =~ "Claude Code skills"
-      assert gemini["note"] =~ "claude_code_skills section"
+      assert gemini["note"] =~ "stride-gemini"
     end
 
-    test "Gemini format includes safe_installation commands referencing Claude Code", %{
-      conn: conn
-    } do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      gemini = response["multi_agent_instructions"]["formats"]["gemini"]
-
-      assert is_map(gemini["safe_installation"])
-      safe_install = gemini["safe_installation"]
-
-      assert is_binary(safe_install["check_existing"])
-      assert is_binary(safe_install["backup_first"])
-      assert is_binary(safe_install["install_from_claude_skills"])
-      assert is_binary(safe_install["usage"])
-
-      # Verify check_existing command checks for .gemini/skills directory
-      assert safe_install["check_existing"] =~ ".gemini/skills/stride"
-
-      # Verify backup command references .gemini/skills
-      assert safe_install["backup_first"] =~ ".gemini/skills"
-
-      # Verify install_from_claude_skills references claude_code_skills section
-      assert safe_install["install_from_claude_skills"] =~ "claude_code_skills section"
-
-      # Verify usage mentions Gemini finding .gemini/skills
-      assert safe_install["usage"] =~ ".gemini/skills/"
-    end
-
-    test "includes agent_specific_instructions with Gemini skill support", %{conn: conn} do
+    test "includes agent_specific_instructions with Gemini extension support", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
@@ -675,20 +593,18 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       gemini_instructions = agent_instructions["gemini"]
       assert gemini_instructions["description"] =~ "Gemini"
-      assert gemini_instructions["description"] =~ "Claude Code skills"
       assert is_list(gemini_instructions["steps"])
-      assert length(gemini_instructions["steps"]) >= 6
 
       # Verify steps mention key actions
       steps_text = Enum.join(gemini_instructions["steps"], " ")
-      assert steps_text =~ "skill"
+      assert steps_text =~ "stride-gemini"
       assert steps_text =~ ".stride.md"
       assert steps_text =~ ".stride_auth.md"
 
       # Verify note mentions skills
       assert is_binary(gemini_instructions["note"])
       assert gemini_instructions["note"] =~ "Gemini"
-      assert gemini_instructions["note"] =~ "skill"
+      assert gemini_instructions["note"] =~ "stride-gemini"
     end
 
     test "multi-agent instructions usage notes mention OpenCode skills and Kimi", %{conn: conn} do

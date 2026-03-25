@@ -575,34 +575,31 @@ defmodule KanbanWeb.API.AgentJSON do
           "IMPORTANT: The installation commands will overwrite existing configuration files. If you have existing custom configurations, back them up first or append Stride instructions to your existing file. See usage_notes below for safer installation approaches.",
         formats: %{
           copilot: %{
-            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "GitHub Copilot automatically discovers Claude Code skills - install the same skills used by Claude Code",
-            compatible_tools: ["GitHub Copilot", "Claude Code"],
-            reference_section: "claude_code_skills",
-            note:
-              "GitHub Copilot automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and GitHub Copilot will find them automatically. See https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/ for details on GitHub Copilot's skill discovery mechanism.",
-            skills_note:
-              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and GitHub Copilot will discover them.",
-            installation_unix:
-              "# GitHub Copilot users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and GitHub Copilot\n# See claude_code_skills.installation_instructions above for details",
-            installation_windows:
-              "# GitHub Copilot users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and GitHub Copilot\n# See claude_code_skills.installation_instructions above for details",
-            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
-            alternative_locations: [
-              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and GitHub Copilot)",
-              "Global: ~/.claude/skills/<skill-name>/SKILL.md"
+              "Stride Copilot Plugin — provides 6 Copilot-adapted skills and 4 custom agents via copilot plugin install",
+            plugin_repo: "https://github.com/cheezy/stride-copilot",
+            skills_provided: [
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
             ],
-            safe_installation: %{
-              check_existing:
-                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
-              backup_first:
-                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
-              install_from_claude_skills:
-                "Refer to claude_code_skills section above for complete installation. The skills work identically for GitHub Copilot since it discovers .claude/skills/ automatically.",
-              usage:
-                "Invoke specific skills in GitHub Copilot when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. GitHub Copilot will automatically find skills in .claude/skills/ directories."
-            }
+            custom_agents: [
+              "task-explorer",
+              "task-reviewer",
+              "task-decomposer",
+              "hook-diagnostician"
+            ],
+            installation_unix: "copilot plugin install cheezy/stride-copilot",
+            installation_windows: "copilot plugin install cheezy/stride-copilot",
+            update: "copilot plugin update stride-copilot",
+            uninstall: "copilot plugin uninstall stride-copilot",
+            note:
+              "The stride-copilot plugin provides Copilot-adapted versions of all 6 Stride skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic skill and agent discovery. See https://github.com/cheezy/stride-copilot for details.",
+            fallback_note:
+              "For manual installation of 4 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .claude/skills/ — GitHub Copilot discovers them automatically."
           },
           cursor: %{
             file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
@@ -677,35 +674,31 @@ defmodule KanbanWeb.API.AgentJSON do
             token_limit: "Flexible (~100 lines JSON, uses context providers)"
           },
           gemini: %{
-            file_path: ".gemini/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "Google Gemini Code Assist automatically discovers Claude Code skills - install the same skills used by Claude Code",
-            compatible_tools: ["Google Gemini Code Assist", "Claude Code"],
-            reference_section: "claude_code_skills",
-            note:
-              "Gemini Code Assist automatically discovers skills in .gemini/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Gemini will find them automatically. See https://geminicli.com/docs/cli/skills/ for details on Gemini's skill discovery mechanism.",
-            skills_note:
-              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .gemini/skills/ and both Claude Code and Gemini will discover them.",
-            installation_unix:
-              "# Gemini users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .gemini/skills/ work with both Claude Code and Gemini\n# See claude_code_skills.installation_instructions above for details",
-            installation_windows:
-              "# Gemini users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .gemini/skills/ work with both Claude Code and Gemini\n# See claude_code_skills.installation_instructions above for details",
-            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
-            alternative_locations: [
-              "Recommended: .gemini/skills/<skill-name>/SKILL.md (works with both Claude Code and Gemini)",
-              "User-level: ~/.gemini/skills/<skill-name>/SKILL.md (applies to all projects)",
-              "Extension-bundled: Installed within Gemini extensions"
+              "Stride Gemini Extension — provides 6 Gemini-adapted skills and 4 custom agents via gemini extensions install",
+            extension_repo: "https://github.com/cheezy/stride-gemini",
+            skills_provided: [
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
             ],
-            safe_installation: %{
-              check_existing:
-                "ls -la .gemini/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
-              backup_first:
-                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .gemini/skills/$skill/SKILL.md ] && cp .gemini/skills/$skill/SKILL.md .gemini/skills/$skill/SKILL.md.backup; done",
-              install_from_claude_skills:
-                "Refer to claude_code_skills section above for complete installation. The skills work identically for Gemini since it discovers .gemini/skills/ automatically.",
-              usage:
-                "Invoke specific skills in Gemini when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Gemini will automatically find skills in .gemini/skills/ directories."
-            }
+            custom_agents: [
+              "task-explorer",
+              "task-reviewer",
+              "task-decomposer",
+              "hook-diagnostician"
+            ],
+            installation_unix:
+              "gemini extensions install https://github.com/cheezy/stride-gemini",
+            installation_windows:
+              "gemini extensions install https://github.com/cheezy/stride-gemini",
+            note:
+              "The stride-gemini extension provides Gemini-adapted versions of all 6 Stride skills with Gemini tool names and 4 custom agents with Gemini-specific parameters (temperature, max_turns, timeout_mins). Includes GEMINI.md bridge file for workflow enforcement. See https://github.com/cheezy/stride-gemini for details.",
+            fallback_note:
+              "For manual installation of 4 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .gemini/skills/ — Gemini discovers them automatically."
           },
           opencode: %{
             file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
@@ -772,10 +765,10 @@ defmodule KanbanWeb.API.AgentJSON do
           "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should use claude_code_skills section above (not this section)",
-          "GitHub Copilot users: Install the Claude Code skills from claude_code_skills section - GitHub Copilot automatically discovers .claude/skills/ directories",
+          "GitHub Copilot users: RECOMMENDED: copilot plugin install cheezy/stride-copilot (6 skills + 4 agents). Fallback: install Claude Code skills to .claude/skills/",
           "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
           "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
-          "Gemini users: Install the Claude Code skills from claude_code_skills section - Gemini automatically discovers .gemini/skills/ directories",
+          "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (6 skills + 4 agents). Fallback: install Claude Code skills to .gemini/skills/",
           "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
@@ -861,17 +854,17 @@ defmodule KanbanWeb.API.AgentJSON do
               "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Windsurf will find them. See https://docs.windsurf.com/windsurf/cascade/skills for details."
           },
           gemini: %{
-            description: "For Gemini Code Assist users (uses Claude Code skills)",
+            description:
+              "For Gemini CLI users — install the Stride Gemini extension (recommended) or use generic skills as fallback",
             steps: [
-              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .gemini/skills/ directories",
-              "2. Gemini automatically discovers skills in .gemini/skills/ - no additional configuration needed",
+              "1. RECOMMENDED: Install the Stride Gemini extension: gemini extensions install https://github.com/cheezy/stride-gemini",
+              "2. This provides 6 Gemini-adapted skills + 4 custom agents + GEMINI.md bridge file",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
-              "4. Invoke skills in Gemini: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
-              "5. The skills will load Stride integration instructions on-demand",
-              "6. Skills installed to .gemini/skills/ work with both Claude Code and Gemini"
+              "4. Skills activate automatically when Stride API calls are made",
+              "FALLBACK: Install 4 generic skills from claude_code_skills section to .gemini/skills/ directories"
             ],
             note:
-              "Gemini Code Assist automatically discovers skills in .gemini/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Gemini will find them. See https://geminicli.com/docs/cli/skills/ for details."
+              "The stride-gemini extension provides Gemini-adapted skills with Gemini tool names (run_shell_command, read_file, grep_search, etc.) and custom agents with Gemini-specific parameters. See https://github.com/cheezy/stride-gemini for details."
           },
           aider: %{
             description: "For Aider users",
@@ -890,17 +883,18 @@ defmodule KanbanWeb.API.AgentJSON do
             ]
           },
           copilot: %{
-            description: "For GitHub Copilot users (uses Claude Code skills)",
+            description:
+              "For GitHub Copilot CLI users — install the Stride Copilot plugin (recommended) or use generic skills as fallback",
             steps: [
-              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
-              "2. GitHub Copilot automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "1. RECOMMENDED: Install the Stride Copilot plugin: copilot plugin install cheezy/stride-copilot",
+              "2. This provides 6 Copilot-adapted skills + 4 custom agents",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
-              "4. Invoke skills in GitHub Copilot: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
-              "5. The skills will load Stride integration instructions on-demand",
-              "6. Skills installed to .claude/skills/ work with both Claude Code and GitHub Copilot"
+              "4. Skills activate automatically when Stride API calls are made",
+              "5. Update with: copilot plugin update stride-copilot",
+              "FALLBACK: Install 4 generic skills from claude_code_skills section to .claude/skills/ directories"
             ],
             note:
-              "GitHub Copilot automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and GitHub Copilot will find them. See https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/ for details."
+              "The stride-copilot plugin provides Copilot-adapted skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic discovery. See https://github.com/cheezy/stride-copilot for details."
           },
           opencode: %{
             description: "For OpenCode users (uses Claude Code skills)",
