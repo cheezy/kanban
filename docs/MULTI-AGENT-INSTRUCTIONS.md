@@ -59,7 +59,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 ### 2. GitHub Copilot
 
-**Installation Method:** Stride Copilot Plugin (clone from GitHub)
+**Installation Method:** Stride Copilot Plugin (via `copilot plugin install`)
 
 **Scope:** On-demand skill loading (activated when needed) + custom agents
 
@@ -67,23 +67,23 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
 
-> **🔌 RECOMMENDED: Clone the Stride Copilot plugin repo.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The plugin includes enrichment, subagent workflow orchestration, and custom agents that the manual download does not.
+> **🔌 RECOMMENDED: Install the Stride Copilot plugin.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The plugin includes enrichment, subagent workflow orchestration, and custom agents that the manual download does not.
 
 **Installation:**
 
 ```bash
-# Clone the stride-copilot repo into your project
-git clone https://github.com/cheezy/stride-copilot.git stride-copilot
-
-# Copy skills and agents into your project's .github directory
-cp -r stride-copilot/.github/skills/ .github/skills/
-cp -r stride-copilot/.github/agents/ .github/agents/
-cp stride-copilot/.github/copilot-instructions.md .github/copilot-instructions.md
+copilot plugin install cheezy/stride-copilot
 ```
 
-**Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) exist in `.github/skills/` and custom agents exist in `.github/agents/`.
+**Plugin management:**
 
-**IMPORTANT:** The stride-copilot plugin provides Copilot-adapted versions of all Stride skills with tool-agnostic language (no Claude Code-specific tool references). It also includes a `copilot-instructions.md` bridge file that ensures Copilot reliably activates the right skill at each workflow point. For manual installation as a fallback, see the Manual Installation section below.
+```bash
+copilot plugin update stride-copilot       # Update to latest version
+copilot plugin uninstall stride-copilot    # Remove plugin
+copilot plugin list                        # View installed plugins
+```
+
+**IMPORTANT:** The stride-copilot plugin provides Copilot-adapted versions of all Stride skills with tool-agnostic language (no Claude Code-specific tool references). The plugin system handles skill and agent discovery automatically. For manual installation as a fallback, see the Manual Installation section below.
 
 ### 3. Cursor
 
@@ -491,7 +491,11 @@ done
 
 **GitHub Copilot (Recommended — use the plugin):**
 
-> Clone the stride-copilot plugin for the full set of 6 skills + 4 custom agents. See [Section 2: GitHub Copilot](#2-github-copilot) for instructions.
+```bash
+copilot plugin install cheezy/stride-copilot
+```
+
+> This installs the full set of 6 skills + 4 custom agents. See [Section 2: GitHub Copilot](#2-github-copilot) for details.
 
 **GitHub Copilot (Fallback — manual download of 4 generic skills):**
 
@@ -623,9 +627,8 @@ foreach ($skill in @('stride-creating-tasks', 'stride-completing-tasks', 'stride
 
 **Download Stride instructions:**
 ```powershell
-# GitHub Copilot: Use the stride-copilot plugin (recommended)
-# git clone https://github.com/cheezy/stride-copilot.git stride-copilot
-# Then copy .github/skills/, .github/agents/, and .github/copilot-instructions.md
+# GitHub Copilot: Use the plugin (recommended)
+# copilot plugin install cheezy/stride-copilot
 
 # GitHub Copilot (fallback — manual download of 4 generic skills)
 @('stride-creating-tasks', 'stride-completing-tasks', 'stride-claiming-tasks', 'stride-creating-goals') | ForEach-Object {

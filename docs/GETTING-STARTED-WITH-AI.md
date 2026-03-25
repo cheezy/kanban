@@ -133,18 +133,21 @@ For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Mult
 
 ### Install the Stride Plugin (GitHub Copilot)
 
-> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Clone the stride-copilot plugin to get the full set of 6 Copilot-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, and custom agents that the generic manual download does not include.
+> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Install the stride-copilot plugin to get the full set of 6 Copilot-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, and custom agents that the generic manual download does not include.
 
-Clone the repo and copy the files into your project:
+Install via the Copilot CLI:
 
 ```bash
-git clone https://github.com/cheezy/stride-copilot.git stride-copilot
-cp -r stride-copilot/.github/skills/ .github/skills/
-cp -r stride-copilot/.github/agents/ .github/agents/
-cp stride-copilot/.github/copilot-instructions.md .github/copilot-instructions.md
+copilot plugin install cheezy/stride-copilot
 ```
 
-After installation, verify that Stride skills exist in `.github/skills/` (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) and custom agents exist in `.github/agents/` (e.g., `task-explorer`, `task-reviewer`).
+Manage the plugin:
+
+```bash
+copilot plugin update stride-copilot       # Update to latest version
+copilot plugin uninstall stride-copilot    # Remove plugin
+copilot plugin list                        # View installed plugins
+```
 
 For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 

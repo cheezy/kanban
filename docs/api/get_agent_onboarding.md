@@ -73,11 +73,13 @@ Returns comprehensive onboarding information:
     "description": "Always-active code completion guidance for other AI assistants",
     "formats": {
       "copilot": {
-        "file_path": ".github/copilot-instructions.md",
-        "description": "GitHub Copilot instructions",
-        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
-        "installation_unix": "curl -o .github/copilot-instructions.md [download_url]",
-        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .github/copilot-instructions.md"
+        "description": "GitHub Copilot plugin (recommended: copilot plugin install cheezy/stride-copilot)",
+        "installation_unix": "copilot plugin install cheezy/stride-copilot",
+        "installation_windows": "copilot plugin install cheezy/stride-copilot",
+        "fallback_file_path": ".github/copilot-instructions.md",
+        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
+        "fallback_installation_unix": "curl -o .github/copilot-instructions.md [fallback_download_url]",
+        "fallback_installation_windows": "Invoke-WebRequest -Uri \"[fallback_download_url]\" -OutFile .github/copilot-instructions.md"
       },
       "cursor": {
         "file_path": ".cursorrules",
