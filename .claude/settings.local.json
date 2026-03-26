@@ -176,7 +176,14 @@
       "Bash(/dev/null echo:*)",
       "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:geminicli.com)",
-      "WebFetch(domain:opencode.ai)"
+      "WebFetch(domain:opencode.ai)",
+      "Bash(bash /Users/cheezy/dev/elixir/kanban/stride-gemini/hooks/test-stride-hook.sh)",
+      "WebFetch(domain:developers.openai.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(for skill:*)",
+      "Bash(do)",
+      "Bash(/Users/cheezy/dev/elixir/kanban/stride-codex/skills/$skill/SKILL.md:*)",
+      "Bash(sed -i '' \"s/SKILLNAME/$skill/\" /Users/cheezy/dev/elixir/kanban/stride-codex/skills/$skill/SKILL.md)"
     ],
     "deny": [],
     "ask": []
