@@ -81,6 +81,22 @@ Returns comprehensive onboarding information:
         "fallback_installation_unix": "curl -o .github/copilot-instructions.md [fallback_download_url]",
         "fallback_installation_windows": "Invoke-WebRequest -Uri \"[fallback_download_url]\" -OutFile .github/copilot-instructions.md"
       },
+      "opencode": {
+        "description": "OpenCode plugin with automatic hook execution (recommended: add to opencode.json)",
+        "installation_unix": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project",
+        "config_file": "opencode.json",
+        "config_entry": "{\"plugin\": [\"github:cheezy/stride-opencode\"]}",
+        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
+        "fallback_installation_unix": "curl -o .github/copilot-instructions.md [fallback_download_url]"
+      },
+      "codex": {
+        "description": "Codex CLI plugin with 6 adapted skills and 4 subagents (no automatic hook interception)",
+        "installation_unix": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash",
+        "installation_project": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project",
+        "agents_file": "AGENTS.md",
+        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
+        "fallback_installation_unix": "cp ~/.agents/AGENTS.md ./AGENTS.md"
+      },
       "cursor": {
         "file_path": ".cursorrules",
         "description": "Cursor rules",
@@ -165,7 +181,7 @@ Complete hook system information:
 Always-active code completion guidance for AI assistants other than Claude Code:
 
 - **Description**: Complementary approach to Claude Code Skills
-- **Formats**: Five AI assistant formats (Copilot, Cursor, Windsurf, Aider, Continue.dev)
+- **Formats**: Seven AI assistant formats (Copilot, OpenCode, Codex, Cursor, Windsurf, Aider, Continue.dev)
 - **Download URLs**: Direct links to instruction files hosted on GitHub
 - **Installation**: Platform-specific download commands (Unix/Linux/macOS and Windows)
 

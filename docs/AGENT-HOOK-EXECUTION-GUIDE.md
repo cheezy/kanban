@@ -804,6 +804,54 @@ The hooks activate automatically when the plugin is enabled. No changes to your 
 
 The automatic approach is recommended for Claude Code users. Other platforms (Copilot, Gemini CLI, Cursor, etc.) should continue using the manual agent-executed approach documented above.
 
+## Automatic Hook Execution via OpenCode Plugin
+
+OpenCode users can install the `stride-opencode` npm plugin, which provides automatic hook execution similar to Claude Code hooks but implemented as a native TypeScript plugin.
+
+**How it works:**
+
+The plugin subscribes to OpenCode's `tool.execute.before` and `tool.execute.after` events:
+
+| OpenCode Event | API Pattern | Stride Hook |
+|---|---|---|
+| `tool.execute.after` | `/api/tasks/claim` | `before_doing` |
+| `tool.execute.before` | `/api/tasks/:id/complete` | `after_doing` (blocks completion on failure) |
+| `tool.execute.after` | `/api/tasks/:id/complete` | `before_review` |
+| `tool.execute.after` | `/api/tasks/:id/mark_reviewed` | `after_review` |
+
+**Installation:**
+
+Add to `opencode.json`:
+```json
+{
+  "plugin": ["github:cheezy/stride-opencode"]
+}
+```
+
+**Advantages over shell-based hooks:**
+- Cross-platform (macOS, Linux, Windows) without separate shell scripts
+- Native JSON parsing (no `jq` dependency)
+- Environment variable caching from claim responses
+- Structured error reporting on hook failures
+
+See [stride-opencode](https://github.com/cheezy/stride-opencode) for details.
+
+## Manual Hook Execution for Codex CLI
+
+Codex CLI has no automatic hook interception system. The agent must execute `.stride.md` hooks directly via shell commands. The `stride-codex` skills are specifically adapted for this — they instruct the agent to:
+
+1. Read the corresponding `## section` from `.stride.md`
+2. Execute each command one at a time via shell
+3. Never prompt for permission — hooks are pre-authorized
+4. Stop on first failure and fix before proceeding
+
+Install the Codex skills:
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
+```
+
+See [stride-codex](https://github.com/cheezy/stride-codex) for details.
+
 ## See Also
 
 - [API Documentation](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md) - Complete API reference

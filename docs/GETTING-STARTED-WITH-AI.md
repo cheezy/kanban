@@ -165,6 +165,52 @@ After installation, verify that Stride skills (e.g., `stride-claiming-tasks`, `s
 
 For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
+### Install the Stride Plugin (OpenCode)
+
+> **🔌 RECOMMENDED FOR OPENCODE USERS:** Install the stride-opencode plugin to get the full set of 6 OpenCode-adapted skills, 4 custom agents, and automatic hook execution via the TypeScript plugin.
+
+Add to your project's `opencode.json`:
+
+```json
+{
+  "plugin": ["github:cheezy/stride-opencode"]
+}
+```
+
+Or install locally:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project
+```
+
+After installation, verify that Stride skills appear in your available skills list.
+
+For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+
+### Install the Stride Plugin (Codex CLI)
+
+> **🔌 RECOMMENDED FOR CODEX CLI USERS:** Install the stride-codex plugin to get the full set of 6 Codex-adapted skills and 4 subagents. Note: Codex has no automatic hook interception — skills instruct the agent to execute hooks directly.
+
+Install globally (available in all projects):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
+```
+
+Or install into the current project only:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project
+```
+
+After installation, copy AGENTS.md to your project root if needed:
+
+```bash
+cp ~/.agents/AGENTS.md ./AGENTS.md
+```
+
+For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+
 ### Agent Onboarding Endpoint
 
 Before configuring files, have your AI agent read and execute the commands from the onboarding endpoint:
