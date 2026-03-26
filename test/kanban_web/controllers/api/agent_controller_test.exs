@@ -351,8 +351,12 @@ defmodule KanbanWeb.API.AgentControllerTest do
       # Verify plugin-based structure
       assert copilot["description"] =~ "Stride Copilot Plugin"
       assert copilot["plugin_repo"] == "https://github.com/cheezy/stride-copilot"
-      assert copilot["installation_unix"] == "copilot plugin install https://github.com/cheezy/stride-copilot"
-      assert copilot["installation_windows"] == "copilot plugin install https://github.com/cheezy/stride-copilot"
+
+      assert copilot["installation_unix"] ==
+               "copilot plugin install https://github.com/cheezy/stride-copilot"
+
+      assert copilot["installation_windows"] ==
+               "copilot plugin install https://github.com/cheezy/stride-copilot"
 
       # Verify skills and agents lists
       assert is_list(copilot["skills_provided"])
@@ -427,100 +431,58 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
-      # Verify basic structure
-      assert opencode["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
+      # Verify basic structure — dedicated stride-opencode plugin
       assert opencode["description"] =~ "OpenCode"
-      assert opencode["description"] =~ "Claude Code skills"
+      assert opencode["description"] =~ "Plugin"
+      assert opencode["plugin_repo"] == "https://github.com/cheezy/stride-opencode"
 
-      # Verify compatible_tools field includes both
-      assert is_list(opencode["compatible_tools"])
-      assert "OpenCode" in opencode["compatible_tools"]
-      assert "Claude Code" in opencode["compatible_tools"]
-      refute "Kimi Code CLI (k2.5)" in opencode["compatible_tools"]
+      # Verify skills and agents provided
+      assert is_list(opencode["skills_provided"])
+      assert length(opencode["skills_provided"]) == 6
+      assert "stride-claiming-tasks" in opencode["skills_provided"]
+      assert "stride-enriching-tasks" in opencode["skills_provided"]
 
-      # Verify reference_section points to claude_code_skills
-      assert opencode["reference_section"] == "claude_code_skills"
-
-      # Verify token limit
-      assert opencode["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
+      assert is_list(opencode["agents_provided"])
+      assert length(opencode["agents_provided"]) == 4
+      assert "task-explorer" in opencode["agents_provided"]
     end
 
-    test "OpenCode format includes proper alternative skill locations", %{conn: conn} do
+    test "OpenCode format includes installation instructions for plugin", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       opencode = response["multi_agent_instructions"]["formats"]["opencode"]
 
-      assert is_list(opencode["alternative_locations"])
-      assert length(opencode["alternative_locations"]) == 3
-
-      locations = Enum.join(opencode["alternative_locations"], " ")
-      assert locations =~ ".claude/skills/<skill-name>/SKILL.md"
-      assert locations =~ "works with both Claude Code and OpenCode"
-      assert locations =~ ".opencode/skills/<skill-name>/SKILL.md"
-      assert locations =~ "~/.claude/skills/<skill-name>/SKILL.md"
-    end
-
-    test "OpenCode format references Claude Code skill installation", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      opencode = response["multi_agent_instructions"]["formats"]["opencode"]
-
-      # Verify Unix installation references Claude Code skills
+      # Verify Unix installation references opencode.json and install script
       unix_install = opencode["installation_unix"]
-      assert unix_install =~ "OpenCode users"
-      assert unix_install =~ "Claude Code skill installation"
-      assert unix_install =~ "claude_code_skills section"
+      assert unix_install =~ "opencode.json"
+      assert unix_install =~ "github:cheezy/stride-opencode"
 
-      # Verify Windows installation references Claude Code skills
-      windows_install = opencode["installation_windows"]
-      assert windows_install =~ "OpenCode users"
-      assert windows_install =~ "Claude Code skill installation"
-      assert windows_install =~ "claude_code_skills section"
-    end
-
-    test "OpenCode format includes important note about Claude Code compatibility", %{conn: conn} do
-      conn = get(conn, ~p"/api/agent/onboarding")
-      response = json_response(conn, 200)
-
-      opencode = response["multi_agent_instructions"]["formats"]["opencode"]
-
+      # Verify note references the plugin
       assert is_binary(opencode["note"])
+      assert opencode["note"] =~ "stride-opencode"
       assert opencode["note"] =~ "OpenCode"
-      assert opencode["note"] =~ "automatically discovers"
-      assert opencode["note"] =~ ".claude/skills/"
-      assert opencode["note"] =~ "Claude Code skills"
-      assert opencode["note"] =~ "claude_code_skills section"
     end
 
-    test "OpenCode format includes safe_installation commands referencing Claude Code", %{
-      conn: conn
-    } do
+    test "Codex CLI format includes dedicated plugin with manual hooks", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
-      opencode = response["multi_agent_instructions"]["formats"]["opencode"]
+      codex = response["multi_agent_instructions"]["formats"]["codex"]
 
-      assert is_map(opencode["safe_installation"])
-      safe_install = opencode["safe_installation"]
+      assert codex["description"] =~ "Codex"
+      assert codex["description"] =~ "Plugin"
+      assert codex["plugin_repo"] == "https://github.com/cheezy/stride-codex"
 
-      assert is_binary(safe_install["check_existing"])
-      assert is_binary(safe_install["backup_first"])
-      assert is_binary(safe_install["install_from_claude_skills"])
-      assert is_binary(safe_install["usage"])
+      assert is_list(codex["skills_provided"])
+      assert length(codex["skills_provided"]) == 6
 
-      # Verify check_existing command checks for .claude/skills directory
-      assert safe_install["check_existing"] =~ ".claude/skills/stride"
+      assert is_list(codex["agents_provided"])
+      assert length(codex["agents_provided"]) == 4
 
-      # Verify backup command references .claude/skills
-      assert safe_install["backup_first"] =~ ".claude/skills"
-
-      # Verify install_from_claude_skills references claude_code_skills section
-      assert safe_install["install_from_claude_skills"] =~ "claude_code_skills section"
-
-      # Verify usage mentions OpenCode finding .claude/skills
-      assert safe_install["usage"] =~ ".claude/skills/"
+      # Verify note mentions manual hook execution
+      assert codex["note"] =~ "manual hook execution"
+      assert codex["note"] =~ "no automatic hook interception"
     end
 
     test "includes agent_specific_instructions with OpenCode skill support", %{conn: conn} do
@@ -540,7 +502,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert opencode_instructions["description"] =~ "OpenCode"
       refute opencode_instructions["description"] =~ "Kimi"
       assert is_list(opencode_instructions["steps"])
-      assert length(opencode_instructions["steps"]) >= 6
+      assert length(opencode_instructions["steps"]) >= 4
 
       # Verify steps mention key actions
       steps_text = Enum.join(opencode_instructions["steps"], " ")

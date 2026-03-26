@@ -44,13 +44,15 @@
               </h4>
 
               <p class="text-base-content opacity-80 mb-4 ml-4">
-                Stride <code>.stride.md</code> hooks now execute automatically through Claude Code's hook system, eliminating all permission prompts. Previously, every hook command (<code>git pull</code>, <code>mix test</code>, <code>mix credo</code>, <code>git commit</code>, etc.) triggered a CLI permission dialog because commands ran through Claude's Bash tool. The new system runs hooks as shell processes on the harness, bypassing the tool permission layer entirely.
+                Stride <code>.stride.md</code>
+                hooks now execute automatically through Claude Code's hook system, eliminating all permission prompts. Previously, every hook command (<code>git pull</code>, <code>mix test</code>, <code>mix credo</code>, <code>git commit</code>, etc.) triggered a CLI permission dialog because commands ran through Claude's Bash tool. The new system runs hooks as shell processes on the harness, bypassing the tool permission layer entirely.
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
                 <li>
                   <strong><code>hooks/stride-hook.sh</code></strong>
-                  — Generic bridge script that parses any user's <code>.stride.md</code> file, detects Stride API calls in Bash tool commands, routes to the correct hook section, and executes each uncommented command sequentially. Exits 2 on failure to block tool calls in PreToolUse context.
+                  — Generic bridge script that parses any user's <code>.stride.md</code>
+                  file, detects Stride API calls in Bash tool commands, routes to the correct hook section, and executes each uncommented command sequentially. Exits 2 on failure to block tool calls in PreToolUse context.
                 </li>
                 <li>
                   <strong><code>hooks/hooks.json</code></strong>
@@ -58,15 +60,20 @@
                 </li>
                 <li>
                   <strong>Environment variable caching</strong>
-                  — Task metadata (<code>$TASK_IDENTIFIER</code>, <code>$TASK_TITLE</code>, <code>$TASK_ID</code>, etc.) is extracted from the claim API response and cached for use by all subsequent hooks in the lifecycle. Cache is cleaned up after the <code>after_review</code> hook.
+                  — Task metadata (<code>$TASK_IDENTIFIER</code>, <code>$TASK_TITLE</code>, <code>$TASK_ID</code>, etc.) is extracted from the claim API response and cached for use by all subsequent hooks in the lifecycle. Cache is cleaned up after the
+                  <code>after_review</code>
+                  hook.
                 </li>
                 <li>
                   <strong>Structured JSON diagnostics</strong>
-                  — On both success and failure, the hook script emits structured JSON with hook name, command sequence, exit codes, and stdout/stderr. On failure, includes <code>commands_completed</code>, <code>commands_remaining</code>, and the specific <code>failed_command</code> for precise diagnosis.
+                  — On both success and failure, the hook script emits structured JSON with hook name, command sequence, exit codes, and stdout/stderr. On failure, includes <code>commands_completed</code>, <code>commands_remaining</code>, and the specific
+                  <code>failed_command</code>
+                  for precise diagnosis.
                 </li>
                 <li>
                   <strong>Hook-diagnostician update</strong>
-                  — The <code>stride:hook-diagnostician</code> agent now accepts both structured JSON from Claude Code hooks and raw text from the legacy agent-executed flow, with command sequence context (PASSED/FAILED/SKIPPED) in its fix plans.
+                  — The <code>stride:hook-diagnostician</code>
+                  agent now accepts both structured JSON from Claude Code hooks and raw text from the legacy agent-executed flow, with command sequence context (PASSED/FAILED/SKIPPED) in its fix plans.
                 </li>
               </ul>
 
@@ -87,17 +94,25 @@
                     </tr>
                     <tr>
                       <td class="text-base-content opacity-80">PreToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/complete</code></td>
-                      <td class="text-base-content opacity-80"><code>after_doing</code> (blocks on failure)</td>
+                      <td class="text-base-content opacity-80">
+                        <code>/api/tasks/:id/complete</code>
+                      </td>
+                      <td class="text-base-content opacity-80">
+                        <code>after_doing</code> (blocks on failure)
+                      </td>
                     </tr>
                     <tr>
                       <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/complete</code></td>
+                      <td class="text-base-content opacity-80">
+                        <code>/api/tasks/:id/complete</code>
+                      </td>
                       <td class="text-base-content opacity-80"><code>before_review</code></td>
                     </tr>
                     <tr>
                       <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80"><code>/api/tasks/:id/mark_reviewed</code></td>
+                      <td class="text-base-content opacity-80">
+                        <code>/api/tasks/:id/mark_reviewed</code>
+                      </td>
                       <td class="text-base-content opacity-80"><code>after_review</code></td>
                     </tr>
                   </tbody>
@@ -119,10 +134,7 @@
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
                 <li>
                   <strong>6 Prompt Files</strong>
-                  — All six Stride workflow skills adapted for Copilot's prompt file system:
-                  <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>,
-                  <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>,
-                  <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
+                  — All six Stride workflow skills adapted for Copilot's prompt file system: <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>, <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
                 </li>
                 <li>
                   <strong>Copilot instructions file</strong>
@@ -138,23 +150,17 @@
               </h4>
 
               <p class="text-base-content opacity-80 mb-4 ml-4">
-                Stride skills and custom agents have been ported to Google Gemini CLI's extension format, distributed as a standalone repository installable via
-                <code>gemini extensions install</code>. This brings full Stride workflow support — including custom agents for codebase exploration, code review, goal decomposition, and hook failure diagnosis — to Gemini CLI users.
+                Stride skills and custom agents have been ported to Google Gemini CLI's extension format, distributed as a standalone repository installable via <code>gemini extensions install</code>. This brings full Stride workflow support — including custom agents for codebase exploration, code review, goal decomposition, and hook failure diagnosis — to Gemini CLI users.
               </p>
 
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
                 <li>
                   <strong>6 Skills</strong>
-                  — All six Stride workflow skills adapted for Gemini CLI conventions:
-                  <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>,
-                  <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>,
-                  <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
+                  — All six Stride workflow skills adapted for Gemini CLI conventions: <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>, <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
                 </li>
                 <li>
                   <strong>4 Custom Agents</strong>
-                  — Specialized Gemini CLI agents for task lifecycle support:
-                  <code>task-explorer</code>, <code>task-reviewer</code>,
-                  <code>task-decomposer</code>, and <code>hook-diagnostician</code>.
+                  — Specialized Gemini CLI agents for task lifecycle support: <code>task-explorer</code>, <code>task-reviewer</code>, <code>task-decomposer</code>, and <code>hook-diagnostician</code>.
                 </li>
                 <li>
                   <strong><code>GEMINI.md</code> bridge file</strong>

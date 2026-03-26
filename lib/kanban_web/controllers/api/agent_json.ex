@@ -593,7 +593,8 @@ defmodule KanbanWeb.API.AgentJSON do
               "hook-diagnostician"
             ],
             installation_unix: "copilot plugin install https://github.com/cheezy/stride-copilot",
-            installation_windows: "copilot plugin install https://github.com/cheezy/stride-copilot",
+            installation_windows:
+              "copilot plugin install https://github.com/cheezy/stride-copilot",
             update: "copilot plugin update stride-copilot",
             uninstall: "copilot plugin uninstall stride-copilot",
             note:
@@ -701,35 +702,58 @@ defmodule KanbanWeb.API.AgentJSON do
               "For manual installation of 4 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .gemini/skills/ — Gemini discovers them automatically."
           },
           opencode: %{
-            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
             description:
-              "OpenCode automatically discovers Claude Code skills - install the same skills used by Claude Code",
-            compatible_tools: ["OpenCode", "Claude Code"],
-            reference_section: "claude_code_skills",
-            note:
-              "OpenCode automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and OpenCode will find them automatically. See https://opencode.ai/docs/skills/ for details on OpenCode's skill discovery mechanism.",
-            skills_note:
-              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and OpenCode will discover them.",
-            installation_unix:
-              "# OpenCode users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and OpenCode\n# See claude_code_skills.installation_instructions above for details",
-            installation_windows:
-              "# OpenCode users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and OpenCode\n# See claude_code_skills.installation_instructions above for details",
-            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
-            alternative_locations: [
-              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and OpenCode)",
-              "Project-local: .opencode/skills/<skill-name>/SKILL.md (OpenCode only)",
-              "Global: ~/.claude/skills/<skill-name>/SKILL.md or ~/.config/opencode/skills/<skill-name>/SKILL.md"
+              "Stride OpenCode Plugin — provides 6 OpenCode-adapted skills, 4 custom agents, and automatic hook execution via npm plugin",
+            plugin_repo: "https://github.com/cheezy/stride-opencode",
+            skills_provided: [
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
             ],
-            safe_installation: %{
-              check_existing:
-                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
-              backup_first:
-                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
-              install_from_claude_skills:
-                "Refer to claude_code_skills section above for complete installation. The skills work identically for OpenCode since it discovers .claude/skills/ automatically.",
-              usage:
-                "Invoke specific skills in OpenCode when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. OpenCode will automatically find skills in .claude/skills/ directories."
-            }
+            agents_provided: [
+              "task-explorer",
+              "task-reviewer",
+              "task-decomposer",
+              "hook-diagnostician"
+            ],
+            installation_unix:
+              "# Add to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# Or install locally:\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project",
+            installation_windows:
+              "# Add to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# Or install locally (requires git):\ngit clone https://github.com/cheezy/stride-opencode.git && xcopy /E stride-opencode\\skills .opencode\\skills\\ && xcopy /E stride-opencode\\agents .opencode\\agents\\",
+            note:
+              "The stride-opencode plugin provides 6 OpenCode-adapted skills with OpenCode tool names, 4 custom agents, and a native TypeScript plugin for automatic hook execution via tool.execute.before/after events. Install via opencode.json plugin array or locally. See https://github.com/cheezy/stride-opencode for details.",
+            fallback_note:
+              "For manual installation, copy skills to .opencode/skills/ and agents to .opencode/agents/ from the GitHub repository."
+          },
+          codex: %{
+            description:
+              "Stride Codex CLI Plugin — provides 6 Codex-adapted skills and 4 subagents with manual hook execution",
+            plugin_repo: "https://github.com/cheezy/stride-codex",
+            skills_provided: [
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
+            ],
+            agents_provided: [
+              "task-explorer",
+              "task-reviewer",
+              "task-decomposer",
+              "hook-diagnostician"
+            ],
+            installation_unix:
+              "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash",
+            installation_windows:
+              "git clone https://github.com/cheezy/stride-codex.git && xcopy /E stride-codex\\skills .agents\\skills\\ && xcopy /E stride-codex\\agents .agents\\agents\\ && copy stride-codex\\AGENTS.md AGENTS.md",
+            note:
+              "The stride-codex plugin provides 6 Codex-adapted skills with manual hook execution (Codex has no automatic hook interception). Skills instruct the agent to read .stride.md and execute commands directly. Install globally with the install script or copy files manually. See https://github.com/cheezy/stride-codex for details.",
+            fallback_note:
+              "For project-local installation, use: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project"
           },
           kimi: %{
             file_path: "AGENTS.md",
@@ -769,7 +793,8 @@ defmodule KanbanWeb.API.AgentJSON do
           "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
           "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
           "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (6 skills + 4 agents). Fallback: install Claude Code skills to .gemini/skills/",
-          "OpenCode users: Install the Claude Code skills from claude_code_skills section - OpenCode automatically discovers .claude/skills/ directories",
+          "OpenCode users: RECOMMENDED: Add \"github:cheezy/stride-opencode\" to opencode.json plugin array (6 skills + 4 agents + auto hooks). Fallback: install skills to .opencode/skills/",
+          "Codex CLI users: RECOMMENDED: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash (6 skills + 4 agents). Manual hook execution.",
           "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
         ],
         safe_installation: [
@@ -777,7 +802,8 @@ defmodule KanbanWeb.API.AgentJSON do
           "RECOMMENDED: Backup existing config: cp .cursorrules .cursorrules.backup",
           "ALTERNATIVE: Append Stride instructions: echo '\\n\\n# Stride Integration' >> .cursorrules && curl -s [url] >> .cursorrules",
           "ALTERNATIVE: Download to temp location and manually merge: curl -o /tmp/stride-instructions.txt [url]",
-          "For OpenCode: Skills are installed in .opencode/skills/stride/ directory and loaded on-demand",
+          "For OpenCode: RECOMMENDED: Add to opencode.json plugin array. Local: install to .opencode/skills/ and .opencode/agents/",
+          "For Codex CLI: Install globally with install.sh or copy skills to .agents/skills/ and agents to .agents/agents/",
           "For Kimi Code CLI (k2.5): Use append-mode installation to add Stride instructions to existing AGENTS.md",
           "For more details see: #{@docs_base_url}/docs/MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
         ]
@@ -897,17 +923,29 @@ defmodule KanbanWeb.API.AgentJSON do
               "The stride-copilot plugin provides Copilot-adapted skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic discovery. See https://github.com/cheezy/stride-copilot for details."
           },
           opencode: %{
-            description: "For OpenCode users (uses Claude Code skills)",
+            description:
+              "For OpenCode users — install the Stride OpenCode plugin (recommended) or use generic skills as fallback",
             steps: [
-              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
-              "2. OpenCode automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "1. RECOMMENDED: Add to opencode.json: {\"plugin\": [\"github:cheezy/stride-opencode\"]}",
+              "2. This provides 6 OpenCode-adapted skills + 4 custom agents + automatic hook execution",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
-              "4. Invoke skills in OpenCode: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
-              "5. The skills will load Stride integration instructions on-demand",
-              "6. Skills installed to .claude/skills/ work with both Claude Code and OpenCode"
+              "4. Skills activate automatically when Stride API calls are made",
+              "FALLBACK: Install locally: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project"
             ],
             note:
-              "OpenCode automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and OpenCode will find them. See https://opencode.ai/docs/skills/ for details."
+              "The stride-opencode plugin provides OpenCode-adapted skills with OpenCode tool names and a native TypeScript plugin for automatic hook execution. See https://github.com/cheezy/stride-opencode for details."
+          },
+          codex: %{
+            description: "For Codex CLI users — install the Stride Codex plugin",
+            steps: [
+              "1. RECOMMENDED: Install globally: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash",
+              "2. This provides 6 Codex-adapted skills + 4 subagents",
+              "3. Create .stride.md and .stride_auth.md files from the templates above",
+              "4. Copy AGENTS.md to your project root: cp ~/.agents/AGENTS.md ./AGENTS.md",
+              "PROJECT-LOCAL: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project"
+            ],
+            note:
+              "Codex CLI has no automatic hook interception. Skills instruct the agent to execute .stride.md hooks directly via shell. See https://github.com/cheezy/stride-codex for details."
           },
           kimi: %{
             description: "For Kimi Code CLI (k2.5) users",
