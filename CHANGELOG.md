@@ -5,6 +5,71 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-03-26
+
+### Added
+
+#### Stride OpenCode Plugin (`stride-opencode`)
+
+Full Stride plugin for [OpenCode](https://opencode.ai), providing 6 skills, 4 agents, and a native TypeScript plugin for automatic hook execution. Published at [cheezy/stride-opencode](https://github.com/cheezy/stride-opencode).
+
+- **TypeScript plugin** (`src/index.ts`) — Native hook execution engine using OpenCode's `tool.execute.before` and `tool.execute.after` events. Automatically detects Stride API calls, routes to the correct `.stride.md` section, and executes commands sequentially. Blocks completion on `after_doing` failure. No external shell scripts or `jq` dependency required.
+
+- **`.stride.md` parser** (`src/parser.ts`) — Dedicated parser module handling CRLF/LF line endings, empty code blocks, comments, adjacent sections, and files without trailing newlines. Exported for testing and reuse.
+
+- **Environment variable caching** — Automatically extracts task metadata (`TASK_ID`, `TASK_IDENTIFIER`, `TASK_TITLE`, etc.) from claim API responses and makes them available in subsequent hooks within the same session.
+
+- **6 OpenCode-adapted skills** — All Stride workflow skills ported with OpenCode frontmatter (`name`, `description`, `license`, `compatibility: opencode`, `metadata`), OpenCode tool names (`grep`, `read`, `glob`, `bash`, `edit`, `write`), and `tool.execute.before`/`tool.execute.after` hook event references.
+
+- **4 custom agents** — Task explorer, reviewer, decomposer, and hook diagnostician with OpenCode agent frontmatter (`description`, `mode: subagent`, `temperature`, `tools` object).
+
+- **npm distribution** — Installable via `opencode.json` plugin array (`"plugin": ["github:cheezy/stride-opencode"]`) or locally via install script.
+
+- **49 passing tests** — Comprehensive test suite using `bun:test` covering parser, hook routing, command filtering, and environment extraction.
+
+#### Stride Codex CLI Plugin (`stride-codex`)
+
+Full Stride plugin for [OpenAI Codex CLI](https://github.com/openai/codex), providing 6 skills and 4 subagents with manual hook execution. Published at [cheezy/stride-codex](https://github.com/cheezy/stride-codex).
+
+- **6 Codex-adapted skills** — All Stride workflow skills ported with simple Codex frontmatter (`name`, `description`). All automatic hook sections removed — manual hook execution is the only path. Skills explicitly instruct the agent to read `.stride.md` and execute each command directly via shell, one at a time, without prompting.
+
+- **4 subagents** — Task explorer, reviewer, decomposer, and hook diagnostician with Codex agent frontmatter (`name`, `description`, `tools` array).
+
+- **Install script** — One-liner installation supporting global (`~/.agents/`) and project-local (`.agents/`) modes:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
+  ```
+
+- **AGENTS.md** — Codex configuration bridge with skill activation rules, tool name mapping, and manual hook execution instructions.
+
+#### Stride Copilot Plugin Updates (`stride-copilot` v2.0.0 → v2.1.0)
+
+Restructured the Copilot plugin for `copilot plugin install` support and added automatic hook execution.
+
+- **Automatic hook execution** — Added `hooks/hooks.json` and `hooks/stride-hook.sh` that intercept Stride API calls and execute `.stride.md` sections automatically. Skills updated with "With Plugin (Automatic Hooks)" and "Without Plugin (Manual Hooks)" paths.
+- **PowerShell support** — Added `hooks/stride-hook.ps1` companion script for native Windows. Platform detection auto-delegates from bash to PowerShell.
+- **Test suites** — `test-stride-hook.sh` (67 tests) and `test-stride-hook.ps1` (70 assertions) covering JSON extraction, parsing, integration, and edge cases.
+- **Repository restructured** for `copilot plugin install` — skills and agents moved from `.github/` to root-level directories. Supports `copilot plugin update` and `copilot plugin uninstall`.
+
+#### Stride Gemini Extension Updates (`stride-gemini` v1.1.0)
+
+Added automatic hook execution to the Gemini CLI extension.
+
+- **Automatic hook execution** — Added `hooks/hooks.json` registering `BeforeTool`/`AfterTool` hooks on `run_shell_command`. Uses `GEMINI_PROJECT_DIR` with `CLAUDE_PROJECT_DIR` fallback. All non-JSON output goes to stderr (Gemini requires JSON-only stdout).
+- **PowerShell support** — Added `hooks/stride-hook.ps1` for Windows compatibility with PowerShell 5.1+ and 7+.
+- **Test suites** — `test-stride-hook.sh` (67 tests) and `test-stride-hook.ps1` (70 assertions) using `GEMINI_PROJECT_DIR`.
+- **GEMINI.md updated** — Hook execution section now documents automatic hooks (BeforeTool/AfterTool via hooks.json) vs manual fallback, with `/hooks panel` reference.
+
+### Changed
+
+- **Onboarding endpoint updated** — `GET /api/agent/onboarding` now includes dedicated entries for OpenCode (with `plugin_repo`, `skills_provided`, `agents_provided`, and npm installation instructions) and Codex CLI (with install script and manual hook execution note). OpenCode entry no longer points to Claude Code skills as a fallback — it references the dedicated `stride-opencode` plugin.
+
+- **Getting started guide updated** — `docs/GETTING-STARTED-WITH-AI.md` now includes "Install the Stride Plugin (OpenCode)" and "Install the Stride Plugin (Codex CLI)" sections with installation commands.
+
+- **Hook execution guide updated** — `docs/AGENT-HOOK-EXECUTION-GUIDE.md` now documents OpenCode's TypeScript plugin automatic hook execution and Codex CLI's manual hook execution approach.
+
+- **API documentation updated** — `docs/api/get_agent_onboarding.md` updated to reflect OpenCode and Codex formats in the response.
+
 ## [1.26.0] - 2026-03-24
 
 ### Added

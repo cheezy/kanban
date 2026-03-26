@@ -31,6 +31,169 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.27.0] - 2026-03-26</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride OpenCode Plugin (<code>stride-opencode</code>)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Full Stride plugin for <a href="https://opencode.ai" class="text-primary hover:underline">OpenCode</a>, providing 6 skills, 4 agents, and a native TypeScript plugin for automatic hook execution. Published at <a href="https://github.com/cheezy/stride-opencode" class="text-primary hover:underline">cheezy/stride-opencode</a>.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>TypeScript plugin</strong>
+                  — Native hook execution engine using OpenCode's <code>tool.execute.before</code> and <code>tool.execute.after</code> events. Automatically detects Stride API calls, routes to the correct <code>.stride.md</code> section, and executes commands sequentially. Blocks completion on <code>after_doing</code> failure.
+                </li>
+                <li>
+                  <strong><code>.stride.md</code> parser</strong>
+                  — Dedicated parser module handling CRLF/LF line endings, empty code blocks, comments, adjacent sections, and files without trailing newlines.
+                </li>
+                <li>
+                  <strong>Environment variable caching</strong>
+                  — Automatically extracts task metadata from claim API responses and makes them available in subsequent hooks within the same session.
+                </li>
+                <li>
+                  <strong>6 OpenCode-adapted skills</strong>
+                  — All Stride workflow skills ported with OpenCode frontmatter, tool names, and <code>tool.execute.before</code>/<code>tool.execute.after</code> hook event references.
+                </li>
+                <li>
+                  <strong>4 custom agents</strong>
+                  — Task explorer, reviewer, decomposer, and hook diagnostician with OpenCode agent frontmatter.
+                </li>
+                <li>
+                  <strong>npm distribution</strong>
+                  — Installable via <code>opencode.json</code> plugin array or locally via install script.
+                </li>
+                <li>
+                  <strong>49 passing tests</strong>
+                  — Comprehensive test suite using <code>bun:test</code> covering parser, hook routing, command filtering, and environment extraction.
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Codex CLI Plugin (<code>stride-codex</code>)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Full Stride plugin for <a href="https://github.com/openai/codex" class="text-primary hover:underline">OpenAI Codex CLI</a>, providing 6 skills and 4 subagents with manual hook execution. Published at <a href="https://github.com/cheezy/stride-codex" class="text-primary hover:underline">cheezy/stride-codex</a>.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>6 Codex-adapted skills</strong>
+                  — All automatic hook sections removed — manual hook execution is the only path. Skills instruct the agent to read <code>.stride.md</code> and execute each command directly via shell.
+                </li>
+                <li>
+                  <strong>4 subagents</strong>
+                  — Task explorer, reviewer, decomposer, and hook diagnostician with Codex agent frontmatter.
+                </li>
+                <li>
+                  <strong>Install script</strong>
+                  — One-liner installation supporting global (<code>~/.agents/</code>) and project-local (<code>.agents/</code>) modes.
+                </li>
+                <li>
+                  <strong>AGENTS.md</strong>
+                  — Codex configuration bridge with skill activation rules, tool name mapping, and manual hook execution instructions.
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Copilot Plugin Updates (<code>stride-copilot</code> v2.0.0 → v2.1.0)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Restructured the Copilot plugin for <code>copilot plugin install</code> support and added automatic hook execution.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>Automatic hook execution</strong>
+                  — Added <code>hooks/hooks.json</code> and <code>hooks/stride-hook.sh</code> that intercept Stride API calls and execute <code>.stride.md</code> sections automatically.
+                </li>
+                <li>
+                  <strong>PowerShell support</strong>
+                  — Added <code>hooks/stride-hook.ps1</code> companion script for native Windows. Platform detection auto-delegates from bash to PowerShell.
+                </li>
+                <li>
+                  <strong>Test suites</strong>
+                  — <code>test-stride-hook.sh</code> (67 tests) and <code>test-stride-hook.ps1</code> (70 assertions) covering JSON extraction, parsing, integration, and edge cases.
+                </li>
+                <li>
+                  <strong>Repository restructured</strong>
+                  — Skills and agents moved from <code>.github/</code> to root-level directories for <code>copilot plugin install</code> support.
+                </li>
+              </ul>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Stride Gemini Extension Updates (<code>stride-gemini</code> v1.1.0)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Added automatic hook execution to the Gemini CLI extension.
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <strong>Automatic hook execution</strong>
+                  — Added <code>hooks/hooks.json</code> registering <code>BeforeTool</code>/<code>AfterTool</code> hooks on <code>run_shell_command</code>. All non-JSON output goes to stderr (Gemini requires JSON-only stdout).
+                </li>
+                <li>
+                  <strong>PowerShell support</strong>
+                  — Added <code>hooks/stride-hook.ps1</code> for Windows compatibility with PowerShell 5.1+ and 7+.
+                </li>
+                <li>
+                  <strong>Test suites</strong>
+                  — <code>test-stride-hook.sh</code> (67 tests) and <code>test-stride-hook.ps1</code> (70 assertions).
+                </li>
+                <li>
+                  <strong>GEMINI.md updated</strong>
+                  — Hook execution section now documents automatic hooks vs manual fallback.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Changed
+            </h3>
+
+            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <li>
+                <strong>Onboarding endpoint updated</strong>
+                — <code>GET /api/agent/onboarding</code> now includes dedicated entries for OpenCode and Codex CLI with plugin repos, skills/agents lists, and platform-specific installation instructions.
+              </li>
+              <li>
+                <strong>Getting started guide updated</strong>
+                — Added OpenCode and Codex CLI installation sections.
+              </li>
+              <li>
+                <strong>Hook execution guide updated</strong>
+                — Documented OpenCode's TypeScript plugin automatic hook execution and Codex CLI's manual hook execution approach.
+              </li>
+              <li>
+                <strong>API documentation updated</strong>
+                — Onboarding endpoint docs reflect OpenCode and Codex formats in the response.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.26.0] - 2026-03-24</h2>
 
           <div class="mb-8">
