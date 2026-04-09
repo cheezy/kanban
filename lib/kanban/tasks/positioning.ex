@@ -64,6 +64,7 @@ defmodule Kanban.Tasks.Positioning do
   """
   def reorder_tasks(column, task_ids) do
     Repo.transaction(fn ->
+      Repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
       tasks = Queries.list_tasks(column)
 
       Enum.each(tasks, fn task ->
@@ -103,11 +104,35 @@ defmodule Kanban.Tasks.Positioning do
 
   @doc """
   Gets the next position for a task in a column.
+
+  WARNING: This function is not safe for concurrent use. If two callers
+  read the same max position before either writes, both will get the same
+  value, causing a unique constraint violation. Use `get_next_position_locked/1`
+  inside a transaction for concurrent-safe position allocation.
   """
   def get_next_position(column) do
+    compute_next_position(column.id)
+  end
+
+  @doc """
+  Gets the next position for a task in a column with an advisory lock.
+
+  Acquires a PostgreSQL transaction-level advisory lock on the column ID,
+  serializing all position allocations for that column. This prevents
+  duplicate position errors when concurrent operations target the same column.
+
+  MUST be called within a `Repo.transaction` — the lock is released
+  automatically when the transaction commits or rolls back.
+  """
+  def get_next_position_locked(column) do
+    Repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
+    compute_next_position(column.id)
+  end
+
+  defp compute_next_position(column_id) do
     query =
       from t in Task,
-        where: t.column_id == ^column.id,
+        where: t.column_id == ^column_id,
         select: max(t.position)
 
     case Repo.one(query) do
@@ -159,6 +184,11 @@ defmodule Kanban.Tasks.Positioning do
 
   defp perform_move(task, new_column, new_position, old_column_id) do
     Repo.transaction(fn ->
+      # Lock columns in consistent order to prevent deadlocks
+      [old_column_id, new_column.id] |> Enum.sort() |> Enum.each(fn col_id ->
+        Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])
+      end)
+
       Logger.info(
         "perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}"
       )

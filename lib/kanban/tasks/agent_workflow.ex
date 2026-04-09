@@ -74,20 +74,28 @@ defmodule Kanban.Tasks.AgentWorkflow do
       true ->
         ready_column = get_column_by_name(task.column.board_id, "Ready")
 
-        next_position = Positioning.get_next_position(ready_column)
+        result =
+          Repo.transaction(fn ->
+            next_position = Positioning.get_next_position_locked(ready_column)
 
-        changeset =
-          task
-          |> Ecto.Changeset.change(%{
-            status: :open,
-            claimed_at: nil,
-            claim_expires_at: nil,
-            assigned_to_id: nil,
-            column_id: ready_column.id,
-            position: next_position
-          })
+            changeset =
+              task
+              |> Ecto.Changeset.change(%{
+                status: :open,
+                claimed_at: nil,
+                claim_expires_at: nil,
+                assigned_to_id: nil,
+                column_id: ready_column.id,
+                position: next_position
+              })
 
-        case Repo.update(changeset) do
+            case Repo.update(changeset) do
+              {:ok, updated_task} -> updated_task
+              {:error, changeset} -> Repo.rollback(changeset)
+            end
+          end)
+
+        case result do
           {:ok, updated_task} ->
             updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
 
@@ -131,31 +139,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       true ->
         review_column = get_column_by_name(board_id, "Review")
 
-        next_position = Positioning.get_next_position(review_column)
-
-        changeset =
-          task
-          |> Ecto.Changeset.cast(params, [
-            :completion_summary,
-            :actual_complexity,
-            :actual_files_changed,
-            :time_spent_minutes,
-            :completed_by_agent,
-            :review_report
-          ])
-          |> Ecto.Changeset.put_change(:column_id, review_column.id)
-          |> Ecto.Changeset.put_change(:position, next_position)
-          |> Ecto.Changeset.put_change(:completed_by_id, user.id)
-          |> Ecto.Changeset.validate_required([
-            :completion_summary,
-            :actual_complexity,
-            :actual_files_changed,
-            :time_spent_minutes
-          ])
-          |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
-          |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
-
-        case Repo.update(changeset) do
+        case move_to_review(task, user, params, review_column) do
           {:ok, updated_task} ->
             handle_successful_completion(
               task,
@@ -224,20 +208,29 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:error, :invalid_column}
     else
       done_column = get_column_by_name(board_id, "Done")
-      next_position = Positioning.get_next_position(done_column)
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      changeset =
-        task
-        |> Ecto.Changeset.change(%{
-          status: :completed,
-          completed_at: task.completed_at || now,
-          column_id: done_column.id,
-          position: next_position
-        })
+      result =
+        Repo.transaction(fn ->
+          next_position = Positioning.get_next_position_locked(done_column)
+          now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      case Repo.update(changeset) do
-        {:ok, _updated_task} ->
+          changeset =
+            task
+            |> Ecto.Changeset.change(%{
+              status: :completed,
+              completed_at: task.completed_at || now,
+              column_id: done_column.id,
+              position: next_position
+            })
+
+          case Repo.update(changeset) do
+            {:ok, _updated_task} -> :ok
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end)
+
+      case result do
+        {:ok, :ok} ->
           {:ok, finalize_completion(task, user, board_id, done_column)}
 
         {:error, changeset} ->
@@ -280,32 +273,39 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   defp perform_claim(task, user, board_id, agent_name) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
-
     doing_column = get_column_by_name(board_id, "Doing")
-
     now = DateTime.utc_now()
     expires_at = now |> DateTime.add(60 * 60, :second)
-    next_position = Positioning.get_next_position(doing_column)
 
-    update_query =
-      from(t in Task,
-        where: t.id == ^task.id,
-        where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
-      )
+    result =
+      Repo.transaction(fn ->
+        next_position = Positioning.get_next_position_locked(doing_column)
 
-    case Repo.update_all(
-           update_query,
-           set: [
-             status: :in_progress,
-             claimed_at: now,
-             claim_expires_at: expires_at,
-             assigned_to_id: user.id,
-             column_id: doing_column.id,
-             position: next_position,
-             updated_at: now
-           ]
-         ) do
-      {1, _} ->
+        update_query =
+          from(t in Task,
+            where: t.id == ^task.id,
+            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
+          )
+
+        case Repo.update_all(
+               update_query,
+               set: [
+                 status: :in_progress,
+                 claimed_at: now,
+                 claim_expires_at: expires_at,
+                 assigned_to_id: user.id,
+                 column_id: doing_column.id,
+                 position: next_position,
+                 updated_at: now
+               ]
+             ) do
+          {1, _} -> :claimed
+          {0, _} -> Repo.rollback(:no_tasks_available)
+        end
+      end)
+
+    case result do
+      {:ok, :claimed} ->
         updated_task = Queries.get_task_for_view!(task.id)
 
         Goals.update_parent_goal_position(updated_task, task.column_id, doing_column.id)
@@ -319,7 +319,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
         {:ok, updated_task, hook_info}
 
-      {0, _} ->
+      {:error, :no_tasks_available} ->
         {:error, :no_tasks_available}
     end
   end
@@ -386,20 +386,29 @@ defmodule Kanban.Tasks.AgentWorkflow do
        ) do
     board_id = board.id
     done_column = get_column_by_name(board_id, "Done")
-    next_position = Positioning.get_next_position(done_column)
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    done_changeset =
-      updated_task
-      |> Ecto.Changeset.change(%{
-        status: :completed,
-        completed_at: updated_task.completed_at || now,
-        column_id: done_column.id,
-        position: next_position
-      })
+    result =
+      Repo.transaction(fn ->
+        next_position = Positioning.get_next_position_locked(done_column)
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    case Repo.update(done_changeset) do
-      {:ok, _final_task} ->
+        done_changeset =
+          updated_task
+          |> Ecto.Changeset.change(%{
+            status: :completed,
+            completed_at: updated_task.completed_at || now,
+            column_id: done_column.id,
+            position: next_position
+          })
+
+        case Repo.update(done_changeset) do
+          {:ok, _final_task} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, :ok} ->
         final_task = finalize_completion(updated_task, user, board_id, done_column)
 
         {:ok, after_review_hook} =
@@ -414,25 +423,67 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
+  defp move_to_review(task, user, params, review_column) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(review_column)
+
+      changeset =
+        task
+        |> Ecto.Changeset.cast(params, [
+          :completion_summary,
+          :actual_complexity,
+          :actual_files_changed,
+          :time_spent_minutes,
+          :completed_by_agent,
+          :review_report
+        ])
+        |> Ecto.Changeset.put_change(:column_id, review_column.id)
+        |> Ecto.Changeset.put_change(:position, next_position)
+        |> Ecto.Changeset.put_change(:completed_by_id, user.id)
+        |> Ecto.Changeset.validate_required([
+          :completion_summary,
+          :actual_complexity,
+          :actual_files_changed,
+          :time_spent_minutes
+        ])
+        |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
+        |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
+
+      case Repo.update(changeset) do
+        {:ok, updated_task} -> updated_task
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
   defp move_to_done(task, user, board_id) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
     done_column = get_column_by_name(board_id, "Done")
-    next_position = Positioning.get_next_position(done_column)
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    changeset =
-      task
-      |> Ecto.Changeset.change(%{
-        status: :completed,
-        completed_at: task.completed_at || now,
-        reviewed_by_id: user.id,
-        column_id: done_column.id,
-        position: next_position
-      })
+    result =
+      Repo.transaction(fn ->
+        next_position = Positioning.get_next_position_locked(done_column)
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    case Repo.update(changeset) do
-      {:ok, _updated_task} ->
+        changeset =
+          task
+          |> Ecto.Changeset.change(%{
+            status: :completed,
+            completed_at: task.completed_at || now,
+            reviewed_by_id: user.id,
+            column_id: done_column.id,
+            position: next_position
+          })
+
+        case Repo.update(changeset) do
+          {:ok, _updated_task} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, :ok} ->
         updated_task = finalize_completion(task, user, board_id, done_column)
 
         {:ok, after_review_hook} =
@@ -448,19 +499,27 @@ defmodule Kanban.Tasks.AgentWorkflow do
   defp move_to_doing(task, user, board_id) do
     doing_column = get_column_by_name(board_id, "Doing")
 
-    next_position = Positioning.get_next_position(doing_column)
+    result =
+      Repo.transaction(fn ->
+        next_position = Positioning.get_next_position_locked(doing_column)
 
-    changeset =
-      task
-      |> Ecto.Changeset.change(%{
-        status: :in_progress,
-        reviewed_by_id: user.id,
-        column_id: doing_column.id,
-        position: next_position
-      })
+        changeset =
+          task
+          |> Ecto.Changeset.change(%{
+            status: :in_progress,
+            reviewed_by_id: user.id,
+            column_id: doing_column.id,
+            position: next_position
+          })
 
-    case Repo.update(changeset) do
-      {:ok, _updated_task} ->
+        case Repo.update(changeset) do
+          {:ok, _updated_task} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, :ok} ->
         updated_task = Queries.get_task_for_view!(task.id)
         old_column_id = task.column_id
 

@@ -40,7 +40,15 @@ defmodule Kanban.Tasks.Creation do
     goal_attrs = prepare_goal_attrs(column, goal_attrs)
 
     Ecto.Multi.new()
-    |> Ecto.Multi.insert(:goal, Task.changeset(%Task{column_id: column.id}, goal_attrs))
+    |> Ecto.Multi.run(:lock_position, fn _repo, _changes ->
+      {:ok, Positioning.get_next_position_locked(column)}
+    end)
+    |> Ecto.Multi.insert(:goal, fn %{lock_position: next_position} ->
+      Task.changeset(
+        %Task{column_id: column.id},
+        override_position(goal_attrs, next_position)
+      )
+    end)
     |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
       TaskHistory.changeset(%TaskHistory{}, %{
         task_id: goal.id,
@@ -53,10 +61,10 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp prepare_goal_attrs(column, attrs) do
-    next_position = Positioning.get_next_position(column)
     identifier = Identifiers.generate_identifier(column, :goal)
 
-    prepared_attrs = prepare_task_attrs(attrs, next_position)
+    # Position 0 is a placeholder — overridden inside the transaction by the locked value
+    prepared_attrs = prepare_task_attrs(attrs, 0)
 
     identifier_key =
       if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
@@ -78,9 +86,15 @@ defmodule Kanban.Tasks.Creation do
       history_key = {:child_task_history, index}
 
       multi_acc
-      |> Ecto.Multi.insert(task_key, fn %{goal: goal} ->
+      |> Ecto.Multi.insert(task_key, fn %{goal: goal, lock_position: base_position} ->
         child_attrs_with_parent =
-          prepare_child_task_attrs(column, child_attrs, goal, index, task_identifiers)
+          prepare_child_task_attrs(
+            child_attrs,
+            goal,
+            index,
+            task_identifiers,
+            base_position
+          )
 
         Task.changeset(%Task{column_id: column.id}, child_attrs_with_parent)
       end)
@@ -95,8 +109,8 @@ defmodule Kanban.Tasks.Creation do
     end)
   end
 
-  defp prepare_child_task_attrs(column, attrs, goal, index, task_identifiers) do
-    next_position = Positioning.get_next_position(column) + index + 1
+  defp prepare_child_task_attrs(attrs, goal, index, task_identifiers, base_position) do
+    next_position = base_position + index + 1
     identifier = Enum.at(task_identifiers, index)
 
     prepared_attrs = prepare_task_attrs(attrs, next_position)
@@ -207,11 +221,11 @@ defmodule Kanban.Tasks.Creation do
   defp convert_single_dependency(dep, _task_identifiers), do: dep
 
   defp prepare_task_creation_attrs(column, attrs) do
-    next_position = Positioning.get_next_position(column)
     task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
     identifier = Identifiers.generate_identifier(column, task_type)
 
-    prepared_attrs = prepare_task_attrs(attrs, next_position)
+    # Position 0 is a placeholder — overridden inside the transaction by the locked value
+    prepared_attrs = prepare_task_attrs(attrs, 0)
 
     identifier_key =
       if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
@@ -220,13 +234,15 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp insert_task_with_history(column, attrs) do
-    changeset =
-      %Task{column_id: column.id}
-      |> Task.changeset(attrs)
-      |> Dependencies.validate_circular_dependencies()
-
     Ecto.Multi.new()
-    |> Ecto.Multi.insert(:task, changeset)
+    |> Ecto.Multi.run(:lock_position, fn _repo, _changes ->
+      {:ok, Positioning.get_next_position_locked(column)}
+    end)
+    |> Ecto.Multi.insert(:task, fn %{lock_position: next_position} ->
+      %Task{column_id: column.id}
+      |> Task.changeset(override_position(attrs, next_position))
+      |> Dependencies.validate_circular_dependencies()
+    end)
     |> Ecto.Multi.insert(:history, fn %{task: task} ->
       TaskHistory.changeset(%TaskHistory{}, %{
         task_id: task.id,
@@ -296,6 +312,14 @@ defmodule Kanban.Tasks.Creation do
       Map.put(attrs, "position", position)
     else
       Map.put(attrs, :position, position)
+    end
+  end
+
+  defp override_position(attrs, position) do
+    cond do
+      Map.has_key?(attrs, "position") -> Map.put(attrs, "position", position)
+      Map.has_key?(attrs, :position) -> Map.put(attrs, :position, position)
+      true -> Map.put(attrs, :position, position)
     end
   end
 end
