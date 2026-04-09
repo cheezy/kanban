@@ -185,7 +185,9 @@ defmodule Kanban.Tasks.Positioning do
   defp perform_move(task, new_column, new_position, old_column_id) do
     Repo.transaction(fn ->
       # Lock columns in consistent order to prevent deadlocks
-      [old_column_id, new_column.id] |> Enum.sort() |> Enum.each(fn col_id ->
+      [old_column_id, new_column.id]
+      |> Enum.sort()
+      |> Enum.each(fn col_id ->
         Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])
       end)
 

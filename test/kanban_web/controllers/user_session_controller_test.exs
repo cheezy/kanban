@@ -7,6 +7,35 @@ defmodule KanbanWeb.UserSessionControllerTest do
     %{unconfirmed_user: unconfirmed_user_fixture(), user: user_fixture()}
   end
 
+  describe "POST /users/register" do
+    test "registers the user and logs them in", %{conn: conn} do
+      email = unique_user_email()
+
+      conn =
+        post(conn, ~p"/users/register", %{
+          "user" => %{"email" => email, "password" => valid_user_password()}
+        })
+
+      assert get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/boards"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
+               "Account created successfully! An email was sent to #{email}."
+    end
+
+    test "returns error flash with invalid data", %{conn: conn} do
+      conn =
+        post(conn, ~p"/users/register", %{
+          "user" => %{"email" => "invalid", "password" => "short"}
+        })
+
+      assert redirected_to(conn) == ~p"/users/register"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
+               "An error occurred during registration"
+    end
+  end
+
   describe "POST /users/log-in - email and password" do
     test "logs the user in", %{conn: conn, user: user} do
       conn =

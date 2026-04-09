@@ -7,18 +7,26 @@ defmodule KanbanWeb.UserSessionController do
   def register(conn, %{"user" => user_params}) do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
-        {:ok, _} =
-          Accounts.deliver_user_confirmation_instructions(
-            user,
-            &url(~p"/users/confirm/#{&1}")
-          )
+        case Accounts.deliver_user_confirmation_instructions(
+               user,
+               &url(~p"/users/confirm/#{&1}")
+             ) do
+          {:ok, _} ->
+            conn
+            |> put_flash(
+              :info,
+              "Account created successfully! An email was sent to #{user.email}. Please check your email to confirm your account."
+            )
+            |> UserAuth.log_in_user(user, user_params)
 
-        conn
-        |> put_flash(
-          :info,
-          "Account created successfully! An email was sent to #{user.email}. Please check your email to confirm your account."
-        )
-        |> UserAuth.log_in_user(user, user_params)
+          {:error, _reason} ->
+            conn
+            |> put_flash(
+              :info,
+              "Account created successfully! We were unable to send a confirmation email. You can request a new one from your settings."
+            )
+            |> UserAuth.log_in_user(user, user_params)
+        end
 
       {:error, %Ecto.Changeset{} = _changeset} ->
         # This shouldn't happen since LiveView validated, but handle it gracefully
