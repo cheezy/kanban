@@ -11,10 +11,13 @@ All four Stride workflow enforcement skills have been successfully implemented a
 
 ### Deployed Skills
 
-1. **stride-claiming-tasks** - Enforces proper claiming workflow with hook execution
-2. **stride-completing-tasks** - Ensures both hooks are executed before marking complete
-3. **stride-creating-tasks** - Requires comprehensive task specifications
-4. **stride-creating-goals** - Enforces proper goal structure and batch format
+1. **stride-workflow** - Single orchestrator for the complete task lifecycle (claim → explore → implement → review → complete). Recommended entry point for all task work. Replaces the need to invoke individual skills at specific moments.
+2. **stride-claiming-tasks** - Enforces proper claiming workflow with hook execution
+3. **stride-completing-tasks** - Ensures both hooks are executed before marking complete
+4. **stride-creating-tasks** - Requires comprehensive task specifications
+5. **stride-creating-goals** - Enforces proper goal structure and batch format
+6. **stride-enriching-tasks** - Transforms minimal task specs into complete implementation-ready tasks
+7. **stride-subagent-workflow** - Decision matrix for codebase exploration and code review agents
 
 ### Distribution Method
 

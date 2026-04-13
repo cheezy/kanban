@@ -194,7 +194,7 @@ Each format includes:
 - Installation command for Windows (using PowerShell)
 - Token limit information
 
-**Note**: Claude Code users should use the `claude_code_skills` section instead for comprehensive workflow enforcement.
+**Note**: Claude Code users should use the `claude_code_skills` section instead for comprehensive workflow enforcement. The recommended entry point for all platforms is the `stride-workflow` orchestrator skill, which walks through the complete task lifecycle (claim → explore → implement → review → complete) in a single skill.
 
 ### `api_reference`
 
