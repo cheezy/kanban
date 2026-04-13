@@ -80,6 +80,16 @@ stride:workflow invoked
 
 **Impact:** Defense-in-depth. Catches agents that skip the orchestrator and invoke the claiming skill directly. Combined with the orchestrator (item 2 above) and the verification checklist (item 3 below), this creates three layers of enforcement.
 
+### Completion Skill Verification Checklist (formerly item 3)
+
+**Status:** ✅ Completed — G52 (W192 main stride, W193 copilot, W194 gemini, W195 codex, W196 opencode)
+
+**What changed:** All 5 plugin completing skills now have a "BEFORE CALLING COMPLETE: Verification Checklist" section with 4 yes/no items: (1) Did you activate stride-workflow after claiming? (2) Did you explore the codebase? (3) Did you review changes against acceptance criteria? (4) Are you ready for the after_doing hook? If any answer is no, the agent is instructed to go back and complete the step before proceeding.
+
+**Scope:** `stride-completing-tasks/SKILL.md` in all 5 plugins (stride, stride-copilot, stride-gemini, stride-codex, stride-opencode). Placed before "The Complete Completion Process" section.
+
+**Impact:** Defense-in-depth. The completing skill is the last stop before the API call. The checklist catches agents that bypassed both the orchestrator and the claiming skill gate. Three layers of enforcement now active: orchestrator → claiming gate → completion checklist.
+
 ---
 
 ## Remaining Recommendations
@@ -125,36 +135,7 @@ If `explorer_result` or `reviewer_result` is missing, the API rejects with a 422
 - Must handle the case where small tasks legitimately skip exploration (the decision matrix allows this) — possibly by accepting `{"dispatched": false, "reason": "small task, 0-1 key_files"}` as a valid result
 - Platforms without subagent support would need a different format for these fields (self-reported exploration rather than agent dispatch)
 
-### 2. Completion Skill Verification Checklist (Soft Gate)
-
-**Problem:** Even with the orchestrator, agents may reach the completion phase having skipped intermediate steps. The completing skill currently has no verification that prior steps occurred.
-
-**Recommendation:** Add a mandatory self-check to the completing skill that blocks completion if the agent hasn't performed required steps:
-
-```
-BEFORE CALLING COMPLETE:
-
-Verify you completed these steps (answer each):
-□ Did you invoke stride:stride-workflow after claiming? (If no → invoke it now)
-□ Did you explore the codebase before coding? (If no → read key_files now)
-□ Did you review your changes against acceptance criteria? (If no → do it now)
-□ Did you run the after_doing hook? (If no → run it now)
-
-If ANY answer is NO → Go back and do it now. Do NOT proceed to complete.
-```
-
-**Scope across plugins:** Update the `stride-completing-tasks` SKILL.md in all 5 plugins.
-
-**Complexity:** Small — text changes to 5 SKILL.md files.
-
-**Tradeoffs:**
-
-- Adds a reflection point that catches skipped steps
-- Still a soft gate (agent can answer "yes" to everything without actually having done it)
-- Most useful as defense-in-depth alongside the orchestrator and API enforcement
-- The completing skill already has a "MANDATORY: Previous Skill Before Completing" section — this extends it with explicit yes/no verification
-
-### 3. Claude Code Hooks for Hard Local Gates
+### 2. Claude Code Hooks for Hard Local Gates
 
 **Problem:** On Claude Code specifically, the agent could start editing files before invoking the orchestrator. The hooks.json system can intercept tool calls, but currently only intercepts Stride API calls (claim, complete, mark_reviewed).
 
@@ -187,7 +168,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Could be fragile if the state file gets out of sync (e.g., agent crashes mid-workflow)
 - Must handle the case where edits are made outside of Stride tasks (not all edits are task work)
 
-### 4. Skills Version Enforcement
+### 3. Skills Version Enforcement
 
 **Problem:** When skills are updated (reframing, orchestrator), agents running older cached versions won't see the changes. The `skills_update_required` field in API responses is advisory — agents can ignore it.
 
@@ -213,7 +194,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Requires a grace period or warning-then-enforce strategy
 - Different plugins may have different version cadences
 
-### 5. Workflow Telemetry and Compliance Tracking
+### 4. Workflow Telemetry and Compliance Tracking
 
 **Problem:** There's no visibility into which workflow steps agents actually follow. The 17-task session's skipping was only discovered by manual review. Without telemetry, compliance issues go undetected.
 
@@ -257,7 +238,7 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 | 1 | Reframe automation notices | Small | Soft (messaging) | ✅ **Completed** (G44, G46-G50) |
 | 2 | Single orchestrator skill | Large | Soft (workflow) | ✅ **Completed** (G45, G46-G50) |
 | 3 | Embed orchestrator gate in claiming skill | Small | Soft (instruction) | ✅ **Completed** (G51) |
-| 4 | Completion skill verification checklist | Small | Soft (self-check) | Not started |
+| 4 | Completion skill verification checklist | Small | Soft (self-check) | ✅ **Completed** (G52) |
 | 5 | Skills version enforcement | Medium | Hard (API gate) | Not started |
 | 6 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
 | 7 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
@@ -267,7 +248,7 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 
 1. ~~Complete the in-progress work (G44-G50)~~ ✅ Done — orchestrator and reframed messaging deployed
 2. ~~Embed dispatch in claiming skill (G51)~~ ✅ Done — non-negotiable gate in all 5 plugins
-3. Completion skill verification checklist (G52) — small effort, defense-in-depth, in progress
+3. ~~Completion skill verification checklist (G52)~~ ✅ Done — 4-item checklist in all 5 plugins
 4. Skills version enforcement — ensures agents actually run the updated skills
 5. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
 6. Claude Code hooks + telemetry — platform-specific hardening and long-term visibility
