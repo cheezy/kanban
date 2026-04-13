@@ -242,7 +242,11 @@ git pull origin main
 
 ## Continuous Work Loop
 
-Agents should work continuously until encountering a task that needs review:
+**Recommended:** Use the `stride-workflow` orchestrator skill for the complete lifecycle. It walks through claim → explore → implement → review → complete in a single skill and handles the continuous loop automatically.
+
+**The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
+
+Agents should work continuously through the full workflow — do not prompt the user between steps, but do not skip steps either:
 
 ```
 ┌─────────────────────────────────────┐
@@ -622,7 +626,7 @@ The `needs_review` field provides flexible control over the review process:
 - **Clear workflow**: Agents know when to continue vs stop
 - **TASK_NEEDS_REVIEW**: Hooks can adapt behavior conditionally
 
-Remember: **If `needs_review = false`, IMMEDIATELY claim the next task to continue working.**
+Remember: **If `needs_review = false`, proceed to the next task. Do not prompt the user — but do not skip the exploration and review phases of the next task either. Following every step IS the fast path.**
 
 ## See Also
 

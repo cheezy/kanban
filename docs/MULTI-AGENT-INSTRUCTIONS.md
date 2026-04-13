@@ -43,9 +43,9 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Scope:** On-demand skill loading (invoked when needed)
 
-**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-completing-tasks`, `stride-enriching-tasks`, `stride-subagent-workflow`
+**Skills Provided:** `stride-workflow` (recommended entry point), `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
-> **🔌 REQUIRED: Install the Stride plugin from the marketplace.** Do NOT manually download skill files for Claude Code — use the plugin instead. The plugin provides the most up-to-date skills and is the only supported installation method.
+> **🔌 REQUIRED: Install the Stride plugin from the marketplace.** Do NOT manually download skill files for Claude Code — use the plugin instead. The plugin provides the most up-to-date skills and is the only supported installation method. The `stride-workflow` orchestrator is the recommended entry point for all task work.
 
 **Installation:**
 ```
@@ -63,11 +63,11 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 **Scope:** On-demand skill loading (activated when needed) + custom agents
 
-**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
+**Skills Provided:** `stride-workflow` (recommended entry point), `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
 **Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
 
-> **🔌 RECOMMENDED: Install the Stride Copilot plugin.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The plugin includes enrichment, subagent workflow orchestration, and custom agents that the manual download does not.
+> **🔌 RECOMMENDED: Install the Stride Copilot plugin.** This provides 7 skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill walks through the complete lifecycle in a single skill.
 
 **Installation:**
 
@@ -182,11 +182,11 @@ curl -o .continue/config.json \
 
 **Scope:** On-demand skill loading (activated when needed) + custom agents
 
-**Skills Provided:** `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
+**Skills Provided:** `stride-workflow` (recommended entry point), `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
 
 **Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
 
-> **🔌 RECOMMENDED: Install the Stride Gemini extension.** This provides the full set of 6 skills and 4 custom agents, compared to only 4 generic skills from the manual download. The extension includes enrichment, subagent workflow orchestration, custom agents, and a GEMINI.md bridge file that the manual download does not.
+> **🔌 RECOMMENDED: Install the Stride Gemini extension.** This provides 7 skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill walks through the complete lifecycle in a single skill.
 
 **Installation:**
 
