@@ -125,7 +125,7 @@ Run these two commands in Claude Code:
 /plugin install stride@stride-marketplace
 ```
 
-After installation, verify the plugin is active by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list.
+After installation, verify the plugin is active by checking that Stride skills appear in your available skills list. The recommended entry point is `stride-workflow` — a single orchestrator that walks through the complete task lifecycle.
 
 > **Automatic Hook Execution (v1.5.0+):** The Stride plugin includes Claude Code hooks that automatically execute your `.stride.md` commands without permission prompts. When the plugin is enabled, Stride API calls are detected and the corresponding hook section runs as a shell process on the harness — bypassing the CLI's tool permission layer entirely. No configuration needed beyond installing the plugin. See the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150) for details.
 
@@ -133,7 +133,7 @@ For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Mult
 
 ### Install the Stride Plugin (GitHub Copilot)
 
-> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Install the stride-copilot plugin to get the full set of 6 Copilot-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, and custom agents that the generic manual download does not include.
+> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Install the stride-copilot plugin to get 7 Copilot-adapted skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill is the recommended entry point for all task work.
 
 Install via the Copilot CLI:
 
@@ -153,7 +153,7 @@ For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](
 
 ### Install the Stride Extension (Gemini CLI)
 
-> **🔌 RECOMMENDED FOR GEMINI CLI USERS:** Install the Stride Gemini extension to get the full set of 6 Gemini-adapted skills and 4 custom agents. This provides enrichment, subagent workflow orchestration, custom agents, and a GEMINI.md bridge file that the generic manual download does not include.
+> **🔌 RECOMMENDED FOR GEMINI CLI USERS:** Install the Stride Gemini extension to get 7 Gemini-adapted skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill is the recommended entry point for all task work.
 
 Install the extension with a single command:
 
@@ -161,13 +161,13 @@ Install the extension with a single command:
 gemini extensions install https://github.com/cheezy/stride-gemini
 ```
 
-After installation, verify that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are accessible.
+After installation, verify that Stride skills appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are accessible. The recommended entry point is `stride-workflow`.
 
 For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
 ### Install the Stride Plugin (OpenCode)
 
-> **🔌 RECOMMENDED FOR OPENCODE USERS:** Install the stride-opencode plugin to get the full set of 6 OpenCode-adapted skills, 4 custom agents, and automatic hook execution via the TypeScript plugin.
+> **🔌 RECOMMENDED FOR OPENCODE USERS:** Install the stride-opencode plugin to get 7 OpenCode-adapted skills (including the `stride-workflow` orchestrator), 4 custom agents, and automatic hook execution via the TypeScript plugin.
 
 Add to your project's `opencode.json`:
 
@@ -183,13 +183,13 @@ Or install locally:
 curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project
 ```
 
-After installation, verify that Stride skills appear in your available skills list.
+After installation, verify that Stride skills appear in your available skills list. The recommended entry point is `stride-workflow`.
 
 For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
 
 ### Install the Stride Plugin (Codex CLI)
 
-> **🔌 RECOMMENDED FOR CODEX CLI USERS:** Install the stride-codex plugin to get the full set of 6 Codex-adapted skills and 4 subagents. Note: Codex has no automatic hook interception — skills instruct the agent to execute hooks directly.
+> **🔌 RECOMMENDED FOR CODEX CLI USERS:** Install the stride-codex plugin to get 7 Codex-adapted skills (including the `stride-workflow` orchestrator) and 4 subagents. Note: Codex has no automatic hook interception — skills instruct the agent to execute hooks directly.
 
 Install globally (available in all projects):
 
@@ -411,13 +411,15 @@ Give your AI agent this prompt to break down and upload a goal:
 >
 > **Important**: The API only supports uploading ONE goal per request. If you need to create multiple goals, you must make separate API calls for each goal."
 
-**✨ Claude Code Skills Available:**
-- Use `stride-claiming-tasks` before claiming tasks
-- Use `stride-completing-tasks` before marking tasks complete
+**✨ Stride Plugin Skills Available:**
+- Use `stride-workflow` for the complete task lifecycle (recommended entry point)
+- Use `stride-claiming-tasks` before claiming tasks (standalone mode)
+- Use `stride-completing-tasks` before marking tasks complete (standalone mode)
 - Use `stride-creating-tasks` for individual tasks and defects
 - Use `stride-creating-goals` for goals with nested tasks or batch creation
 
-These skills are automatically provided via the onboarding endpoint and enforce best practices:
+These skills are available via the Stride plugin for Claude Code, Gemini CLI, Copilot CLI, Codex CLI, and OpenCode:
+- `stride-workflow`: Single orchestrator that walks through claim → explore → implement → review → complete
 - `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
 - `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
 - `stride-creating-tasks`: Prevents 3+ hour exploration failures from minimal task specifications
@@ -675,7 +677,28 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/mark_reviewed \
 
 ### 6. Continuous Agent Work Loop
 
-**The ideal agent workflow:**
+**Recommended: Use the `stride-workflow` orchestrator.** It handles the full lifecycle in a single skill — no need to remember which skills to activate at which moments.
+
+**The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
+
+```
+Orchestrator flow (stride-workflow):
+1. Claim task (hooks fire automatically or are executed manually)
+2. Explore codebase (decision matrix determines depth)
+3. Implement changes
+4. Review against acceptance criteria
+5. Execute hooks (after_doing, before_review)
+6. Complete task
+7. IF needs_review = false:
+   → after_review hook fires
+   → Task to Done
+   → Loop to step 1 (claim next task)
+8. IF needs_review = true:
+   → Task to Review
+   → STOP and wait for human
+```
+
+**Manual flow (without orchestrator):**
 
 ```
 1. Execute before_doing hook (capture exit_code, output, duration_ms)
@@ -693,7 +716,7 @@ curl -X PATCH https://your-stride-instance.com/api/tasks/123/mark_reviewed \
    → STOP and wait for human
 ```
 
-**Key Point**: Agents should work continuously, claiming and completing tasks until they hit a task that requires review. This maximizes productivity.
+**Key Point**: Agents should work continuously through the full workflow — claiming, exploring, implementing, reviewing, and completing tasks. Do not prompt the user between steps, but do not skip steps either.
 
 See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
 
@@ -742,8 +765,8 @@ See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
 
 **Continuous Work:**
 - ✅ Keep claiming tasks until you hit `needs_review=true`
-- ✅ Don't wait between tasks
-- ✅ Maximize throughput while maintaining quality
+- ✅ Don't wait between tasks — but don't skip steps either
+- ✅ Following every step IS the fast path — skipping steps causes rework
 
 ### For Teams
 
