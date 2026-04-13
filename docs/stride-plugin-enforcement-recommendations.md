@@ -31,9 +31,9 @@ The agent optimized for throughput over process compliance, resolving the tensio
 
 ### Reframe Automation Notices (formerly item 4)
 
-**Status:** In progress — G44 (main stride), G46-G49 (copilot, gemini, codex, opencode), G50 (docs)
+**Status:** ✅ Completed — G44 (main stride), G46 (gemini: W172), G48 (codex: W175), G49 (opencode: W178), G50 (docs: W181-W184)
 
-**What changed:** All `⚡ AUTOMATION NOTICE ⚡` sections across all five plugins are being rewritten to emphasize process compliance rather than speed. The old framing said "work continuously without asking 'Should I continue?'" which agents generalized to "skip any step that feels optional." The new framing says:
+**What changed:** All `⚡ AUTOMATION NOTICE ⚡` sections across all five plugins have been rewritten to emphasize process compliance rather than speed. The old framing said "work continuously without asking 'Should I continue?'" which agents generalized to "skip any step that feels optional." The new framing says:
 
 > The agent should work continuously through the full workflow: explore → implement → review → complete. Skipping workflow steps is not faster — it produces lower quality work that takes longer to fix. The workflow IS the automation. Every step exists because skipping it caused failures.
 
@@ -43,7 +43,7 @@ The agent optimized for throughput over process compliance, resolving the tensio
 
 ### Single Orchestrator Skill (formerly item 2)
 
-**Status:** In progress — G45 (main stride design + implementation), G46-G49 (port to all plugins), G50 (docs)
+**Status:** ✅ Completed — G45 (main stride), G46 (gemini: W173-W174), G48 (codex: W176-W177), G49 (opencode: W179-W180), G50 (docs: W181-W184)
 
 **What changed:** A new `stride-workflow` skill replaces the pattern of 6+ disconnected skills that agents must remember to invoke at specific moments. The agent invokes one skill after deciding to work on tasks, and that skill walks through the complete sequence:
 
@@ -271,8 +271,8 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 
 | Priority | Recommendation | Effort | Enforcement Type | Status |
 | -------- | -------------- | ------ | ---------------- | ------ |
-| 1 | Reframe automation notices | Small | Soft (messaging) | **In progress** (G44, G46-G50) |
-| 2 | Single orchestrator skill | Large | Soft (workflow) | **In progress** (G45, G46-G50) |
+| 1 | Reframe automation notices | Small | Soft (messaging) | ✅ **Completed** (G44, G46-G50) |
+| 2 | Single orchestrator skill | Large | Soft (workflow) | ✅ **Completed** (G45, G46-G50) |
 | 3 | Embed dispatch in claiming skill | Small | Soft (instruction) | Not started |
 | 4 | Completion skill verification checklist | Small | Soft (self-check) | Not started |
 | 5 | Skills version enforcement | Medium | Hard (API gate) | Not started |

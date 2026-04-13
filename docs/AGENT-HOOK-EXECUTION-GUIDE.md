@@ -11,6 +11,8 @@ Stride uses a **client-side hook execution** architecture where:
 
 This design allows agents to integrate with git workflows, run quality checks, and perform setup/cleanup tasks automatically.
 
+**Recommended:** Use the `stride-workflow` orchestrator skill as your entry point. It handles hook execution as part of the complete task lifecycle (claim → explore → implement → review → complete). For platforms with automatic hook support (Claude Code, Gemini CLI, OpenCode), hooks fire automatically when API calls are made. For platforms with manual execution (Copilot CLI, Codex CLI, Cursor, Windsurf), the orchestrator guides you through each hook step.
+
 ## Platform Support
 
 This guide provides examples for multiple platforms:
