@@ -372,54 +372,73 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert copilot["uninstall"] == "copilot plugin uninstall stride-copilot"
     end
 
-    test "Cursor format uses Claude Code skills", %{conn: conn} do
+    test "Cursor format has full 7-skill support", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       cursor = response["multi_agent_instructions"]["formats"]["cursor"]
 
       # Verify basic structure
-      assert cursor["file_path"] == ".claude/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert cursor["file_path"] == ".cursor/skills/<skill-name>/SKILL.md (7 skills total)"
       assert cursor["description"] =~ "Cursor"
-      assert cursor["description"] =~ "Claude Code skills"
+      assert cursor["description"] =~ "stride-workflow"
 
       # Verify compatible_tools field includes both
       assert is_list(cursor["compatible_tools"])
       assert "Cursor" in cursor["compatible_tools"]
       assert "Claude Code" in cursor["compatible_tools"]
-      refute "OpenCode" in cursor["compatible_tools"]
-      refute "GitHub Copilot" in cursor["compatible_tools"]
-      refute "Kimi Code CLI (k2.5)" in cursor["compatible_tools"]
 
-      # Verify reference_section points to claude_code_skills
-      assert cursor["reference_section"] == "claude_code_skills"
+      # Verify skills_provided has all 7 skills
+      assert is_list(cursor["skills_provided"])
+      assert length(cursor["skills_provided"]) == 7
+      assert "stride-workflow" in cursor["skills_provided"]
+      assert "stride-claiming-tasks" in cursor["skills_provided"]
+      assert "stride-completing-tasks" in cursor["skills_provided"]
+      assert "stride-enriching-tasks" in cursor["skills_provided"]
+      assert "stride-subagent-workflow" in cursor["skills_provided"]
+
+      # Verify no reference_section (self-contained now)
+      refute Map.has_key?(cursor, "reference_section")
+
+      # Verify installation commands have curl
+      assert cursor["installation_unix"] =~ "curl"
+      assert cursor["installation_unix"] =~ ".cursor/skills/"
+      assert cursor["installation_windows"] =~ ".cursor/skills/"
 
       # Verify token limit
       assert cursor["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
     end
 
-    test "Windsurf format uses Claude Code skills", %{conn: conn} do
+    test "Windsurf format has full 7-skill support", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       windsurf = response["multi_agent_instructions"]["formats"]["windsurf"]
 
       # Verify basic structure
-      assert windsurf["file_path"] == ".windsurf/skills/<skill-name>/SKILL.md (4 skills total)"
+      assert windsurf["file_path"] == ".windsurf/skills/<skill-name>/SKILL.md (7 skills total)"
       assert windsurf["description"] =~ "Windsurf"
-      assert windsurf["description"] =~ "Claude Code skills"
+      assert windsurf["description"] =~ "stride-workflow"
 
       # Verify compatible_tools field includes both
       assert is_list(windsurf["compatible_tools"])
       assert "Windsurf" in windsurf["compatible_tools"]
       assert "Claude Code" in windsurf["compatible_tools"]
-      refute "OpenCode" in windsurf["compatible_tools"]
-      refute "GitHub Copilot" in windsurf["compatible_tools"]
-      refute "Cursor" in windsurf["compatible_tools"]
-      refute "Kimi Code CLI (k2.5)" in windsurf["compatible_tools"]
 
-      # Verify reference_section points to claude_code_skills
-      assert windsurf["reference_section"] == "claude_code_skills"
+      # Verify skills_provided has all 7 skills
+      assert is_list(windsurf["skills_provided"])
+      assert length(windsurf["skills_provided"]) == 7
+      assert "stride-workflow" in windsurf["skills_provided"]
+      assert "stride-claiming-tasks" in windsurf["skills_provided"]
+      assert "stride-enriching-tasks" in windsurf["skills_provided"]
+
+      # Verify no reference_section (self-contained now)
+      refute Map.has_key?(windsurf, "reference_section")
+
+      # Verify installation commands have curl and correct paths
+      assert windsurf["installation_unix"] =~ "curl"
+      assert windsurf["installation_unix"] =~ ".windsurf/skills/"
+      assert windsurf["installation_windows"] =~ ".windsurf/skills/"
 
       # Verify token limit
       assert windsurf["token_limit"] == "~2000-3000 tokens per skill (~100-150 lines each)"
@@ -592,6 +611,8 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert kimi["file_path"] == "AGENTS.md"
       assert kimi["description"] =~ "Kimi Code CLI"
       assert kimi["description"] =~ "append-mode"
+      assert kimi["description"] =~ "stride-workflow"
+      assert kimi["description"] =~ "verification checklist"
 
       # Verify compatible_tools field
       assert is_list(kimi["compatible_tools"])
@@ -697,16 +718,28 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert kimi_instructions["note"] =~ "AGENTS.md"
     end
 
-    test "Continue format remains unchanged as always-active", %{conn: conn} do
+    test "Continue.dev format has full 7-skill support", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       formats = response["multi_agent_instructions"]["formats"]
 
-      # Verify Continue format
       continue = formats["continue"]
-      assert continue["file_path"] == ".continue/config.json"
-      assert is_binary(continue["description"])
+      assert continue["file_path"] == ".continue/skills/<skill-name>/SKILL.md (7 skills total)"
+      assert continue["description"] =~ "stride-workflow"
+
+      # Verify skills_provided has all 7 skills
+      assert is_list(continue["skills_provided"])
+      assert length(continue["skills_provided"]) == 7
+      assert "stride-workflow" in continue["skills_provided"]
+
+      # Verify installation commands
+      assert continue["installation_unix"] =~ "curl"
+      assert continue["installation_unix"] =~ ".continue/skills/"
+
+      # Verify supplemental config.json preserved
+      assert is_map(continue["supplemental_config"])
+      assert continue["supplemental_config"]["download_url"] =~ "continue-config.json"
     end
 
     test "includes api_schema with all required sections", %{conn: conn} do
@@ -808,17 +841,21 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert skills["marketplace_repository"] == "https://github.com/cheezy/stride-marketplace"
     end
 
-    test "claude_code_skills lists all four skill names", %{conn: conn} do
+    test "claude_code_skills lists all seven skill names", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
 
       skills_included = response["claude_code_skills"]["skills_included"]
 
       assert is_list(skills_included)
+      assert length(skills_included) == 7
+      assert "stride-workflow" in skills_included
       assert "stride-claiming-tasks" in skills_included
       assert "stride-completing-tasks" in skills_included
       assert "stride-creating-tasks" in skills_included
       assert "stride-creating-goals" in skills_included
+      assert "stride-enriching-tasks" in skills_included
+      assert "stride-subagent-workflow" in skills_included
     end
   end
 end

@@ -4,6 +4,48 @@
 
 This project integrates with Stride, a kanban-based task management platform designed for AI-human collaboration. Stride provides task workflow enforcement through client-side hooks and comprehensive API endpoints for task management.
 
+## Workflow Orchestrator (stride-workflow)
+
+**The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
+
+When working on Stride tasks, follow this complete lifecycle for every task:
+
+```
+WORKFLOW (Claim → Explore → Implement → Review → Complete):
+├─ 1. Discovery: GET /api/tasks/next, review task details
+├─ 2. Claim: Execute before_doing hook manually, then POST /api/tasks/claim
+├─ 3. Explore (check decision matrix):
+│     ├─ Goal/large undecomposed → Break down, create via API
+│     ├─ Small, 0-1 key_files → Skip to Step 4
+│     └─ Otherwise → Read key_files, search patterns, outline approach
+├─ 4. Implement: Write code following acceptance_criteria, patterns_to_follow, pitfalls
+├─ 5. Review (check decision matrix):
+│     ├─ Small, 0-1 key_files → Skip to Step 6
+│     └─ Otherwise → Self-review against acceptance criteria + pitfalls
+├─ 6. Hooks: Execute after_doing (120s) + before_review (60s) manually
+├─ 7. Complete: PATCH /api/tasks/:id/complete with ALL required fields + hook results
+└─ 8. Loop: needs_review=false → Step 1 | needs_review=true → STOP
+```
+
+**Decision matrix for exploration and review:**
+- small + 0-1 key_files → Skip explore, plan, review
+- small + 2+ key_files → Explore + Review
+- medium/large → Explore + Plan + Review
+- goal/undecomposed → Decompose first
+
+**Do not prompt the user between steps. Do not skip steps. Both rules apply simultaneously.**
+
+### BEFORE CALLING COMPLETE: Verification Checklist
+
+Before calling the completion endpoint, verify ALL of these:
+
+1. Did you explore the codebase (read key_files, search for patterns, find related tests)?
+2. Did you review your changes against acceptance_criteria and pitfalls?
+3. Did you execute the after_doing hook successfully (tests pass, credo clean)?
+4. Did you execute the before_review hook successfully?
+
+**If any answer is NO, go back and complete that step before proceeding.**
+
 ## Hook Execution (MANDATORY)
 
 Stride enforces workflow discipline through four client-side hooks that execute on your machine:
@@ -306,10 +348,15 @@ Your project should have these files:
 - **API Reference:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md
 - **Hook Execution:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md
 - **AI Workflow:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md
+- **stride-workflow Skill:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/skills/stride-workflow/SKILL.md
 
 ## Quick Reference
 
-**Workflow:** before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
+**Workflow:** claim → explore → implement → review → hooks → complete → [if needs_review=false: loop, else: stop]
+
+**Full sequence:** before_doing hook → claim WITH result → explore codebase → implement → self-review against criteria → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
+
+**Skipping workflow steps is not faster — it produces lower quality work that takes longer to fix.**
 
 **API Base:** https://www.stridelikeaboss.com
 

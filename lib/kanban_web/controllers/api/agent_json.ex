@@ -91,7 +91,7 @@ defmodule KanbanWeb.API.AgentJSON do
           installation_steps: [
             "1. Run: /plugin marketplace add cheezy/stride-marketplace",
             "2. Run: /plugin install stride@stride-marketplace",
-            "3. The 4 Stride skills will be automatically available"
+            "3. The 7 Stride skills will be automatically available"
           ],
           verification:
             "The skills will appear in your skill list automatically after installation",
@@ -248,10 +248,13 @@ defmodule KanbanWeb.API.AgentJSON do
         plugin_repository: "https://github.com/cheezy/stride",
         marketplace_repository: "https://github.com/cheezy/stride-marketplace",
         skills_included: [
+          "stride-workflow",
           "stride-claiming-tasks",
           "stride-completing-tasks",
           "stride-creating-tasks",
-          "stride-creating-goals"
+          "stride-creating-goals",
+          "stride-enriching-tasks",
+          "stride-subagent-workflow"
         ]
       },
       workflow: [
@@ -600,79 +603,108 @@ defmodule KanbanWeb.API.AgentJSON do
             note:
               "The stride-copilot plugin provides Copilot-adapted versions of all 6 Stride skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic skill and agent discovery. See https://github.com/cheezy/stride-copilot for details.",
             fallback_note:
-              "For manual installation of 4 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .claude/skills/ — GitHub Copilot discovers them automatically."
+              "For manual installation of 7 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .claude/skills/ — GitHub Copilot discovers them automatically."
           },
           cursor: %{
-            file_path: ".claude/skills/<skill-name>/SKILL.md (4 skills total)",
+            file_path: ".cursor/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Cursor automatically discovers Claude Code skills - install the same skills used by Claude Code",
+              "Stride skills for Cursor — 7 skills including the stride-workflow orchestrator, downloaded into .cursor/skills/ for auto-discovery",
             compatible_tools: ["Cursor", "Claude Code"],
-            reference_section: "claude_code_skills",
-            note:
-              "Cursor automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Cursor will find them automatically. See https://cursor.com/docs/context/skills for details on Cursor's skill discovery mechanism.",
-            skills_note:
-              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .claude/skills/ and both Claude Code and Cursor will discover them.",
+            skills_provided: [
+              "stride-workflow",
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
+            ],
             installation_unix:
-              "# Cursor users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ work with both Claude Code and Cursor\n# See claude_code_skills.installation_instructions above for details",
+              "for skill in stride-workflow stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals stride-enriching-tasks stride-subagent-workflow; do mkdir -p .cursor/skills/$skill && curl -sL #{@docs_base_url}/docs/multi-agent-instructions/skills/$skill/SKILL.md -o .cursor/skills/$skill/SKILL.md; done",
             installation_windows:
-              "# Cursor users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to ~/.claude/skills/ or .claude/skills/ work with both Claude Code and Cursor\n# See claude_code_skills.installation_instructions above for details",
+              "$skills = @('stride-workflow','stride-claiming-tasks','stride-completing-tasks','stride-creating-tasks','stride-creating-goals','stride-enriching-tasks','stride-subagent-workflow'); foreach ($s in $skills) { New-Item -ItemType Directory -Force -Path \".cursor/skills/$s\" | Out-Null; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/skills/$s/SKILL.md\" -OutFile \".cursor/skills/$s/SKILL.md\" }",
+            note:
+              "Cursor automatically discovers skills in .cursor/skills/ directories. These 7 skills include the stride-workflow orchestrator (complete task lifecycle), enforcement gates (claiming gate, verification checklist), and reframed process-over-speed messaging. See https://cursor.com/docs/context/skills for details.",
             token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
             alternative_locations: [
-              "Recommended: .claude/skills/<skill-name>/SKILL.md (works with both Claude Code and Cursor)",
-              "Cursor-specific: .cursor/skills/<skill-name>/SKILL.md (Cursor only)",
-              "Global: ~/.claude/skills/<skill-name>/SKILL.md or ~/.cursor/skills/<skill-name>/SKILL.md"
+              "Recommended: .cursor/skills/<skill-name>/SKILL.md (Cursor auto-discovers)",
+              "Also works: .claude/skills/<skill-name>/SKILL.md (cross-compatible with Claude Code)",
+              "Global: ~/.cursor/skills/<skill-name>/SKILL.md"
             ],
             safe_installation: %{
               check_existing:
-                "ls -la .claude/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
+                "ls -la .cursor/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
               backup_first:
-                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .claude/skills/$skill/SKILL.md ] && cp .claude/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md.backup; done",
-              install_from_claude_skills:
-                "Refer to claude_code_skills section above for complete installation. The skills work identically for Cursor since it discovers .claude/skills/ automatically.",
+                "for skill in stride-workflow stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals stride-enriching-tasks stride-subagent-workflow; do [ -f .cursor/skills/$skill/SKILL.md ] && cp .cursor/skills/$skill/SKILL.md .cursor/skills/$skill/SKILL.md.backup; done",
               usage:
-                "Invoke specific skills in Cursor when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Cursor will automatically find skills in .claude/skills/ directories."
+                "Invoke the stride-workflow skill to start the complete task lifecycle. Individual skills are also available: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Cursor will automatically find skills in .cursor/skills/ directories."
             }
           },
           windsurf: %{
-            file_path: ".windsurf/skills/<skill-name>/SKILL.md (4 skills total)",
+            file_path: ".windsurf/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Windsurf automatically discovers Claude Code skills - install the same skills used by Claude Code",
+              "Stride skills for Windsurf — 7 skills including the stride-workflow orchestrator, downloaded into .windsurf/skills/ for auto-discovery",
             compatible_tools: ["Windsurf", "Claude Code"],
-            reference_section: "claude_code_skills",
-            note:
-              "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Simply install the Claude Code skills from the claude_code_skills section above, and Windsurf will find them automatically. See https://docs.windsurf.com/windsurf/cascade/skills for details on Windsurf's skill discovery mechanism.",
-            skills_note:
-              "The 4 Stride skills (stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals) are defined in the claude_code_skills section above. Install them to .windsurf/skills/ and both Claude Code and Windsurf will discover them.",
+            skills_provided: [
+              "stride-workflow",
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
+            ],
             installation_unix:
-              "# Windsurf users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf\n# See claude_code_skills.installation_instructions above for details",
+              "for skill in stride-workflow stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals stride-enriching-tasks stride-subagent-workflow; do mkdir -p .windsurf/skills/$skill && curl -sL #{@docs_base_url}/docs/multi-agent-instructions/skills/$skill/SKILL.md -o .windsurf/skills/$skill/SKILL.md; done",
             installation_windows:
-              "# Windsurf users: Use the Claude Code skill installation from claude_code_skills section\n# Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf\n# See claude_code_skills.installation_instructions above for details",
+              "$skills = @('stride-workflow','stride-claiming-tasks','stride-completing-tasks','stride-creating-tasks','stride-creating-goals','stride-enriching-tasks','stride-subagent-workflow'); foreach ($s in $skills) { New-Item -ItemType Directory -Force -Path \".windsurf/skills/$s\" | Out-Null; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/skills/$s/SKILL.md\" -OutFile \".windsurf/skills/$s/SKILL.md\" }",
+            note:
+              "Windsurf automatically discovers skills in .windsurf/skills/ directories. These 7 skills include the stride-workflow orchestrator (complete task lifecycle), enforcement gates (claiming gate, verification checklist), and reframed process-over-speed messaging. See https://docs.windsurf.com/windsurf/cascade/skills for details.",
             token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
             alternative_locations: [
-              "Recommended: .windsurf/skills/<skill-name>/SKILL.md (works with both Claude Code and Windsurf)",
-              "Global: ~/.codeium/windsurf/skills/<skill-name>/SKILL.md or ~/.claude/skills/<skill-name>/SKILL.md"
+              "Recommended: .windsurf/skills/<skill-name>/SKILL.md (Windsurf auto-discovers)",
+              "Global: ~/.codeium/windsurf/skills/<skill-name>/SKILL.md"
             ],
             safe_installation: %{
               check_existing:
                 "ls -la .windsurf/skills/stride-* 2>/dev/null | grep -c 'stride-' || echo '0 skills found'",
               backup_first:
-                "for skill in stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals; do [ -f .windsurf/skills/$skill/SKILL.md ] && cp .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup; done",
-              install_from_claude_skills:
-                "Refer to claude_code_skills section above for complete installation. The skills work identically for Windsurf since it discovers .windsurf/skills/ automatically.",
+                "for skill in stride-workflow stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals stride-enriching-tasks stride-subagent-workflow; do [ -f .windsurf/skills/$skill/SKILL.md ] && cp .windsurf/skills/$skill/SKILL.md .windsurf/skills/$skill/SKILL.md.backup; done",
               usage:
-                "Invoke specific skills in Windsurf when needed: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Windsurf will automatically find skills in .windsurf/skills/ directories."
+                "Invoke the stride-workflow skill to start the complete task lifecycle. Individual skills are also available: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc. Windsurf will automatically find skills in .windsurf/skills/ directories."
             }
           },
           continue: %{
-            file_path: ".continue/config.json",
+            file_path: ".continue/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Continue.dev configuration (project-scoped JSON with context providers)",
-            download_url: "#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+              "Stride skills for Continue.dev — 7 skills including the stride-workflow orchestrator, downloaded into .continue/skills/ for auto-discovery",
+            compatible_tools: ["Continue.dev"],
+            skills_provided: [
+              "stride-workflow",
+              "stride-claiming-tasks",
+              "stride-completing-tasks",
+              "stride-creating-tasks",
+              "stride-creating-goals",
+              "stride-enriching-tasks",
+              "stride-subagent-workflow"
+            ],
             installation_unix:
-              "mkdir -p .continue && curl -o .continue/config.json #{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+              "for skill in stride-workflow stride-claiming-tasks stride-completing-tasks stride-creating-tasks stride-creating-goals stride-enriching-tasks stride-subagent-workflow; do mkdir -p .continue/skills/$skill && curl -sL #{@docs_base_url}/docs/multi-agent-instructions/skills/$skill/SKILL.md -o .continue/skills/$skill/SKILL.md; done",
             installation_windows:
-              "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json\" -OutFile .continue/config.json",
-            token_limit: "Flexible (~100 lines JSON, uses context providers)"
+              "$skills = @('stride-workflow','stride-claiming-tasks','stride-completing-tasks','stride-creating-tasks','stride-creating-goals','stride-enriching-tasks','stride-subagent-workflow'); foreach ($s in $skills) { New-Item -ItemType Directory -Force -Path \".continue/skills/$s\" | Out-Null; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/skills/$s/SKILL.md\" -OutFile \".continue/skills/$s/SKILL.md\" }",
+            note:
+              "Continue.dev discovers skills in .continue/skills/ directories (added Jan 2026). These 7 skills include the stride-workflow orchestrator (complete task lifecycle), enforcement gates (claiming gate, verification checklist), and reframed process-over-speed messaging.",
+            token_limit: "~2000-3000 tokens per skill (~100-150 lines each)",
+            supplemental_config: %{
+              description:
+                "Optional Continue.dev config.json with context providers (supplemental to skills)",
+              download_url:
+                "#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+              installation_unix:
+                "mkdir -p .continue && curl -o .continue/config.json #{@docs_base_url}/docs/multi-agent-instructions/continue-config.json",
+              installation_windows:
+                "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"#{@docs_base_url}/docs/multi-agent-instructions/continue-config.json\" -OutFile .continue/config.json"
+            }
           },
           gemini: %{
             description:
@@ -699,7 +731,7 @@ defmodule KanbanWeb.API.AgentJSON do
             note:
               "The stride-gemini extension provides Gemini-adapted versions of all 6 Stride skills with Gemini tool names and 4 custom agents with Gemini-specific parameters (temperature, max_turns, timeout_mins). Includes GEMINI.md bridge file for workflow enforcement. See https://github.com/cheezy/stride-gemini for details.",
             fallback_note:
-              "For manual installation of 4 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .gemini/skills/ — Gemini discovers them automatically."
+              "For manual installation of 7 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .gemini/skills/ — Gemini discovers them automatically."
           },
           opencode: %{
             description:
@@ -757,7 +789,8 @@ defmodule KanbanWeb.API.AgentJSON do
           },
           kimi: %{
             file_path: "AGENTS.md",
-            description: "Kimi Code CLI (k2.5) instructions (append-mode, always-active)",
+            description:
+              "Kimi Code CLI (k2.5) instructions with stride-workflow orchestrator, verification checklist, and enforcement messaging (append-mode, always-active)",
             compatible_tools: ["Kimi Code CLI (k2.5)"],
             download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
             installation_unix:
@@ -790,12 +823,12 @@ defmodule KanbanWeb.API.AgentJSON do
           "Token limits vary by assistant - content is optimized accordingly",
           "Claude Code users should use claude_code_skills section above (not this section)",
           "GitHub Copilot users: RECOMMENDED: copilot plugin install https://github.com/cheezy/stride-copilot (6 skills + 4 agents). Fallback: install Claude Code skills to .claude/skills/",
-          "Cursor users: Install the Claude Code skills from claude_code_skills section - Cursor automatically discovers .claude/skills/ directories",
-          "Windsurf users: Install the Claude Code skills from claude_code_skills section - Windsurf automatically discovers .windsurf/skills/ directories",
+          "Cursor users: Install 7 Stride skills (including stride-workflow orchestrator) to .cursor/skills/ - see multi_agent_instructions.cursor for curl commands",
+          "Windsurf users: Install 7 Stride skills (including stride-workflow orchestrator) to .windsurf/skills/ - see multi_agent_instructions.windsurf for curl commands",
           "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (6 skills + 4 agents). Fallback: install Claude Code skills to .gemini/skills/",
           "OpenCode users: RECOMMENDED: Add \"github:cheezy/stride-opencode\" to opencode.json plugin array (6 skills + 4 agents + auto hooks). Fallback: install skills to .opencode/skills/",
           "Codex CLI users: RECOMMENDED: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash (6 skills + 4 agents). Manual hook execution.",
-          "Kimi Code CLI (k2.5) users: If you already have AGENTS.md, append Stride instructions to it; otherwise create new AGENTS.md"
+          "Kimi Code CLI (k2.5) users: Enhanced AGENTS.md with stride-workflow orchestrator, verification checklist, and enforcement messaging. Append to existing AGENTS.md or create new"
         ],
         safe_installation: [
           "RECOMMENDED: Check if config file exists before overwriting: [ -f .cursorrules ] && echo 'File exists, backup first'",
@@ -854,30 +887,32 @@ defmodule KanbanWeb.API.AgentJSON do
             """
           },
           cursor: %{
-            description: "For Cursor users (uses Claude Code skills)",
+            description:
+              "For Cursor users — install 7 Stride skills including the stride-workflow orchestrator",
             steps: [
-              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .claude/skills/ directories",
-              "2. Cursor automatically discovers skills in .claude/skills/ - no additional configuration needed",
+              "1. Install all 7 Stride skills: run the installation command from multi_agent_instructions.cursor.installation_unix above",
+              "2. Cursor automatically discovers skills in .cursor/skills/ - no additional configuration needed",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
-              "4. Invoke skills in Cursor: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
-              "5. The skills will load Stride integration instructions on-demand",
-              "6. Skills installed to .claude/skills/ work with Claude Code, GitHub Copilot, Cursor, and OpenCode"
+              "4. Invoke stride-workflow to start the complete task lifecycle (claim → explore → implement → review → complete)",
+              "5. Individual skills are also available: 'stride-claiming-tasks', 'stride-completing-tasks', etc.",
+              "6. Skills include the workflow orchestrator, enforcement gates, and all task creation formats"
             ],
             note:
-              "Cursor automatically discovers skills in .claude/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Cursor will find them. See https://cursor.com/docs/context/skills for details."
+              "Cursor automatically discovers skills in .cursor/skills/ directories. The 7 Stride skills include stride-workflow (orchestrator), stride-claiming-tasks (with claiming gate), stride-completing-tasks (with verification checklist), stride-creating-tasks, stride-creating-goals, stride-enriching-tasks, and stride-subagent-workflow."
           },
           windsurf: %{
-            description: "For Windsurf users (uses Claude Code skills)",
+            description:
+              "For Windsurf users — install 7 Stride skills including the stride-workflow orchestrator",
             steps: [
-              "1. Install the 4 Claude Code skills listed in claude_code_skills section above to .windsurf/skills/ directories",
+              "1. Install all 7 Stride skills: run the installation command from multi_agent_instructions.windsurf.installation_unix above",
               "2. Windsurf automatically discovers skills in .windsurf/skills/ - no additional configuration needed",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
-              "4. Invoke skills in Windsurf: 'stride-claiming-tasks' when claiming, 'stride-completing-tasks' when finishing work, etc.",
-              "5. The skills will load Stride integration instructions on-demand",
-              "6. Skills installed to .windsurf/skills/ work with both Claude Code and Windsurf"
+              "4. Invoke stride-workflow to start the complete task lifecycle (claim → explore → implement → review → complete)",
+              "5. Individual skills are also available: 'stride-claiming-tasks', 'stride-completing-tasks', etc.",
+              "6. Skills include the workflow orchestrator, enforcement gates, and all task creation formats"
             ],
             note:
-              "Windsurf automatically discovers skills in .windsurf/skills/ directories, making it compatible with Claude Code skills. Install the Claude Code skills from the claude_code_skills section, and Windsurf will find them. See https://docs.windsurf.com/windsurf/cascade/skills for details."
+              "Windsurf automatically discovers skills in .windsurf/skills/ directories. The 7 Stride skills include stride-workflow (orchestrator), stride-claiming-tasks (with claiming gate), stride-completing-tasks (with verification checklist), stride-creating-tasks, stride-creating-goals, stride-enriching-tasks, and stride-subagent-workflow."
           },
           gemini: %{
             description:
@@ -887,7 +922,7 @@ defmodule KanbanWeb.API.AgentJSON do
               "2. This provides 6 Gemini-adapted skills + 4 custom agents + GEMINI.md bridge file",
               "3. Create .stride.md and .stride_auth.md files from the templates above",
               "4. Skills activate automatically when Stride API calls are made",
-              "FALLBACK: Install 4 generic skills from claude_code_skills section to .gemini/skills/ directories"
+              "FALLBACK: Install 7 generic skills from claude_code_skills section to .gemini/skills/ directories"
             ],
             note:
               "The stride-gemini extension provides Gemini-adapted skills with Gemini tool names (run_shell_command, read_file, grep_search, etc.) and custom agents with Gemini-specific parameters. See https://github.com/cheezy/stride-gemini for details."
@@ -917,7 +952,7 @@ defmodule KanbanWeb.API.AgentJSON do
               "3. Create .stride.md and .stride_auth.md files from the templates above",
               "4. Skills activate automatically when Stride API calls are made",
               "5. Update with: copilot plugin update stride-copilot",
-              "FALLBACK: Install 4 generic skills from claude_code_skills section to .claude/skills/ directories"
+              "FALLBACK: Install 7 generic skills from claude_code_skills section to .claude/skills/ directories"
             ],
             note:
               "The stride-copilot plugin provides Copilot-adapted skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic discovery. See https://github.com/cheezy/stride-copilot for details."
