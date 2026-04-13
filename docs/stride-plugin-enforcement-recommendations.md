@@ -13,13 +13,13 @@ The agent optimized for throughput over process compliance, resolving the tensio
 
 ### Root Causes
 
-1. **Instructions without enforcement are eventually ignored.** The skills say MANDATORY but nothing prevents the agent from skipping them. The API accepts complete requests without evidence that subagents were dispatched.
+1. **Instructions without enforcement are eventually ignored.** The skills say MANDATORY but nothing prevents the agent from skipping them. The API accepts complete requests without evidence that subagents were dispatched. *(Partially addressed: soft gates added via orchestrator, claiming gate, and verification checklist. Hard API gates remain as future work.)*
 
-2. **Too many disconnected skills.** The agent must remember to invoke 6+ separate skills at specific moments in a workflow. Each is a separate context load. Under pressure to deliver quickly, the agent drops the ones that feel optional.
+2. **Too many disconnected skills.** The agent must remember to invoke 6+ separate skills at specific moments in a workflow. Each is a separate context load. Under pressure to deliver quickly, the agent drops the ones that feel optional. *(Addressed: stride-workflow orchestrator absorbs all skills into one entry point.)*
 
-3. **Conflicting emphasis.** The `⚡ AUTOMATION NOTICE ⚡` sections in claiming and completing skills emphasize "work continuously without ANY user prompts" and "Do NOT prompt." This primes the agent to prioritize throughput, which it then generalizes to skipping process steps.
+3. **Conflicting emphasis.** The `⚡ AUTOMATION NOTICE ⚡` sections in claiming and completing skills emphasize "work continuously without ANY user prompts" and "Do NOT prompt." This primes the agent to prioritize throughput, which it then generalizes to skipping process steps. *(Addressed: all automation notices reframed to "the workflow IS the automation — every step exists because skipping it caused failures.")*
 
-4. **No hard gates.** The after_doing and before_review hooks are enforced because the API rejects requests without their results. The subagent steps have no equivalent enforcement.
+4. **No hard gates.** The after_doing and before_review hooks are enforced because the API rejects requests without their results. The subagent steps have no equivalent enforcement. *(Partially addressed: three soft gates now in place. Hard API gates for explorer/reviewer results remain as future work.)*
 
 ### Core Principle
 
@@ -63,10 +63,11 @@ stride:workflow invoked
 
 **Platform coverage:**
 
-- **Claude Code** — Full subagent dispatch (explorer, planner, reviewer)
-- **Copilot, Codex** — No subagents, manual hook execution, task metadata guidance
-- **Gemini** — No subagents, automatic hook execution
-- **OpenCode** — No subagents, TypeScript/Bun execution model
+- **Claude Code** — Full subagent dispatch (explorer, planner, reviewer, decomposer, diagnostician) + automatic hook execution via hooks.json
+- **Copilot** — Custom agents (explorer, reviewer, decomposer, diagnostician) + manual hook execution
+- **Gemini** — Custom agents + automatic hook execution via `tool.execute.before`/`tool.execute.after` + hooks.json
+- **Codex** — Custom agents with graceful fallback + manual hook execution
+- **OpenCode** — Custom agents with graceful fallback + automatic hook execution via `tool.execute.before`/`tool.execute.after`
 
 **Impact:** Eliminates the "forgot to invoke that separate skill" failure mode entirely. The agent invokes one thing and follows it through. Highest-impact change short of API enforcement.
 
@@ -89,6 +90,37 @@ stride:workflow invoked
 **Scope:** `stride-completing-tasks/SKILL.md` in all 5 plugins (stride, stride-copilot, stride-gemini, stride-codex, stride-opencode). Placed before "The Complete Completion Process" section.
 
 **Impact:** Defense-in-depth. The completing skill is the last stop before the API call. The checklist catches agents that bypassed both the orchestrator and the claiming skill gate. Three layers of enforcement now active: orchestrator → claiming gate → completion checklist.
+
+### Plugin Releases (G53)
+
+**Status:** ✅ Completed — G53 (W198-W202)
+
+All enforcement gate changes have been released across all 5 plugins:
+
+| Plugin | Version | Task | Key Changes |
+|--------|---------|------|-------------|
+| stride (Claude Code) | 1.7.0 | W198 | Claiming gate + verification checklist |
+| stride-copilot | 2.3.0 | W199 | Same + plugin.json bump |
+| stride-gemini | 1.3.0 | W200 | Same (CHANGELOG only) |
+| stride-codex | 1.2.0 | W201 | Same (CHANGELOG only) |
+| stride-opencode | 1.2.0 | W202 | Same + package.json bump |
+
+All repos committed and pushed to origin on 2026-04-13.
+
+### Documentation Updates (G50)
+
+**Status:** ✅ Completed — G50 (W181-W185)
+
+All core documentation updated to reference the orchestrator and use process-over-speed messaging:
+
+- `docs/AI-WORKFLOW.md` (W181) — stride-workflow as primary entry point, reframed CRITICAL notices
+- `docs/GETTING-STARTED-WITH-AI.md` (W182) — stride-workflow in all 5 platform sections, updated continuous work loop
+- `docs/MULTI-AGENT-INSTRUCTIONS.md` (W183) — stride-workflow in Claude Code, Copilot, Gemini skills lists
+- `docs/REVIEW-WORKFLOW.md` (W183) — orchestrator in continuous work loop, reframed summary
+- `docs/api/get_agent_onboarding.md` (W184) — stride-workflow reference in multi-agent note
+- `docs/STRIDE-SKILLS-PLAN.md` (W184) — all 7 deployed skills listed
+- `docs/AGENT-HOOK-EXECUTION-GUIDE.md` (W185) — orchestrator reference in overview
+- This file (W185, W191, W197) — implementation status updates
 
 ---
 
@@ -239,16 +271,21 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 | 2 | Single orchestrator skill | Large | Soft (workflow) | ✅ **Completed** (G45, G46-G50) |
 | 3 | Embed orchestrator gate in claiming skill | Small | Soft (instruction) | ✅ **Completed** (G51) |
 | 4 | Completion skill verification checklist | Small | Soft (self-check) | ✅ **Completed** (G52) |
-| 5 | Skills version enforcement | Medium | Hard (API gate) | Not started |
-| 6 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
-| 7 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
-| 8 | Workflow telemetry and compliance tracking | Large | Observability | Not started |
+| 5 | Release all plugins | Small | Deployment | ✅ **Completed** (G53) |
+| 6 | Skills version enforcement | Medium | Hard (API gate) | Not started |
+| 7 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
+| 8 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
+| 9 | Workflow telemetry and compliance tracking | Large | Observability | Not started |
 
 **Recommended sequence:**
 
-1. ~~Complete the in-progress work (G44-G50)~~ ✅ Done — orchestrator and reframed messaging deployed
-2. ~~Embed dispatch in claiming skill (G51)~~ ✅ Done — non-negotiable gate in all 5 plugins
-3. ~~Completion skill verification checklist (G52)~~ ✅ Done — 4-item checklist in all 5 plugins
-4. Skills version enforcement — ensures agents actually run the updated skills
-5. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
-6. Claude Code hooks + telemetry — platform-specific hardening and long-term visibility
+1. ~~Reframe automation notices (G44, G46-G50)~~ ✅ Done — process-over-speed messaging in all plugins and docs
+2. ~~Single orchestrator skill (G45, G46-G50)~~ ✅ Done — stride-workflow in all 5 plugins
+3. ~~Embed orchestrator gate in claiming skill (G51)~~ ✅ Done — non-negotiable gate in all 5 plugins
+4. ~~Completion skill verification checklist (G52)~~ ✅ Done — 4-item checklist in all 5 plugins
+5. ~~Release all plugins (G53)~~ ✅ Done — stride 1.7.0, copilot 2.3.0, gemini 1.3.0, codex 1.2.0, opencode 1.2.0
+6. Skills version enforcement — ensures agents actually run the updated skills
+7. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
+8. Claude Code hooks + telemetry — platform-specific hardening and long-term visibility
+
+**Current state (2026-04-13):** All soft enforcement gates are implemented and released. The four remaining items are hard gates (API enforcement, version enforcement) and observability (telemetry). These require server-side changes and are higher effort.
