@@ -11,16 +11,27 @@ defmodule KanbanWeb.API.TaskController do
     board = conn.assigns.current_board
 
     if params["column_id"] do
-      column = Columns.get_column!(params["column_id"])
+      case parse_id(params["column_id"]) do
+        {:ok, column_id} ->
+          column = Columns.get_column!(column_id)
 
-      case verify_column_ownership(column, board) do
-        :ok ->
-          tasks = Tasks.list_tasks(column)
-          emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-          render(conn, :index, tasks: tasks)
+          case verify_column_ownership(column, board) do
+            :ok ->
+              tasks = Tasks.list_tasks(column)
+              emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+              render(conn, :index, tasks: tasks)
 
-        error ->
-          handle_task_error(conn, error)
+            error ->
+              handle_task_error(conn, error)
+          end
+
+        :error ->
+          error_response(
+            conn,
+            :bad_request,
+            "Invalid column_id: must be an integer",
+            :invalid_param
+          )
       end
     else
       columns = Columns.list_columns(board)
@@ -67,26 +78,38 @@ defmodule KanbanWeb.API.TaskController do
     user = conn.assigns.current_user
     api_token = conn.assigns.api_token
 
-    column_id = task_params["column_id"] || get_default_column_id(board)
-    column = Columns.get_column!(column_id)
+    case parse_id(task_params["column_id"] || get_default_column_id(board)) do
+      {:ok, column_id} ->
+        column = Columns.get_column!(column_id)
 
-    case verify_column_ownership(column, board) do
-      :ok ->
-        task_params_with_creator = build_task_params_with_creator(task_params, user, api_token)
-        child_tasks = Map.get(task_params, "tasks", [])
+        case verify_column_ownership(column, board) do
+          :ok ->
+            task_params_with_creator =
+              build_task_params_with_creator(task_params, user, api_token)
 
-        if child_tasks != [] do
-          column
-          |> Tasks.create_goal_with_tasks(task_params_with_creator, child_tasks)
-          |> handle_goal_creation(conn)
-        else
-          column
-          |> Tasks.create_task(task_params_with_creator)
-          |> handle_task_creation(conn)
+            child_tasks = Map.get(task_params, "tasks", [])
+
+            if child_tasks != [] do
+              column
+              |> Tasks.create_goal_with_tasks(task_params_with_creator, child_tasks)
+              |> handle_goal_creation(conn)
+            else
+              column
+              |> Tasks.create_task(task_params_with_creator)
+              |> handle_task_creation(conn)
+            end
+
+          error ->
+            handle_task_error(conn, error)
         end
 
-      error ->
-        handle_task_error(conn, error)
+      :error ->
+        error_response(
+          conn,
+          :bad_request,
+          "Invalid column_id: must be an integer",
+          :invalid_param
+        )
     end
   end
 
@@ -896,6 +919,17 @@ defmodule KanbanWeb.API.TaskController do
       index: index
     })
   end
+
+  defp parse_id(id) when is_integer(id), do: {:ok, id}
+
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int_id, ""} -> {:ok, int_id}
+      _ -> :error
+    end
+  end
+
+  defp parse_id(_), do: :error
 
   defp handle_hook_validation_error(conn, hook_name, reason) do
     error_response =

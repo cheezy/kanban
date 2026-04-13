@@ -113,6 +113,18 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 422)["errors"] != %{}
     end
 
+    test "returns 400 for invalid column_id in create", %{conn: conn} do
+      task_params = %{
+        "title" => "Test Task",
+        "column_id" => "306,305"
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+      response = json_response(conn, 400)
+
+      assert response["error"] =~ "Invalid column_id"
+    end
+
     test "returns 401 without authentication" do
       conn = build_conn()
       conn = put_req_header(conn, "accept", "application/json")
@@ -618,6 +630,20 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert is_list(response["data"])
       titles = Enum.map(response["data"], & &1["title"])
       assert "Task 1" in titles
+    end
+
+    test "returns 400 for comma-separated column_id", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks?column_id=306,305")
+      response = json_response(conn, 400)
+
+      assert response["error"] =~ "Invalid column_id"
+    end
+
+    test "returns 400 for non-numeric column_id", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks?column_id=abc")
+      response = json_response(conn, 400)
+
+      assert response["error"] =~ "Invalid column_id"
     end
 
     test "returns 401 without authentication" do
