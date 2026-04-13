@@ -183,7 +183,10 @@
       "Bash(for skill:*)",
       "Bash(do)",
       "Bash(/Users/cheezy/dev/elixir/kanban/stride-codex/skills/$skill/SKILL.md:*)",
-      "Bash(sed -i '' \"s/SKILLNAME/$skill/\" /Users/cheezy/dev/elixir/kanban/stride-codex/skills/$skill/SKILL.md)"
+      "Bash(sed -i '' \"s/SKILLNAME/$skill/\" /Users/cheezy/dev/elixir/kanban/stride-codex/skills/$skill/SKILL.md)",
+      "Bash([ -f \"/Users/cheezy/dev/elixir/kanban/$plugin/plugin.json\" ])",
+      "Bash([ -f \"/Users/cheezy/dev/elixir/kanban/$plugin/package.json\" ])",
+      "Bash([ -f \"/Users/cheezy/dev/elixir/kanban/$plugin/CHANGELOG.md\" ])"
     ],
     "deny": [],
     "ask": []
