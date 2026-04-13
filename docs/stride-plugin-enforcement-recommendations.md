@@ -70,6 +70,16 @@ stride:workflow invoked
 
 **Impact:** Eliminates the "forgot to invoke that separate skill" failure mode entirely. The agent invokes one thing and follows it through. Highest-impact change short of API enforcement.
 
+### Embed Orchestrator Gate in Claiming Skill (formerly item 2)
+
+**Status:** ✅ Completed — G51 (W186 main stride, W187 copilot, W188 gemini, W189 codex, W190 opencode)
+
+**What changed:** All 5 plugin claiming skills now have a non-negotiable "YOUR NEXT STEP" gate that demands `stride-workflow` invocation immediately after claiming. The previous "Recommended: Use the Workflow Orchestrator" section has been replaced with language that explicitly states this is not optional, not a suggestion — it IS the next step. The standalone mode section now includes a workflow violation warning.
+
+**Scope:** `stride-claiming-tasks/SKILL.md` in all 5 plugins (stride, stride-copilot, stride-gemini, stride-codex, stride-opencode).
+
+**Impact:** Defense-in-depth. Catches agents that skip the orchestrator and invoke the claiming skill directly. Combined with the orchestrator (item 2 above) and the verification checklist (item 3 below), this creates three layers of enforcement.
+
 ---
 
 ## Remaining Recommendations
@@ -115,34 +125,7 @@ If `explorer_result` or `reviewer_result` is missing, the API rejects with a 422
 - Must handle the case where small tasks legitimately skip exploration (the decision matrix allows this) — possibly by accepting `{"dispatched": false, "reason": "small task, 0-1 key_files"}` as a valid result
 - Platforms without subagent support would need a different format for these fields (self-reported exploration rather than agent dispatch)
 
-### 2. Embed Subagent Dispatch in the Claiming Skill (Soft Gate)
-
-**Problem:** Even with the orchestrator skill available, agents may still invoke the claiming skill directly (it remains available for standalone use). The claiming skill currently ends with "BEGIN IMPLEMENTATION IMMEDIATELY" which sends agents straight to coding.
-
-**Recommendation:** Change the claiming skill's post-claim instructions to make the orchestrator the non-negotiable next step:
-
-```
-Task claimed successfully.
-
-YOUR NEXT STEP (NON-NEGOTIABLE):
-Invoke the stride:stride-workflow skill NOW.
-Do NOT write any code, create any files, or make any edits until you have.
-
-This is not optional. This is not a suggestion. This IS the next step.
-```
-
-**Scope across plugins:** Update the `stride-claiming-tasks` SKILL.md in all 5 plugins. Each plugin's version should reference `stride-workflow` (the new orchestrator) rather than the old `stride-subagent-workflow`.
-
-**Complexity:** Small — text changes to 5 SKILL.md files.
-
-**Tradeoffs:**
-
-- Low effort, immediate improvement
-- Still a soft gate (agent can ignore the instruction)
-- Works as defense-in-depth alongside the orchestrator — catches agents that skip the orchestrator and go directly to claiming
-- Partially addressed by the orchestrator work (G45/G46-G49) which already updates claiming skills to reference the orchestrator, but the current updates recommend rather than demand
-
-### 3. Completion Skill Verification Checklist (Soft Gate)
+### 2. Completion Skill Verification Checklist (Soft Gate)
 
 **Problem:** Even with the orchestrator, agents may reach the completion phase having skipped intermediate steps. The completing skill currently has no verification that prior steps occurred.
 
@@ -171,7 +154,7 @@ If ANY answer is NO → Go back and do it now. Do NOT proceed to complete.
 - Most useful as defense-in-depth alongside the orchestrator and API enforcement
 - The completing skill already has a "MANDATORY: Previous Skill Before Completing" section — this extends it with explicit yes/no verification
 
-### 4. Claude Code Hooks for Hard Local Gates
+### 3. Claude Code Hooks for Hard Local Gates
 
 **Problem:** On Claude Code specifically, the agent could start editing files before invoking the orchestrator. The hooks.json system can intercept tool calls, but currently only intercepts Stride API calls (claim, complete, mark_reviewed).
 
@@ -204,7 +187,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Could be fragile if the state file gets out of sync (e.g., agent crashes mid-workflow)
 - Must handle the case where edits are made outside of Stride tasks (not all edits are task work)
 
-### 5. Skills Version Enforcement
+### 4. Skills Version Enforcement
 
 **Problem:** When skills are updated (reframing, orchestrator), agents running older cached versions won't see the changes. The `skills_update_required` field in API responses is advisory — agents can ignore it.
 
@@ -230,7 +213,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Requires a grace period or warning-then-enforce strategy
 - Different plugins may have different version cadences
 
-### 6. Workflow Telemetry and Compliance Tracking
+### 5. Workflow Telemetry and Compliance Tracking
 
 **Problem:** There's no visibility into which workflow steps agents actually follow. The 17-task session's skipping was only discovered by manual review. Without telemetry, compliance issues go undetected.
 
@@ -273,7 +256,7 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 | -------- | -------------- | ------ | ---------------- | ------ |
 | 1 | Reframe automation notices | Small | Soft (messaging) | ✅ **Completed** (G44, G46-G50) |
 | 2 | Single orchestrator skill | Large | Soft (workflow) | ✅ **Completed** (G45, G46-G50) |
-| 3 | Embed dispatch in claiming skill | Small | Soft (instruction) | Not started |
+| 3 | Embed orchestrator gate in claiming skill | Small | Soft (instruction) | ✅ **Completed** (G51) |
 | 4 | Completion skill verification checklist | Small | Soft (self-check) | Not started |
 | 5 | Skills version enforcement | Medium | Hard (API gate) | Not started |
 | 6 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
@@ -282,8 +265,9 @@ A dashboard or report could then show compliance rates across agents, tasks, and
 
 **Recommended sequence:**
 
-1. Complete the in-progress work (G44-G50) — establishes the orchestrator and reframed messaging
-2. Items 3-4 (embed dispatch + completion checklist) — small effort, defense-in-depth, can be done immediately after
-3. Item 5 (skills version enforcement) — ensures agents actually run the updated skills
-4. Item 6 (API enforcement) — the highest-impact hard gate, but requires server changes
-5. Items 7-8 (Claude Code hooks + telemetry) — platform-specific hardening and long-term visibility
+1. ~~Complete the in-progress work (G44-G50)~~ ✅ Done — orchestrator and reframed messaging deployed
+2. ~~Embed dispatch in claiming skill (G51)~~ ✅ Done — non-negotiable gate in all 5 plugins
+3. Completion skill verification checklist (G52) — small effort, defense-in-depth, in progress
+4. Skills version enforcement — ensures agents actually run the updated skills
+5. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
+6. Claude Code hooks + telemetry — platform-specific hardening and long-term visibility
