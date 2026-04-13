@@ -73,7 +73,13 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 ### AI Workflow Integration
 
-⚠️ **CRITICAL: Mandatory Hook Validation**
+**Recommended: Use the Workflow Orchestrator**
+
+For agents using Stride plugins (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode), the `stride-workflow` skill is the recommended entry point. It walks through the complete lifecycle — claiming, codebase exploration, implementation, code review, hooks, and completion — in a single skill. The orchestrator ensures no mandatory steps are skipped.
+
+**The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
+
+**Hook Validation**
 
 Hook execution is enforced at the API level. You MUST execute hooks and include the execution results in your API requests. The server will reject requests without valid hook results.
 
@@ -86,13 +92,13 @@ Hook execution is enforced at the API level. You MUST execute hooks and include 
 }
 ```
 
-⚠️ **CRITICAL: Hook Execution Order**
+**Hook Execution Order**
 
 Hooks MUST be executed in the exact order specified below. The API validates hook execution results and rejects requests that don't include them.
 
-**Complete AI Workflow with Hooks (Claim → Execute → Complete → Review):**
+**Complete AI Workflow with Hooks (Claim → Explore → Implement → Review → Complete):**
 
-**✨ Claude Code Skill Available:** Use the `stride-claiming-tasks` skill before calling POST /api/tasks/claim to ensure proper prerequisite verification and hook execution. This skill is automatically provided via the onboarding endpoint.
+**✨ Stride Plugin Available:** Use the `stride-workflow` orchestrator skill for the complete lifecycle. It handles hook execution, codebase exploration, code review, and all required API fields automatically. Individual skills (`stride-claiming-tasks`, `stride-completing-tasks`) remain available for standalone use.
 
 1. **Discover tasks** - Call [GET /api/tasks/next](../api/get_tasks_next.md) to find available tasks
 
@@ -282,17 +288,18 @@ POST /api/tasks
 
 See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
-**✨ Claude Code Skills Available:**
+**✨ Stride Plugin Skills Available:**
+- Use `stride-workflow` for the complete task lifecycle (recommended entry point)
 - Use `stride-creating-tasks` for individual tasks and defects
 - Use `stride-creating-goals` for goals with nested tasks or batch creation
 
-These skills are automatically provided via the onboarding endpoint and prevent common mistakes.
+These skills are available via the Stride plugin for Claude Code, Gemini CLI, Copilot CLI, Codex CLI, and OpenCode.
 
 ### Task Completion
 
-**✨ Claude Code Skill Available:** Use the `stride-completing-tasks` skill before calling PATCH /api/tasks/:id/complete to ensure proper hook execution order and prevent quality gate bypasses. This skill is automatically provided via the onboarding endpoint.
+**✨ Stride Plugin Available:** Use the `stride-workflow` orchestrator (recommended) or the `stride-completing-tasks` skill before calling PATCH /api/tasks/:id/complete. These ensure proper hook execution order and prevent quality gate bypasses.
 
-**⚠️ CRITICAL:** You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
+You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
 
 When completing a task, use [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md):
 
@@ -455,10 +462,11 @@ This creates a **Kanban board optimized for AI agents** - structured workflow wi
 
 ### Getting Started
 
-1. **Read the API documentation** - [../api/README.md](../api/README.md)
+1. **Install the Stride plugin** for your AI agent platform (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, or OpenCode)
 2. **Set up authentication** - Create `.stride_auth.md` with your API token
 3. **Configure hooks** - Create `.stride.md` with your workflow hooks
-4. **Start claiming tasks** - Use the API to claim, complete, and review tasks
+4. **Activate `stride-workflow`** - The orchestrator walks through claim → explore → implement → review → complete
+5. **Read the API documentation** - [../api/README.md](../api/README.md) for endpoint details
 
 ### Related Documentation
 
