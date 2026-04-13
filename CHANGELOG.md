@@ -5,6 +5,51 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-04-13
+
+### Added
+
+#### Stride Workflow Orchestrator and Enforcement Gates (All Plugins)
+
+**New `stride-workflow` orchestrator skill** — A single skill that replaces the pattern of remembering to invoke 6+ separate skills at specific moments. Agents invoke it once and follow the complete lifecycle: claim → explore → implement → review → hooks → complete → loop. Includes a decision matrix for when to explore, plan, and review based on task complexity and key_files count. Platform-adaptive with dual paths for Claude Code (subagent dispatch) and other environments (manual exploration/review).
+
+**Claiming gate** — All claiming skills now include a non-negotiable "YOUR NEXT STEP" section demanding `stride-workflow` invocation after claiming. Catches agents that skip the orchestrator.
+
+**Completion verification checklist** — All completing skills now include a 4-item checklist before the completion endpoint: (1) Did you activate stride-workflow? (2) Did you explore the codebase? (3) Did you review changes against acceptance criteria? (4) Are you ready for the after_doing hook?
+
+**Reframed automation notices** — All `AUTOMATION NOTICE` sections rewritten from "work continuously without stopping" to "the workflow IS the automation — every step exists because skipping it caused failures."
+
+Three layers of defense-in-depth: orchestrator guides every step → claiming gate catches orchestrator skippers → completion checklist catches everyone else.
+
+#### Plugin Releases
+
+| Plugin | Version | Changes |
+|--------|---------|---------|
+| stride (Claude Code) | 1.7.0 | Orchestrator, reframed notices, claiming gate, verification checklist |
+| stride-copilot | 2.3.0 | Same changes, adapted for Copilot's `activate` syntax |
+| stride-gemini | 1.3.0 | Same changes, with tool.execute hook integration |
+| stride-codex | 1.2.0 | Same changes, with graceful fallback for agents |
+| stride-opencode | 1.2.0 | Same changes, with tool.execute hook integration |
+
+#### Generic Skills for File-Based Platforms (Cursor, Windsurf, Continue.dev, Kimi Code)
+
+Cursor, Windsurf, Continue.dev, and Kimi Code do not support dedicated plugin repos — they use file-based skill discovery. Previously, these platforms were told to install 4 generic Claude Code skills with no stride-workflow, no enforcement gates, and no enriching/subagent-workflow skills.
+
+**7 generic SKILL.md files** hosted at `docs/multi-agent-instructions/skills/` — tool-agnostic versions of all Stride skills adapted from the v1.7.0 plugin, including stride-workflow orchestrator with all enforcement enhancements. Each file has `compatibility: cursor, windsurf, continue, kimi` frontmatter and dual-path design (Claude Code subagent dispatch vs. manual exploration/review).
+
+**Onboarding endpoint enhanced** — The `GET /api/agent/onboarding` response now provides:
+- **Cursor**: `skills_provided` with all 7 skills, curl download commands for `.cursor/skills/`, PowerShell Windows commands
+- **Windsurf**: Same pattern with `.windsurf/skills/` paths
+- **Continue.dev**: Same pattern with `.continue/skills/` paths (Continue.dev added SKILL.md support in Jan 2026), existing `config.json` preserved as supplemental
+- **Kimi Code**: Enhanced AGENTS.md with condensed orchestrator steps, 4-item verification checklist, and process-over-speed messaging
+
+**`claude_code_skills.skills_included`** updated from 4 to 7 skills. All `usage_notes` and `memory_strategy` entries updated. All "4 skills" references replaced throughout.
+
+### Changed
+
+- All documentation updated to reference stride-workflow as the primary entry point: AI-WORKFLOW.md, GETTING-STARTED-WITH-AI.md, MULTI-AGENT-INSTRUCTIONS.md, REVIEW-WORKFLOW.md, AGENT-HOOK-EXECUTION-GUIDE.md, STRIDE-SKILLS-PLAN.md, onboarding endpoint docs
+- Enforcement recommendations document (`docs/stride-plugin-enforcement-recommendations.md`) updated to mark items 1-5 as completed across all plugins
+
 ## [1.27.0] - 2026-03-26
 
 ### Added
