@@ -726,6 +726,29 @@ defmodule Kanban.TasksTest do
       assert Enum.at(tasks, 0).id == task2.id
       assert Enum.at(tasks, 1).id == task1.id
     end
+
+    test "does not violate unique constraint when archived tasks exist" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task1 = task_fixture(column, %{title: "Active 1"})
+      task2 = task_fixture(column, %{title: "To Archive"})
+      task3 = task_fixture(column, %{title: "Active 2"})
+
+      # Archive the middle task - it keeps its position in the DB
+      {:ok, _archived} = Tasks.archive_task(task2)
+
+      # Reorder the non-archived tasks (which is what the UI sends)
+      # This should not crash with a unique constraint violation
+      assert :ok = Tasks.reorder_tasks(column, [task3.id, task1.id])
+
+      tasks = Tasks.list_tasks(column)
+      assert Enum.at(tasks, 0).id == task3.id
+      assert Enum.at(tasks, 0).position == 0
+      assert Enum.at(tasks, 1).id == task1.id
+      assert Enum.at(tasks, 1).position == 1
+    end
   end
 
   describe "can_add_task?/1" do

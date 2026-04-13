@@ -65,13 +65,13 @@ defmodule Kanban.Tasks.Positioning do
   def reorder_tasks(column, task_ids) do
     Repo.transaction(fn ->
       Repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
-      tasks = Queries.list_tasks(column)
 
-      Enum.each(tasks, fn task ->
-        Task
-        |> where([t], t.id == ^task.id)
-        |> Repo.update_all(set: [position: -1 * task.id])
-      end)
+      # Move ALL tasks in the column (including archived) to temp negative positions
+      # to avoid unique constraint violations on the (column_id, position) index
+      Repo.query!(
+        "UPDATE tasks SET position = -1 * id WHERE column_id = $1 AND position >= 0",
+        [column.id]
+      )
 
       task_ids
       |> Enum.with_index()
@@ -79,6 +79,23 @@ defmodule Kanban.Tasks.Positioning do
         Task
         |> where([t], t.id == ^task_id and t.column_id == ^column.id)
         |> Repo.update_all(set: [position: index])
+      end)
+
+      # Reassign positions to any remaining tasks still at temp positions
+      # (e.g., archived tasks not included in task_ids)
+      remaining_ids =
+        Task
+        |> where([t], t.column_id == ^column.id and t.position < 0)
+        |> order_by([t], asc: t.id)
+        |> select([t], t.id)
+        |> Repo.all()
+
+      remaining_ids
+      |> Enum.with_index(length(task_ids))
+      |> Enum.each(fn {id, pos} ->
+        Task
+        |> where([t], t.id == ^id)
+        |> Repo.update_all(set: [position: pos])
       end)
     end)
 
