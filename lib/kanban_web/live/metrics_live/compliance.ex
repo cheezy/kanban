@@ -11,15 +11,24 @@ defmodule KanbanWeb.MetricsLive.Compliance do
   def handle_params(%{"id" => board_id}, _url, socket) do
     user = socket.assigns.current_scope.user
 
-    case Boards.get_board(board_id, user) do
-      {:ok, board} ->
-        {:noreply, load_compliance(socket, board)}
-
+    with {:ok, board} <- Boards.get_board(board_id, user),
+         true <- Boards.can_modify?(board, user) do
+      {:noreply, load_compliance(socket, board)}
+    else
       {:error, :not_found} ->
         {:noreply,
          socket
          |> put_flash(:error, gettext("Board not found"))
          |> push_navigate(to: ~p"/boards")}
+
+      false ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :error,
+           gettext("You don't have permission to view compliance metrics for this board.")
+         )
+         |> push_navigate(to: ~p"/boards/#{board_id}")}
     end
   end
 

@@ -7,6 +7,7 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Boards
   alias Kanban.Tasks
 
   describe "Compliance - Basic Display" do
@@ -115,12 +116,54 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
   describe "Compliance - Access Control" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
+    test "owner can view the dashboard", %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert html =~ "Compliance Metrics"
+    end
+
+    test "member with modify access can view the dashboard", %{board: board} do
+      modify_user = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify)
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), modify_user)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert html =~ "Compliance Metrics"
+    end
+
+    test "member with read_only access is denied and redirected to the board",
+         %{board: board} do
+      read_only_user = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only)
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), read_only_user)
+
+      assert {:error, {:live_redirect, %{to: "/boards/" <> _, flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert error =~ "permission"
+    end
+
     test "denies access to non-board-members", %{conn: conn, board: board} do
       other_user = user_fixture()
       conn = log_in_user(conn, other_user)
 
       assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
                live(conn, ~p"/boards/#{board}/metrics/compliance")
+    end
+
+    test "redirects unauthenticated users to the login page", %{board: board} do
+      conn = Phoenix.ConnTest.build_conn()
+
+      assert {:error, {:redirect, %{to: path}}} =
+               live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert path =~ "/users/log-in"
+    end
+
+    test "redirects to /boards when the board does not exist", %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => _}}}} =
+               live(conn, ~p"/boards/999999/metrics/compliance")
     end
   end
 

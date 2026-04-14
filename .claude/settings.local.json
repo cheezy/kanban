@@ -198,7 +198,13 @@
       "Bash(git remote:*)",
       "Bash(git --no-pager diff --stat)",
       "Bash(git --no-pager diff HEAD -- lib/kanban/tasks/compliance.ex test/kanban/tasks/compliance_test.exs)",
-      "WebFetch(domain:docs.claude.com)"
+      "WebFetch(domain:docs.claude.com)",
+      "Bash(bash hooks/test-stride-hook.sh)",
+      "Bash(bash /Users/cheezy/dev/elixir/kanban/stride/hooks/test-stride-hook.sh)",
+      "Bash(bash stride-copilot/hooks/test-stride-hook.sh)",
+      "Bash(bun run:*)",
+      "Bash(bun test:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []
