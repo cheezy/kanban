@@ -60,7 +60,7 @@ defmodule Kanban.Tasks.ComplianceTest do
       result = Compliance.step_dispatch_rates(board.id)
 
       assert %{rate: 100.0, total: 1, dispatched: 1} = Map.fetch!(result, "build")
-      assert %{rate: 0.0, total: 1, dispatched: 0} = Map.fetch!(result, "lint")
+      assert %{rate: +0.0, total: 1, dispatched: 0} = Map.fetch!(result, "lint")
     end
 
     test "ignores steps missing the name key", %{board: board, column: column} do
@@ -74,7 +74,7 @@ defmodule Kanban.Tasks.ComplianceTest do
 
       result = Compliance.step_dispatch_rates(board.id)
 
-      assert %{rate: 0.0, total: 1, dispatched: 0} = Map.fetch!(result, "deploy")
+      assert %{rate: +0.0, total: 1, dispatched: 0} = Map.fetch!(result, "deploy")
     end
 
     test "scopes by board_id (no cross-board leakage)", %{
