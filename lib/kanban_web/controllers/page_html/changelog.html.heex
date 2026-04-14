@@ -51,8 +51,8 @@
 
               <p class="text-base-content opacity-80 mb-4 ml-4">
                 The API <code>update</code>
-                endpoint now rejects any request that attempts to change a task's
-                <code>column_id</code>, returning <strong>403 Forbidden</strong>
+                endpoint now rejects any request that attempts to change a task's <code>column_id</code>, returning
+                <strong>403 Forbidden</strong>
                 with a message directing callers to the proper workflow endpoints (<code>claim</code>, <code>complete</code>, <code>mark_reviewed</code>, <code>mark_done</code>). Echoed matching values are silently stripped so honest round-trip clients are unaffected. A new
                 <code>[:kanban, :api, :task_update_column_change_forbidden]</code>
                 telemetry event fires on every rejected attempt for monitoring.
@@ -68,16 +68,13 @@
                   — Ready → Doing (still verifies the task is in Ready)
                 </li>
                 <li>
-                  <code>PATCH /tasks/:id/complete</code>
-                  — Doing → Review
+                  <code>PATCH /tasks/:id/complete</code> — Doing → Review
                 </li>
                 <li>
-                  <code>PATCH /tasks/:id/mark_reviewed</code>
-                  — review approval
+                  <code>PATCH /tasks/:id/mark_reviewed</code> — review approval
                 </li>
                 <li>
-                  <code>PATCH /tasks/:id/mark_done</code>
-                  — → Done
+                  <code>PATCH /tasks/:id/mark_done</code> — → Done
                 </li>
               </ul>
 

@@ -2496,6 +2496,47 @@ defmodule Kanban.TasksTest do
       assert is_nil(task.review_report)
     end
 
+    test "workflow_steps defaults to empty list when absent from params", %{column: column} do
+      attrs = %{title: "Test task", position: 0}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.workflow_steps == []
+    end
+
+    test "workflow_steps casts an array of maps", %{column: column} do
+      steps = [
+        %{"name" => "before_doing", "exit_code" => 0},
+        %{"name" => "after_doing", "exit_code" => 0, "duration_ms" => 120}
+      ]
+
+      attrs = %{title: "Test task", position: 0, workflow_steps: steps}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.workflow_steps == steps
+    end
+
+    test "workflow_steps accepts a single-step list", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        position: 0,
+        workflow_steps: [%{"name" => "before_doing", "exit_code" => 0}]
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.workflow_steps == [%{"name" => "before_doing", "exit_code" => 0}]
+    end
+
+    test "workflow_steps accepts an explicit empty list", %{column: column} do
+      attrs = %{title: "Test task", position: 0, workflow_steps: []}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.workflow_steps == []
+    end
+
     test "validates reviewed_at must be set when review_status is not pending", %{
       column: column,
       user: user
@@ -6384,6 +6425,33 @@ defmodule Kanban.TasksTest do
 
       assert is_nil(result.review_report)
       assert result.completion_summary == "Implemented the feature"
+    end
+
+    test "persists workflow_steps when provided in params", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      steps = [
+        %{"name" => "before_doing", "exit_code" => 0, "duration_ms" => 50},
+        %{"name" => "after_doing", "exit_code" => 0, "duration_ms" => 200}
+      ]
+
+      params_with_steps = Map.put(params, "workflow_steps", steps)
+
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params_with_steps)
+
+      assert result.workflow_steps == steps
+    end
+
+    test "defaults workflow_steps to empty list when omitted from params", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params)
+
+      assert result.workflow_steps == []
     end
 
     test "returns hooks for after_doing and before_review", %{

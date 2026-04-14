@@ -363,6 +363,9 @@ defmodule Kanban.Tasks.Task do
     # Structured review report from task-reviewer agent
     field :review_report, :string
 
+    # Workflow step records from agent hooks (before_doing, after_doing, before_review, after_review)
+    field :workflow_steps, {:array, :map}, default: []
+
     # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
@@ -454,6 +457,7 @@ defmodule Kanban.Tasks.Task do
       :review_status,
       :review_notes,
       :review_report,
+      :workflow_steps,
       :reviewed_by_id,
       :reviewed_at,
       # Archive tracking
