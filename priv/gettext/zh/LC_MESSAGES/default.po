@@ -3101,7 +3101,7 @@ msgstr ""
 msgid "Avg Steps / Task"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:30
+#: lib/kanban_web/live/metrics_live/compliance.ex:39
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
@@ -3150,4 +3150,19 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:36
 #, elixir-autogen, elixir-format, fuzzy
 msgid "dispatched"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:277
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Compliance"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:281
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Workflow step dispatch rates and agent compliance"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:29
+#, elixir-autogen, elixir-format
+msgid "You don't have permission to view compliance metrics for this board."
 msgstr ""

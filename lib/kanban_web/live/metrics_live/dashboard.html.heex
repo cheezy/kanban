@@ -107,7 +107,7 @@
       </form>
     </div>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       <.link
         navigate={
           ~p"/boards/#{@board}/metrics/throughput?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
@@ -256,6 +256,36 @@
               <.icon
                 name="hero-pause"
                 class="h-8 w-8 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        :if={@board.ai_optimized_board}
+        navigate={~p"/boards/#{@board}/metrics/compliance"}
+        class="group bg-gradient-to-br from-white to-teal-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-teal-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+      >
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
+                <.icon
+                  name="hero-shield-check-solid"
+                  class="h-5 w-5 text-teal-600 dark:text-teal-400"
+                /> {gettext("Compliance")}
+              </dt>
+              <dd class="mt-1">
+                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {gettext("Workflow step dispatch rates and agent compliance")}
+                </div>
+              </dd>
+            </div>
+            <div class="flex-shrink-0 p-3 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+              <.icon
+                name="hero-shield-check"
+                class="h-8 w-8 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300"
               />
             </div>
           </div>
