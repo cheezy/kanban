@@ -736,6 +736,30 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert is_nil(response["review_report"])
     end
+
+    test "returns workflow_steps in task response", %{conn: conn, column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task with workflow steps",
+          "workflow_steps" => [
+            %{"name" => "plan", "status" => "done", "duration_ms" => 100}
+          ]
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["workflow_steps"] == [
+               %{"name" => "plan", "status" => "done", "duration_ms" => 100}
+             ]
+    end
+
+    test "returns workflow_steps as empty array when not set", %{conn: conn, task: task} do
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["workflow_steps"] == []
+    end
   end
 
   describe "PATCH /api/tasks/:id" do
@@ -1741,6 +1765,55 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert is_nil(response["review_report"])
       assert response["completion_summary"] == "Implemented feature"
+    end
+
+    test "accepts and persists workflow_steps in complete endpoint", %{
+      conn: conn,
+      task: task
+    } do
+      steps = [
+        %{"name" => "before_doing", "status" => "success", "duration_ms" => 100},
+        %{"name" => "after_doing", "status" => "success", "duration_ms" => 5000}
+      ]
+
+      completion_params = %{
+        "completion_summary" => "Implemented feature",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1 file",
+        "time_spent_minutes" => 10,
+        "workflow_steps" => steps,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["workflow_steps"] == steps
+
+      get_conn = get(recycle(conn), ~p"/api/tasks/#{task.id}")
+      get_response = json_response(get_conn, 200)["data"]
+
+      assert get_response["workflow_steps"] == steps
+    end
+
+    test "complete endpoint defaults workflow_steps to empty array when omitted", %{
+      conn: conn,
+      task: task
+    } do
+      completion_params = %{
+        "completion_summary" => "Implemented feature",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "1 file",
+        "time_spent_minutes" => 10,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["workflow_steps"] == []
     end
   end
 

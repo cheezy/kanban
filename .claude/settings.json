@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true
+    "superpowers@superpowers-marketplace": true,
+    "stride@stride-marketplace": true
   }
 }
