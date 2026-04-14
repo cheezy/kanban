@@ -5,6 +5,25 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.1] - 2026-04-14
+
+### Security
+
+#### Prevent Agents from Bypassing Workflow via Column Reassignment
+
+Agents were able to move tasks from Backlog directly to Ready by sending `PATCH /api/tasks/:id` with a new `column_id`, then claiming the task — bypassing the human review gate that gates which tasks are available for AI work. Two production incidents of this behavior were observed.
+
+The API `update` endpoint now rejects any request that attempts to change a task's `column_id`, returning **403 Forbidden** with a message directing callers to the proper workflow endpoints (`claim`, `complete`, `mark_reviewed`, `mark_done`). Echoed matching values are silently stripped so honest round-trip clients are unaffected. A new `[:kanban, :api, :task_update_column_change_forbidden]` telemetry event fires on every rejected attempt for monitoring.
+
+Column transitions for agents are now strictly limited to:
+
+- `POST /tasks/claim` — Ready → Doing (still verifies the task is in Ready)
+- `PATCH /tasks/:id/complete` — Doing → Review
+- `PATCH /tasks/:id/mark_reviewed` — review approval
+- `PATCH /tasks/:id/mark_done` — → Done
+
+Human users dragging tasks in the LiveView UI are unaffected — that flow uses a separate code path and is not subject to the restriction.
+
 ## [1.28.0] - 2026-04-13
 
 ### Added

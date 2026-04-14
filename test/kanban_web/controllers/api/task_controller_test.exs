@@ -788,6 +788,50 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 422)["errors"] != %{}
     end
 
+    test "rejects column_id change (Backlog to Ready bypass attempt)", %{
+      conn: conn,
+      task: task,
+      board: board
+    } do
+      ready_column = Columns.list_columns(board) |> Enum.find(&(&1.name == "Ready"))
+
+      update_params = %{"column_id" => ready_column.id}
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: update_params)
+      response = json_response(conn, 403)
+
+      assert response["error"] =~ "cannot move tasks between columns"
+
+      # Confirm the task did NOT move
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.column_id == task.column_id
+    end
+
+    test "allows update when column_id matches current value (idempotent echo)", %{
+      conn: conn,
+      task: task
+    } do
+      update_params = %{
+        "title" => "Echoed back",
+        "column_id" => task.column_id
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: update_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["title"] == "Echoed back"
+      assert response["column_id"] == task.column_id
+    end
+
+    test "rejects invalid column_id value", %{conn: conn, task: task} do
+      update_params = %{"column_id" => "306,305"}
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: update_params)
+      response = json_response(conn, 403)
+
+      assert response["error"] =~ "cannot move tasks between columns"
+    end
+
     test "returns 404 for nonexistent task", %{conn: conn} do
       conn = patch(conn, ~p"/api/tasks/999999", task: %{"title" => "Updated"})
       response = json_response(conn, 404)

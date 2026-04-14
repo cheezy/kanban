@@ -236,16 +236,10 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
-        case Tasks.update_task(task, task_params) do
-          {:ok, task} ->
-            task = Tasks.get_task_for_view!(task.id)
-            emit_telemetry(conn, :task_updated, %{task_id: task.id})
-            render(conn, :show, task: task)
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> render(:error, changeset: changeset)
+        if column_change_attempted?(task_params, task) do
+          reject_column_change(conn, task)
+        else
+          perform_api_task_update(conn, task, task_params)
         end
 
       error ->
@@ -918,6 +912,44 @@ defmodule KanbanWeb.API.TaskController do
       error: "WIP limit reached while creating goal at index #{index}",
       index: index
     })
+  end
+
+  defp column_change_attempted?(%{"column_id" => new_id}, task) do
+    case parse_id(new_id) do
+      {:ok, int_id} -> int_id != task.column_id
+      :error -> true
+    end
+  end
+
+  defp column_change_attempted?(_task_params, _task), do: false
+
+  defp reject_column_change(conn, task) do
+    emit_telemetry(conn, :task_update_column_change_forbidden, %{task_id: task.id})
+
+    error_response(
+      conn,
+      :forbidden,
+      "Agents cannot move tasks between columns via update. Use the workflow endpoints (claim, complete, mark_reviewed, mark_done) to transition tasks.",
+      :column_change_forbidden
+    )
+  end
+
+  defp perform_api_task_update(conn, task, task_params) do
+    # Strip column_id even if it matches current value — agents should never
+    # send it, and stripping keeps update_task's intent unambiguous.
+    safe_params = Map.delete(task_params, "column_id")
+
+    case Tasks.update_task(task, safe_params) do
+      {:ok, updated_task} ->
+        updated_task = Tasks.get_task_for_view!(updated_task.id)
+        emit_telemetry(conn, :task_updated, %{task_id: updated_task.id})
+        render(conn, :show, task: updated_task)
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
+    end
   end
 
   defp parse_id(id) when is_integer(id), do: {:ok, id}

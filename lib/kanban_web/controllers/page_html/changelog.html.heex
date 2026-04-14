@@ -31,6 +31,64 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.28.1] - 2026-04-14</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Security
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Prevent Agents from Bypassing Workflow via Column Reassignment
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Agents were able to move tasks from Backlog directly to Ready by sending
+                <code>PATCH /api/tasks/:id</code>
+                with a new <code>column_id</code>, then claiming the task — bypassing the human review gate that gates which tasks are available for AI work. Two production incidents of this behavior were observed.
+              </p>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                The API <code>update</code>
+                endpoint now rejects any request that attempts to change a task's
+                <code>column_id</code>, returning <strong>403 Forbidden</strong>
+                with a message directing callers to the proper workflow endpoints (<code>claim</code>, <code>complete</code>, <code>mark_reviewed</code>, <code>mark_done</code>). Echoed matching values are silently stripped so honest round-trip clients are unaffected. A new
+                <code>[:kanban, :api, :task_update_column_change_forbidden]</code>
+                telemetry event fires on every rejected attempt for monitoring.
+              </p>
+
+              <p class="text-base-content opacity-80 mb-2 ml-4">
+                Column transitions for agents are now strictly limited to:
+              </p>
+
+              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+                <li>
+                  <code>POST /tasks/claim</code>
+                  — Ready → Doing (still verifies the task is in Ready)
+                </li>
+                <li>
+                  <code>PATCH /tasks/:id/complete</code>
+                  — Doing → Review
+                </li>
+                <li>
+                  <code>PATCH /tasks/:id/mark_reviewed</code>
+                  — review approval
+                </li>
+                <li>
+                  <code>PATCH /tasks/:id/mark_done</code>
+                  — → Done
+                </li>
+              </ul>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Human users dragging tasks in the LiveView UI are unaffected — that flow uses a separate code path and is not subject to the restriction.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.28.0] - 2026-04-13</h2>
 
           <div class="mb-8">
@@ -50,7 +108,9 @@
                 </li>
                 <li>
                   <strong>Claiming gate</strong>
-                  — All claiming skills now include a non-negotiable "YOUR NEXT STEP" section demanding <code>stride-workflow</code> invocation after claiming. Catches agents that skip the orchestrator.
+                  — All claiming skills now include a non-negotiable "YOUR NEXT STEP" section demanding
+                  <code>stride-workflow</code>
+                  invocation after claiming. Catches agents that skip the orchestrator.
                 </li>
                 <li>
                   <strong>Completion verification checklist</strong>
@@ -58,7 +118,8 @@
                 </li>
                 <li>
                   <strong>Reframed automation notices</strong>
-                  — All <code>AUTOMATION NOTICE</code> sections rewritten from "work continuously without stopping" to "the workflow IS the automation — every step exists because skipping it caused failures."
+                  — All <code>AUTOMATION NOTICE</code>
+                  sections rewritten from "work continuously without stopping" to "the workflow IS the automation — every step exists because skipping it caused failures."
                 </li>
               </ul>
 
@@ -134,7 +195,10 @@
               <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
                 <li>
                   <strong>7 generic SKILL.md files</strong>
-                  hosted at <code>docs/multi-agent-instructions/skills/</code> — tool-agnostic versions of all Stride skills adapted from the v1.7.0 plugin, including stride-workflow orchestrator with all enforcement enhancements. Each file has <code>compatibility: cursor, windsurf, continue, kimi</code> frontmatter and dual-path design (Claude Code subagent dispatch vs. manual exploration/review).
+                  hosted at <code>docs/multi-agent-instructions/skills/</code>
+                  — tool-agnostic versions of all Stride skills adapted from the v1.7.0 plugin, including stride-workflow orchestrator with all enforcement enhancements. Each file has
+                  <code>compatibility: cursor, windsurf, continue, kimi</code>
+                  frontmatter and dual-path design (Claude Code subagent dispatch vs. manual exploration/review).
                 </li>
                 <li>
                   <strong>Onboarding endpoint enhanced</strong>
@@ -150,8 +214,10 @@
                       paths
                     </li>
                     <li>
-                      <strong>Continue.dev</strong>: Same pattern with <code>.continue/skills/</code>
-                      paths (Continue.dev added SKILL.md support in Jan 2026), existing <code>config.json</code>
+                      <strong>Continue.dev</strong>: Same pattern with
+                      <code>.continue/skills/</code>
+                      paths (Continue.dev added SKILL.md support in Jan 2026), existing
+                      <code>config.json</code>
                       preserved as supplemental
                     </li>
                     <li>
@@ -161,7 +227,9 @@
                 </li>
                 <li>
                   <strong><code>claude_code_skills.skills_included</code></strong>
-                  updated from 4 to 7 skills. All <code>usage_notes</code> and <code>memory_strategy</code> entries updated. All "4 skills" references replaced throughout.
+                  updated from 4 to 7 skills. All <code>usage_notes</code>
+                  and <code>memory_strategy</code>
+                  entries updated. All "4 skills" references replaced throughout.
                 </li>
               </ul>
             </div>
