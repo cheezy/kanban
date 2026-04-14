@@ -107,6 +107,26 @@ All enforcement gate changes have been released across all 5 plugins:
 
 All repos committed and pushed to origin on 2026-04-13.
 
+### Workflow Telemetry and Compliance Tracking (formerly Remaining Recommendation 4)
+
+**Status:** ✅ Completed — 2026-04-14 (main stride server + plugin W218–W219, stride-copilot W222–W224, stride-gemini W225–W227, stride-codex W228–W230, stride-opencode W231–W233)
+
+**What changed:** Every `/complete` payload now carries a six-entry `workflow_steps` array recording which phases ran (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`) — or were legitimately skipped per the decision matrix, in which case the entry records a `reason` string. The schema lives on `Kanban.Tasks.Task` as a JSONB field (`{:array, :map}`, default `[]`) alongside `review_report`, following the same lifecycle: submitted with `/complete`, persisted on the task, exposed via `lib/kanban_web/controllers/api/task_json.ex`, and rendered in the task view. `Kanban.Tasks.Compliance.step_dispatch_rates/1` aggregates the array across tasks to power a new compliance dashboard at `/metrics/compliance`.
+
+All five plugins' `stride-workflow` orchestrator skills gained a "Workflow Telemetry: The `workflow_steps` Array" section documenting the step-name vocabulary and per-entry schema (`name`, `dispatched`, `duration_ms`, `reason`). All five plugins' `stride-completing-tasks` skills added `workflow_steps` to the verification checklist, the API Request Format example, the Completion Request Field Reference table, and the Quick Reference Card REQUIRED BODY, along with a Schema Reference paragraph pointing at `stride-workflow` as the source of truth. Step names are byte-identical across plugins so telemetry aggregates cleanly across agents.
+
+**Releases (2026-04-14):**
+
+| Plugin | Version |
+|--------|---------|
+| stride (Claude Code) | 1.8.0 |
+| stride-copilot | 2.4.0 |
+| stride-gemini | 1.4.0 |
+| stride-codex | 1.3.0 |
+| stride-opencode | 1.3.0 |
+
+**Impact:** Closes the observability gap that made the original 17-task skipping invisible until manual review. Compliance is now measurable per-task, per-agent, and in aggregate — a prerequisite for deciding which of the remaining hard gates actually need to ship. Data is permanent and queryable per-task (JSONB), not buried in ephemeral logs.
+
 ### Documentation Updates (G50)
 
 **Status:** ✅ Completed — G50 (W181-W185)
@@ -226,62 +246,6 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Requires a grace period or warning-then-enforce strategy
 - Different plugins may have different version cadences
 
-### 4. Workflow Telemetry and Compliance Tracking
-
-**Problem:** There's no visibility into which workflow steps agents actually follow. The 17-task session's skipping was only discovered by manual review. Without telemetry, compliance issues go undetected.
-
-**Recommendation:** Attach a `workflow_steps` record to each task, using the same pattern as the existing `review_report` field on `Kanban.Tasks.Task`. `review_report` is populated from the task-reviewer subagent's output, submitted with the `/complete` request, stored on the task, and rendered in both the API response (`task_json.ex`) and the task view component. `workflow_steps` should follow this same lifecycle so that compliance data is permanently tied to the task it describes — not just written to ephemeral logs.
-
-**Schema change:** Add a new field on `Kanban.Tasks.Task` alongside `review_report`:
-
-```elixir
-# In lib/kanban/tasks/task.ex, alongside :review_report
-field :workflow_steps, {:array, :map}, default: []
-```
-
-A JSONB array (`{:array, :map}`) is preferred over `:string` so the data is queryable for dashboards and reports without parsing.
-
-**Submission pattern:** The orchestrator collects step data during the workflow and submits it as part of the `/complete` payload, in the same way `review_report` is submitted today:
-
-```json
-PATCH /api/tasks/:id/complete
-{
-  "agent_name": "Claude Opus 4.6",
-  "completion_summary": "...",
-  "actual_complexity": "medium",
-  "time_spent_minutes": 45,
-  "review_report": "...",
-  "workflow_steps": [
-    {"step": "explorer", "dispatched": true, "duration_ms": 12000},
-    {"step": "planner", "dispatched": false, "reason": "small_task"},
-    {"step": "implementation", "duration_ms": 1800000},
-    {"step": "reviewer", "dispatched": true, "issues_found": 0, "duration_ms": 8000},
-    {"step": "after_doing", "exit_code": 0, "duration_ms": 45000},
-    {"step": "before_review", "exit_code": 0, "duration_ms": 2000}
-  ]
-}
-```
-
-**Implementation points:**
-
-- Add `:workflow_steps` to the `cast` call in `move_to_review/4` in `lib/kanban/tasks/agent_workflow.ex` (where `review_report` is already cast)
-- Expose it in `lib/kanban_web/controllers/api/task_json.ex` (alongside `review_report: task.review_report`)
-- Render it in `lib/kanban_web/live/task_live/view_component.ex` (alongside the existing `review_report` display)
-- Add a compliance dashboard that aggregates `workflow_steps` across tasks via Ecto JSONB queries — this is only possible because the data lives on the task, not in a log
-
-**Scope across plugins:** Server-side schema/API/UI changes (migration, schema, JSON view, view component, dashboard) plus updates to all 5 plugins' orchestrator skills to collect and submit step data in the `/complete` request.
-
-**Complexity:** Large — migration, schema field, cast whitelist, JSON serializer, UI rendering, dashboard/reporting UI, and plugin updates.
-
-**Tradeoffs:**
-
-- Provides visibility into compliance without blocking agents
-- Data is permanent and queryable per-task, just like `review_report` — no separate telemetry store to maintain
-- Enables data-driven decisions about which enforcement mechanisms are needed
-- Less intrusive than hard gates — measures rather than blocks
-- Could be a prerequisite for API enforcement (measure first, enforce after establishing baselines)
-- JSONB storage trades off schema rigidity for flexibility — step names and payload shapes should be documented in the orchestrator skill to stay consistent across plugins
-
 ---
 
 ## Recommended Implementation Order
@@ -293,10 +257,10 @@ PATCH /api/tasks/:id/complete
 | 3 | Embed orchestrator gate in claiming skill | Small | Soft (instruction) | ✅ **Completed** (G51) |
 | 4 | Completion skill verification checklist | Small | Soft (self-check) | ✅ **Completed** (G52) |
 | 5 | Release all plugins | Small | Deployment | ✅ **Completed** (G53) |
-| 6 | Skills version enforcement | Medium | Hard (API gate) | Not started |
-| 7 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
-| 8 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
-| 9 | Workflow telemetry and compliance tracking | Large | Observability | Not started |
+| 6 | Workflow telemetry and compliance tracking | Large | Observability | ✅ **Completed** (2026-04-14) |
+| 7 | Skills version enforcement | Medium | Hard (API gate) | Not started |
+| 8 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
+| 9 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
 
 **Recommended sequence:**
 
@@ -305,8 +269,9 @@ PATCH /api/tasks/:id/complete
 3. ~~Embed orchestrator gate in claiming skill (G51)~~ ✅ Done — non-negotiable gate in all 5 plugins
 4. ~~Completion skill verification checklist (G52)~~ ✅ Done — 4-item checklist in all 5 plugins
 5. ~~Release all plugins (G53)~~ ✅ Done — stride 1.7.0, copilot 2.3.0, gemini 1.3.0, codex 1.2.0, opencode 1.2.0
-6. Skills version enforcement — ensures agents actually run the updated skills
-7. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
-8. Claude Code hooks + telemetry — platform-specific hardening and long-term visibility
+6. ~~Workflow telemetry and compliance tracking (2026-04-14)~~ ✅ Done — `workflow_steps` schema + compliance dashboard + all 5 plugins submitting the array
+7. Skills version enforcement — ensures agents actually run the updated skills
+8. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
+9. Claude Code hooks for edit gating — Claude Code-specific hardening
 
-**Current state (2026-04-13):** All soft enforcement gates are implemented and released. The four remaining items are hard gates (API enforcement, version enforcement) and observability (telemetry). These require server-side changes and are higher effort.
+**Current state (2026-04-14):** All soft enforcement gates are implemented and released, and observability has landed via the `workflow_steps` telemetry pipeline. The three remaining items are hard gates (API enforcement, skills version enforcement, Claude Code edit gating). These require server-side changes and are higher effort, but compliance baselines can now be measured before deciding which hard gates actually need to ship.
