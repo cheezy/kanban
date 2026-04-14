@@ -1149,6 +1149,133 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       refute result =~ "Review Report"
     end
 
+    test "displays workflow_steps section when workflow_steps is non-empty", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [
+            %{"name" => "before_doing", "status" => "success", "duration_ms" => 120},
+            %{"name" => "after_doing", "exit_code" => 0, "duration_ms" => 5400}
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Workflow Steps"
+      assert result =~ "bg-indigo-50"
+      assert result =~ "before_doing"
+      assert result =~ "after_doing"
+      assert result =~ "120 ms"
+      assert result =~ "5400 ms"
+    end
+
+    test "hides workflow_steps section when workflow_steps is empty", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Workflow Steps"
+    end
+
+    test "renders workflow step with skipped status and reason", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [
+            %{
+              "name" => "before_review",
+              "skipped" => true,
+              "reason" => "needs_review is false"
+            }
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "before_review"
+      assert result =~ "Skipped"
+      assert result =~ "Reason"
+      assert result =~ "needs_review is false"
+    end
+
+    test "renders workflow step with only name (no duration, no status)", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{workflow_steps: [%{"name" => "plan"}]})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "plan"
+      assert result =~ "Dispatched"
+    end
+
+    test "renders workflow step with dispatched=false", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [%{"name" => "after_review", "dispatched" => false}]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "after_review"
+      assert result =~ "Not dispatched"
+    end
+
+    test "renders workflow step with non-ASCII name and long reason", %{board: board} do
+      column = column_fixture(board)
+      long_reason = String.duplicate("very long reason text ", 20)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [
+            %{
+              "name" => "レビュー前フック",
+              "skipped" => true,
+              "reason" => long_reason
+            }
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "レビュー前フック"
+      assert result =~ String.trim(long_reason)
+      assert result =~ "break-words"
+    end
+
     test "does not display creator info section when no creator data", %{task: task} do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,

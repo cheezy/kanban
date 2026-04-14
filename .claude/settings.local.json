@@ -193,7 +193,8 @@
       "WebFetch(domain:hub.continue.dev)",
       "WebFetch(domain:www.continue.dev)",
       "Bash(cp /Users/cheezy/.claude/plugins/cache/stride-marketplace/stride/1.7.0/skills/stride-claiming-tasks/SKILL.md /Users/cheezy/dev/elixir/kanban/docs/multi-agent-instructions/skills/stride-claiming-tasks/SKILL.md)",
-      "Bash(cp /Users/cheezy/.claude/plugins/cache/stride-marketplace/stride/1.7.0/skills/stride-completing-tasks/SKILL.md /Users/cheezy/dev/elixir/kanban/docs/multi-agent-instructions/skills/stride-completing-tasks/SKILL.md)"
+      "Bash(cp /Users/cheezy/.claude/plugins/cache/stride-marketplace/stride/1.7.0/skills/stride-completing-tasks/SKILL.md /Users/cheezy/dev/elixir/kanban/docs/multi-agent-instructions/skills/stride-completing-tasks/SKILL.md)",
+      "Bash(~/.claude/plugins/cache/stride-marketplace/stride/1.7.0/hooks/stride-hook.sh pre:*)"
     ],
     "deny": [],
     "ask": []

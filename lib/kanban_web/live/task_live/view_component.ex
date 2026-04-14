@@ -731,6 +731,36 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           </div>
         <% end %>
 
+        <%= if @task.workflow_steps && @task.workflow_steps != [] do %>
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 dark:bg-indigo-900/20 dark:border-indigo-700/50">
+            <h4 class="text-sm font-semibold text-indigo-900 dark:text-indigo-200 mb-2">
+              {gettext("Workflow Steps")}
+            </h4>
+            <div class="text-indigo-900 dark:text-indigo-100 text-sm space-y-2 max-h-96 overflow-y-auto">
+              <%= for step <- @task.workflow_steps do %>
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span class="font-semibold break-words">
+                    {step["name"] || gettext("(unnamed step)")}
+                  </span>
+                  <span class="text-xs">
+                    {workflow_step_status_label(step)}
+                  </span>
+                  <%= if is_integer(step["duration_ms"]) do %>
+                    <span class="text-xs opacity-70">
+                      {gettext("%{ms} ms", ms: step["duration_ms"])}
+                    </span>
+                  <% end %>
+                  <%= if is_binary(step["reason"]) && step["reason"] != "" do %>
+                    <p class="w-full text-xs opacity-80 whitespace-pre-wrap break-words">
+                      <span class="font-semibold">{gettext("Reason")}:</span> {step["reason"]}
+                    </p>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
         <%= if @task.status == :completed && (@task.completed_at || @task.completed_by || @task.completed_by_agent || @task.completion_summary) do %>
           <div class="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 class="text-sm font-semibold text-green-900 mb-2">{gettext("Completion")}</h4>
@@ -947,4 +977,14 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp ensure_test_list(value) when is_list(value), do: value
   defp ensure_test_list(value) when is_binary(value), do: [value]
   defp ensure_test_list(_), do: []
+
+  defp workflow_step_status_label(%{} = step) do
+    cond do
+      step["skipped"] == true -> gettext("Skipped")
+      step["dispatched"] == false -> gettext("Not dispatched")
+      is_binary(step["status"]) and step["status"] != "" -> step["status"]
+      is_integer(step["exit_code"]) -> gettext("exit %{code}", code: step["exit_code"])
+      true -> gettext("Dispatched")
+    end
+  end
 end
