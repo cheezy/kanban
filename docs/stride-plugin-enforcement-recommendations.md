@@ -230,13 +230,27 @@ The `check-stride-workflow-state` script would check a local state file (written
 
 **Problem:** There's no visibility into which workflow steps agents actually follow. The 17-task session's skipping was only discovered by manual review. Without telemetry, compliance issues go undetected.
 
-**Recommendation:** Add lightweight telemetry to the orchestrator skill and API:
+**Recommendation:** Attach a `workflow_steps` record to each task, using the same pattern as the existing `review_report` field on `Kanban.Tasks.Task`. `review_report` is populated from the task-reviewer subagent's output, submitted with the `/complete` request, stored on the task, and rendered in both the API response (`task_json.ex`) and the task view component. `workflow_steps` should follow this same lifecycle so that compliance data is permanently tied to the task it describes — not just written to ephemeral logs.
 
-- The orchestrator records which steps it executed in a structured log
-- The complete endpoint accepts a `workflow_steps` array documenting what happened:
+**Schema change:** Add a new field on `Kanban.Tasks.Task` alongside `review_report`:
+
+```elixir
+# In lib/kanban/tasks/task.ex, alongside :review_report
+field :workflow_steps, {:array, :map}, default: []
+```
+
+A JSONB array (`{:array, :map}`) is preferred over `:string` so the data is queryable for dashboards and reports without parsing.
+
+**Submission pattern:** The orchestrator collects step data during the workflow and submits it as part of the `/complete` payload, in the same way `review_report` is submitted today:
 
 ```json
+PATCH /api/tasks/:id/complete
 {
+  "agent_name": "Claude Opus 4.6",
+  "completion_summary": "...",
+  "actual_complexity": "medium",
+  "time_spent_minutes": 45,
+  "review_report": "...",
   "workflow_steps": [
     {"step": "explorer", "dispatched": true, "duration_ms": 12000},
     {"step": "planner", "dispatched": false, "reason": "small_task"},
@@ -248,18 +262,25 @@ The `check-stride-workflow-state` script would check a local state file (written
 }
 ```
 
-A dashboard or report could then show compliance rates across agents, tasks, and time periods.
+**Implementation points:**
 
-**Scope across plugins:** Server-side storage and reporting, plus updates to all 5 plugins' orchestrator skills to collect and submit step data.
+- Add `:workflow_steps` to the `cast` call in `move_to_review/4` in `lib/kanban/tasks/agent_workflow.ex` (where `review_report` is already cast)
+- Expose it in `lib/kanban_web/controllers/api/task_json.ex` (alongside `review_report: task.review_report`)
+- Render it in `lib/kanban_web/live/task_live/view_component.ex` (alongside the existing `review_report` display)
+- Add a compliance dashboard that aggregates `workflow_steps` across tasks via Ecto JSONB queries — this is only possible because the data lives on the task, not in a log
 
-**Complexity:** Large — requires database schema, API changes, reporting UI, and plugin updates.
+**Scope across plugins:** Server-side schema/API/UI changes (migration, schema, JSON view, view component, dashboard) plus updates to all 5 plugins' orchestrator skills to collect and submit step data in the `/complete` request.
+
+**Complexity:** Large — migration, schema field, cast whitelist, JSON serializer, UI rendering, dashboard/reporting UI, and plugin updates.
 
 **Tradeoffs:**
 
 - Provides visibility into compliance without blocking agents
+- Data is permanent and queryable per-task, just like `review_report` — no separate telemetry store to maintain
 - Enables data-driven decisions about which enforcement mechanisms are needed
 - Less intrusive than hard gates — measures rather than blocks
 - Could be a prerequisite for API enforcement (measure first, enforce after establishing baselines)
+- JSONB storage trades off schema rigidity for flexibility — step names and payload shapes should be documented in the orchestrator skill to stay consistent across plugins
 
 ---
 
