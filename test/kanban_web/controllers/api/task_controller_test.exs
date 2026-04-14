@@ -1683,7 +1683,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["completed_by_agent"] == "ai_agent:claude-sonnet-4"
     end
 
-    test "does not track AI agent when completing task without agent_model", %{
+    test "falls back to agent_name when completing task without agent_model", %{
       task: task,
       user: user,
       board: board
@@ -1698,6 +1698,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = put_req_header(conn, "authorization", "Bearer #{plain_token}")
 
       completion_params = %{
+        "agent_name" => "My Custom Agent",
         "completion_summary" =>
           Jason.encode!(%{
             files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
@@ -1713,7 +1714,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
       response = json_response(conn, 200)["data"]
 
-      assert response["completed_by_agent"] == nil
+      assert response["completed_by_agent"] == "My Custom Agent"
     end
 
     test "returns 404 for nonexistent task", %{conn: conn} do

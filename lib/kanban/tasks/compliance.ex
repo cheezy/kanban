@@ -39,8 +39,14 @@ defmodule Kanban.Tasks.Compliance do
   """
 
   @doc """
-  Returns a map of step name to dispatch rate (0.0 to 100.0) across all tasks
-  on the given board.
+  Returns a map of step name to dispatch metrics across all tasks on the given
+  board.
+
+  Each entry contains:
+
+    * `:rate` — dispatch percentage (0.0 to 100.0)
+    * `:total` — total number of times this step appears
+    * `:dispatched` — number of times the step was dispatched
 
   A step is considered "dispatched" when its `"dispatched"` key is `true`.
   Steps with no `"name"` key are ignored. Tasks with an empty `workflow_steps`
@@ -51,7 +57,7 @@ defmodule Kanban.Tasks.Compliance do
 
     Map.new(rows, fn [name, total, dispatched] ->
       rate = if total > 0, do: dispatched / total * 100.0, else: 0.0
-      {name, rate}
+      {name, %{rate: rate, total: total, dispatched: dispatched}}
     end)
   end
 

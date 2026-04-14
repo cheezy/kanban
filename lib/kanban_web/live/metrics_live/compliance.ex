@@ -32,6 +32,10 @@ defmodule KanbanWeb.MetricsLive.Compliance do
     end
   end
 
+  defp dispatch_rate_color(rate) when rate >= 80.0, do: "bg-success"
+  defp dispatch_rate_color(rate) when rate >= 50.0, do: "bg-warning"
+  defp dispatch_rate_color(_rate), do: "bg-error"
+
   defp load_compliance(socket, board) do
     user_id = socket.assigns.current_scope.user.id
 

@@ -1219,7 +1219,7 @@ msgstr ""
 msgid "Add Verification Step"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:100
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:118
 #: lib/kanban_web/live/task_live/view_component.ex:240
 #: lib/kanban_web/live/task_live/view_component.ex:782
 #, elixir-autogen, elixir-format
@@ -2960,7 +2960,7 @@ msgstr "Temps que les tâches passent en attente de révision après achèvement
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:101
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:119
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Total Tasks"
@@ -3063,6 +3063,7 @@ msgstr ""
 msgid "(unnamed step)"
 msgstr ""
 
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:28
 #: lib/kanban_web/live/task_live/view_component.ex:987
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
@@ -3093,43 +3094,43 @@ msgstr ""
 msgid "exit %{code}"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:70
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "(no reason given)"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:103
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Avg Steps / Task"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:39
+#: lib/kanban_web/live/metrics_live/compliance.ex:43
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:91
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:109
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compliance by Agent"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:127
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "No agent activity recorded"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:84
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "No skipped steps recorded"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:52
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "No workflow step data yet"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:59
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:77
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Skip Reasons"
 msgstr ""
@@ -3139,7 +3140,7 @@ msgstr ""
 msgid "Step Dispatch Rates"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:102
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "Tasks With Steps"
 msgstr ""
@@ -3147,11 +3148,6 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "Workflow step dispatch, skip reasons, and per-agent compliance"
-msgstr ""
-
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:36
-#, elixir-autogen, elixir-format, fuzzy
-msgid "dispatched"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:277
@@ -3168,3 +3164,18 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to view compliance metrics for this board."
 msgstr ""
+
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:27
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Dispatch Rate"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Step"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:29
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Total"
+msgstr "Total des tâches"

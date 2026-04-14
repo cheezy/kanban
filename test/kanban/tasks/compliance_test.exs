@@ -45,7 +45,8 @@ defmodule Kanban.Tasks.ComplianceTest do
 
       result = Compliance.step_dispatch_rates(board.id)
 
-      assert_in_delta Map.fetch!(result, "build"), 66.666, 0.01
+      assert %{rate: rate, total: 3, dispatched: 2} = Map.fetch!(result, "build")
+      assert_in_delta rate, 66.666, 0.01
     end
 
     test "handles multiple distinct step names", %{board: board, column: column} do
@@ -58,8 +59,8 @@ defmodule Kanban.Tasks.ComplianceTest do
 
       result = Compliance.step_dispatch_rates(board.id)
 
-      assert Map.fetch!(result, "build") == 100.0
-      assert Map.fetch!(result, "lint") == 0.0
+      assert %{rate: 100.0, total: 1, dispatched: 1} = Map.fetch!(result, "build")
+      assert %{rate: 0.0, total: 1, dispatched: 0} = Map.fetch!(result, "lint")
     end
 
     test "ignores steps missing the name key", %{board: board, column: column} do
@@ -73,7 +74,7 @@ defmodule Kanban.Tasks.ComplianceTest do
 
       result = Compliance.step_dispatch_rates(board.id)
 
-      assert Map.fetch!(result, "deploy") == 0.0
+      assert %{rate: 0.0, total: 1, dispatched: 0} = Map.fetch!(result, "deploy")
     end
 
     test "scopes by board_id (no cross-board leakage)", %{

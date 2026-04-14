@@ -18,27 +18,45 @@
       </h2>
       <div
         :if={map_size(@dispatch_rates) > 0}
-        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        class="card bg-base-100 border border-base-300 overflow-x-auto"
       >
-        <div
-          :for={{step_name, rate} <- Enum.sort_by(@dispatch_rates, fn {name, _} -> name end)}
-          class="card bg-base-100 border border-base-300 p-5"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-base-content opacity-70 truncate">
-                {step_name}
-              </p>
-              <p class="mt-1 text-2xl font-bold text-base-content">
-                {:erlang.float_to_binary(rate, decimals: 1)}%
-              </p>
-              <p class="text-xs text-base-content opacity-60">
-                {gettext("dispatched")}
-              </p>
-            </div>
-            <.icon name="hero-paper-airplane" class="h-6 w-6 text-base-content opacity-40" />
-          </div>
-        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{gettext("Step")}</th>
+              <th class="w-1/2">{gettext("Dispatch Rate")}</th>
+              <th class="text-right">{gettext("Dispatched")}</th>
+              <th class="text-right">{gettext("Total")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={
+              {step_name, stats} <-
+                Enum.sort_by(@dispatch_rates, fn {name, _} -> name end)
+            }>
+              <td class="font-medium text-base-content">{step_name}</td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <div class="flex-1 h-2.5 rounded-full bg-base-300 overflow-hidden">
+                    <div
+                      class={[
+                        "h-full rounded-full transition-all duration-500",
+                        dispatch_rate_color(stats.rate)
+                      ]}
+                      style={"width: #{stats.rate}%"}
+                    >
+                    </div>
+                  </div>
+                  <span class="text-sm font-semibold text-base-content tabular-nums w-14 text-right">
+                    {:erlang.float_to_binary(stats.rate, decimals: 1)}%
+                  </span>
+                </div>
+              </td>
+              <td class="text-right text-base-content">{stats.dispatched}</td>
+              <td class="text-right text-base-content">{stats.total}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div
         :if={map_size(@dispatch_rates) == 0}

@@ -388,7 +388,7 @@ defmodule KanbanWeb.API.TaskController do
          agent_name,
          agent_skills_version
        ) do
-    params_with_agent = maybe_add_completed_by_agent(params, api_token)
+    params_with_agent = maybe_add_completed_by_agent(params, api_token, agent_name)
 
     case Tasks.complete_task(task, user, params_with_agent, agent_name) do
       {:ok, task, hooks} ->
@@ -802,9 +802,9 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp maybe_add_completed_by_agent(task_params, api_token) do
+  defp maybe_add_completed_by_agent(task_params, api_token, agent_name) do
     case api_token.agent_model do
-      nil -> task_params
+      nil -> Map.put(task_params, "completed_by_agent", agent_name)
       agent_model -> Map.put(task_params, "completed_by_agent", "ai_agent:#{agent_model}")
     end
   end
