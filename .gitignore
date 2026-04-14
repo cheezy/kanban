@@ -42,6 +42,8 @@ npm-debug.log
 TOKENS
 
 .stride_auth.md
+.stride-hook.log
+.stride-env-cache
 priv/repo/seed_metrics_data.exs
 package.json
 package-lock.json

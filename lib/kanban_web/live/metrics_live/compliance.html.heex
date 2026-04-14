@@ -1,0 +1,132 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+    <.header>
+      {@board.name} - {gettext("Compliance Metrics")}
+      <:subtitle>
+        {gettext("Workflow step dispatch, skip reasons, and per-agent compliance")}
+      </:subtitle>
+      <:actions>
+        <.link navigate={~p"/boards/#{@board}/metrics"}>
+          <.button>{gettext("Back to Dashboard")}</.button>
+        </.link>
+      </:actions>
+    </.header>
+
+    <section class="mt-8">
+      <h2 class="text-lg font-bold text-base-content mb-4">
+        {gettext("Step Dispatch Rates")}
+      </h2>
+      <div
+        :if={map_size(@dispatch_rates) > 0}
+        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div
+          :for={{step_name, rate} <- Enum.sort_by(@dispatch_rates, fn {name, _} -> name end)}
+          class="card bg-base-100 border border-base-300 p-5"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-base-content opacity-70 truncate">
+                {step_name}
+              </p>
+              <p class="mt-1 text-2xl font-bold text-base-content">
+                {:erlang.float_to_binary(rate, decimals: 1)}%
+              </p>
+              <p class="text-xs text-base-content opacity-60">
+                {gettext("dispatched")}
+              </p>
+            </div>
+            <.icon name="hero-paper-airplane" class="h-6 w-6 text-base-content opacity-40" />
+          </div>
+        </div>
+      </div>
+      <div
+        :if={map_size(@dispatch_rates) == 0}
+        class="card bg-base-100 border border-base-300 p-8 text-center"
+      >
+        <.icon
+          name="hero-paper-airplane"
+          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
+        />
+        <p class="text-base-content opacity-70">
+          {gettext("No workflow step data yet")}
+        </p>
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="text-lg font-bold text-base-content mb-4">
+        {gettext("Skip Reasons")}
+      </h2>
+      <div
+        :if={map_size(@skip_reasons) > 0}
+        class="card bg-base-100 border border-base-300 divide-y divide-base-300"
+      >
+        <div
+          :for={{reason, count} <- Enum.sort_by(@skip_reasons, fn {_, c} -> -c end)}
+          class="flex items-center justify-between px-4 py-3"
+        >
+          <span class="text-base-content">
+            {if reason == "", do: gettext("(no reason given)"), else: reason}
+          </span>
+          <span class="badge badge-warning">{count}</span>
+        </div>
+      </div>
+      <div
+        :if={map_size(@skip_reasons) == 0}
+        class="card bg-base-100 border border-base-300 p-8 text-center"
+      >
+        <.icon
+          name="hero-forward"
+          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
+        />
+        <p class="text-base-content opacity-70">
+          {gettext("No skipped steps recorded")}
+        </p>
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <h2 class="text-lg font-bold text-base-content mb-4">
+        {gettext("Compliance by Agent")}
+      </h2>
+      <div
+        :if={map_size(@agent_compliance) > 0}
+        class="card bg-base-100 border border-base-300 overflow-x-auto"
+      >
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{gettext("Agent")}</th>
+              <th class="text-right">{gettext("Total Tasks")}</th>
+              <th class="text-right">{gettext("Tasks With Steps")}</th>
+              <th class="text-right">{gettext("Avg Steps / Task")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={{agent, stats} <- Enum.sort_by(@agent_compliance, fn {name, _} -> name end)}>
+              <td class="font-medium text-base-content">{agent}</td>
+              <td class="text-right text-base-content">{stats.total_tasks}</td>
+              <td class="text-right text-base-content">{stats.tasks_with_steps}</td>
+              <td class="text-right text-base-content">
+                {:erlang.float_to_binary(stats.avg_steps, decimals: 2)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        :if={map_size(@agent_compliance) == 0}
+        class="card bg-base-100 border border-base-300 p-8 text-center"
+      >
+        <.icon
+          name="hero-user-group"
+          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
+        />
+        <p class="text-base-content opacity-70">
+          {gettext("No agent activity recorded")}
+        </p>
+      </div>
+    </section>
+  </div>
+</Layouts.app>
