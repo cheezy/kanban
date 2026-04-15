@@ -694,7 +694,14 @@ defmodule KanbanWeb.BoardLive.Show do
   defp load_tasks_for_columns(socket, columns) do
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
-        {column.id, Tasks.list_tasks(column)}
+        tasks = Tasks.list_tasks(column)
+
+        tasks =
+          if column.name == "Done",
+            do: Tasks.sort_by_goal_hierarchy(tasks),
+            else: tasks
+
+        {column.id, tasks}
       end)
 
     goal_progress = compute_goal_progress(tasks_by_column)

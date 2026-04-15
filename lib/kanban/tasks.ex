@@ -29,6 +29,7 @@ defmodule Kanban.Tasks do
 
   def list_tasks(column, opts \\ []), do: Queries.list_tasks(column, opts)
 
+  defdelegate sort_by_goal_hierarchy(tasks), to: Queries
   defdelegate list_archived_tasks(column), to: Queries
   defdelegate list_archived_tasks_for_board(board_id), to: Queries
   defdelegate get_task!(id), to: Queries

@@ -170,6 +170,27 @@ defmodule Kanban.Tasks.Queries do
     end
   end
 
+  @doc """
+  Sorts tasks so standalone tasks (no parent, not a goal) appear first,
+  followed by goals in ascending identifier order with their children
+  listed directly underneath each goal.
+  """
+  def sort_by_goal_hierarchy(tasks) do
+    by_parent = Enum.group_by(tasks, & &1.parent_id)
+    standalone = tasks |> Enum.filter(&standalone?/1) |> Enum.sort_by(& &1.identifier)
+    goals = tasks |> Enum.filter(&(&1.type == :goal)) |> Enum.sort_by(& &1.identifier)
+
+    standalone ++ Enum.flat_map(goals, &goal_with_children(&1, by_parent))
+  end
+
+  defp standalone?(%{parent_id: nil, type: type}) when type != :goal, do: true
+  defp standalone?(_task), do: false
+
+  defp goal_with_children(goal, by_parent) do
+    children = by_parent |> Map.get(goal.id, []) |> Enum.sort_by(& &1.identifier)
+    [goal | children]
+  end
+
   defp maybe_filter_archived(query, false) do
     where(query, [t], is_nil(t.archived_at))
   end
