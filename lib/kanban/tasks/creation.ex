@@ -23,8 +23,6 @@ defmodule Kanban.Tasks.Creation do
     should_check_wip = task_type in [:work, :defect]
 
     if !should_check_wip || Positioning.can_add_task?(column) do
-      attrs = prepare_task_creation_attrs(column, attrs)
-
       column
       |> insert_task_with_history(attrs)
       |> emit_task_creation_telemetry(column)
@@ -37,34 +35,30 @@ defmodule Kanban.Tasks.Creation do
   Creates a goal with nested child tasks in a single atomic transaction.
   """
   def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []) do
-    goal_attrs = prepare_goal_attrs(column, goal_attrs)
-
     Ecto.Multi.new()
-    |> Ecto.Multi.run(:lock_position, fn _repo, _changes ->
-      {:ok, Positioning.get_next_position_locked(column)}
+    |> Ecto.Multi.run(:lock_and_prepare, fn _repo, _changes ->
+      next_position = Positioning.get_next_position_locked(column)
+      goal_identifier = Identifiers.generate_identifier(column.board_id, :goal)
+
+      child_identifiers =
+        Identifiers.pregenerate_task_identifiers(column.board_id, child_tasks_attrs)
+
+      {:ok, %{position: next_position, goal_id: goal_identifier, child_ids: child_identifiers}}
     end)
-    |> Ecto.Multi.insert(:goal, fn %{lock_position: next_position} ->
-      Task.changeset(
-        %Task{column_id: column.id},
-        override_position(goal_attrs, next_position)
-      )
+    |> Ecto.Multi.insert(:goal, fn %{lock_and_prepare: prep} ->
+      attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
+      Task.changeset(%Task{column_id: column.id}, attrs)
     end)
     |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
-      TaskHistory.changeset(%TaskHistory{}, %{
-        task_id: goal.id,
-        type: :creation
-      })
+      TaskHistory.changeset(%TaskHistory{}, %{task_id: goal.id, type: :creation})
     end)
     |> insert_child_tasks(column, child_tasks_attrs)
     |> Repo.transaction()
     |> handle_goal_creation_result(column)
   end
 
-  defp prepare_goal_attrs(column, attrs) do
-    identifier = Identifiers.generate_identifier(column, :goal)
-
-    # Position 0 is a placeholder — overridden inside the transaction by the locked value
-    prepared_attrs = prepare_task_attrs(attrs, 0)
+  defp prepare_goal_attrs(attrs, identifier, position) do
+    prepared_attrs = prepare_task_attrs(attrs, position)
 
     identifier_key =
       if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
@@ -77,8 +71,6 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp insert_child_tasks(multi, column, child_tasks_attrs) do
-    task_identifiers = Identifiers.pregenerate_task_identifiers(column, child_tasks_attrs)
-
     child_tasks_attrs
     |> Enum.with_index()
     |> Enum.reduce(multi, fn {child_attrs, index}, multi_acc ->
@@ -86,14 +78,14 @@ defmodule Kanban.Tasks.Creation do
       history_key = {:child_task_history, index}
 
       multi_acc
-      |> Ecto.Multi.insert(task_key, fn %{goal: goal, lock_position: base_position} ->
+      |> Ecto.Multi.insert(task_key, fn %{goal: goal, lock_and_prepare: prep} ->
         child_attrs_with_parent =
           prepare_child_task_attrs(
             child_attrs,
             goal,
             index,
-            task_identifiers,
-            base_position
+            prep.child_ids,
+            prep.position
           )
 
         Task.changeset(%Task{column_id: column.id}, child_attrs_with_parent)
@@ -220,37 +212,35 @@ defmodule Kanban.Tasks.Creation do
 
   defp convert_single_dependency(dep, _task_identifiers), do: dep
 
-  defp prepare_task_creation_attrs(column, attrs) do
-    task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
-    identifier = Identifiers.generate_identifier(column, task_type)
-
-    # Position 0 is a placeholder — overridden inside the transaction by the locked value
-    prepared_attrs = prepare_task_attrs(attrs, 0)
-
-    identifier_key =
-      if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
-
-    Map.put(prepared_attrs, identifier_key, identifier)
-  end
-
   defp insert_task_with_history(column, attrs) do
     Ecto.Multi.new()
-    |> Ecto.Multi.run(:lock_position, fn _repo, _changes ->
-      {:ok, Positioning.get_next_position_locked(column)}
+    |> Ecto.Multi.run(:lock_and_prepare, fn _repo, _changes ->
+      next_position = Positioning.get_next_position_locked(column)
+      task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
+      identifier = Identifiers.generate_identifier(column.board_id, task_type)
+      {:ok, %{position: next_position, identifier: identifier}}
     end)
-    |> Ecto.Multi.insert(:task, fn %{lock_position: next_position} ->
+    |> Ecto.Multi.insert(:task, fn %{lock_and_prepare: prep} ->
+      task_attrs =
+        attrs
+        |> prepare_task_attrs(prep.position)
+        |> put_key("identifier", prep.identifier)
+
       %Task{column_id: column.id}
-      |> Task.changeset(override_position(attrs, next_position))
+      |> Task.changeset(task_attrs)
       |> Dependencies.validate_circular_dependencies()
     end)
     |> Ecto.Multi.insert(:history, fn %{task: task} ->
-      TaskHistory.changeset(%TaskHistory{}, %{
-        task_id: task.id,
-        type: :creation
-      })
+      TaskHistory.changeset(%TaskHistory{}, %{task_id: task.id, type: :creation})
     end)
     |> Repo.transaction()
     |> handle_task_creation_result(attrs)
+  end
+
+  defp put_key(attrs, key, value) do
+    actual_key =
+      if Map.keys(attrs) |> Enum.any?(&is_binary/1), do: key, else: String.to_existing_atom(key)
+    Map.put(attrs, actual_key, value)
   end
 
   defp handle_task_creation_result(transaction_result, attrs) do
@@ -312,14 +302,6 @@ defmodule Kanban.Tasks.Creation do
       Map.put(attrs, "position", position)
     else
       Map.put(attrs, :position, position)
-    end
-  end
-
-  defp override_position(attrs, position) do
-    cond do
-      Map.has_key?(attrs, "position") -> Map.put(attrs, "position", position)
-      Map.has_key?(attrs, :position) -> Map.put(attrs, :position, position)
-      true -> Map.put(attrs, :position, position)
     end
   end
 end

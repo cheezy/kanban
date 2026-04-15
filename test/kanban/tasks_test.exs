@@ -7518,10 +7518,13 @@ defmodule Kanban.TasksTest do
     test "generates identifier with invalid task type defaulting to work" do
       user = user_fixture()
       board = board_fixture(user)
-      column = column_fixture(board)
 
-      # Create a task with an unrecognized type string - it should default to :work
-      identifier = Kanban.Tasks.Identifiers.generate_identifier(column, "unknown_type")
+      identifier =
+        Kanban.Repo.transaction(fn ->
+          Kanban.Tasks.Identifiers.generate_identifier(board.id, "unknown_type")
+        end)
+
+      assert {:ok, identifier} = identifier
       assert String.starts_with?(identifier, "W")
     end
   end

@@ -149,6 +149,7 @@ defmodule Kanban.Tasks.Queries do
   def get_task_by_identifier_for_view!(identifier, column_ids) do
     case Task
          |> where([t], t.identifier == ^identifier and t.column_id in ^column_ids)
+         |> limit(1)
          |> Repo.one() do
       nil ->
         nil
