@@ -14,7 +14,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
         subscribe_to_board_updates(socket, board.id)
 
-        archived_tasks = Tasks.list_archived_tasks_for_board(board.id)
+        archived_tasks = load_archived_tasks(board.id)
 
         {:ok,
          socket
@@ -48,7 +48,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
       task ->
         case Tasks.unarchive_task(task) do
           {:ok, _task} ->
-            archived_tasks = Tasks.list_archived_tasks_for_board(socket.assigns.board.id)
+            archived_tasks = load_archived_tasks(socket.assigns.board.id)
 
             {:noreply,
              socket
@@ -105,6 +105,12 @@ defmodule KanbanWeb.ArchiveLive.Index do
   @impl true
   def handle_info(_msg, socket) do
     {:noreply, socket}
+  end
+
+  defp load_archived_tasks(board_id) do
+    board_id
+    |> Tasks.list_archived_tasks_for_board()
+    |> Tasks.sort_by_goal_hierarchy()
   end
 
   defp subscribe_to_board_updates(socket, board_id) do
