@@ -63,30 +63,33 @@ const SortableHook = {
 
     // Use requestAnimationFrame to ensure DOM is fully updated before reordering
     requestAnimationFrame(() => {
-      // Get all task elements (exclude empty state)
-      const taskElements = Array.from(this.el.children).filter(child => child.dataset.id)
+      // Skip position-based re-sorting for server-sorted columns (e.g. Done)
+      if (!this.el.dataset.serverSorted) {
+        // Get all task elements (exclude empty state)
+        const taskElements = Array.from(this.el.children).filter(child => child.dataset.id)
 
-      // Sort elements by their data-position attribute
-      const sortedElements = taskElements.slice().sort((a, b) => {
-        const posA = parseInt(a.dataset.position || "0")
-        const posB = parseInt(b.dataset.position || "0")
-        return posA - posB
-      })
-
-      // Check if reordering is needed
-      const needsReorder = sortedElements.some((el, index) => taskElements[index] !== el)
-
-      if (needsReorder) {
-        // Remove all task elements
-        taskElements.forEach(el => el.remove())
-        // Re-insert in correct order
-        const emptyState = this.el.querySelector('.empty-state')
-        sortedElements.forEach(el => {
-          this.el.appendChild(el)
+        // Sort elements by their data-position attribute
+        const sortedElements = taskElements.slice().sort((a, b) => {
+          const posA = parseInt(a.dataset.position || "0")
+          const posB = parseInt(b.dataset.position || "0")
+          return posA - posB
         })
-        // Move empty state to beginning if it exists
-        if (emptyState) {
-          this.el.insertBefore(emptyState, this.el.firstChild)
+
+        // Check if reordering is needed
+        const needsReorder = sortedElements.some((el, index) => taskElements[index] !== el)
+
+        if (needsReorder) {
+          // Remove all task elements
+          taskElements.forEach(el => el.remove())
+          // Re-insert in correct order
+          const emptyState = this.el.querySelector('.empty-state')
+          sortedElements.forEach(el => {
+            this.el.appendChild(el)
+          })
+          // Move empty state to beginning if it exists
+          if (emptyState) {
+            this.el.insertBefore(emptyState, this.el.firstChild)
+          }
         }
       }
 
