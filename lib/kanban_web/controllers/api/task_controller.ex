@@ -3,6 +3,7 @@ defmodule KanbanWeb.API.TaskController do
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
 
   action_fallback KanbanWeb.API.FallbackController
@@ -362,7 +363,8 @@ defmodule KanbanWeb.API.TaskController do
 
     with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
          :ok <- validate_hook(params["after_doing_result"], "after_doing"),
-         :ok <- validate_hook(params["before_review_result"], "before_review") do
+         :ok <- validate_hook(params["before_review_result"], "before_review"),
+         :ok <- gate_completion_results(task, params) do
       agent_name = params["agent_name"] || "Unknown"
 
       proceed_with_complete(
@@ -376,6 +378,16 @@ defmodule KanbanWeb.API.TaskController do
       )
     else
       error -> handle_task_error(conn, error)
+    end
+  end
+
+  defp gate_completion_results(task, params) do
+    metadata = [task_id: task.id, agent_name: params["agent_name"]]
+
+    case CompletionResultGate.gate(params, metadata: metadata) do
+      :ok -> :ok
+      {:warn, _failures} -> :ok
+      {:reject, body} -> {:error, {:completion_validation_failed, body}}
     end
   end
 
@@ -669,6 +681,12 @@ defmodule KanbanWeb.API.TaskController do
 
   defp handle_task_error(conn, {:error, {:hook_failed, hook_name, reason}}) do
     handle_hook_validation_error(conn, hook_name, reason)
+  end
+
+  defp handle_task_error(conn, {:error, {:completion_validation_failed, body}}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(ErrorDocs.add_docs_to_error(body, :completion_validation_failed))
   end
 
   defp error_response(conn, status, message, doc_key) do

@@ -436,7 +436,9 @@ defmodule Kanban.Tasks.AgentWorkflow do
           :time_spent_minutes,
           :completed_by_agent,
           :review_report,
-          :workflow_steps
+          :workflow_steps,
+          :explorer_result,
+          :reviewer_result
         ])
         |> Ecto.Changeset.put_change(:column_id, review_column.id)
         |> Ecto.Changeset.put_change(:position, next_position)

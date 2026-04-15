@@ -366,6 +366,12 @@ defmodule Kanban.Tasks.Task do
     # Workflow step records from agent hooks (before_doing, after_doing, before_review, after_review)
     field :workflow_steps, {:array, :map}, default: []
 
+    # Explorer subagent result submitted at task completion (pre-validated by Kanban.Tasks.CompletionValidation)
+    field :explorer_result, :map
+
+    # Reviewer subagent result submitted at task completion (pre-validated by Kanban.Tasks.CompletionValidation)
+    field :reviewer_result, :map
+
     # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
@@ -458,6 +464,8 @@ defmodule Kanban.Tasks.Task do
       :review_notes,
       :review_report,
       :workflow_steps,
+      :explorer_result,
+      :reviewer_result,
       :reviewed_by_id,
       :reviewed_at,
       # Archive tracking

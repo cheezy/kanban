@@ -24,6 +24,13 @@ config :kanban,
   ecto_repos: [Kanban.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Strict mode gate for PATCH /api/tasks/:id/complete explorer_result and
+# reviewer_result fields. When false (default), missing or invalid results
+# produce a structured warning log but the request succeeds (grace mode).
+# When true, missing or invalid results produce a 422 rejection.
+# Runtime-toggleable via STRIDE_STRICT_COMPLETION_VALIDATION=true.
+config :kanban, :strict_completion_validation, false
+
 # Configures the endpoint
 config :kanban, KanbanWeb.Endpoint,
   url: [host: "localhost"],

@@ -2537,6 +2537,52 @@ defmodule Kanban.TasksTest do
       assert task.workflow_steps == []
     end
 
+    test "explorer_result defaults to nil when absent from params", %{column: column} do
+      attrs = %{title: "Test task", position: 0}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert is_nil(task.explorer_result)
+    end
+
+    test "explorer_result casts a map", %{column: column} do
+      result = %{
+        "dispatched" => true,
+        "summary" => "Explored 5 files and identified the existing telemetry pattern",
+        "duration_ms" => 12_000
+      }
+
+      attrs = %{title: "Test task", position: 0, explorer_result: result}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.explorer_result == result
+    end
+
+    test "reviewer_result defaults to nil when absent from params", %{column: column} do
+      attrs = %{title: "Test task", position: 0}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert is_nil(task.reviewer_result)
+    end
+
+    test "reviewer_result casts a map", %{column: column} do
+      result = %{
+        "dispatched" => true,
+        "summary" => "Reviewed diff against the six acceptance criteria and four pitfalls",
+        "duration_ms" => 8_000,
+        "acceptance_criteria_checked" => 6,
+        "issues_found" => 0
+      }
+
+      attrs = %{title: "Test task", position: 0, reviewer_result: result}
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.reviewer_result == result
+    end
+
     test "validates reviewed_at must be set when review_status is not pending", %{
       column: column,
       user: user

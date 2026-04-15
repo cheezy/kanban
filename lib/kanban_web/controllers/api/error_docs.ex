@@ -96,6 +96,23 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # Completion result validation errors (explorer_result, reviewer_result)
+  def get_docs(:completion_validation_failed, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#completing-tasks",
+      related_docs: [
+        "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md"
+      ],
+      common_causes: [
+        "explorer_result or reviewer_result missing from request body",
+        "summary shorter than 40 non-whitespace characters",
+        "skip reason not one of the allowed enum values",
+        "dispatched=true without duration_ms (or reviewer counts)",
+        "dispatched=false without a reason"
+      ]
+    }
+  end
+
   # Hook execution errors
   def get_docs(:hook_validation_failed, _opts) do
     %{

@@ -60,6 +60,35 @@ defmodule KanbanWeb.API.TaskControllerTest do
     }
   end
 
+  defp valid_explorer_result do
+    %{
+      "dispatched" => true,
+      "summary" => "Explored the 3 key files and identified the existing pattern to mirror",
+      "duration_ms" => 12_000
+    }
+  end
+
+  defp valid_reviewer_result do
+    %{
+      "dispatched" => true,
+      "summary" => "Reviewed the diff against all acceptance criteria and pitfalls",
+      "duration_ms" => 8_000,
+      "acceptance_criteria_checked" => 5,
+      "issues_found" => 0
+    }
+  end
+
+  defp base_completion_params do
+    %{
+      "completion_summary" => "Implemented feature",
+      "actual_complexity" => "small",
+      "actual_files_changed" => "1 file",
+      "time_spent_minutes" => 10,
+      "after_doing_result" => valid_after_doing_result(),
+      "before_review_result" => valid_before_review_result()
+    }
+  end
+
   describe "POST /api/tasks" do
     test "creates task with all fields", %{conn: conn, column: column} do
       task_params = %{
@@ -759,6 +788,66 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(conn, 200)["data"]
 
       assert response["workflow_steps"] == []
+    end
+
+    test "returns explorer_result in task response", %{conn: conn, column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task with explorer result",
+          "explorer_result" => %{
+            "dispatched" => true,
+            "summary" => "Explored key files and identified existing patterns to follow",
+            "duration_ms" => 12_000
+          }
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["explorer_result"] == %{
+               "dispatched" => true,
+               "summary" => "Explored key files and identified existing patterns to follow",
+               "duration_ms" => 12_000
+             }
+    end
+
+    test "returns explorer_result as null when not set", %{conn: conn, task: task} do
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert is_nil(response["explorer_result"])
+    end
+
+    test "returns reviewer_result in task response", %{conn: conn, column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task with reviewer result",
+          "reviewer_result" => %{
+            "dispatched" => true,
+            "summary" => "Reviewed the diff against acceptance criteria and pitfalls",
+            "duration_ms" => 8_000,
+            "acceptance_criteria_checked" => 5,
+            "issues_found" => 0
+          }
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert response["reviewer_result"] == %{
+               "dispatched" => true,
+               "summary" => "Reviewed the diff against acceptance criteria and pitfalls",
+               "duration_ms" => 8_000,
+               "acceptance_criteria_checked" => 5,
+               "issues_found" => 0
+             }
+    end
+
+    test "returns reviewer_result as null when not set", %{conn: conn, task: task} do
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert is_nil(response["reviewer_result"])
     end
   end
 
@@ -1815,6 +1904,135 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(conn, 200)["data"]
 
       assert response["workflow_steps"] == []
+    end
+  end
+
+  describe "PATCH /api/tasks/:id/complete explorer/reviewer validation gate" do
+    import ExUnit.CaptureLog
+
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Test Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => true
+        })
+
+      previous = Application.get_env(:kanban, :strict_completion_validation, false)
+
+      on_exit(fn ->
+        Application.put_env(:kanban, :strict_completion_validation, previous)
+      end)
+
+      %{task: task}
+    end
+
+    test "grace mode (default): invalid explorer_result logs warn and returns 200",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, false)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", %{"dispatched" => true, "summary" => "too short"})
+
+      log =
+        capture_log(fn ->
+          conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+          assert json_response(conn, 200)["data"]["id"] == task.id
+        end)
+
+      assert log =~ "stride.completion.validation_failed"
+      assert log =~ "grace"
+    end
+
+    test "grace mode (default): missing explorer_result and reviewer_result returns 200",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, false)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", base_completion_params())
+
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "strict mode: invalid explorer_result returns 422 with structured error body",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", %{"dispatched" => true, "summary" => "too short"})
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      assert response["error"] == "completion validation failed"
+      assert is_list(response["failures"])
+
+      failure = Enum.find(response["failures"], &(&1["field"] == "explorer_result"))
+      assert failure
+      assert is_list(failure["errors"])
+      assert Map.has_key?(response, "required_format")
+      assert Map.has_key?(response, "documentation")
+    end
+
+    test "strict mode: missing explorer_result returns 422", %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      assert response["error"] == "completion validation failed"
+      assert Enum.any?(response["failures"], &(&1["field"] == "explorer_result"))
+    end
+
+    test "strict mode: valid explorer_result and reviewer_result returns 200 and persists",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["explorer_result"] == valid_explorer_result()
+      assert response["reviewer_result"] == valid_reviewer_result()
+    end
+
+    test "strict mode: valid skip-form reason is accepted", %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      skip_form = %{
+        "dispatched" => false,
+        "reason" => "small_task_0_1_key_files",
+        "summary" => "Small task with zero key files; exploration would add no signal"
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", skip_form)
+        |> Map.put("reviewer_result", skip_form)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["explorer_result"] == skip_form
     end
   end
 
