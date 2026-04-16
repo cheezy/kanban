@@ -1,6 +1,8 @@
 defmodule KanbanWeb.API.TaskControllerTest do
   use KanbanWeb.ConnCase
 
+  @moduletag capture_log: true
+
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
 
@@ -2033,6 +2035,157 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert response["id"] == task.id
       assert response["explorer_result"] == skip_form
+    end
+
+    for reason <- [
+          "no_subagent_support",
+          "trivial_change_docs_only",
+          "self_reported_exploration"
+        ] do
+      test "strict mode: skip reason #{reason} on explorer_result is accepted",
+           %{conn: conn, task: task} do
+        Application.put_env(:kanban, :strict_completion_validation, true)
+
+        skip_form = %{
+          "dispatched" => false,
+          "reason" => unquote(reason),
+          "summary" => "Self-reported exploration summary that exceeds the minimum length rule"
+        }
+
+        params =
+          base_completion_params()
+          |> Map.put("explorer_result", skip_form)
+          |> Map.put("reviewer_result", valid_reviewer_result())
+
+        conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+        response = json_response(conn, 200)["data"]
+
+        assert response["id"] == task.id
+        assert response["explorer_result"] == skip_form
+      end
+    end
+
+    test "strict mode: skip reason 'self_reported_review' on reviewer_result is accepted",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      skip_form = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => "Self-reviewed implementation against the acceptance criteria and pitfalls"
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", skip_form)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert response["reviewer_result"] == skip_form
+    end
+
+    test "strict mode: unknown skip reason returns 422", %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      bad_skip = %{
+        "dispatched" => false,
+        "reason" => "because_reasons",
+        "summary" => "A substantive summary that meets the minimum-length rule for skipping"
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", bad_skip)
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      failure = Enum.find(response["failures"], &(&1["field"] == "explorer_result"))
+      assert failure
+      assert Enum.any?(failure["errors"], &(&1["field"] == "reason"))
+    end
+
+    test "strict mode: missing reviewer_result returns 422", %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params = Map.put(base_completion_params(), "explorer_result", valid_explorer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      assert Enum.any?(response["failures"], &(&1["field"] == "reviewer_result"))
+    end
+
+    test "strict mode: negative duration_ms on explorer_result returns 422",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      bad_explorer = %{
+        "dispatched" => true,
+        "summary" => "A perfectly substantive summary of more than forty non-whitespace chars",
+        "duration_ms" => -1
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", bad_explorer)
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      failure = Enum.find(response["failures"], &(&1["field"] == "explorer_result"))
+      assert failure
+      assert Enum.any?(failure["errors"], &(&1["field"] == "duration_ms"))
+    end
+
+    test "strict mode: dispatched reviewer_result missing issues_found returns 422",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      bad_reviewer = %{
+        "dispatched" => true,
+        "summary" => "Reviewed the diff against acceptance criteria — forty-plus chars",
+        "duration_ms" => 8_000,
+        "acceptance_criteria_checked" => 5
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", bad_reviewer)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      failure = Enum.find(response["failures"], &(&1["field"] == "reviewer_result"))
+      assert failure
+      assert Enum.any?(failure["errors"], &(&1["field"] == "issues_found"))
+    end
+
+    test "strict mode: 422 body shape shares hook-result error top-level keys",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", %{"dispatched" => true, "summary" => "too short"})
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      # Hook-result 422 bodies have: error (string), required_format (map), documentation (URL
+      # string from ErrorDocs). Completion-result 422 bodies share those top-level keys plus a
+      # multi-payload-aware `failures` list (hook errors carry a single `hook` key instead).
+      assert is_binary(response["error"])
+      assert is_map(response["required_format"])
+      assert is_binary(response["documentation"])
+      assert is_list(response["failures"])
     end
   end
 

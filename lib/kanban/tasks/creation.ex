@@ -240,6 +240,7 @@ defmodule Kanban.Tasks.Creation do
   defp put_key(attrs, key, value) do
     actual_key =
       if Map.keys(attrs) |> Enum.any?(&is_binary/1), do: key, else: String.to_existing_atom(key)
+
     Map.put(attrs, actual_key, value)
   end
 
