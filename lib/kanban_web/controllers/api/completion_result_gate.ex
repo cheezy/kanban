@@ -49,8 +49,16 @@ defmodule KanbanWeb.API.CompletionResultGate do
 
   defp collect_failures(params) do
     [
-      evaluate("explorer_result", params["explorer_result"], &CompletionValidation.validate_explorer_result/1),
-      evaluate("reviewer_result", params["reviewer_result"], &CompletionValidation.validate_reviewer_result/1)
+      evaluate(
+        "explorer_result",
+        params["explorer_result"],
+        &CompletionValidation.validate_explorer_result/1
+      ),
+      evaluate(
+        "reviewer_result",
+        params["reviewer_result"],
+        &CompletionValidation.validate_reviewer_result/1
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -109,20 +117,24 @@ defmodule KanbanWeb.API.CompletionResultGate do
       required_format: %{
         "explorer_result" => %{
           "dispatched" => true,
-          "summary" => "A substantive summary of what the subagent explored (40+ non-whitespace chars)",
+          "summary" =>
+            "A substantive summary of what the subagent explored (40+ non-whitespace chars)",
           "duration_ms" => 12_000
         },
         "reviewer_result" => %{
           "dispatched" => true,
-          "summary" => "A substantive summary of what the reviewer checked (40+ non-whitespace chars)",
+          "summary" =>
+            "A substantive summary of what the reviewer checked (40+ non-whitespace chars)",
           "duration_ms" => 8_000,
           "acceptance_criteria_checked" => 5,
           "issues_found" => 0
         },
         "skip_form" => %{
           "dispatched" => false,
-          "reason" => "one of: #{Enum.map_join(CompletionValidation.skip_reasons(), ", ", &Atom.to_string/1)}",
-          "summary" => "A substantive summary of what was self-reported (40+ non-whitespace chars)"
+          "reason" =>
+            "one of: #{Enum.map_join(CompletionValidation.skip_reasons(), ", ", &Atom.to_string/1)}",
+          "summary" =>
+            "A substantive summary of what was self-reported (40+ non-whitespace chars)"
         }
       }
     }
