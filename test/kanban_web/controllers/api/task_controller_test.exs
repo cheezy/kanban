@@ -4,11 +4,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
 
-  @moduletag capture_log: true
-
   alias Kanban.ApiTokens
   alias Kanban.Columns
   alias Kanban.Tasks
+
+  @moduletag capture_log: true
 
   setup %{conn: conn} do
     user = user_fixture()
