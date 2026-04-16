@@ -1,10 +1,10 @@
 defmodule KanbanWeb.API.TaskControllerTest do
   use KanbanWeb.ConnCase
 
-  @moduletag capture_log: true
-
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+
+  @moduletag capture_log: true
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
