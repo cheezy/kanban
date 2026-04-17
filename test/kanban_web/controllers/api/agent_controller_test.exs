@@ -1,6 +1,9 @@
 defmodule KanbanWeb.API.AgentControllerTest do
   use KanbanWeb.ConnCase
 
+  @skills_dir "docs/multi-agent-instructions/skills"
+  @agents_md_path "docs/multi-agent-instructions/AGENTS.md"
+
   describe "GET /api/agent/onboarding" do
     setup %{conn: conn} do
       conn = put_req_header(conn, "accept", "application/json")
@@ -856,6 +859,93 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert "stride-creating-goals" in skills_included
       assert "stride-enriching-tasks" in skills_included
       assert "stride-subagent-workflow" in skills_included
+    end
+
+    test "Cursor description mentions G65 completion-validation requirement", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      cursor = response["multi_agent_instructions"]["formats"]["cursor"]
+
+      assert cursor["description"] =~ "G65 completion-validation"
+      assert cursor["description"] =~ "explorer_result"
+      assert cursor["description"] =~ "reviewer_result"
+      assert cursor["description"] =~ "workflow_steps"
+    end
+
+    test "Windsurf description mentions G65 completion-validation requirement", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      windsurf = response["multi_agent_instructions"]["formats"]["windsurf"]
+
+      assert windsurf["description"] =~ "G65 completion-validation"
+      assert windsurf["description"] =~ "explorer_result"
+      assert windsurf["description"] =~ "reviewer_result"
+      assert windsurf["description"] =~ "workflow_steps"
+    end
+
+    test "Continue.dev description mentions G65 completion-validation requirement", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      continue = response["multi_agent_instructions"]["formats"]["continue"]
+
+      assert continue["description"] =~ "G65 completion-validation"
+      assert continue["description"] =~ "explorer_result"
+      assert continue["description"] =~ "reviewer_result"
+      assert continue["description"] =~ "workflow_steps"
+    end
+
+    test "Kimi description mentions G65 completion-validation requirement", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      kimi = response["multi_agent_instructions"]["formats"]["kimi"]
+
+      assert kimi["description"] =~ "G65 completion-validation"
+      assert kimi["description"] =~ "explorer_result"
+      assert kimi["description"] =~ "reviewer_result"
+      assert kimi["description"] =~ "workflow_steps"
+    end
+
+    test "stride-completing-tasks SKILL.md contains G65 completion-validation content" do
+      path = Path.join([@skills_dir, "stride-completing-tasks", "SKILL.md"])
+
+      assert_file_contains(path, [
+        "explorer_result",
+        "reviewer_result",
+        "workflow_steps",
+        "strict_completion_validation",
+        "no_subagent_support",
+        "small_task_0_1_key_files",
+        "trivial_change_docs_only",
+        "self_reported_exploration",
+        "self_reported_review"
+      ])
+    end
+
+    test "stride-workflow SKILL.md and AGENTS.md contain G65 core tokens" do
+      workflow_path = Path.join([@skills_dir, "stride-workflow", "SKILL.md"])
+
+      core_tokens = [
+        "explorer_result",
+        "reviewer_result",
+        "workflow_steps",
+        "strict_completion_validation"
+      ]
+
+      assert_file_contains(workflow_path, core_tokens)
+      assert_file_contains(@agents_md_path, core_tokens)
+    end
+  end
+
+  defp assert_file_contains(path, tokens) do
+    content = File.read!(path)
+
+    for token <- tokens do
+      assert content =~ token,
+             "Expected #{path} to contain #{inspect(token)} but it did not"
     end
   end
 end
