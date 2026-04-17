@@ -43,6 +43,7 @@ Before calling the completion endpoint, verify ALL of these:
 2. Did you review your changes against acceptance_criteria and pitfalls?
 3. Did you execute the after_doing hook successfully (tests pass, credo clean)?
 4. Did you execute the before_review hook successfully?
+5. Can you produce `explorer_result`, `reviewer_result`, and `workflow_steps` for the completion payload? See **Completion Validation Requirements (G65)** below.
 
 **If any answer is NO, go back and complete that step before proceeding.**
 
@@ -56,6 +57,16 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 - **after_review** (60s, blocking) - Execute after approval (merge, deploy)
 
 **CRITICAL:** Execute BOTH `after_doing` AND `before_review` hooks BEFORE calling the task completion endpoint. The API requires both `after_doing_result` and `before_review_result` in the completion request. Hook validation failures must prevent task completion.
+
+## Completion Validation Requirements (G65)
+
+Every `/api/tasks/:id/complete` call **must** include three additional top-level fields beyond the hook results:
+
+- **`explorer_result`** — object: either the dispatched-subagent shape OR the self-reported skip-form. You have no subagent dispatch, so use the skip-form with `reason: "self_reported_exploration"` (or `no_subagent_support` if the decision matrix skipped exploration) and a `summary` of at least 40 non-whitespace characters.
+- **`reviewer_result`** — same shape as `explorer_result`. Use skip-form with `reason: "self_reported_review"` and a 40+ char summary describing what you checked.
+- **`workflow_steps`** — array of six telemetry entries, one per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`), each with `{name, dispatched, duration_ms}` for dispatched steps and `{name, dispatched: false, reason}` for skipped steps.
+
+Rollout status: currently **grace mode** — missing or invalid payloads log a warning and succeed. When `:strict_completion_validation` flips, missing/invalid payloads return `422`. Emit the fields correctly now. For the exact shape, skip-reason enum (5 values), 40-char rule, and 422 rejection format, see the full schema in `stride-completing-tasks/SKILL.md` at the URL listed under Documentation Links.
 
 ## Top 5 Critical Mistakes to Avoid
 
@@ -240,7 +251,25 @@ curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
       "exit_code": 0,
       "output": "Creating pull request...\nPR #123 created",
       "duration_ms": 2340
-    }
+    },
+    "explorer_result": {
+      "dispatched": false,
+      "reason": "self_reported_exploration",
+      "summary": "Read lib/my_app/auth.ex and related tests; identified existing JWT pattern and three helpers to reuse"
+    },
+    "reviewer_result": {
+      "dispatched": false,
+      "reason": "self_reported_review",
+      "summary": "Walked the diff against all 5 acceptance criteria and 3 pitfalls; confirmed each criterion met and no pitfall hit"
+    },
+    "workflow_steps": [
+      {"name": "explorer",       "dispatched": true,  "duration_ms": 9800},
+      {"name": "planner",        "dispatched": false, "reason": "Small task — planner skipped per decision matrix"},
+      {"name": "implementation", "dispatched": true,  "duration_ms": 1520000},
+      {"name": "reviewer",       "dispatched": true,  "duration_ms": 8400},
+      {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
+      {"name": "before_review",  "dispatched": true,  "duration_ms": 2340}
+    ]
   }'
 ```
 
@@ -253,6 +282,9 @@ curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
 - `actual_files_changed` (string) - Comma-separated file paths (NOT an array)
 - `after_doing_result` (object) - Hook result with `exit_code`, `output`, `duration_ms`
 - `before_review_result` (object) - Hook result with `exit_code`, `output`, `duration_ms`
+- `explorer_result` (object) - Exploration outcome; skip-form with `reason: "self_reported_exploration"` on platforms without subagents. See G65 section above.
+- `reviewer_result` (object) - Review outcome; skip-form with `reason: "self_reported_review"` on platforms without subagents. See G65 section above.
+- `workflow_steps` (array) - Six-entry telemetry array (one per phase). See G65 section above.
 
 ### Creating a Task
 
@@ -349,6 +381,7 @@ Your project should have these files:
 - **Hook Execution:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md
 - **AI Workflow:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md
 - **stride-workflow Skill:** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/skills/stride-workflow/SKILL.md
+- **stride-completing-tasks Skill (G65 schema):** https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/skills/stride-completing-tasks/SKILL.md
 
 ## Quick Reference
 
