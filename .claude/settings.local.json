@@ -208,7 +208,8 @@
       "Bash(bash -n hooks/stride-hook.sh)",
       "Bash(./hooks/test-stride-hook.sh)",
       "Read(//private/tmp/**)",
-      "Bash(mix test.coverage)"
+      "Bash(mix test.coverage)",
+      "Bash(git rev-list *)"
     ],
     "deny": [],
     "ask": []
