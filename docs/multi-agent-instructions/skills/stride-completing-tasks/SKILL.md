@@ -17,6 +17,9 @@ The completion API requires fields that are ONLY documented here:
 - `actual_files_changed` (required — comma-separated STRING, not array)
 - `after_doing_result` (required — object with `exit_code`, `output`, `duration_ms`)
 - `before_review_result` (required — object with `exit_code`, `output`, `duration_ms`)
+- `workflow_steps` (required — array of six telemetry entries, one per workflow phase; see the `stride-workflow` skill for the schema)
+- `explorer_result` (required — object: dispatched-subagent result OR self-reported skip with reason enum; on Cursor/Windsurf/Continue/Kimi the skip form is the default because these platforms have no subagents. See Explorer/Reviewer Result Schema)
+- `reviewer_result` (required — object: dispatched-subagent result OR self-reported skip with reason enum; same shape guidance as `explorer_result`. See Explorer/Reviewer Result Schema)
 
 **Attempting to complete a task from memory without this skill results in 3+ failed API calls** as you discover each missing field one at a time. This has been observed in practice.
 
@@ -122,6 +125,8 @@ Use when you've finished implementing a Stride task and are ready to mark it com
 - [ ] **Did you explore the codebase before coding?** If no → read the task's `key_files`, search for `patterns_to_follow`, and understand the existing code before proceeding.
 - [ ] **Did you review your changes against `acceptance_criteria`?** If no → walk through each acceptance criterion and verify your implementation meets it. Check `pitfalls` too.
 - [ ] **Are you ready to run the `after_doing` hook (tests, linting)?** If no → fix any known issues first. The hook will fail if tests don't pass.
+- [ ] **Is `workflow_steps` ready to send?** If no → jot down the six canonical phases in order (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`) with `dispatched=true/false` and `duration_ms` for dispatched ones. The array is required on every completion — see the `stride-workflow` skill for the schema.
+- [ ] **Can you produce `explorer_result` and `reviewer_result`?** Both are required — either the dispatched-subagent shape (if you have subagent tools) or the skip shape with an enum `reason` and a summary of 40+ non-whitespace characters. Missing or invalid = 422 once strict mode flips. See the Explorer/Reviewer Result Schema section below.
 
 **If ANY answer is NO → Go back and do it now. Do NOT proceed to completion.**
 
@@ -329,13 +334,109 @@ PATCH /api/tasks/:id/complete
     "exit_code": 0,
     "output": "Creating pull request...\nPR #123 created: https://github.com/org/repo/pull/123",
     "duration_ms": 2340
-  }
+  },
+  "explorer_result": {
+    "dispatched": false,
+    "reason": "no_subagent_support",
+    "summary": "Read lib/foo.ex and test/foo_test.exs; identified the existing error-tuple pattern and 3 test helpers to reuse for the new flow."
+  },
+  "reviewer_result": {
+    "dispatched": false,
+    "reason": "self_reported_review",
+    "summary": "Walked the diff against all 5 acceptance criteria and the 3 pitfalls; confirmed each criterion met and no pitfall hit."
+  },
+  "workflow_steps": [
+    {"name": "explorer",       "dispatched": true,  "duration_ms": 9800},
+    {"name": "planner",        "dispatched": false, "reason": "Small task — planner skipped per decision matrix"},
+    {"name": "implementation", "dispatched": true,  "duration_ms": 1520000},
+    {"name": "reviewer",       "dispatched": true,  "duration_ms": 8400},
+    {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
+    {"name": "before_review",  "dispatched": true,  "duration_ms": 2340}
+  ]
 }
 ```
 
-**Critical:** Both `after_doing_result` and `before_review_result` are REQUIRED. The API will reject requests without them.
+**Critical:** `after_doing_result`, `before_review_result`, `workflow_steps`, `explorer_result`, and `reviewer_result` are ALL required. The API will reject requests missing any of them — see the Explorer/Reviewer Result Schema section below for accepted shapes.
+
+**Schema reference:** The `workflow_steps` array must match the schema documented in the `stride-workflow` skill — key-for-key. Always include one entry per step name (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). Skipped steps use `{"name": "<step>", "dispatched": false, "reason": "<why>"}`.
 
 **Optional:** Include `review_report` when a task-reviewer agent produced a structured review. Omit it when no review was performed (e.g., small tasks with 0-1 key_files).
+
+## Explorer/Reviewer Result Schema
+
+Every `/complete` call **must** include both `explorer_result` and `reviewer_result` as top-level objects. Each accepts two shapes: a dispatched-subagent result (when a subagent tool is available, e.g. Claude Code's `stride:task-explorer`) or a self-reported skip (for platforms without subagents, or when the decision matrix legitimately skipped the step). Server-side validation is pre-validated by `Kanban.Tasks.CompletionValidation`; invalid payloads are logged during the grace-period rollout and rejected with `422` once `:strict_completion_validation` flips.
+
+**Platform note:** On Cursor, Windsurf, Continue, and Kimi Code, subagent dispatch is not available. Use **Shape 2 (self-reported skip)** — typically with `reason: "no_subagent_support"` when you read `key_files` inline during implementation, or `self_reported_exploration`/`self_reported_review` if you did substantive inline analysis beyond what a bare skip implies.
+
+### Shape 1 — dispatched subagent (platforms with subagent support, e.g. Claude Code)
+
+```json
+"explorer_result": {
+  "dispatched": true,
+  "summary": "<40+ non-whitespace characters describing what was explored>",
+  "duration_ms": 12000
+}
+
+"reviewer_result": {
+  "dispatched": true,
+  "summary": "<40+ non-whitespace characters describing what was reviewed>",
+  "duration_ms": 8000,
+  "acceptance_criteria_checked": 5,
+  "issues_found": 0
+}
+```
+
+`reviewer_result` additionally requires `acceptance_criteria_checked` and `issues_found` as non-negative integers when `dispatched` is `true`.
+
+### Shape 2 — self-reported skip (for no-subagent platforms or decision-matrix skips)
+
+```json
+{
+  "dispatched": false,
+  "reason": "<one of the 5 enum values below>",
+  "summary": "<40+ non-whitespace characters explaining why and what was self-reported>"
+}
+```
+
+The `reason` must be exactly one of:
+
+| Reason | When to use |
+|---|---|
+| `no_subagent_support` | Platform has no subagent dispatch available — the default path for Cursor, Windsurf, Continue, Kimi Code (also Codex/OpenCode) |
+| `small_task_0_1_key_files` | Decision matrix: task is small with 0–1 key_files and exploration/review was skipped per the matrix |
+| `trivial_change_docs_only` | Docs-only change with no code impact; exploration/review provides no value |
+| `self_reported_exploration` | You read `key_files` and analyzed the codebase manually beyond what a bare skip would imply |
+| `self_reported_review` | You walked the diff against `acceptance_criteria` and `pitfalls` manually |
+
+Free-form reasons are rejected — the enum is the contract.
+
+### Minimum summary length
+
+Summaries must contain at least **40 non-whitespace characters**. Trivial summaries like `"explored files"` or `"reviewed code"` are rejected. The minimum is counted after stripping all whitespace, so inserting spaces does not help.
+
+### 422 rejection example
+
+When strict mode is on and a payload fails validation:
+
+```json
+{
+  "error": "completion validation failed",
+  "failures": [
+    {
+      "field": "explorer_result",
+      "errors": [
+        {"field": "summary", "message": "must be a string of at least 40 non-whitespace characters"}
+      ]
+    }
+  ],
+  "required_format": { /* both shapes documented above */ },
+  "documentation": "https://.../AI-WORKFLOW.md#completing-tasks"
+}
+```
+
+### Grace-period rollout
+
+Until the server flips `:strict_completion_validation` to true, missing or invalid `explorer_result`/`reviewer_result` produces a structured warning log but the request succeeds. **Emit the fields correctly now** — agents that lag the rollout will start getting 422 rejections on the flip day.
 
 ## Review vs Auto-Approval Decision
 
@@ -507,7 +608,7 @@ REQUIRED BODY: {
   "agent_name": "Claude Opus 4.6",
   "time_spent_minutes": 45,
   "completion_notes": "...",
-  "review_report": "..." (optional — include when task-reviewer ran),
+  "review_report": "..." (optional — include when a review was performed),
   "skills_version": "1.0",
   "after_doing_result": {
     "exit_code": 0,
@@ -518,8 +619,34 @@ REQUIRED BODY: {
     "exit_code": 0,
     "output": "Executed by Claude Code hooks system",
     "duration_ms": 0
-  }
+  },
+  "explorer_result": {
+    "dispatched": true,
+    "summary": "<40+ non-whitespace chars>",
+    "duration_ms": 12000
+  },
+  "reviewer_result": {
+    "dispatched": true,
+    "summary": "<40+ non-whitespace chars>",
+    "duration_ms": 8000,
+    "acceptance_criteria_checked": 5,
+    "issues_found": 0
+  },
+  "workflow_steps": [
+    {"name": "explorer",       "dispatched": true,  "duration_ms": 12450},
+    {"name": "planner",        "dispatched": true,  "duration_ms": 8200},
+    {"name": "implementation", "dispatched": true,  "duration_ms": 1820000},
+    {"name": "reviewer",       "dispatched": true,  "duration_ms": 15300},
+    {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
+    {"name": "before_review",  "dispatched": true,  "duration_ms": 2340}
+  ]
 }
+
+SKIP FORM for explorer_result / reviewer_result (when no subagent was dispatched
+— typical for Cursor/Windsurf/Continue/Kimi which have no subagent tools):
+  {"dispatched": false, "reason": "<enum>", "summary": "<40+ non-whitespace chars>"}
+Reason enum: no_subagent_support, small_task_0_1_key_files, trivial_change_docs_only,
+             self_reported_exploration, self_reported_review
 
 VERSION: Send skills_version from your SKILL.md frontmatter with every complete request
 ```
@@ -552,6 +679,9 @@ VERSION: Send skills_version from your SKILL.md frontmatter with every complete 
 | `actual_files_changed` | string | Yes | Comma-separated file paths (NOT an array) |
 | `after_doing_result` | object | Yes | Hook result (see format below) |
 | `before_review_result` | object | Yes | Hook result (see format below) |
+| `workflow_steps` | array | Yes | Telemetry array with one entry per step name. See the `stride-workflow` skill for the full schema (six canonical step names: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). |
+| `explorer_result` | object | Yes | Result of codebase exploration — either the dispatched-subagent shape (on platforms with subagent tools) or the self-reported skip shape (on Cursor/Windsurf/Continue/Kimi). See the Explorer/Reviewer Result Schema section. |
+| `reviewer_result` | object | Yes | Result of code review against acceptance criteria. Same two shapes as `explorer_result`. When `dispatched=true`, also requires `acceptance_criteria_checked` and `issues_found`. See the Explorer/Reviewer Result Schema section. |
 | `review_report` | string | No | Structured review report from task-reviewer agent. Include when a review was performed; omit when no review was done. |
 | `skills_version` | string | No | Your skills version from SKILL.md frontmatter |
 
