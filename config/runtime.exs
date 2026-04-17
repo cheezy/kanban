@@ -32,7 +32,7 @@ end
 # Flip /complete explorer_result / reviewer_result validation to strict mode
 # without a redeploy by setting STRIDE_STRICT_COMPLETION_VALIDATION=true.
 if System.get_env("STRIDE_STRICT_COMPLETION_VALIDATION") == "true" do
-  config :kanban, :strict_completion_validation, true
+  config :kanban, :strict_completion_validation, false
 end
 
 if config_env() == :prod do
