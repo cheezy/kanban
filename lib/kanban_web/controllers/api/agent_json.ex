@@ -608,7 +608,7 @@ defmodule KanbanWeb.API.AgentJSON do
           cursor: %{
             file_path: ".cursor/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Stride skills for Cursor — 7 skills including the stride-workflow orchestrator, downloaded into .cursor/skills/ for auto-discovery",
+              "Stride skills for Cursor — 7 skills including the stride-workflow orchestrator, downloaded into .cursor/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
             compatible_tools: ["Cursor", "Claude Code"],
             skills_provided: [
               "stride-workflow",
@@ -643,7 +643,7 @@ defmodule KanbanWeb.API.AgentJSON do
           windsurf: %{
             file_path: ".windsurf/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Stride skills for Windsurf — 7 skills including the stride-workflow orchestrator, downloaded into .windsurf/skills/ for auto-discovery",
+              "Stride skills for Windsurf — 7 skills including the stride-workflow orchestrator, downloaded into .windsurf/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
             compatible_tools: ["Windsurf", "Claude Code"],
             skills_provided: [
               "stride-workflow",
@@ -677,7 +677,7 @@ defmodule KanbanWeb.API.AgentJSON do
           continue: %{
             file_path: ".continue/skills/<skill-name>/SKILL.md (7 skills total)",
             description:
-              "Stride skills for Continue.dev — 7 skills including the stride-workflow orchestrator, downloaded into .continue/skills/ for auto-discovery",
+              "Stride skills for Continue.dev — 7 skills including the stride-workflow orchestrator, downloaded into .continue/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
             compatible_tools: ["Continue.dev"],
             skills_provided: [
               "stride-workflow",
@@ -790,7 +790,7 @@ defmodule KanbanWeb.API.AgentJSON do
           kimi: %{
             file_path: "AGENTS.md",
             description:
-              "Kimi Code CLI (k2.5) instructions with stride-workflow orchestrator, verification checklist, and enforcement messaging (append-mode, always-active)",
+              "Kimi Code CLI (k2.5) instructions with stride-workflow orchestrator, verification checklist, enforcement messaging, and G65 completion-validation requirements (explorer_result, reviewer_result, workflow_steps required on /complete) — append-mode, always-active",
             compatible_tools: ["Kimi Code CLI (k2.5)"],
             download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
             installation_unix:
