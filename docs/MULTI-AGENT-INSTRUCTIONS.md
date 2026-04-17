@@ -341,6 +341,14 @@ All seven instruction formats cover the same essential topics:
    - API Reference URL
    - Hook Execution Guide URL
 
+6. **Completion Validation Requirements (G65)**
+   - `explorer_result` required on every `/complete` call — dispatched-subagent shape or self-reported skip with enum reason
+   - `reviewer_result` required on every `/complete` call — same two shapes as `explorer_result`
+   - `workflow_steps` required on every `/complete` call — six-entry telemetry array (one per phase)
+   - Skip-reason enum: `no_subagent_support`, `small_task_0_1_key_files`, `trivial_change_docs_only`, `self_reported_exploration`, `self_reported_review`
+   - 40-character non-whitespace minimum on `summary` fields
+   - Rolling out via `:strict_completion_validation` feature flag (currently grace mode, 422 rejection once flipped)
+
 ### Format-Specific Adaptations
 
 **GitHub Copilot (YAML + Markdown Skills):**
