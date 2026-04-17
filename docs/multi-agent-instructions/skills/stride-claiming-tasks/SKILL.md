@@ -320,11 +320,14 @@ DURATION=$((END_TIME - START_TIME))
 - Check key_files to understand which files to modify
 - Review patterns_to_follow for code consistency
 - Note pitfalls to avoid
+- **Capture exploration findings as you go** — on platforms without subagent dispatch (Cursor, Windsurf, Continue, Kimi Code), the observations you make while reading `key_files` and analyzing patterns will feed into the `explorer_result` you must include at completion. Keep a short running note of: which files you read, which patterns you identified, which existing helpers you plan to reuse. A single paragraph is enough — it becomes the `summary` field (40+ non-whitespace chars) of your `explorer_result` skip-form.
 - **Proceed immediately to the next workflow step (exploration, then implementation)**
 - Follow the testing_strategy outlined in the task
 - Work continuously through explore → implement → review → complete
 
 **AUTOMATION: The workflow IS the automation. Follow every step — claim → explore → implement → review → complete — without ANY user prompts between steps.**
+
+**Why capture exploration findings now:** Every `/complete` payload must include an `explorer_result` object. For agents with subagent dispatch, this is populated from the subagent's return value. For agents without (Cursor, Windsurf, Continue, Kimi Code), it is populated from your own notes. Reconstructing exploration findings at completion time produces thin, invalid summaries that fail the 40-char minimum. Capture now, submit at completion. See `stride-completing-tasks/SKILL.md` for the full `explorer_result` schema.
 
 ## ⚠️ YOUR NEXT STEP (NON-NEGOTIABLE) ⚠️
 
