@@ -28,6 +28,9 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `after_doing_result` | object | **Yes** | Result of executing the `after_doing` hook. Must include `exit_code`, `output`, and `duration_ms`. |
 | `before_review_result` | object | **Yes** | Result of executing the `before_review` hook. Must include `exit_code`, `output`, and `duration_ms`. |
+| `explorer_result` | object | **Yes** (grace-warned, strict-rejected) | Exploration outcome — dispatched-subagent shape or self-reported skip-form. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
+| `reviewer_result` | object | **Yes** (grace-warned, strict-rejected) | Review outcome — same two shapes as `explorer_result`. Dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
+| `workflow_steps` | array | Recommended (telemetry) | Six-entry telemetry array, one object per workflow phase. Cast onto the task struct for aggregation. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `agent_name` | string | No | Name of the agent completing the task (e.g., "Claude Sonnet 4.5"). Defaults to "Unknown". |
 | `time_spent_minutes` | integer | No | Time spent on the task in minutes |
 | `completion_notes` | string | No | Notes about the completion |
@@ -54,6 +57,63 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
 - `output`: String containing the output from hook execution (e.g., test results, linter output, PR creation output)
 - `duration_ms`: Time taken to execute the hook in milliseconds
 
+### Completion Validation Format (G65)
+
+`explorer_result` and `reviewer_result` are server-validated by `Kanban.Tasks.CompletionValidation`. Each accepts two shapes.
+
+**Dispatched shape** — use when an exploration/review subagent produced the result (e.g. Claude Code with `stride:task-explorer`):
+
+```json
+"explorer_result": {
+  "dispatched": true,
+  "summary": "<at least 40 non-whitespace characters>",
+  "duration_ms": 12000
+}
+
+"reviewer_result": {
+  "dispatched": true,
+  "summary": "<at least 40 non-whitespace characters>",
+  "duration_ms": 8000,
+  "acceptance_criteria_checked": 5,
+  "issues_found": 0
+}
+```
+
+`reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers. `explorer_result` does not.
+
+**Skip form** — use when exploration/review was skipped or produced inline (for platforms without subagent dispatch, or when the task's decision matrix skipped the step):
+
+```json
+{
+  "dispatched": false,
+  "reason": "<one of the 5 enum values below>",
+  "summary": "<at least 40 non-whitespace characters explaining what you did instead>"
+}
+```
+
+The `reason` field must be exactly one of:
+
+| Reason | When to use |
+|---|---|
+| `no_subagent_support` | Platform has no subagent dispatch (Cursor, Windsurf, Continue.dev, Kimi Code). Also Codex CLI and OpenCode during graceful fallback. |
+| `small_task_0_1_key_files` | Decision matrix: task is small with 0–1 `key_files` and exploration/review was legitimately skipped. |
+| `trivial_change_docs_only` | Docs-only change with no code impact; exploration/review provides no value. |
+| `self_reported_exploration` | You read `key_files` and analyzed the codebase manually beyond what a bare skip implies. |
+| `self_reported_review` | You walked the diff against `acceptance_criteria` and `pitfalls` manually. |
+
+Free-form reasons are rejected — the enum is the contract.
+
+**Minimum summary length:** Summaries must contain at least **40 non-whitespace characters**. Trivial summaries like `"explored files"` or `"reviewed code"` are rejected (the 40-char threshold is counted after stripping all whitespace).
+
+**Rollout mode:** The server is rolling out enforcement behind the `:strict_completion_validation` application flag:
+
+- **Grace (current default):** Missing or invalid `explorer_result` / `reviewer_result` log a structured warning and the request succeeds.
+- **Strict (post-rollout):** Missing or invalid results return `422` with a `failures` list. See the 422 example below.
+
+**`workflow_steps`** is a six-entry telemetry array (one object per phase: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). It is cast onto the task struct for aggregation but is not currently rejected when missing. Include it to contribute telemetry. Each entry has `{name, dispatched, duration_ms}` when the step ran, or `{name, dispatched: false, reason}` when it was skipped.
+
+**Authoritative format reference:** See `GET /api/agent/onboarding` → `api_schema.explorer_result_format`, `reviewer_result_format`, `workflow_steps_format`, and `validation_modes` for the machine-readable contract. Server source of truth: `Kanban.Tasks.CompletionValidation` (`lib/kanban/tasks/completion_validation.ex`) and `Kanban.KanbanWeb.Api.CompletionResultGate` (`lib/kanban_web/controllers/api/completion_result_gate.ex`).
+
 ### Request Body Example
 
 ```json
@@ -70,6 +130,43 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
     "exit_code": 0,
     "output": "Creating pull request...\nPR #123 created: https://github.com/org/repo/pull/123",
     "duration_ms": 2340
+  },
+  "explorer_result": {
+    "dispatched": true,
+    "summary": "Explored lib/my_app/auth.ex and related tests; identified existing JWT helper pattern to reuse",
+    "duration_ms": 12000
+  },
+  "reviewer_result": {
+    "dispatched": true,
+    "summary": "Reviewed the diff against all 5 acceptance criteria and 3 pitfalls; no issues found",
+    "duration_ms": 8000,
+    "acceptance_criteria_checked": 5,
+    "issues_found": 0
+  },
+  "workflow_steps": [
+    {"name": "explorer",       "dispatched": true,  "duration_ms": 12000},
+    {"name": "planner",        "dispatched": true,  "duration_ms": 8200},
+    {"name": "implementation", "dispatched": true,  "duration_ms": 1820000},
+    {"name": "reviewer",       "dispatched": true,  "duration_ms": 8000},
+    {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
+    {"name": "before_review",  "dispatched": true,  "duration_ms": 2340}
+  ]
+}
+```
+
+Example using the self-reported skip form (for platforms without subagent dispatch — Cursor, Windsurf, Continue.dev, Kimi Code — or for small tasks where exploration/review were skipped per the decision matrix):
+
+```json
+{
+  "explorer_result": {
+    "dispatched": false,
+    "reason": "no_subagent_support",
+    "summary": "Read lib/foo.ex and test/foo_test.exs inline; identified the existing error-tuple pattern to mirror"
+  },
+  "reviewer_result": {
+    "dispatched": false,
+    "reason": "self_reported_review",
+    "summary": "Walked the diff against all 5 acceptance criteria and 3 pitfalls; confirmed each criterion met"
   }
 }
 ```
