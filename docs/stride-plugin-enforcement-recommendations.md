@@ -187,6 +187,57 @@ If `explorer_result` or `reviewer_result` is missing, the API rejects with a 422
 - Must handle the case where small tasks legitimately skip exploration (the decision matrix allows this) — possibly by accepting `{"dispatched": false, "reason": "small task, 0-1 key_files"}` as a valid result
 - Platforms without subagent support would need a different format for these fields (self-reported exploration rather than agent dispatch)
 
+#### Operational: Enforcement Flag
+
+**Flag:** `:kanban, :strict_completion_validation` — Application env key read by `Kanban.KanbanWeb.Api.CompletionResultGate.strict?/0` (`lib/kanban_web/controllers/api/completion_result_gate.ex:48`).
+
+**Default:** `false` (grace mode). Set in `config/config.exs:32`:
+
+```elixir
+config :kanban, :strict_completion_validation, false
+```
+
+**Runtime override:** `config/runtime.exs:33-36` wires the `STRIDE_STRICT_COMPLETION_VALIDATION` env var to the flag. **Important:** the current override block is an explicit kill switch — when `STRIDE_STRICT_COMPLETION_VALIDATION=true` is set, the flag is held at `false`. This was done deliberately (commit `225be03` — *"setting flag to false — not ready for rollout yet"*) to prevent accidental early activation during the grace-period soak. To flip to strict, revert the override block so the env var enables strict mode, or set the flag in `config/runtime.exs` directly.
+
+**Modes:**
+
+| Mode | Flag value | Behavior |
+|---|---|---|
+| Grace (default) | `false` | Validation runs; failures are logged but request proceeds. Clients see normal 200 responses. |
+| Strict | `true` | Validation runs; failures cause HTTP 422 with `failures` body and the request is rejected. |
+
+Validation logic is identical in both modes — only the disposition of failures changes. The grace-mode warn volume is a faithful predictor of the strict-mode rejection volume (same failure set, different action).
+
+**Soft-warn log format:** `CompletionResultGate.log_warning/3` emits one warning per failing completion, regardless of mode:
+
+```
+[warning] stride.completion.validation_failed (grace): explorer_result: summary; reviewer_result: summary,acceptance_criteria_checked
+```
+
+With structured metadata: `event: "stride.completion.validation_failed"`, `mode: :grace` or `:strict`, `failures: [...]` (per-field list of `{field, errors}` maps), plus any caller-provided metadata such as `task_id` and `agent`.
+
+**Monitoring during grace period:**
+
+```bash
+# Volume of validation failures per hour (log scraping)
+grep "stride.completion.validation_failed" app.log | awk '{print substr($2,1,13)}' | sort | uniq -c
+
+# Per-field breakdown (from structured log metadata)
+# Requires a structured log parser; the metadata.failures list shows which fields fail most often
+```
+
+A dropping trend indicates older plugins (or misconfigured agents) are migrating to the G65-compliant payload shape. Flat or growing volume means clients aren't catching up — hold the flip.
+
+**Rollback:** Revert the flag to `false` in `config/runtime.exs` (or re-enable the kill-switch override block). No data migration required — grace mode restores immediately on deploy. Logs continue to show which agents would have been rejected.
+
+**Cross-references:**
+
+- Canonical validation: `lib/kanban/tasks/completion_validation.ex` (`@skip_reasons`, `@min_summary_length = 40`)
+- Request/response shape: `lib/kanban_web/controllers/api/completion_result_gate.ex` (`build_body/1` renders the 422 payload)
+- Client-facing schema: `GET /api/agent/onboarding` → `api_schema.validation_modes` and `api_schema.plugin_versions`
+- Client docs: `docs/api/patch_tasks_id_complete.md` → Completion Validation Format (G65) section
+- Related task: W242 (flip flag to strict after grace-period soak)
+
 ### 2. Claude Code Hooks for Hard Local Gates
 
 **Problem:** On Claude Code specifically, the agent could start editing files before invoking the orchestrator. The hooks.json system can intercept tool calls, but currently only intercepts Stride API calls (claim, complete, mark_reviewed).
