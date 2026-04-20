@@ -133,6 +133,8 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
    - **REQUIRED:** Include BOTH `after_doing_result` AND `before_review_result` parameters
+   - **REQUIRED (G65):** Include `explorer_result` and `reviewer_result` — dispatched-subagent shape or self-reported skip-form with enum `reason` and 40+ non-whitespace-char `summary`. See [Completion Validation](#completion-validation) below.
+   - **Recommended:** Include `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`).
    - **Only call this AFTER both hooks succeed**
    - API validates both hooks were executed and succeeded
    - Task moves to Review column (or Done if `needs_review=false`)
@@ -157,6 +159,37 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
     - If changes requested: task returns to Doing, repeat from step 4
 
 11. **Dependencies automatically unblock** - Next tasks become available
+
+---
+
+### Completion Validation
+
+Starting with G65 (April 2026), the `/complete` endpoint validates three additional top-level fields alongside `after_doing_result` and `before_review_result`:
+
+| Field | Required | Shape |
+|---|---|---|
+| `explorer_result` | Yes (grace-warned, strict-rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
+| `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found` |
+| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review` |
+
+**Rollout modes** (controlled by the `:strict_completion_validation` application flag):
+
+- **Grace mode (current default):** Missing or invalid `explorer_result` / `reviewer_result` log a structured warning and the request succeeds. Emit the fields correctly now to prepare for the flip.
+- **Strict mode (post-rollout):** Missing or invalid results return HTTP `422` with a `failures` list. Any agent not emitting valid fields is locked out of completion.
+
+**Skip form** — for platforms without subagent dispatch (Cursor, Windsurf, Continue.dev, Kimi Code) or when the decision matrix legitimately skipped the step:
+
+```json
+{
+  "dispatched": false,
+  "reason": "no_subagent_support",
+  "summary": "Read lib/foo.ex and test/foo_test.exs inline; identified the existing error-tuple pattern to mirror."
+}
+```
+
+The `reason` field must be one of five enum values: `no_subagent_support`, `small_task_0_1_key_files`, `trivial_change_docs_only`, `self_reported_exploration`, `self_reported_review`. The `summary` must contain at least 40 non-whitespace characters.
+
+**Full specification:** See [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](../api/patch_tasks_id_complete.md#completion-validation-format-g65) for the complete shape, rejection example, and authoritative schema references.
 
 ---
 
