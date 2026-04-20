@@ -854,6 +854,15 @@ curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh
 
 See [stride-codex](https://github.com/cheezy/stride-codex) for details.
 
+## Related: Completion Validation (G65)
+
+**Hooks and completion validation are separate systems.** This guide covers hook execution (`before_doing`, `after_doing`, `before_review`, `after_review`) — bash commands that run on your machine and whose results are submitted to the server. It does **not** cover the `explorer_result`, `reviewer_result`, and `workflow_steps` fields that the `/complete` endpoint now also requires. Those fields report on exploration and review work your agent did (via subagent dispatch or inline) — they are not derived from any hook.
+
+Completing a task with valid `after_doing_result` and `before_review_result` but missing `explorer_result` / `reviewer_result` will log a soft-warn today and return HTTP 422 once `:strict_completion_validation` flips to strict mode.
+
+- [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) — full field specification, shapes, enum values
+- [AI Workflow Guide — Completion Validation](AI-WORKFLOW.md#completion-validation) — workflow integration
+
 ## See Also
 
 - [API Documentation](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md) - Complete API reference
