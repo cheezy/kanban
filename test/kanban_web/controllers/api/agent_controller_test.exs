@@ -821,6 +821,107 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(hook_format["example"])
     end
 
+    test "api_schema complete_task lists explorer_result as required body field", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      required_body = schema["request_formats"]["complete_task"]["required_body"]
+      assert Map.has_key?(required_body, "explorer_result")
+
+      explorer_format = schema["explorer_result_format"]
+      assert is_map(explorer_format)
+      assert is_map(explorer_format["dispatched_fields"])
+      assert is_map(explorer_format["skip_form"])
+      assert is_map(explorer_format["example"])
+    end
+
+    test "api_schema complete_task lists reviewer_result with acceptance_criteria_checked", %{
+      conn: conn
+    } do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      required_body = schema["request_formats"]["complete_task"]["required_body"]
+      assert Map.has_key?(required_body, "reviewer_result")
+
+      reviewer_format = schema["reviewer_result_format"]
+      assert is_map(reviewer_format)
+      assert is_map(reviewer_format["dispatched_fields"])
+      assert is_map(reviewer_format["dispatched_fields"]["acceptance_criteria_checked"])
+      assert is_map(reviewer_format["dispatched_fields"]["issues_found"])
+      assert is_map(reviewer_format["skip_form"])
+    end
+
+    test "api_schema complete_task lists workflow_steps with six canonical step names", %{
+      conn: conn
+    } do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      required_body = schema["request_formats"]["complete_task"]["required_body"]
+      assert Map.has_key?(required_body, "workflow_steps")
+
+      workflow_format = schema["workflow_steps_format"]
+      assert is_map(workflow_format)
+      assert workflow_format["type"] == "array_of_objects"
+
+      step_names = workflow_format["step_names"]
+      assert is_list(step_names)
+      assert length(step_names) == 6
+
+      for name <- [
+            "explorer",
+            "planner",
+            "implementation",
+            "reviewer",
+            "after_doing",
+            "before_review"
+          ] do
+        assert name in step_names,
+               "Expected workflow step_names to include #{inspect(name)}"
+      end
+    end
+
+    test "api_schema documents plugin_versions with minimum supported versions", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      versions = schema["plugin_versions"]
+      assert is_map(versions)
+
+      for plugin <- [
+            "stride",
+            "stride-copilot",
+            "stride-gemini",
+            "stride-codex",
+            "stride-opencode"
+          ] do
+        entry = versions[plugin]
+
+        assert is_map(entry),
+               "Expected plugin_versions to include #{inspect(plugin)} as a map"
+
+        assert is_binary(entry["minimum"])
+        assert is_binary(entry["label"])
+      end
+    end
+
+    test "api_schema documents validation_modes with strict_completion_validation flag", %{
+      conn: conn
+    } do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      modes = schema["validation_modes"]
+      assert is_map(modes)
+      assert is_binary(modes["description"])
+      assert modes["description"] =~ "strict_completion_validation"
+
+      assert is_map(modes["grace"])
+      assert is_map(modes["strict"])
+      assert is_map(modes["example_rejection"])
+    end
+
     test "includes skills_version as a non-empty string", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       response = json_response(conn, 200)
