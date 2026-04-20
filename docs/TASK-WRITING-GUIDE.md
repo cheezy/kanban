@@ -978,6 +978,39 @@ from t in Task,
 - Don't add bulk priority assignment
 ```
 
+## Completion Validation Requirements (G65)
+
+Every Stride task completes with a structured payload the server validates. Three of those fields — `explorer_result`, `reviewer_result`, and `workflow_steps` — are populated from the agent's actual exploration, review, and workflow behavior during the task. **As a task author, the quality of your task metadata directly determines whether the agent can produce valid payloads.** Thin tasks produce thin skip-form summaries that fail the 40-character minimum. Rich tasks produce substantive dispatched payloads that clear validation cleanly.
+
+### What this means for task authors
+
+1. **`key_files` is what the explorer reads.** An agent's `explorer_result.summary` describes what it found in those files. If you list zero or vague `key_files`, the explorer has nothing concrete to summarize, and the agent falls back to a short skip-form summary that may fail validation. Aim for 2-5 specific file paths with a `note` explaining why each one matters.
+
+2. **`acceptance_criteria` drives the reviewer.** When the reviewer subagent runs (Claude Code) or the agent self-reviews (Cursor, Windsurf, Continue, Kimi), it walks each line of `acceptance_criteria` and reports `acceptance_criteria_checked`. Vague criteria like "works correctly" aren't checkable — produce one clear, verifiable statement per line.
+
+3. **`pitfalls` and `patterns_to_follow` give the reviewer substance.** `reviewer_result.summary` references these when reporting what was checked. Leaving them empty turns reviews into "walked the diff, no issues found" which reads thin.
+
+4. **Small tasks with 0-1 `key_files` can legitimately skip exploration and review** per the workflow's decision matrix. In that case the agent submits a skip-form with `reason: "small_task_0_1_key_files"`. Tag your small tasks honestly with `complexity: "small"` to make this path available — don't inflate complexity to force dispatch.
+
+5. **Subagent dispatch isn't available everywhere.** Cursor, Windsurf, Continue.dev, and Kimi Code agents always submit the skip-form with `reason: "no_subagent_support"` or `"self_reported_exploration"`/`"self_reported_review"`. Their summaries come from reading your task's metadata inline. So your task metadata IS the raw material for their validation payload — even more so than on Claude Code where a subagent's parallel exploration covers some gaps.
+
+### Practical checklist for task authors
+
+- [ ] **Does `key_files` have at least one concrete, specific file path?** (Or is this genuinely small with 0-1 files, in which case say so?)
+- [ ] **Does `acceptance_criteria` contain at least 3 checkable lines?** Each should be verifiable by someone reading the diff.
+- [ ] **Are `pitfalls` named and specific?** (Not "don't break things" — name the specific anti-pattern.)
+- [ ] **Do `patterns_to_follow` point at a real file the agent can open?**
+
+If you answer "no" to any of these on a medium or large task, the resulting `explorer_result` / `reviewer_result` payloads will be thin even before the agent writes a line of code. Rich task = rich payload.
+
+### Full payload specification
+
+This guide covers the author's perspective. For the exact payload shapes, skip-reason enum values, 40-character minimum rule, and rollout status:
+
+- [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) — full API contract
+- [AI Workflow — Completion Validation](AI-WORKFLOW.md#completion-validation) — workflow context
+- `GET /api/agent/onboarding` → `api_schema.explorer_result_format` / `reviewer_result_format` / `workflow_steps_format` — machine-readable schema
+
 ## Internal Mental Model During Task Execution
 
 1. Task Context
