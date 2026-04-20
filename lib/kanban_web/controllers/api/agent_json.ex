@@ -1215,7 +1215,13 @@ defmodule KanbanWeb.API.AgentJSON do
             actual_files_changed:
               "string (comma-separated file paths, NOT an array — e.g. 'lib/foo.ex, lib/bar.ex')",
             after_doing_result: "hook_result_format (see below)",
-            before_review_result: "hook_result_format (see below)"
+            before_review_result: "hook_result_format (see below)",
+            explorer_result:
+              "explorer_result_format (see below) — required; use dispatched shape or skip_form",
+            reviewer_result:
+              "reviewer_result_format (see below) — required; use dispatched shape or skip_form",
+            workflow_steps:
+              "workflow_steps_format (see below) — six-entry telemetry array, one entry per phase"
           }
         }
       },
@@ -1239,6 +1245,150 @@ defmodule KanbanWeb.API.AgentJSON do
           }
         },
         example: %{exit_code: 0, output: "All tests passed", duration_ms: 1234}
+      },
+      explorer_result_format: %{
+        description:
+          "Required format for explorer_result on /complete. Two accepted shapes: dispatched (subagent ran) or skip_form (not dispatched).",
+        dispatched_fields: %{
+          dispatched: %{type: "boolean", required: true, description: "true for this shape"},
+          summary: %{
+            type: "string",
+            required: true,
+            description:
+              "What the exploration covered. Must contain at least 40 non-whitespace characters."
+          },
+          duration_ms: %{
+            type: "integer",
+            required: true,
+            description: "Wall-clock time the exploration took, in milliseconds (non-negative)"
+          }
+        },
+        skip_form: %{
+          description: "Use when exploration was skipped or self-reported.",
+          fields: %{
+            dispatched: %{type: "boolean", required: true, description: "false for this shape"},
+            reason: %{
+              type: "enum",
+              required: true,
+              values: [
+                "no_subagent_support",
+                "small_task_0_1_key_files",
+                "trivial_change_docs_only",
+                "self_reported_exploration",
+                "self_reported_review"
+              ]
+            },
+            summary: %{
+              type: "string",
+              required: true,
+              description:
+                "Substantive explanation of what was done instead. At least 40 non-whitespace characters."
+            }
+          },
+          example: %{
+            dispatched: false,
+            reason: "no_subagent_support",
+            summary:
+              "Read lib/foo.ex and test/foo_test.exs inline; identified the existing error-tuple pattern to mirror."
+          }
+        },
+        example: %{
+          dispatched: true,
+          summary: "Explored 3 key_files and identified the existing pattern to mirror",
+          duration_ms: 12_000
+        }
+      },
+      reviewer_result_format: %{
+        description:
+          "Required format for reviewer_result on /complete. Two accepted shapes: dispatched (subagent ran) or skip_form (not dispatched).",
+        dispatched_fields: %{
+          dispatched: %{type: "boolean", required: true, description: "true for this shape"},
+          summary: %{
+            type: "string",
+            required: true,
+            description:
+              "What the review covered. Must contain at least 40 non-whitespace characters."
+          },
+          duration_ms: %{
+            type: "integer",
+            required: true,
+            description: "Wall-clock time the review took, in milliseconds (non-negative)"
+          },
+          acceptance_criteria_checked: %{
+            type: "integer",
+            required: true,
+            description:
+              "Count of acceptance criteria lines verified (non-negative integer). Required only when dispatched=true."
+          },
+          issues_found: %{
+            type: "integer",
+            required: true,
+            description:
+              "Count of issues the reviewer reported (non-negative integer). Required only when dispatched=true."
+          }
+        },
+        skip_form: %{
+          description:
+            "Same skip shape as explorer_result. Use when review was skipped or self-reported. See explorer_result_format.skip_form for field details and enum values.",
+          example: %{
+            dispatched: false,
+            reason: "self_reported_review",
+            summary:
+              "Walked the diff against all 5 acceptance criteria and 3 pitfalls; confirmed each criterion met and no pitfall hit."
+          }
+        },
+        example: %{
+          dispatched: true,
+          summary: "Reviewed the diff against all acceptance criteria and pitfalls",
+          duration_ms: 8_000,
+          acceptance_criteria_checked: 5,
+          issues_found: 0
+        }
+      },
+      workflow_steps_format: %{
+        description:
+          "Ordered six-entry telemetry array documenting which workflow phases executed during the task. " <>
+            "Cast onto the task struct for aggregation; not currently rejected when missing.",
+        type: "array_of_objects",
+        step_names: [
+          "explorer",
+          "planner",
+          "implementation",
+          "reviewer",
+          "after_doing",
+          "before_review"
+        ],
+        fields: %{
+          name: %{
+            type: "enum",
+            required: true,
+            description: "One of the six step_names above, in the order listed"
+          },
+          dispatched: %{
+            type: "boolean",
+            required: true,
+            description: "true if the step ran; false if intentionally skipped"
+          },
+          duration_ms: %{
+            type: "integer",
+            required_when: "dispatched=true",
+            description: "Wall-clock time the step took, in milliseconds"
+          },
+          reason: %{
+            type: "string",
+            required_when: "dispatched=false",
+            description:
+              "Short explanation of why the step was skipped (free-form; not the explorer_result/reviewer_result enum)"
+          }
+        },
+        example: [
+          %{name: "explorer", dispatched: true, duration_ms: 12_450},
+          %{name: "planner", dispatched: true, duration_ms: 8_200},
+          %{name: "implementation", dispatched: true, duration_ms: 1_820_000},
+          %{name: "reviewer", dispatched: true, duration_ms: 15_300},
+          %{name: "after_doing", dispatched: true, duration_ms: 45_678},
+          %{name: "before_review", dispatched: true, duration_ms: 2_340}
+        ]
       },
       task_fields: %{
         title: %{type: "string", required: true, description: "Short task description"},
@@ -1312,6 +1462,49 @@ defmodule KanbanWeb.API.AgentJSON do
             edge_cases: ["Empty password", "SQL injection attempt"],
             coverage_target: "100% for auth module"
           }
+        }
+      },
+      plugin_versions: %{
+        description:
+          "Minimum plugin versions that emit the G65 explorer_result / reviewer_result / workflow_steps fields. " <>
+            "Older clients operate in grace mode (warnings only) until upgraded.",
+        stride: %{minimum: "1.9.0", label: "1.9.0+"},
+        "stride-copilot": %{minimum: "2.5.0", label: "2.5.0+"},
+        "stride-gemini": %{minimum: "1.5.0", label: "1.5.0+"},
+        "stride-codex": %{minimum: "1.4.0", label: "1.4.0+"},
+        "stride-opencode": %{minimum: "1.4.0", label: "1.4.0+"}
+      },
+      validation_modes: %{
+        description:
+          "Completion validation runs in one of two modes, controlled by the " <>
+            ":strict_completion_validation application flag. explorer_result and reviewer_result are pre-validated by Kanban.Tasks.CompletionValidation. " <>
+            "workflow_steps is telemetry — cast onto the task struct but not rejected when absent.",
+        grace: %{
+          flag: ":strict_completion_validation = false",
+          behavior:
+            "Missing or malformed explorer_result / reviewer_result log a structured warning but the request succeeds. Default rollout mode.",
+          intended_for: "Plugin rollout window; older clients remain compatible."
+        },
+        strict: %{
+          flag: ":strict_completion_validation = true",
+          behavior:
+            "Missing or malformed explorer_result / reviewer_result are rejected with HTTP 422 and a failures list. Skip forms must include a valid reason.",
+          intended_for: "Post-rollout steady state; enforces task-quality contracts."
+        },
+        example_rejection: %{
+          status: 422,
+          error: "completion validation failed",
+          failures: [
+            %{
+              field: "explorer_result",
+              errors: [
+                %{
+                  field: "summary",
+                  message: "must be a string of at least 40 non-whitespace characters"
+                }
+              ]
+            }
+          ]
         }
       },
       valid_capabilities: Kanban.Tasks.Task.valid_capabilities()
