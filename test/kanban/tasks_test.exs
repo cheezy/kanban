@@ -80,6 +80,108 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "list_tasks_by_columns/2" do
+    test "returns empty map for empty column list" do
+      assert Tasks.list_tasks_by_columns([]) == %{}
+    end
+
+    test "groups tasks by column_id from a single Repo call" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+      column3 = column_fixture(board)
+
+      t1a = task_fixture(column1, %{title: "1A"})
+      t1b = task_fixture(column1, %{title: "1B"})
+      t2a = task_fixture(column2, %{title: "2A"})
+      # column3 intentionally has no tasks
+
+      grouped = Tasks.list_tasks_by_columns([column1, column2, column3])
+
+      assert Map.keys(grouped) |> Enum.sort() == [column1.id, column2.id]
+      assert Enum.map(grouped[column1.id], & &1.id) == [t1a.id, t1b.id]
+      assert Enum.map(grouped[column2.id], & &1.id) == [t2a.id]
+      refute Map.has_key?(grouped, column3.id)
+    end
+
+    test "orders tasks by position ascending within each column bucket" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task_fixture(column, %{title: "first"})
+      task_fixture(column, %{title: "second"})
+      task_fixture(column, %{title: "third"})
+
+      grouped = Tasks.list_tasks_by_columns([column])
+
+      positions = Enum.map(grouped[column.id], & &1.position)
+      assert positions == [0, 1, 2]
+    end
+
+    test "excludes archived tasks by default" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      active = task_fixture(column, %{title: "Active"})
+      stale = task_fixture(column, %{title: "To archive"})
+
+      {:ok, _} = Tasks.archive_task(stale)
+
+      grouped = Tasks.list_tasks_by_columns([column])
+
+      assert length(grouped[column.id]) == 1
+      assert hd(grouped[column.id]).id == active.id
+    end
+
+    test "includes archived tasks when include_archived: true" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      t1 = task_fixture(column, %{title: "Active"})
+      t2 = task_fixture(column, %{title: "Archived"})
+
+      {:ok, _} = Tasks.archive_task(t2)
+
+      grouped = Tasks.list_tasks_by_columns([column], include_archived: true)
+
+      assert length(grouped[column.id]) == 2
+      ids = Enum.map(grouped[column.id], & &1.id) |> Enum.sort()
+      assert ids == Enum.sort([t1.id, t2.id])
+    end
+
+    test "preloads :assigned_to so callers do not trigger extra queries" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task_fixture(column, %{title: "Solo", assigned_to_id: user.id})
+
+      grouped = Tasks.list_tasks_by_columns([column])
+      task = hd(grouped[column.id])
+
+      # association resolved without raising — NotLoaded would raise on access
+      assert task.assigned_to.id == user.id
+    end
+
+    test "matches single-column list_tasks/1 result set" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task_fixture(column, %{title: "A"})
+      task_fixture(column, %{title: "B"})
+
+      list = Tasks.list_tasks(column)
+      grouped = Tasks.list_tasks_by_columns([column])
+
+      assert Enum.map(list, & &1.id) == Enum.map(grouped[column.id], & &1.id)
+    end
+  end
+
   describe "list_archived_tasks/1" do
     test "returns only archived tasks" do
       user = user_fixture()

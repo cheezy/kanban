@@ -692,9 +692,11 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:edit_task_in_column), do: "Edit Task"
 
   defp load_tasks_for_columns(socket, columns) do
+    grouped = Tasks.list_tasks_by_columns(columns)
+
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
-        tasks = Tasks.list_tasks(column)
+        tasks = Map.get(grouped, column.id, [])
 
         tasks =
           if column.name == "Done",

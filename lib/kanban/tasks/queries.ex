@@ -30,6 +30,36 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
+  Returns tasks for a batch of columns, grouped by `column_id`.
+
+  Issues a single query (one pool checkout) regardless of how many columns are
+  requested. Tasks are ordered by `position` within each column's bucket and
+  `:assigned_to` is preloaded — matching the single-column `list_tasks/2` shape.
+
+  The returned map only contains keys for columns that have at least one task.
+  Callers that need an entry for every requested column should merge against a
+  seed map built from the column IDs.
+  """
+  def list_tasks_by_columns(columns, opts \\ []) do
+    include_archived = Keyword.get(opts, :include_archived, false)
+    column_ids = Enum.map(columns, & &1.id)
+
+    case column_ids do
+      [] ->
+        %{}
+
+      ids ->
+        Task
+        |> where([t], t.column_id in ^ids)
+        |> maybe_filter_archived(include_archived)
+        |> order_by([t], [t.column_id, t.position])
+        |> preload(:assigned_to)
+        |> Repo.all()
+        |> Enum.group_by(& &1.column_id)
+    end
+  end
+
+  @doc """
   Returns archived tasks for a column, sorted by archived_at descending.
   """
   def list_archived_tasks(column) do

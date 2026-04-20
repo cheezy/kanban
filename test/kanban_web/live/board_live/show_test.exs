@@ -108,6 +108,35 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "WIP"
       assert html =~ "5"
     end
+
+    test "tasks-load query count does not scale with column count (D5 N+1 guard)",
+         %{conn: conn, user: user} do
+      # Mount two boards: one with few columns, one with many.
+      # With the N+1 fixed, both should emit the SAME number of task-list queries.
+      # With an N+1 regression, the many-column mount would emit more.
+      board_small = board_fixture(user)
+      small_columns = for _ <- 1..2, do: column_fixture(board_small)
+      for column <- small_columns, _ <- 1..3, do: task_fixture(column)
+
+      board_large = board_fixture(user)
+      large_columns = for _ <- 1..10, do: column_fixture(board_large)
+      for column <- large_columns, _ <- 1..3, do: task_fixture(column)
+
+      small_queries = capture_task_queries(fn -> live(conn, ~p"/boards/#{board_small}") end)
+      large_queries = capture_task_queries(fn -> live(conn, ~p"/boards/#{board_large}") end)
+
+      assert length(small_queries) == length(large_queries),
+             "task-list query count must not scale with column count. " <>
+               "Small board (2 cols): #{length(small_queries)} queries. " <>
+               "Large board (10 cols): #{length(large_queries)} queries."
+
+      # Sanity: batched queries use `column_id IN` / `= ANY`, not per-row equality.
+      assert Enum.any?(large_queries, fn q ->
+               String.contains?(q, "column_id") and
+                 (String.contains?(q, "IN ") or String.contains?(q, "= ANY"))
+             end),
+             "expected a batched query using IN / = ANY against column_id"
+    end
   end
 
   describe "Show with new task" do
@@ -1573,6 +1602,42 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       html = render(show_live)
       assert html =~ "Task deleted successfully"
       refute html =~ task.title
+    end
+  end
+
+  # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.
+  # Used by the N+1 regression guard so the batched tasks load can't silently
+  # revert to a per-column loop.
+  defp capture_task_queries(fun) do
+    ref = make_ref()
+    handler_id = {__MODULE__, ref}
+    parent = self()
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, %{query: query}, _config ->
+        if String.match?(query, ~r/FROM "tasks"/i) do
+          send(parent, {:task_query, ref, query})
+        end
+      end,
+      nil
+    )
+
+    try do
+      fun.()
+    after
+      :telemetry.detach(handler_id)
+    end
+
+    collect_task_queries(ref, [])
+  end
+
+  defp collect_task_queries(ref, acc) do
+    receive do
+      {:task_query, ^ref, query} -> collect_task_queries(ref, [query | acc])
+    after
+      0 -> Enum.reverse(acc)
     end
   end
 end
