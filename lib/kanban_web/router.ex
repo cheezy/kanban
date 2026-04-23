@@ -98,6 +98,18 @@ defmodule KanbanWeb.Router do
     )
   end
 
+  scope "/admin", KanbanWeb.Admin do
+    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+
+    live_session :admin,
+      on_mount: [
+        {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.UserAuth, :require_admin}
+      ] do
+      live "/messages", MessageLive.Index, :index
+    end
+  end
+
   ## Authentication routes
 
   scope "/", KanbanWeb do

@@ -43,12 +43,7 @@ defmodule Kanban.Messages do
 
   """
   def create_message(%{id: sender_id}, attrs) do
-    attrs =
-      attrs
-      |> attrs_to_map()
-      |> Map.put(:sender_id, sender_id)
-
-    %Message{}
+    %Message{sender_id: sender_id}
     |> Message.changeset(attrs)
     |> Repo.insert()
   end
@@ -96,6 +91,11 @@ defmodule Kanban.Messages do
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:message_id, :user_id])
   end
 
-  defp attrs_to_map(attrs) when is_map(attrs), do: attrs
-  defp attrs_to_map(attrs), do: Enum.into(attrs, %{})
+  @doc """
+  Returns a changeset for the given message and attrs, useful for tracking
+  form changes in a LiveView.
+  """
+  def change_message(%Message{} = message, attrs \\ %{}) do
+    Message.changeset(message, attrs)
+  end
 end

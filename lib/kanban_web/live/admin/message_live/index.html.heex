@@ -1,0 +1,62 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <.header>
+    {gettext("Broadcast Messages")}
+    <:subtitle>
+      {gettext("Compose messages that appear on every user's board until they dismiss them.")}
+    </:subtitle>
+  </.header>
+
+  <section class="mt-8 max-w-2xl">
+    <h2 class="text-lg font-semibold text-base-content mb-4">
+      {gettext("Create a new message")}
+    </h2>
+
+    <.form
+      :let={f}
+      for={@form}
+      id="new-message-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <.input field={f[:title]} type="text" label={gettext("Title")} required />
+      <.input field={f[:body]} type="textarea" label={gettext("Body")} rows="4" required />
+      <.button phx-disable-with={gettext("Saving...")} class="btn-primary">
+        {gettext("Create Message")}
+      </.button>
+    </.form>
+  </section>
+
+  <section class="mt-12">
+    <h2 class="text-lg font-semibold text-base-content mb-4">
+      {gettext("Existing messages")}
+    </h2>
+
+    <div :if={@messages == []} class="text-base-content opacity-70">
+      {gettext("No messages yet.")}
+    </div>
+
+    <ul :if={@messages != []} id="messages" class="space-y-4">
+      <li
+        :for={message <- @messages}
+        id={"message-#{message.id}"}
+        class="border border-base-300 rounded-lg bg-base-100 p-4"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <h3 class="text-base-content font-semibold">{message.title}</h3>
+            <p class="mt-2 text-base-content opacity-80 whitespace-pre-wrap">{message.body}</p>
+          </div>
+          <.button
+            phx-click="delete"
+            phx-value-id={message.id}
+            data-confirm={gettext("Delete this message? This cannot be undone.")}
+            class="btn-error btn-sm"
+          >
+            {gettext("Delete")}
+          </.button>
+        </div>
+      </li>
+    </ul>
+  </section>
+</Layouts.app>
