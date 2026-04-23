@@ -31,6 +31,35 @@
       </:actions>
     </.header>
 
+    <div
+      id="undismissed_messages"
+      phx-update="stream"
+      aria-live="polite"
+      class="mt-4 space-y-2"
+    >
+      <div
+        :for={{dom_id, message} <- @streams.undismissed_messages}
+        id={dom_id}
+        role="alert"
+        class="alert alert-info shadow-sm"
+      >
+        <.icon name="hero-megaphone" class="h-6 w-6 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <h3 class="font-semibold">{message.title}</h3>
+          <p class="text-sm whitespace-pre-wrap">{message.body}</p>
+        </div>
+        <button
+          type="button"
+          phx-click="dismiss_message"
+          phx-value-id={message.id}
+          aria-label={gettext("Dismiss message")}
+          class="btn btn-sm btn-ghost"
+        >
+          <.icon name="hero-x-mark" class="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+
     <%= if is_nil(@user_access) do %>
       <div class="mt-4 mb-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
         <div class="flex items-center gap-3">

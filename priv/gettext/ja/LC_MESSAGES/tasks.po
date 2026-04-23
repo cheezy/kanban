@@ -11,7 +11,7 @@ msgstr ""
 "Language: ja\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban_web/live/board_live/show.ex:245
+#: lib/kanban_web/live/board_live/show.ex:269
 #, elixir-autogen, elixir-format
 msgid "Moved 1 task to Ready"
 msgid_plural "Moved %{count} tasks to Ready"

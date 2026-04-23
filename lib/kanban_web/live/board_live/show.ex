@@ -4,16 +4,22 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Columns
+  alias Kanban.Messages
   alias Kanban.Tasks
 
   @impl true
   def mount(_params, _session, socket) do
+    user = socket.assigns.current_scope.user
+    undismissed_messages = Messages.list_undismissed_for_user(user)
+
     {:ok,
-     assign(socket,
+     socket
+     |> assign(
        viewing_task_id: nil,
        show_task_modal: false,
        tasks_version: :os.system_time(:millisecond)
-     )}
+     )
+     |> stream(:undismissed_messages, undismissed_messages)}
   end
 
   @impl true
@@ -127,6 +133,24 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("dismiss_message", %{"id" => id}, socket) do
+    user = socket.assigns.current_scope.user
+    message_id = String.to_integer(id)
+
+    case Messages.dismiss_message(user, message_id) do
+      {:ok, _} ->
+        {:noreply,
+         stream_delete_by_dom_id(
+           socket,
+           :undismissed_messages,
+           "undismissed_messages-#{message_id}"
+         )}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not dismiss message."))}
+    end
+  end
+
   def handle_event("delete_column", %{"id" => id}, socket) do
     cond do
       socket.assigns.user_access != :owner ->

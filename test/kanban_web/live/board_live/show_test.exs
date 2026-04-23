@@ -1640,4 +1640,79 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       0 -> Enum.reverse(acc)
     end
   end
+
+  describe "undismissed broadcast messages banner" do
+    setup [:register_and_log_in_user]
+
+    test "renders the banner when an undismissed message exists", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      admin = admin_user_fixture()
+      message = message_fixture(admin, %{title: "Welcome!", body: "Enjoy Stride"})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "Welcome!"
+      assert html =~ "Enjoy Stride"
+      assert html =~ ~s(id="undismissed_messages-#{message.id}")
+    end
+
+    test "no banner block items when there are no undismissed messages", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ ~s(id="undismissed_messages-)
+    end
+
+    test "clicking dismiss removes the banner and persists across reload", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      admin = admin_user_fixture()
+      message = message_fixture(admin, %{title: "Hi", body: "there"})
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "Hi"
+
+      html =
+        view
+        |> element("#undismissed_messages-#{message.id} button[phx-click='dismiss_message']")
+        |> render_click()
+
+      refute html =~ ~s(id="undismissed_messages-#{message.id}")
+
+      {:ok, _view2, html2} = live(conn, ~p"/boards/#{board}")
+      refute html2 =~ ~s(id="undismissed_messages-#{message.id}")
+    end
+
+    test "user A dismissing does not affect user B's banner", %{conn: conn_a, user: user_a} do
+      board_a = board_fixture(user_a)
+      admin = admin_user_fixture()
+      message = message_fixture(admin, %{title: "ShareMe", body: "body"})
+
+      user_b = user_fixture()
+      conn_b = log_in_user(Phoenix.ConnTest.build_conn(), user_b)
+      board_b = board_fixture(user_b)
+
+      {:ok, view_a, _} = live(conn_a, ~p"/boards/#{board_a}")
+
+      view_a
+      |> element("#undismissed_messages-#{message.id} button[phx-click='dismiss_message']")
+      |> render_click()
+
+      {:ok, _view_b, html_b} = live(conn_b, ~p"/boards/#{board_b}")
+      assert html_b =~ ~s(id="undismissed_messages-#{message.id}")
+    end
+  end
+
+  defp admin_user_fixture do
+    user = user_fixture()
+    {:ok, admin} = Kanban.Accounts.update_user_type(user, :admin)
+    admin
+  end
+
+  defp message_fixture(sender, attrs) do
+    Kanban.MessagesFixtures.message_fixture(sender, attrs)
+  end
 end
