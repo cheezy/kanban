@@ -290,6 +290,18 @@ cp -r stride-codex/agents/ .agents/agents/
 cp stride-codex/AGENTS.md AGENTS.md
 ```
 
+**Windows (PowerShell):**
+
+Requires PowerShell 5.1+ or PowerShell Core 7+ and Git for Windows on `PATH`.
+
+```powershell
+# Global install (all projects)
+irm https://raw.githubusercontent.com/cheezy/stride-codex/main/install.ps1 | iex
+
+# Or project-local install (scriptblock wrapper required to pass -Project)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cheezy/stride-codex/main/install.ps1))) -Project
+```
+
 **Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are discoverable.
 
 **Skill discovery paths:** Codex CLI discovers skills in `.agents/skills/<name>/SKILL.md` or `.codex/skills/<name>/SKILL.md`, and agents in `.agents/agents/<name>.md`.
@@ -752,6 +764,12 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/hea
   New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.claude\skills\$_
   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md" -OutFile $env:USERPROFILE\.claude\skills\$_\SKILL.md
 }
+
+# Codex CLI (use the plugin installer — global install to $env:USERPROFILE\.agents\)
+irm https://raw.githubusercontent.com/cheezy/stride-codex/main/install.ps1 | iex
+
+# Or project-local Codex install (scriptblock wrapper required to pass -Project through irm | iex)
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cheezy/stride-codex/main/install.ps1))) -Project
 
 # Kimi Code CLI (k2.5)
 # If AGENTS.md exists, append Stride instructions
