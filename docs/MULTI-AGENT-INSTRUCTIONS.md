@@ -1,14 +1,14 @@
 # Multi-Agent Instructions
 
-*Last Updated: March 24, 2026*
+*Last Updated: April 24, 2026*
 
 ## Overview
 
 Stride provides enhanced integration support for multiple AI coding assistants beyond Claude Code. While Claude Code uses contextual Skills for workflow enforcement, other AI assistants receive always-active code completion guidance through their native configuration formats.
 
-**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode), and provide always-active code completion guidance for other AI assistants.
+**Core Principle:** Share Claude Code Skills across compatible platforms (GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode, Codex CLI), and provide always-active code completion guidance for other AI assistants.
 
-**Supported AI Assistants:** Claude Code (Skills), GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), Gemini Code Assist (Skills), OpenCode (Skills), Continue.dev, Kimi Code CLI (k2.5)
+**Supported AI Assistants:** Claude Code (Skills), GitHub Copilot (Skills), Cursor (Skills), Windsurf (Skills), Gemini Code Assist (Skills), OpenCode (Skills), Codex CLI (Skills), Continue.dev, Kimi Code CLI (k2.5)
 
 ## Architecture
 
@@ -36,6 +36,8 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
 ## Supported AI Assistants (7 Skills-Based + 2 Always-Active)
+
+> Skills-based: Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini CLI, OpenCode, Codex CLI. Always-active: Continue.dev, Kimi Code CLI.
 
 ### 1. Claude Code
 
@@ -255,7 +257,46 @@ done
 - Detailed code patterns with Markdown formatting per skill
 - Comprehensive mistake catalog distributed across relevant skills
 
-### 8. Kimi Code CLI (k2.5)
+### 8. Codex CLI
+
+**Installation Method:** Stride Codex Plugin (install script from GitHub)
+
+**Scope:** On-demand skill loading (activated when needed) + custom agents
+
+**Skills Provided:** `stride-workflow` (recommended entry point), `stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`
+
+**Custom Agents:** `task-explorer`, `task-reviewer`, `task-decomposer`, `hook-diagnostician`
+
+> **🔌 RECOMMENDED: Install the Stride Codex plugin.** This provides 7 skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill walks through the complete lifecycle in a single skill.
+
+**Installation (global — applies to all projects):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
+```
+
+**Installation (current project only):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project
+```
+
+**Manual installation:**
+
+```bash
+git clone https://github.com/cheezy/stride-codex.git
+cp -r stride-codex/skills/ .agents/skills/
+cp -r stride-codex/agents/ .agents/agents/
+cp stride-codex/AGENTS.md AGENTS.md
+```
+
+**Verify installation** by checking that Stride skills (e.g., `stride-claiming-tasks`, `stride-completing-tasks`) appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are discoverable.
+
+**Skill discovery paths:** Codex CLI discovers skills in `.agents/skills/<name>/SKILL.md` or `.codex/skills/<name>/SKILL.md`, and agents in `.agents/agents/<name>.md`.
+
+**IMPORTANT:** Codex CLI has no automatic hook interception. The agent executes `.stride.md` hooks directly by reading the file and running each command via shell, one command at a time. The Stride skills provide the exact execution pattern. For manual installation as a fallback, see the Manual Installation section below.
+
+### 9. Kimi Code CLI (k2.5)
 
 **File:** `AGENTS.md`
 
@@ -396,6 +437,15 @@ All seven instruction formats cover the same essential topics:
 - Installed in .opencode/skills/stride/ or ~/.config/opencode/skills/stride/
 - Claude-compatible via .claude/skills/stride/ path
 
+**Codex CLI (Plugin with Skills + Custom Agents):**
+- YAML frontmatter with name and description fields
+- Rich formatting with headings, lists, code blocks in body
+- 7 skills + 4 custom agents via stride-codex plugin
+- Custom agents for exploration, review, decomposition, and diagnostics
+- Installed via `curl -fsSL .../install.sh | bash` (global or `--project`)
+- Discovered in `.agents/skills/` or `.codex/skills/` (agents in `.agents/agents/`)
+- Manual hook execution — no automatic interception in Codex CLI
+
 **Kimi Code CLI (k2.5) (Markdown):**
 - Always-active instructions loaded on startup
 - Append-mode for merging with existing AGENTS.md content
@@ -465,7 +515,7 @@ Total size: ~28KB of instruction content
 When AI agents fetch the onboarding endpoint, they should automatically download the appropriate instruction file based on their type:
 
 1. Agent fetches `/api/agent/onboarding`
-2. Agent identifies its type (Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Kimi)
+2. Agent identifies its type (Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Codex CLI, Kimi)
 3. Agent extracts the `download_url` for its format
 4. Agent executes the appropriate `installation_unix` or `installation_windows` command
 5. Instruction file is placed in the correct location
@@ -590,6 +640,18 @@ for skill in stride-creating-tasks stride-completing-tasks stride-claiming-tasks
     https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/SKILL.md
 done
 ```
+
+**Codex CLI (Recommended — use the plugin):**
+
+```bash
+# Global install (all projects)
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
+
+# Or project-local install
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project
+```
+
+> This installs the full set of 7 skills + 4 custom agents. See [Section 8: Codex CLI](#8-codex-cli) for details.
 
 **Kimi Code CLI (k2.5):**
 ```bash
@@ -741,7 +803,7 @@ To update instruction content:
 | **Content Size** | 1000+ lines per skill | 200-400 lines total |
 | **Distribution** | Embedded in endpoint | Downloadable files |
 | **Workflow Enforcement** | Blocking validation | Guidance only |
-| **Target Assistants** | Claude Code (via plugin) | GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode (Skills); Continue.dev, Kimi (Always-active) |
+| **Target Assistants** | Claude Code (via plugin) | GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode, Codex CLI (Skills); Continue.dev, Kimi (Always-active) |
 | **Update Frequency** | With endpoint changes | Independent file updates |
 | **Token Cost** | High (comprehensive) | Low (concise) |
 
