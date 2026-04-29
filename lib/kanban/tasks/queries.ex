@@ -208,14 +208,22 @@ defmodule Kanban.Tasks.Queries do
   """
   def sort_by_goal_hierarchy(tasks) do
     by_parent = Enum.group_by(tasks, & &1.parent_id)
-    standalone = tasks |> Enum.filter(&standalone?/1) |> Enum.sort_by(& &1.identifier)
     goals = tasks |> Enum.filter(&(&1.type == :goal)) |> Enum.sort_by(& &1.identifier)
+    goal_ids = MapSet.new(goals, & &1.id)
+    standalone = collect_standalone(tasks, goal_ids)
 
     standalone ++ Enum.flat_map(goals, &goal_with_children(&1, by_parent))
   end
 
-  defp standalone?(%{parent_id: nil, type: type}) when type != :goal, do: true
-  defp standalone?(_task), do: false
+  defp collect_standalone(tasks, goal_ids) do
+    tasks
+    |> Enum.filter(&standalone?(&1, goal_ids))
+    |> Enum.sort_by(& &1.identifier)
+  end
+
+  defp standalone?(%{type: :goal}, _goal_ids), do: false
+  defp standalone?(%{parent_id: nil}, _goal_ids), do: true
+  defp standalone?(%{parent_id: parent_id}, goal_ids), do: not MapSet.member?(goal_ids, parent_id)
 
   defp goal_with_children(goal, by_parent) do
     children = by_parent |> Map.get(goal.id, []) |> Enum.sort_by(& &1.identifier)

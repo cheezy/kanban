@@ -57,5 +57,27 @@ defmodule Kanban.Tasks.QueriesTest do
       result = Queries.sort_by_goal_hierarchy([work, defect])
       assert Enum.map(result, & &1.identifier) == ["D1", "W1"]
     end
+
+    test "child tasks whose parent goal is not in the list still appear" do
+      # Simulates the Done column: a goal has some children done and some still
+      # in another column. The completed children must not vanish.
+      orphan_child = task(%{id: 1, identifier: "W7", type: :work, parent_id: 99})
+      standalone = task(%{id: 2, identifier: "W3", type: :work})
+
+      result = Queries.sort_by_goal_hierarchy([orphan_child, standalone])
+      assert Enum.map(result, & &1.identifier) == ["W3", "W7"]
+    end
+
+    test "mix of standalone, orphan children, and goals with children" do
+      standalone = task(%{id: 1, identifier: "W1", type: :work})
+      orphan_child = task(%{id: 2, identifier: "W2", type: :work, parent_id: 99})
+      goal = task(%{id: 3, identifier: "G1", type: :goal})
+      goal_child = task(%{id: 4, identifier: "W5", type: :work, parent_id: 3})
+
+      result =
+        Queries.sort_by_goal_hierarchy([orphan_child, goal_child, goal, standalone])
+
+      assert Enum.map(result, & &1.identifier) == ["W1", "W2", "G1", "W5"]
+    end
   end
 end
