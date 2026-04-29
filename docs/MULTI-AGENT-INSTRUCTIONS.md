@@ -35,6 +35,23 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 4. **Easy Updates**: Update individual formats without changing entire endpoint
 5. **Consistent Distribution**: All formats served from same GitHub docs directory
 
+### Orchestrator-First Pattern (All Assistants)
+
+For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. The motivation, the three-layer defense design, and the per-platform decisions live in [`docs/plans/stride-plugin-feedback.md`](plans/stride-plugin-feedback.md). Each platform implements as much of the pattern as its host runtime allows:
+
+| Platform | Layer 1 (runtime gate) | Layer 2 (INTERNAL descriptions) | Layer 3 (STOP body preamble) |
+|---|---|---|---|
+| Claude Code (`stride` plugin 1.10.0) | Yes — `PreToolUse(Skill)` hook with marker check | Yes | Yes |
+| Gemini CLI (`stride-gemini` 1.6.0) | Yes — `BeforeTool(activate_skill)` hook with marker check | Yes | Yes |
+| OpenCode (`stride-opencode` 1.5.0) | Yes — TypeScript gate wired into `tool.execute.before` | Yes | Yes |
+| GitHub Copilot (`stride-copilot` 2.6.0) | Not portable — Copilot CLI exposes no skill-activation event (see `stride-copilot/docs/HOOK_RESEARCH.md`) | Yes | Yes |
+| Codex CLI (`stride-codex` 1.6.0) | Not portable — Codex CLI exposes no hook system | Yes | Yes |
+| Cursor / Windsurf (manual install of `docs/multi-agent-instructions/skills/*`) | Not available — Cursor and Windsurf rely on the auto-activation matcher | Yes (via INTERNAL `description:` fields) | Yes (via STOP block in each `SKILL.md`) |
+| Continue.dev (`docs/multi-agent-instructions/continue-config.json`) | Not available — JSON config has no skill matcher | Inline orchestrator-first paragraph in the `systemMessage` |
+| Kimi Code CLI (`docs/multi-agent-instructions/AGENTS.md`) | Not available — AGENTS.md is always-active prose with no matcher | Inline `Orchestrator-First Pattern` section near the top of AGENTS.md |
+
+The same orchestrator-first guidance is also present in `docs/multi-agent-instructions/copilot-instructions.md`, `GEMINI.md`, `cursorrules.txt`, `windsurfrules.txt`, and the legacy single-file `SKILL.md` for hosts that download those manual-fallback files. The wording in every location is shared so cross-agent grep finds the same phrasing.
+
 ## Supported AI Assistants (7 Skills-Based + 2 Always-Active)
 
 > Skills-based: Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini CLI, OpenCode, Codex CLI. Always-active: Continue.dev, Kimi Code CLI.
