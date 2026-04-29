@@ -7,6 +7,12 @@ skills_version: 1.0
 
 # Stride: Completing Tasks
 
+## STOP — orchestrator check
+
+If you arrived here directly from a user prompt, you are in the wrong skill.
+Invoke `stride:stride-workflow` instead. Do not read further.
+Sub-skills are dispatched by the orchestrator only.
+
 ## ⚠️ THIS SKILL IS MANDATORY — NOT OPTIONAL ⚠️
 
 **If you are about to call `PATCH /api/tasks/:id/complete`, you MUST have invoked this skill first.**

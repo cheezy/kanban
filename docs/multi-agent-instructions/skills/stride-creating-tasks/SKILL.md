@@ -7,6 +7,12 @@ skills_version: 1.0
 
 # Stride: Creating Tasks
 
+## STOP — orchestrator check
+
+If you arrived here directly from a user prompt, you are in the wrong skill.
+Invoke `stride:stride-workflow` instead. Do not read further.
+Sub-skills are dispatched by the orchestrator only.
+
 ## ⚠️ THIS SKILL IS MANDATORY — NOT OPTIONAL ⚠️
 
 **If you are about to call `POST /api/tasks` to create a work task or defect, you MUST have invoked this skill first.**

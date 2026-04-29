@@ -7,6 +7,12 @@ skills_version: 1.0
 
 # Stride: Subagent Workflow
 
+## STOP — orchestrator check
+
+If you arrived here directly from a user prompt, you are in the wrong skill.
+Invoke `stride:stride-workflow` instead. Do not read further.
+Sub-skills are dispatched by the orchestrator only.
+
 ## ⚠️ THIS SKILL IS MANDATORY AFTER CLAIMING — NOT OPTIONAL ⚠️
 
 **If you just claimed a Stride task and are about to start implementation, you MUST invoke this skill first.**
