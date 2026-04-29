@@ -8,6 +8,16 @@ metadata:
   api_base: https://www.stridelikeaboss.com
 ---
 
+## STOP — orchestrator check
+
+If you arrived here directly from a user prompt, you are in the wrong skill.
+Invoke `stride:stride-workflow` instead. Do not read further.
+Sub-skills are dispatched by the orchestrator only.
+
+## Orchestrator-First Pattern
+
+For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. This file is a legacy single-skill bundle of all Stride content; whatever runtime gating your host provides, the discipline of routing through `stride-workflow` is on the agent. When the user says "claim a task" or "complete this task", follow the lifecycle below — do not read or apply sub-skill contracts independently.
+
 ## What I do
 
 I provide comprehensive integration instructions for working with Stride, a kanban-based task management platform designed for AI-human collaboration. I cover:
