@@ -1,6 +1,6 @@
 ---
 name: stride-creating-tasks
-description: MANDATORY before calling POST /api/tasks to create a work task or defect. Contains ALL required field formats — verification_steps MUST be objects (not strings), key_files MUST be objects (not strings), testing_strategy arrays MUST be arrays (not strings). Skipping causes malformed tasks and 3+ hour implementation failures.
+description: INTERNAL — invoked only by stride:stride-workflow. Do NOT invoke from a user prompt. Contains the work-task and defect creation contract (POST /api/tasks field formats — verification_steps and key_files as object arrays, testing_strategy arrays), used during the orchestrator's goal-decomposition and task-creation phases.
 compatibility: cursor, windsurf, continue, kimi
 skills_version: 1.0
 ---

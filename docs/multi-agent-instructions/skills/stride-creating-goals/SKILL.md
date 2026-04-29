@@ -1,6 +1,6 @@
 ---
 name: stride-creating-goals
-description: MANDATORY before calling POST /api/tasks/batch or creating goals with POST /api/tasks. Contains the ONLY correct batch format — the root key MUST be "goals" not "tasks" (most common mistake, causes 422 error). Skipping causes API rejections and malformed dependency chains.
+description: INTERNAL — invoked only by stride:stride-workflow. Do NOT invoke from a user prompt. Contains the goal/batch creation contract (POST /api/tasks/batch root key MUST be "goals" not "tasks", dependency index format), used during the orchestrator's goal-decomposition phase.
 compatibility: cursor, windsurf, continue, kimi
 skills_version: 1.0
 ---

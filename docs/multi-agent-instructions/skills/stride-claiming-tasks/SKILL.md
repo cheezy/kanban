@@ -1,6 +1,6 @@
 ---
 name: stride-claiming-tasks
-description: MANDATORY before calling GET /api/tasks/next or POST /api/tasks/claim. Contains required before_doing hook execution pattern and claim request format. The claim endpoint REQUIRES before_doing_result which is ONLY documented here — skipping causes API rejection. Invoke for ANY task claiming or discovery operation.
+description: INTERNAL — invoked only by stride:stride-workflow. Do NOT invoke from a user prompt. Contains the claim API contract (POST /api/tasks/claim payload and required before_doing_result shape) and the before_doing hook execution pattern, used during the orchestrator's claim phase.
 compatibility: cursor, windsurf, continue, kimi
 skills_version: 1.0
 ---

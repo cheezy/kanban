@@ -1,6 +1,6 @@
 ---
 name: stride-workflow
-description: Single orchestrator for the complete Stride task lifecycle. Replaces the pattern of invoking 6+ separate skills at specific moments. Invoke ONCE after deciding to work on Stride tasks — walks through prerequisites, claiming, exploration, implementation, review, hooks, and completion in sequence. Handles both Claude Code (with subagent dispatch) and other environments (Cursor/Windsurf/Continue/Kimi Code without subagents).
+description: Single orchestrator for the complete Stride task lifecycle. Invoke when the user asks to claim a task, work on the next stride task, work on stride tasks, complete a stride task, enrich a stride task, decompose a goal, or create a goal or stride tasks. Replaces invoking stride-claiming-tasks, stride-completing-tasks, stride-creating-tasks, stride-creating-goals, stride-enriching-tasks, or stride-subagent-workflow directly — those are dispatched from inside this orchestrator. Walks through prerequisites, claiming, exploration, implementation, review, hooks, and completion. Handles both Claude Code (with subagent dispatch) and other environments (Cursor/Windsurf/Continue without subagents).
 compatibility: cursor, windsurf, continue, kimi
 skills_version: 1.0
 ---
