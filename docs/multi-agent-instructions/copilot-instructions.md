@@ -1,5 +1,9 @@
 # Stride Integration - GitHub Copilot Instructions
 
+## Orchestrator-First Pattern
+
+For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. The Claude Code, Gemini, and OpenCode plugins enforce this with a runtime hook on skill activation; Copilot relies on auto-activation matching, so the discipline is on the agent. When the user says "claim a task" or "complete this task", follow the lifecycle below — do not read or apply sub-skill contracts independently.
+
 ## Hook Execution (Mandatory)
 
 Stride enforces workflow discipline through four client-side hooks that execute on the developer's machine:
