@@ -4,6 +4,12 @@
 
 This project integrates with Stride, a kanban-based task management platform designed for AI-human collaboration. Stride provides task workflow enforcement through client-side hooks and comprehensive API endpoints for task management.
 
+## Orchestrator-First Pattern
+
+For any Stride task work, the orchestrator is `stride-workflow`. Every Stride task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are **dispatched from inside `stride-workflow` at the appropriate phase, not invoked directly from a user prompt**. The other plugins (Claude Code, Gemini, OpenCode) enforce this with a runtime hook on skill activation; Kimi has no equivalent gate, so the discipline is on the agent.
+
+When the user says "claim a task", "work on the next stride task", "complete this task", "decompose this goal", or any similar request, the response is to follow the `stride-workflow` lifecycle below — **not** to read or quote the sub-skill files independently. If you find yourself about to apply a sub-skill's contract outside the lifecycle, stop and re-enter the lifecycle at the correct phase. Skipping phases is not faster; it produces lower-quality work that takes longer to fix.
+
 ## Workflow Orchestrator (stride-workflow)
 
 **The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
