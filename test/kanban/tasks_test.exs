@@ -614,6 +614,236 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "update_task/2 goal assignment cascade" do
+    setup do
+      alice = user_fixture()
+      bob = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal = task_fixture(column, %{title: "Some Goal", type: :goal})
+
+      child1 = task_fixture(column, %{title: "Child 1", parent_id: goal.id})
+      child2 = task_fixture(column, %{title: "Child 2", parent_id: goal.id})
+      child3 = task_fixture(column, %{title: "Child 3", parent_id: goal.id})
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      %{
+        alice: alice,
+        bob: bob,
+        board: board,
+        column: column,
+        goal: goal,
+        child1: child1,
+        child2: child2,
+        child3: child3
+      }
+    end
+
+    test "assigning a goal cascades to every non-completed child", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      assert {:ok, updated_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+      assert updated_goal.assigned_to_id == alice.id
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id == alice.id
+    end
+
+    test "cascade writes assignment_history for each affected child", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      {:ok, _updated_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+
+      goal_history = Tasks.get_task_with_history!(goal.id).task_histories
+      child1_history = Tasks.get_task_with_history!(child1.id).task_histories
+      child2_history = Tasks.get_task_with_history!(child2.id).task_histories
+      child3_history = Tasks.get_task_with_history!(child3.id).task_histories
+
+      for histories <- [goal_history, child1_history, child2_history, child3_history] do
+        assignment_histories = Enum.filter(histories, &(&1.type == :assignment))
+        assert length(assignment_histories) == 1
+        assert hd(assignment_histories).from_user_id == nil
+        assert hd(assignment_histories).to_user_id == alice.id
+      end
+    end
+
+    test "cascade broadcasts task_update events for the goal AND each child", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      {:ok, _updated_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+
+      # Drain all broadcasts that arrived. Order is not guaranteed and the
+      # goal's broadcast type may differ from the children's, so collect IDs
+      # from any task_update / task_assigned style messages.
+      broadcasted_ids = drain_task_broadcasts()
+
+      assert goal.id in broadcasted_ids
+      assert child1.id in broadcasted_ids
+      assert child2.id in broadcasted_ids
+      assert child3.id in broadcasted_ids
+    end
+
+    test "cascade does NOT touch completed children", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      from(t in Kanban.Tasks.Task, where: t.id == ^child2.id)
+      |> Kanban.Repo.update_all(set: [status: :completed])
+
+      {:ok, _updated_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id == alice.id
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id)
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id == alice.id
+
+      child2_assignment_count =
+        Tasks.get_task_with_history!(child2.id).task_histories
+        |> Enum.count(&(&1.type == :assignment))
+
+      assert child2_assignment_count == 0
+    end
+
+    test "cascade does NOT create spurious history when a child already matches", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      {:ok, _} = Tasks.update_task(child2, %{assigned_to_id: alice.id})
+
+      child2_history_before =
+        Tasks.get_task_with_history!(child2.id).task_histories
+        |> Enum.count(&(&1.type == :assignment))
+
+      assert child2_history_before == 1
+
+      {:ok, _updated_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+
+      child2_history_after =
+        Tasks.get_task_with_history!(child2.id).task_histories
+        |> Enum.count(&(&1.type == :assignment))
+
+      assert child2_history_after == 1, "no new assignment row should be added"
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id == alice.id
+    end
+
+    test "updating a goal field OTHER than assigned_to_id does NOT cascade", %{
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      {:ok, _updated_goal} = Tasks.update_task(goal, %{title: "Renamed Goal"})
+
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id)
+    end
+
+    test "assigning a non-goal task does NOT touch any other task", %{
+      alice: alice,
+      column: column
+    } do
+      sibling_a = task_fixture(column, %{title: "Sibling A"})
+      sibling_b = task_fixture(column, %{title: "Sibling B"})
+
+      {:ok, _updated} = Tasks.update_task(sibling_a, %{assigned_to_id: alice.id})
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, sibling_a.id).assigned_to_id == alice.id
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, sibling_b.id).assigned_to_id)
+    end
+
+    test "unassigning a goal cascades nil to all assigned children", %{
+      alice: alice,
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      {:ok, assigned_goal} = Tasks.update_task(goal, %{assigned_to_id: alice.id})
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id == alice.id
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id == alice.id
+
+      {:ok, updated_goal} = Tasks.update_task(assigned_goal, %{assigned_to_id: nil})
+
+      assert is_nil(updated_goal.assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id)
+    end
+
+    test "goal with zero children: cascade is a no-op", %{
+      alice: alice,
+      column: column
+    } do
+      lonely_goal = task_fixture(column, %{title: "Lonely Goal", type: :goal})
+
+      assert {:ok, updated} = Tasks.update_task(lonely_goal, %{assigned_to_id: alice.id})
+      assert updated.assigned_to_id == alice.id
+    end
+
+    test "cascade rolls back atomically when the Multi step fails", %{
+      goal: goal,
+      child1: child1,
+      child2: child2,
+      child3: child3
+    } do
+      # Assigning to a non-existent user id triggers the foreign-key
+      # constraint on assigned_to_id, which surfaces as a changeset error
+      # from inside the Multi. The goal update (Multi step :goal) fails,
+      # the transaction rolls back, and no child mutations persist.
+      assert {:error, %Ecto.Changeset{} = failed} =
+               Tasks.update_task(goal, %{assigned_to_id: -1})
+
+      assert %{assigned_to_id: ["does not exist"]} = errors_on(failed)
+
+      # Children must still be in their original (unassigned) state.
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child1.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child2.id).assigned_to_id)
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, child3.id).assigned_to_id)
+
+      # And the goal must still be unassigned.
+      assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id)
+    end
+
+    defp drain_task_broadcasts do
+      drain_task_broadcasts([])
+    end
+
+    defp drain_task_broadcasts(acc) do
+      receive do
+        {Kanban.Tasks, _event, %{id: id}} -> drain_task_broadcasts([id | acc])
+        _other -> drain_task_broadcasts(acc)
+      after
+        50 -> Enum.uniq(acc)
+      end
+    end
+  end
+
   describe "delete_task/1" do
     test "deletes the task" do
       user = user_fixture()

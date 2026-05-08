@@ -5,19 +5,39 @@ defmodule Kanban.Tasks.Lifecycle do
 
   import Ecto.Query, warn: false
 
+  alias Ecto.Multi
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskHistory
 
   @doc """
   Updates a task.
+
+  When the task is a goal AND the changeset includes `:assigned_to_id`, this
+  function ALSO cascades the new assignment to every non-completed child task
+  whose `assigned_to_id` differs from the new value. The cascade is atomic:
+  goal update, child updates, and assignment_history rows all commit together
+  in a single transaction. If any step fails, none persist.
   """
   def update_task(%Task{} = task, attrs) do
     changeset = Task.changeset(task, attrs)
     changeset = Dependencies.validate_circular_dependencies(changeset)
+    assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
+
+    if assignment_changed? and task.type == :goal do
+      update_goal_with_cascade(task, changeset)
+    else
+      update_without_cascade(task, changeset)
+    end
+  end
+
+  # Existing single-task update path. Preserves the original side-effect
+  # ordering (priority/assignment/dependencies/status histories, then broadcast).
+  defp update_without_cascade(task, changeset) do
     priority_changed? = Map.has_key?(changeset.changes, :priority)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
     dependencies_changed? = Map.has_key?(changeset.changes, :dependencies)
@@ -61,6 +81,112 @@ defmodule Kanban.Tasks.Lifecycle do
       error ->
         error
     end
+  end
+
+  # Atomic goal-with-cascade update path. Runs:
+  #   1. Update the goal (Multi.update :goal)
+  #   2. Insert the goal's own assignment_history row
+  #   3. For each eligible child (non-completed, assigned_to_id != new):
+  #        - Multi.update {:child, child.id} with the new assigned_to_id
+  #        - Multi.insert {:child_history, child.id} for the child's history row
+  # If any step fails, the whole transaction rolls back and the function
+  # returns {:error, changeset}. After commit, the function broadcasts
+  # task_update events for the goal AND each cascaded child.
+  defp update_goal_with_cascade(goal, changeset) do
+    new_assigned_to_id = Ecto.Changeset.get_change(changeset, :assigned_to_id)
+    children = fetch_eligible_children(goal.id, new_assigned_to_id)
+
+    multi =
+      Multi.new()
+      |> Multi.update(:goal, changeset)
+      |> Multi.insert(
+        :goal_history,
+        build_assignment_history(goal.id, goal.assigned_to_id, new_assigned_to_id)
+      )
+
+    multi =
+      Enum.reduce(children, multi, fn child, acc ->
+        acc
+        |> Multi.update(
+          {:child, child.id},
+          Task.changeset(child, %{assigned_to_id: new_assigned_to_id})
+        )
+        |> Multi.insert(
+          {:child_history, child.id},
+          build_assignment_history(child.id, child.assigned_to_id, new_assigned_to_id)
+        )
+      end)
+
+    case Repo.transaction(multi) do
+      {:ok, changes} ->
+        updated_goal = Map.fetch!(changes, :goal)
+        fire_concurrent_goal_side_effects(goal, updated_goal, changeset)
+
+        Broadcaster.broadcast_task_update(updated_goal, changeset)
+
+        Enum.each(children, fn child ->
+          updated_child = Map.fetch!(changes, {:child, child.id})
+          Broadcaster.broadcast_task_change(updated_child, :task_updated)
+        end)
+
+        {:ok, updated_goal}
+
+      {:error, _step, failed_changeset, _changes_so_far} ->
+        {:error, failed_changeset}
+    end
+  end
+
+  # Side effects for fields that may change in the same save as the assignment.
+  # The goal's own assignment_history is already inserted by the Multi (as
+  # :goal_history), so it is intentionally excluded here.
+  defp fire_concurrent_goal_side_effects(goal, updated_goal, changeset) do
+    if Map.has_key?(changeset.changes, :priority) do
+      History.create_priority_change_history(
+        goal.priority,
+        updated_goal.priority,
+        updated_goal.id
+      )
+    end
+
+    if Map.has_key?(changeset.changes, :dependencies) do
+      Dependencies.update_task_blocking_status(updated_goal)
+    end
+
+    if Map.has_key?(changeset.changes, :status) and updated_goal.status == :completed do
+      preloaded = Repo.preload(updated_goal, :column)
+      Dependencies.unblock_dependent_tasks(preloaded.identifier, preloaded.column.board_id)
+    end
+  end
+
+  defp build_assignment_history(task_id, from_user_id, to_user_id) do
+    TaskHistory.changeset(%TaskHistory{}, %{
+      task_id: task_id,
+      type: :assignment,
+      from_user_id: from_user_id,
+      to_user_id: to_user_id
+    })
+  end
+
+  # Eligible children for the cascade: non-completed children of the goal
+  # whose current assigned_to_id is not already equal to the new value.
+  # Two clauses because the SQL predicate differs depending on whether the new
+  # assignment is nil (unassign cascade) or a concrete user id.
+  defp fetch_eligible_children(goal_id, nil) do
+    from(t in Task,
+      where: t.parent_id == ^goal_id,
+      where: t.status != :completed,
+      where: not is_nil(t.assigned_to_id)
+    )
+    |> Repo.all()
+  end
+
+  defp fetch_eligible_children(goal_id, new_assigned_to_id) do
+    from(t in Task,
+      where: t.parent_id == ^goal_id,
+      where: t.status != :completed,
+      where: t.assigned_to_id != ^new_assigned_to_id or is_nil(t.assigned_to_id)
+    )
+    |> Repo.all()
   end
 
   @doc """
