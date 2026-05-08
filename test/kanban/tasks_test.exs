@@ -7276,6 +7276,30 @@ defmodule Kanban.TasksTest do
       assert {:error, :review_not_performed} = Tasks.mark_reviewed(task, user)
     end
 
+    test "returns :invalid_review_status when review_status is :pending", %{
+      review_column: review_column,
+      user: user
+    } do
+      # `:pending` is a valid enum value but `mark_reviewed/2` only acts on
+      # :approved, :changes_requested, and :rejected. Falling through to the
+      # `true ->` branch of the cond returns :invalid_review_status. We have
+      # to set the field via Repo.update_all because the schema validation
+      # forbids creating a task with status != :pending without
+      # reviewed_at/reviewed_by_id, but :pending itself is allowed only at
+      # creation time and the controller layer wouldn't normally call
+      # mark_reviewed in that state — this guards against that misuse.
+      {:ok, task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Pending Review",
+          "status" => "in_progress",
+          "review_status" => "pending",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      assert {:error, :invalid_review_status} = Tasks.mark_reviewed(task, user)
+    end
+
     test "unblocks dependent tasks when approved", %{
       review_column: review_column,
       user: user
