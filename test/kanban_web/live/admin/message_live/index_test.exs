@@ -30,6 +30,15 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
 
       assert flash["error"] =~ "admin"
     end
+
+    test "unauthenticated visitor is redirected to the login page" do
+      conn = Phoenix.ConnTest.build_conn()
+
+      assert {:error, {:redirect, %{to: redirect_to}}} =
+               live(conn, ~p"/admin/messages")
+
+      assert redirect_to == ~p"/users/log-in"
+    end
   end
 
   describe "admin access" do
@@ -93,6 +102,31 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
 
       assert html =~ "can&#39;t be blank"
     end
+
+    test "successful save flashes the confirmation message", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      view
+      |> form("#new-message-form", message: %{title: "Heads up", body: "All quiet today"})
+      |> render_submit()
+
+      assert render(view) =~ "Message created."
+    end
+
+    test "submitting invalid params does not insert a row and re-renders form errors", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      html =
+        view
+        |> form("#new-message-form", message: %{title: "", body: ""})
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      refute html =~ "Message created."
+      assert Messages.list_messages() == []
+    end
   end
 
   describe "delete a message" do
@@ -126,6 +160,38 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
 
       assert Messages.list_messages() == []
       assert Messages.list_undismissed_for_user(reader) == []
+    end
+
+    test "successful delete flashes the confirmation message", %{conn: conn, user: admin} do
+      message = message_fixture(admin, %{title: "fleeting"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      view
+      |> element("#message-#{message.id} button[phx-click='delete']")
+      |> render_click()
+
+      assert render(view) =~ "Message deleted."
+    end
+
+    test "deleting a non-existent id flashes 'Message not found' without crashing", %{
+      conn: conn,
+      user: admin
+    } do
+      message = message_fixture(admin, %{title: "concurrently-removed"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      # Race: another tab deletes the row before this LiveView's delete event
+      # fires. The handler must not crash and must surface a human-readable
+      # error flash. Drive the event directly via render_hook so we exercise
+      # the nil branch even after the DOM element is gone.
+      {:ok, _} = Messages.delete_message(message)
+
+      render_hook(view, "delete", %{"id" => Integer.to_string(message.id)})
+
+      assert render(view) =~ "Message not found."
+      assert Messages.list_messages() == []
     end
   end
 end
