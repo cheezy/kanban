@@ -290,6 +290,28 @@ defmodule KanbanWeb.API.ErrorDocs do
     end
   end
 
+  def get_docs(:assigned_to_other_user, opts) do
+    identifier = Keyword.get(opts, :identifier)
+
+    %{
+      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#claiming-tasks",
+      common_causes:
+        if identifier do
+          [
+            "Task '#{identifier}' has a non-nil assigned_to_id pointing to a different user",
+            "The task was pre-assigned via the UI (or cascaded from a goal assignment) to someone else",
+            "Skip this task and call GET /api/tasks/next again — your queue will exclude assigned-to-others tasks automatically"
+          ]
+        else
+          [
+            "The task has a non-nil assigned_to_id pointing to a different user",
+            "The task was pre-assigned via the UI (or cascaded from a goal assignment) to someone else",
+            "Skip this task and call GET /api/tasks/next again — your queue will exclude assigned-to-others tasks automatically"
+          ]
+        end
+    }
+  end
+
   # Forbidden/Authorization errors
   def get_docs(:forbidden, _opts) do
     %{

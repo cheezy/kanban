@@ -350,6 +350,9 @@ defmodule KanbanWeb.API.TaskController do
       {:error, :no_tasks_available} ->
         handle_no_tasks_available(conn, task_identifier)
 
+      {:error, :assigned_to_other_user} ->
+        handle_assigned_to_other_user(conn, task_identifier)
+
       {:error, reason} ->
         conn
         |> put_status(:unprocessable_entity)
@@ -845,6 +848,26 @@ defmodule KanbanWeb.API.TaskController do
 
     conn
     |> put_status(:conflict)
+    |> json(error_response)
+  end
+
+  defp handle_assigned_to_other_user(conn, task_identifier) do
+    error_message =
+      if task_identifier do
+        "Task '#{task_identifier}' is assigned to a different user. Only the assigned user can claim it."
+      else
+        "This task is assigned to a different user. Only the assigned user can claim it."
+      end
+
+    error_response =
+      ErrorDocs.add_docs_to_error(
+        %{error: error_message},
+        :assigned_to_other_user,
+        identifier: task_identifier
+      )
+
+    conn
+    |> put_status(:forbidden)
     |> json(error_response)
   end
 

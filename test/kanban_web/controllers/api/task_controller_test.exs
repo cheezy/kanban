@@ -1462,6 +1462,51 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] =~ "W99999"
       assert response["error"] =~ "not available to claim"
     end
+
+    test "returns 403 when claiming a task assigned to a different user", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: alice,
+      board: board
+    } do
+      {:ok, alice_task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Alice's task",
+          "status" => "open",
+          "created_by_id" => alice.id,
+          "assigned_to_id" => alice.id
+        })
+
+      bob = user_fixture()
+
+      {:ok, {_token_struct, bob_token}} =
+        ApiTokens.create_api_token(bob, board, %{
+          "name" => "Bob's Token",
+          "agent_capabilities" => ["code_generation", "testing"]
+        })
+
+      bob_conn =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{bob_token}")
+
+      bob_conn =
+        post(bob_conn, ~p"/api/tasks/claim", %{
+          "identifier" => alice_task.identifier,
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      response = json_response(bob_conn, 403)
+      assert response["error"] =~ alice_task.identifier
+      assert response["error"] =~ "assigned to a different user"
+
+      # Database row is not mutated by the failed claim attempt.
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, alice_task.id)
+      assert reloaded.status == :open
+      assert reloaded.assigned_to_id == alice.id
+      assert is_nil(reloaded.claimed_at)
+    end
   end
 
   describe "POST /api/tasks/:id/unclaim" do

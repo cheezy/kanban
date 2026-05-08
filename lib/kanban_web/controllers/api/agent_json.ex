@@ -1129,6 +1129,14 @@ defmodule KanbanWeb.API.AgentJSON do
               "API REQUIRES before_review_result parameter - request will be rejected (422 error)",
             fix:
               "ALL four hooks are now BLOCKING and must succeed. Execute after_doing AND before_review hooks BEFORE calling /complete. Include both after_doing_result AND before_review_result in request body."
+          },
+          %{
+            mistake:
+              "Trying to claim a task that has already been assigned to a different user via the UI or a goal-cascade",
+            consequence:
+              "API returns 403 Forbidden with error :assigned_to_other_user. The task row is NOT mutated.",
+            fix:
+              "Skip this task and call GET /api/tasks/next again — your queue will exclude assigned-to-others tasks automatically. Only the user named in assigned_to_id can claim a pre-assigned task. Unassigned tasks (assigned_to_id IS NULL) remain claimable by anyone."
           }
         ]
       },
