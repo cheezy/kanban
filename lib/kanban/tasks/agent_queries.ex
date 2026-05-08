@@ -68,8 +68,12 @@ defmodule Kanban.Tasks.AgentQueries do
 
   Has status "open" (not claimed) OR has expired claim.
   Returns nil if no task available.
+
+  When `user_id` is supplied, the result is restricted to tasks whose
+  `assigned_to_id` is either `nil` or equal to `user_id`. When `user_id` is
+  `nil`, no assignment filter is applied (legacy behavior).
   """
-  def get_next_task(agent_capabilities \\ [], board_id) do
+  def get_next_task(agent_capabilities \\ [], board_id, user_id \\ nil) do
     now = DateTime.utc_now()
 
     completed_task_identifiers =
@@ -140,6 +144,8 @@ defmodule Kanban.Tasks.AgentQueries do
             )
       )
 
+    query = filter_by_assignment(query, user_id)
+
     tasks = Repo.all(query)
 
     Enum.find(tasks, fn task ->
@@ -149,8 +155,12 @@ defmodule Kanban.Tasks.AgentQueries do
 
   @doc """
   Gets a specific task for claiming by identifier, applying the same filters as get_next_task.
+
+  When `user_id` is supplied, the result is restricted to tasks whose
+  `assigned_to_id` is either `nil` or equal to `user_id`. When `user_id` is
+  `nil`, no assignment filter is applied (legacy behavior).
   """
-  def get_specific_task_for_claim(identifier, agent_capabilities, board_id) do
+  def get_specific_task_for_claim(identifier, agent_capabilities, board_id, user_id \\ nil) do
     now = DateTime.utc_now()
 
     completed_task_identifiers =
@@ -200,7 +210,15 @@ defmodule Kanban.Tasks.AgentQueries do
             )
       )
 
+    query = filter_by_assignment(query, user_id)
+
     Repo.one(query)
+  end
+
+  defp filter_by_assignment(query, nil), do: query
+
+  defp filter_by_assignment(query, user_id) do
+    from(t in query, where: is_nil(t.assigned_to_id) or t.assigned_to_id == ^user_id)
   end
 
   defp has_key_file_conflict?(task, conflicting_tasks) do

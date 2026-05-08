@@ -6231,6 +6231,145 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "claim_next_task/5 with assigned_to_id gate" do
+    setup do
+      alice = Kanban.AccountsFixtures.user_fixture()
+      bob = Kanban.AccountsFixtures.user_fixture()
+      board = Kanban.BoardsFixtures.ai_optimized_board_fixture(alice)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      %{
+        alice: alice,
+        bob: bob,
+        board: board,
+        ready_column: ready_column,
+        doing_column: doing_column
+      }
+    end
+
+    test "the assigned user can claim their own task", %{
+      alice: alice,
+      board: board,
+      ready_column: column,
+      doing_column: doing_column
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Alice's task",
+          "status" => "open",
+          "created_by_id" => alice.id,
+          "assigned_to_id" => alice.id
+        })
+
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], alice, board.id, task.identifier)
+
+      assert result.id == task.id
+      assert result.status == :in_progress
+      assert result.column_id == doing_column.id
+      assert result.assigned_to_id == alice.id
+    end
+
+    test "a different user cannot claim an assigned task", %{
+      alice: alice,
+      bob: bob,
+      board: board,
+      ready_column: column
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Alice's task",
+          "status" => "open",
+          "created_by_id" => alice.id,
+          "assigned_to_id" => alice.id
+        })
+
+      result = Tasks.claim_next_task([], bob, board.id, task.identifier)
+
+      assert result == {:error, :assigned_to_other_user}
+
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
+      assert reloaded.status == :open
+      assert reloaded.assigned_to_id == alice.id
+      assert is_nil(reloaded.claimed_at)
+    end
+
+    test "a different user cannot re-claim an Alice-assigned task with an expired claim", %{
+      alice: alice,
+      bob: bob,
+      board: board,
+      ready_column: column
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Alice's task",
+          "status" => "open",
+          "created_by_id" => alice.id,
+          "assigned_to_id" => alice.id
+        })
+
+      # Simulate an expired claim Alice once held: status :in_progress with
+      # claim_expires_at in the past. Other agents would normally be able to
+      # re-claim such a row; the assignment gate must prevent that.
+      past = DateTime.utc_now() |> DateTime.add(-3600, :second)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: [status: :in_progress, claim_expires_at: past])
+
+      # Bob targets the identifier directly — the gate must still hold.
+      result = Tasks.claim_next_task([], bob, board.id, task.identifier)
+
+      assert result == {:error, :assigned_to_other_user}
+    end
+
+    test "an unassigned task remains claimable by anyone", %{
+      bob: bob,
+      board: board,
+      ready_column: column,
+      doing_column: doing_column
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Open task",
+          "status" => "open",
+          "created_by_id" => bob.id
+        })
+
+      {:ok, result, _hook_info} = Tasks.claim_next_task([], bob, board.id, task.identifier)
+
+      assert result.id == task.id
+      assert result.column_id == doing_column.id
+      assert result.assigned_to_id == bob.id
+    end
+
+    test "get_next_task hides assigned-to-other-user tasks from the queue", %{
+      alice: alice,
+      bob: bob,
+      board: board,
+      ready_column: column
+    } do
+      {:ok, _alice_task} =
+        Tasks.create_task(column, %{
+          "title" => "Alice's task",
+          "status" => "open",
+          "created_by_id" => alice.id,
+          "assigned_to_id" => alice.id
+        })
+
+      {:ok, open_task} =
+        Tasks.create_task(column, %{
+          "title" => "Open task",
+          "status" => "open",
+          "created_by_id" => alice.id
+        })
+
+      # Bob's queue: only the unassigned task surfaces.
+      result = Tasks.get_next_task([], board.id, bob.id)
+      assert result.id == open_task.id
+    end
+  end
+
   describe "get_next_task/2 key_file conflict edge cases" do
     setup do
       user = Kanban.AccountsFixtures.user_fixture()

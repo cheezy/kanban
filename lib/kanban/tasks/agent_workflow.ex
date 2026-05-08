@@ -39,17 +39,45 @@ defmodule Kanban.Tasks.AgentWorkflow do
       ) do
     task =
       if task_identifier do
-        AgentQueries.get_specific_task_for_claim(task_identifier, agent_capabilities, board_id)
+        AgentQueries.get_specific_task_for_claim(
+          task_identifier,
+          agent_capabilities,
+          board_id,
+          user.id
+        )
       else
-        AgentQueries.get_next_task(agent_capabilities, board_id)
+        AgentQueries.get_next_task(agent_capabilities, board_id, user.id)
       end
 
     case task do
       nil ->
-        {:error, :no_tasks_available}
+        if task_identifier do
+          claim_failure_for_specific_task(task_identifier, board_id, user.id)
+        else
+          {:error, :no_tasks_available}
+        end
 
       task ->
         perform_claim(task, user, board_id, agent_name)
+    end
+  end
+
+  # When a specific identifier is requested but the assignment-aware query
+  # returns nil, distinguish "this task is assigned to a different user" from
+  # "this task does not exist / is not eligible for any agent". The unfiltered
+  # lookup tells us if the row exists and who owns it.
+  #
+  # Capabilities are intentionally passed as `[]` here so this disambiguation
+  # step never hides an assignment conflict behind a capability filter — we
+  # are answering "is this row assigned to someone else?", not "is the caller
+  # capable of claiming it?".
+  defp claim_failure_for_specific_task(task_identifier, board_id, user_id) do
+    case AgentQueries.get_specific_task_for_claim(task_identifier, [], board_id) do
+      %{assigned_to_id: assigned_id} when not is_nil(assigned_id) and assigned_id != user_id ->
+        {:error, :assigned_to_other_user}
+
+      _ ->
+        {:error, :no_tasks_available}
     end
   end
 
@@ -281,10 +309,16 @@ defmodule Kanban.Tasks.AgentWorkflow do
       Repo.transaction(fn ->
         next_position = Positioning.get_next_position_locked(doing_column)
 
+        # The atomic update_query carries the assignment predicate so that a
+        # concurrent claim attempt by a different user cannot race past an
+        # Elixir-level guard while the row is still :open. If 0 rows update,
+        # disambiguate the failure by inspecting the row inside the same
+        # transaction.
         update_query =
           from(t in Task,
             where: t.id == ^task.id,
-            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)
+            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+            where: is_nil(t.assigned_to_id) or t.assigned_to_id == ^user.id
           )
 
         case Repo.update_all(
@@ -299,8 +333,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
                  updated_at: now
                ]
              ) do
-          {1, _} -> :claimed
-          {0, _} -> Repo.rollback(:no_tasks_available)
+          {1, _} ->
+            :claimed
+
+          {0, _} ->
+            Repo.rollback(claim_zero_row_reason(task.id, user.id))
         end
       end)
 
@@ -321,6 +358,24 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
       {:error, :no_tasks_available} ->
         {:error, :no_tasks_available}
+
+      {:error, :assigned_to_other_user} ->
+        {:error, :assigned_to_other_user}
+    end
+  end
+
+  # After the atomic update_all returns 0 rows, inspect the live row to decide
+  # whether the failure was caused by a competing claim/state change
+  # (:no_tasks_available) or by a non-matching assignment
+  # (:assigned_to_other_user).
+  defp claim_zero_row_reason(task_id, user_id) do
+    case Repo.get(Task, task_id) do
+      %Task{assigned_to_id: assigned_id}
+      when not is_nil(assigned_id) and assigned_id != user_id ->
+        :assigned_to_other_user
+
+      _ ->
+        :no_tasks_available
     end
   end
 

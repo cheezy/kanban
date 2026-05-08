@@ -82,8 +82,8 @@ defmodule Kanban.Tasks do
   defdelegate get_tasks_requiring_technology(tech), to: AgentQueries
   defdelegate get_tasks_with_automated_verification(), to: AgentQueries
 
-  def get_next_task(agent_capabilities \\ [], board_id),
-    do: AgentQueries.get_next_task(agent_capabilities, board_id)
+  def get_next_task(agent_capabilities \\ [], board_id, user_id \\ nil),
+    do: AgentQueries.get_next_task(agent_capabilities, board_id, user_id)
 
   # ── Agent workflow delegations ─────────────────────────────────────
 

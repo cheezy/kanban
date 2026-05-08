@@ -272,10 +272,11 @@ defmodule KanbanWeb.API.TaskController do
 
   def next(conn, params) do
     board = conn.assigns.current_board
+    user = conn.assigns.current_user
     api_token = conn.assigns.api_token
     agent_capabilities = api_token.agent_capabilities || []
 
-    case Tasks.get_next_task(agent_capabilities, board.id) do
+    case Tasks.get_next_task(agent_capabilities, board.id, user.id) do
       nil ->
         conn
         |> put_status(:not_found)
