@@ -31,6 +31,120 @@
         </p>
 
         <section class="mb-10">
+          <h2 class="text-3xl font-bold text-base-content mb-4">[1.29.0] - 2026-05-08</h2>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Added
+            </h3>
+
+            <div class="mb-6">
+              <h4 class="text-xl font-semibold text-base-content mb-3">
+                Goal-Driven Assignment Workflow (G88, G89, G90)
+              </h4>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Three coordinated changes that make a goal's
+                <code>assigned_to_id</code>
+                a meaningful boundary across the goal's full lifecycle. Previously, assigning a goal to a person was a no-op for the children — they stayed unassigned, were claimable by any agent, and a freshly added child created a new assignment hole. With this release, "the goal owner owns the goal's work" is a real invariant maintained automatically.
+              </p>
+
+              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+                Cascading goal assignment to existing children (G88)
+              </h5>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                When a goal's <code>assigned_to_id</code>
+                is changed via the UI or API, the new assignment cascades atomically to every non-completed child task whose
+                <code>assigned_to_id</code>
+                differs from the new value. The cascade is performed inside an <code>Ecto.Multi</code>: goal update, all child updates, and per-task <code>assignment_history</code>
+                rows commit together or roll back together. Each affected child broadcasts a
+                <code>task_updated</code>
+                event over PubSub so connected board LiveViews refresh in real time. Completed children are intentionally not touched. Unassigning a goal (setting
+                <code>assigned_to_id</code> to <code>nil</code>) also propagates
+                <code>nil</code>
+                to children — the goal-mirrors-children model holds in both directions.
+              </p>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                The form_component LiveView now shows a flash after a goal save indicating how many children were also re-assigned: <em>"Task updated successfully. 3 child tasks were also updated."</em>
+                Translated via <code>ngettext</code>
+                for all 7 supported locales. Suppressed when zero children were affected.
+              </p>
+
+              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+                Restricting task claiming to the assigned user (G89)
+              </h5>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                Tasks with a non-nil <code>assigned_to_id</code>
+                are now visible and claimable ONLY by the named user.
+                <code>GET /api/tasks/next</code>
+                automatically filters out assigned-to-others tasks for each agent.
+                <code>POST /api/tasks/claim</code>
+                against an explicit identifier assigned to another user returns
+                <strong>403 Forbidden</strong>
+                with <code>&#123;"error": "This task is assigned to a different user"&#125;</code>. The gate is enforced atomically inside the SQL <code>update_query</code> of <code>perform_claim/4</code>, so two concurrent agents cannot race past it. Unassigned tasks (<code>assigned_to_id IS NULL</code>) remain claimable by anyone — fully backwards compatible.
+              </p>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                A new error variant <code>:assigned_to_other_user</code>
+                is documented in the agent onboarding catalog (<code>agent_json.ex</code>
+                <code>common_mistakes_agents_make</code>) with a corresponding
+                <code>ErrorDocs</code>
+                clause linking to the AI workflow guide. Recommended remediation: skip the task and call
+                <code>GET /api/tasks/next</code>
+                again — the queue endpoint automatically excludes assigned-to-others tasks.
+              </p>
+
+              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+                Inheriting goal's assignment when a new child is added (G90)
+              </h5>
+
+              <p class="text-base-content opacity-80 mb-4 ml-4">
+                When <code>Tasks.create_task/2</code> is called with a <code>parent_id</code>
+                referencing an assigned goal AND attrs do NOT explicitly set
+                <code>assigned_to_id</code>, the new task inherits the goal's
+                <code>assigned_to_id</code>
+                at creation time. The same rule applies to children created inside
+                <code>Tasks.create_goal_with_tasks/3</code>. Explicit <code>assigned_to_id</code>
+                values in attrs always win — including explicit <code>nil</code>
+                — so the inheritance only fills the gap when the caller did not specify an assignee. Defensive against missing parent rows and non-goal parents: both are silent no-ops.
+              </p>
+            </div>
+          </div>
+
+          <div class="mb-8">
+            <h3 class="text-2xl font-semibold text-base-content mb-4">
+              Changed
+            </h3>
+
+            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <li>
+                <code>Kanban.Tasks.AgentQueries.get_next_task/3</code>
+                and
+                <code>get_specific_task_for_claim/4</code>
+                accept an optional <code>user_id</code> parameter (defaults to <code>nil</code>). When supplied, the query filters out tasks assigned to other users. Passing
+                <code>nil</code> preserves the legacy unfiltered behavior — existing callers are unaffected.
+              </li>
+              <li>
+                <code>Kanban.Tasks.Lifecycle.update_task/2</code>
+                now branches on
+                <code>task.type == :goal AND assigned_to_id changed</code>
+                to dispatch to a new atomic-<code>Multi</code> path. Non-goal updates retain the original
+                <code>Repo.update</code>-then-side-effects flow exactly. Return shape (<code>&#123;:ok, %Task&#123;&#125;&#125; | &#123;:error, %Ecto.Changeset&#123;&#125;&#125;</code>) is unchanged so all existing callers (<code>form_component.ex</code>, <code>task_controller.ex</code>, <code>positioning.ex</code>) work without modification.
+              </li>
+              <li>
+                <code>Kanban.Tasks.Creation.create_task/2</code>
+                now calls <code>maybe_inherit_assignment_from_parent/1</code>
+                before <code>insert_task_with_history</code>. Tasks without
+                <code>parent_id</code> are unaffected.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="mb-10">
           <h2 class="text-3xl font-bold text-base-content mb-4">[1.28.1] - 2026-04-14</h2>
 
           <div class="mb-8">

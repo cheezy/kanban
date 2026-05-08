@@ -5,6 +5,36 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-05-08
+
+### Added
+
+#### Goal-Driven Assignment Workflow (G88, G89, G90)
+
+Three coordinated changes that make a goal's `assigned_to_id` a meaningful boundary across the goal's full lifecycle. Previously, assigning a goal to a person was a no-op for the children — they stayed unassigned, were claimable by any agent, and a freshly added child created a new assignment hole. With this release, "the goal owner owns the goal's work" is a real invariant maintained automatically.
+
+**Cascading goal assignment to existing children (G88)**
+
+When a goal's `assigned_to_id` is changed via the UI or API, the new assignment cascades atomically to every non-completed child task whose `assigned_to_id` differs from the new value. The cascade is performed inside an `Ecto.Multi`: goal update, all child updates, and per-task `assignment_history` rows commit together or roll back together. Each affected child broadcasts a `task_updated` event over PubSub so connected board LiveViews refresh in real time. Completed children are intentionally not touched. Unassigning a goal (setting `assigned_to_id` to `nil`) also propagates `nil` to children — the goal-mirrors-children model holds in both directions.
+
+The form_component LiveView now shows a flash after a goal save indicating how many children were also re-assigned: "Task updated successfully. 3 child tasks were also updated." Translated via `ngettext` for all 7 supported locales. Suppressed when zero children were affected.
+
+**Restricting task claiming to the assigned user (G89)**
+
+Tasks with a non-nil `assigned_to_id` are now visible and claimable ONLY by the named user. `GET /api/tasks/next` automatically filters out assigned-to-others tasks for each agent. `POST /api/tasks/claim` against an explicit identifier assigned to another user returns **403 Forbidden** with `{"error": "This task is assigned to a different user"}`. The gate is enforced atomically inside the SQL `update_query` of `perform_claim/4`, so two concurrent agents cannot race past it. Unassigned tasks (`assigned_to_id IS NULL`) remain claimable by anyone — fully backwards compatible.
+
+A new error variant `:assigned_to_other_user` is documented in the agent onboarding catalog (`agent_json.ex` `common_mistakes_agents_make`) with a corresponding `ErrorDocs` clause linking to the AI workflow guide. Recommended remediation: skip the task and call `GET /api/tasks/next` again — the queue endpoint automatically excludes assigned-to-others tasks.
+
+**Inheriting goal's assignment when a new child is added (G90)**
+
+When `Tasks.create_task/2` is called with a `parent_id` referencing an assigned goal AND attrs do NOT explicitly set `assigned_to_id`, the new task inherits the goal's `assigned_to_id` at creation time. The same rule applies to children created inside `Tasks.create_goal_with_tasks/3`. Explicit `assigned_to_id` values in attrs always win — including explicit `nil` — so the inheritance only fills the gap when the caller did not specify an assignee. Defensive against missing parent rows and non-goal parents: both are silent no-ops.
+
+### Changed
+
+- `Kanban.Tasks.AgentQueries.get_next_task/3` and `get_specific_task_for_claim/4` accept an optional `user_id` parameter (defaults to `nil`). When supplied, the query filters out tasks assigned to other users. Passing `nil` preserves the legacy unfiltered behavior — existing callers are unaffected.
+- `Kanban.Tasks.Lifecycle.update_task/2` now branches on `task.type == :goal AND assigned_to_id changed` to dispatch to a new atomic-`Multi` path. Non-goal updates retain the original `Repo.update`-then-side-effects flow exactly. Return shape (`{:ok, %Task{}} | {:error, %Ecto.Changeset{}}`) is unchanged so all existing callers (`form_component.ex`, `task_controller.ex`, `positioning.ex`) work without modification.
+- `Kanban.Tasks.Creation.create_task/2` now calls `maybe_inherit_assignment_from_parent/1` before `insert_task_with_history`. Tasks without `parent_id` are unaffected.
+
 ## [1.28.1] - 2026-04-14
 
 ### Security
