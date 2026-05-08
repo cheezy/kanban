@@ -382,6 +382,142 @@ defmodule Kanban.TasksTest do
 
       assert length(Tasks.list_tasks(column)) == 3
     end
+
+    test "inherits goal's assigned_to_id when child is added under an assigned goal" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal =
+        task_fixture(column, %{
+          title: "Assigned Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{title: "New Child", parent_id: goal.id})
+
+      assert child.assigned_to_id == alice.id
+    end
+
+    test "explicit assigned_to_id in attrs wins over inheritance" do
+      alice = user_fixture()
+      bob = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal =
+        task_fixture(column, %{
+          title: "Assigned Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{
+                 title: "Explicit Bob",
+                 parent_id: goal.id,
+                 assigned_to_id: bob.id
+               })
+
+      assert child.assigned_to_id == bob.id
+    end
+
+    test "explicit nil assigned_to_id in attrs disables inheritance" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal =
+        task_fixture(column, %{
+          title: "Assigned Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{
+                 title: "Explicit Nil",
+                 parent_id: goal.id,
+                 assigned_to_id: nil
+               })
+
+      assert is_nil(child.assigned_to_id)
+    end
+
+    test "no inheritance when the goal is unassigned" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal = task_fixture(column, %{title: "Unassigned Goal", type: :goal})
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{title: "Lonely Child", parent_id: goal.id})
+
+      assert is_nil(child.assigned_to_id)
+    end
+
+    test "no inheritance when the parent is not a goal (defensive)" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      # A work-typed task can technically have an assigned_to_id but should
+      # never propagate it to a child via this rule.
+      parent_work =
+        task_fixture(column, %{
+          title: "Sibling work task",
+          type: :work,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{title: "Child of work", parent_id: parent_work.id})
+
+      assert is_nil(child.assigned_to_id)
+    end
+
+    test "no inheritance when no parent_id is set" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      # Even though an assigned goal exists on this column, a sibling task
+      # without parent_id must NOT pick up the goal's assignment.
+      _goal =
+        task_fixture(column, %{
+          title: "Some Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, sibling} = Tasks.create_task(column, %{title: "Standalone"})
+
+      assert is_nil(sibling.assigned_to_id)
+    end
+
+    test "string-keyed attrs inherit correctly when assigned_to_id is absent" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal =
+        task_fixture(column, %{
+          title: "Assigned Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      assert {:ok, child} =
+               Tasks.create_task(column, %{
+                 "title" => "Stringy Child",
+                 "parent_id" => goal.id
+               })
+
+      assert child.assigned_to_id == alice.id
+    end
   end
 
   describe "update_task/2" do
@@ -6034,6 +6170,61 @@ defmodule Kanban.TasksTest do
       assert_receive {:task_updated, updated_task}
       assert updated_task.id == task2.id
       assert updated_task.status == :blocked
+    end
+
+    test "children inherit goal's assigned_to_id when their attrs omit it" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "Goal owned by Alice",
+        created_by_id: alice.id,
+        assigned_to_id: alice.id
+      }
+
+      child_tasks = [
+        %{"title" => "Inherits", "type" => "work"},
+        %{"title" => "Also inherits", "type" => "work"}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: children}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      assert goal.assigned_to_id == alice.id
+
+      Enum.each(children, fn child ->
+        assert child.assigned_to_id == alice.id
+      end)
+    end
+
+    test "explicit child assigned_to_id wins over goal-level inheritance" do
+      alice = user_fixture()
+      bob = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      goal_attrs = %{
+        title: "Alice's goal",
+        created_by_id: alice.id,
+        assigned_to_id: alice.id
+      }
+
+      child_tasks = [
+        %{"title" => "Inherits Alice", "type" => "work"},
+        %{"title" => "Bob's child", "type" => "work", "assigned_to_id" => bob.id},
+        %{"title" => "Explicitly nil", "type" => "work", "assigned_to_id" => nil}
+      ]
+
+      assert {:ok, %{child_tasks: children}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, child_tasks)
+
+      [inherits_alice, bobs_child, explicit_nil] =
+        Enum.sort_by(children, & &1.position)
+
+      assert inherits_alice.assigned_to_id == alice.id
+      assert bobs_child.assigned_to_id == bob.id
+      assert is_nil(explicit_nil.assigned_to_id)
     end
   end
 

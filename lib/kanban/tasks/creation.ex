@@ -17,8 +17,16 @@ defmodule Kanban.Tasks.Creation do
   @doc """
   Creates a task for a column with automatic position assignment.
   Respects WIP limit - returns error if column is at capacity.
+
+  When `attrs` includes a non-nil `parent_id` (atom or string key) referencing
+  an existing **goal** that has a non-nil `assigned_to_id`, AND `attrs` does NOT
+  carry an explicit `assigned_to_id` key, the new task inherits the goal's
+  `assigned_to_id` at creation time. Explicit `assigned_to_id` values in
+  `attrs` (including explicit `nil`) are always preserved — the inheritance
+  only fills the gap when the caller did not specify an assignee.
   """
   def create_task(column, attrs \\ %{}) do
+    attrs = maybe_inherit_assignment_from_parent(attrs)
     task_type = get_task_type_from_attrs(attrs)
     should_check_wip = task_type in [:work, :defect]
 
@@ -115,6 +123,7 @@ defmodule Kanban.Tasks.Creation do
     parent_id_key = if is_map_key(prepared_attrs, "position"), do: "parent_id", else: :parent_id
 
     prepared_attrs = inherit_creator_info(prepared_attrs, goal)
+    prepared_attrs = inherit_assignment_from_goal_struct(prepared_attrs, goal)
 
     prepared_attrs
     |> Map.put(identifier_key, identifier)
@@ -130,6 +139,65 @@ defmodule Kanban.Tasks.Creation do
     attrs
     |> Map.put_new(created_by_id_key, goal.created_by_id)
     |> maybe_put_created_by_agent(created_by_agent_key, goal.created_by_agent)
+  end
+
+  # Looks up the parent task by `parent_id` in attrs (atom or string key) and,
+  # when the parent is a goal with a non-nil assigned_to_id AND attrs does not
+  # already carry an explicit assigned_to_id key, returns attrs with the
+  # parent's assigned_to_id injected. Used by `create_task/2` so a new task
+  # added under an existing assigned goal inherits that goal's assignee.
+  defp maybe_inherit_assignment_from_parent(attrs) when is_map(attrs) do
+    if assigned_to_id_explicit?(attrs) do
+      attrs
+    else
+      case fetch_parent_id(attrs) do
+        nil -> attrs
+        parent_id -> apply_inheritance_from_parent_id(attrs, parent_id)
+      end
+    end
+  end
+
+  defp maybe_inherit_assignment_from_parent(attrs), do: attrs
+
+  defp apply_inheritance_from_parent_id(attrs, parent_id) do
+    case Repo.get(Task, parent_id) do
+      %Task{type: :goal, assigned_to_id: assigned_id} when not is_nil(assigned_id) ->
+        put_assigned_to_id(attrs, assigned_id)
+
+      _ ->
+        attrs
+    end
+  end
+
+  # Variant used inside `create_goal_with_tasks/3` where the goal struct is
+  # already in hand (just inserted by the Multi). Avoids a redundant DB lookup
+  # and keeps the rule consistent with the create_task/2 path: child attrs
+  # without an explicit assigned_to_id inherit the goal's assignment, when set.
+  defp inherit_assignment_from_goal_struct(attrs, %Task{assigned_to_id: nil}), do: attrs
+
+  defp inherit_assignment_from_goal_struct(attrs, %Task{assigned_to_id: assigned_id}) do
+    if assigned_to_id_explicit?(attrs) do
+      attrs
+    else
+      put_assigned_to_id(attrs, assigned_id)
+    end
+  end
+
+  defp assigned_to_id_explicit?(attrs) do
+    Map.has_key?(attrs, :assigned_to_id) or Map.has_key?(attrs, "assigned_to_id")
+  end
+
+  defp fetch_parent_id(attrs) do
+    case Map.get(attrs, :parent_id, Map.get(attrs, "parent_id")) do
+      nil -> nil
+      parent_id -> parent_id
+    end
+  end
+
+  defp put_assigned_to_id(attrs, assigned_id) do
+    has_string_keys? = Map.keys(attrs) |> Enum.any?(&is_binary/1)
+    key = if has_string_keys?, do: "assigned_to_id", else: :assigned_to_id
+    Map.put(attrs, key, assigned_id)
   end
 
   defp maybe_put_created_by_agent(attrs, _key, nil), do: attrs
