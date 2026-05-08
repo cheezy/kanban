@@ -806,6 +806,33 @@ defmodule Kanban.TasksTest do
       assert updated.assigned_to_id == alice.id
     end
 
+    test "count_cascade_affected_children returns the size of the eligible set", %{
+      alice: alice,
+      goal: goal,
+      child1: child1
+    } do
+      assert Tasks.count_cascade_affected_children(goal, alice.id) == 3
+
+      # Pre-assigning one child to alice removes it from the eligible set.
+      {:ok, _} = Tasks.update_task(child1, %{assigned_to_id: alice.id})
+      assert Tasks.count_cascade_affected_children(goal, alice.id) == 2
+
+      # Marking that already-assigned child completed leaves the count
+      # unchanged (it was already excluded by the assignment match).
+      from(t in Kanban.Tasks.Task, where: t.id == ^child1.id)
+      |> Kanban.Repo.update_all(set: [status: :completed])
+
+      assert Tasks.count_cascade_affected_children(goal, alice.id) == 2
+    end
+
+    test "count_cascade_affected_children returns 0 for non-goal tasks", %{
+      alice: alice,
+      column: column
+    } do
+      regular_task = task_fixture(column, %{title: "Just a work task"})
+      assert Tasks.count_cascade_affected_children(regular_task, alice.id) == 0
+    end
+
     test "cascade rolls back atomically when the Multi step fails", %{
       goal: goal,
       child1: child1,

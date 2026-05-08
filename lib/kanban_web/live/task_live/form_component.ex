@@ -369,13 +369,15 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     # Auto-populate completed_at when status is set to completed
     task_params = maybe_add_completed_at(task_params, socket.assigns.task)
 
+    cascade_count = compute_cascade_count(socket.assigns.task, task_params)
+
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
         notify_parent({:saved, task})
 
         {:noreply,
          socket
-         |> put_flash(:info, gettext("Task updated successfully"))
+         |> put_flash(:info, build_update_flash(cascade_count))
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -384,6 +386,43 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
+  end
+
+  # When a goal's `assigned_to_id` is being changed, ask the Tasks context how
+  # many non-completed children will inherit the new assignment via the
+  # cascade in `Lifecycle.update_task/2`. The count is computed BEFORE the
+  # cascade runs, so it reflects the eligible-children set the cascade will
+  # touch. Returns 0 for non-goal tasks or when assignment is unchanged.
+  defp compute_cascade_count(task, task_params) do
+    if task.type == :goal and Map.has_key?(task_params, "assigned_to_id") do
+      target = parse_assignment_target(task_params["assigned_to_id"])
+      Tasks.count_cascade_affected_children(task, target)
+    else
+      0
+    end
+  end
+
+  defp parse_assignment_target(nil), do: nil
+  defp parse_assignment_target(""), do: nil
+  defp parse_assignment_target(value) when is_integer(value), do: value
+
+  defp parse_assignment_target(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp parse_assignment_target(_), do: nil
+
+  defp build_update_flash(0), do: gettext("Task updated successfully")
+
+  defp build_update_flash(n) when n > 0 do
+    ngettext(
+      "Task updated successfully. 1 child task was also updated.",
+      "Task updated successfully. %{count} child tasks were also updated.",
+      n
+    )
   end
 
   defp create_task_in_column(socket, column, task_params) do

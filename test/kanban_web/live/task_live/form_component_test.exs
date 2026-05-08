@@ -3194,4 +3194,100 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert is_nil(task.review_status)
     end
   end
+
+  describe "handle_event save with goal-assignment cascade flash" do
+    setup do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board, %{name: "To Do"})
+
+      goal = task_fixture(column, %{title: "Cascade Goal", type: :goal})
+
+      _child1 = task_fixture(column, %{title: "Child 1", parent_id: goal.id})
+      _child2 = task_fixture(column, %{title: "Child 2", parent_id: goal.id})
+      _child3 = task_fixture(column, %{title: "Child 3", parent_id: goal.id})
+
+      # FormComponent.update preloads the task — load it the same way so the
+      # socket gets a struct that matches what the production code sees.
+      goal_loaded = Tasks.get_task!(goal.id)
+
+      %{alice: alice, board: board, column: column, goal: goal_loaded}
+    end
+
+    test "flash mentions cascade count when assigning a goal with eligible children",
+         %{alice: alice, board: board, goal: goal} do
+      socket = build_edit_socket(goal, board)
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"assigned_to_id" => Integer.to_string(alice.id)}},
+          socket
+        )
+
+      flash = updated_socket.assigns.flash
+      assert flash["info"] =~ "Task updated successfully"
+      assert flash["info"] =~ "3 child tasks were also updated"
+    end
+
+    test "flash is the plain success message when the assignment is unchanged",
+         %{board: board, goal: goal} do
+      socket = build_edit_socket(goal, board)
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Renamed Goal"}},
+          socket
+        )
+
+      flash = updated_socket.assigns.flash
+      assert flash["info"] == "Task updated successfully"
+    end
+
+    test "flash is the plain success message when the saved task is not a goal",
+         %{alice: alice, board: board, column: column} do
+      regular = task_fixture(column, %{title: "Plain task"}) |> then(&Tasks.get_task!(&1.id))
+      socket = build_edit_socket(regular, board)
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"assigned_to_id" => Integer.to_string(alice.id)}},
+          socket
+        )
+
+      flash = updated_socket.assigns.flash
+      assert flash["info"] == "Task updated successfully"
+    end
+
+    test "flash is the plain success message for a goal with no eligible children",
+         %{alice: alice, board: board, column: column} do
+      lonely_goal =
+        task_fixture(column, %{title: "Lonely Goal", type: :goal})
+        |> then(&Tasks.get_task!(&1.id))
+
+      socket = build_edit_socket(lonely_goal, board)
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"assigned_to_id" => Integer.to_string(alice.id)}},
+          socket
+        )
+
+      flash = updated_socket.assigns.flash
+      assert flash["info"] == "Task updated successfully"
+    end
+
+    defp build_edit_socket(task, board) do
+      {:ok, socket} =
+        FormComponent.update(
+          %{task: task, board: board, action: :edit_task, patch: ~p"/"},
+          %Phoenix.LiveView.Socket{}
+        )
+
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+  end
 end

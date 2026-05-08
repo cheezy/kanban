@@ -167,27 +167,43 @@ defmodule Kanban.Tasks.Lifecycle do
     })
   end
 
+  defp fetch_eligible_children(goal_id, new_assigned_to_id) do
+    eligible_children_query(goal_id, new_assigned_to_id) |> Repo.all()
+  end
+
   # Eligible children for the cascade: non-completed children of the goal
   # whose current assigned_to_id is not already equal to the new value.
   # Two clauses because the SQL predicate differs depending on whether the new
   # assignment is nil (unassign cascade) or a concrete user id.
-  defp fetch_eligible_children(goal_id, nil) do
+  defp eligible_children_query(goal_id, nil) do
     from(t in Task,
       where: t.parent_id == ^goal_id,
       where: t.status != :completed,
       where: not is_nil(t.assigned_to_id)
     )
-    |> Repo.all()
   end
 
-  defp fetch_eligible_children(goal_id, new_assigned_to_id) do
+  defp eligible_children_query(goal_id, new_assigned_to_id) do
     from(t in Task,
       where: t.parent_id == ^goal_id,
       where: t.status != :completed,
       where: t.assigned_to_id != ^new_assigned_to_id or is_nil(t.assigned_to_id)
     )
-    |> Repo.all()
   end
+
+  @doc """
+  Returns the number of children that would be re-assigned if a cascade ran
+  right now — non-completed children of `goal` whose `assigned_to_id` differs
+  from `new_assigned_to_id`.
+
+  Returns 0 when `goal.type` is not `:goal`. Used by UI components that need
+  to surface a "N child tasks were also updated" affordance after the cascade.
+  """
+  def count_cascade_affected_children(%Task{type: :goal, id: id}, new_assigned_to_id) do
+    eligible_children_query(id, new_assigned_to_id) |> Repo.aggregate(:count)
+  end
+
+  def count_cascade_affected_children(_task, _new_assigned_to_id), do: 0
 
   @doc """
   Deletes a task and reorders the remaining tasks.
