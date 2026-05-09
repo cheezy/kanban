@@ -195,6 +195,61 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
       ]
     },
     %{
+      id: "using-stride-with-a-team",
+      title: "Using Stride With a Team",
+      description:
+        "Coordinate multiple developers and their AI agents on the same board by assigning goals to specific people.",
+      tags: ["collaboration", "best-practices", "workflow", "ai-agents"],
+      content_type: "guide",
+      reading_time: 5,
+      thumbnail: "/images/resources/team-workflow.png",
+      created_at: ~D[2026-05-09],
+      steps: [
+        %{
+          title: "Why Goal Assignment Matters for Teams",
+          content:
+            "When multiple developers run AI agents against the same Stride board, they share a single pool of available work. Without coordination, one developer's agent can claim a task that another developer was about to work on — leading to merge conflicts, duplicated effort, and verbal coordination overhead Stride was supposed to eliminate.\n\nAssigning a goal to a specific developer turns that goal into **their** lane of work:\n\n- Only their agents can claim tasks under that goal\n- Any new child task added to the goal automatically inherits the assignment\n- Other team members' agents skip past the goal entirely when polling for work\n\nThe rest of this guide walks through how to set this up and use it day to day.",
+          image: nil
+        },
+        %{
+          title: "Plan the Work as Goals, Not Flat Tasks",
+          content:
+            "The team workflow only works if your work is organized into **goals with children**, not as a flat list of independent tasks. Before assigning anything, make sure each major initiative is structured as a goal:\n\n- **Goal**: A multi-task initiative (e.g. \"Billing rewrite\", \"Onboarding flow\", \"Search performance\")\n- **Child tasks**: The individual work items (W-tasks for features, D-tasks for defects)\n\nA good rule of thumb: if two developers could reasonably own different *parts* of the same effort, those parts should be separate goals. Assignment happens at the goal level, so the goal boundary is also the ownership boundary.",
+          image: nil
+        },
+        %{
+          title: "Assign Each Goal to a Developer",
+          content:
+            "Open the goal in the board view and set the **Assigned To** field to the developer who will own it. Save the change.\n\nWhen you save:\n\n- The assignment cascades atomically to every non-completed child task under the goal\n- A flash message confirms how many children were updated (\"3 child tasks were also updated.\")\n- Connected boards refresh in real time so other team members see the change immediately\n- Completed children are intentionally not touched — their assignment is part of the historical record\n\nRepeat for each major goal on the board. Two developers can each own multiple goals; one developer can own everything; an unassigned goal remains a shared pool that anyone can pick from.",
+          image: nil
+        },
+        %{
+          title: "Run Agents Per Developer",
+          content:
+            "Each developer runs their own AI agent (Claude Code, Copilot, Cursor, etc.) authenticated against Stride with their own user identity. When the agent calls `GET /api/tasks/next`, Stride filters the queue automatically:\n\n- Tasks assigned to the calling user — included\n- Unassigned tasks — included (shared pool)\n- Tasks assigned to other users — excluded\n\nNo manual filtering, no \"please don't take this one\" notes, no daily standup carve-up of the backlog. The assignment graph IS the coordination protocol, and Stride enforces it on every claim.\n\nIf an agent tries to claim a specific task assigned to another user (for example, by identifier), the API returns **403 Forbidden** with `{\"error\": \"This task is assigned to a different user\"}`. The recommended remediation is to skip that task and call `GET /api/tasks/next` again — the queue endpoint already filters correctly, so the 403 should be rare in practice.",
+          image: nil
+        },
+        %{
+          title: "Adding New Tasks Mid-Flight",
+          content:
+            "When you add a new child task to an already-assigned goal, the new task automatically inherits the goal's `assigned_to_id`. You don't have to remember to set it. This applies whether you create the task through the UI, the API, or via a batch goal creation.\n\nIf you genuinely want a new child to be unassigned (so anyone's agent can pick it up), explicitly set its assignee to **None** when creating it. Explicit values always win over inheritance — including explicit \"unassigned.\"\n\nThis means the team can keep adding work to in-flight goals without re-opening the coordination problem each time. The invariant — \"the goal owner owns the goal's work\" — holds even as the goal grows.",
+          image: nil
+        },
+        %{
+          title: "Handing a Goal Off",
+          content:
+            "When a developer rotates off a goal — illness, vacation, end-of-sprint reshuffle, or just realizing someone else has more context — change the goal's **Assigned To** field to the new owner and save.\n\nIn one atomic operation:\n\n- The goal moves to the new owner\n- Every non-completed child moves with it\n- Per-task assignment history rows record the handoff\n- The previous owner's agents stop seeing the work on their next poll\n- The new owner's agents pick it up on their next poll\n\nNo task-by-task reassignment. No risk of orphaned children stuck on the previous owner. Setting the goal back to **Unassigned** does the same thing in reverse — every non-completed child moves back to the shared pool.",
+          image: nil
+        },
+        %{
+          title: "Best Practices for Team Workflows",
+          content:
+            "**Keep goals scoped to one owner at a time.** If two developers are actively working on the same goal, that's a sign the goal is too big — split it into separate goals so each can be owned independently.\n\n**Use the unassigned pool for shared backlog work.** Bug fixes, small enhancements, and exploratory tasks that any team member could pick up belong in unassigned goals (or as flat unassigned tasks). The assignment system is opt-in per goal — you don't have to assign everything.\n\n**Make assignment changes visible.** When you reassign or hand off a goal, mention it in your team chat. The system handles the technical handoff automatically, but humans still benefit from knowing who's responsible for what.\n\n**Review the assignment graph regularly.** During retros or planning, glance at who owns which goals on the board. Imbalances (one developer owning everything, or critical goals unassigned) are easy to spot and easy to rebalance with a single field change per goal.",
+          image: nil
+        }
+      ]
+    },
+    %{
       id: "setting-up-hooks",
       title: "Setting Up Hook Execution",
       description:

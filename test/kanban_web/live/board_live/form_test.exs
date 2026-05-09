@@ -247,6 +247,163 @@ defmodule KanbanWeb.BoardLive.FormTest do
     end
   end
 
+  describe "BoardLive.Form (new — ai_optimized variant)" do
+    setup :register_and_log_in_user
+
+    test "creates an AI-optimized board when ?ai_optimized=true is passed", %{
+      conn: conn,
+      user: user
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/boards/new?ai_optimized=true")
+
+      form =
+        form(lv, "#board-form", board: %{name: "AI Board", description: "An AI optimized board"})
+
+      assert {:ok, _, html} = form |> render_submit() |> follow_redirect(conn)
+      assert html =~ "Board created successfully"
+
+      board = Kanban.Boards.list_boards(user) |> Enum.find(&(&1.name == "AI Board"))
+      assert board.ai_optimized_board == true
+
+      column_names =
+        Kanban.Columns.list_columns(board) |> Enum.map(& &1.name)
+
+      assert "Backlog" in column_names
+      assert "Ready" in column_names
+      assert "Doing" in column_names
+      assert "Review" in column_names
+      assert "Done" in column_names
+    end
+
+    test "creates a non-AI board when ai_optimized param is absent", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/boards/new")
+
+      form =
+        form(lv, "#board-form", board: %{name: "Plain Board", description: "Just a board"})
+
+      assert {:ok, _, _html} = form |> render_submit() |> follow_redirect(conn)
+
+      board = Kanban.Boards.list_boards(user) |> Enum.find(&(&1.name == "Plain Board"))
+      assert board.ai_optimized_board == false
+    end
+
+    test "ai_optimized=anything-else is treated as not AI", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/boards/new?ai_optimized=yes")
+
+      form = form(lv, "#board-form", board: %{name: "Maybe AI", description: "Test"})
+
+      assert {:ok, _, _html} = form |> render_submit() |> follow_redirect(conn)
+
+      board = Kanban.Boards.list_boards(user) |> Enum.find(&(&1.name == "Maybe AI"))
+      assert board.ai_optimized_board == false
+    end
+  end
+
+  describe "BoardLive.Form (edit — error and edge paths)" do
+    setup :register_and_log_in_user
+
+    test "redirects to /boards with a flash when the board does not exist", %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/999999/edit")
+
+      assert error =~ "Board not found"
+    end
+
+    test "redirects to /boards with a flash when board id is non-numeric", %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => error}}}} =
+               live(conn, ~p"/boards/not-an-id/edit")
+
+      assert error =~ "Board not found"
+    end
+
+    test "remove_user shows 'User not found' when the user_id does not exist", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      other_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, other_user, :read_only)
+
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      Kanban.Repo.delete!(other_user)
+
+      lv
+      |> element("button[phx-value-user_id='#{other_user.id}']", "Remove")
+      |> render_click()
+
+      assert render(lv) =~ "User not found"
+    end
+
+    test "search_user clears any prior flash message after a successful match", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      other_user = user_fixture()
+
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      lv
+      |> form("form[phx-submit='search_user']", %{email: "nope@example.com"})
+      |> render_submit()
+
+      assert render(lv) =~ "Could not find a user with that email address"
+
+      lv
+      |> form("form[phx-submit='search_user']", %{email: other_user.email})
+      |> render_submit()
+
+      refute render(lv) =~ "Could not find a user with that email address"
+    end
+  end
+
+  describe "BoardLive.Form (edit — field visibility)" do
+    setup :register_and_log_in_user
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      %{board: board}
+    end
+
+    test "toggling the same field twice returns to the original state", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      lv |> element("input[phx-value-field='complexity']") |> render_click()
+
+      first_state = Kanban.Boards.get_board!(board.id, user).field_visibility["complexity"]
+      assert first_state == true
+
+      lv |> element("input[phx-value-field='complexity']") |> render_click()
+
+      second_state = Kanban.Boards.get_board!(board.id, user).field_visibility["complexity"]
+      assert second_state == false
+    end
+
+    test "toggling one field does not affect other fields' visibility", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      lv |> element("input[phx-value-field='complexity']") |> render_click()
+      lv |> element("input[phx-value-field='pitfalls']") |> render_click()
+
+      visibility = Kanban.Boards.get_board!(board.id, user).field_visibility
+
+      assert visibility["complexity"] == true
+      assert visibility["pitfalls"] == true
+      assert visibility["acceptance_criteria"] == true
+      assert visibility["context"] == false
+      assert visibility["key_files"] == false
+    end
+  end
+
   describe "BoardLive.Form (read-only toggle)" do
     setup :register_and_log_in_user
 
