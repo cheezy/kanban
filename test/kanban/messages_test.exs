@@ -163,14 +163,16 @@ defmodule Kanban.MessagesTest do
       assert Repo.aggregate(MessageDismissal, :count) == 2
     end
 
-    test "returns {:error, changeset} for a non-existent message_id" do
+    test "returns {:error, :not_found} for a non-existent message_id" do
+      # An attacker probing dismiss_message with a bogus id used to surface
+      # an FK-violation changeset, indirectly leaking that the messages
+      # table was the rejection source. The visibility check up front
+      # returns :not_found uniformly without ever touching the dismissals
+      # table.
       reader = user_fixture()
 
-      assert {:error, %Ecto.Changeset{} = cs} =
-               Messages.dismiss_message(reader, 999_999_999)
-
-      errors = errors_on(cs)
-      assert "does not exist" in Map.get(errors, :message_id, [])
+      assert {:error, :not_found} = Messages.dismiss_message(reader, 999_999_999)
+      assert Repo.aggregate(MessageDismissal, :count) == 0
     end
   end
 

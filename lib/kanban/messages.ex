@@ -77,18 +77,27 @@ defmodule Kanban.Messages do
   @doc """
   Records a dismissal of `message_id` by `user`.
 
+  Verifies the message exists before recording the dismissal — otherwise a
+  caller could insert dismissal rows for arbitrary message ids and probe
+  the message table indirectly. Returns `{:error, :not_found}` when the
+  message id does not resolve.
+
   Idempotent — calling twice with the same (user, message) does not raise
   and does not create duplicate rows. Relies on the unique index on
   `(message_id, user_id)` in the `message_dismissals` table.
-
-  Returns `{:error, changeset}` if the given `message_id` does not exist.
   """
   def dismiss_message(%{id: user_id}, message_id) do
-    attrs = %{message_id: message_id, user_id: user_id}
+    case Repo.get(Message, message_id) do
+      nil ->
+        {:error, :not_found}
 
-    %MessageDismissal{}
-    |> MessageDismissal.changeset(attrs)
-    |> Repo.insert(on_conflict: :nothing, conflict_target: [:message_id, :user_id])
+      %Message{} ->
+        attrs = %{message_id: message_id, user_id: user_id}
+
+        %MessageDismissal{}
+        |> MessageDismissal.changeset(attrs)
+        |> Repo.insert(on_conflict: :nothing, conflict_target: [:message_id, :user_id])
+    end
   end
 
   @doc """
