@@ -215,6 +215,143 @@ defmodule Kanban.Boards.BoardTest do
       assert errors[:description] == ["should be at most 255 character(s)"]
     end
 
+    test "empty string name fails validate_required" do
+      changeset = Board.changeset(%Board{}, %{name: ""})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "explicit nil name fails validate_required" do
+      changeset = Board.changeset(%Board{}, %{name: nil})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "whitespace-only name fails validate_required (Ecto trims)" do
+      changeset = Board.changeset(%Board{}, %{name: "        "})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "accepts string-keyed params" do
+      changeset =
+        Board.changeset(%Board{}, %{
+          "name" => "String Keys",
+          "description" => "Works the same way"
+        })
+
+      assert changeset.valid?
+      assert get_change(changeset, :name) == "String Keys"
+      assert get_change(changeset, :description) == "Works the same way"
+    end
+
+    test "updates an existing board while preserving its id" do
+      existing = %Board{id: 42, name: "Original", description: "Old"}
+      changeset = Board.changeset(existing, %{name: "Renamed Board"})
+
+      assert changeset.valid?
+      assert changeset.data.id == 42
+      assert get_change(changeset, :name) == "Renamed Board"
+      refute Map.has_key?(changeset.changes, :description)
+    end
+
+    test "casting only :name in attrs leaves description untouched on existing board" do
+      existing = %Board{name: "Original", description: "Keep me"}
+      changeset = Board.changeset(existing, %{name: "Renamed Board"})
+
+      applied = Ecto.Changeset.apply_changes(changeset)
+      assert applied.name == "Renamed Board"
+      assert applied.description == "Keep me"
+    end
+
+    test "rejects non-boolean read_only values" do
+      changeset = Board.changeset(%Board{}, %{name: "Test Board", read_only: "yes"})
+      assert %{read_only: ["is invalid"]} = errors_on(changeset)
+    end
+
+    test "field_visibility with atom keys is rejected (validation expects string keys)" do
+      atom_keyed = %{
+        acceptance_criteria: true,
+        complexity: false,
+        context: false,
+        key_files: false,
+        verification_steps: false,
+        technical_notes: false,
+        observability: false,
+        error_handling: false,
+        technology_requirements: false,
+        pitfalls: false,
+        out_of_scope: false,
+        required_capabilities: false
+      }
+
+      changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: atom_keyed})
+
+      assert %{field_visibility: ["missing required field visibility keys"]} =
+               errors_on(changeset)
+    end
+
+    test "field_visibility validation only checks key presence, not value types" do
+      visibility = %{
+        "acceptance_criteria" => "yes",
+        "complexity" => 1,
+        "context" => nil,
+        "key_files" => false,
+        "verification_steps" => false,
+        "technical_notes" => false,
+        "observability" => false,
+        "error_handling" => false,
+        "technology_requirements" => false,
+        "pitfalls" => false,
+        "out_of_scope" => false,
+        "required_capabilities" => false
+      }
+
+      changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: visibility})
+      assert changeset.valid?
+      assert get_change(changeset, :field_visibility) == visibility
+    end
+
+    test "validate_required is checked even when an unrelated field_visibility change is valid" do
+      changeset =
+        Board.changeset(%Board{}, %{
+          name: "",
+          field_visibility: %{
+            "acceptance_criteria" => true,
+            "complexity" => false,
+            "context" => false,
+            "key_files" => false,
+            "verification_steps" => false,
+            "technical_notes" => false,
+            "observability" => false,
+            "error_handling" => false,
+            "technology_requirements" => false,
+            "pitfalls" => false,
+            "out_of_scope" => false,
+            "required_capabilities" => false
+          }
+        })
+
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "schema declares user_access as a virtual field" do
+      assert :user_access in Board.__schema__(:virtual_fields)
+    end
+
+    test "user_access is not cast through the changeset" do
+      changeset = Board.changeset(%Board{}, %{name: "Test Board", user_access: :owner})
+      assert changeset.valid?
+      refute Map.has_key?(changeset.changes, :user_access)
+    end
+
+    test "schema lists the expected real fields" do
+      fields = Board.__schema__(:fields)
+      assert :name in fields
+      assert :description in fields
+      assert :ai_optimized_board in fields
+      assert :read_only in fields
+      assert :field_visibility in fields
+      refute :user_access in fields
+    end
+
     test "allows updating field_visibility" do
       updated_visibility = %{
         "acceptance_criteria" => false,

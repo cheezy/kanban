@@ -69,9 +69,6 @@ defmodule Kanban.Boards.Board do
         else
           add_error(changeset, :field_visibility, "missing required field visibility keys")
         end
-
-      _ ->
-        add_error(changeset, :field_visibility, "must be a map")
     end
   end
 end
