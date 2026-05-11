@@ -12,10 +12,12 @@ defmodule KanbanWeb.Router do
     plug :put_root_layout, html: {KanbanWeb.Layouts, :root}
     plug :protect_from_forgery
 
-    plug :put_secure_browser_headers, %{
-      "content-security-policy" =>
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
-    }
+    # Framework-default security headers (X-Frame-Options,
+    # X-Content-Type-Options, etc.). The CSP header is set separately by
+    # CspNonce below so each request gets a fresh nonce.
+    plug :put_secure_browser_headers
+
+    plug KanbanWeb.Plugs.CspNonce
 
     plug :fetch_current_scope_for_user
     plug KanbanWeb.Plugs.Locale, "en"
