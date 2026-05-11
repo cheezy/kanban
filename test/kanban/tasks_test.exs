@@ -7802,7 +7802,7 @@ defmodule Kanban.TasksTest do
     end
   end
 
-  describe "get_task_by_identifier_for_view!/2" do
+  describe "get_task_by_identifier_for_view/2" do
     test "returns task by identifier scoped to columns" do
       user = user_fixture()
       board = board_fixture(user)
@@ -7814,7 +7814,7 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      result = Tasks.get_task_by_identifier_for_view!(task.identifier, [column.id])
+      result = Tasks.get_task_by_identifier_for_view(task.identifier, [column.id])
 
       assert result != nil
       assert result.id == task.id
@@ -7828,7 +7828,7 @@ defmodule Kanban.TasksTest do
       board = board_fixture(user)
       column = column_fixture(board)
 
-      assert Tasks.get_task_by_identifier_for_view!("NONEXISTENT", [column.id]) == nil
+      assert Tasks.get_task_by_identifier_for_view("NONEXISTENT", [column.id]) == nil
     end
 
     test "returns nil when task is in a different column" do
@@ -7843,7 +7843,7 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      assert Tasks.get_task_by_identifier_for_view!(task.identifier, [column2.id]) == nil
+      assert Tasks.get_task_by_identifier_for_view(task.identifier, [column2.id]) == nil
     end
 
     test "finds task when searching across multiple columns" do
@@ -7858,7 +7858,7 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      result = Tasks.get_task_by_identifier_for_view!(task.identifier, [column1.id, column2.id])
+      result = Tasks.get_task_by_identifier_for_view(task.identifier, [column1.id, column2.id])
 
       assert result != nil
       assert result.id == task.id

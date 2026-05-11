@@ -667,7 +667,7 @@ defmodule KanbanWeb.API.TaskController do
         columns = Columns.list_columns(board)
         column_ids = Enum.map(columns, & &1.id)
 
-        Tasks.get_task_by_identifier_for_view!(id_or_identifier, column_ids)
+        Tasks.get_task_by_identifier_for_view(id_or_identifier, column_ids)
     end
   end
 

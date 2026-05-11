@@ -41,7 +41,7 @@ defmodule Kanban.Tasks do
   defdelegate get_task_with_history!(id), to: Queries
   defdelegate get_task_for_view!(id), to: Queries
   defdelegate get_task_for_view(id), to: Queries
-  defdelegate get_task_by_identifier_for_view!(identifier, column_ids), to: Queries
+  defdelegate get_task_by_identifier_for_view(identifier, column_ids), to: Queries
 
   # ── Creation delegations ───────────────────────────────────────────
 
