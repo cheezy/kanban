@@ -117,9 +117,25 @@ defmodule KanbanWeb.Telemetry.UserActivityPage do
 
   defp apply_search_filter(query, nil), do: query
 
-  defp apply_search_filter(query, search) do
+  defp apply_search_filter(query, "") do
+    apply_search_filter(query, nil)
+  end
+
+  defp apply_search_filter(query, search) when is_binary(search) do
+    pattern = "%" <> escape_like(search) <> "%"
+
     from [me, u] in query,
-      where: ilike(u.email, ^"%#{search}%")
+      where: fragment("? ILIKE ? ESCAPE '\\'", u.email, ^pattern)
+  end
+
+  # Escapes LIKE/ILIKE metacharacters (\, %, _) in `s` by prefixing each with
+  # a backslash. Public to make the escape behavior testable; not part of the
+  # dashboard API. Callers must pair this with an explicit `ESCAPE '\'` clause
+  # on the SQL side so Postgres treats the backslash as the escape character
+  # regardless of session settings.
+  @doc false
+  def escape_like(s) when is_binary(s) do
+    String.replace(s, ["\\", "%", "_"], &("\\" <> &1))
   end
 
   defp apply_sort(query, :email, :asc) do
