@@ -3466,4 +3466,47 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["human_task"] == false
     end
   end
+
+  describe "proceed_with_claim/8 catch-all error handler" do
+    test "response body never contains inspect-style internals" do
+      body = KanbanWeb.API.TaskController.unexpected_claim_error_body()
+
+      assert body == %{
+               error: "internal_server_error",
+               message:
+                 "Failed to claim task. Please retry; if the failure persists, contact support."
+             }
+
+      # No tuple-printing, no Elixir-atom syntax, no module-name syntax
+      # — the body is a flat user-facing string.
+      refute body.message =~ "{"
+      refute body.message =~ ":"
+      refute body.message =~ "%"
+    end
+
+    test "handle_unexpected_claim_error/3 logs the raw reason but returns the stable body" do
+      import ExUnit.CaptureLog
+
+      starting_conn = Phoenix.ConnTest.build_conn(:post, "/api/tasks/claim")
+
+      {response_conn, log} =
+        with_log(fn ->
+          KanbanWeb.API.TaskController.handle_unexpected_claim_error(
+            starting_conn,
+            {:weird_database, :error_atom, "unexpected"},
+            task_identifier: "W999",
+            agent_name: "Test Agent"
+          )
+        end)
+
+      # The raw reason is in the log (operator visibility) ...
+      assert log =~ ":weird_database"
+
+      # ... but NOT in the JSON response body (no client leak).
+      body = Phoenix.ConnTest.json_response(response_conn, 500)
+      assert body["error"] == "internal_server_error"
+      refute body["message"] =~ ":weird_database"
+      refute body["message"] =~ "unexpected"
+    end
+  end
 end

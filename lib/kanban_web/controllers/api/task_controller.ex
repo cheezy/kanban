@@ -6,6 +6,8 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
 
+  require Logger
+
   action_fallback KanbanWeb.API.FallbackController
 
   def index(conn, params) do
@@ -354,10 +356,35 @@ defmodule KanbanWeb.API.TaskController do
         handle_assigned_to_other_user(conn, task_identifier)
 
       {:error, reason} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: "Failed to claim task", reason: inspect(reason)})
+        handle_unexpected_claim_error(conn, reason,
+          task_identifier: task_identifier,
+          agent_name: agent_name
+        )
     end
+  end
+
+  # Logs the underlying reason server-side (changeset internals, internal
+  # atoms, database errors, etc.) and returns a stable user-facing body
+  # so the response does not leak implementation detail to API clients.
+  # Exposed for testing.
+  @doc false
+  def handle_unexpected_claim_error(conn, reason, metadata) do
+    Logger.error(
+      "claim_next_task catch-all error: #{inspect(reason)}",
+      Keyword.put(metadata, :reason, inspect(reason))
+    )
+
+    conn
+    |> put_status(:internal_server_error)
+    |> json(unexpected_claim_error_body())
+  end
+
+  @doc false
+  def unexpected_claim_error_body do
+    %{
+      error: "internal_server_error",
+      message: "Failed to claim task. Please retry; if the failure persists, contact support."
+    }
   end
 
   def complete(conn, %{"id" => id_or_identifier} = params) do
