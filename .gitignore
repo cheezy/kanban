@@ -62,3 +62,9 @@ security-review/
 # contributor maintains their own narrow allow-list without coupling the
 # repo's security posture to one developer's workflow.
 .claude/settings.local.json
+
+# Editor/IDE backup files. These accumulate accidentally, duplicate
+# source code in places auditors and grep won't easily find, and have
+# leaked credentials in other Phoenix projects' commit histories.
+*.backup
+*.bak
