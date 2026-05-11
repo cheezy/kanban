@@ -22,7 +22,7 @@
       >
         <.input field={f[:title]} type="text" label={gettext("Title")} required />
         <.input field={f[:body]} type="textarea" label={gettext("Body")} rows="4" required />
-        <.button phx-disable-with={gettext("Saving...")} class="btn-primary">
+        <.button phx-disable-with={gettext("Saving...")}>
           {gettext("Create Message")}
         </.button>
       </.form>
