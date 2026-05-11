@@ -1754,6 +1754,117 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Cross-board task still exists.
       assert %{} = Kanban.Tasks.get_task!(other_task.id)
     end
+
+    test "read-only user is rejected when pushing move_task event", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Read-only Move Target", position: 0})
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(task.id),
+        "old_column_id" => to_string(column.id),
+        "new_column_id" => to_string(column.id),
+        "new_position" => 5
+      })
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to move tasks on this board"
+
+      # Task position unchanged.
+      assert %{column_id: column_id} = Kanban.Tasks.get_task!(task.id)
+      assert column_id == column.id
+    end
+
+    test "cross-board task id is rejected when pushing move_task event", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      own_column = column_fixture(own_board)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board Move Target", position: 0})
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(other_task.id),
+        "old_column_id" => to_string(own_column.id),
+        "new_column_id" => to_string(own_column.id),
+        "new_position" => 0
+      })
+
+      html = render(show_live)
+      assert html =~ "Failed to move task"
+
+      # Cross-board task did NOT get reassigned to the current board's column.
+      assert %{column_id: column_id} = Kanban.Tasks.get_task!(other_task.id)
+      assert column_id == other_column.id
+    end
+
+    test "cross-board old_column_id is rejected when pushing move_task event", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      own_column = column_fixture(own_board)
+      own_task = task_fixture(own_column, %{title: "Own Task", position: 0})
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(own_task.id),
+        "old_column_id" => to_string(other_column.id),
+        "new_column_id" => to_string(own_column.id),
+        "new_position" => 0
+      })
+
+      html = render(show_live)
+      assert html =~ "Failed to move task"
+    end
+
+    test "cross-board new_column_id is rejected when pushing move_task event", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      own_column = column_fixture(own_board)
+      own_task = task_fixture(own_column, %{title: "Own Task", position: 0})
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("move_task", %{
+        "task_id" => to_string(own_task.id),
+        "old_column_id" => to_string(own_column.id),
+        "new_column_id" => to_string(other_column.id),
+        "new_position" => 0
+      })
+
+      html = render(show_live)
+      assert html =~ "Failed to move task"
+
+      # Task did NOT migrate to the other board's column.
+      assert %{column_id: column_id} = Kanban.Tasks.get_task!(own_task.id)
+      assert column_id == own_column.id
+    end
   end
 
   # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.

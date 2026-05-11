@@ -332,23 +332,30 @@ defmodule KanbanWeb.BoardLive.Show do
         },
         socket
       ) do
-    require Logger
+    case authorize_move_task(socket, task_id, old_column_id, new_column_id) do
+      {:ok, task, parsed_old_col_id, parsed_new_col_id} ->
+        require Logger
 
-    task_id = String.to_integer(task_id)
-    old_column_id = String.to_integer(old_column_id)
-    new_column_id = String.to_integer(new_column_id)
+        Logger.info(
+          "Move task event: task_id=#{task.id}, old_column=#{parsed_old_col_id}, new_column=#{parsed_new_col_id}, new_position=#{new_position}"
+        )
 
-    Logger.info(
-      "Move task event: task_id=#{task_id}, old_column=#{old_column_id}, new_column=#{new_column_id}, new_position=#{new_position}"
-    )
+        if parsed_old_col_id == parsed_new_col_id do
+          handle_task_reorder(socket, parsed_old_col_id, task.id, new_position)
+        else
+          handle_task_move(socket, task, parsed_new_col_id, new_position)
+        end
 
-    task = Tasks.get_task!(task_id)
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to move tasks on this board")
+         )}
 
-    # If moving within the same column, just reorder
-    if old_column_id == new_column_id do
-      handle_task_reorder(socket, old_column_id, task_id, new_position)
-    else
-      handle_task_move(socket, task, new_column_id, new_position)
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move task"))}
     end
   end
 
@@ -656,6 +663,29 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp parse_task_id(_), do: :error
+
+  defp authorize_move_task(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
+    if socket.assigns.can_modify do
+      lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id)
+    else
+      {:error, :not_authorized}
+    end
+  end
+
+  defp lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
+    board_id = socket.assigns.board.id
+
+    with {:ok, task_id} <- parse_task_id(raw_task_id),
+         {:ok, old_col_id} <- parse_task_id(raw_old_col_id),
+         {:ok, new_col_id} <- parse_task_id(raw_new_col_id),
+         %{} = task <- Tasks.get_task_for_board(task_id, board_id),
+         %{} <- Columns.get_column_for_board(old_col_id, board_id),
+         %{} <- Columns.get_column_for_board(new_col_id, board_id) do
+      {:ok, task, old_col_id, new_col_id}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
 
   defp assign_common_board_state(socket, board, user_access, columns) do
     socket

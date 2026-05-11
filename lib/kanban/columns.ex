@@ -41,6 +41,19 @@ defmodule Kanban.Columns do
   def get_column!(id), do: Repo.get!(Column, id)
 
   @doc """
+  Returns a column scoped to a board, or `nil` if it does not exist or
+  belongs to a different board.
+
+  Used by authorization-sensitive callers that must not trust a
+  client-supplied column id without verifying it belongs to the current
+  board (e.g. drag-and-drop handlers that receive both old and new
+  column ids).
+  """
+  def get_column_for_board(id, board_id) do
+    Repo.get_by(Column, id: id, board_id: board_id)
+  end
+
+  @doc """
   Creates a column for a board with automatic position assignment.
 
   ## Examples
