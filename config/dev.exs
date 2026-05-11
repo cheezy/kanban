@@ -23,7 +23,17 @@ config :kanban, KanbanWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "RbFieI8qCgam4CgJIuc+33zpm0br379W0avLjJ5K7Z34CALil+ZbfF8sDtvSNrF3",
+  # Per-developer dev signing key. Each contributor SHOULD export
+  # SECRET_KEY_BASE (generate one with `mix phx.gen.secret`) so the dev
+  # signing key isn't shared across the team — important if a dev server
+  # is ever exposed to the internet via tunneling or port forwarding.
+  # See README "Local development setup" for the workflow. The fallback
+  # below is a clearly-labeled placeholder so non-server tasks (mix
+  # help, mix deps.audit, etc.) can still load this config; it is NOT
+  # suitable for any externally-reachable server.
+  secret_key_base:
+    System.get_env("SECRET_KEY_BASE") ||
+      "DEV_PLACEHOLDER_KEY_NOT_FOR_PUBLIC_USE_RUN_mix_phx_gen_secret_AND_EXPORT_SECRET_KEY_BASE_xxxxx",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:kanban, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:kanban, ~w(--watch)]}

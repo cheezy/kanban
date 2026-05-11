@@ -17,6 +17,25 @@ This comprehensive guide walks you through:
 - Configuring workflow hooks
 - Understanding the human-AI collaboration workflow
 
+### Local development setup
+
+Before running `mix phx.server` (or any dev work that signs cookies /
+LiveView tokens), export a per-developer `SECRET_KEY_BASE`. The dev
+environment no longer ships with a shared signing key — every
+contributor previously had the same one, which is unsafe if a dev
+server is ever exposed externally (ngrok, tunneling, port forwarding).
+
+```bash
+# generate once and store it in your shell rc / direnv:
+export SECRET_KEY_BASE="$(mix phx.gen.secret)"
+```
+
+If you don't set the variable, `config/dev.exs` falls back to a
+clearly-labeled placeholder so non-server tasks (`mix help`,
+`mix deps.audit`, etc.) keep working — but **do not** start
+`mix phx.server` against an externally-reachable network without
+setting your own key first.
+
 ---
 
 ## What is Stride?
