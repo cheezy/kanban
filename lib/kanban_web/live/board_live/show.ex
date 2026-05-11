@@ -234,30 +234,42 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("delete_task", %{"id" => id}, socket) do
-    task = Tasks.get_task!(id)
+    case authorize_modify_for_task(socket, id) do
+      {:ok, task} ->
+        case Tasks.delete_task(task) do
+          {:ok, _deleted_task} ->
+            columns = Columns.list_columns(socket.assigns.board)
 
-    case Tasks.delete_task(task) do
-      {:ok, _deleted_task} ->
-        columns = Columns.list_columns(socket.assigns.board)
+            Process.send_after(self(), :clear_skip_reload, 100)
 
-        Process.send_after(self(), :clear_skip_reload, 100)
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Task deleted successfully"))
+             |> assign(:skip_next_reload, true)
+             |> stream(:columns, columns)
+             |> load_tasks_for_columns(columns)}
 
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Task deleted successfully"))
-         |> assign(:skip_next_reload, true)
-         |> stream(:columns, columns)
-         |> load_tasks_for_columns(columns)}
+          {:error, :has_dependents} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Cannot delete task: other tasks depend on it. Remove dependencies first.")
+             )}
 
-      {:error, :has_dependents} ->
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
+        end
+
+      {:error, :not_authorized} ->
         {:noreply,
          put_flash(
            socket,
            :error,
-           gettext("Cannot delete task: other tasks depend on it. Remove dependencies first.")
+           gettext("You do not have permission to delete tasks on this board")
          )}
 
-      {:error, _changeset} ->
+      {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
     end
   end

@@ -1650,6 +1650,51 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Cross-board task was not archived.
       assert %{archived_at: nil} = Kanban.Tasks.get_task!(other_task.id)
     end
+
+    test "read-only user is rejected when pushing delete_task event", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Read-only Delete Target"})
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("delete_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to delete tasks on this board"
+
+      # Task still exists.
+      assert %{} = Kanban.Tasks.get_task!(task.id)
+    end
+
+    test "cross-board task id is rejected when pushing delete_task event", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      _own_column = column_fixture(own_board)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board Delete Target"})
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("delete_task", %{"id" => to_string(other_task.id)})
+
+      html = render(show_live)
+      assert html =~ "Failed to delete task"
+
+      # Cross-board task still exists.
+      assert %{} = Kanban.Tasks.get_task!(other_task.id)
+    end
   end
 
   # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.
