@@ -523,6 +523,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task
@@ -558,6 +559,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task
@@ -578,6 +580,69 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert Enum.empty?(updated_socket.assigns.task.comments)
     end
 
+    test "rejects add_comment when the user is not a board member" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Members Only"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: stranger},
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add_comment",
+          %{"task_comment" => %{"content" => "should not save"}},
+          socket
+        )
+
+      assert updated_socket.assigns.flash["error"] =~ "must be a board member"
+      # No comment row was created.
+      assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
+    end
+
+    test "accepts add_comment when the user is a read-only board member" do
+      owner = user_fixture()
+      reader = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Open Discussion"})
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: reader},
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add_comment",
+          %{"task_comment" => %{"content" => "I have thoughts"}},
+          socket
+        )
+
+      assert length(updated_socket.assigns.task.comments) == 1
+    end
+
     test "adds multiple comments" do
       user = user_fixture()
       board = board_fixture(user)
@@ -587,6 +652,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task
@@ -628,6 +694,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task
@@ -648,6 +715,48 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       # Comment should be associated with the task
       comment = hd(updated_socket.assigns.task.comments)
       assert comment.task_id == task.id
+    end
+
+    test "overrides any client-supplied task_id in comment_params" do
+      # Server-source the task_id from socket.assigns.task — never trust
+      # an attacker-supplied task_id key in the params map.
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Real Task"})
+
+      # A separate task whose id the attacker tries to spoof.
+      other_task = task_fixture(column, %{title: "Other Task"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add_comment",
+          %{
+            "task_comment" => %{
+              "content" => "should attach to real task",
+              "task_id" => other_task.id
+            }
+          },
+          socket
+        )
+
+      # Comment goes to the SERVER task, ignoring the spoofed task_id.
+      comment = hd(updated_socket.assigns.task.comments)
+      assert comment.task_id == task.id
+      refute comment.task_id == other_task.id
     end
   end
 
