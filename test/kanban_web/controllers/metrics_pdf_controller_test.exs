@@ -999,4 +999,50 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     end
   end
+
+  describe "handle_pdf_error/4 flash leak fix" do
+    test "pdf_error_flash_message/0 is a generic, no-internals string" do
+      message = KanbanWeb.MetricsPdfController.pdf_error_flash_message()
+
+      assert is_binary(message)
+      assert message =~ "Failed to generate the export"
+      # No tuple-printing, no Elixir-atom syntax, no module-name syntax.
+      refute message =~ "{"
+      refute message =~ ":"
+      refute message =~ "inspect"
+    end
+
+    test "handle_pdf_error/4 logs the raw reason but flashes only the generic message" do
+      import ExUnit.CaptureLog
+
+      starting_conn =
+        :get
+        |> Phoenix.ConnTest.build_conn("/some-path")
+        |> Plug.Test.init_test_session(%{})
+        |> Phoenix.Controller.fetch_flash()
+
+      {response_conn, log} =
+        with_log(fn ->
+          KanbanWeb.MetricsPdfController.handle_pdf_error(
+            starting_conn,
+            42,
+            "throughput",
+            {:chromic_pdf_crashed, :worker_unavailable, "/tmp/pdf-stash/abc"}
+          )
+        end)
+
+      # Raw reason in operator log...
+      assert log =~ "chromic_pdf_crashed"
+      assert log =~ "/tmp/pdf-stash/abc"
+
+      # ...but the flash carries only the generic localized message.
+      flash = Phoenix.Flash.get(response_conn.assigns.flash, :error)
+      assert flash == KanbanWeb.MetricsPdfController.pdf_error_flash_message()
+      refute flash =~ "chromic_pdf_crashed"
+      refute flash =~ "/tmp/pdf-stash"
+
+      # Marks the conn as a redirect.
+      assert response_conn.status == 302
+    end
+  end
 end

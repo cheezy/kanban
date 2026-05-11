@@ -11,6 +11,8 @@ defmodule KanbanWeb.MetricsPdfController do
   alias KanbanWeb.MetricsExcelExport
   alias KanbanWeb.MetricsLive.Helpers
 
+  require Logger
+
   @metric_templates %{
     "throughput" => :throughput,
     "cycle-time" => :cycle_time,
@@ -114,10 +116,24 @@ defmodule KanbanWeb.MetricsPdfController do
     |> send_resp(200, pdf_binary)
   end
 
-  defp handle_pdf_error(conn, board_id, metric, reason) do
+  # Log the raw reason for operators (ChromicPDF port output, internal
+  # tuples, paths, etc.) but show the user a generic localized message —
+  # never interpolate inspect/1 into a response body or flash. Exposed
+  # for testing.
+  @doc false
+  def handle_pdf_error(conn, board_id, metric, reason) do
+    Logger.error(
+      "PDF/export generation failed (board_id=#{board_id}, metric=#{inspect(metric)}, reason=#{inspect(reason)})"
+    )
+
     conn
-    |> put_flash(:error, "Failed to generate PDF: #{inspect(reason)}")
+    |> put_flash(:error, pdf_error_flash_message())
     |> redirect(to: get_redirect_path(conn, board_id, metric))
+  end
+
+  @doc false
+  def pdf_error_flash_message do
+    gettext("Failed to generate the export. Please try again or contact support.")
   end
 
   defp load_metric_data("throughput", board_id, opts) do
