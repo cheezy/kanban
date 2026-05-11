@@ -418,6 +418,79 @@ defmodule KanbanWeb.ArchiveLiveTest do
       # Active task was not deleted.
       assert %{} = Tasks.get_task!(task.id)
     end
+
+    test "string-encoded id is accepted by unarchive happy path", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Drag-and-drop and phx-value-id payloads arrive as strings; the parse_id
+      # binary branch must accept fully-numeric strings.
+      task = task_fixture(column, %{title: "String ID Task"})
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Push a string id (not the integer); render_click coerces to whatever we pass.
+      index_live |> render_click("unarchive", %{"id" => to_string(archived_task.id)})
+
+      html = render(index_live)
+      assert html =~ "Task unarchived successfully"
+    end
+
+    test "non-numeric id is rejected by unarchive without raising", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Untouchable"})
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # A crafted payload with a non-numeric id must produce the standard error
+      # flash, NOT crash the LiveView.
+      index_live |> render_click("unarchive", %{"id" => "definitely-not-a-number"})
+
+      html = render(index_live)
+      assert html =~ "Failed to unarchive task"
+
+      # Original archived task is untouched.
+      assert %{archived_at: archived_at} = Tasks.get_task!(archived_task.id)
+      refute is_nil(archived_at)
+    end
+
+    test "non-numeric id is rejected by delete without raising", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Untouchable Delete"})
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      index_live |> render_click("delete", %{"id" => "not-a-number"})
+
+      html = render(index_live)
+      assert html =~ "Failed to delete task"
+
+      # Original archived task is untouched.
+      assert %{} = Tasks.get_task!(archived_task.id)
+    end
+
+    test "handle_info ignores unknown messages without crashing", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Send a message that doesn't match any specific handle_info clause.
+      send(index_live.pid, {:something_unrelated, :payload})
+
+      # Render must still succeed — the catch-all clause swallows the message.
+      assert render(index_live) =~ "Archived Tasks"
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

@@ -293,34 +293,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp do_promote_goal(socket, goal) do
-    case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
-      {:ok, count} ->
-        columns = Columns.list_columns(socket.assigns.board)
-
-        {:noreply,
-         socket
-         |> put_flash(
-           :info,
-           dngettext(
-             "tasks",
-             "Moved 1 task to Ready",
-             "Moved %{count} tasks to Ready",
-             count,
-             count: count
-           )
-         )
-         |> stream(:columns, columns, reset: true)
-         |> load_tasks_for_columns(columns)}
-
-      {:error, :not_a_goal} ->
-        {:noreply, put_flash(socket, :error, gettext("Only goals can be promoted"))}
-
-      {:error, _reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to move goal to Ready"))}
-    end
-  end
-
   @impl true
   def handle_event(
         "move_task",
@@ -431,31 +403,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp do_create_token(socket, params) do
-    user = socket.assigns.current_scope.user
-    board = socket.assigns.board
-
-    token_params =
-      params["api_token"]
-      |> Map.merge(params["token"] || %{})
-      |> parse_agent_capabilities()
-
-    case ApiTokens.create_api_token(user, board, token_params) do
-      {:ok, {_api_token, plain_text_token}} ->
-        api_tokens = ApiTokens.list_api_tokens(board)
-        token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
-
-        {:noreply,
-         socket
-         |> assign(:api_tokens, api_tokens)
-         |> assign(:new_token, plain_text_token)
-         |> assign(:token_form, to_form(token_changeset))}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
-    end
-  end
-
   @impl true
   def handle_event("dismiss_token", _params, socket) do
     {:noreply, assign(socket, :new_token, nil)}
@@ -471,56 +418,12 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp do_revoke_token(socket, id) do
-    api_token = ApiTokens.get_api_token!(id)
-    board = socket.assigns.board
-
-    if api_token.board_id == board.id do
-      case ApiTokens.revoke_api_token(api_token) do
-        {:ok, _api_token} ->
-          api_tokens = ApiTokens.list_api_tokens(board)
-
-          {:noreply,
-           socket
-           |> assign(:api_tokens, api_tokens)
-           |> put_flash(:info, gettext("API token revoked successfully"))}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to revoke token"))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
-    end
-  end
-
   def handle_event("delete_token", %{"id" => id}, socket) do
     if socket.assigns.can_modify do
       do_delete_token(socket, id)
     else
       {:noreply,
        put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
-    end
-  end
-
-  defp do_delete_token(socket, id) do
-    api_token = ApiTokens.get_api_token!(id)
-    board = socket.assigns.board
-
-    if api_token.board_id == board.id do
-      case ApiTokens.delete_api_token(api_token) do
-        {:ok, _api_token} ->
-          api_tokens = ApiTokens.list_api_tokens(board)
-
-          {:noreply,
-           socket
-           |> assign(:api_tokens, api_tokens)
-           |> put_flash(:info, gettext("API token deleted successfully"))}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete token"))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
     end
   end
 
@@ -690,6 +593,103 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp parse_task_id(_), do: :error
+
+  defp do_promote_goal(socket, goal) do
+    case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
+      {:ok, count} ->
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           dngettext(
+             "tasks",
+             "Moved 1 task to Ready",
+             "Moved %{count} tasks to Ready",
+             count,
+             count: count
+           )
+         )
+         |> stream(:columns, columns, reset: true)
+         |> load_tasks_for_columns(columns)}
+
+      {:error, :not_a_goal} ->
+        {:noreply, put_flash(socket, :error, gettext("Only goals can be promoted"))}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move goal to Ready"))}
+    end
+  end
+
+  defp do_create_token(socket, params) do
+    user = socket.assigns.current_scope.user
+    board = socket.assigns.board
+
+    token_params =
+      params["api_token"]
+      |> Map.merge(params["token"] || %{})
+      |> parse_agent_capabilities()
+
+    case ApiTokens.create_api_token(user, board, token_params) do
+      {:ok, {_api_token, plain_text_token}} ->
+        api_tokens = ApiTokens.list_api_tokens(board)
+        token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
+
+        {:noreply,
+         socket
+         |> assign(:api_tokens, api_tokens)
+         |> assign(:new_token, plain_text_token)
+         |> assign(:token_form, to_form(token_changeset))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
+    end
+  end
+
+  defp do_revoke_token(socket, id) do
+    api_token = ApiTokens.get_api_token!(id)
+    board = socket.assigns.board
+
+    if api_token.board_id == board.id do
+      case ApiTokens.revoke_api_token(api_token) do
+        {:ok, _api_token} ->
+          api_tokens = ApiTokens.list_api_tokens(board)
+
+          {:noreply,
+           socket
+           |> assign(:api_tokens, api_tokens)
+           |> put_flash(:info, gettext("API token revoked successfully"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to revoke token"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
+    end
+  end
+
+  defp do_delete_token(socket, id) do
+    api_token = ApiTokens.get_api_token!(id)
+    board = socket.assigns.board
+
+    if api_token.board_id == board.id do
+      case ApiTokens.delete_api_token(api_token) do
+        {:ok, _api_token} ->
+          api_tokens = ApiTokens.list_api_tokens(board)
+
+          {:noreply,
+           socket
+           |> assign(:api_tokens, api_tokens)
+           |> put_flash(:info, gettext("API token deleted successfully"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete token"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
+    end
+  end
 
   defp authorize_move_task(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
     if socket.assigns.can_modify do
