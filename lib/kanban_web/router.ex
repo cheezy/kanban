@@ -13,9 +13,17 @@ defmodule KanbanWeb.Router do
     plug :protect_from_forgery
 
     # Framework-default security headers (X-Frame-Options,
-    # X-Content-Type-Options, etc.). The CSP header is set separately by
-    # CspNonce below so each request gets a fresh nonce.
-    plug :put_secure_browser_headers
+    # X-Content-Type-Options, etc.) plus a placeholder Content-Security-Policy
+    # so static analyzers (Sobelow Config.CSP) see a policy declared here.
+    # The placeholder is intentionally restrictive — `default-src 'self'` and
+    # nothing else — so even if CspNonce somehow fails to fire later in the
+    # pipeline, the response still ships a defense-grade CSP rather than no
+    # policy at all. CspNonce overwrites this header with the per-request
+    # nonce'd policy via Plug.Conn.put_resp_header (single-value semantics:
+    # last write wins).
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'self'"
+    }
 
     plug KanbanWeb.Plugs.CspNonce
 

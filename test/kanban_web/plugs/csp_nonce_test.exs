@@ -67,5 +67,25 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
 
       assert nonce1 != nonce2
     end
+
+    test "overwrites a pre-existing content-security-policy header" do
+      # The :browser pipeline sets a static CSP placeholder via
+      # put_secure_browser_headers so Sobelow's Config.CSP static check sees a
+      # policy declared at the router. CspNonce must overwrite that header at
+      # runtime so the actual response carries the per-request nonce.
+      conn =
+        conn(:get, "/")
+        |> put_resp_header("content-security-policy", "default-src 'self'")
+        |> CspNonce.call([])
+
+      headers = get_resp_header(conn, "content-security-policy")
+
+      # Single value (overwrite, not append).
+      assert length(headers) == 1
+
+      [policy] = headers
+      assert policy =~ "'nonce-#{conn.assigns.csp_nonce}'"
+      refute policy == "default-src 'self'"
+    end
   end
 end
