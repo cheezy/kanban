@@ -66,24 +66,17 @@ defmodule Kanban.Columns do
 
   """
   def create_column(board, attrs \\ %{}) do
-    # Get the next position
-    next_position = get_next_position(board)
-
-    # Handle both string and atom keys
+    # Normalize every caller-supplied key to a string. Ecto.Changeset.cast/3
+    # rejects mixed atom/string-keyed maps but is happy with a fully
+    # string-keyed map — it matches each entry against the allowed-fields
+    # list internally and silently ignores unknown fields. Earlier versions
+    # of this function used String.to_existing_atom on every caller-supplied
+    # string key, which raised ArgumentError on any unexpected key and
+    # surfaced as a 500 instead of a controlled changeset error.
     attrs =
-      case attrs do
-        %{} = map when is_map_key(map, "name") or is_map_key(map, :name) ->
-          # Convert to atom keys if needed, then add position
-          attrs
-          |> Enum.into(%{}, fn
-            {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
-            {k, v} -> {k, v}
-          end)
-          |> Map.put(:position, next_position)
-
-        _ ->
-          Map.put(attrs, :position, next_position)
-      end
+      attrs
+      |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
+      |> Map.put("position", get_next_position(board))
 
     %Column{board_id: board.id}
     |> Column.changeset(attrs)

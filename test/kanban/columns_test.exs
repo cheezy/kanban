@@ -114,6 +114,21 @@ defmodule Kanban.ColumnsTest do
       assert {:error, %Ecto.Changeset{}} = Columns.create_column(board, %{})
     end
 
+    test "accepts string-keyed attrs without raising on unknown keys" do
+      # An unknown string key used to raise ArgumentError from
+      # String.to_existing_atom/1. cast/3 silently ignores unknown
+      # fields, so we should get a controlled {:ok, _} (when the
+      # known string-keyed fields are valid) without a crash.
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert {:ok, %Column{name: "From Strings"}} =
+               Columns.create_column(board, %{
+                 "name" => "From Strings",
+                 "totally_unknown_field" => 42
+               })
+    end
+
     test "rejects negative wip_limit" do
       user = user_fixture()
       board = board_fixture(user)
