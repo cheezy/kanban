@@ -352,6 +352,72 @@ defmodule KanbanWeb.ArchiveLiveTest do
       html = render(index_live)
       assert html =~ "Failed to delete task"
     end
+
+    test "read-only user is rejected when pushing delete event", %{
+      conn: conn,
+      user: user
+    } do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "Test Column"})
+      Kanban.Boards.add_user_to_board(board, user, :read_only)
+
+      task = task_fixture(column, %{title: "Read-only Delete Target"})
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      index_live |> render_click("delete", %{"id" => archived_task.id})
+
+      html = render(index_live)
+      assert html =~ "You do not have permission to delete tasks on this board"
+
+      # Task still exists (not deleted).
+      assert %{} = Tasks.get_task!(archived_task.id)
+    end
+
+    test "cross-board task id is rejected when pushing delete event", %{
+      conn: conn,
+      board: own_board,
+      user: user
+    } do
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board, %{name: "Other Column"})
+      other_task = task_fixture(other_column, %{title: "Cross-Board Delete"})
+      {:ok, archived_other_task} = Tasks.archive_task(other_task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{own_board}/archive")
+
+      index_live |> render_click("delete", %{"id" => archived_other_task.id})
+
+      html = render(index_live)
+      assert html =~ "Failed to delete task"
+
+      # Cross-board task was not deleted.
+      assert %{} = Tasks.get_task!(archived_other_task.id)
+
+      _ = user
+    end
+
+    test "non-archived task id is rejected when pushing delete event", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # A task that is NOT archived must not be deletable via the archive page.
+      task = task_fixture(column, %{title: "Active Task"})
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      index_live |> render_click("delete", %{"id" => task.id})
+
+      html = render(index_live)
+      assert html =~ "Failed to delete task"
+
+      # Active task was not deleted.
+      assert %{} = Tasks.get_task!(task.id)
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

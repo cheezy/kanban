@@ -72,11 +72,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    case Kanban.Repo.get(Kanban.Tasks.Task, id) do
-      nil ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
-
-      task ->
+    case authorize_modify_for_archived(socket, id) do
+      {:ok, task} ->
         case Tasks.delete_task(task) do
           {:ok, _task} ->
             {:noreply,
@@ -87,6 +84,17 @@ defmodule KanbanWeb.ArchiveLive.Index do
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
         end
+
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to delete tasks on this board")
+         )}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
     end
   end
 
