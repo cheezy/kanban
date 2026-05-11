@@ -41,7 +41,24 @@ defmodule KanbanWeb.ResourcesLive.Show do
 
   @doc """
   Renders markdown content to HTML.
-  Supports basic formatting: **bold**, `code`, links, and newlines.
+
+  Pipeline: escape any HTML in the source first (so `<script>` in the
+  markdown can never reach the page as an executable tag), then apply
+  markdown transformations (`**bold**`, backtick `code`, `[text](url)`
+  links, fenced code blocks, lists, paragraphs). The escape-first
+  ordering and the URL-protocol allow-list in `convert_links/1` are
+  load-bearing — see the contract tests in `show_test.exs` "render_markdown/1
+  XSS prevention" describe block which assert script-tag escape, event-handler
+  escape, `javascript:`/`data:`/`vbscript:` blocking.
+
+  A full swap to Earmark was attempted but reverted: Earmark passes
+  inline HTML through by default, and the `:escape` option that would
+  block it does not exist in Earmark's option set as of v1.4. A safe
+  full-swap would require either HtmlSanitizeEx (a new dep) or a
+  pre-escape pass — at which point the pipeline below is still
+  doing most of the work. Earmark IS installed in the project for
+  future use by other markdown-rendering call sites where a sanitizer
+  dep is acceptable.
   """
   def render_markdown(content) when is_binary(content) do
     content
