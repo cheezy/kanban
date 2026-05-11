@@ -370,6 +370,20 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert {:error, :invalid_column} = AgentWorkflow.mark_reviewed(task, ctx.user)
     end
 
+    test "returns :not_authorized when the caller is not a board member", ctx do
+      # ctx.other is a real user but has no membership on ctx.board.
+      task = set_review_status(ctx.in_review_task, :approved, ctx.user)
+
+      assert {:error, :not_authorized} = AgentWorkflow.mark_reviewed(task, ctx.other)
+    end
+
+    test "returns :not_authorized when the caller is a read-only board member", ctx do
+      task = set_review_status(ctx.in_review_task, :approved, ctx.user)
+      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only)
+
+      assert {:error, :not_authorized} = AgentWorkflow.mark_reviewed(task, ctx.other)
+    end
+
     test "approved review broadcasts task_completed", ctx do
       task = set_review_status(ctx.in_review_task, :approved, ctx.user)
 
@@ -417,6 +431,16 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       task = create_open_task(ctx.ready, ctx.user)
 
       assert {:error, :invalid_column} = AgentWorkflow.mark_done(task, ctx.user)
+    end
+
+    test "returns :not_authorized when the caller is not a board member", ctx do
+      assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
+    end
+
+    test "returns :not_authorized when the caller is a read-only board member", ctx do
+      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only)
+
+      assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
     end
   end
 end

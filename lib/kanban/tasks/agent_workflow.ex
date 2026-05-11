@@ -8,6 +8,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Boards
   alias Kanban.Columns.Column
   alias Kanban.Hooks
   alias Kanban.Repo
@@ -201,6 +202,9 @@ defmodule Kanban.Tasks.AgentWorkflow do
     board_id = task.column.board_id
 
     cond do
+      not authorized_reviewer?(board_id, user) ->
+        {:error, :not_authorized}
+
       task.column.name != "Review" ->
         {:error, :invalid_column}
 
@@ -232,39 +236,55 @@ defmodule Kanban.Tasks.AgentWorkflow do
     task = Repo.preload(task, [:column, :assigned_to, :created_by])
     board_id = task.column.board_id
 
-    if task.column.name != "Review" do
-      {:error, :invalid_column}
-    else
-      done_column = get_column_by_name(board_id, "Done")
+    cond do
+      not authorized_reviewer?(board_id, user) ->
+        {:error, :not_authorized}
 
-      result =
-        Repo.transaction(fn ->
-          next_position = Positioning.get_next_position_locked(done_column)
-          now = DateTime.utc_now() |> DateTime.truncate(:second)
+      task.column.name != "Review" ->
+        {:error, :invalid_column}
 
-          changeset =
-            task
-            |> Ecto.Changeset.change(%{
-              status: :completed,
-              completed_at: task.completed_at || now,
-              column_id: done_column.id,
-              position: next_position
-            })
-
-          case Repo.update(changeset) do
-            {:ok, _updated_task} -> :ok
-            {:error, changeset} -> Repo.rollback(changeset)
-          end
-        end)
-
-      case result do
-        {:ok, :ok} ->
-          {:ok, finalize_completion(task, user, board_id, done_column)}
-
-        {:error, changeset} ->
-          {:error, changeset}
-      end
+      true ->
+        do_mark_done(task, user, board_id)
     end
+  end
+
+  defp do_mark_done(task, user, board_id) do
+    done_column = get_column_by_name(board_id, "Done")
+
+    result =
+      Repo.transaction(fn ->
+        next_position = Positioning.get_next_position_locked(done_column)
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        changeset =
+          task
+          |> Ecto.Changeset.change(%{
+            status: :completed,
+            completed_at: task.completed_at || now,
+            column_id: done_column.id,
+            position: next_position
+          })
+
+        case Repo.update(changeset) do
+          {:ok, _updated_task} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:ok, :ok} ->
+        {:ok, finalize_completion(task, user, board_id, done_column)}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  defp authorized_reviewer?(board_id, %{id: user_id}) do
+    # The reviewer must be a member of the board with at least :modify
+    # access. Owners get the same privilege via :owner. Read-only
+    # members must not be able to advance a task out of Review.
+    Boards.get_user_access(board_id, user_id) in [:owner, :modify]
   end
 
   # Private functions
