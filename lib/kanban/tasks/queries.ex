@@ -101,6 +101,21 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
+  Returns a task scoped to a board, or `nil` if it does not exist or
+  belongs to a different board.
+
+  Unlike `get_archived_task_for_board/2` this does not filter on
+  `archived_at`, so callers can use it to authorize any task lookup that
+  must be bounded by the current board.
+  """
+  def get_task_for_board(id, board_id) do
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], t.id == ^id and c.board_id == ^board_id)
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a single task. Raises `Ecto.NoResultsError` if not found.
   """
   def get_task!(id) do

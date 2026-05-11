@@ -36,6 +36,7 @@ defmodule Kanban.Tasks do
   defdelegate list_archived_tasks(column), to: Queries
   defdelegate list_archived_tasks_for_board(board_id), to: Queries
   defdelegate get_archived_task_for_board(id, board_id), to: Queries
+  defdelegate get_task_for_board(id, board_id), to: Queries
   defdelegate get_task!(id), to: Queries
   defdelegate get_task_with_history!(id), to: Queries
   defdelegate get_task_for_view!(id), to: Queries

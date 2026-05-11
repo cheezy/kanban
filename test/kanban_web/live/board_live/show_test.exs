@@ -1603,6 +1603,53 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Task deleted successfully"
       refute html =~ task.title
     end
+
+    test "read-only user is rejected when pushing archive_task event", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Read-only Archive Target"})
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to archive tasks on this board"
+
+      # Task was not archived.
+      assert %{archived_at: nil} = Kanban.Tasks.get_task!(task.id)
+    end
+
+    test "cross-board task id is rejected when pushing archive_task event", %{conn: conn} do
+      # Owner of the board the user will visit.
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      _own_column = column_fixture(own_board)
+
+      # A completely separate board with its own task — the malicious target.
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board Target"})
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("archive_task", %{"id" => to_string(other_task.id)})
+
+      html = render(show_live)
+      assert html =~ "Failed to archive task"
+
+      # Cross-board task was not archived.
+      assert %{archived_at: nil} = Kanban.Tasks.get_task!(other_task.id)
+    end
   end
 
   # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.

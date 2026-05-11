@@ -201,27 +201,35 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_event("archive_task", %{"id" => id}, socket) do
     require Logger
-    task = Tasks.get_task!(id)
 
-    case Tasks.archive_task(task) do
-      {:ok, _archived_task} ->
-        columns = Columns.list_columns(socket.assigns.board)
+    case authorize_modify_for_task(socket, id) do
+      {:ok, task} ->
+        case Tasks.archive_task(task) do
+          {:ok, _archived_task} ->
+            columns = Columns.list_columns(socket.assigns.board)
 
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Task archived successfully"))
+             |> stream(:columns, columns, reset: true)
+             |> load_tasks_for_columns(columns)}
+
+          {:error, changeset} ->
+            Logger.error("Failed to archive task #{id}: #{inspect(changeset.errors)}")
+            {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
+        end
+
+      {:error, :not_authorized} ->
         {:noreply,
-         socket
-         |> put_flash(:info, gettext("Task archived successfully"))
-         |> stream(:columns, columns, reset: true)
-         |> load_tasks_for_columns(columns)}
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to archive tasks on this board")
+         )}
 
-      {:error, changeset} ->
-        Logger.error("Failed to archive task #{id}: #{inspect(changeset.errors)}")
+      {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
     end
-  rescue
-    e ->
-      require Logger
-      Logger.error("Archive task crashed for task #{id}: #{Exception.message(e)}")
-      {:noreply, put_flash(socket, :error, gettext("Failed to archive task"))}
   end
 
   @impl true
@@ -592,6 +600,34 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp check_new_column_authorization(_live_action, _user_access, _board), do: :ok
+
+  defp authorize_modify_for_task(socket, raw_id) do
+    if socket.assigns.can_modify do
+      lookup_task_for_board(socket, raw_id)
+    else
+      {:error, :not_authorized}
+    end
+  end
+
+  defp lookup_task_for_board(socket, raw_id) do
+    with {:ok, id} <- parse_task_id(raw_id),
+         %{} = task <- Tasks.get_task_for_board(id, socket.assigns.board.id) do
+      {:ok, task}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp parse_task_id(id) when is_integer(id), do: {:ok, id}
+
+  defp parse_task_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> {:ok, n}
+      _ -> :error
+    end
+  end
+
+  defp parse_task_id(_), do: :error
 
   defp assign_common_board_state(socket, board, user_access, columns) do
     socket
