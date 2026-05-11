@@ -185,10 +185,17 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_event("view_task", %{"id" => id}, socket) do
     require Logger
-    task_id = String.to_integer(id)
-    Logger.debug("view_task event: task_id=#{task_id}, scheduling modal show")
-    Process.send_after(self(), {:show_task_modal, task_id}, 100)
-    {:noreply, assign(socket, viewing_task_id: task_id, show_task_modal: false)}
+
+    with {:ok, task_id} <- parse_task_id(id),
+         %{} <- Tasks.get_task_for_board(task_id, socket.assigns.board.id) do
+      Logger.debug("view_task event: task_id=#{task_id}, scheduling modal show")
+      Process.send_after(self(), {:show_task_modal, task_id}, 100)
+      {:noreply, assign(socket, viewing_task_id: task_id, show_task_modal: false)}
+    else
+      _ ->
+        Logger.debug("view_task event: rejected client-supplied id=#{inspect(id)}")
+        {:noreply, put_flash(socket, :error, gettext("Task not found"))}
+    end
   end
 
   @impl true

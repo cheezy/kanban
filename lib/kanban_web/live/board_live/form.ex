@@ -103,6 +103,53 @@ defmodule KanbanWeb.BoardLive.Form do
     end
   end
 
+  def handle_event("toggle_field", %{"field" => field_name} = _params, socket) do
+    board = socket.assigns.board
+    current_visibility = socket.assigns.field_visibility
+
+    # Ensure all required keys are present with defaults
+    default_visibility = %{
+      "acceptance_criteria" => false,
+      "complexity" => false,
+      "context" => false,
+      "key_files" => false,
+      "verification_steps" => false,
+      "technical_notes" => false,
+      "observability" => false,
+      "error_handling" => false,
+      "technology_requirements" => false,
+      "pitfalls" => false,
+      "out_of_scope" => false,
+      "required_capabilities" => false,
+      "security_considerations" => false,
+      "testing_strategy" => false,
+      "integration_points" => false
+    }
+
+    # Merge current with defaults to ensure all keys present
+    complete_visibility = Map.merge(default_visibility, current_visibility)
+
+    # Toggle the requested field
+    new_visibility =
+      Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
+
+    case Boards.update_field_visibility(
+           board,
+           new_visibility,
+           socket.assigns.current_scope.user
+         ) do
+      {:ok, updated_board} ->
+        {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
+    end
+  end
+
   defp do_add_user(socket, access) do
     user = socket.assigns.searched_user
     board = socket.assigns.board
@@ -163,53 +210,6 @@ defmodule KanbanWeb.BoardLive.Form do
 
   defp membership_denied_flash do
     gettext("Only the board owner can manage board membership")
-  end
-
-  def handle_event("toggle_field", %{"field" => field_name} = _params, socket) do
-    board = socket.assigns.board
-    current_visibility = socket.assigns.field_visibility
-
-    # Ensure all required keys are present with defaults
-    default_visibility = %{
-      "acceptance_criteria" => false,
-      "complexity" => false,
-      "context" => false,
-      "key_files" => false,
-      "verification_steps" => false,
-      "technical_notes" => false,
-      "observability" => false,
-      "error_handling" => false,
-      "technology_requirements" => false,
-      "pitfalls" => false,
-      "out_of_scope" => false,
-      "required_capabilities" => false,
-      "security_considerations" => false,
-      "testing_strategy" => false,
-      "integration_points" => false
-    }
-
-    # Merge current with defaults to ensure all keys present
-    complete_visibility = Map.merge(default_visibility, current_visibility)
-
-    # Toggle the requested field
-    new_visibility =
-      Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
-
-    case Boards.update_field_visibility(
-           board,
-           new_visibility,
-           socket.assigns.current_scope.user
-         ) do
-      {:ok, updated_board} ->
-        {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
-
-      {:error, :unauthorized} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
-    end
   end
 
   defp save_board(socket, :edit, board_params) do

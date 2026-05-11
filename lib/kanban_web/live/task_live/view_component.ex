@@ -5,16 +5,36 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
-    task = Tasks.get_task_for_view(task_id)
+    expected_board_id = Map.get(assigns, :board_id)
+    task = load_task_for_board(task_id, expected_board_id)
 
     {:ok,
      socket
      |> assign(assigns)
      |> assign(:task, task)
-     |> assign(:board_id, Map.get(assigns, :board_id))
+     |> assign(:board_id, expected_board_id)
      |> assign(:ai_optimized_board, Map.get(assigns, :ai_optimized_board, false))
      |> assign(:can_modify, Map.get(assigns, :can_modify, false))
      |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+  end
+
+  # Defense-in-depth: even if a caller forgets to scope the task lookup at the
+  # parent LiveView, the component must not render a task that doesn't belong
+  # to the supplied board_id. When no board_id is given (legacy callers), fall
+  # back to the unscoped lookup — but callers SHOULD always pass one.
+  defp load_task_for_board(task_id, nil), do: Tasks.get_task_for_view(task_id)
+
+  defp load_task_for_board(task_id, board_id) do
+    case Tasks.get_task_for_view(task_id) do
+      nil ->
+        nil
+
+      %{column: %{board_id: ^board_id}} = task ->
+        task
+
+      _other_board ->
+        nil
+    end
   end
 
   defp field_visible?(field_visibility, field_name) do

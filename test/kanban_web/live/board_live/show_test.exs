@@ -1939,6 +1939,63 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Token still exists.
       assert %{} = Kanban.ApiTokens.get_api_token!(token.id)
     end
+
+    test "cross-board task id is rejected when pushing view_task event", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      _own_column = column_fixture(own_board)
+
+      # A task on a completely separate board.
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board View Target"})
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("view_task", %{"id" => to_string(other_task.id)})
+
+      html = render(show_live)
+      assert html =~ "Task not found"
+      # Modal must NOT open with the cross-board task id assigned.
+      refute html =~ other_task.title
+    end
+
+    test "non-numeric view_task id is rejected without crashing", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("view_task", %{"id" => "not-a-number"})
+
+      html = render(show_live)
+      assert html =~ "Task not found"
+      refute html =~ "Internal Server Error"
+    end
+
+    test "read-only viewer can still open view_task on their own board", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Read-only Viewable Task"})
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("view_task", %{"id" => to_string(task.id)})
+
+      html = render(show_live)
+      # No rejection flash; the in-board view path is preserved for read-only members.
+      refute html =~ "Task not found"
+    end
   end
 
   # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.
