@@ -1559,6 +1559,65 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       assert render(show_live) =~ "Only goals can be promoted"
     end
+
+    test "read-only user is rejected when pushing promote_goal_to_ready event", %{conn: conn} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      backlog = Kanban.Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, %{goal: goal, child_tasks: _child_tasks}} =
+        Kanban.Tasks.create_goal_with_tasks(
+          backlog,
+          %{title: "Read-only Promote Target"},
+          [%{title: "Child"}]
+        )
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("promote_goal_to_ready", %{"id" => to_string(goal.id)})
+
+      assert render(show_live) =~ "You do not have permission to promote goals on this board"
+
+      # Goal column unchanged (still Backlog).
+      assert %{column_id: column_id} = Kanban.Tasks.get_task!(goal.id)
+      assert column_id == backlog.id
+    end
+
+    test "cross-board goal id is rejected when pushing promote_goal_to_ready event", %{
+      conn: conn,
+      user: user
+    } do
+      own_board = ai_optimized_board_fixture(user)
+
+      other_owner = user_fixture()
+      other_board = ai_optimized_board_fixture(other_owner)
+
+      other_backlog =
+        Kanban.Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, %{goal: other_goal}} =
+        Kanban.Tasks.create_goal_with_tasks(
+          other_backlog,
+          %{title: "Cross-Board Goal"},
+          [%{title: "Child"}]
+        )
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("promote_goal_to_ready", %{"id" => to_string(other_goal.id)})
+
+      assert render(show_live) =~ "Failed to move goal to Ready"
+
+      # Cross-board goal stayed in its original Backlog column.
+      assert %{column_id: column_id} = Kanban.Tasks.get_task!(other_goal.id)
+      assert column_id == other_backlog.id
+    end
   end
 
   describe "archive_task and delete_task authorization" do

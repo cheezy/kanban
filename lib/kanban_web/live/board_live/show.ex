@@ -276,8 +276,24 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("promote_goal_to_ready", %{"id" => id}, socket) do
-    goal = Tasks.get_task!(id)
+    case authorize_modify_for_task(socket, id) do
+      {:ok, goal} ->
+        do_promote_goal(socket, goal)
 
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to promote goals on this board")
+         )}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move goal to Ready"))}
+    end
+  end
+
+  defp do_promote_goal(socket, goal) do
     case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
       {:ok, count} ->
         columns = Columns.list_columns(socket.assigns.board)
