@@ -282,6 +282,60 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Failed to unarchive task"
     end
 
+    test "read-only user is rejected when pushing unarchive event", %{
+      conn: conn,
+      user: user
+    } do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "Test Column"})
+      Kanban.Boards.add_user_to_board(board, user, :read_only)
+
+      task = task_fixture(column, %{title: "Read-only Task"})
+      {:ok, archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # A malicious client can push the event even though the UI button is hidden.
+      index_live |> render_click("unarchive", %{"id" => archived_task.id})
+
+      html = render(index_live)
+      assert html =~ "You do not have permission to unarchive tasks on this board"
+
+      # Task stayed archived.
+      assert %{archived_at: archived_at} = Tasks.get_task!(archived_task.id)
+      refute is_nil(archived_at)
+    end
+
+    test "cross-board task id is rejected when pushing unarchive event", %{
+      conn: conn,
+      board: own_board,
+      user: user
+    } do
+      # Build a second board that the current user cannot modify, archive a task on it.
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board, %{name: "Other Column"})
+      other_task = task_fixture(other_column, %{title: "Cross-Board Task"})
+      {:ok, archived_other_task} = Tasks.archive_task(other_task)
+
+      # Current user owns own_board and visits its archive page.
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{own_board}/archive")
+
+      # Push the cross-board archived task id through the unarchive event.
+      index_live |> render_click("unarchive", %{"id" => archived_other_task.id})
+
+      html = render(index_live)
+      assert html =~ "Failed to unarchive task"
+
+      # Cross-board task stayed archived.
+      assert %{archived_at: archived_at} = Tasks.get_task!(archived_other_task.id)
+      refute is_nil(archived_at)
+
+      # Guard against unused variable warning.
+      _ = user
+    end
+
     test "shows error message when delete fails", %{
       conn: conn,
       board: board,

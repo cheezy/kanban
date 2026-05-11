@@ -41,11 +41,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   @impl true
   def handle_event("unarchive", %{"id" => id}, socket) do
-    case Kanban.Repo.get(Kanban.Tasks.Task, id) do
-      nil ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to unarchive task"))}
-
-      task ->
+    case authorize_modify_for_archived(socket, id) do
+      {:ok, task} ->
         case Tasks.unarchive_task(task) do
           {:ok, _task} ->
             archived_tasks = load_archived_tasks(socket.assigns.board.id)
@@ -59,6 +56,17 @@ defmodule KanbanWeb.ArchiveLive.Index do
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to unarchive task"))}
         end
+
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to unarchive tasks on this board")
+         )}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to unarchive task"))}
     end
   end
 
@@ -112,6 +120,34 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> Tasks.list_archived_tasks_for_board()
     |> Tasks.sort_by_goal_hierarchy()
   end
+
+  defp authorize_modify_for_archived(socket, raw_id) do
+    if socket.assigns.can_modify do
+      lookup_archived_task(socket, raw_id)
+    else
+      {:error, :not_authorized}
+    end
+  end
+
+  defp lookup_archived_task(socket, raw_id) do
+    with {:ok, id} <- parse_id(raw_id),
+         %{} = task <- Tasks.get_archived_task_for_board(id, socket.assigns.board.id) do
+      {:ok, task}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp parse_id(id) when is_integer(id), do: {:ok, id}
+
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> {:ok, n}
+      _ -> :error
+    end
+  end
+
+  defp parse_id(_), do: :error
 
   defp subscribe_to_board_updates(socket, board_id) do
     if connected?(socket) do
