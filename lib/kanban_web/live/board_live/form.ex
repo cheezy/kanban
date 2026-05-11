@@ -88,6 +88,22 @@ defmodule KanbanWeb.BoardLive.Form do
   end
 
   def handle_event("add_user", %{"access" => access}, socket) do
+    if owner_authorized?(socket) do
+      do_add_user(socket, access)
+    else
+      {:noreply, put_flash(socket, :error, membership_denied_flash())}
+    end
+  end
+
+  def handle_event("remove_user", %{"user_id" => user_id}, socket) do
+    if owner_authorized?(socket) do
+      do_remove_user(socket, user_id)
+    else
+      {:noreply, put_flash(socket, :error, membership_denied_flash())}
+    end
+  end
+
+  defp do_add_user(socket, access) do
     user = socket.assigns.searched_user
     board = socket.assigns.board
     access_atom = String.to_existing_atom(access)
@@ -110,7 +126,7 @@ defmodule KanbanWeb.BoardLive.Form do
     end
   end
 
-  def handle_event("remove_user", %{"user_id" => user_id}, socket) do
+  defp do_remove_user(socket, user_id) do
     board = socket.assigns.board
     user_id = String.to_integer(user_id)
 
@@ -136,6 +152,17 @@ defmodule KanbanWeb.BoardLive.Form do
              |> put_flash(:error, gettext("Failed to remove user from board"))}
         end
     end
+  end
+
+  defp owner_authorized?(socket) do
+    board = socket.assigns.board
+    current_user = socket.assigns.current_scope.user
+
+    not is_nil(board.id) and Boards.owner?(board, current_user)
+  end
+
+  defp membership_denied_flash do
+    gettext("Only the board owner can manage board membership")
   end
 
   def handle_event("toggle_field", %{"field" => field_name} = _params, socket) do

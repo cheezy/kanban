@@ -356,6 +356,44 @@ defmodule KanbanWeb.BoardLive.FormTest do
 
       refute render(lv) =~ "Could not find a user with that email address"
     end
+
+    test "add_user is rejected on the :new path (board not yet saved)", %{conn: conn} do
+      # On /boards/new the socket's board is an unsaved %Board{} (id: nil).
+      # The membership UI isn't rendered, but a crafted client can still push
+      # add_user directly over the LiveView socket. The owner_authorized?
+      # guard rejects it because board.id is nil.
+      {:ok, lv, _html} = live(conn, ~p"/boards/new")
+
+      render_hook(lv, "add_user", %{"access" => "read_only"})
+
+      html = render(lv)
+      assert html =~ "Only the board owner can manage board membership"
+    end
+
+    test "remove_user is rejected on the :new path (board not yet saved)", %{conn: conn} do
+      target = user_fixture()
+
+      {:ok, lv, _html} = live(conn, ~p"/boards/new")
+
+      render_hook(lv, "remove_user", %{"user_id" => to_string(target.id)})
+
+      html = render(lv)
+      assert html =~ "Only the board owner can manage board membership"
+    end
+
+    test "add_user does not crash the LiveView when board.id is nil", %{conn: conn} do
+      # Belt-and-braces: even when add_user is fired with arbitrary access
+      # values on the :new path, the LiveView responds with the denial flash
+      # — it does not crash, does not raise, does not try to call
+      # Boards.add_user_to_board on an unsaved board.
+      {:ok, lv, _html} = live(conn, ~p"/boards/new")
+
+      render_hook(lv, "add_user", %{"access" => "modify"})
+
+      html = render(lv)
+      assert html =~ "Only the board owner can manage board membership"
+      refute html =~ "Internal Server Error"
+    end
   end
 
   describe "BoardLive.Form (edit — field visibility)" do
