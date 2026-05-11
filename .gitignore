@@ -57,3 +57,8 @@ stride-opencode/
 stride-codex/
 stride-pi/
 security-review/
+
+# Per-developer Claude Code permission allow-list. Untracked so each
+# contributor maintains their own narrow allow-list without coupling the
+# repo's security posture to one developer's workflow.
+.claude/settings.local.json
