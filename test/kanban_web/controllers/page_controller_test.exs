@@ -16,6 +16,22 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "GET /tango: gettext'd marketing copy is never raw'd onto the page", %{conn: conn} do
+    # Asserts the template no longer ships `raw/1` on translator-controlled
+    # strings. If a future change re-introduces raw/1 here, this test fails
+    # before a malicious translator can land an inline <script>.
+    template = File.read!("lib/kanban_web/controllers/page_html/tango.html.heex")
+    refute template =~ "|> raw()"
+    refute template =~ "raw("
+
+    # Sanity: the page still renders and contains key copy fragments.
+    conn = get(conn, ~p"/tango")
+    body = html_response(conn, 200)
+    assert body =~ "About Tango"
+    assert body =~ "Our Mission"
+    assert body =~ "Work With Us"
+  end
+
   test "GET /changelog", %{conn: conn} do
     conn = get(conn, ~p"/changelog")
     assert html_response(conn, 200)
