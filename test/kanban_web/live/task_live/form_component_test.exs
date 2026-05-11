@@ -1734,6 +1734,121 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       # Verify: Form has error
       assert updated_socket.assigns.form.source.errors[:column_id] != nil
     end
+
+    test "prevents setting parent_id to a task on a different board" do
+      user1 = user_fixture()
+      user2 = user_fixture()
+      board1 = board_fixture(user1)
+      board2 = board_fixture(user2)
+      column1 = column_fixture(board1)
+      column2 = column_fixture(board2)
+
+      # A task on board1 the attacker is editing.
+      task = task_fixture(column1, %{title: "Editable Task"})
+      # A goal on the OTHER board the attacker tries to parent it under.
+      other_goal = task_fixture(column2, %{title: "Cross-Board Goal"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user1},
+            task: task,
+            board: board1,
+            action: :edit_task,
+            patch: "/boards/#{board1.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Editable Task",
+        "parent_id" => to_string(other_goal.id)
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      # Task was not re-parented across boards.
+      reloaded = Kanban.Repo.get!(Tasks.Task, task.id)
+      refute reloaded.parent_id == other_goal.id
+
+      assert updated_socket.assigns.error_message == "Security error: Invalid parent goal"
+      assert updated_socket.assigns.form.source.errors[:parent_id] != nil
+    end
+
+    test "prevents setting assigned_to_id to a user without board access" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Editable Task"})
+
+      # A user with NO membership on the board.
+      stranger = user_fixture()
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: owner},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Editable Task",
+        "assigned_to_id" => to_string(stranger.id)
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      reloaded = Kanban.Repo.get!(Tasks.Task, task.id)
+      refute reloaded.assigned_to_id == stranger.id
+
+      assert updated_socket.assigns.error_message == "Security error: Invalid assignee"
+      assert updated_socket.assigns.form.source.errors[:assigned_to_id] != nil
+    end
+
+    test "allows setting assigned_to_id to a legitimate board member" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Editable Task"})
+
+      modify_member = user_fixture()
+      Kanban.Boards.add_user_to_board(board, modify_member, :modify)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: owner},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Editable Task",
+        "assigned_to_id" => to_string(modify_member.id)
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      refute updated_socket.assigns[:error_message] == "Security error: Invalid assignee"
+    end
   end
 
   describe "assignable users" do

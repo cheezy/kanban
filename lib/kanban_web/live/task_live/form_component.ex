@@ -302,26 +302,25 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp save_task(socket, :edit_task, task_params) do
-    # Security: If column_id is being changed, verify it belongs to the current board
-    if Map.has_key?(task_params, "column_id") do
-      column_id = task_params["column_id"]
-      column = Columns.get_column!(column_id)
-
-      if column.board_id == socket.assigns.board.id do
+    # Security: every relational field that the user can change via the
+    # form must be verified to live on the current board. The existing
+    # column_id check is preserved; parent_id and assigned_to_id are now
+    # validated the same way. Each check is independent — a single bad
+    # field rejects the whole save with a targeted changeset error.
+    case validate_relational_scopes(socket, task_params) do
+      :ok ->
         perform_task_update(socket, task_params)
-      else
+
+      {:error, field, message} ->
         changeset =
           socket.assigns.task
           |> Tasks.Task.changeset(task_params)
-          |> Ecto.Changeset.add_error(:column_id, gettext("Column does not belong to this board"))
+          |> Ecto.Changeset.add_error(field, message)
 
         {:noreply,
          socket
-         |> assign(:error_message, gettext("Security error: Invalid column"))
+         |> assign(:error_message, scope_error_label(field))
          |> assign_form(changeset)}
-      end
-    else
-      perform_task_update(socket, task_params)
     end
   end
 
@@ -345,6 +344,89 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       create_task_in_column(socket, column, task_params)
     end
   end
+
+  defp validate_relational_scopes(socket, task_params) do
+    board = socket.assigns.board
+
+    with :ok <- validate_column_scope(task_params, board),
+         :ok <- validate_parent_scope(task_params, board) do
+      validate_assigned_to_scope(task_params, board)
+    end
+  end
+
+  defp validate_column_scope(task_params, board) do
+    case Map.get(task_params, "column_id") do
+      nil ->
+        :ok
+
+      "" ->
+        :ok
+
+      column_id ->
+        column = Columns.get_column!(column_id)
+
+        if column.board_id == board.id do
+          :ok
+        else
+          {:error, :column_id, gettext("Column does not belong to this board")}
+        end
+    end
+  end
+
+  defp validate_parent_scope(task_params, board) do
+    case Map.get(task_params, "parent_id") do
+      nil ->
+        :ok
+
+      "" ->
+        :ok
+
+      parent_id_input ->
+        with {:ok, parent_id} <- coerce_id(parent_id_input),
+             %{} <- Tasks.get_task_for_board(parent_id, board.id) do
+          :ok
+        else
+          _ -> {:error, :parent_id, gettext("Parent goal does not belong to this board")}
+        end
+    end
+  end
+
+  defp validate_assigned_to_scope(task_params, board) do
+    case Map.get(task_params, "assigned_to_id") do
+      nil ->
+        :ok
+
+      "" ->
+        :ok
+
+      assigned_input ->
+        with {:ok, user_id} <- coerce_id(assigned_input),
+             true <- board_member?(board, user_id) do
+          :ok
+        else
+          _ -> {:error, :assigned_to_id, gettext("Assignee does not have access to this board")}
+        end
+    end
+  end
+
+  defp coerce_id(id) when is_integer(id), do: {:ok, id}
+
+  defp coerce_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> {:ok, n}
+      _ -> :error
+    end
+  end
+
+  defp coerce_id(_), do: :error
+
+  defp board_member?(board, user_id) do
+    not is_nil(Kanban.Boards.get_user_access(board.id, user_id))
+  end
+
+  defp scope_error_label(:column_id), do: gettext("Security error: Invalid column")
+  defp scope_error_label(:parent_id), do: gettext("Security error: Invalid parent goal")
+  defp scope_error_label(:assigned_to_id), do: gettext("Security error: Invalid assignee")
 
   defp perform_task_update(socket, task_params) do
     # Auto-populate review fields when review_status changes
