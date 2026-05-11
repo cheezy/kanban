@@ -82,7 +82,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
               <select
                 name="issue[label]"
                 id="issue_label"
-                class="w-full px-3 py-2 h-10 border border-base-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class={"w-full px-3 py-2 h-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 #{if @form[:label].errors != [], do: "border-red-500", else: "border-base-300"}"}
               >
                 <%= for {display, value} <- label_options() do %>
                   <option value={value} selected={@form[:label].value == value}>
@@ -90,6 +90,9 @@ defmodule KanbanWeb.IssueLive.FormComponent do
                   </option>
                 <% end %>
               </select>
+              <%= for error <- @form[:label].errors do %>
+                <p class="mt-1 text-sm text-red-600">{translate_error(error)}</p>
+              <% end %>
             </div>
 
             <div>
@@ -240,7 +243,18 @@ defmodule KanbanWeb.IssueLive.FormComponent do
         errors
       end
 
+    errors =
+      if params["label"] in allowed_label_values() do
+        errors
+      else
+        [{:label, {gettext("must be one of the listed options"), []}} | errors]
+      end
+
     errors
+  end
+
+  defp allowed_label_values do
+    Enum.map(label_options(), fn {_display, value} -> value end)
   end
 
   defp blank?(nil), do: true

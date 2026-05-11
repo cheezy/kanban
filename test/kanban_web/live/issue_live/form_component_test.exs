@@ -81,6 +81,23 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
       assert result =~ "can&#39;t be blank" or result =~ "can't be blank"
     end
 
+    test "rejects a label that is not in the allow-list", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/issue")
+
+      result =
+        view
+        |> element("#issue-form")
+        |> render_submit(%{
+          issue: %{title: "Test Issue", body: "Test body", label: "definitely-not-allowed"}
+        })
+
+      assert result =~ "must be one of the listed options"
+      # Crucially, the GitHub.create_issue path was NOT reached, so the
+      # 'GitHub integration is not configured' error from the test env's
+      # missing config does not appear.
+      refute result =~ "GitHub integration is not configured"
+    end
+
     test "shows error when GitHub is not configured", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/issue")
 
