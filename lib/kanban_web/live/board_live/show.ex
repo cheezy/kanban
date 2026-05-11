@@ -423,6 +423,15 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("create_token", params, socket) do
+    if socket.assigns.can_modify do
+      do_create_token(socket, params)
+    else
+      {:noreply,
+       put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
+    end
+  end
+
+  defp do_create_token(socket, params) do
     user = socket.assigns.current_scope.user
     board = socket.assigns.board
 
@@ -454,6 +463,15 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("revoke_token", %{"id" => id}, socket) do
+    if socket.assigns.can_modify do
+      do_revoke_token(socket, id)
+    else
+      {:noreply,
+       put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
+    end
+  end
+
+  defp do_revoke_token(socket, id) do
     api_token = ApiTokens.get_api_token!(id)
     board = socket.assigns.board
 
@@ -476,6 +494,15 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_event("delete_token", %{"id" => id}, socket) do
+    if socket.assigns.can_modify do
+      do_delete_token(socket, id)
+    else
+      {:noreply,
+       put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
+    end
+  end
+
+  defp do_delete_token(socket, id) do
     api_token = ApiTokens.get_api_token!(id)
     board = socket.assigns.board
 

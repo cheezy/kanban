@@ -1865,6 +1865,80 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert %{column_id: column_id} = Kanban.Tasks.get_task!(own_task.id)
       assert column_id == own_column.id
     end
+
+    test "read-only user is rejected when pushing create_token event", %{conn: conn} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      # Route into :show (not :api_tokens which is route-gated already).
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("create_token", %{"api_token" => %{"name" => "Sneaky Token"}})
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to manage API tokens"
+
+      # No token was created on this board.
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "read-only user is rejected when pushing revoke_token event", %{conn: conn} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      {:ok, {token, _plaintext}} =
+        Kanban.ApiTokens.create_api_token(owner, board, %{
+          name: "Owner Token",
+          agent_capabilities: ["code_generation"]
+        })
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("revoke_token", %{"id" => to_string(token.id)})
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to manage API tokens"
+
+      # Token is still active.
+      refreshed = Kanban.ApiTokens.get_api_token!(token.id)
+      assert is_nil(refreshed.revoked_at)
+    end
+
+    test "read-only user is rejected when pushing delete_token event", %{conn: conn} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      {:ok, {token, _plaintext}} =
+        Kanban.ApiTokens.create_api_token(owner, board, %{
+          name: "Owner Token",
+          agent_capabilities: ["code_generation"]
+        })
+
+      reader = user_fixture()
+      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+
+      conn = log_in_user(conn, reader)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_hook("delete_token", %{"id" => to_string(token.id)})
+
+      html = render(show_live)
+      assert html =~ "You do not have permission to manage API tokens"
+
+      # Token still exists.
+      assert %{} = Kanban.ApiTokens.get_api_token!(token.id)
+    end
   end
 
   # Captures every `SELECT ... FROM "tasks"` query issued while `fun` runs.
