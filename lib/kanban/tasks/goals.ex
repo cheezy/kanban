@@ -17,25 +17,50 @@ defmodule Kanban.Tasks.Goals do
   require Logger
 
   @doc """
-  Gets a task with hierarchical tree structure.
+  Gets a task with hierarchical tree structure, scoped to a board.
 
-  Returns a map with the task, children, and counts.
+  Returns a map with the task, children, and counts. Returns `nil` if the
+  task does not exist on the supplied board — closes the cross-board IDOR
+  that the previous 1-arity variant left open (W397).
   """
-  def get_task_tree(task_id) when is_integer(task_id) do
-    task = Queries.get_task_for_view!(task_id)
+  def get_task_tree(task_id, board_id) when is_integer(task_id) and is_integer(board_id) do
+    case Queries.get_task_for_board(task_id, board_id) do
+      nil ->
+        nil
 
-    children =
-      if task.type == :goal do
-        from(t in Task,
-          where: t.parent_id == ^task_id,
-          order_by: [asc: t.position],
-          preload: [:column, :assigned_to, :created_by, :completed_by, :reviewed_by]
-        )
-        |> Repo.all()
-      else
-        []
-      end
+      task ->
+        task =
+          Repo.preload(task, [:column, :assigned_to, :created_by, :completed_by, :reviewed_by])
 
+        children =
+          if task.type == :goal,
+            do: fetch_scoped_children(task_id, board_id, preload: true),
+            else: []
+
+        build_task_tree_result(task, children)
+    end
+  end
+
+  defp fetch_scoped_children(parent_task_id, board_id, opts) do
+    preload? = Keyword.get(opts, :preload, false)
+
+    base =
+      from(t in Task,
+        join: c in assoc(t, :column),
+        where: t.parent_id == ^parent_task_id and c.board_id == ^board_id,
+        order_by: [asc: t.position]
+      )
+
+    if preload? do
+      base
+      |> preload([:column, :assigned_to, :created_by, :completed_by, :reviewed_by])
+      |> Repo.all()
+    else
+      Repo.all(base)
+    end
+  end
+
+  defp build_task_tree_result(task, children) do
     total_count = 1 + length(children)
 
     completed_count =
@@ -58,14 +83,13 @@ defmodule Kanban.Tasks.Goals do
   end
 
   @doc """
-  Gets all child tasks for a given parent task (goal).
+  Gets all child tasks for a given parent task (goal), scoped to a board.
+
+  Returns `[]` for children on other boards — closes the cross-board IDOR that
+  the previous 1-arity variant left open (W397).
   """
-  def get_task_children(parent_task_id) do
-    from(t in Task,
-      where: t.parent_id == ^parent_task_id,
-      order_by: [asc: t.position]
-    )
-    |> Repo.all()
+  def get_task_children(parent_task_id, board_id) do
+    fetch_scoped_children(parent_task_id, board_id, preload: false)
   end
 
   @doc """

@@ -721,7 +721,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
-        tree_data = Tasks.get_task_tree(task.id)
+        tree_data = Tasks.get_task_tree(task.id, board.id)
         emit_telemetry(conn, :task_tree_fetched, %{task_id: task.id})
         render(conn, :tree, tree: tree_data)
 

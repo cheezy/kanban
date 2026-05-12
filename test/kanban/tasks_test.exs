@@ -5015,7 +5015,7 @@ defmodule Kanban.TasksTest do
       assert String.starts_with?(child_task.identifier, "W")
     end
 
-    test "get_task_children/1 returns children of a goal" do
+    test "get_task_children/2 returns children of a goal" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -5038,13 +5038,13 @@ defmodule Kanban.TasksTest do
           "parent_id" => goal.id
         })
 
-      children = Tasks.get_task_children(goal.id)
+      children = Tasks.get_task_children(goal.id, board.id)
 
       assert length(children) == 2
       assert Enum.map(children, & &1.id) |> Enum.sort() == [child1.id, child2.id] |> Enum.sort()
     end
 
-    test "get_task_children/1 returns empty list for non-goal tasks" do
+    test "get_task_children/2 returns empty list for non-goal tasks" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -5055,12 +5055,43 @@ defmodule Kanban.TasksTest do
           "type" => "work"
         })
 
-      children = Tasks.get_task_children(task.id)
+      children = Tasks.get_task_children(task.id, board.id)
 
       assert children == []
     end
 
-    test "get_task_tree/1 returns tree with children for goals" do
+    test "get_task_children/2 returns [] when board_id does not match (W397 IDOR defense)" do
+      user_a = user_fixture()
+      board_a = board_fixture(user_a)
+      column_a = column_fixture(board_a)
+
+      {:ok, goal_a} =
+        Tasks.create_task(column_a, %{"title" => "Goal on A", "type" => "goal"})
+
+      {:ok, _child} =
+        Tasks.create_task(column_a, %{"title" => "Child A", "parent_id" => goal_a.id})
+
+      user_b = user_fixture()
+      board_b = board_fixture(user_b)
+
+      assert Tasks.get_task_children(goal_a.id, board_b.id) == []
+    end
+
+    test "get_task_tree/2 returns nil when board_id does not match (W397 IDOR defense)" do
+      user_a = user_fixture()
+      board_a = board_fixture(user_a)
+      column_a = column_fixture(board_a)
+
+      {:ok, goal_a} =
+        Tasks.create_task(column_a, %{"title" => "Goal on A", "type" => "goal"})
+
+      user_b = user_fixture()
+      board_b = board_fixture(user_b)
+
+      assert Tasks.get_task_tree(goal_a.id, board_b.id) == nil
+    end
+
+    test "get_task_tree/2 returns tree with children for goals" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -5087,7 +5118,7 @@ defmodule Kanban.TasksTest do
           "status" => "open"
         })
 
-      tree = Tasks.get_task_tree(goal.id)
+      tree = Tasks.get_task_tree(goal.id, board.id)
 
       assert tree.task.id == goal.id
       assert length(tree.children) == 2
@@ -5096,7 +5127,7 @@ defmodule Kanban.TasksTest do
       assert tree.counts.blocked == 0
     end
 
-    test "get_task_tree/1 counts include parent task in totals" do
+    test "get_task_tree/2 counts include parent task in totals" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -5119,13 +5150,13 @@ defmodule Kanban.TasksTest do
       {:ok, _child} =
         Tasks.update_task(child, %{"status" => "completed", "completed_at" => DateTime.utc_now()})
 
-      tree = Tasks.get_task_tree(goal.id)
+      tree = Tasks.get_task_tree(goal.id, board.id)
 
       assert tree.counts.total == 2
       assert tree.counts.completed == 2
     end
 
-    test "get_task_tree/1 returns empty children for non-goal tasks" do
+    test "get_task_tree/2 returns empty children for non-goal tasks" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
@@ -5136,7 +5167,7 @@ defmodule Kanban.TasksTest do
           "type" => "work"
         })
 
-      tree = Tasks.get_task_tree(task.id)
+      tree = Tasks.get_task_tree(task.id, board.id)
 
       assert tree.task.id == task.id
       assert tree.children == []
@@ -8182,7 +8213,7 @@ defmodule Kanban.TasksTest do
 
       child =
         goal.id
-        |> Tasks.get_task_children()
+        |> Tasks.get_task_children(board.id)
         |> List.first()
 
       # Move child to Doing
@@ -8318,7 +8349,7 @@ defmodule Kanban.TasksTest do
         assert count == 2
 
         # Children should be in ready column
-        children = Tasks.get_task_children(goal.id)
+        children = Tasks.get_task_children(goal.id, board.id)
         assert Enum.all?(children, &(&1.column_id == ready_column.id))
       end
     end

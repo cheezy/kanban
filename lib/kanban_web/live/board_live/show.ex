@@ -846,7 +846,7 @@ defmodule KanbanWeb.BoardLive.Show do
         {column.id, tasks}
       end)
 
-    goal_progress = compute_goal_progress(tasks_by_column)
+    goal_progress = compute_goal_progress(tasks_by_column, socket.assigns.board.id)
     backlog_goals_with_children = compute_backlog_promotable_goals(columns, tasks_by_column)
 
     socket
@@ -856,12 +856,12 @@ defmodule KanbanWeb.BoardLive.Show do
     |> assign(:tasks_version, :os.system_time(:millisecond))
   end
 
-  defp compute_goal_progress(tasks_by_column) do
+  defp compute_goal_progress(tasks_by_column, board_id) do
     tasks_by_column
     |> Enum.flat_map(fn {_column_id, tasks} -> tasks end)
     |> Enum.filter(&(&1.type == :goal))
     |> Enum.into(%{}, fn goal ->
-      children = Tasks.get_task_children(goal.id)
+      children = Tasks.get_task_children(goal.id, board_id)
       total = length(children)
       completed = Enum.count(children, &(&1.status == :completed))
       percentage = if total > 0, do: round(completed / total * 100), else: 0
