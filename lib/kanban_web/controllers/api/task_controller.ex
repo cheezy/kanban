@@ -82,16 +82,18 @@ defmodule KanbanWeb.API.TaskController do
     if params["column_id"] do
       case parse_id(params["column_id"]) do
         {:ok, column_id} ->
-          column = Columns.get_column!(column_id)
+          # Board-scoped lookup so a cross-board column id and a nonexistent
+          # column id produce the same {:error, :not_found} response — closes
+          # the existence-oracle gap that the old get_column! + verify pattern
+          # had (W399).
+          case Columns.get_column_for_board(column_id, board.id) do
+            nil ->
+              handle_task_error(conn, {:error, :not_found})
 
-          case verify_column_ownership(column, board) do
-            :ok ->
+            column ->
               tasks = Tasks.list_tasks(column)
               emit_telemetry(conn, :task_listed, %{count: length(tasks)})
               render(conn, :index, tasks: tasks)
-
-            error ->
-              handle_task_error(conn, error)
           end
 
         :error ->
@@ -149,14 +151,14 @@ defmodule KanbanWeb.API.TaskController do
 
     case parse_id(task_params["column_id"] || get_default_column_id(board)) do
       {:ok, column_id} ->
-        column = Columns.get_column!(column_id)
+        # Board-scoped lookup unifies "no such column" and "column on other
+        # board" into a single not_found response (W399).
+        case Columns.get_column_for_board(column_id, board.id) do
+          nil ->
+            handle_task_error(conn, {:error, :not_found})
 
-        case verify_column_ownership(column, board) do
-          :ok ->
+          column ->
             perform_api_task_create(conn, column, task_params, user, api_token)
-
-          error ->
-            handle_task_error(conn, error)
         end
 
       :error ->
@@ -246,16 +248,17 @@ defmodule KanbanWeb.API.TaskController do
     api_token = conn.assigns.api_token
 
     column_id = get_default_column_id(board)
-    column = Columns.get_column!(column_id)
 
-    case verify_column_ownership(column, board) do
-      :ok ->
+    # Board-scoped lookup; default column should always exist on the board, so
+    # this is defense-in-depth in case get_default_column_id returns nil/stale.
+    case column_id && Columns.get_column_for_board(column_id, board.id) do
+      nil ->
+        handle_task_error(conn, {:error, :not_found})
+
+      column ->
         goals
         |> process_batch_goals(column, user, api_token, conn)
         |> handle_batch_result(conn)
-
-      error ->
-        handle_task_error(conn, error)
     end
   end
 
@@ -761,9 +764,6 @@ defmodule KanbanWeb.API.TaskController do
 
   defp verify_board_ownership(%{column: %{board_id: board_id}}, %{id: board_id}), do: :ok
   defp verify_board_ownership(_, _), do: {:error, :forbidden}
-
-  defp verify_column_ownership(%{board_id: board_id}, %{id: board_id}), do: :ok
-  defp verify_column_ownership(_, _), do: {:error, :column_forbidden}
 
   defp validate_hook(result, hook_name) do
     case Kanban.Hooks.Validator.validate_hook_execution(result, hook_name, blocking: true) do

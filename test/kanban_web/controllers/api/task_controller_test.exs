@@ -2850,7 +2850,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "column access control" do
-    test "cannot create task with column from different board", %{conn: conn, user: _user} do
+    test "cannot create task with column from different board (W399: unified 404)",
+         %{conn: conn, user: _user} do
+      # W399: cross-board column_id and nonexistent column_id now both return
+      # 404, closing the existence-oracle gap.
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
@@ -2861,7 +2864,18 @@ defmodule KanbanWeb.API.TaskControllerTest do
       }
 
       conn = post(conn, ~p"/api/tasks", task: task_params)
-      assert json_response(conn, 403)["error"] =~ "Column does not belong to this board"
+      assert json_response(conn, 404)["error"] != nil
+    end
+
+    test "creating a task with a nonexistent column_id returns the same 404 (no oracle)",
+         %{conn: conn} do
+      task_params = %{
+        "title" => "Invalid Task",
+        "column_id" => 999_999_999
+      }
+
+      conn = post(conn, ~p"/api/tasks", task: task_params)
+      assert json_response(conn, 404)["error"] != nil
     end
   end
 
@@ -2889,13 +2903,21 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "filter tasks by column belonging to different board" do
-    test "returns 403 when filtering by column from different board", %{conn: conn} do
+    test "returns 404 when filtering by column from different board (W399: unified)",
+         %{conn: conn} do
+      # W399: cross-board and nonexistent column_id collapse to the same 404
+      # response so the API does not reveal whether the id exists.
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
 
       conn = get(conn, ~p"/api/tasks?column_id=#{other_column.id}")
-      assert json_response(conn, 403)["error"] =~ "Column does not belong to this board"
+      assert json_response(conn, 404)["error"] != nil
+    end
+
+    test "returns the same 404 for a nonexistent column_id (no oracle)", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks?column_id=999999999")
+      assert json_response(conn, 404)["error"] != nil
     end
   end
 
