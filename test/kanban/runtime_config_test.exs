@@ -14,10 +14,25 @@ defmodule Kanban.RuntimeConfigTest do
   end
 
   describe "production database TLS (W394)" do
-    test "Repo config enforces verify_peer TLS to Postgres",
+    test "Repo config sets an ssl: option in the prod block (no plaintext)",
          %{runtime_source: source} do
+      assert source =~ "ssl: ssl_opts",
+             "config/runtime.exs must wire the Repo through an ssl_opts list so production connections are always encrypted (see W394)"
+    end
+
+    test "ssl_opts switch supports both :verify_peer and :verify_none paths",
+         %{runtime_source: source} do
+      # Operators serving public-internet Postgres set DATABASE_SSL_VERIFY=peer
+      # for chain validation; Fly's internal 6PN uses the verify_none default
+      # because the cert is self-signed and the network is the trust boundary.
+      assert source =~ "DATABASE_SSL_VERIFY",
+             "config/runtime.exs must read DATABASE_SSL_VERIFY to choose between verify_peer and verify_none"
+
       assert source =~ "verify: :verify_peer",
-             "config/runtime.exs must enable Postgres TLS verification with :verify_peer (see W394)"
+             "the peer branch must call out verify: :verify_peer"
+
+      assert source =~ "verify: :verify_none",
+             "the none branch must call out verify: :verify_none (default for Fly internal Postgres)"
     end
 
     test "Repo config does not leave ssl: true commented out",

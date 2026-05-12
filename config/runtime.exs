@@ -45,8 +45,39 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  # W394 + post-deploy fix: encrypt Postgres connections in production, but let
+  # the deployment opt into peer certificate verification.
+  #
+  #   DATABASE_SSL_VERIFY=peer  → verify_peer against DATABASE_SSL_CACERTFILE
+  #                               (or CAStore.file_path() if unset). Required
+  #                               when the DB is reached over the public
+  #                               internet (Neon, Supabase, RDS public IP, …).
+  #
+  #   DATABASE_SSL_VERIFY=none  → verify_none, encrypted but no chain check.
+  #                               This is the safe default on Fly.io's 6PN
+  #                               private network where Postgres presents a
+  #                               self-signed Fly-internal cert and the network
+  #                               itself is the trust boundary.
+  #
+  # Default is :verify_none so first-deploy on Fly doesn't fail; operators
+  # serving public-internet Postgres must explicitly set DATABASE_SSL_VERIFY=peer.
+  ssl_opts =
+    case System.get_env("DATABASE_SSL_VERIFY", "none") do
+      "peer" ->
+        cacertfile = System.get_env("DATABASE_SSL_CACERTFILE") || CAStore.file_path()
+        [verify: :verify_peer, cacertfile: cacertfile]
+
+      "none" ->
+        [verify: :verify_none]
+
+      other ->
+        raise """
+        Invalid DATABASE_SSL_VERIFY value: #{inspect(other)}. Expected "peer" or "none".
+        """
+    end
+
   config :kanban, Kanban.Repo,
-    ssl: [verify: :verify_peer, cacertfile: CAStore.file_path()],
+    ssl: ssl_opts,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
