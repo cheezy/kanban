@@ -14,30 +14,34 @@ defmodule Kanban.RuntimeConfigTest do
   end
 
   describe "production database TLS (W394)" do
-    test "Repo config sets an ssl: option in the prod block (no plaintext)",
+    test "Repo TLS is wired through a DATABASE_SSL env-driven setting",
          %{runtime_source: source} do
-      # Postgrex splits TLS into `ssl: true` (enable) + `ssl_opts: [...]`
-      # (handshake options). Both must be present in the prod Repo block.
-      assert source =~ "ssl: true",
-             "config/runtime.exs must enable TLS on the prod Repo with ssl: true so production connections are always encrypted (see W394)"
+      # Current Postgrex API: a single `ssl:` key takes either `false`
+      # (plaintext) or a keyword list (TLS handshake options). We pick the
+      # value at runtime based on DATABASE_SSL.
+      assert source =~ "ssl: ssl_setting",
+             "config/runtime.exs must wire the ssl_setting variable into the prod Repo (see W394 post-deploy fix)"
 
-      assert source =~ "ssl_opts: ssl_opts",
-             "config/runtime.exs must wire the ssl_opts keyword list into the Repo so verify/cacertfile reach the TLS handshake (see W394 post-deploy fix)"
+      refute source =~ "ssl_opts:",
+             "config/runtime.exs must NOT use the deprecated `ssl_opts:` key — pass options under `ssl:` instead"
     end
 
-    test "ssl_opts switch supports both :verify_peer and :verify_none paths",
+    test "DATABASE_SSL switch supports disable / verify_none / verify_peer",
          %{runtime_source: source} do
-      # Operators serving public-internet Postgres set DATABASE_SSL_VERIFY=peer
-      # for chain validation; Fly's internal 6PN uses the verify_none default
-      # because the cert is self-signed and the network is the trust boundary.
-      assert source =~ "DATABASE_SSL_VERIFY",
-             "config/runtime.exs must read DATABASE_SSL_VERIFY to choose between verify_peer and verify_none"
+      # Three documented modes: TLS-off (default, fits Fly internal Postgres
+      # where the cert is unparseable by OTP's PKIX decoder), encrypted-only,
+      # and full chain validation for public-internet Postgres providers.
+      assert source =~ "DATABASE_SSL",
+             "config/runtime.exs must read DATABASE_SSL to select the TLS mode"
 
-      assert source =~ "verify: :verify_peer",
-             "the peer branch must call out verify: :verify_peer"
+      assert source =~ ~s("disable"),
+             "the disable branch must exist (it is the default for Fly internal Postgres)"
 
       assert source =~ "verify: :verify_none",
-             "the none branch must call out verify: :verify_none (default for Fly internal Postgres)"
+             "the verify_none branch must call out verify: :verify_none"
+
+      assert source =~ "verify: :verify_peer",
+             "the verify_peer branch must call out verify: :verify_peer"
     end
 
     test "Repo config does not leave ssl: true commented out",

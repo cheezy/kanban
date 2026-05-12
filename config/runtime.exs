@@ -45,47 +45,57 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  # W394 + post-deploy fix: encrypt Postgres connections in production, but let
-  # the deployment opt into peer certificate verification.
+  # W394 + post-deploy fixes: Postgres TLS is environment-driven, defaulting
+  # to OFF for Fly's internal 6PN network.
   #
-  #   DATABASE_SSL_VERIFY=peer  → verify_peer against DATABASE_SSL_CACERTFILE
-  #                               (or CAStore.file_path() if unset). Required
-  #                               when the DB is reached over the public
-  #                               internet (Neon, Supabase, RDS public IP, …).
+  #   DATABASE_SSL=disable  (default)
+  #       No TLS. Appropriate for Fly.io internal Postgres because:
+  #         (1) the 6PN network is an isolated, per-tenant WireGuard private
+  #             network — the wire is not on a shared medium an attacker can
+  #             sniff, so TLS is belt-and-suspenders rather than a primary
+  #             control; this matches Fly's own documented setup.
+  #         (2) Fly's internal Postgres certificate contains a Distinguished
+  #             Name attribute that Erlang/OTP's PKIX ASN.1 decoder cannot
+  #             parse (`:asn1, :bad_range` from
+  #             `dec_OTPRelativeDistinguishedName_SingleAttribute`). The
+  #             decoder runs BEFORE the verify check, so `verify_none` does
+  #             not help — the cert must not be presented at all.
   #
-  #   DATABASE_SSL_VERIFY=none  → verify_none, encrypted but no chain check.
-  #                               This is the safe default on Fly.io's 6PN
-  #                               private network where Postgres presents a
-  #                               self-signed Fly-internal cert and the network
-  #                               itself is the trust boundary.
+  #   DATABASE_SSL=verify_none
+  #       TLS encryption but no chain validation. Use this for self-managed
+  #       Postgres on a public IP where you don't have a CA bundle but still
+  #       want encryption in transit.
   #
-  # Default is :verify_none so first-deploy on Fly doesn't fail; operators
-  # serving public-internet Postgres must explicitly set DATABASE_SSL_VERIFY=peer.
+  #   DATABASE_SSL=verify_peer
+  #       Full TLS with peer certificate validation against
+  #       DATABASE_SSL_CACERTFILE (or `CAStore.file_path/0` if unset). REQUIRED
+  #       when the DB is reached over the public internet (Neon, Supabase,
+  #       RDS public IP, …).
   #
-  # Note: Postgrex splits TLS configuration across TWO keys — `ssl:` is the
-  # boolean flag (enable/disable TLS) and `ssl_opts:` is the keyword list
-  # passed through to `:ssl.connect/3`. Putting the keyword list under `ssl:`
-  # makes Postgrex enable TLS (the list is truthy) but never threads the
-  # verify option into the actual handshake, which is what caused the original
-  # `Certificate Unknown` alert in the Fly deploy.
-  ssl_opts =
-    case System.get_env("DATABASE_SSL_VERIFY", "none") do
-      "peer" ->
+  # If you move Postgres to a public-internet provider, set DATABASE_SSL
+  # explicitly — defaulting to `disable` is correct for Fly but unsafe over
+  # an untrusted network.
+  ssl_setting =
+    case System.get_env("DATABASE_SSL", "disable") do
+      "disable" ->
+        false
+
+      "verify_none" ->
+        [verify: :verify_none, server_name_indication: :disable]
+
+      "verify_peer" ->
         cacertfile = System.get_env("DATABASE_SSL_CACERTFILE") || CAStore.file_path()
         [verify: :verify_peer, cacertfile: cacertfile, server_name_indication: :disable]
 
-      "none" ->
-        [verify: :verify_none, server_name_indication: :disable]
-
       other ->
         raise """
-        Invalid DATABASE_SSL_VERIFY value: #{inspect(other)}. Expected "peer" or "none".
+        Invalid DATABASE_SSL value: #{inspect(other)}.
+        Expected "disable", "verify_none", or "verify_peer".
         """
     end
 
   config :kanban, Kanban.Repo,
-    ssl: true,
-    ssl_opts: ssl_opts,
+    ssl: ssl_setting,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
