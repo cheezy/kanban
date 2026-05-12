@@ -2287,8 +2287,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
       task: task
     } do
       steps = [
-        %{"name" => "before_doing", "status" => "success", "duration_ms" => 100},
-        %{"name" => "after_doing", "status" => "success", "duration_ms" => 5000}
+        %{"name" => "before_doing", "dispatched" => true, "duration_ms" => 100},
+        %{"name" => "after_doing", "dispatched" => true, "duration_ms" => 5000}
       ]
 
       completion_params = %{
@@ -2359,8 +2359,12 @@ defmodule KanbanWeb.API.TaskControllerTest do
       %{task: task}
     end
 
-    test "grace mode (default): invalid explorer_result logs warn and returns 200",
+    test "grace mode (default): invalid explorer_result logs warn at gate AND fails changeset (W398)",
          %{conn: conn, task: task} do
+      # After W398, move_to_review/4 runs the same validators unconditionally at
+      # the schema layer, so even when CompletionResultGate is in grace mode
+      # (warn + pass) the persistence step rejects malformed blobs with a 422.
+      # The gate still logs the warning — we assert both behaviors here.
       Application.put_env(:kanban, :strict_completion_validation, false)
 
       params =
@@ -2370,7 +2374,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
       log =
         capture_log(fn ->
           conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
-          assert json_response(conn, 200)["data"]["id"] == task.id
+          response = json_response(conn, 422)
+          assert response["errors"]["explorer_result"] != nil
         end)
 
       assert log =~ "stride.completion.validation_failed"

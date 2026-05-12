@@ -7199,8 +7199,8 @@ defmodule Kanban.TasksTest do
       completion_params: params
     } do
       steps = [
-        %{"name" => "before_doing", "exit_code" => 0, "duration_ms" => 50},
-        %{"name" => "after_doing", "exit_code" => 0, "duration_ms" => 200}
+        %{"name" => "before_doing", "dispatched" => true, "duration_ms" => 50, "exit_code" => 0},
+        %{"name" => "after_doing", "dispatched" => true, "duration_ms" => 200, "exit_code" => 0}
       ]
 
       params_with_steps = Map.put(params, "workflow_steps", steps)

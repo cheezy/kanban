@@ -13,6 +13,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Hooks
   alias Kanban.Repo
   alias Kanban.Tasks.AgentQueries
+  alias Kanban.Tasks.CompletionValidation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Positioning
@@ -526,12 +527,107 @@ defmodule Kanban.Tasks.AgentWorkflow do
         ])
         |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
         |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
+        |> validate_explorer_result_payload(params)
+        |> validate_reviewer_result_payload(params)
+        |> validate_workflow_steps_shape(params)
 
       case Repo.update(changeset) do
         {:ok, updated_task} -> updated_task
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  # Belt-and-suspenders schema-layer validation for the JSON blobs that the API
+  # accepts. CompletionResultGate already enforces these at the HTTP boundary
+  # when :strict_completion_validation is on, but here we enforce them
+  # unconditionally so internal callers and non-strict deployments cannot
+  # persist malformed blobs (W398).
+  defp validate_explorer_result_payload(changeset, params) do
+    case Map.get(params, "explorer_result") do
+      nil ->
+        changeset
+
+      value ->
+        case CompletionValidation.validate_explorer_result(value) do
+          {:ok, _} ->
+            changeset
+
+          {:error, errors} ->
+            Enum.reduce(errors, changeset, fn {_field, message}, acc ->
+              Ecto.Changeset.add_error(acc, :explorer_result, message)
+            end)
+        end
+    end
+  end
+
+  defp validate_reviewer_result_payload(changeset, params) do
+    case Map.get(params, "reviewer_result") do
+      nil ->
+        changeset
+
+      value ->
+        case CompletionValidation.validate_reviewer_result(value) do
+          {:ok, _} ->
+            changeset
+
+          {:error, errors} ->
+            Enum.reduce(errors, changeset, fn {_field, message}, acc ->
+              Ecto.Changeset.add_error(acc, :reviewer_result, message)
+            end)
+        end
+    end
+  end
+
+  # workflow_steps is {:array, :map} in the schema — Ecto's cast handles the
+  # type, but we add an explicit shape check so non-list input or list elements
+  # missing the canonical step fields are rejected before persistence.
+  defp validate_workflow_steps_shape(changeset, params) do
+    case Map.get(params, "workflow_steps") do
+      nil ->
+        changeset
+
+      value when is_list(value) ->
+        if Enum.all?(value, &valid_workflow_step?/1) do
+          changeset
+        else
+          Ecto.Changeset.add_error(
+            changeset,
+            :workflow_steps,
+            "each entry must be a map with a 'name' key and either duration_ms (when dispatched) or reason (when skipped)"
+          )
+        end
+
+      _ ->
+        Ecto.Changeset.add_error(changeset, :workflow_steps, "must be a list of step maps")
+    end
+  end
+
+  defp valid_workflow_step?(%{} = step) do
+    name = fetch_step_field(step, "name")
+    dispatched = fetch_step_field(step, "dispatched")
+
+    cond do
+      not is_binary(name) -> false
+      dispatched == true -> is_integer(fetch_step_field(step, "duration_ms"))
+      dispatched == false -> is_binary(fetch_step_field(step, "reason"))
+      true -> false
+    end
+  end
+
+  defp valid_workflow_step?(_), do: false
+
+  defp fetch_step_field(step, key) do
+    case Map.fetch(step, key) do
+      {:ok, value} -> value
+      :error -> Map.get(step, safe_existing_atom(key))
+    end
+  end
+
+  defp safe_existing_atom(key) do
+    String.to_existing_atom(key)
+  rescue
+    ArgumentError -> nil
   end
 
   defp move_to_done(task, user, board_id) do

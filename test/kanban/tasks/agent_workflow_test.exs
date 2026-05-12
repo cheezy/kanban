@@ -305,6 +305,91 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     end
   end
 
+  describe "complete_task/4 — W398 payload validation" do
+    setup :setup_board
+
+    setup ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      Map.put(ctx, :claimed, claimed)
+    end
+
+    test "rejects malformed explorer_result", %{claimed: claimed, user: user} do
+      params =
+        valid_complete_params()
+        |> Map.put("explorer_result", %{"dispatched" => true, "summary" => "too short"})
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :explorer_result)
+    end
+
+    test "rejects malformed reviewer_result", %{claimed: claimed, user: user} do
+      params =
+        valid_complete_params()
+        |> Map.put("explorer_result", %{
+          "dispatched" => true,
+          "summary" => String.duplicate("a", 40),
+          "duration_ms" => 1000
+        })
+        |> Map.put("reviewer_result", %{"dispatched" => true, "summary" => "x"})
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :reviewer_result)
+    end
+
+    test "rejects workflow_steps that are not a list", %{claimed: claimed, user: user} do
+      params = Map.put(valid_complete_params(), "workflow_steps", "not-a-list")
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :workflow_steps)
+    end
+
+    test "rejects workflow_steps list entries missing required keys",
+         %{claimed: claimed, user: user} do
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{"name" => "before_doing"}
+        ])
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :workflow_steps)
+    end
+
+    test "accepts well-formed workflow_steps + explorer/reviewer payloads",
+         %{claimed: claimed, user: user} do
+      summary = String.duplicate("a", 40)
+
+      params =
+        valid_complete_params()
+        |> Map.put("explorer_result", %{
+          "dispatched" => true,
+          "summary" => summary,
+          "duration_ms" => 1000
+        })
+        |> Map.put("reviewer_result", %{
+          "dispatched" => true,
+          "summary" => summary,
+          "duration_ms" => 500,
+          "acceptance_criteria_checked" => 3,
+          "issues_found" => 0
+        })
+        |> Map.put("workflow_steps", [
+          %{"name" => "explorer", "dispatched" => true, "duration_ms" => 1000},
+          %{"name" => "planner", "dispatched" => false, "reason" => "small task"}
+        ])
+
+      assert {:ok, _task, _hooks} = AgentWorkflow.complete_task(claimed, user, params, "Claude")
+    end
+  end
+
   describe "mark_reviewed/2" do
     setup ctx do
       ctx = setup_board(ctx)
