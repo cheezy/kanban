@@ -60,9 +60,16 @@ defmodule Kanban.Accounts.User do
     |> validate_password(opts)
   end
 
+  # Disallow HTML/markup metacharacters and control characters (including CR/LF
+  # for header-injection defense). Combined with HTML-escaping at email render
+  # time in UserNotifier, this denies the stored-XSS / email-template-injection
+  # path described in CWE-79.
   defp validate_name(changeset) do
     changeset
     |> validate_length(:name, max: 160)
+    |> validate_format(:name, ~r/^[^<>&\x00-\x1f\x7f]*$/,
+      message: "cannot contain HTML metacharacters or control characters"
+    )
   end
 
   defp validate_email(changeset, opts) do

@@ -3,6 +3,17 @@ defmodule Kanban.Accounts.UserNotifier do
 
   alias Kanban.Mailer
 
+  # HTML-escapes user-controlled string content before it is interpolated into
+  # the raw HTML body heredoc. Without this, a user whose :name contains script
+  # or markup escapes would inject arbitrary HTML into the reset-password,
+  # confirmation, and email-change templates (CWE-79). Nil names fall through
+  # as an empty string.
+  defp escape_name(nil), do: ""
+
+  defp escape_name(name) when is_binary(name) do
+    name |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+  end
+
   # Delivers the email using the application mailer.
   defp deliver(recipient, subject, body) do
     email =
@@ -24,7 +35,7 @@ defmodule Kanban.Accounts.UserNotifier do
   def deliver_update_email_instructions(user, url) do
     deliver(user.email, "Update email instructions", """
     <div>
-    Hi #{user.name},
+    Hi #{escape_name(user.name)},
 
     <p>
     You are receiving this email because you requested to change the
@@ -48,7 +59,7 @@ defmodule Kanban.Accounts.UserNotifier do
   def deliver_confirmation_instructions(user, url) do
     deliver(user.email, "Confirm your Stride account", """
     <div>
-    Hi #{user.name},
+    Hi #{escape_name(user.name)},
 
     <p>
     Welcome to Stride! We received your request to create an account with Stride.
@@ -77,7 +88,7 @@ defmodule Kanban.Accounts.UserNotifier do
   def deliver_reset_password_instructions(user, url) do
     deliver(user.email, "Reset your Stride password", """
     <div>
-    Hi #{user.name},
+    Hi #{escape_name(user.name)},
 
     <p>
     You are receiving this email because you (or someone else) requested to reset your

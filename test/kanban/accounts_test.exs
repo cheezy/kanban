@@ -78,6 +78,40 @@ defmodule Kanban.AccountsTest do
       assert "has already been taken" in errors_on(changeset).email
     end
 
+    test "rejects names containing HTML metacharacters (W395)" do
+      for bad_name <- [
+            "<script>alert(1)</script>",
+            "Foo<bar",
+            "Foo>bar",
+            "Foo&bar",
+            "Foo\nBar",
+            "Foo\rBar",
+            "Foo\x00Bar"
+          ] do
+        {:error, changeset} =
+          Accounts.register_user(%{email: unique_user_email(), name: bad_name})
+
+        assert "cannot contain HTML metacharacters or control characters" in errors_on(changeset).name,
+               "expected rejection for name=#{inspect(bad_name)}, got errors=#{inspect(errors_on(changeset))}"
+      end
+    end
+
+    test "accepts names containing Unicode and apostrophes" do
+      attrs = valid_user_attributes(name: "José D'Acosta")
+      {:ok, user} = Accounts.register_user(attrs)
+      assert user.name == "José D'Acosta"
+    end
+  end
+
+  describe "change_user_email/3 name validation (W395)" do
+    test "rejects names containing HTML metacharacters" do
+      user = user_fixture()
+
+      changeset = Accounts.change_user_email(user, %{name: "<img src=x>", email: user.email})
+
+      assert "cannot contain HTML metacharacters or control characters" in errors_on(changeset).name
+    end
+
     test "registers users with password" do
       email = unique_user_email()
       attrs = valid_user_attributes(email: email)

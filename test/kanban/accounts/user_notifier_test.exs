@@ -86,6 +86,51 @@ defmodule Kanban.Accounts.UserNotifierTest do
     end
   end
 
+  describe "W395 XSS / HTML-injection defense in email bodies" do
+    @malicious_name "<script>alert(1)</script>"
+
+    test "deliver_update_email_instructions escapes user.name" do
+      user = %User{email: "user@example.com", name: @malicious_name}
+      {:ok, email} = UserNotifier.deliver_update_email_instructions(user, "http://example.com/x")
+
+      refute email.html_body =~ @malicious_name
+      assert email.html_body =~ "&lt;script&gt;alert(1)&lt;/script&gt;"
+    end
+
+    test "deliver_confirmation_instructions escapes user.name" do
+      user = %User{email: "user@example.com", name: @malicious_name}
+      {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, "http://example.com/x")
+
+      refute email.html_body =~ @malicious_name
+      assert email.html_body =~ "&lt;script&gt;alert(1)&lt;/script&gt;"
+    end
+
+    test "deliver_reset_password_instructions escapes user.name" do
+      user = %User{email: "user@example.com", name: @malicious_name}
+
+      {:ok, email} =
+        UserNotifier.deliver_reset_password_instructions(user, "http://example.com/x")
+
+      refute email.html_body =~ @malicious_name
+      assert email.html_body =~ "&lt;script&gt;alert(1)&lt;/script&gt;"
+    end
+
+    test "nil user.name renders an empty greeting without crashing" do
+      user = %User{email: "user@example.com", name: nil}
+      {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, "http://example.com/x")
+
+      assert email.html_body =~ "Hi ,"
+    end
+
+    test "ampersand in user.name is escaped" do
+      user = %User{email: "user@example.com", name: "Pete & Repeat"}
+      {:ok, email} = UserNotifier.deliver_confirmation_instructions(user, "http://example.com/x")
+
+      refute email.html_body =~ "Pete & Repeat"
+      assert email.html_body =~ "Pete &amp; Repeat"
+    end
+  end
+
   describe "email delivery" do
     test "returns ok tuple with email on successful delivery" do
       user = %User{email: "test@example.com", name: "Test"}
