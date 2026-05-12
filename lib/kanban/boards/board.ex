@@ -61,31 +61,53 @@ defmodule Kanban.Boards.Board do
     |> validate_field_visibility()
   end
 
+  # Single source of truth for what field_visibility keys are allowed. Used by:
+  #   * validate_field_visibility/1 below — rejects changesets containing
+  #     unknown keys.
+  #   * KanbanWeb.BoardLive.Show / BoardLive.Form — rejects toggle_field events
+  #     whose "field" param is not in this list (closes the W401 input-
+  #     validation gap where arbitrary attacker-chosen keys could be inserted).
+  @toggleable_fields ~w(
+    acceptance_criteria
+    complexity
+    context
+    key_files
+    verification_steps
+    technical_notes
+    observability
+    error_handling
+    technology_requirements
+    pitfalls
+    out_of_scope
+    required_capabilities
+    security_considerations
+    testing_strategy
+    integration_points
+  )
+
+  @doc """
+  Public allow-list of valid field_visibility keys. Callers should validate
+  any client-supplied field name against this list BEFORE merging into the
+  field_visibility map (W401).
+  """
+  def toggleable_fields, do: @toggleable_fields
+
   defp validate_field_visibility(changeset) do
     case get_change(changeset, :field_visibility) do
       nil ->
         changeset
 
       visibility when is_map(visibility) ->
-        required_keys = [
-          "acceptance_criteria",
-          "complexity",
-          "context",
-          "key_files",
-          "verification_steps",
-          "technical_notes",
-          "observability",
-          "error_handling",
-          "technology_requirements",
-          "pitfalls",
-          "out_of_scope",
-          "required_capabilities"
-        ]
+        case Map.keys(visibility) -- @toggleable_fields do
+          [] ->
+            changeset
 
-        if Enum.all?(required_keys, &Map.has_key?(visibility, &1)) do
-          changeset
-        else
-          add_error(changeset, :field_visibility, "missing required field visibility keys")
+          unknown_keys ->
+            add_error(
+              changeset,
+              :field_visibility,
+              "contains unknown keys: #{Enum.join(unknown_keys, ", ")}"
+            )
         end
     end
   end

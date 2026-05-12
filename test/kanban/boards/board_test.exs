@@ -60,17 +60,20 @@ defmodule Kanban.Boards.BoardTest do
       assert %{field_visibility: ["is invalid"]} = errors_on(changeset)
     end
 
-    test "validates field_visibility has all required keys" do
+    test "W401: an incomplete subset of allow-listed keys is now valid (no rejection)" do
+      # Behavior change (W401): the validator previously required ALL keys to
+      # be present; it now rejects only UNKNOWN keys. A proper subset of the
+      # allow-list is therefore valid, matching how the LiveView toggle handler
+      # builds up state incrementally.
       incomplete_visibility = %{
         "acceptance_criteria" => true,
         "complexity" => false
       }
 
       changeset =
-        Board.changeset(%Board{}, %{name: "Test", field_visibility: incomplete_visibility})
+        Board.changeset(%Board{}, %{name: "Test Board", field_visibility: incomplete_visibility})
 
-      assert %{field_visibility: ["missing required field visibility keys"]} =
-               errors_on(changeset)
+      assert changeset.valid?
     end
 
     test "accepts complete field_visibility map" do
@@ -168,33 +171,28 @@ defmodule Kanban.Boards.BoardTest do
       assert %{field_visibility: ["is invalid"]} = errors_on(changeset)
     end
 
-    test "empty field_visibility map is rejected (no required keys present)" do
+    test "W401: empty field_visibility map is now valid (no unknown keys)" do
       changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: %{}})
 
-      assert %{field_visibility: ["missing required field visibility keys"]} =
-               errors_on(changeset)
+      assert changeset.valid?
     end
 
-    test "field_visibility with all required keys plus extra keys is valid" do
+    test "W401: field_visibility with unknown keys is rejected" do
+      # Behavior change (W401): the validator now rejects keys that are not on
+      # Board.toggleable_fields/0. This closes the input-validation gap where
+      # arbitrary attacker-chosen keys could be inserted into the JSONB map.
       visibility = %{
         "acceptance_criteria" => true,
         "complexity" => false,
-        "context" => false,
-        "key_files" => false,
-        "verification_steps" => false,
-        "technical_notes" => false,
-        "observability" => false,
-        "error_handling" => false,
-        "technology_requirements" => false,
-        "pitfalls" => false,
-        "out_of_scope" => false,
-        "required_capabilities" => false,
         "future_field" => true,
         "another_extra" => false
       }
 
       changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: visibility})
-      assert changeset.valid?
+
+      refute changeset.valid?
+      assert %{field_visibility: [msg]} = errors_on(changeset)
+      assert msg =~ "unknown keys"
     end
 
     test "field_visibility is unchanged when not in attrs" do
@@ -272,7 +270,7 @@ defmodule Kanban.Boards.BoardTest do
       assert %{read_only: ["is invalid"]} = errors_on(changeset)
     end
 
-    test "field_visibility with atom keys is rejected (validation expects string keys)" do
+    test "W401: field_visibility with atom keys is rejected (allow-list is string-only)" do
       atom_keyed = %{
         acceptance_criteria: true,
         complexity: false,
@@ -290,8 +288,9 @@ defmodule Kanban.Boards.BoardTest do
 
       changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: atom_keyed})
 
-      assert %{field_visibility: ["missing required field visibility keys"]} =
-               errors_on(changeset)
+      refute changeset.valid?
+      assert %{field_visibility: [msg]} = errors_on(changeset)
+      assert msg =~ "unknown keys"
     end
 
     test "field_visibility validation only checks key presence, not value types" do

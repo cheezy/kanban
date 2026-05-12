@@ -104,32 +104,25 @@ defmodule KanbanWeb.BoardLive.Form do
   end
 
   def handle_event("toggle_field", %{"field" => field_name} = _params, socket) do
+    # W401: reject any client-supplied "field" name that is not on the
+    # canonical allow-list before it lands in the JSONB map.
+    if field_name in Board.toggleable_fields() do
+      perform_toggle(socket, field_name)
+    else
+      {:noreply, put_flash(socket, :error, gettext("Invalid field name"))}
+    end
+  end
+
+  defp perform_toggle(socket, field_name) do
     board = socket.assigns.board
     current_visibility = socket.assigns.field_visibility
 
-    # Ensure all required keys are present with defaults
-    default_visibility = %{
-      "acceptance_criteria" => false,
-      "complexity" => false,
-      "context" => false,
-      "key_files" => false,
-      "verification_steps" => false,
-      "technical_notes" => false,
-      "observability" => false,
-      "error_handling" => false,
-      "technology_requirements" => false,
-      "pitfalls" => false,
-      "out_of_scope" => false,
-      "required_capabilities" => false,
-      "security_considerations" => false,
-      "testing_strategy" => false,
-      "integration_points" => false
-    }
-
-    # Merge current with defaults to ensure all keys present
+    # Build a complete visibility map (all allow-listed keys present with their
+    # current value or false default) so we always pass a fully-populated map
+    # into the changeset, then flip the toggled field.
+    default_visibility = Map.new(Board.toggleable_fields(), fn key -> {key, false} end)
     complete_visibility = Map.merge(default_visibility, current_visibility)
 
-    # Toggle the requested field
     new_visibility =
       Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
 

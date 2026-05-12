@@ -1310,11 +1310,26 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
+      # "complexity" is on the W401 allow-list; default is false, so toggling
+      # should flip it to true.
       show_live
-      |> render_click("toggle_field", %{"field" => "description"})
+      |> render_click("toggle_field", %{"field" => "complexity"})
 
       updated_board = Kanban.Boards.get_board!(board.id, user)
-      assert updated_board.field_visibility["description"] == true
+      assert updated_board.field_visibility["complexity"] == true
+    end
+
+    test "owner cannot toggle a field not on the allow-list (W401)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> render_click("toggle_field", %{"field" => "evil_injected_key"})
+
+      assert render(show_live) =~ "Invalid field name"
+      updated_board = Kanban.Boards.get_board!(board.id, user)
+      refute Map.has_key?(updated_board.field_visibility, "evil_injected_key")
     end
 
     test "non-owner cannot toggle field visibility", %{conn: conn, user: user} do

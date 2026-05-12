@@ -338,31 +338,18 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("toggle_field", %{"field" => field_name}, socket) do
-    if socket.assigns.is_owner do
-      board = socket.assigns.board
-      current_visibility = socket.assigns.field_visibility
+    cond do
+      not socket.assigns.is_owner ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
 
-      new_visibility =
-        Map.put(current_visibility, field_name, !Map.get(current_visibility, field_name, false))
+      field_name not in Boards.Board.toggleable_fields() ->
+        # W401: reject any client-supplied "field" name that is not on the
+        # canonical allow-list before it lands in the JSONB map.
+        {:noreply, put_flash(socket, :error, gettext("Invalid field name"))}
 
-      case Boards.update_field_visibility(
-             board,
-             new_visibility,
-             socket.assigns.current_scope.user
-           ) do
-        {:ok, updated_board} ->
-          {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
-
-        {:error, :unauthorized} ->
-          {:noreply,
-           put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
-      end
-    else
-      {:noreply,
-       put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+      true ->
+        do_toggle_field(socket, field_name)
     end
   end
 
@@ -1009,6 +996,30 @@ defmodule KanbanWeb.BoardLive.Show do
     else
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+    end
+  end
+
+  defp do_toggle_field(socket, field_name) do
+    board = socket.assigns.board
+    current_visibility = socket.assigns.field_visibility
+
+    new_visibility =
+      Map.put(current_visibility, field_name, !Map.get(current_visibility, field_name, false))
+
+    case Boards.update_field_visibility(
+           board,
+           new_visibility,
+           socket.assigns.current_scope.user
+         ) do
+      {:ok, updated_board} ->
+        {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
     end
   end
 
