@@ -140,8 +140,5 @@ if config_env() == :prod do
     ssl: true,
     auth: :always,
     port: 465,
-    retries: 1,
-    sockopts: [
-      {:verify, :verify_none}
-    ]
+    retries: 1
 end
