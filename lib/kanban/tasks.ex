@@ -50,6 +50,11 @@ defmodule Kanban.Tasks do
   def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []),
     do: Creation.create_goal_with_tasks(column, goal_attrs, child_tasks_attrs)
 
+  defdelegate api_create_task(column, attrs), to: Creation
+
+  def api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []),
+    do: Creation.api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs)
+
   # ── Lifecycle delegations ──────────────────────────────────────────
 
   defdelegate update_task(task, attrs), to: Lifecycle

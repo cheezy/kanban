@@ -341,6 +341,162 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "POST /api/tasks mass-assignment protection" do
+    test "silently strips status from a flat task create", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "New",
+            "type" => "work",
+            "priority" => "medium",
+            "complexity" => "small",
+            "status" => "completed"
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      assert reloaded.status == :open
+      refute reloaded.status == :completed
+    end
+
+    test "silently strips identifier (always server-generated)", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "New",
+            "type" => "work",
+            "priority" => "medium",
+            "identifier" => "X999"
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      refute reloaded.identifier == "X999"
+      assert is_binary(reloaded.identifier)
+      assert reloaded.identifier =~ ~r/^[WDG]\d+$/
+    end
+
+    test "silently strips completion + review fields and assigned_to_id",
+         %{conn: conn} do
+      other = user_fixture()
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "New",
+            "type" => "work",
+            "priority" => "medium",
+            "completed_at" => "2025-01-01T00:00:00Z",
+            "completed_by_id" => other.id,
+            "review_status" => "approved",
+            "reviewed_by_id" => other.id,
+            "time_spent_minutes" => 9999,
+            "actual_complexity" => "large",
+            "archived_at" => "2025-01-01T00:00:00Z",
+            "assigned_to_id" => other.id
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      assert is_nil(reloaded.completed_at)
+      assert is_nil(reloaded.completed_by_id)
+      assert is_nil(reloaded.review_status)
+      assert is_nil(reloaded.reviewed_by_id)
+      assert is_nil(reloaded.time_spent_minutes)
+      assert is_nil(reloaded.actual_complexity)
+      assert is_nil(reloaded.archived_at)
+      assert is_nil(reloaded.assigned_to_id)
+    end
+
+    test "silently strips workflow_steps / explorer_result / reviewer_result",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "New",
+            "type" => "work",
+            "priority" => "medium",
+            "workflow_steps" => [%{"name" => "fake", "dispatched" => true, "duration_ms" => 1}],
+            "explorer_result" => %{"dispatched" => true, "summary" => "fake"},
+            "reviewer_result" => %{"dispatched" => true, "summary" => "fake"}
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      assert reloaded.workflow_steps == []
+      assert is_nil(reloaded.explorer_result)
+      assert is_nil(reloaded.reviewer_result)
+    end
+
+    test "still applies legitimate descriptive fields", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "New",
+            "description" => "desc",
+            "type" => "work",
+            "priority" => "high",
+            "complexity" => "medium",
+            "why" => "because",
+            "what" => "what",
+            "status" => "completed"
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      assert reloaded.title == "New"
+      assert reloaded.description == "desc"
+      assert reloaded.priority == :high
+      assert reloaded.complexity == :medium
+      assert reloaded.why == "because"
+      assert reloaded.what == "what"
+      assert reloaded.status == :open
+    end
+
+    test "goal-with-children create strips forbidden fields on child tasks too",
+         %{conn: conn} do
+      other = user_fixture()
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Goal",
+            "type" => "goal",
+            "priority" => "medium",
+            "tasks" => [
+              %{
+                "title" => "Child 1",
+                "type" => "work",
+                "priority" => "medium",
+                "status" => "completed",
+                "identifier" => "W999",
+                "completed_by_id" => other.id
+              }
+            ]
+          }
+        )
+
+      response = json_response(conn, 201)
+      [child_summary] = response["child_tasks"]
+      child = Tasks.get_task!(child_summary["id"])
+
+      assert child.status == :open
+      refute child.identifier == "W999"
+      assert is_nil(child.completed_by_id)
+      assert child.title == "Child 1"
+    end
+  end
+
   describe "POST /api/tasks/batch" do
     test "creates multiple goals with child tasks", %{conn: conn} do
       goals_params = [

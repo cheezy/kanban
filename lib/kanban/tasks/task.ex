@@ -557,6 +557,65 @@ defmodule Kanban.Tasks.Task do
     :needs_review
   ]
 
+  # Allow-list for the API create path. Mirrors `@api_update_fields` and adds the
+  # fields that the server injects during creation (identifier from the locked
+  # Multi step, column_id/position from the column lookup + Positioning helpers,
+  # created_by_id/created_by_agent from the API-token scope + agent_name header,
+  # parent_id when a goal seeds child tasks). Client-supplied values for those
+  # injected fields must be stripped at the controller layer — the changeset
+  # cannot distinguish "from Multi" vs "from JSON payload" once they land in attrs.
+  @api_create_fields @api_update_fields ++
+                       [
+                         :identifier,
+                         :column_id,
+                         :position,
+                         :created_by_id,
+                         :created_by_agent,
+                         :parent_id
+                       ]
+
+  @doc """
+  Strict changeset for API POST /api/tasks (and POST /api/tasks/batch).
+
+  Casts only descriptive fields plus the server-controlled creation fields the
+  Multi step injects (identifier, position, column_id, created_by_id,
+  created_by_agent, parent_id). The controller is responsible for stripping any
+  client-supplied values for those server-controlled fields before the Multi
+  runs. Workflow/audit fields (status defaults to :open via the schema,
+  claimed_at/completed_*/reviewed_*/archived_at/etc. are not cast at all) can
+  never reach a newly-inserted row through this path.
+  """
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
+  def api_create_changeset(task, attrs) do
+    task
+    |> cast(attrs, @api_create_fields)
+    |> validate_embed_type(:key_files, attrs)
+    |> validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
+    |> normalize_ai_context_fields()
+    |> validate_required([:title, :position, :type, :priority])
+    |> validate_inclusion(:type, [:work, :defect, :goal],
+      message: "must be 'work', 'defect', or 'goal'"
+    )
+    |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
+      message: "must be 'low', 'medium', 'high', or 'critical'"
+    )
+    |> validate_inclusion(:complexity, [:small, :medium, :large],
+      message: "must be 'small', 'medium', or 'large'"
+    )
+    |> validate_technology_requirements()
+    |> validate_required_capabilities()
+    |> validate_dependencies()
+    |> validate_security_considerations()
+    |> validate_testing_strategy()
+    |> validate_integration_points()
+    |> foreign_key_constraint(:column_id)
+    |> foreign_key_constraint(:created_by_id)
+    |> unique_constraint([:column_id, :position])
+    |> unique_constraint(:identifier)
+  end
+
   @doc """
   Strict changeset for API PATCH /api/tasks/:id.
 

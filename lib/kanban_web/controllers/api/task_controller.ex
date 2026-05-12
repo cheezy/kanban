@@ -13,6 +13,38 @@ defmodule KanbanWeb.API.TaskController do
   # dedicated workflow endpoints (claim/complete/mark_reviewed) instead.
   # Defense in depth: the controller filters and logs; Task.api_update_changeset/2
   # also enforces the allow-list at the changeset layer.
+  # String keys an API client may NOT mass-assign on POST /api/tasks (or
+  # /api/tasks/batch). status defaults to :open via the schema, identifier and
+  # position are generated server-side, and the workflow/audit fields can only
+  # be set by the dedicated workflow endpoints. created_by_id and
+  # created_by_agent are not in this list because the controller helper
+  # `build_task_params_with_creator/3` overwrites them server-side after the
+  # filter — they need to flow through the changeset's allow-list.
+  @forbidden_api_create_fields ~w(
+    status
+    identifier
+    position
+    claimed_at
+    claim_expires_at
+    completed_at
+    completed_by_id
+    completed_by_agent
+    completion_summary
+    actual_complexity
+    actual_files_changed
+    time_spent_minutes
+    review_status
+    review_notes
+    review_report
+    reviewed_by_id
+    reviewed_at
+    workflow_steps
+    explorer_result
+    reviewer_result
+    archived_at
+    assigned_to_id
+  )
+
   @forbidden_api_update_fields ~w(
     status
     identifier
@@ -121,20 +153,7 @@ defmodule KanbanWeb.API.TaskController do
 
         case verify_column_ownership(column, board) do
           :ok ->
-            task_params_with_creator =
-              build_task_params_with_creator(task_params, user, api_token)
-
-            child_tasks = Map.get(task_params, "tasks", [])
-
-            if child_tasks != [] do
-              column
-              |> Tasks.create_goal_with_tasks(task_params_with_creator, child_tasks)
-              |> handle_goal_creation(conn)
-            else
-              column
-              |> Tasks.create_task(task_params_with_creator)
-              |> handle_task_creation(conn)
-            end
+            perform_api_task_create(conn, column, task_params, user, api_token)
 
           error ->
             handle_task_error(conn, error)
@@ -147,6 +166,27 @@ defmodule KanbanWeb.API.TaskController do
           "Invalid column_id: must be an integer",
           :invalid_param
         )
+    end
+  end
+
+  defp perform_api_task_create(conn, column, task_params, user, api_token) do
+    {safe_task_params, rejected_goal_fields} = filter_forbidden_create_fields(task_params)
+    child_tasks_raw = Map.get(task_params, "tasks", [])
+    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
+
+    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
+
+    task_params_with_creator =
+      build_task_params_with_creator(safe_task_params, user, api_token)
+
+    if safe_child_tasks != [] do
+      column
+      |> Tasks.api_create_goal_with_tasks(task_params_with_creator, safe_child_tasks)
+      |> handle_goal_creation(conn)
+    else
+      column
+      |> Tasks.api_create_task(task_params_with_creator)
+      |> handle_task_creation(conn)
     end
   end
 
@@ -953,10 +993,15 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp create_single_goal_in_batch(goal_params, index, column, user, api_token, conn, acc) do
-    task_params_with_creator = build_task_params_with_creator(goal_params, user, api_token)
-    child_tasks = Map.get(goal_params, "tasks", [])
+    {safe_goal_params, rejected_goal_fields} = filter_forbidden_create_fields(goal_params)
+    child_tasks_raw = Map.get(goal_params, "tasks", [])
+    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
 
-    case Tasks.create_goal_with_tasks(column, task_params_with_creator, child_tasks) do
+    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
+
+    task_params_with_creator = build_task_params_with_creator(safe_goal_params, user, api_token)
+
+    case Tasks.api_create_goal_with_tasks(column, task_params_with_creator, safe_child_tasks) do
       {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
         handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc)
 
@@ -1075,6 +1120,48 @@ defmodule KanbanWeb.API.TaskController do
     rejected = Enum.filter(@forbidden_api_update_fields, &Map.has_key?(task_params, &1))
     safe_params = Map.drop(task_params, @forbidden_api_update_fields)
     {safe_params, rejected}
+  end
+
+  # Strips the create-path forbidden fields and returns {safe_params, rejected}.
+  # Unlike the update filter, this keeps `column_id` (the create flow legitimately
+  # honors it after `verify_column_ownership`).
+  defp filter_forbidden_create_fields(task_params) when is_map(task_params) do
+    rejected = Enum.filter(@forbidden_api_create_fields, &Map.has_key?(task_params, &1))
+    safe_params = Map.drop(task_params, @forbidden_api_create_fields)
+    {safe_params, rejected}
+  end
+
+  defp filter_forbidden_create_fields(other), do: {other, []}
+
+  # Filters a list of child task maps (from POST /api/tasks with `tasks: [...]`
+  # or POST /api/tasks/batch). Returns the cleaned list plus a deduplicated list
+  # of any forbidden field names that appeared across children.
+  defp filter_child_tasks(child_tasks) when is_list(child_tasks) do
+    {safe_children, rejected_lists} =
+      Enum.map_reduce(child_tasks, [], fn child, acc ->
+        {safe, rejected} = filter_forbidden_create_fields(child)
+        {safe, acc ++ rejected}
+      end)
+
+    {safe_children, Enum.uniq(rejected_lists)}
+  end
+
+  defp filter_child_tasks(other), do: {other, []}
+
+  defp log_create_mass_assignment(conn, [], []), do: conn
+
+  defp log_create_mass_assignment(conn, goal_fields, child_fields) do
+    Logger.info("API mass-assignment attempt rejected on create",
+      rejected_fields: Enum.uniq(goal_fields ++ child_fields),
+      actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
+    )
+
+    emit_telemetry(conn, :task_create_forbidden_fields_filtered, %{
+      goal_fields: goal_fields,
+      child_fields: child_fields
+    })
+
+    conn
   end
 
   defp parse_id(id) when is_integer(id), do: {:ok, id}
