@@ -110,7 +110,8 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
                result =~ "L&#39;intégration GitHub n&#39;est pas configurée"
     end
 
-    test "shows generic error when GitHub API returns error", %{conn: conn} do
+    test "shows generic (non-leaking) error when GitHub API returns error (W402)",
+         %{conn: conn} do
       Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
 
       mock_client = fn _url, _opts ->
@@ -131,7 +132,10 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
         |> render_submit(%{issue: %{title: "Test Issue", body: "Test body", label: "defect"}})
 
       assert result =~ "Failed to submit issue"
-      assert result =~ "GitHub API returned status 500"
+      assert result =~ "Failed to submit the issue. Please try again later."
+      # W402: must NOT leak the upstream status code or response details.
+      refute result =~ "GitHub API returned status 500"
+      refute result =~ "Internal Server Error"
     end
 
     test "shows success message and link after successful submission", %{conn: conn} do
@@ -254,6 +258,80 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
 
       assert result =~ "Issue submitted successfully!" or
                result =~ "Problème soumis avec succès"
+    end
+  end
+
+  describe "W402: input validation + rate limiting" do
+    setup do
+      Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
+
+      mock_client = fn _url, _opts ->
+        {:ok,
+         %Req.Response{
+           status: 201,
+           body: %{"html_url" => "https://github.com/owner/repo/issues/42"}
+         }}
+      end
+
+      Application.put_env(:kanban, :http_client, mock_client)
+
+      :ok
+    end
+
+    test "rejects an oversize title", %{conn: conn} do
+      long_title = String.duplicate("a", 201)
+      {:ok, view, _html} = live(conn, ~p"/issue")
+
+      result =
+        view
+        |> element("#issue-form")
+        |> render_submit(%{
+          issue: %{title: long_title, body: "Some body", label: "defect"}
+        })
+
+      assert result =~ "200" or result =~ "fewer"
+      refute result =~ "Issue submitted successfully!"
+    end
+
+    test "rejects an oversize body", %{conn: conn} do
+      long_body = String.duplicate("a", 4_001)
+      {:ok, view, _html} = live(conn, ~p"/issue")
+
+      result =
+        view
+        |> element("#issue-form")
+        |> render_submit(%{
+          issue: %{title: "Short title", body: long_body, label: "defect"}
+        })
+
+      assert result =~ "4000" or result =~ "fewer"
+      refute result =~ "Issue submitted successfully!"
+    end
+
+    test "blocks a rapid follow-up submission within the rate-limit window",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/issue")
+
+      # First submission — succeeds.
+      view
+      |> element("#issue-form")
+      |> render_submit(%{issue: %{title: "First", body: "First body", label: "defect"}})
+
+      assert render(view) =~ "Issue submitted successfully!"
+
+      # Reset the form (clears submitted state without resetting the rate window).
+      view
+      |> element("[phx-click='reset']")
+      |> render_click()
+
+      # Second submission immediately — should hit the rate limit.
+      result =
+        view
+        |> element("#issue-form")
+        |> render_submit(%{issue: %{title: "Second", body: "Second body", label: "defect"}})
+
+      assert result =~ "Please wait" or result =~ "moment"
+      refute result =~ "Issue submitted successfully!"
     end
   end
 end

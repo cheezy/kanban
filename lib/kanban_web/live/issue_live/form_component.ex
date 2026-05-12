@@ -172,6 +172,16 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     """
   end
 
+  # W402: bound the abuse surface of the publicly-mountable issue form. Even
+  # without a session-level or IP-level rate limiter (would require a new dep
+  # like Hammer or PlugAttack), these guards stop the runaway-loop spam shape
+  # and bound payload size so a malicious client cannot exhaust the server's
+  # GitHub rate limit with a single request. Future work: add Hammer-backed
+  # per-IP throttling once a dep upgrade can be scoped.
+  @title_max_length 200
+  @body_max_length 4_000
+  @min_submission_interval_seconds 30
+
   @impl true
   def update(assigns, socket) do
     {:ok,
@@ -180,6 +190,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
      |> assign_new(:submitted, fn -> false end)
      |> assign_new(:issue_url, fn -> nil end)
      |> assign_new(:error, fn -> nil end)
+     |> assign_new(:last_submission_at, fn -> nil end)
      |> assign_new(:form, fn -> to_form(default_params(), as: "issue") end)}
   end
 
@@ -190,26 +201,21 @@ defmodule KanbanWeb.IssueLive.FormComponent do
   end
 
   def handle_event("save", %{"issue" => params}, socket) do
-    case validate(params) do
-      [] ->
-        case GitHub.create_issue(params["title"], params["body"], [params["label"]]) do
-          {:ok, url} ->
-            {:noreply,
-             socket
-             |> assign(:submitted, true)
-             |> assign(:issue_url, url)
-             |> assign(:error, nil)}
+    cond do
+      rate_limited?(socket) ->
+        {:noreply,
+         assign(
+           socket,
+           :error,
+           gettext("Please wait a moment before submitting another issue.")
+         )}
 
-          {:error, :not_configured} ->
-            {:noreply, assign(socket, :error, gettext("GitHub integration is not configured"))}
-
-          {:error, reason} ->
-            {:noreply, assign(socket, :error, inspect(reason))}
-        end
-
-      errors ->
-        form = to_form(params, as: "issue", errors: errors)
+      validate(params) != [] ->
+        form = to_form(params, as: "issue", errors: validate(params))
         {:noreply, assign(socket, form: form)}
+
+      true ->
+        do_submit(socket, params)
     end
   end
 
@@ -222,6 +228,45 @@ defmodule KanbanWeb.IssueLive.FormComponent do
      |> assign(:form, to_form(default_params(), as: "issue"))}
   end
 
+  defp do_submit(socket, params) do
+    case GitHub.create_issue(params["title"], params["body"], [params["label"]]) do
+      {:ok, url} ->
+        {:noreply,
+         socket
+         |> assign(:submitted, true)
+         |> assign(:issue_url, url)
+         |> assign(:error, nil)
+         |> assign(:last_submission_at, System.system_time(:second))}
+
+      {:error, :not_configured} ->
+        {:noreply, assign(socket, :error, gettext("GitHub integration is not configured"))}
+
+      {:error, _reason} ->
+        # W402: do not surface inspect(reason) — request/response details may
+        # leak internal URLs, headers, or other server metadata. Log the full
+        # reason server-side and return a fixed gettext message to the client.
+        require Logger
+        Logger.error("KanbanWeb.IssueLive.FormComponent: GitHub.create_issue failed")
+
+        {:noreply,
+         assign(
+           socket,
+           :error,
+           gettext("Failed to submit the issue. Please try again later.")
+         )}
+    end
+  end
+
+  defp rate_limited?(socket) do
+    case socket.assigns[:last_submission_at] do
+      nil ->
+        false
+
+      last ->
+        System.system_time(:second) - last < @min_submission_interval_seconds
+    end
+  end
+
   defp default_params do
     %{"title" => "", "body" => "", "label" => "defect"}
   end
@@ -230,17 +275,33 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     errors = []
 
     errors =
-      if blank?(params["title"]) do
-        [{:title, {gettext("can't be blank"), []}} | errors]
-      else
-        errors
+      cond do
+        blank?(params["title"]) ->
+          [{:title, {gettext("can't be blank"), []}} | errors]
+
+        too_long?(params["title"], @title_max_length) ->
+          [
+            {:title, {gettext("must be %{n} characters or fewer", n: @title_max_length), []}}
+            | errors
+          ]
+
+        true ->
+          errors
       end
 
     errors =
-      if blank?(params["body"]) do
-        [{:body, {gettext("can't be blank"), []}} | errors]
-      else
-        errors
+      cond do
+        blank?(params["body"]) ->
+          [{:body, {gettext("can't be blank"), []}} | errors]
+
+        too_long?(params["body"], @body_max_length) ->
+          [
+            {:body, {gettext("must be %{n} characters or fewer", n: @body_max_length), []}}
+            | errors
+          ]
+
+        true ->
+          errors
       end
 
     errors =
@@ -252,6 +313,10 @@ defmodule KanbanWeb.IssueLive.FormComponent do
 
     errors
   end
+
+  defp too_long?(nil, _), do: false
+  defp too_long?(str, max) when is_binary(str), do: String.length(str) > max
+  defp too_long?(_, _), do: false
 
   defp allowed_label_values do
     Enum.map(label_options(), fn {_display, value} -> value end)
