@@ -529,31 +529,39 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     |> assign(:form, to_form(changeset))
   end
 
-  defp maybe_add_review_metadata(task_params, current_user) do
+  # W403: review attribution and completion timestamps are server-owned audit
+  # fields. The previous Map.put_new / Map.has_key? pattern let a board member
+  # forge them via a crafted form payload (CWE-639). Now we ALWAYS overwrite
+  # those keys with server values when the status transition fires, and we
+  # drop any client-supplied version up front so even non-transition saves do
+  # not let a malicious client persist forged values. Exposed via @doc false so
+  # the regression test in form_component_test.exs can exercise the logic
+  # directly without the full LiveView submit roundtrip.
+  @doc false
+  def maybe_add_review_metadata(task_params, current_user) do
+    # Strip any client-supplied review attribution unconditionally — the server
+    # is the only authority for who reviewed and when.
+    task_params = Map.drop(task_params, ["reviewed_at", "reviewed_by_id"])
     review_status = task_params["review_status"]
 
-    # If review_status is being set to something other than pending,
-    # and reviewed_at/reviewed_by_id are not already set, set them automatically
     if review_status && review_status != "" && review_status != "pending" do
       task_params
-      |> Map.put_new("reviewed_at", DateTime.utc_now() |> DateTime.truncate(:second))
-      |> Map.put_new("reviewed_by_id", current_user.id)
+      |> Map.put("reviewed_at", DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Map.put("reviewed_by_id", current_user.id)
     else
       task_params
     end
   end
 
-  defp maybe_add_completed_at(task_params, task) do
+  @doc false
+  def maybe_add_completed_at(task_params, task) do
+    # Strip any client-supplied completion timestamp unconditionally — the
+    # server's `DateTime.utc_now/0` is the only authority. Cycle-time metrics
+    # depend on this being honest.
+    task_params = Map.drop(task_params, ["completed_at"])
     status = task_params["status"]
 
-    # If status is being set to completed and completed_at is not already set
-    # (either in params or on the existing task), set it automatically
-    should_set_completed_at =
-      (status == "completed" || status == :completed) &&
-        !Map.has_key?(task_params, "completed_at") &&
-        is_nil(task.completed_at)
-
-    if should_set_completed_at do
+    if (status == "completed" || status == :completed) && is_nil(task.completed_at) do
       Map.put(task_params, "completed_at", DateTime.utc_now() |> DateTime.truncate(:second))
     else
       task_params

@@ -3514,4 +3514,91 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
     end
   end
+
+  describe "W403 server-side attribution overrides for review_metadata and completed_at" do
+    test "maybe_add_review_metadata strips client-supplied reviewed_at and reviewed_by_id" do
+      current_user = %{id: 42}
+
+      params = %{
+        "review_status" => "approved",
+        "reviewed_at" => "1999-01-01T00:00:00Z",
+        "reviewed_by_id" => 999
+      }
+
+      result = FormComponent.maybe_add_review_metadata(params, current_user)
+
+      refute result["reviewed_at"] == "1999-01-01T00:00:00Z"
+      refute result["reviewed_by_id"] == 999
+      assert result["reviewed_by_id"] == 42
+      assert %DateTime{} = result["reviewed_at"]
+    end
+
+    test "maybe_add_review_metadata does not add metadata when status is pending" do
+      current_user = %{id: 42}
+      params = %{"review_status" => "pending"}
+
+      result = FormComponent.maybe_add_review_metadata(params, current_user)
+
+      refute Map.has_key?(result, "reviewed_at")
+      refute Map.has_key?(result, "reviewed_by_id")
+    end
+
+    test "maybe_add_review_metadata strips forged metadata even when review_status is empty" do
+      current_user = %{id: 42}
+
+      params = %{
+        "review_status" => "",
+        "reviewed_at" => "1999-01-01T00:00:00Z",
+        "reviewed_by_id" => 999
+      }
+
+      result = FormComponent.maybe_add_review_metadata(params, current_user)
+
+      # Forged values must NOT survive even when the transition does not fire.
+      refute Map.has_key?(result, "reviewed_at")
+      refute Map.has_key?(result, "reviewed_by_id")
+    end
+
+    test "maybe_add_completed_at strips client-supplied completed_at and sets server value" do
+      task = %{completed_at: nil}
+
+      params = %{
+        "status" => "completed",
+        "completed_at" => "1999-01-01T00:00:00Z"
+      }
+
+      result = FormComponent.maybe_add_completed_at(params, task)
+
+      refute result["completed_at"] == "1999-01-01T00:00:00Z"
+      assert %DateTime{} = result["completed_at"]
+    end
+
+    test "maybe_add_completed_at strips forged completed_at even on non-completing status" do
+      task = %{completed_at: nil}
+
+      params = %{
+        "status" => "in_progress",
+        "completed_at" => "1999-01-01T00:00:00Z"
+      }
+
+      result = FormComponent.maybe_add_completed_at(params, task)
+
+      # Forged value must NOT survive even when the completion transition does
+      # not fire — otherwise an attacker could pre-set completed_at on an
+      # in-progress task and have it picked up by a later save.
+      refute Map.has_key?(result, "completed_at")
+    end
+
+    test "maybe_add_completed_at preserves existing task.completed_at when status stays completed" do
+      existing_dt = ~U[2026-01-01 00:00:00Z]
+      task = %{completed_at: existing_dt}
+      params = %{"status" => "completed"}
+
+      result = FormComponent.maybe_add_completed_at(params, task)
+
+      # No completed_at is added because the task is already completed;
+      # the existing timestamp on task.completed_at is preserved by Ecto cast.
+      refute Map.has_key?(result, "completed_at")
+    end
+  end
 end
