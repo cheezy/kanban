@@ -84,13 +84,13 @@ defmodule KanbanWeb.MetricsExcelExport do
     weekends_label = if opts[:exclude_weekends], do: "Excluded", else: "Included"
     generated_at = Calendar.strftime(DateTime.utc_now(), "%b %d, %Y %I:%M %p")
 
-    row1 = [["#{metric_label} Metrics — #{board.name}" | @bold]]
+    row1 = [[safe_text("#{metric_label} Metrics — #{board.name}") | @bold]]
 
     filter_parts = ["Time Range: #{time_range_label}", "Weekends: #{weekends_label}"]
 
     filter_parts =
       if ai_optimized?(board) do
-        agent_label = opts[:agent_name] || "All Agents"
+        agent_label = safe_text(opts[:agent_name] || "All Agents")
         filter_parts ++ ["Agent: #{agent_label}"]
       else
         filter_parts
@@ -117,8 +117,8 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(tasks, fn task ->
         base = [
-          task[:identifier],
-          task[:title],
+          safe_text(task[:identifier]),
+          safe_text(task[:title]),
           format_datetime_cell(task[:inserted_at])
         ]
 
@@ -127,7 +127,7 @@ defmodule KanbanWeb.MetricsExcelExport do
             [
               format_datetime_cell(task[:claimed_at]),
               format_datetime_cell(task[:completed_at]),
-              task[:completed_by_agent] || "—"
+              safe_text(task[:completed_by_agent] || "—")
             ]
         else
           base ++ [format_datetime_cell(task[:completed_at])]
@@ -150,14 +150,14 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(goals, fn goal ->
         base = [
-          goal[:identifier],
-          goal[:title],
+          safe_text(goal[:identifier]),
+          safe_text(goal[:title]),
           format_datetime_cell(goal[:inserted_at]),
           format_datetime_cell(goal[:completed_at])
         ]
 
         if ai_optimized?(board) do
-          base ++ [goal[:completed_by_agent] || "—"]
+          base ++ [safe_text(goal[:completed_by_agent] || "—")]
         else
           base
         end
@@ -182,15 +182,15 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(tasks, fn task ->
         base = [
-          task[:identifier],
-          task[:title],
+          safe_text(task[:identifier]),
+          safe_text(task[:title]),
           format_time_cell(task[:cycle_time_seconds]),
           format_datetime_cell(task[:claimed_at]),
           format_datetime_cell(task[:completed_at])
         ]
 
         if ai_optimized?(board) do
-          base ++ [task[:completed_by_agent] || "—"]
+          base ++ [safe_text(task[:completed_by_agent] || "—")]
         else
           base
         end
@@ -214,15 +214,15 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(tasks, fn task ->
         base = [
-          task[:identifier],
-          task[:title],
+          safe_text(task[:identifier]),
+          safe_text(task[:title]),
           format_time_cell(task[:lead_time_seconds]),
           format_datetime_cell(task[:inserted_at]),
           format_datetime_cell(task[:completed_at])
         ]
 
         if ai_optimized?(board) do
-          base ++ [task[:completed_by_agent] || "—"]
+          base ++ [safe_text(task[:completed_by_agent] || "—")]
         else
           base
         end
@@ -245,12 +245,12 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(tasks, fn task ->
         [
-          task[:identifier],
-          task[:title],
+          safe_text(task[:identifier]),
+          safe_text(task[:title]),
           format_time_cell(task[:review_wait_seconds]),
           format_datetime_cell(task[:completed_at]),
           format_datetime_cell(task[:reviewed_at]),
-          task[:completed_by_agent] || "—"
+          safe_text(task[:completed_by_agent] || "—")
         ]
       end)
 
@@ -276,15 +276,15 @@ defmodule KanbanWeb.MetricsExcelExport do
     rows =
       Enum.map(tasks, fn task ->
         base = [
-          task[:identifier],
-          task[:title],
+          safe_text(task[:identifier]),
+          safe_text(task[:title]),
           format_time_cell(task[:backlog_wait_seconds]),
           format_datetime_cell(task[:inserted_at]),
           format_datetime_cell(task[:claimed_at])
         ]
 
         if ai_optimized?(board) do
-          base ++ [task[:completed_by_agent] || "—"]
+          base ++ [safe_text(task[:completed_by_agent] || "—")]
         else
           base
         end
@@ -298,6 +298,16 @@ defmodule KanbanWeb.MetricsExcelExport do
   defp ai_optimized?(board), do: board.ai_optimized_board
 
   defp bold_row(cells), do: Enum.map(cells, fn cell -> [cell | @bold] end)
+
+  # Prefix any string that Excel/LibreOffice would interpret as a formula with a
+  # single apostrophe so it renders as literal text. Applied to every cell whose
+  # value originates from user-controlled fields (task title, identifier,
+  # completed_by_agent, board.name, agent name filter). Non-strings pass through
+  # untouched so date/duration cell builders are not affected.
+  defp safe_text(<<c, _::binary>> = s) when c in [?=, ?+, ?-, ?@, 0x09, 0x0D],
+    do: "'" <> s
+
+  defp safe_text(s), do: s
 
   defp format_datetime_cell(nil), do: "N/A"
   defp format_datetime_cell(datetime), do: Helpers.format_datetime(datetime)

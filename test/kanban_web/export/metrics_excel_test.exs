@@ -383,4 +383,123 @@ defmodule KanbanWeb.MetricsExcelExportTest do
       assert_valid_xlsx(result)
     end
   end
+
+  # ── Formula-injection sanitization (W391) ──
+  #
+  # Verifies that user-controlled string cells (task title, identifier,
+  # completed_by_agent, board.name, agent_name filter) are sanitized so Excel /
+  # LibreOffice will render formula-prefixed values as literal text. We assert
+  # by extracting xl/sharedStrings.xml from the xlsx zip and inspecting the
+  # decoded string table.
+
+  defp extract_shared_strings({:ok, bytes}) do
+    {:ok, handle} = :zip.zip_open(bytes, [:memory])
+    {:ok, {_path, xml}} = :zip.zip_get(~c"xl/sharedStrings.xml", handle)
+    :zip.zip_close(handle)
+    to_string(xml)
+  end
+
+  describe "generate/4 - formula injection sanitization" do
+    setup do
+      malicious_task =
+        make_task(%{
+          identifier: "=cmd|'/C calc'!A1",
+          title: "+HYPERLINK(\"http://evil/\")",
+          completed_by_agent: "-malicious"
+        })
+
+      malicious_board = %{name: "@phish.example.com", ai_optimized_board: true}
+
+      data = %{tasks: [malicious_task], completed_goals: []}
+
+      %{data: data, board: malicious_board}
+    end
+
+    test "wraps formula-prefixed task identifier with apostrophe", %{data: data, board: board} do
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      assert xml =~ "&apos;=cmd|&apos;/C calc&apos;!A1" or xml =~ "'=cmd|"
+      refute xml =~ ~r/<t[^>]*>=cmd/
+    end
+
+    test "wraps formula-prefixed task title with apostrophe", %{data: data, board: board} do
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      refute xml =~ ~r/<t[^>]*>\+HYPERLINK/
+      assert xml =~ "'+HYPERLINK" or xml =~ "&apos;+HYPERLINK"
+    end
+
+    test "wraps formula-prefixed completed_by_agent with apostrophe",
+         %{data: data, board: board} do
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      refute xml =~ ~r/<t[^>]*>-malicious/
+      assert xml =~ "'-malicious" or xml =~ "&apos;-malicious"
+    end
+
+    test "wraps formula-prefixed agent_name filter option", %{data: data, board: board} do
+      opts = Keyword.put(@default_opts, :agent_name, "=HACK()")
+      xml = extract_shared_strings(MetricsExcelExport.generate(board, "throughput", opts, data))
+      refute xml =~ ~r/<t[^>]*>Agent: =HACK/
+      assert xml =~ "Agent: '=HACK" or xml =~ "Agent: &apos;=HACK"
+    end
+
+    test "wraps tab-prefixed title with apostrophe", %{board: board} do
+      data = %{
+        tasks: [make_task(%{identifier: "W1", title: "\tSUM(A1:A10)"})],
+        completed_goals: []
+      }
+
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      refute xml =~ ~r/<t[^>]*>\tSUM/
+
+      assert xml =~ "'\tSUM" or xml =~ "&apos;\tSUM" or xml =~ "&apos;&#9;SUM" or
+               xml =~ "&apos;&#x9;SUM"
+    end
+
+    test "wraps CR-prefixed title with apostrophe", %{board: board} do
+      data = %{
+        tasks: [make_task(%{identifier: "W1", title: "\r=BAD()"})],
+        completed_goals: []
+      }
+
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      refute xml =~ ~r/<t[^>]*>\r=BAD/
+
+      assert xml =~ "'\r=BAD" or xml =~ "&apos;\r=BAD" or xml =~ "&apos;&#13;=BAD" or
+               xml =~ "&apos;&#xD;=BAD"
+    end
+
+    test "leaves non-prefixed strings unchanged", %{board: board} do
+      benign = make_task(%{identifier: "W42", title: "Normal Task", completed_by_agent: "Alice"})
+      data = %{tasks: [benign], completed_goals: []}
+
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(board, "throughput", @default_opts, data)
+        )
+
+      assert xml =~ "W42"
+      refute xml =~ "'W42"
+      assert xml =~ "Normal Task"
+      refute xml =~ "'Normal Task"
+    end
+  end
 end

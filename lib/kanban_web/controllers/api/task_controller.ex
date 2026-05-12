@@ -169,27 +169,6 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp perform_api_task_create(conn, column, task_params, user, api_token) do
-    {safe_task_params, rejected_goal_fields} = filter_forbidden_create_fields(task_params)
-    child_tasks_raw = Map.get(task_params, "tasks", [])
-    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
-
-    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
-
-    task_params_with_creator =
-      build_task_params_with_creator(safe_task_params, user, api_token)
-
-    if safe_child_tasks != [] do
-      column
-      |> Tasks.api_create_goal_with_tasks(task_params_with_creator, safe_child_tasks)
-      |> handle_goal_creation(conn)
-    else
-      column
-      |> Tasks.api_create_task(task_params_with_creator)
-      |> handle_task_creation(conn)
-    end
-  end
-
   def create(conn, _params) do
     error_response =
       ErrorDocs.add_docs_to_error(
@@ -211,6 +190,27 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(error_response)
+  end
+
+  defp perform_api_task_create(conn, column, task_params, user, api_token) do
+    {safe_task_params, rejected_goal_fields} = filter_forbidden_create_fields(task_params)
+    child_tasks_raw = Map.get(task_params, "tasks", [])
+    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
+
+    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
+
+    task_params_with_creator =
+      build_task_params_with_creator(safe_task_params, user, api_token)
+
+    if safe_child_tasks != [] do
+      column
+      |> Tasks.api_create_goal_with_tasks(task_params_with_creator, safe_child_tasks)
+      |> handle_goal_creation(conn)
+    else
+      column
+      |> Tasks.api_create_task(task_params_with_creator)
+      |> handle_task_creation(conn)
+    end
   end
 
   def batch_create(conn, %{"tasks" => _tasks}) do
