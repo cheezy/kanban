@@ -61,14 +61,21 @@ if config_env() == :prod do
   #
   # Default is :verify_none so first-deploy on Fly doesn't fail; operators
   # serving public-internet Postgres must explicitly set DATABASE_SSL_VERIFY=peer.
+  #
+  # Note: Postgrex splits TLS configuration across TWO keys — `ssl:` is the
+  # boolean flag (enable/disable TLS) and `ssl_opts:` is the keyword list
+  # passed through to `:ssl.connect/3`. Putting the keyword list under `ssl:`
+  # makes Postgrex enable TLS (the list is truthy) but never threads the
+  # verify option into the actual handshake, which is what caused the original
+  # `Certificate Unknown` alert in the Fly deploy.
   ssl_opts =
     case System.get_env("DATABASE_SSL_VERIFY", "none") do
       "peer" ->
         cacertfile = System.get_env("DATABASE_SSL_CACERTFILE") || CAStore.file_path()
-        [verify: :verify_peer, cacertfile: cacertfile]
+        [verify: :verify_peer, cacertfile: cacertfile, server_name_indication: :disable]
 
       "none" ->
-        [verify: :verify_none]
+        [verify: :verify_none, server_name_indication: :disable]
 
       other ->
         raise """
@@ -77,7 +84,8 @@ if config_env() == :prod do
     end
 
   config :kanban, Kanban.Repo,
-    ssl: ssl_opts,
+    ssl: true,
+    ssl_opts: ssl_opts,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`

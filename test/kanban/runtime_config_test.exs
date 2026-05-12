@@ -16,8 +16,13 @@ defmodule Kanban.RuntimeConfigTest do
   describe "production database TLS (W394)" do
     test "Repo config sets an ssl: option in the prod block (no plaintext)",
          %{runtime_source: source} do
-      assert source =~ "ssl: ssl_opts",
-             "config/runtime.exs must wire the Repo through an ssl_opts list so production connections are always encrypted (see W394)"
+      # Postgrex splits TLS into `ssl: true` (enable) + `ssl_opts: [...]`
+      # (handshake options). Both must be present in the prod Repo block.
+      assert source =~ "ssl: true",
+             "config/runtime.exs must enable TLS on the prod Repo with ssl: true so production connections are always encrypted (see W394)"
+
+      assert source =~ "ssl_opts: ssl_opts",
+             "config/runtime.exs must wire the ssl_opts keyword list into the Repo so verify/cacertfile reach the TLS handshake (see W394 post-deploy fix)"
     end
 
     test "ssl_opts switch supports both :verify_peer and :verify_none paths",
