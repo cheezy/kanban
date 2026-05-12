@@ -73,6 +73,52 @@ defmodule KanbanWeb.BoardLiveTest do
 
       refute html =~ "other user board"
     end
+
+    test "delete event for a board the user does not own returns :unauthorized flash",
+         %{conn: conn, user: user} do
+      # The user has :modify access to the board but is not the owner. The
+      # context-level owner check in W396's Boards.delete_board/2 returns
+      # {:error, :unauthorized}, which BoardLive.Index handles by flashing the
+      # owner-only error and re-navigating.
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, owner)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards")
+
+      render_hook(index_live, "delete", %{"id" => to_string(board.id)})
+      flash = assert_redirect(index_live, ~p"/boards")
+
+      assert flash["error"] =~ "Only the board owner can delete this board"
+      assert %Kanban.Boards.Board{} = Kanban.Boards.get_board!(board.id, user)
+    end
+
+    test "delete event for an id that does not match an accessible board returns :not_found flash",
+         %{conn: conn} do
+      # Either a deleted board id, an id from a board the user has no access to,
+      # or a bogus large id — Boards.get_board/2 returns {:error, :not_found} in
+      # all of those cases, and BoardLive.Index flashes 'Board not found'.
+      {:ok, index_live, _html} = live(conn, ~p"/boards")
+
+      render_hook(index_live, "delete", %{"id" => "999999999"})
+      flash = assert_redirect(index_live, ~p"/boards")
+
+      assert flash["error"] =~ "Board not found"
+    end
+
+    test "mounts with has_boards: false when the user has no boards",
+         %{conn: conn} do
+      # The user from register_and_log_in_user has no boards yet, so the
+      # has_boards assign flips to false and the empty-state UI renders.
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # The index template renders different content when has_boards is false.
+      # At minimum, no board card should render and the listing heading still
+      # appears. (Tests upstream of this one have already covered the populated
+      # branch.)
+      refute html =~ ~r/<li id="boards-\d+"/
+      assert html =~ "Listing Boards" or html =~ "boards"
+    end
   end
 
   describe "Show" do

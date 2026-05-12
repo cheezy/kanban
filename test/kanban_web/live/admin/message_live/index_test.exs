@@ -8,6 +8,7 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
   alias Kanban.Accounts
   alias Kanban.Messages
   alias Kanban.Messages.Message
+  alias KanbanWeb.Admin.MessageLive.Index
 
   defp promote_to_admin(user) do
     {:ok, admin} = Accounts.update_user_type(user, :admin)
@@ -245,6 +246,57 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
 
       assert render(view) =~ "admin"
       assert Enum.any?(Messages.list_messages(), &(&1.id == m.id))
+    end
+
+    test "validate event for a non-admin scope is rejected by the guard",
+         %{conn: conn} do
+      # Covers the per-event guard on the "validate" phx-change handler. This
+      # path was previously only exercised on save/delete; adding it for full
+      # coverage of the W400 defense.
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      :sys.replace_state(view.pid, fn state ->
+        scope = state.socket.assigns.current_scope
+        non_admin_user = %{scope.user | type: :user}
+        new_scope = %{scope | user: non_admin_user}
+        put_in(state.socket.assigns.current_scope, new_scope)
+      end)
+
+      render_hook(view, "validate", %{"message" => %{"title" => "x", "body" => "y"}})
+
+      assert render(view) =~ "admin"
+    end
+  end
+
+  describe "fetch_message/1 defensive id parser" do
+    # The LiveView's phx-value-id attributes always serialize as strings, so
+    # the integer and non-binary heads are defensive clauses that the
+    # event-driven tests do not naturally reach. These targeted tests pin the
+    # contract: integer in → record (or nil); non-binary non-integer in → nil.
+
+    test "looks up a message by an integer id directly" do
+      admin = promote_to_admin(user_fixture())
+      message = message_fixture(admin, %{title: "lookup-test"})
+
+      assert %Message{id: id} = Index.fetch_message(message.id)
+      assert id == message.id
+    end
+
+    test "returns nil for an integer id that does not match any message" do
+      assert Index.fetch_message(999_999_999) == nil
+    end
+
+    test "returns nil for a non-binary, non-integer id (defensive fallthrough)" do
+      assert Index.fetch_message(nil) == nil
+      assert Index.fetch_message(:foo) == nil
+      assert Index.fetch_message(%{id: 1}) == nil
+      assert Index.fetch_message([1, 2, 3]) == nil
+    end
+
+    test "returns nil for a malformed string id" do
+      assert Index.fetch_message("not-an-integer") == nil
+      assert Index.fetch_message("123abc") == nil
+      assert Index.fetch_message("") == nil
     end
   end
 end

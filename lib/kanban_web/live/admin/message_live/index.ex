@@ -85,15 +85,21 @@ defmodule KanbanWeb.Admin.MessageLive.Index do
     {:noreply, put_flash(socket, :error, gettext("You must be an admin to perform this action."))}
   end
 
-  defp fetch_message(id) when is_binary(id) do
+  # Defensive id parser — accepts string ids from phx-value-id attributes,
+  # integers from internal callers, and returns nil for anything malformed
+  # (non-integer string, non-binary non-integer, etc.) so the LiveView does
+  # not crash on a tampered payload. Exposed via @doc false so the regression
+  # tests can exercise each head directly.
+  @doc false
+  def fetch_message(id) when is_binary(id) do
     case Integer.parse(id) do
       {int_id, ""} -> Repo.get(Message, int_id)
       _ -> nil
     end
   end
 
-  defp fetch_message(id) when is_integer(id), do: Repo.get(Message, id)
-  defp fetch_message(_), do: nil
+  def fetch_message(id) when is_integer(id), do: Repo.get(Message, id)
+  def fetch_message(_), do: nil
 
   defp assign_new_form(socket) do
     assign(socket, :form, to_form(Messages.change_message(%Message{})))

@@ -110,8 +110,11 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
                result =~ "L&#39;intégration GitHub n&#39;est pas configurée"
     end
 
+    @tag :capture_log
     test "shows generic (non-leaking) error when GitHub API returns error (W402)",
          %{conn: conn} do
+      # @tag :capture_log silences the expected Logger.error from W402's
+      # error path so the test runner output stays clean.
       Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
 
       mock_client = fn _url, _opts ->
