@@ -253,7 +253,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       column = column_fixture(board, %{name: "Test Column"})
 
       # Grant read-only access to the current user
-      Kanban.Boards.add_user_to_board(board, user, :read_only)
+      Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
 
       task = task_fixture(column, %{title: "Test Task"})
       Tasks.archive_task(task)
@@ -289,7 +289,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       owner = user_fixture()
       board = board_fixture(owner)
       column = column_fixture(board, %{name: "Test Column"})
-      Kanban.Boards.add_user_to_board(board, user, :read_only)
+      Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
 
       task = task_fixture(column, %{title: "Read-only Task"})
       {:ok, archived_task} = Tasks.archive_task(task)
@@ -360,7 +360,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       owner = user_fixture()
       board = board_fixture(owner)
       column = column_fixture(board, %{name: "Test Column"})
-      Kanban.Boards.add_user_to_board(board, user, :read_only)
+      Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
 
       task = task_fixture(column, %{title: "Read-only Delete Target"})
       {:ok, archived_task} = Tasks.archive_task(task)

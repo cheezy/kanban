@@ -173,15 +173,17 @@ defmodule Kanban.Boards.BoardUserTest do
       board = board_fixture(user1)
 
       # Try to add a second owner
-      assert_raise Ecto.ConstraintError, fn ->
+      result =
         %BoardUser{}
         |> BoardUser.changeset(%{
           board_id: board.id,
           user_id: user2.id,
           access: :owner
         })
-        |> Repo.insert!()
-      end
+        |> Repo.insert()
+
+      assert {:error, changeset} = result
+      assert "board already has an owner" in errors_on(changeset).board_id
     end
 
     test "allows multiple non-owner users on the same board" do
@@ -246,7 +248,7 @@ defmodule Kanban.Boards.BoardUserTest do
         |> BoardUser.changeset(%{
           board_id: board.id,
           user_id: 999_999,
-          access: :owner
+          access: :read_only
         })
         |> Repo.insert!()
       end

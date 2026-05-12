@@ -379,7 +379,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
     test "returns :not_authorized when the caller is a read-only board member", ctx do
       task = set_review_status(ctx.in_review_task, :approved, ctx.user)
-      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only)
+      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only, ctx.user)
 
       assert {:error, :not_authorized} = AgentWorkflow.mark_reviewed(task, ctx.other)
     end
@@ -438,7 +438,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     end
 
     test "returns :not_authorized when the caller is a read-only board member", ctx do
-      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only)
+      Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only, ctx.user)
 
       assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
     end

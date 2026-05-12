@@ -20,19 +20,10 @@ defmodule Kanban.Boards.BoardUser do
     |> validate_required([:board_id, :user_id, :access])
     |> validate_inclusion(:access, @access_levels)
     |> unique_constraint([:board_id, :user_id])
-    |> validate_only_one_owner()
-  end
-
-  defp validate_only_one_owner(changeset) do
-    access = get_field(changeset, :access)
-    board_id = get_field(changeset, :board_id)
-
-    if access == :owner and board_id do
-      # This will be enforced by database constraint, but we can add a soft check here
-      changeset
-    else
-      changeset
-    end
+    |> unique_constraint(:board_id,
+      name: :board_users_one_owner_per_board,
+      message: "board already has an owner"
+    )
   end
 
   def access_levels, do: @access_levels

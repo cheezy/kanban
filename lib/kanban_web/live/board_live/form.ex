@@ -155,7 +155,7 @@ defmodule KanbanWeb.BoardLive.Form do
     board = socket.assigns.board
     access_atom = String.to_existing_atom(access)
 
-    case Boards.add_user_to_board(board, user, access_atom) do
+    case Boards.add_user_to_board(board, user, access_atom, socket.assigns.current_scope.user) do
       {:ok, _board_user} ->
         board_users = Boards.list_board_users(board)
 
@@ -184,7 +184,7 @@ defmodule KanbanWeb.BoardLive.Form do
          |> put_flash(:error, gettext("User not found"))}
 
       user ->
-        case Boards.remove_user_from_board(board, user) do
+        case Boards.remove_user_from_board(board, user, socket.assigns.current_scope.user) do
           {:ok, _board_user} ->
             board_users = Boards.list_board_users(board)
 
@@ -213,7 +213,11 @@ defmodule KanbanWeb.BoardLive.Form do
   end
 
   defp save_board(socket, :edit, board_params) do
-    case Boards.update_board(socket.assigns.board, board_params) do
+    case Boards.update_board(
+           socket.assigns.board,
+           board_params,
+           socket.assigns.current_scope.user
+         ) do
       {:ok, board} ->
         {:noreply,
          socket

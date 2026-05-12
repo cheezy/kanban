@@ -122,15 +122,21 @@ defmodule Kanban.Boards.BoardTest do
       assert changeset.valid?
     end
 
-    test "casts read_only when set to true" do
+    test "public changeset/2 does not cast :read_only (owner-only field, see W396)" do
       changeset = Board.changeset(%Board{}, %{name: "Test Board", read_only: true})
+      assert changeset.valid?
+      refute Map.has_key?(changeset.changes, :read_only)
+    end
+
+    test "owner_changeset/2 casts read_only when set to true" do
+      changeset = Board.owner_changeset(%Board{}, %{name: "Test Board", read_only: true})
       assert changeset.valid?
       assert get_change(changeset, :read_only) == true
     end
 
-    test "casts read_only when set to false on a board where it was true" do
+    test "owner_changeset/2 casts read_only when set to false on a board where it was true" do
       changeset =
-        Board.changeset(%Board{read_only: true}, %{name: "Test Board", read_only: false})
+        Board.owner_changeset(%Board{read_only: true}, %{name: "Test Board", read_only: false})
 
       assert changeset.valid?
       assert get_change(changeset, :read_only) == false
@@ -261,8 +267,8 @@ defmodule Kanban.Boards.BoardTest do
       assert applied.description == "Keep me"
     end
 
-    test "rejects non-boolean read_only values" do
-      changeset = Board.changeset(%Board{}, %{name: "Test Board", read_only: "yes"})
+    test "owner_changeset/2 rejects non-boolean read_only values" do
+      changeset = Board.owner_changeset(%Board{}, %{name: "Test Board", read_only: "yes"})
       assert %{read_only: ["is invalid"]} = errors_on(changeset)
     end
 

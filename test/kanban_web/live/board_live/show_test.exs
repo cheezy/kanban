@@ -222,7 +222,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -239,7 +239,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with read-only access
       readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
 
       conn = log_in_user(conn, readonly_user)
 
@@ -378,7 +378,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -400,7 +400,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with read-only access
       readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
 
       conn = log_in_user(conn, readonly_user)
 
@@ -549,7 +549,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -567,7 +567,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with read-only access
       readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
 
       conn = log_in_user(conn, readonly_user)
 
@@ -587,7 +587,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -604,7 +604,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -621,7 +621,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -642,7 +642,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -663,7 +663,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       # Add current user with modify access
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -862,7 +862,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(owner)
 
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -876,7 +876,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(owner)
 
       readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
 
       conn = log_in_user(conn, readonly_user)
 
@@ -1020,7 +1020,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(owner)
 
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
 
@@ -1034,7 +1034,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(owner)
 
       readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
 
       conn = log_in_user(conn, readonly_user)
 
@@ -1409,7 +1409,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = board_fixture(owner)
 
       # Make the board read-only
-      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
 
       # Create a non-member user and log them in
       non_member = user_fixture()
@@ -1443,7 +1443,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Create a read-only board
       owner = user_fixture()
       board = board_fixture(owner)
-      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
 
       # Create a non-member user and log them in
       non_member = user_fixture()
@@ -1460,11 +1460,11 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Create a read-only board
       owner = user_fixture()
       board = board_fixture(owner)
-      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
 
       # Create a member user and add to board
       member = user_fixture()
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :read_only, owner)
 
       # Log in as the member
       conn = log_in_user(conn, member)
@@ -1480,7 +1480,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # Create a read-only board
       owner = user_fixture()
       board = board_fixture(owner)
-      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
 
       # Log in as the owner
       conn = log_in_user(conn, owner)
@@ -1498,7 +1498,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = board_fixture(owner)
       column = column_fixture(board)
       task = task_fixture(column)
-      {:ok, _board} = Kanban.Boards.update_board(board, %{read_only: true})
+      {:ok, _board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
 
       # Create a non-member user and log them in
       non_member = user_fixture()
@@ -1573,7 +1573,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
         )
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1630,7 +1630,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column)
 
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1650,7 +1650,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column)
 
       modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       conn = log_in_user(conn, modify_user)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1670,7 +1670,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column, %{title: "Read-only Archive Target"})
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1717,7 +1717,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column, %{title: "Read-only Delete Target"})
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1762,7 +1762,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column, %{title: "Read-only Move Target", position: 0})
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1871,7 +1871,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(owner)
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       # Route into :show (not :api_tokens which is route-gated already).
@@ -1898,7 +1898,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
         })
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1925,7 +1925,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
         })
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
@@ -1984,7 +1984,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       task = task_fixture(column, %{title: "Read-only Viewable Task"})
 
       reader = user_fixture()
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       conn = log_in_user(conn, reader)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")

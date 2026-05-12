@@ -51,7 +51,7 @@ defmodule KanbanWeb.BoardLive.FormComponent do
   end
 
   defp save_board(socket, :edit, board_params) do
-    case Boards.update_board(socket.assigns.board, board_params) do
+    case Boards.update_board(socket.assigns.board, board_params, socket.assigns.current_user) do
       {:ok, board} ->
         notify_parent({:saved, board})
 

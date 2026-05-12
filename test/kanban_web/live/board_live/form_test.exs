@@ -54,12 +54,12 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert html =~ "Manage Users"
     end
 
-    test "non-owner cannot access edit board page", %{conn: conn, board: board} do
+    test "non-owner cannot access edit board page", %{conn: conn, board: board, user: user} do
       # Create another user who is not on the board
       other_user = user_fixture()
 
       # Add them to the board with read-only access
-      Kanban.Boards.add_user_to_board(board, other_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, other_user, :read_only, user)
 
       # Login as the other user
       conn = log_in_user(conn, other_user)
@@ -187,9 +187,9 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert render(lv) =~ "Can Edit"
     end
 
-    test "removes user from board", %{conn: conn, board: board} do
+    test "removes user from board", %{conn: conn, board: board, user: user} do
       other_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, other_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, other_user, :read_only, user)
 
       {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -199,9 +199,9 @@ defmodule KanbanWeb.BoardLive.FormTest do
       refute render(lv) =~ other_user.email
     end
 
-    test "prevents adding duplicate user", %{conn: conn, board: board} do
+    test "prevents adding duplicate user", %{conn: conn, board: board, user: user} do
       other_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, other_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, other_user, :read_only, user)
 
       {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
 
@@ -322,7 +322,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
     } do
       board = board_fixture(user)
       other_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, other_user, :read_only)
+      Kanban.Boards.add_user_to_board(board, other_user, :read_only, user)
 
       {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
 

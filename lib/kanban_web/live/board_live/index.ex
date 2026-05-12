@@ -25,19 +25,20 @@ defmodule KanbanWeb.BoardLive.Index do
 
     case Boards.get_board(id, user) do
       {:ok, board} ->
-        if Boards.owner?(board, user) do
-          {:ok, _} = Boards.delete_board(board)
-          boards = Boards.list_boards(user)
+        case Boards.delete_board(board, user) do
+          {:ok, _} ->
+            boards = Boards.list_boards(user)
 
-          {:noreply,
-           socket
-           |> assign(:has_boards, not Enum.empty?(boards))
-           |> stream_delete(:boards, board)}
-        else
-          {:noreply,
-           socket
-           |> put_flash(:error, gettext("Only the board owner can delete this board"))
-           |> push_navigate(to: ~p"/boards")}
+            {:noreply,
+             socket
+             |> assign(:has_boards, not Enum.empty?(boards))
+             |> stream_delete(:boards, board)}
+
+          {:error, :unauthorized} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, gettext("Only the board owner can delete this board"))
+             |> push_navigate(to: ~p"/boards")}
         end
 
       {:error, :not_found} ->

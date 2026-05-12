@@ -122,9 +122,9 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
       assert html =~ "Compliance Metrics"
     end
 
-    test "member with modify access can view the dashboard", %{board: board} do
+    test "member with modify access can view the dashboard", %{board: board, user: user} do
       modify_user = user_fixture()
-      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify, user)
       conn = log_in_user(Phoenix.ConnTest.build_conn(), modify_user)
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
@@ -133,9 +133,9 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
     end
 
     test "member with read_only access is denied and redirected to the board",
-         %{board: board} do
+         %{board: board, user: user} do
       read_only_user = user_fixture()
-      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only, user)
       conn = log_in_user(Phoenix.ConnTest.build_conn(), read_only_user)
 
       assert {:error, {:live_redirect, %{to: "/boards/" <> _, flash: %{"error" => error}}}} =

@@ -33,8 +33,26 @@ defmodule Kanban.Boards.Board do
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Default changeset for board mutations available to any caller with at least
+  :modify access. Notably excludes `:read_only` from the cast list — that flag
+  toggles whether the board is visible to non-members, so flipping it is an
+  owner-only operation handled via `owner_changeset/2`.
+  """
   def changeset(board, attrs) do
+    board
+    |> cast(attrs, [:name, :description, :field_visibility])
+    |> validate_required([:name])
+    |> validate_length(:name, min: 5, max: 50)
+    |> validate_length(:description, max: 255)
+    |> validate_field_visibility()
+  end
+
+  @doc """
+  Owner-only changeset. Same fields as `changeset/2` plus `:read_only`. Routed
+  through by `Boards.update_board/3` after the owner check has succeeded.
+  """
+  def owner_changeset(board, attrs) do
     board
     |> cast(attrs, [:name, :description, :field_visibility, :read_only])
     |> validate_required([:name])

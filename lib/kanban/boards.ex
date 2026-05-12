@@ -270,26 +270,31 @@ defmodule Kanban.Boards do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_board(%Board{} = board, attrs) do
-    board
-    |> Board.changeset(attrs)
-    |> Repo.update()
+  def update_board(%Board{} = board, attrs, user) do
+    if owner?(board, user) do
+      board
+      |> Board.owner_changeset(attrs)
+      |> Repo.update()
+    else
+      {:error, :unauthorized}
+    end
   end
 
   @doc """
-  Deletes a board.
+  Deletes a board. Owner-only.
 
   ## Examples
 
-      iex> delete_board(board)
+      iex> delete_board(board, user)
       {:ok, %Board{}}
 
-      iex> delete_board(board)
-      {:error, %Ecto.Changeset{}}
-
   """
-  def delete_board(%Board{} = board) do
-    Repo.delete(board)
+  def delete_board(%Board{} = board, user) do
+    if owner?(board, user) do
+      Repo.delete(board)
+    else
+      {:error, :unauthorized}
+    end
   end
 
   @doc """
@@ -314,15 +319,19 @@ defmodule Kanban.Boards do
       {:ok, %BoardUser{}}
 
   """
-  def add_user_to_board(%Board{} = board, user, access)
+  def add_user_to_board(%Board{} = board, user, access, current_user)
       when access in [:owner, :read_only, :modify] do
-    %BoardUser{}
-    |> BoardUser.changeset(%{
-      board_id: board.id,
-      user_id: user.id,
-      access: access
-    })
-    |> Repo.insert()
+    if owner?(board, current_user) do
+      %BoardUser{}
+      |> BoardUser.changeset(%{
+        board_id: board.id,
+        user_id: user.id,
+        access: access
+      })
+      |> Repo.insert()
+    else
+      {:error, :unauthorized}
+    end
   end
 
   @doc """
@@ -334,10 +343,14 @@ defmodule Kanban.Boards do
       {:ok, %BoardUser{}}
 
   """
-  def remove_user_from_board(%Board{} = board, user) do
-    case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-      nil -> {:error, :not_found}
-      board_user -> Repo.delete(board_user)
+  def remove_user_from_board(%Board{} = board, user, current_user) do
+    if owner?(board, current_user) do
+      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
+        nil -> {:error, :not_found}
+        board_user -> Repo.delete(board_user)
+      end
+    else
+      {:error, :unauthorized}
     end
   end
 
@@ -350,16 +363,20 @@ defmodule Kanban.Boards do
       {:ok, %BoardUser{}}
 
   """
-  def update_user_access(%Board{} = board, user, new_access)
+  def update_user_access(%Board{} = board, user, new_access, current_user)
       when new_access in [:owner, :read_only, :modify] do
-    case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-      nil ->
-        {:error, :not_found}
+    if owner?(board, current_user) do
+      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
+        nil ->
+          {:error, :not_found}
 
-      board_user ->
-        board_user
-        |> BoardUser.changeset(%{access: new_access})
-        |> Repo.update()
+        board_user ->
+          board_user
+          |> BoardUser.changeset(%{access: new_access})
+          |> Repo.update()
+      end
+    else
+      {:error, :unauthorized}
     end
   end
 

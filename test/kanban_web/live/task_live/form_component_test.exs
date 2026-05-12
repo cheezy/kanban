@@ -618,7 +618,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       board = board_fixture(owner)
       column = column_fixture(board, %{name: "To Do"})
       task = task_fixture(column, %{title: "Open Discussion"})
-      Kanban.Boards.add_user_to_board(board, reader, :read_only)
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
 
       {:ok, socket} =
         FormComponent.update(
@@ -1823,7 +1823,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task = task_fixture(column, %{title: "Editable Task"})
 
       modify_member = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_member, :modify)
+      Kanban.Boards.add_user_to_board(board, modify_member, :modify, owner)
 
       {:ok, socket} =
         FormComponent.update(
@@ -1856,7 +1856,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user1 = user_fixture(%{email: "user1@example.com", name: "User One"})
       user2 = user_fixture(%{email: "user2@example.com", name: ""})
       board = board_fixture(user1)
-      Kanban.Boards.add_user_to_board(board, user2, :modify)
+      Kanban.Boards.add_user_to_board(board, user2, :modify, user1)
       column = column_fixture(board, %{name: "To Do"})
       task = %Tasks.Task{column_id: column.id}
 

@@ -672,7 +672,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with modify access can see add task buttons", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
       _column = column_fixture(board, %{name: "To Do"})
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
@@ -686,7 +686,7 @@ defmodule KanbanWeb.BoardLiveTest do
     } do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
       column = column_fixture(board, %{name: "To Do"})
       task = task_fixture(column, %{title: "Task 1"})
 
@@ -699,7 +699,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with modify access can delete tasks", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
       column = column_fixture(board, %{name: "To Do"})
       task = task_fixture(column, %{title: "Task to delete"})
 
@@ -716,7 +716,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with modify access cannot delete columns", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
       column = column_fixture(board, %{name: "To Delete"})
 
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
@@ -736,7 +736,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with read only access cannot see add task buttons", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
       _column = column_fixture(board, %{name: "To Do"})
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
@@ -748,7 +748,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with read only access cannot see edit buttons", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
       column = column_fixture(board, %{name: "To Do"})
       task = task_fixture(column, %{title: "Task 1"})
 
@@ -761,7 +761,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with read only access cannot see delete buttons", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
       column = column_fixture(board, %{name: "To Do"})
       _task = task_fixture(column, %{title: "Task 1"})
 
@@ -774,7 +774,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with read only access can view board and tasks", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user, %{name: "Shared Board"})
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
       column = column_fixture(board, %{name: "To Do"})
       _task = task_fixture(column, %{title: "Visible Task"})
 
@@ -794,7 +794,7 @@ defmodule KanbanWeb.BoardLiveTest do
       column = column_fixture(board, %{name: "To Do"})
 
       other_user = user_fixture(%{email: "assigned@example.com", name: "Assigned User"})
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, other_user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, other_user, :modify, user)
 
       _task = task_fixture(column, %{title: "Assigned Task", assigned_to_id: other_user.id})
 
@@ -1276,7 +1276,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with modify access can create tokens", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = ai_optimized_board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
@@ -1291,7 +1291,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "user with read only access cannot access API tokens page", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = ai_optimized_board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
 
       assert {:error, {:live_redirect, %{to: redirect_path}}} =
                live(conn, ~p"/boards/#{board}/api_tokens")
@@ -1320,7 +1320,7 @@ defmodule KanbanWeb.BoardLiveTest do
     test "non-owner cannot toggle field visibility", %{conn: conn, user: user} do
       other_user = user_fixture()
       board = board_fixture(other_user)
-      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 

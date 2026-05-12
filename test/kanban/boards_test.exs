@@ -95,7 +95,7 @@ defmodule Kanban.BoardsTest do
       owner = user_fixture()
       non_member = user_fixture()
       board = board_fixture(owner, %{name: "Public Board"})
-      {:ok, board} = Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Boards.update_board(board, %{read_only: true}, owner)
 
       assert {:ok, fetched_board} = Boards.get_board(board.id, non_member)
       assert fetched_board.id == board.id
@@ -174,7 +174,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner, %{name: "Public Board"})
 
       # Make the board read-only
-      {:ok, board} = Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Boards.update_board(board, %{read_only: true}, owner)
 
       # Non-member should be able to access it with user_access: nil
       fetched_board = Boards.get_board!(board.id, non_member)
@@ -199,10 +199,10 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner, %{name: "Board"})
 
       # Add member with read_only access
-      {:ok, _} = Boards.add_user_to_board(board, member, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
 
       # Make board read-only
-      {:ok, board} = Boards.update_board(board, %{read_only: true})
+      {:ok, board} = Boards.update_board(board, %{read_only: true}, owner)
 
       # Member should get their actual access level
       fetched_board = Boards.get_board!(board.id, member)
@@ -268,7 +268,7 @@ defmodule Kanban.BoardsTest do
 
       attrs = %{name: "New Name", description: "New Description"}
 
-      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs)
+      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs, user)
       assert updated_board.id == board.id
       assert updated_board.name == "New Name"
       assert updated_board.description == "New Description"
@@ -280,7 +280,7 @@ defmodule Kanban.BoardsTest do
 
       attrs = %{name: "New Name"}
 
-      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs)
+      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs, user)
       assert updated_board.name == "New Name"
       assert updated_board.description == "Description"
     end
@@ -291,7 +291,7 @@ defmodule Kanban.BoardsTest do
 
       attrs = %{description: "New Description"}
 
-      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs)
+      assert {:ok, %Board{} = updated_board} = Boards.update_board(board, attrs, user)
       assert updated_board.name == "Name1"
       assert updated_board.description == "New Description"
     end
@@ -302,7 +302,7 @@ defmodule Kanban.BoardsTest do
 
       attrs = %{name: ""}
 
-      assert {:error, %Ecto.Changeset{} = changeset} = Boards.update_board(board, attrs)
+      assert {:error, %Ecto.Changeset{} = changeset} = Boards.update_board(board, attrs, user)
       assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
 
@@ -313,7 +313,7 @@ defmodule Kanban.BoardsTest do
       long_name = String.duplicate("a", 256)
       attrs = %{name: long_name}
 
-      assert {:error, %Ecto.Changeset{} = changeset} = Boards.update_board(board, attrs)
+      assert {:error, %Ecto.Changeset{} = changeset} = Boards.update_board(board, attrs, user)
       assert %{name: ["should be at most 50 character(s)"]} = errors_on(changeset)
     end
   end
@@ -323,7 +323,7 @@ defmodule Kanban.BoardsTest do
       user = user_fixture()
       board = board_fixture(user)
 
-      assert {:ok, %Board{}} = Boards.delete_board(board)
+      assert {:ok, %Board{}} = Boards.delete_board(board, user)
       assert_raise Ecto.NoResultsError, fn -> Boards.get_board!(board.id, user) end
     end
 
@@ -334,7 +334,7 @@ defmodule Kanban.BoardsTest do
 
       assert length(Boards.list_boards(user)) == 2
 
-      Boards.delete_board(board1)
+      Boards.delete_board(board1, user)
 
       boards = Boards.list_boards(user)
       assert length(boards) == 1
@@ -395,7 +395,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       assert Boards.get_user_access(board.id, reader.id) == :read_only
     end
@@ -405,7 +405,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       collaborator = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify, owner)
 
       assert Boards.get_user_access(board.id, collaborator.id) == :modify
     end
@@ -432,7 +432,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       assert Boards.owner?(board, reader) == false
     end
@@ -442,7 +442,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       collaborator = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify, owner)
 
       assert Boards.owner?(board, collaborator) == false
     end
@@ -469,7 +469,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       collaborator = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, collaborator, :modify, owner)
 
       assert Boards.can_modify?(board, collaborator) == true
     end
@@ -479,7 +479,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       assert Boards.can_modify?(board, reader) == false
     end
@@ -499,9 +499,8 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       new_user = user_fixture()
 
-      assert_raise Ecto.ConstraintError, fn ->
-        Boards.add_user_to_board(board, new_user, :owner)
-      end
+      assert {:error, changeset} = Boards.add_user_to_board(board, new_user, :owner, owner)
+      assert "board already has an owner" in errors_on(changeset).board_id
     end
 
     test "adds a user with read_only access" do
@@ -509,7 +508,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      assert {:ok, board_user} = Boards.add_user_to_board(board, reader, :read_only)
+      assert {:ok, board_user} = Boards.add_user_to_board(board, reader, :read_only, owner)
       assert board_user.access == :read_only
 
       # Verify user can see the board
@@ -521,7 +520,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       collaborator = user_fixture()
 
-      assert {:ok, board_user} = Boards.add_user_to_board(board, collaborator, :modify)
+      assert {:ok, board_user} = Boards.add_user_to_board(board, collaborator, :modify, owner)
       assert board_user.access == :modify
 
       # Verify user can see the board
@@ -533,9 +532,9 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
-      assert {:error, changeset} = Boards.add_user_to_board(board, reader, :modify)
+      assert {:error, changeset} = Boards.add_user_to_board(board, reader, :modify, owner)
       assert %{board_id: ["has already been taken"]} = errors_on(changeset)
     end
 
@@ -547,7 +546,7 @@ defmodule Kanban.BoardsTest do
       # Reader has no boards initially
       assert Boards.list_boards(reader) == []
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       # Reader now sees the board
       boards = Boards.list_boards(reader)
@@ -562,12 +561,12 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       # Verify user can see the board
       assert Boards.get_board!(board.id, reader)
 
-      assert {:ok, _} = Boards.remove_user_from_board(board, reader)
+      assert {:ok, _} = Boards.remove_user_from_board(board, reader, owner)
 
       # Verify user can no longer see the board
       assert_raise Ecto.NoResultsError, fn ->
@@ -580,7 +579,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       other_user = user_fixture()
 
-      assert {:error, :not_found} = Boards.remove_user_from_board(board, other_user)
+      assert {:error, :not_found} = Boards.remove_user_from_board(board, other_user, owner)
     end
 
     test "board is removed from user's board list after being removed" do
@@ -588,12 +587,12 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       # Reader sees the board
       assert length(Boards.list_boards(reader)) == 1
 
-      {:ok, _} = Boards.remove_user_from_board(board, reader)
+      {:ok, _} = Boards.remove_user_from_board(board, reader, owner)
 
       # Reader no longer sees the board
       assert Boards.list_boards(reader) == []
@@ -606,10 +605,10 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, user, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, user, :read_only, owner)
       assert Boards.get_user_access(board.id, user.id) == :read_only
 
-      assert {:ok, board_user} = Boards.update_user_access(board, user, :modify)
+      assert {:ok, board_user} = Boards.update_user_access(board, user, :modify, owner)
       assert board_user.access == :modify
       assert Boards.get_user_access(board.id, user.id) == :modify
     end
@@ -619,10 +618,10 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, user, :modify, owner)
       assert Boards.get_user_access(board.id, user.id) == :modify
 
-      assert {:ok, board_user} = Boards.update_user_access(board, user, :read_only)
+      assert {:ok, board_user} = Boards.update_user_access(board, user, :read_only, owner)
       assert board_user.access == :read_only
       assert Boards.get_user_access(board.id, user.id) == :read_only
     end
@@ -632,11 +631,10 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, user, :modify, owner)
 
-      assert_raise Ecto.ConstraintError, fn ->
-        Boards.update_user_access(board, user, :owner)
-      end
+      assert {:error, changeset} = Boards.update_user_access(board, user, :owner, owner)
+      assert "board already has an owner" in errors_on(changeset).board_id
     end
 
     test "returns error when user is not on the board" do
@@ -644,7 +642,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       other_user = user_fixture()
 
-      assert {:error, :not_found} = Boards.update_user_access(board, other_user, :modify)
+      assert {:error, :not_found} = Boards.update_user_access(board, other_user, :modify, owner)
     end
   end
 
@@ -656,7 +654,7 @@ defmodule Kanban.BoardsTest do
       _board1 = board_fixture(owner, %{name: "Owner's Board"})
       board2 = board_fixture(owner, %{name: "Shared Board"})
 
-      {:ok, _} = Boards.add_user_to_board(board2, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board2, reader, :read_only, owner)
 
       boards = Boards.list_boards(reader)
 
@@ -672,7 +670,7 @@ defmodule Kanban.BoardsTest do
       owned_board = board_fixture(user1, %{name: "My Board"})
       other_board = board_fixture(user2, %{name: "Shared with Me"})
 
-      {:ok, _} = Boards.add_user_to_board(other_board, user1, :modify)
+      {:ok, _} = Boards.add_user_to_board(other_board, user1, :modify, user2)
 
       boards = Boards.list_boards(user1)
 
@@ -745,8 +743,8 @@ defmodule Kanban.BoardsTest do
       modify_user = user_fixture()
       read_only_user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only)
-      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only, owner)
+      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify, owner)
 
       users = Boards.list_board_users(board)
 
@@ -762,8 +760,8 @@ defmodule Kanban.BoardsTest do
       user_b = user_fixture(%{email: "bravo@example.com"})
       user_a = user_fixture(%{email: "alpha@example.com"})
 
-      {:ok, _} = Boards.add_user_to_board(board, user_b, :read_only)
-      {:ok, _} = Boards.add_user_to_board(board, user_a, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, user_b, :read_only, owner)
+      {:ok, _} = Boards.add_user_to_board(board, user_a, :read_only, owner)
 
       users = Boards.list_board_users(board)
       read_only_users = Enum.filter(users, &(&1.access == :read_only))
@@ -778,7 +776,7 @@ defmodule Kanban.BoardsTest do
       board2 = board_fixture(owner)
       other_user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board2, other_user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board2, other_user, :modify, owner)
 
       users = Boards.list_board_users(board1)
       assert length(users) == 1
@@ -821,7 +819,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       other_user = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, other_user, :modify)
+      {:ok, _} = Boards.add_user_to_board(board, other_user, :modify, owner)
 
       assert {:error, :unauthorized} =
                Boards.update_field_visibility(board, %{"complexity" => false}, other_user)
@@ -832,7 +830,7 @@ defmodule Kanban.BoardsTest do
       board = board_fixture(owner)
       reader = user_fixture()
 
-      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only)
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
 
       assert {:error, :unauthorized} =
                Boards.update_field_visibility(board, %{"complexity" => false}, reader)
@@ -858,6 +856,86 @@ defmodule Kanban.BoardsTest do
 
       assert_receive {:field_visibility_updated, received_visibility}
       assert received_visibility["complexity"] == false
+    end
+  end
+
+  # ── W396 authorization tests ──
+  #
+  # The 5 mutators (update_board, delete_board, add_user_to_board,
+  # remove_user_from_board, update_user_access) all require the caller to be
+  # the board owner. These tests assert the new {:error, :unauthorized}
+  # behavior for non-owners across each mutator.
+
+  describe "W396: mutator authorization" do
+    setup do
+      owner = user_fixture()
+      stranger = user_fixture()
+      modify_user = user_fixture()
+      read_only_user = user_fixture()
+      board = board_fixture(owner)
+
+      {:ok, _} = Boards.add_user_to_board(board, modify_user, :modify, owner)
+      {:ok, _} = Boards.add_user_to_board(board, read_only_user, :read_only, owner)
+
+      %{
+        owner: owner,
+        stranger: stranger,
+        modify_user: modify_user,
+        read_only_user: read_only_user,
+        board: board
+      }
+    end
+
+    test "update_board: non-owner :modify returns :unauthorized",
+         %{board: board, modify_user: u} do
+      assert {:error, :unauthorized} = Boards.update_board(board, %{name: "Hacked"}, u)
+    end
+
+    test "update_board: stranger returns :unauthorized",
+         %{board: board, stranger: u} do
+      assert {:error, :unauthorized} = Boards.update_board(board, %{name: "Hacked"}, u)
+    end
+
+    test "update_board: owner cannot have read_only mass-assigned via base changeset",
+         %{board: board, owner: owner} do
+      # Owner still succeeds and read_only flips through owner_changeset.
+      assert {:ok, updated} = Boards.update_board(board, %{read_only: true}, owner)
+      assert updated.read_only == true
+
+      # change_board still uses the public (non-owner) changeset which excludes read_only.
+      changeset = Boards.change_board(board, %{read_only: true})
+      refute Map.has_key?(changeset.changes, :read_only)
+    end
+
+    test "delete_board: non-owner :modify returns :unauthorized",
+         %{board: board, modify_user: u} do
+      assert {:error, :unauthorized} = Boards.delete_board(board, u)
+    end
+
+    test "delete_board: stranger returns :unauthorized",
+         %{board: board, stranger: u} do
+      assert {:error, :unauthorized} = Boards.delete_board(board, u)
+    end
+
+    test "add_user_to_board: non-owner :modify returns :unauthorized",
+         %{board: board, modify_user: actor} do
+      victim = user_fixture()
+      assert {:error, :unauthorized} = Boards.add_user_to_board(board, victim, :modify, actor)
+    end
+
+    test "remove_user_from_board: non-owner :modify returns :unauthorized",
+         %{board: board, modify_user: actor, read_only_user: target} do
+      assert {:error, :unauthorized} = Boards.remove_user_from_board(board, target, actor)
+    end
+
+    test "update_user_access: non-owner :modify returns :unauthorized",
+         %{board: board, modify_user: actor, read_only_user: target} do
+      assert {:error, :unauthorized} = Boards.update_user_access(board, target, :modify, actor)
+    end
+
+    test "update_user_access: stranger returns :unauthorized",
+         %{board: board, stranger: stranger, read_only_user: target} do
+      assert {:error, :unauthorized} = Boards.update_user_access(board, target, :modify, stranger)
     end
   end
 end
