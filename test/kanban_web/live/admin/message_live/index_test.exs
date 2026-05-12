@@ -193,5 +193,58 @@ defmodule KanbanWeb.Admin.MessageLive.IndexTest do
       assert render(view) =~ "Message not found."
       assert Messages.list_messages() == []
     end
+
+    test "delete event with non-integer id does not crash (W400/W401)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      render_hook(view, "delete", %{"id" => "not-an-integer"})
+
+      assert render(view) =~ "Message not found."
+    end
+  end
+
+  describe "W400 per-event admin guards (defense-in-depth)" do
+    # Even though the on_mount hook stops non-admins from reaching the
+    # LiveView, the per-event guard is a third defense layer in case the
+    # router or on_mount declarations are ever altered. These tests exercise
+    # the guard logic directly by mounting a socket as admin, then swapping
+    # current_scope.user.type to :user before each render_hook to simulate
+    # a stale or tampered scope.
+
+    setup :register_and_log_in_admin
+
+    test "save event for a non-admin scope is rejected by the guard", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      :sys.replace_state(view.pid, fn state ->
+        scope = state.socket.assigns.current_scope
+        non_admin_user = %{scope.user | type: :user}
+        new_scope = %{scope | user: non_admin_user}
+        put_in(state.socket.assigns.current_scope, new_scope)
+      end)
+
+      render_hook(view, "save", %{"message" => %{"title" => "x", "body" => "x"}})
+
+      assert render(view) =~ "admin"
+      assert Messages.list_messages() == []
+    end
+
+    test "delete event for a non-admin scope is rejected by the guard",
+         %{conn: conn, user: admin} do
+      m = message_fixture(admin, %{title: "guard-test"})
+      {:ok, view, _html} = live(conn, ~p"/admin/messages")
+
+      :sys.replace_state(view.pid, fn state ->
+        scope = state.socket.assigns.current_scope
+        non_admin_user = %{scope.user | type: :user}
+        new_scope = %{scope | user: non_admin_user}
+        put_in(state.socket.assigns.current_scope, new_scope)
+      end)
+
+      render_hook(view, "delete", %{"id" => Integer.to_string(m.id)})
+
+      assert render(view) =~ "admin"
+      assert Enum.any?(Messages.list_messages(), &(&1.id == m.id))
+    end
   end
 end
