@@ -25,23 +25,18 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_params(%{"id" => id, "column_id" => column_id, "task_id" => task_id}, _, socket) do
     with_board(socket, id, fn board, user_access ->
-      columns = Columns.list_columns(board)
-      column = Columns.get_column!(column_id)
-      task = Tasks.get_task!(task_id)
-
-      {:noreply,
-       socket
-       |> assign(:page_title, page_title(socket.assigns.live_action))
-       |> assign(:board, board)
-       |> assign(:user_access, user_access)
-       |> assign(:can_modify, user_access in [:owner, :modify])
-       |> assign(:is_owner, user_access == :owner)
-       |> assign(:field_visibility, board.field_visibility || %{})
-       |> assign(:column, column)
-       |> assign(:task, task)
-       |> assign(:has_columns, not Enum.empty?(columns))
-       |> stream(:columns, columns, reset: true)
-       |> load_tasks_for_columns(columns)}
+      with {:ok, column_id_int} <- parse_task_id(column_id),
+           {:ok, task_id_int} <- parse_task_id(task_id),
+           %Columns.Column{} = column <- Columns.get_column_for_board(column_id_int, board.id),
+           %Tasks.Task{} = task <- Tasks.get_task_for_board(task_id_int, board.id) do
+        assign_column_and_task(socket, board, user_access, column, task)
+      else
+        _ ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Column or task not found on this board"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
     end)
   end
 
@@ -62,31 +57,16 @@ defmodule KanbanWeb.BoardLive.Show do
 
   def handle_params(%{"id" => id, "task_id" => task_id}, _, socket) do
     with_board(socket, id, fn board, user_access ->
-      columns = Columns.list_columns(board)
-      task = Tasks.get_task!(task_id)
-
-      socket =
-        socket
-        |> assign(:page_title, page_title(socket.assigns.live_action))
-        |> assign(:board, board)
-        |> assign(:user_access, user_access)
-        |> assign(:can_modify, user_access in [:owner, :modify])
-        |> assign(:is_owner, user_access == :owner)
-        |> assign(:field_visibility, board.field_visibility || %{})
-        |> assign(:task, task)
-        |> assign(:has_columns, not Enum.empty?(columns))
-        |> assign(:viewing_task_id, nil)
-        |> assign(:show_task_modal, false)
-        |> stream(:columns, columns, reset: true)
-
-      socket =
-        if Map.has_key?(socket.assigns, :tasks_by_column) do
-          socket
-        else
-          load_tasks_for_columns(socket, columns)
-        end
-
-      {:noreply, socket}
+      with {:ok, task_id_int} <- parse_task_id(task_id),
+           %Tasks.Task{} = task <- Tasks.get_task_for_board(task_id_int, board.id) do
+        assign_task_only(socket, board, user_access, task)
+      else
+        _ ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Task not found on this board"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
     end)
   end
 
@@ -164,21 +144,7 @@ defmodule KanbanWeb.BoardLive.Show do
          |> put_flash(:error, gettext("Cannot delete columns on AI optimized boards"))}
 
       true ->
-        column = Columns.get_column!(id)
-
-        case Columns.delete_column(column) do
-          {:ok, _column} ->
-            columns = Columns.list_columns(socket.assigns.board)
-
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("Column deleted successfully"))
-             |> assign(:has_columns, not Enum.empty?(columns))
-             |> stream_delete(:columns, column)}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}
-        end
+        do_delete_column(socket, id)
     end
   end
 
@@ -759,7 +725,18 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp handle_task_reorder(socket, column_id, task_id, new_position) do
-    column = Columns.get_column!(column_id)
+    # IDs here were already board-scoped by authorize_move_task; the scoped
+    # lookup is defense-in-depth in case this helper is ever called directly.
+    case Columns.get_column_for_board(column_id, socket.assigns.board.id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+
+      column ->
+        do_handle_task_reorder(socket, column, task_id, new_position)
+    end
+  end
+
+  defp do_handle_task_reorder(socket, column, task_id, new_position) do
     tasks = Tasks.list_tasks(column)
 
     # Get the current order of task IDs
@@ -787,11 +764,22 @@ defmodule KanbanWeb.BoardLive.Show do
 
   defp handle_task_move(socket, task, new_column_id, new_position) do
     require Logger
-    new_column = Columns.get_column!(new_column_id)
 
-    Logger.info(
-      "Attempting to move task #{task.id} to column #{new_column_id} at position #{new_position}"
-    )
+    case Columns.get_column_for_board(new_column_id, socket.assigns.board.id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+
+      new_column ->
+        Logger.info(
+          "Attempting to move task #{task.id} to column #{new_column_id} at position #{new_position}"
+        )
+
+        do_handle_task_move(socket, task, new_column, new_position)
+    end
+  end
+
+  defp do_handle_task_move(socket, task, new_column, new_position) do
+    require Logger
 
     case Tasks.move_task(task, new_column, new_position) do
       {:ok, _task} ->
@@ -812,7 +800,7 @@ defmodule KanbanWeb.BoardLive.Show do
         # Send wip_limit_violation event to trigger visual feedback on target column
         socket
         |> put_flash(:error, gettext("Cannot move task: column has reached its WIP limit"))
-        |> push_event("wip_limit_violation", %{column_id: new_column_id})
+        |> push_event("wip_limit_violation", %{column_id: new_column.id})
         |> push_event("move_failed", %{})
         |> reload_board_columns()
 
@@ -948,14 +936,96 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp assign_board_with_column(socket, board, user_access, column_id) do
+    with {:ok, column_id_int} <- parse_task_id(column_id),
+         %Columns.Column{} = column <- Columns.get_column_for_board(column_id_int, board.id) do
+      columns = Columns.list_columns(board)
+
+      {:noreply,
+       socket
+       |> assign_common_board_state(board, user_access, columns)
+       |> assign(:column, column)
+       |> assign(:column_id, column.id)}
+    else
+      _ ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Column not found on this board"))
+         |> push_patch(to: ~p"/boards/#{board}")}
+    end
+  end
+
+  defp assign_column_and_task(socket, board, user_access, column, task) do
     columns = Columns.list_columns(board)
-    column = Columns.get_column!(column_id)
+    task = Kanban.Repo.preload(task, :assigned_to)
 
     {:noreply,
      socket
-     |> assign_common_board_state(board, user_access, columns)
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:board, board)
+     |> assign(:user_access, user_access)
+     |> assign(:can_modify, user_access in [:owner, :modify])
+     |> assign(:is_owner, user_access == :owner)
+     |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:column, column)
-     |> assign(:column_id, column.id)}
+     |> assign(:task, task)
+     |> assign(:has_columns, not Enum.empty?(columns))
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)}
+  end
+
+  defp assign_task_only(socket, board, user_access, task) do
+    columns = Columns.list_columns(board)
+    task = Kanban.Repo.preload(task, :assigned_to)
+
+    socket =
+      socket
+      |> assign(:page_title, page_title(socket.assigns.live_action))
+      |> assign(:board, board)
+      |> assign(:user_access, user_access)
+      |> assign(:can_modify, user_access in [:owner, :modify])
+      |> assign(:is_owner, user_access == :owner)
+      |> assign(:field_visibility, board.field_visibility || %{})
+      |> assign(:task, task)
+      |> assign(:has_columns, not Enum.empty?(columns))
+      |> assign(:viewing_task_id, nil)
+      |> assign(:show_task_modal, false)
+      |> stream(:columns, columns, reset: true)
+
+    socket =
+      if Map.has_key?(socket.assigns, :tasks_by_column) do
+        socket
+      else
+        load_tasks_for_columns(socket, columns)
+      end
+
+    {:noreply, socket}
+  end
+
+  defp do_delete_column(socket, raw_id) do
+    with {:ok, column_id} <- parse_task_id(raw_id),
+         %Columns.Column{} = column <-
+           Columns.get_column_for_board(column_id, socket.assigns.board.id) do
+      perform_column_deletion(socket, column)
+    else
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+    end
+  end
+
+  defp perform_column_deletion(socket, column) do
+    case Columns.delete_column(column) do
+      {:ok, _column} ->
+        columns = Columns.list_columns(socket.assigns.board)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Column deleted successfully"))
+         |> assign(:has_columns, not Enum.empty?(columns))
+         |> stream_delete(:columns, column)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}
+    end
   end
 
   defp with_board(socket, id, fun) do

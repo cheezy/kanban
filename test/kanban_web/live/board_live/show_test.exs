@@ -2099,6 +2099,89 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "W392 cross-board IDOR protection" do
+    test "delete_column event rejects a column id from a different board", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+      _own_column = column_fixture(own_board)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board, %{name: "Cross-Board Column"})
+
+      conn = log_in_user(conn, owner)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{own_board}")
+
+      show_live
+      |> render_hook("delete_column", %{"id" => to_string(other_column.id)})
+
+      html = render(show_live)
+      assert html =~ "Column not found on this board"
+
+      # Cross-board column was NOT deleted.
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column!(other_column.id)
+    end
+
+    test "GET /boards/A/columns/<col-from-B>/edit redirects with error and does not leak data",
+         %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board, %{name: "Secret Column"})
+
+      conn = log_in_user(conn, owner)
+
+      assert {:error, {:live_redirect, %{to: redirect_path, flash: flash}}} =
+               live(conn, ~p"/boards/#{own_board}/columns/#{other_column}/edit")
+
+      assert redirect_path == "/boards/#{own_board.id}"
+      assert flash["error"] == "Column not found on this board"
+      refute redirect_path =~ "Secret Column"
+    end
+
+    test "GET /boards/A/tasks/<task-from-B>/edit redirects with error", %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board Task Secret"})
+
+      conn = log_in_user(conn, owner)
+
+      assert {:error, {:live_redirect, %{to: redirect_path, flash: flash}}} =
+               live(conn, ~p"/boards/#{own_board}/tasks/#{other_task}/edit")
+
+      assert redirect_path == "/boards/#{own_board.id}"
+      assert flash["error"] == "Task not found on this board"
+    end
+
+    test "GET /boards/A/columns/<col-from-B>/tasks/<task-from-B>/edit redirects with error",
+         %{conn: conn} do
+      owner = user_fixture()
+      own_board = board_fixture(owner)
+
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      other_task = task_fixture(other_column, %{title: "Cross-Board Task Secret 2"})
+
+      conn = log_in_user(conn, owner)
+
+      assert {:error, {:live_redirect, %{to: redirect_path, flash: flash}}} =
+               live(
+                 conn,
+                 ~p"/boards/#{own_board}/columns/#{other_column}/tasks/#{other_task}/edit"
+               )
+
+      assert redirect_path == "/boards/#{own_board.id}"
+      assert flash["error"] == "Column or task not found on this board"
+    end
+  end
+
   defp admin_user_fixture do
     user = user_fixture()
     {:ok, admin} = Kanban.Accounts.update_user_type(user, :admin)
