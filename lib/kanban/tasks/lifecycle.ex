@@ -35,6 +35,25 @@ defmodule Kanban.Tasks.Lifecycle do
     end
   end
 
+  @doc """
+  API-safe update path for PATCH /api/tasks/:id.
+
+  Uses `Task.api_update_changeset/2` which enforces a strict allow-list,
+  blocking mass-assignment of workflow/audit fields (status, assigned_to_id,
+  claimed_at, completed_*, reviewed_*, identifier, parent_id, time_spent_minutes,
+  archived_at, …). Workflow endpoints (claim/complete/mark_reviewed) set those
+  fields via their own internal paths that bypass this changeset.
+
+  The cascade branch from `update_task/2` is unreachable here because
+  `:assigned_to_id` is not in the allow-list — API callers cannot trigger a
+  goal-to-children assignment cascade.
+  """
+  def api_update_task(%Task{} = task, attrs) do
+    changeset = Task.api_update_changeset(task, attrs)
+    changeset = Dependencies.validate_circular_dependencies(changeset)
+    update_without_cascade(task, changeset)
+  end
+
   # Existing single-task update path. Preserves the original side-effect
   # ordering (priority/assignment/dependencies/status histories, then broadcast).
   defp update_without_cascade(task, changeset) do

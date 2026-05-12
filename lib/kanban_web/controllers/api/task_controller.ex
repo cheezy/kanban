@@ -8,6 +8,40 @@ defmodule KanbanWeb.API.TaskController do
 
   require Logger
 
+  # String keys (since params arrive from JSON as strings) that an API client
+  # may NOT mass-assign via PATCH /api/tasks/:id. These flow through the
+  # dedicated workflow endpoints (claim/complete/mark_reviewed) instead.
+  # Defense in depth: the controller filters and logs; Task.api_update_changeset/2
+  # also enforces the allow-list at the changeset layer.
+  @forbidden_api_update_fields ~w(
+    status
+    identifier
+    parent_id
+    column_id
+    position
+    assigned_to_id
+    claimed_at
+    claim_expires_at
+    completed_at
+    completed_by_id
+    completed_by_agent
+    completion_summary
+    actual_complexity
+    actual_files_changed
+    time_spent_minutes
+    review_status
+    review_notes
+    review_report
+    reviewed_by_id
+    reviewed_at
+    workflow_steps
+    explorer_result
+    reviewer_result
+    created_by_id
+    created_by_agent
+    archived_at
+  )
+
   action_fallback KanbanWeb.API.FallbackController
 
   def index(conn, params) do
@@ -1004,11 +1038,22 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp perform_api_task_update(conn, task, task_params) do
-    # Strip column_id even if it matches current value — agents should never
-    # send it, and stripping keeps update_task's intent unambiguous.
-    safe_params = Map.delete(task_params, "column_id")
+    {safe_params, rejected_fields} = filter_forbidden_update_fields(task_params)
 
-    case Tasks.update_task(task, safe_params) do
+    if rejected_fields != [] do
+      Logger.info("API mass-assignment attempt rejected",
+        task_id: task.id,
+        rejected_fields: rejected_fields,
+        actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
+      )
+
+      emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
+        task_id: task.id,
+        fields: rejected_fields
+      })
+    end
+
+    case Tasks.api_update_task(task, safe_params) do
       {:ok, updated_task} ->
         updated_task = Tasks.get_task_for_view!(updated_task.id)
         emit_telemetry(conn, :task_updated, %{task_id: updated_task.id})
@@ -1019,6 +1064,17 @@ defmodule KanbanWeb.API.TaskController do
         |> put_status(:unprocessable_entity)
         |> render(:error, changeset: changeset)
     end
+  end
+
+  # Splits task_params into the safe subset (allowed fields only) and the list
+  # of forbidden field names that were present in the original payload. Always
+  # also strips "column_id" (column moves happen via the workflow endpoints,
+  # and the upstream column_change_attempted?/2 check has already produced 403
+  # for substantive column changes).
+  defp filter_forbidden_update_fields(task_params) do
+    rejected = Enum.filter(@forbidden_api_update_fields, &Map.has_key?(task_params, &1))
+    safe_params = Map.drop(task_params, @forbidden_api_update_fields)
+    {safe_params, rejected}
   end
 
   defp parse_id(id) when is_integer(id), do: {:ok, id}

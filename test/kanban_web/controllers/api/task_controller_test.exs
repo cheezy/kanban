@@ -1001,6 +1001,228 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "PATCH /api/tasks/:id mass-assignment protection" do
+    setup %{column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Original",
+          "description" => "Initial description",
+          "complexity" => "small",
+          "created_by_id" => user.id
+        })
+
+      %{task: task}
+    end
+
+    test "silently strips status and keeps the rest of the patch", %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "status" => "completed"})
+
+      response = json_response(conn, 200)["data"]
+      reloaded = Tasks.get_task!(task.id)
+
+      assert response["title"] == "New"
+      assert reloaded.status == task.status
+      refute reloaded.status == :completed
+    end
+
+    test "silently strips assigned_to_id", %{conn: conn, task: task} do
+      other = user_fixture()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "New", "assigned_to_id" => other.id}
+        )
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert Tasks.get_task!(task.id).assigned_to_id == task.assigned_to_id
+    end
+
+    test "silently strips completed_by_id and completed_at", %{conn: conn, task: task} do
+      other = user_fixture()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "completed_by_id" => other.id,
+            "completed_at" => "2025-01-01T00:00:00Z"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert is_nil(reloaded.completed_by_id)
+      assert is_nil(reloaded.completed_at)
+    end
+
+    test "silently strips reviewed_by_id, reviewed_at, review_status, review_notes",
+         %{conn: conn, task: task} do
+      other = user_fixture()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "reviewed_by_id" => other.id,
+            "reviewed_at" => "2025-01-01T00:00:00Z",
+            "review_status" => "approved",
+            "review_notes" => "lgtm"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert is_nil(reloaded.reviewed_by_id)
+      assert is_nil(reloaded.reviewed_at)
+      assert is_nil(reloaded.review_status)
+      assert is_nil(reloaded.review_notes)
+    end
+
+    test "silently strips identifier (server-generated only)", %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "identifier" => "X999"})
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert Tasks.get_task!(task.id).identifier == task.identifier
+    end
+
+    test "silently strips parent_id", %{conn: conn, column: column, user: user, task: task} do
+      {:ok, goal} =
+        Tasks.create_task(column, %{
+          "title" => "Some goal",
+          "type" => "goal",
+          "complexity" => "small",
+          "created_by_id" => user.id
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "parent_id" => goal.id})
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert Tasks.get_task!(task.id).parent_id == task.parent_id
+    end
+
+    test "silently strips claim fields", %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "claimed_at" => "2025-01-01T00:00:00Z",
+            "claim_expires_at" => "2025-01-01T01:00:00Z"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert is_nil(reloaded.claimed_at)
+      assert is_nil(reloaded.claim_expires_at)
+    end
+
+    test "silently strips completion actuals (time_spent_minutes, actual_complexity, actual_files_changed)",
+         %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "time_spent_minutes" => 9999,
+            "actual_complexity" => "large",
+            "actual_files_changed" => "secret.ex"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert is_nil(reloaded.time_spent_minutes)
+      assert is_nil(reloaded.actual_complexity)
+      assert is_nil(reloaded.actual_files_changed)
+    end
+
+    test "silently strips created_by_* and archived_at", %{conn: conn, task: task} do
+      other = user_fixture()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "created_by_id" => other.id,
+            "created_by_agent" => "rogue",
+            "archived_at" => "2025-01-01T00:00:00Z"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert reloaded.created_by_id == task.created_by_id
+      assert reloaded.created_by_agent == task.created_by_agent
+      assert is_nil(reloaded.archived_at)
+    end
+
+    test "silently strips workflow_steps / explorer_result / reviewer_result",
+         %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "New",
+            "workflow_steps" => [%{"name" => "fake", "dispatched" => true, "duration_ms" => 1}],
+            "explorer_result" => %{"dispatched" => true, "summary" => "fake"},
+            "reviewer_result" => %{"dispatched" => true, "summary" => "fake"}
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "New"
+      assert reloaded.workflow_steps == task.workflow_steps
+      assert reloaded.explorer_result == task.explorer_result
+      assert reloaded.reviewer_result == task.reviewer_result
+    end
+
+    test "strips every forbidden field at once while applying legitimate changes",
+         %{conn: conn, task: task} do
+      other = user_fixture()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "Legitimate",
+            "why" => "Legitimate why",
+            "status" => "completed",
+            "identifier" => "X999",
+            "assigned_to_id" => other.id,
+            "completed_by_id" => other.id,
+            "completed_at" => "2025-01-01T00:00:00Z",
+            "reviewed_by_id" => other.id,
+            "review_status" => "approved",
+            "time_spent_minutes" => 9999,
+            "actual_complexity" => "large",
+            "archived_at" => "2025-01-01T00:00:00Z"
+          }
+        )
+
+      reloaded = Tasks.get_task!(task.id)
+
+      assert json_response(conn, 200)["data"]["title"] == "Legitimate"
+      assert reloaded.title == "Legitimate"
+      assert reloaded.why == "Legitimate why"
+      assert reloaded.identifier == task.identifier
+      assert reloaded.status == task.status
+      assert is_nil(reloaded.completed_by_id)
+      assert is_nil(reloaded.completed_at)
+      assert is_nil(reloaded.reviewed_by_id)
+      assert is_nil(reloaded.review_status)
+      assert is_nil(reloaded.time_spent_minutes)
+      assert is_nil(reloaded.actual_complexity)
+      assert is_nil(reloaded.archived_at)
+      assert reloaded.assigned_to_id == task.assigned_to_id
+    end
+  end
+
   describe "cross-board access protection" do
     test "cannot access tasks from different board", %{conn: conn, user: _user} do
       other_user = user_fixture()

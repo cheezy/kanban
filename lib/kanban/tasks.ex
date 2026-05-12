@@ -53,6 +53,7 @@ defmodule Kanban.Tasks do
   # ── Lifecycle delegations ──────────────────────────────────────────
 
   defdelegate update_task(task, attrs), to: Lifecycle
+  defdelegate api_update_task(task, attrs), to: Lifecycle
   defdelegate count_cascade_affected_children(task, new_assigned_to_id), to: Lifecycle
   defdelegate delete_task(task), to: Lifecycle
   defdelegate archive_task(task), to: Lifecycle

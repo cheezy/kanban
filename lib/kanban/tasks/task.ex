@@ -514,6 +514,82 @@ defmodule Kanban.Tasks.Task do
     |> unique_constraint(:identifier)
   end
 
+  # Strict allow-list of fields mutable via the public PATCH /api/tasks/:id endpoint.
+  # Workflow/audit/identity fields (status, assigned_to_id, claimed_at, completed_at,
+  # completed_by_id, reviewed_by_id, review_status, identifier, parent_id, position,
+  # column_id, created_by_id, time_spent_minutes, archived_at, …) are intentionally
+  # omitted — those are set only by the dedicated workflow endpoints
+  # (claim/complete/mark_reviewed/unclaim), which bypass this changeset entirely.
+  @api_update_fields [
+    # Descriptive
+    :title,
+    :description,
+    :acceptance_criteria,
+    :why,
+    :what,
+    :where_context,
+    :estimated_files,
+    :patterns_to_follow,
+    :database_changes,
+    :validation_rules,
+    :pitfalls,
+    :out_of_scope,
+    # Categorization (non-workflow)
+    :type,
+    :priority,
+    :complexity,
+    # JSONB arrays / maps
+    :technology_requirements,
+    :required_capabilities,
+    :security_considerations,
+    :testing_strategy,
+    :integration_points,
+    :dependencies,
+    # Observability hints
+    :telemetry_event,
+    :metrics_to_track,
+    :logging_requirements,
+    # Error-handling hints
+    :error_user_message,
+    :error_on_failure,
+    # Misc
+    :human_task,
+    :needs_review
+  ]
+
+  @doc """
+  Strict changeset for API PATCH /api/tasks/:id.
+
+  Casts only descriptive fields; workflow/audit fields cannot be mass-assigned
+  through this path. See `@api_update_fields` for the authoritative allow-list.
+  """
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
+  def api_update_changeset(task, attrs) do
+    task
+    |> cast(attrs, @api_update_fields)
+    |> validate_embed_type(:key_files, attrs)
+    |> validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
+    |> normalize_ai_context_fields()
+    |> validate_required([:title, :type, :priority])
+    |> validate_inclusion(:type, [:work, :defect, :goal],
+      message: "must be 'work', 'defect', or 'goal'"
+    )
+    |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
+      message: "must be 'low', 'medium', 'high', or 'critical'"
+    )
+    |> validate_inclusion(:complexity, [:small, :medium, :large],
+      message: "must be 'small', 'medium', or 'large'"
+    )
+    |> validate_technology_requirements()
+    |> validate_required_capabilities()
+    |> validate_dependencies()
+    |> validate_security_considerations()
+    |> validate_testing_strategy()
+    |> validate_integration_points()
+  end
+
   # Validate that embed fields are arrays before casting
   defp validate_embed_type(changeset, field, attrs) do
     field_str = to_string(field)
