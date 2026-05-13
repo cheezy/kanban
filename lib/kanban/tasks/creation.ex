@@ -74,16 +74,15 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp do_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs, changeset_fn) do
+    column
+    |> build_goal_creation_multi(goal_attrs, child_tasks_attrs, changeset_fn)
+    |> Repo.transaction()
+    |> handle_goal_creation_result(column)
+  end
+
+  defp build_goal_creation_multi(column, goal_attrs, child_tasks_attrs, changeset_fn) do
     Ecto.Multi.new()
-    |> Ecto.Multi.run(:lock_and_prepare, fn _repo, _changes ->
-      next_position = Positioning.get_next_position_locked(column)
-      goal_identifier = Identifiers.generate_identifier(column.board_id, :goal)
-
-      child_identifiers =
-        Identifiers.pregenerate_task_identifiers(column.board_id, child_tasks_attrs)
-
-      {:ok, %{position: next_position, goal_id: goal_identifier, child_ids: child_identifiers}}
-    end)
+    |> Ecto.Multi.run(:lock_and_prepare, goal_lock_and_prepare_fun(column, child_tasks_attrs))
     |> Ecto.Multi.insert(:goal, fn %{lock_and_prepare: prep} ->
       attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
       changeset_fn.(%Task{column_id: column.id}, attrs)
@@ -92,8 +91,18 @@ defmodule Kanban.Tasks.Creation do
       TaskHistory.changeset(%TaskHistory{}, %{task_id: goal.id, type: :creation})
     end)
     |> insert_child_tasks(column, child_tasks_attrs, changeset_fn)
-    |> Repo.transaction()
-    |> handle_goal_creation_result(column)
+  end
+
+  defp goal_lock_and_prepare_fun(column, child_tasks_attrs) do
+    fn _repo, _changes ->
+      next_position = Positioning.get_next_position_locked(column)
+      goal_identifier = Identifiers.generate_identifier(column.board_id, :goal)
+
+      child_identifiers =
+        Identifiers.pregenerate_task_identifiers(column.board_id, child_tasks_attrs)
+
+      {:ok, %{position: next_position, goal_id: goal_identifier, child_ids: child_identifiers}}
+    end
   end
 
   defp prepare_goal_attrs(attrs, identifier, position) do
@@ -113,30 +122,34 @@ defmodule Kanban.Tasks.Creation do
     child_tasks_attrs
     |> Enum.with_index()
     |> Enum.reduce(multi, fn {child_attrs, index}, multi_acc ->
-      task_key = {:child_task, index}
-      history_key = {:child_task_history, index}
+      add_child_task_steps(multi_acc, column, child_attrs, index, changeset_fn)
+    end)
+  end
 
-      multi_acc
-      |> Ecto.Multi.insert(task_key, fn %{goal: goal, lock_and_prepare: prep} ->
-        child_attrs_with_parent =
-          prepare_child_task_attrs(
-            child_attrs,
-            goal,
-            index,
-            prep.child_ids,
-            prep.position
-          )
+  defp add_child_task_steps(multi_acc, column, child_attrs, index, changeset_fn) do
+    task_key = {:child_task, index}
+    history_key = {:child_task_history, index}
 
-        changeset_fn.(%Task{column_id: column.id}, child_attrs_with_parent)
-      end)
-      |> Ecto.Multi.insert(history_key, fn changes ->
-        child_task = Map.get(changes, task_key)
+    multi_acc
+    |> Ecto.Multi.insert(task_key, fn %{goal: goal, lock_and_prepare: prep} ->
+      child_attrs_with_parent =
+        prepare_child_task_attrs(
+          child_attrs,
+          goal,
+          index,
+          prep.child_ids,
+          prep.position
+        )
 
-        TaskHistory.changeset(%TaskHistory{}, %{
-          task_id: child_task.id,
-          type: :creation
-        })
-      end)
+      changeset_fn.(%Task{column_id: column.id}, child_attrs_with_parent)
+    end)
+    |> Ecto.Multi.insert(history_key, fn changes ->
+      child_task = Map.get(changes, task_key)
+
+      TaskHistory.changeset(%TaskHistory{}, %{
+        task_id: child_task.id,
+        type: :creation
+      })
     end)
   end
 
@@ -312,14 +325,32 @@ defmodule Kanban.Tasks.Creation do
   defp convert_single_dependency(dep, _task_identifiers), do: dep
 
   defp insert_task_with_history(column, attrs, changeset_fn) do
+    column
+    |> build_task_creation_multi(attrs, changeset_fn)
+    |> Repo.transaction()
+    |> handle_task_creation_result(attrs)
+  end
+
+  defp build_task_creation_multi(column, attrs, changeset_fn) do
     Ecto.Multi.new()
-    |> Ecto.Multi.run(:lock_and_prepare, fn _repo, _changes ->
+    |> Ecto.Multi.run(:lock_and_prepare, task_lock_and_prepare_fun(column, attrs))
+    |> Ecto.Multi.insert(:task, task_insert_fun(column, attrs, changeset_fn))
+    |> Ecto.Multi.insert(:history, fn %{task: task} ->
+      TaskHistory.changeset(%TaskHistory{}, %{task_id: task.id, type: :creation})
+    end)
+  end
+
+  defp task_lock_and_prepare_fun(column, attrs) do
+    fn _repo, _changes ->
       next_position = Positioning.get_next_position_locked(column)
       task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
       identifier = Identifiers.generate_identifier(column.board_id, task_type)
       {:ok, %{position: next_position, identifier: identifier}}
-    end)
-    |> Ecto.Multi.insert(:task, fn %{lock_and_prepare: prep} ->
+    end
+  end
+
+  defp task_insert_fun(column, attrs, changeset_fn) do
+    fn %{lock_and_prepare: prep} ->
       task_attrs =
         attrs
         |> prepare_task_attrs(prep.position)
@@ -328,12 +359,7 @@ defmodule Kanban.Tasks.Creation do
       %Task{column_id: column.id}
       |> changeset_fn.(task_attrs)
       |> Dependencies.validate_circular_dependencies()
-    end)
-    |> Ecto.Multi.insert(:history, fn %{task: task} ->
-      TaskHistory.changeset(%TaskHistory{}, %{task_id: task.id, type: :creation})
-    end)
-    |> Repo.transaction()
-    |> handle_task_creation_result(attrs)
+    end
   end
 
   defp put_key(attrs, key, value) do

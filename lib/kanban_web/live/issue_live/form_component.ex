@@ -231,12 +231,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
   defp do_submit(socket, params) do
     case GitHub.create_issue(params["title"], params["body"], [params["label"]]) do
       {:ok, url} ->
-        {:noreply,
-         socket
-         |> assign(:submitted, true)
-         |> assign(:issue_url, url)
-         |> assign(:error, nil)
-         |> assign(:last_submission_at, System.system_time(:second))}
+        {:noreply, assign_submission_success(socket, url)}
 
       {:error, :not_configured} ->
         {:noreply, assign(socket, :error, gettext("GitHub integration is not configured"))}
@@ -257,6 +252,14 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     end
   end
 
+  defp assign_submission_success(socket, url) do
+    socket
+    |> assign(:submitted, true)
+    |> assign(:issue_url, url)
+    |> assign(:error, nil)
+    |> assign(:last_submission_at, System.system_time(:second))
+  end
+
   defp rate_limited?(socket) do
     case socket.assigns[:last_submission_at] do
       nil ->
@@ -272,46 +275,50 @@ defmodule KanbanWeb.IssueLive.FormComponent do
   end
 
   defp validate(params) do
-    errors = []
+    []
+    |> validate_title(params["title"])
+    |> validate_body(params["body"])
+    |> validate_label(params["label"])
+  end
 
-    errors =
-      cond do
-        blank?(params["title"]) ->
-          [{:title, {gettext("can't be blank"), []}} | errors]
+  defp validate_title(errors, title) do
+    cond do
+      blank?(title) ->
+        [{:title, {gettext("can't be blank"), []}} | errors]
 
-        too_long?(params["title"], @title_max_length) ->
-          [
-            {:title, {gettext("must be %{n} characters or fewer", n: @title_max_length), []}}
-            | errors
-          ]
+      too_long?(title, @title_max_length) ->
+        [
+          {:title, {gettext("must be %{n} characters or fewer", n: @title_max_length), []}}
+          | errors
+        ]
 
-        true ->
-          errors
-      end
-
-    errors =
-      cond do
-        blank?(params["body"]) ->
-          [{:body, {gettext("can't be blank"), []}} | errors]
-
-        too_long?(params["body"], @body_max_length) ->
-          [
-            {:body, {gettext("must be %{n} characters or fewer", n: @body_max_length), []}}
-            | errors
-          ]
-
-        true ->
-          errors
-      end
-
-    errors =
-      if params["label"] in allowed_label_values() do
+      true ->
         errors
-      else
-        [{:label, {gettext("must be one of the listed options"), []}} | errors]
-      end
+    end
+  end
 
-    errors
+  defp validate_body(errors, body) do
+    cond do
+      blank?(body) ->
+        [{:body, {gettext("can't be blank"), []}} | errors]
+
+      too_long?(body, @body_max_length) ->
+        [
+          {:body, {gettext("must be %{n} characters or fewer", n: @body_max_length), []}}
+          | errors
+        ]
+
+      true ->
+        errors
+    end
+  end
+
+  defp validate_label(errors, label) do
+    if label in allowed_label_values() do
+      errors
+    else
+      [{:label, {gettext("must be one of the listed options"), []}} | errors]
+    end
   end
 
   defp too_long?(nil, _), do: false

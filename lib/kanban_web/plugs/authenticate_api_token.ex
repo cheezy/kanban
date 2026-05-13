@@ -41,28 +41,33 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
       |> assign(:current_board, api_token.board)
       |> assign(:api_token, api_token)
     else
-      {:error, :missing_token} ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "Missing or invalid Authorization header"})
-        |> halt()
-
-      {:error, :not_found} ->
-        emit_auth_failed_telemetry(conn, "token_not_found")
-
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "Invalid API token"})
-        |> halt()
-
-      {:error, :revoked} ->
-        emit_auth_failed_telemetry(conn, "token_revoked")
-
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "API token has been revoked"})
-        |> halt()
+      error -> halt_with_auth_error(conn, error)
     end
+  end
+
+  defp halt_with_auth_error(conn, {:error, :missing_token}) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Missing or invalid Authorization header"})
+    |> halt()
+  end
+
+  defp halt_with_auth_error(conn, {:error, :not_found}) do
+    emit_auth_failed_telemetry(conn, "token_not_found")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Invalid API token"})
+    |> halt()
+  end
+
+  defp halt_with_auth_error(conn, {:error, :revoked}) do
+    emit_auth_failed_telemetry(conn, "token_revoked")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "API token has been revoked"})
+    |> halt()
   end
 
   defp extract_token(conn) do

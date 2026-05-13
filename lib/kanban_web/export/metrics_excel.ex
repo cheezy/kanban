@@ -51,15 +51,7 @@ defmodule KanbanWeb.MetricsExcelExport do
 
   defp build_sheet(board, "wait-time", opts, data) do
     header = header_rows(board, "Wait Time", opts)
-
-    review_section =
-      if ai_optimized?(board) do
-        {review_headers, review_rows} = review_wait_rows(board, data)
-        [[["Reviewed Tasks" | @bold]]] ++ [review_headers | review_rows] ++ [[]]
-      else
-        []
-      end
-
+    review_section = wait_time_review_section(board, data)
     {backlog_headers, backlog_rows} = backlog_wait_rows(board, data)
     backlog_label = if ai_optimized?(board), do: "Claimed Tasks", else: "Started Tasks"
 
@@ -75,6 +67,15 @@ defmodule KanbanWeb.MetricsExcelExport do
   defp build_sheet(board, _metric, opts, _data) do
     rows = header_rows(board, "Unknown", opts)
     %Sheet{name: "Export", rows: rows, col_widths: @col_widths_base}
+  end
+
+  defp wait_time_review_section(board, data) do
+    if ai_optimized?(board) do
+      {review_headers, review_rows} = review_wait_rows(board, data)
+      [[["Reviewed Tasks" | @bold]]] ++ [review_headers | review_rows] ++ [[]]
+    else
+      []
+    end
   end
 
   # Header rows (rows 1-4)
@@ -114,27 +115,28 @@ defmodule KanbanWeb.MetricsExcelExport do
         bold_row(["Identifier", "Title", "Created", "Completed"])
       end
 
-    rows =
-      Enum.map(tasks, fn task ->
-        base = [
-          safe_text(task[:identifier]),
-          safe_text(task[:title]),
-          format_datetime_cell(task[:inserted_at])
-        ]
-
-        if ai_optimized?(board) do
-          base ++
-            [
-              format_datetime_cell(task[:claimed_at]),
-              format_datetime_cell(task[:completed_at]),
-              safe_text(task[:completed_by_agent] || "—")
-            ]
-        else
-          base ++ [format_datetime_cell(task[:completed_at])]
-        end
-      end)
+    rows = Enum.map(tasks, &throughput_task_row(&1, ai_optimized?(board)))
 
     {headers, rows}
+  end
+
+  defp throughput_task_row(task, ai_optimized) do
+    base = [
+      safe_text(task[:identifier]),
+      safe_text(task[:title]),
+      format_datetime_cell(task[:inserted_at])
+    ]
+
+    if ai_optimized do
+      base ++
+        [
+          format_datetime_cell(task[:claimed_at]),
+          format_datetime_cell(task[:completed_at]),
+          safe_text(task[:completed_by_agent] || "—")
+        ]
+    else
+      base ++ [format_datetime_cell(task[:completed_at])]
+    end
   end
 
   defp throughput_goal_rows(board, data) do
@@ -179,24 +181,25 @@ defmodule KanbanWeb.MetricsExcelExport do
         bold_row(["Identifier", "Title", "Cycle Time", claimed_label, "Completed"])
       end
 
-    rows =
-      Enum.map(tasks, fn task ->
-        base = [
-          safe_text(task[:identifier]),
-          safe_text(task[:title]),
-          format_time_cell(task[:cycle_time_seconds]),
-          format_datetime_cell(task[:claimed_at]),
-          format_datetime_cell(task[:completed_at])
-        ]
-
-        if ai_optimized?(board) do
-          base ++ [safe_text(task[:completed_by_agent] || "—")]
-        else
-          base
-        end
-      end)
+    rows = Enum.map(tasks, &cycle_time_row(&1, ai_optimized?(board)))
 
     {headers, rows}
+  end
+
+  defp cycle_time_row(task, ai_optimized) do
+    base = [
+      safe_text(task[:identifier]),
+      safe_text(task[:title]),
+      format_time_cell(task[:cycle_time_seconds]),
+      format_datetime_cell(task[:claimed_at]),
+      format_datetime_cell(task[:completed_at])
+    ]
+
+    if ai_optimized do
+      base ++ [safe_text(task[:completed_by_agent] || "—")]
+    else
+      base
+    end
   end
 
   # Lead Time rows
@@ -211,24 +214,25 @@ defmodule KanbanWeb.MetricsExcelExport do
         bold_row(["Identifier", "Title", "Lead Time", "Created", "Completed"])
       end
 
-    rows =
-      Enum.map(tasks, fn task ->
-        base = [
-          safe_text(task[:identifier]),
-          safe_text(task[:title]),
-          format_time_cell(task[:lead_time_seconds]),
-          format_datetime_cell(task[:inserted_at]),
-          format_datetime_cell(task[:completed_at])
-        ]
-
-        if ai_optimized?(board) do
-          base ++ [safe_text(task[:completed_by_agent] || "—")]
-        else
-          base
-        end
-      end)
+    rows = Enum.map(tasks, &lead_time_row(&1, ai_optimized?(board)))
 
     {headers, rows}
+  end
+
+  defp lead_time_row(task, ai_optimized) do
+    base = [
+      safe_text(task[:identifier]),
+      safe_text(task[:title]),
+      format_time_cell(task[:lead_time_seconds]),
+      format_datetime_cell(task[:inserted_at]),
+      format_datetime_cell(task[:completed_at])
+    ]
+
+    if ai_optimized do
+      base ++ [safe_text(task[:completed_by_agent] || "—")]
+    else
+      base
+    end
   end
 
   # Wait Time rows
@@ -242,19 +246,20 @@ defmodule KanbanWeb.MetricsExcelExport do
     headers =
       bold_row(["Identifier", "Title", "Review Wait", "Completed", "Reviewed", "Agent"])
 
-    rows =
-      Enum.map(tasks, fn task ->
-        [
-          safe_text(task[:identifier]),
-          safe_text(task[:title]),
-          format_time_cell(task[:review_wait_seconds]),
-          format_datetime_cell(task[:completed_at]),
-          format_datetime_cell(task[:reviewed_at]),
-          safe_text(task[:completed_by_agent] || "—")
-        ]
-      end)
+    rows = Enum.map(tasks, &review_wait_row/1)
 
     {headers, rows}
+  end
+
+  defp review_wait_row(task) do
+    [
+      safe_text(task[:identifier]),
+      safe_text(task[:title]),
+      format_time_cell(task[:review_wait_seconds]),
+      format_datetime_cell(task[:completed_at]),
+      format_datetime_cell(task[:reviewed_at]),
+      safe_text(task[:completed_by_agent] || "—")
+    ]
   end
 
   defp backlog_wait_rows(board, data) do
@@ -273,24 +278,25 @@ defmodule KanbanWeb.MetricsExcelExport do
         bold_row(["Identifier", "Title", wait_label, "Created", claimed_label])
       end
 
-    rows =
-      Enum.map(tasks, fn task ->
-        base = [
-          safe_text(task[:identifier]),
-          safe_text(task[:title]),
-          format_time_cell(task[:backlog_wait_seconds]),
-          format_datetime_cell(task[:inserted_at]),
-          format_datetime_cell(task[:claimed_at])
-        ]
-
-        if ai_optimized?(board) do
-          base ++ [safe_text(task[:completed_by_agent] || "—")]
-        else
-          base
-        end
-      end)
+    rows = Enum.map(tasks, &backlog_wait_row(&1, ai_optimized?(board)))
 
     {headers, rows}
+  end
+
+  defp backlog_wait_row(task, ai_optimized) do
+    base = [
+      safe_text(task[:identifier]),
+      safe_text(task[:title]),
+      format_time_cell(task[:backlog_wait_seconds]),
+      format_datetime_cell(task[:inserted_at]),
+      format_datetime_cell(task[:claimed_at])
+    ]
+
+    if ai_optimized do
+      base ++ [safe_text(task[:completed_by_agent] || "—")]
+    else
+      base
+    end
   end
 
   # Helpers

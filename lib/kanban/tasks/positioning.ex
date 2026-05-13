@@ -25,29 +25,7 @@ defmodule Kanban.Tasks.Positioning do
   """
   def move_task(%Task{} = task, %Column{} = new_column, new_position) do
     old_column_id = task.column_id
-
-    result =
-      if new_column.id != old_column_id do
-        should_check_wip = task.type in [:work, :defect]
-
-        if should_check_wip do
-          current_count =
-            Task
-            |> where([t], t.column_id == ^new_column.id)
-            |> where([t], t.type in [:work, :defect])
-            |> Repo.aggregate(:count)
-
-          if new_column.wip_limit > 0 and current_count >= new_column.wip_limit do
-            {:error, :wip_limit_reached}
-          else
-            perform_move(task, new_column, new_position, old_column_id)
-          end
-        else
-          perform_move(task, new_column, new_position, old_column_id)
-        end
-      else
-        perform_move(task, new_column, new_position, old_column_id)
-      end
+    result = check_wip_and_perform_move(task, new_column, new_position, old_column_id)
 
     case result do
       {:ok, updated_task} ->
@@ -57,6 +35,27 @@ defmodule Kanban.Tasks.Positioning do
       error ->
         error
     end
+  end
+
+  defp check_wip_and_perform_move(task, new_column, new_position, old_column_id) do
+    cross_column? = new_column.id != old_column_id
+    should_check_wip = cross_column? and task.type in [:work, :defect]
+
+    if should_check_wip and wip_limit_exceeded?(new_column) do
+      {:error, :wip_limit_reached}
+    else
+      perform_move(task, new_column, new_position, old_column_id)
+    end
+  end
+
+  defp wip_limit_exceeded?(new_column) do
+    current_count =
+      Task
+      |> where([t], t.column_id == ^new_column.id)
+      |> where([t], t.type in [:work, :defect])
+      |> Repo.aggregate(:count)
+
+    new_column.wip_limit > 0 and current_count >= new_column.wip_limit
   end
 
   @doc """
@@ -73,33 +72,40 @@ defmodule Kanban.Tasks.Positioning do
         [column.id]
       )
 
-      task_ids
-      |> Enum.with_index()
-      |> Enum.each(fn {task_id, index} ->
-        Task
-        |> where([t], t.id == ^task_id and t.column_id == ^column.id)
-        |> Repo.update_all(set: [position: index])
-      end)
-
-      # Reassign positions to any remaining tasks still at temp positions
-      # (e.g., archived tasks not included in task_ids)
-      remaining_ids =
-        Task
-        |> where([t], t.column_id == ^column.id and t.position < 0)
-        |> order_by([t], asc: t.id)
-        |> select([t], t.id)
-        |> Repo.all()
-
-      remaining_ids
-      |> Enum.with_index(length(task_ids))
-      |> Enum.each(fn {id, pos} ->
-        Task
-        |> where([t], t.id == ^id)
-        |> Repo.update_all(set: [position: pos])
-      end)
+      assign_reorder_positions(column, task_ids)
+      assign_remaining_positions(column, length(task_ids))
     end)
 
     :ok
+  end
+
+  defp assign_reorder_positions(column, task_ids) do
+    task_ids
+    |> Enum.with_index()
+    |> Enum.each(fn {task_id, index} ->
+      Task
+      |> where([t], t.id == ^task_id and t.column_id == ^column.id)
+      |> Repo.update_all(set: [position: index])
+    end)
+  end
+
+  defp assign_remaining_positions(column, offset) do
+    # Reassign positions to any remaining tasks still at temp positions
+    # (e.g., archived tasks not included in task_ids)
+    remaining_ids =
+      Task
+      |> where([t], t.column_id == ^column.id and t.position < 0)
+      |> order_by([t], asc: t.id)
+      |> select([t], t.id)
+      |> Repo.all()
+
+    remaining_ids
+    |> Enum.with_index(offset)
+    |> Enum.each(fn {id, pos} ->
+      Task
+      |> where([t], t.id == ^id)
+      |> Repo.update_all(set: [position: pos])
+    end)
   end
 
   @doc """

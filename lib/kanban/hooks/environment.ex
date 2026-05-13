@@ -33,6 +33,14 @@ defmodule Kanban.Hooks.Environment do
     agent_name = Keyword.get(opts, :agent_name, "Unknown")
     hook_name = Keyword.get(opts, :hook_name, "unknown")
 
+    context_vars = context_env_vars(task, board, agent_name, hook_name)
+
+    task
+    |> task_env_vars()
+    |> Map.merge(context_vars)
+  end
+
+  defp task_env_vars(task) do
     %{
       "TASK_ID" => to_string(task.id),
       "TASK_IDENTIFIER" => task.identifier || "",
@@ -41,7 +49,12 @@ defmodule Kanban.Hooks.Environment do
       "TASK_STATUS" => to_string(task.status || "open"),
       "TASK_COMPLEXITY" => to_string(task.complexity || "medium"),
       "TASK_PRIORITY" => to_string(task.priority || 0),
-      "TASK_NEEDS_REVIEW" => to_string(task.needs_review || false),
+      "TASK_NEEDS_REVIEW" => to_string(task.needs_review || false)
+    }
+  end
+
+  defp context_env_vars(task, board, agent_name, hook_name) do
+    %{
       "BOARD_ID" => to_string(board.id),
       "BOARD_NAME" => board.name || "",
       "COLUMN_ID" => to_string(task.column.id),

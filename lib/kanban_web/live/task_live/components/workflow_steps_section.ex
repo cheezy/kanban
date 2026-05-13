@@ -40,12 +40,27 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
   end
 
   defp workflow_step_status_label(%{} = step) do
-    cond do
-      step["skipped"] == true -> gettext("Skipped")
-      step["dispatched"] == false -> gettext("Not dispatched")
-      is_binary(step["status"]) and step["status"] != "" -> step["status"]
-      is_integer(step["exit_code"]) -> gettext("exit %{code}", code: step["exit_code"])
-      true -> gettext("Dispatched")
-    end
+    skipped = step["skipped"]
+    dispatched = step["dispatched"]
+    status = step["status"]
+    exit_code = step["exit_code"]
+    workflow_step_status_label_from(skipped, dispatched, status, exit_code)
   end
+
+  defp workflow_step_status_label_from(true, _dispatched, _status, _exit_code),
+    do: gettext("Skipped")
+
+  defp workflow_step_status_label_from(_skipped, false, _status, _exit_code),
+    do: gettext("Not dispatched")
+
+  defp workflow_step_status_label_from(_skipped, _dispatched, status, _exit_code)
+       when is_binary(status) and status != "",
+       do: status
+
+  defp workflow_step_status_label_from(_skipped, _dispatched, _status, exit_code)
+       when is_integer(exit_code),
+       do: gettext("exit %{code}", code: exit_code)
+
+  defp workflow_step_status_label_from(_skipped, _dispatched, _status, _exit_code),
+    do: gettext("Dispatched")
 end

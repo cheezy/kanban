@@ -99,13 +99,7 @@ defmodule Kanban.ApiTokens do
 
   """
   def create_api_token(user, board, attrs \\ %{}) do
-    attrs =
-      attrs
-      |> Enum.map(fn {k, v} -> {to_string(k), v} end)
-      |> Map.new()
-      |> Map.put("user_id", user.id)
-      |> Map.put("board_id", board.id)
-
+    attrs = normalize_api_token_attrs(attrs, user, board)
     changeset = ApiToken.changeset(%ApiToken{}, attrs)
 
     case Repo.insert(changeset) do
@@ -123,6 +117,14 @@ defmodule Kanban.ApiTokens do
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  defp normalize_api_token_attrs(attrs, user, board) do
+    attrs
+    |> Enum.map(fn {k, v} -> {to_string(k), v} end)
+    |> Map.new()
+    |> Map.put("user_id", user.id)
+    |> Map.put("board_id", board.id)
   end
 
   @doc """

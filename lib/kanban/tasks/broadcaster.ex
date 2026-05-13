@@ -51,21 +51,16 @@ defmodule Kanban.Tasks.Broadcaster do
   (status change, claim, completion, review, or generic update).
   """
   def broadcast_task_update(%Task{} = task, %Ecto.Changeset{} = changeset) do
+    broadcast_task_change(task, classify_task_update_event(changeset))
+  end
+
+  defp classify_task_update_event(changeset) do
     cond do
-      Map.has_key?(changeset.changes, :status) ->
-        broadcast_task_change(task, :task_status_changed)
-
-      Map.has_key?(changeset.changes, :claimed_at) ->
-        broadcast_task_change(task, :task_claimed)
-
-      Map.has_key?(changeset.changes, :completed_at) ->
-        broadcast_task_change(task, :task_completed)
-
-      Map.has_key?(changeset.changes, :review_status) ->
-        broadcast_task_change(task, :task_reviewed)
-
-      true ->
-        broadcast_task_change(task, :task_updated)
+      Map.has_key?(changeset.changes, :status) -> :task_status_changed
+      Map.has_key?(changeset.changes, :claimed_at) -> :task_claimed
+      Map.has_key?(changeset.changes, :completed_at) -> :task_completed
+      Map.has_key?(changeset.changes, :review_status) -> :task_reviewed
+      true -> :task_updated
     end
   end
 end

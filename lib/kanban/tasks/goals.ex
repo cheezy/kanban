@@ -222,28 +222,34 @@ defmodule Kanban.Tasks.Goals do
   defp determine_target_column(goal_context) do
     done_column = find_done_column(goal_context.all_columns)
 
-    all_in_done? =
-      done_column != nil &&
-        Enum.all?(goal_context.children_data, fn {_id, column_id} ->
-          column_id == done_column.id
-        end)
-
     target_column =
-      if all_in_done? do
+      if all_children_in_done?(goal_context, done_column) do
         done_column
       else
-        valid_columns =
-          goal_context.children_data
-          |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
-          |> Enum.reject(&is_nil/1)
-
-        case valid_columns do
-          [] -> List.first(goal_context.all_columns)
-          columns -> Enum.min_by(columns, & &1.position)
-        end
+        pick_leftmost_child_column(goal_context)
       end
 
     {:ok, target_column}
+  end
+
+  defp all_children_in_done?(_goal_context, nil), do: false
+
+  defp all_children_in_done?(goal_context, done_column) do
+    Enum.all?(goal_context.children_data, fn {_id, column_id} ->
+      column_id == done_column.id
+    end)
+  end
+
+  defp pick_leftmost_child_column(goal_context) do
+    valid_columns =
+      goal_context.children_data
+      |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
+      |> Enum.reject(&is_nil/1)
+
+    case valid_columns do
+      [] -> List.first(goal_context.all_columns)
+      columns -> Enum.min_by(columns, & &1.position)
+    end
   end
 
   defp find_done_column(columns) do

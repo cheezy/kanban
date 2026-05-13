@@ -55,31 +55,37 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   end
 
   defp load_wait_time_data(socket) do
-    opts = [
-      time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
-    ]
+    opts = build_wait_time_opts(socket)
+    board_id = socket.assigns.board.id
 
-    opts =
-      if socket.assigns.agent_name do
-        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
-      else
-        opts
-      end
+    {:ok, stats} = Metrics.get_wait_time_stats(board_id, opts)
+    review_tasks = get_review_wait_tasks(board_id, opts)
+    backlog_tasks = get_backlog_wait_tasks(board_id, opts)
 
-    {:ok, stats} = Metrics.get_wait_time_stats(socket.assigns.board.id, opts)
-    review_tasks = get_review_wait_tasks(socket.assigns.board.id, opts)
-    backlog_tasks = get_backlog_wait_tasks(socket.assigns.board.id, opts)
-    grouped_review_tasks = group_review_tasks_by_date(review_tasks)
-    grouped_backlog_tasks = group_backlog_tasks_by_date(backlog_tasks)
+    assign_wait_time_data(socket, stats, review_tasks, backlog_tasks)
+  end
 
+  defp assign_wait_time_data(socket, stats, review_tasks, backlog_tasks) do
     socket
     |> assign(:review_wait_stats, stats.review_wait)
     |> assign(:backlog_wait_stats, stats.backlog_wait)
     |> assign(:review_tasks, review_tasks)
     |> assign(:backlog_tasks, backlog_tasks)
-    |> assign(:grouped_review_tasks, grouped_review_tasks)
-    |> assign(:grouped_backlog_tasks, grouped_backlog_tasks)
+    |> assign(:grouped_review_tasks, group_review_tasks_by_date(review_tasks))
+    |> assign(:grouped_backlog_tasks, group_backlog_tasks_by_date(backlog_tasks))
+  end
+
+  defp build_wait_time_opts(socket) do
+    opts = [
+      time_range: socket.assigns.time_range,
+      exclude_weekends: socket.assigns.exclude_weekends
+    ]
+
+    if socket.assigns.agent_name do
+      Keyword.put(opts, :agent_name, socket.assigns.agent_name)
+    else
+      opts
+    end
   end
 
   defp get_review_wait_tasks(board_id, opts) do

@@ -30,25 +30,26 @@ defmodule Kanban.Boards do
     |> where([b, bu], bu.user_id == ^user.id)
     |> select([b, bu], %{b | user_access: bu.access})
     |> Repo.all()
-    |> Enum.sort_by(
-      fn board ->
-        access_priority =
-          case board.user_access do
-            :owner -> 0
-            :modify -> 1
-            :read_only -> 2
-          end
+    |> Enum.sort_by(&board_sort_key/1, &board_sort_compare/2)
+  end
 
-        {access_priority, NaiveDateTime.to_erl(board.inserted_at)}
-      end,
-      fn {priority_a, time_a}, {priority_b, time_b} ->
-        if priority_a == priority_b do
-          time_a >= time_b
-        else
-          priority_a < priority_b
-        end
+  defp board_sort_key(board) do
+    access_priority =
+      case board.user_access do
+        :owner -> 0
+        :modify -> 1
+        :read_only -> 2
       end
-    )
+
+    {access_priority, NaiveDateTime.to_erl(board.inserted_at)}
+  end
+
+  defp board_sort_compare({priority_a, time_a}, {priority_b, time_b}) do
+    if priority_a == priority_b do
+      time_a >= time_b
+    else
+      priority_a < priority_b
+    end
   end
 
   @doc """
@@ -161,24 +162,7 @@ defmodule Kanban.Boards do
 
   """
   def create_board(user, attrs \\ %{}) do
-    result =
-      Ecto.Multi.new()
-      |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
-      |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
-        BoardUser.changeset(%BoardUser{}, %{
-          board_id: board.id,
-          user_id: user.id,
-          access: :owner
-        })
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{board: board}} -> {:ok, board}
-        {:error, :board, changeset, _} -> {:error, changeset}
-        {:error, :board_user, changeset, _} -> {:error, changeset}
-      end
-
-    case result do
+    case run_create_board_transaction(user, attrs) do
       {:ok, board} ->
         :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{
           board_id: board.id,
@@ -191,6 +175,30 @@ defmodule Kanban.Boards do
         error
     end
   end
+
+  defp run_create_board_transaction(user, attrs) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
+    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
+      owner_board_user_changeset(board, user)
+    end)
+    |> Repo.transaction()
+    |> handle_board_transaction_result()
+  end
+
+  defp owner_board_user_changeset(board, user) do
+    BoardUser.changeset(%BoardUser{}, %{
+      board_id: board.id,
+      user_id: user.id,
+      access: :owner
+    })
+  end
+
+  defp handle_board_transaction_result({:ok, %{board: board}}), do: {:ok, board}
+  defp handle_board_transaction_result({:error, :board, changeset, _}), do: {:error, changeset}
+
+  defp handle_board_transaction_result({:error, :board_user, changeset, _}),
+    do: {:error, changeset}
 
   @doc """
   Creates an AI-optimized board with default columns: Backlog, Ready, Doing, Review, and Done.

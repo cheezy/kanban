@@ -145,19 +145,7 @@ defmodule KanbanWeb.API.TaskJSON do
   end
 
   def error(%{changeset: changeset}) do
-    errors =
-      Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-        Enum.reduce(opts, msg, fn {key, value}, acc ->
-          string_value =
-            if is_binary(value) or is_number(value) or is_atom(value) do
-              to_string(value)
-            else
-              inspect(value)
-            end
-
-          String.replace(acc, "%{#{key}}", string_value)
-        end)
-      end)
+    errors = Ecto.Changeset.traverse_errors(changeset, &translate_changeset_error/1)
 
     # Add documentation links for fields with errors
     documentation = ErrorDocs.get_docs(:validation_error, fields: Map.keys(errors))
@@ -167,4 +155,15 @@ defmodule KanbanWeb.API.TaskJSON do
       documentation: documentation
     }
   end
+
+  defp translate_changeset_error({msg, opts}) do
+    Enum.reduce(opts, msg, fn {key, value}, acc ->
+      String.replace(acc, "%{#{key}}", stringify_error_value(value))
+    end)
+  end
+
+  defp stringify_error_value(value) when is_binary(value) or is_number(value) or is_atom(value),
+    do: to_string(value)
+
+  defp stringify_error_value(value), do: inspect(value)
 end

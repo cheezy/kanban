@@ -114,17 +114,7 @@ defmodule KanbanWeb.ResourcesLive.Index do
     tags = Keyword.get(overrides, :tags, socket.assigns.selected_tags)
     sort_by = Keyword.get(overrides, :sort_by, socket.assigns.sort_by)
 
-    query_params =
-      %{}
-      |> then(fn params ->
-        if search != "", do: Map.put(params, "search", search), else: params
-      end)
-      |> then(fn params ->
-        if tags != [], do: Map.put(params, "tags", Enum.join(tags, ",")), else: params
-      end)
-      |> then(fn params ->
-        if sort_by != "relevance", do: Map.put(params, "sort_by", sort_by), else: params
-      end)
+    query_params = build_filter_query_params(search, tags, sort_by)
 
     path =
       case URI.encode_query(query_params) do
@@ -134,6 +124,22 @@ defmodule KanbanWeb.ResourcesLive.Index do
 
     push_patch(socket, to: path)
   end
+
+  defp build_filter_query_params(search, tags, sort_by) do
+    %{}
+    |> maybe_put_search(search)
+    |> maybe_put_tags(tags)
+    |> maybe_put_sort_by(sort_by)
+  end
+
+  defp maybe_put_search(params, ""), do: params
+  defp maybe_put_search(params, search), do: Map.put(params, "search", search)
+
+  defp maybe_put_tags(params, []), do: params
+  defp maybe_put_tags(params, tags), do: Map.put(params, "tags", Enum.join(tags, ","))
+
+  defp maybe_put_sort_by(params, "relevance"), do: params
+  defp maybe_put_sort_by(params, sort_by), do: Map.put(params, "sort_by", sort_by)
 
   # Delegate to shared module for consistency
   defdelegate type_icon(content_type), to: HowToData

@@ -48,39 +48,50 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   end
 
   defp load_dashboard_data(socket) do
+    opts = build_dashboard_opts(socket)
+
+    case Metrics.get_dashboard_summary(socket.assigns.board.id, opts) do
+      {:ok, summary} ->
+        assign_dashboard_summary(socket, summary)
+
+      {:error, _reason} ->
+        assign_empty_dashboard(socket)
+    end
+  end
+
+  defp build_dashboard_opts(socket) do
     opts = [
       time_range: socket.assigns.time_range,
       exclude_weekends: socket.assigns.exclude_weekends
     ]
 
-    opts =
-      if socket.assigns.agent_name do
-        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
-      else
-        opts
-      end
-
-    case Metrics.get_dashboard_summary(socket.assigns.board.id, opts) do
-      {:ok, summary} ->
-        socket
-        |> assign(:throughput, summary.throughput)
-        |> assign(:cycle_time, summary.cycle_time)
-        |> assign(:lead_time, summary.lead_time)
-        |> assign(:wait_time, summary.wait_time)
-
-      {:error, _reason} ->
-        socket
-        |> assign(:throughput, [])
-        |> assign(:cycle_time, %{average_hours: 0, median_hours: 0, count: 0})
-        |> assign(:lead_time, %{average_hours: 0, median_hours: 0, count: 0})
-        |> assign(
-          :wait_time,
-          %{
-            review_wait: %{average_hours: 0, median_hours: 0, count: 0},
-            backlog_wait: %{average_hours: 0, median_hours: 0, count: 0}
-          }
-        )
+    if socket.assigns.agent_name do
+      Keyword.put(opts, :agent_name, socket.assigns.agent_name)
+    else
+      opts
     end
+  end
+
+  defp assign_dashboard_summary(socket, summary) do
+    socket
+    |> assign(:throughput, summary.throughput)
+    |> assign(:cycle_time, summary.cycle_time)
+    |> assign(:lead_time, summary.lead_time)
+    |> assign(:wait_time, summary.wait_time)
+  end
+
+  defp assign_empty_dashboard(socket) do
+    socket
+    |> assign(:throughput, [])
+    |> assign(:cycle_time, %{average_hours: 0, median_hours: 0, count: 0})
+    |> assign(:lead_time, %{average_hours: 0, median_hours: 0, count: 0})
+    |> assign(
+      :wait_time,
+      %{
+        review_wait: %{average_hours: 0, median_hours: 0, count: 0},
+        backlog_wait: %{average_hours: 0, median_hours: 0, count: 0}
+      }
+    )
   end
 
   defp format_hours(hours) when is_number(hours) and hours == 0, do: "0h"

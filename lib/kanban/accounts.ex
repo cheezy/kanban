@@ -325,14 +325,24 @@ defmodule Kanban.Accounts do
   Confirms a user account.
   """
   def confirm_user(token) do
+    case run_confirm_user(token) do
+      {:ok, user} -> {:ok, user}
+      error -> handle_confirm_error(error)
+    end
+  end
+
+  defp run_confirm_user(token) do
     with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
          %UserToken{user_id: user_id} <- Repo.one(query),
-         %User{} = user <- Repo.get(User, user_id),
-         {:ok, user} <- maybe_confirm_user(user),
+         %User{} = user <- Repo.get(User, user_id) do
+      finalize_confirm_user(user, user_id)
+    end
+  end
+
+  defp finalize_confirm_user(user, user_id) do
+    with {:ok, user} <- maybe_confirm_user(user),
          {_count, nil} <- delete_confirm_tokens(user_id) do
       {:ok, user}
-    else
-      error -> handle_confirm_error(error)
     end
   end
 

@@ -53,12 +53,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
 
       # If it's a map with numeric string keys (from inputs_for), convert to list
       value when is_map(value) ->
-        list =
-          value
-          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
-          |> Enum.map(fn {_k, v} -> Map.delete(v, "_persistent_id") end)
-
-        Map.put(params, field_name, list)
+        Map.put(params, field_name, indexed_map_to_list(value))
 
       # If it's nil or missing, don't add it to params
       # Schema defaults will handle nil values appropriately
@@ -66,6 +61,12 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
       _ ->
         params
     end
+  end
+
+  defp indexed_map_to_list(value) do
+    value
+    |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+    |> Enum.map(fn {_k, v} -> Map.delete(v, "_persistent_id") end)
   end
 
   defp normalize_testing_strategy(params) do

@@ -34,8 +34,13 @@ defmodule Kanban.Metrics do
 
   """
   def get_dashboard_summary(board_id, opts \\ []) do
-    with {:ok, throughput} <- get_throughput(board_id, opts),
-         {:ok, cycle_time} <- get_cycle_time_stats(board_id, opts),
+    with {:ok, throughput} <- get_throughput(board_id, opts) do
+      build_remaining_dashboard_summary(board_id, opts, throughput)
+    end
+  end
+
+  defp build_remaining_dashboard_summary(board_id, opts, throughput) do
+    with {:ok, cycle_time} <- get_cycle_time_stats(board_id, opts),
          {:ok, lead_time} <- get_lead_time_stats(board_id, opts),
          {:ok, wait_time} <- get_wait_time_stats(board_id, opts) do
       {:ok,
@@ -112,34 +117,31 @@ defmodule Kanban.Metrics do
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
 
     start_date = get_start_date(time_range)
+    results = throughput_query(board_id, start_date, agent_name) |> Repo.all()
 
-    query =
-      Task
-      |> join(:inner, [t], c in assoc(t, :column))
-      |> where([t, c], c.board_id == ^board_id)
-      |> where([t], not is_nil(t.completed_at))
-      |> where([t], t.completed_at >= ^start_date)
-      |> where([t], t.type != ^:goal)
-      |> maybe_filter_by_agent(agent_name)
-      |> group_by([t], fragment("DATE(?)", t.completed_at))
-      |> select([t], %{
-        date: fragment("DATE(?)", t.completed_at),
-        count: count(t.id)
-      })
-      |> order_by([t], fragment("DATE(?)", t.completed_at))
+    {:ok, maybe_reject_weekends(results, exclude_weekends)}
+  end
 
-    results = Repo.all(query)
+  defp throughput_query(board_id, start_date, agent_name) do
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id == ^board_id)
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.completed_at >= ^start_date)
+    |> where([t], t.type != ^:goal)
+    |> maybe_filter_by_agent(agent_name)
+    |> group_by([t], fragment("DATE(?)", t.completed_at))
+    |> select([t], %{
+      date: fragment("DATE(?)", t.completed_at),
+      count: count(t.id)
+    })
+    |> order_by([t], fragment("DATE(?)", t.completed_at))
+  end
 
-    filtered_results =
-      if exclude_weekends do
-        Enum.reject(results, fn %{date: date} ->
-          Date.day_of_week(date) in [6, 7]
-        end)
-      else
-        results
-      end
+  defp maybe_reject_weekends(results, false), do: results
 
-    {:ok, filtered_results}
+  defp maybe_reject_weekends(results, true) do
+    Enum.reject(results, fn %{date: date} -> Date.day_of_week(date) in [6, 7] end)
   end
 
   @doc """
@@ -333,23 +335,26 @@ defmodule Kanban.Metrics do
 
     if board_ai_optimized?(board_id) do
       agent_name = Keyword.get(opts, :agent_name)
-
-      review_results =
-        fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends)
-
-      backlog_results =
-        fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends)
-
-      with {:ok, review_stats} <- calculate_wait_time_stats(review_results),
-           {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
-        {:ok,
-         %{
-           review_wait: review_stats,
-           backlog_wait: backlog_stats
-         }}
-      end
+      compute_ai_wait_time_stats(board_id, start_date, agent_name, exclude_weekends)
     else
       get_wait_time_stats_from_history(board_id, start_date, exclude_weekends)
+    end
+  end
+
+  defp compute_ai_wait_time_stats(board_id, start_date, agent_name, exclude_weekends) do
+    review_results =
+      fetch_review_wait_times(board_id, start_date, agent_name, exclude_weekends)
+
+    backlog_results =
+      fetch_backlog_wait_times(board_id, start_date, agent_name, exclude_weekends)
+
+    with {:ok, review_stats} <- calculate_wait_time_stats(review_results),
+         {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
+      {:ok,
+       %{
+         review_wait: review_stats,
+         backlog_wait: backlog_stats
+       }}
     end
   end
 

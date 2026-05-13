@@ -50,40 +50,8 @@ defmodule KanbanWeb.BoardLive.Form do
     email = String.trim(email)
 
     case Accounts.get_user_by_email(email) do
-      nil ->
-        {:noreply,
-         socket
-         |> assign(:searched_user, nil)
-         |> assign(:search_email, email)
-         |> put_flash(:error, gettext("Could not find a user with that email address"))}
-
-      user ->
-        current_user_id = socket.assigns.current_scope.user.id
-
-        if user.id == current_user_id do
-          {:noreply,
-           socket
-           |> assign(:searched_user, nil)
-           |> assign(:search_email, email)
-           |> put_flash(:error, gettext("You cannot add yourself to the board"))}
-        else
-          already_added? =
-            Enum.any?(socket.assigns.board_users, fn %{user: u} -> u.id == user.id end)
-
-          if already_added? do
-            {:noreply,
-             socket
-             |> assign(:searched_user, nil)
-             |> assign(:search_email, email)
-             |> put_flash(:error, gettext("User is already added to the board"))}
-          else
-            {:noreply,
-             socket
-             |> assign(:searched_user, user)
-             |> assign(:search_email, email)
-             |> clear_flash()}
-          end
-        end
+      nil -> respond_user_not_found(socket, email)
+      user -> evaluate_searched_user(socket, user, email)
     end
   end
 
@@ -113,18 +81,46 @@ defmodule KanbanWeb.BoardLive.Form do
     end
   end
 
+  defp respond_user_not_found(socket, email) do
+    {:noreply,
+     socket
+     |> assign(:searched_user, nil)
+     |> assign(:search_email, email)
+     |> put_flash(:error, gettext("Could not find a user with that email address"))}
+  end
+
+  defp evaluate_searched_user(socket, user, email) do
+    cond do
+      user.id == socket.assigns.current_scope.user.id ->
+        reject_searched_user(socket, email, gettext("You cannot add yourself to the board"))
+
+      user_already_in_board?(socket, user) ->
+        reject_searched_user(socket, email, gettext("User is already added to the board"))
+
+      true ->
+        {:noreply,
+         socket
+         |> assign(:searched_user, user)
+         |> assign(:search_email, email)
+         |> clear_flash()}
+    end
+  end
+
+  defp user_already_in_board?(socket, user) do
+    Enum.any?(socket.assigns.board_users, fn %{user: u} -> u.id == user.id end)
+  end
+
+  defp reject_searched_user(socket, email, message) do
+    {:noreply,
+     socket
+     |> assign(:searched_user, nil)
+     |> assign(:search_email, email)
+     |> put_flash(:error, message)}
+  end
+
   defp perform_toggle(socket, field_name) do
     board = socket.assigns.board
-    current_visibility = socket.assigns.field_visibility
-
-    # Build a complete visibility map (all allow-listed keys present with their
-    # current value or false default) so we always pass a fully-populated map
-    # into the changeset, then flip the toggled field.
-    default_visibility = Map.new(Board.toggleable_fields(), fn key -> {key, false} end)
-    complete_visibility = Map.merge(default_visibility, current_visibility)
-
-    new_visibility =
-      Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
+    new_visibility = build_toggled_visibility(socket.assigns.field_visibility, field_name)
 
     case Boards.update_field_visibility(
            board,
@@ -141,6 +137,16 @@ defmodule KanbanWeb.BoardLive.Form do
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
     end
+  end
+
+  defp build_toggled_visibility(current_visibility, field_name) do
+    # Build a complete visibility map (all allow-listed keys present with their
+    # current value or false default) so we always pass a fully-populated map
+    # into the changeset, then flip the toggled field.
+    default_visibility = Map.new(Board.toggleable_fields(), fn key -> {key, false} end)
+    complete_visibility = Map.merge(default_visibility, current_visibility)
+
+    Map.put(complete_visibility, field_name, !Map.get(complete_visibility, field_name, false))
   end
 
   defp do_add_user(socket, access) do

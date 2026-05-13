@@ -10,21 +10,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
     case Boards.get_board(board_id, user) do
       {:ok, board} ->
-        user_access = Boards.get_user_access(board.id, user.id)
-
-        subscribe_to_board_updates(socket, board.id)
-
-        archived_tasks = load_archived_tasks(board.id)
-
-        {:ok,
-         socket
-         |> assign(:page_title, "Stride")
-         |> assign(:board, board)
-         |> assign(:user_access, user_access)
-         |> assign(:can_modify, user_access in [:owner, :modify])
-         |> assign(:is_owner, user_access == :owner)
-         |> assign(:has_archived_tasks, archived_tasks != [])
-         |> stream(:archived_tasks, archived_tasks)}
+        {:ok, assign_archive_state(socket, board, user)}
 
       {:error, :not_found} ->
         {:ok,
@@ -32,6 +18,23 @@ defmodule KanbanWeb.ArchiveLive.Index do
          |> put_flash(:error, gettext("Board not found"))
          |> push_navigate(to: ~p"/boards")}
     end
+  end
+
+  defp assign_archive_state(socket, board, user) do
+    user_access = Boards.get_user_access(board.id, user.id)
+
+    subscribe_to_board_updates(socket, board.id)
+
+    archived_tasks = load_archived_tasks(board.id)
+
+    socket
+    |> assign(:page_title, "Stride")
+    |> assign(:board, board)
+    |> assign(:user_access, user_access)
+    |> assign(:can_modify, user_access in [:owner, :modify])
+    |> assign(:is_owner, user_access == :owner)
+    |> assign(:has_archived_tasks, archived_tasks != [])
+    |> stream(:archived_tasks, archived_tasks)
   end
 
   @impl true
@@ -43,19 +46,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
   def handle_event("unarchive", %{"id" => id}, socket) do
     case authorize_modify_for_archived(socket, id) do
       {:ok, task} ->
-        case Tasks.unarchive_task(task) do
-          {:ok, _task} ->
-            archived_tasks = load_archived_tasks(socket.assigns.board.id)
-
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("Task unarchived successfully"))
-             |> assign(:has_archived_tasks, archived_tasks != [])
-             |> stream(:archived_tasks, archived_tasks, reset: true)}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to unarchive task"))}
-        end
+        perform_unarchive(socket, task)
 
       {:error, :not_authorized} ->
         {:noreply,
@@ -70,20 +61,10 @@ defmodule KanbanWeb.ArchiveLive.Index do
     end
   end
 
-  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     case authorize_modify_for_archived(socket, id) do
       {:ok, task} ->
-        case Tasks.delete_task(task) do
-          {:ok, _task} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("Task deleted successfully"))
-             |> stream_delete(:archived_tasks, task)}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
-        end
+        perform_delete(socket, task)
 
       {:error, :not_authorized} ->
         {:noreply,
@@ -94,6 +75,35 @@ defmodule KanbanWeb.ArchiveLive.Index do
          )}
 
       {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
+    end
+  end
+
+  defp perform_unarchive(socket, task) do
+    case Tasks.unarchive_task(task) do
+      {:ok, _task} ->
+        archived_tasks = load_archived_tasks(socket.assigns.board.id)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Task unarchived successfully"))
+         |> assign(:has_archived_tasks, archived_tasks != [])
+         |> stream(:archived_tasks, archived_tasks, reset: true)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to unarchive task"))}
+    end
+  end
+
+  defp perform_delete(socket, task) do
+    case Tasks.delete_task(task) do
+      {:ok, _task} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Task deleted successfully"))
+         |> stream_delete(:archived_tasks, task)}
+
+      {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete task"))}
     end
   end

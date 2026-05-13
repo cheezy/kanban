@@ -419,16 +419,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp perform_task_update(socket, task_params) do
-    # Auto-populate review fields when review_status changes
-    task_params =
-      case Map.get(socket.assigns, :current_scope) do
-        %{user: user} -> maybe_add_review_metadata(task_params, user)
-        _ -> task_params
-      end
-
-    # Auto-populate completed_at when status is set to completed
-    task_params = maybe_add_completed_at(task_params, socket.assigns.task)
-
+    task_params = prepare_task_update_params(socket, task_params)
     cascade_count = TaskParams.compute_cascade_count(socket.assigns.task, task_params)
 
     case Tasks.update_task(socket.assigns.task, task_params) do
@@ -448,6 +439,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  defp prepare_task_update_params(socket, task_params) do
+    task_params =
+      case Map.get(socket.assigns, :current_scope) do
+        %{user: user} -> maybe_add_review_metadata(task_params, user)
+        _ -> task_params
+      end
+
+    maybe_add_completed_at(task_params, socket.assigns.task)
+  end
+
   defp create_task_in_column(socket, column, task_params) do
     case Tasks.create_task(column, task_params) do
       {:ok, task} ->
@@ -459,15 +460,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, :wip_limit_reached} ->
-        changeset =
-          socket.assigns.task
-          |> Tasks.Task.changeset(task_params)
-          |> Ecto.Changeset.add_error(:column_id, gettext("WIP limit reached for this column"))
-
-        {:noreply,
-         socket
-         |> assign(:error_message, gettext("Cannot add task: WIP limit reached for this column"))
-         |> assign_form(changeset)}
+        handle_wip_limit_reached(socket, task_params)
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
@@ -475,6 +468,18 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
+  end
+
+  defp handle_wip_limit_reached(socket, task_params) do
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(task_params)
+      |> Ecto.Changeset.add_error(:column_id, gettext("WIP limit reached for this column"))
+
+    {:noreply,
+     socket
+     |> assign(:error_message, gettext("Cannot add task: WIP limit reached for this column"))
+     |> assign_form(changeset)}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
@@ -532,21 +537,24 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> TaskComment.changeset(comment_params)
          |> Repo.insert() do
       {:ok, _comment} ->
-        task =
-          Tasks.get_task_with_history!(socket.assigns.task.id)
-          |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
-
-        comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
-
-        {:noreply,
-         socket
-         |> assign(:task, task)
-         |> assign(:comment_form, to_form(comment_changeset))
-         |> put_flash(:info, gettext("Comment added successfully"))}
+        {:noreply, assign_after_comment_added(socket)}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset))}
     end
+  end
+
+  defp assign_after_comment_added(socket) do
+    task =
+      Tasks.get_task_with_history!(socket.assigns.task.id)
+      |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+
+    comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
+
+    socket
+    |> assign(:task, task)
+    |> assign(:comment_form, to_form(comment_changeset))
+    |> put_flash(:info, gettext("Comment added successfully"))
   end
 
   # Authorization gate for add_comment: caller must be a member of the

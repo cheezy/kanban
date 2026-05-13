@@ -27,16 +27,21 @@ defmodule KanbanWeb.MetricsPdfController do
 
     case Boards.get_board(board_id, user) do
       {:ok, board} ->
-        case params["format"] do
-          "excel" -> generate_and_send_excel(conn, board, metric, params)
-          _ -> generate_and_send_pdf(conn, board, metric, params)
-        end
+        dispatch_export_format(conn, board, metric, params)
 
       {:error, :not_found} ->
         conn
         |> put_status(:not_found)
         |> json(%{error: "Board not found"})
     end
+  end
+
+  defp dispatch_export_format(conn, board, metric, %{"format" => "excel"} = params) do
+    generate_and_send_excel(conn, board, metric, params)
+  end
+
+  defp dispatch_export_format(conn, board, metric, params) do
+    generate_and_send_pdf(conn, board, metric, params)
   end
 
   defp generate_and_send_pdf(conn, board, metric, params) do

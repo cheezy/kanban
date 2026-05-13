@@ -94,23 +94,26 @@ defmodule KanbanWeb.MetricsPdfHTML do
 
   defp line_chart_points(daily_times, chart_width, chart_height, max_val) when max_val > 0 do
     count = length(daily_times)
-    padding = 0
 
     daily_times
     |> Enum.with_index()
-    |> Enum.map(fn {day, i} ->
-      x =
-        if count > 1,
-          do: padding + i / (count - 1) * (chart_width - 2 * padding),
-          else: chart_width / 2
-
-      y = chart_height - day.average_hours / max_val * chart_height
-      {Float.round(x * 1.0, 1), Float.round(y * 1.0, 1)}
-    end)
+    |> Enum.map(&line_chart_point(&1, count, chart_width, chart_height, max_val))
   end
 
   defp line_chart_points(_daily_times, chart_width, chart_height, _max_val) do
     [{Float.round(chart_width / 2.0, 1), Float.round(chart_height / 2.0, 1)}]
+  end
+
+  defp line_chart_point({day, i}, count, chart_width, chart_height, max_val) do
+    padding = 0
+
+    x =
+      if count > 1,
+        do: padding + i / (count - 1) * (chart_width - 2 * padding),
+        else: chart_width / 2
+
+    y = chart_height - day.average_hours / max_val * chart_height
+    {Float.round(x * 1.0, 1), Float.round(y * 1.0, 1)}
   end
 
   defp points_to_polyline(points) do

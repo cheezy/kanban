@@ -24,28 +24,33 @@ defmodule KanbanWeb.BoardLive.Index do
     user = socket.assigns.current_scope.user
 
     case Boards.get_board(id, user) do
-      {:ok, board} ->
-        case Boards.delete_board(board, user) do
-          {:ok, _} ->
-            boards = Boards.list_boards(user)
+      {:ok, board} -> attempt_board_deletion(socket, board, user)
+      {:error, :not_found} -> board_not_found_response(socket)
+    end
+  end
 
-            {:noreply,
-             socket
-             |> assign(:has_boards, not Enum.empty?(boards))
-             |> stream_delete(:boards, board)}
+  defp attempt_board_deletion(socket, board, user) do
+    case Boards.delete_board(board, user) do
+      {:ok, _} ->
+        boards = Boards.list_boards(user)
 
-          {:error, :unauthorized} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, gettext("Only the board owner can delete this board"))
-             |> push_navigate(to: ~p"/boards")}
-        end
-
-      {:error, :not_found} ->
         {:noreply,
          socket
-         |> put_flash(:error, gettext("Board not found"))
+         |> assign(:has_boards, not Enum.empty?(boards))
+         |> stream_delete(:boards, board)}
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Only the board owner can delete this board"))
          |> push_navigate(to: ~p"/boards")}
     end
+  end
+
+  defp board_not_found_response(socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, gettext("Board not found"))
+     |> push_navigate(to: ~p"/boards")}
   end
 end

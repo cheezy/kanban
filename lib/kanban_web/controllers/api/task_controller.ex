@@ -80,36 +80,44 @@ defmodule KanbanWeb.API.TaskController do
     board = conn.assigns.current_board
 
     if params["column_id"] do
-      case parse_id(params["column_id"]) do
-        {:ok, column_id} ->
-          # Board-scoped lookup so a cross-board column id and a nonexistent
-          # column id produce the same {:error, :not_found} response — closes
-          # the existence-oracle gap that the old get_column! + verify pattern
-          # had (W399).
-          case Columns.get_column_for_board(column_id, board.id) do
-            nil ->
-              handle_task_error(conn, {:error, :not_found})
-
-            column ->
-              tasks = Tasks.list_tasks(column)
-              emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-              render(conn, :index, tasks: tasks)
-          end
-
-        :error ->
-          error_response(
-            conn,
-            :bad_request,
-            "Invalid column_id: must be an integer",
-            :invalid_param
-          )
-      end
+      list_tasks_by_column_id(conn, board, params["column_id"])
     else
-      columns = Columns.list_columns(board)
-      tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
-      emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-      render(conn, :index, tasks: tasks)
+      list_all_board_tasks(conn, board)
     end
+  end
+
+  defp list_tasks_by_column_id(conn, board, raw_column_id) do
+    case parse_id(raw_column_id) do
+      {:ok, column_id} ->
+        # Board-scoped lookup so a cross-board column id and a nonexistent
+        # column id produce the same {:error, :not_found} response — closes
+        # the existence-oracle gap that the old get_column! + verify pattern
+        # had (W399).
+        case Columns.get_column_for_board(column_id, board.id) do
+          nil ->
+            handle_task_error(conn, {:error, :not_found})
+
+          column ->
+            tasks = Tasks.list_tasks(column)
+            emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+            render(conn, :index, tasks: tasks)
+        end
+
+      :error ->
+        error_response(
+          conn,
+          :bad_request,
+          "Invalid column_id: must be an integer",
+          :invalid_param
+        )
+    end
+  end
+
+  defp list_all_board_tasks(conn, board) do
+    columns = Columns.list_columns(board)
+    tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
+    emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+    render(conn, :index, tasks: tasks)
   end
 
   def show(conn, %{"id" => id_or_identifier}) do
@@ -151,15 +159,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case parse_id(task_params["column_id"] || get_default_column_id(board)) do
       {:ok, column_id} ->
-        # Board-scoped lookup unifies "no such column" and "column on other
-        # board" into a single not_found response (W399).
-        case Columns.get_column_for_board(column_id, board.id) do
-          nil ->
-            handle_task_error(conn, {:error, :not_found})
-
-          column ->
-            perform_api_task_create(conn, column, task_params, user, api_token)
-        end
+        resolve_column_and_create(conn, board, column_id, task_params, user, api_token)
 
       :error ->
         error_response(
@@ -192,6 +192,18 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(error_response)
+  end
+
+  defp resolve_column_and_create(conn, board, column_id, task_params, user, api_token) do
+    # Board-scoped lookup unifies "no such column" and "column on other
+    # board" into a single not_found response (W399).
+    case Columns.get_column_for_board(column_id, board.id) do
+      nil ->
+        handle_task_error(conn, {:error, :not_found})
+
+      column ->
+        perform_api_task_create(conn, column, task_params, user, api_token)
+    end
   end
 
   defp perform_api_task_create(conn, column, task_params, user, api_token) do
@@ -402,18 +414,7 @@ defmodule KanbanWeb.API.TaskController do
   defp proceed_with_claim(conn, user, board, task_identifier, agent) do
     case Tasks.claim_next_task(agent.capabilities, user, board.id, task_identifier, agent.name) do
       {:ok, task, hook_info} ->
-        emit_telemetry(conn, :task_claimed, %{
-          task_id: task.id,
-          priority: task.priority,
-          api_token_id: agent.api_token.id,
-          specific_task: !!task_identifier
-        })
-
-        render(conn, :show,
-          task: task,
-          hook: hook_info,
-          agent_skills_version: agent.skills_version
-        )
+        render_claimed_task(conn, task, hook_info, task_identifier, agent)
 
       {:error, :no_tasks_available} ->
         handle_no_tasks_available(conn, task_identifier)
@@ -427,6 +428,21 @@ defmodule KanbanWeb.API.TaskController do
           agent_name: agent.name
         )
     end
+  end
+
+  defp render_claimed_task(conn, task, hook_info, task_identifier, agent) do
+    emit_telemetry(conn, :task_claimed, %{
+      task_id: task.id,
+      priority: task.priority,
+      api_token_id: agent.api_token.id,
+      specific_task: !!task_identifier
+    })
+
+    render(conn, :show,
+      task: task,
+      hook: hook_info,
+      agent_skills_version: agent.skills_version
+    )
   end
 
   # Logs the underlying reason server-side (changeset internals, internal
@@ -459,19 +475,26 @@ defmodule KanbanWeb.API.TaskController do
     api_token = conn.assigns.api_token
 
     with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
-         :ok <- validate_hook(params["after_doing_result"], "after_doing"),
-         :ok <- validate_hook(params["before_review_result"], "before_review"),
-         :ok <- gate_completion_results(task, params) do
-      agent = %{
-        name: params["agent_name"] || "Unknown",
-        api_token: api_token,
-        skills_version: params["skills_version"]
-      }
-
-      proceed_with_complete(conn, task, user, params, agent)
+         :ok <- validate_complete_preconditions(task, params) do
+      proceed_with_complete(conn, task, user, params, build_complete_agent(params, api_token))
     else
       error -> handle_task_error(conn, error)
     end
+  end
+
+  defp validate_complete_preconditions(task, params) do
+    with :ok <- validate_hook(params["after_doing_result"], "after_doing"),
+         :ok <- validate_hook(params["before_review_result"], "before_review") do
+      gate_completion_results(task, params)
+    end
+  end
+
+  defp build_complete_agent(params, api_token) do
+    %{
+      name: params["agent_name"] || "Unknown",
+      api_token: api_token,
+      skills_version: params["skills_version"]
+    }
   end
 
   defp gate_completion_results(task, params) do
@@ -489,16 +512,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case Tasks.complete_task(task, user, params_with_agent, agent.name) do
       {:ok, task, hooks} ->
-        emit_telemetry(conn, :task_completed, %{
-          task_id: task.id,
-          time_spent_minutes: task.time_spent_minutes
-        })
-
-        render(conn, :show,
-          task: task,
-          hooks: hooks,
-          agent_skills_version: agent.skills_version
-        )
+        render_completed_task(conn, task, hooks, agent)
 
       {:error, :invalid_status} ->
         error_response(
@@ -523,43 +537,58 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  defp render_completed_task(conn, task, hooks, agent) do
+    emit_telemetry(conn, :task_completed, %{
+      task_id: task.id,
+      time_spent_minutes: task.time_spent_minutes
+    })
+
+    render(conn, :show,
+      task: task,
+      hooks: hooks,
+      agent_skills_version: agent.skills_version
+    )
+  end
+
   def unclaim(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
-        reason = params["reason"]
-
-        case Tasks.unclaim_task(task, user, reason) do
-          {:ok, task} ->
-            emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
-            render(conn, :show, task: task)
-
-          {:error, :not_authorized} ->
-            error_response(
-              conn,
-              :forbidden,
-              "You can only unclaim tasks that you claimed",
-              :not_authorized_to_unclaim
-            )
-
-          {:error, :not_claimed} ->
-            error_response(
-              conn,
-              :unprocessable_entity,
-              "Task is not currently claimed",
-              :task_not_claimed
-            )
-
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> render(:error, changeset: changeset)
-        end
+        proceed_with_unclaim(conn, task, user, params["reason"])
 
       error ->
         handle_task_error(conn, error)
+    end
+  end
+
+  defp proceed_with_unclaim(conn, task, user, reason) do
+    case Tasks.unclaim_task(task, user, reason) do
+      {:ok, task} ->
+        emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
+        render(conn, :show, task: task)
+
+      {:error, :not_authorized} ->
+        error_response(
+          conn,
+          :forbidden,
+          "You can only unclaim tasks that you claimed",
+          :not_authorized_to_unclaim
+        )
+
+      {:error, :not_claimed} ->
+        error_response(
+          conn,
+          :unprocessable_entity,
+          "Task is not currently claimed",
+          :task_not_claimed
+        )
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
     end
   end
 
@@ -631,28 +660,29 @@ defmodule KanbanWeb.API.TaskController do
     user = conn.assigns.current_user
 
     case fetch_and_verify_task(id_or_identifier, board) do
+      {:ok, task} -> proceed_with_mark_done(conn, task, user)
+      error -> handle_task_error(conn, error)
+    end
+  end
+
+  defp proceed_with_mark_done(conn, task, user) do
+    case Tasks.mark_done(task, user) do
       {:ok, task} ->
-        case Tasks.mark_done(task, user) do
-          {:ok, task} ->
-            emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
-            render(conn, :show, task: task)
+        emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
+        render(conn, :show, task: task)
 
-          {:error, :invalid_column} ->
-            error_response(
-              conn,
-              :unprocessable_entity,
-              "Task must be in Review column to mark as done",
-              :invalid_column_for_mark_done
-            )
+      {:error, :invalid_column} ->
+        error_response(
+          conn,
+          :unprocessable_entity,
+          "Task must be in Review column to mark as done",
+          :invalid_column_for_mark_done
+        )
 
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> render(:error, changeset: changeset)
-        end
-
-      error ->
-        handle_task_error(conn, error)
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
     end
   end
 
@@ -1065,18 +1095,7 @@ defmodule KanbanWeb.API.TaskController do
   defp perform_api_task_update(conn, task, task_params) do
     {safe_params, rejected_fields} = filter_forbidden_update_fields(task_params)
 
-    if rejected_fields != [] do
-      Logger.info("API mass-assignment attempt rejected",
-        task_id: task.id,
-        rejected_fields: rejected_fields,
-        actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
-      )
-
-      emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
-        task_id: task.id,
-        fields: rejected_fields
-      })
-    end
+    log_update_mass_assignment(conn, task, rejected_fields)
 
     case Tasks.api_update_task(task, safe_params) do
       {:ok, updated_task} ->
@@ -1089,6 +1108,21 @@ defmodule KanbanWeb.API.TaskController do
         |> put_status(:unprocessable_entity)
         |> render(:error, changeset: changeset)
     end
+  end
+
+  defp log_update_mass_assignment(_conn, _task, []), do: :ok
+
+  defp log_update_mass_assignment(conn, task, rejected_fields) do
+    Logger.info("API mass-assignment attempt rejected",
+      task_id: task.id,
+      rejected_fields: rejected_fields,
+      actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
+    )
+
+    emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
+      task_id: task.id,
+      fields: rejected_fields
+    })
   end
 
   # Splits task_params into the safe subset (allowed fields only) and the list

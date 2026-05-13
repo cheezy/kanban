@@ -920,18 +920,17 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     current_index =
       Enum.find_index(related, fn {how_to, _} -> how_to.id == current_how_to.id end)
 
-    prev_how_to =
-      if current_index && current_index > 0 do
-        {how_to, _} = Enum.at(related, current_index - 1)
-        how_to
-      end
+    {neighbor_at(related, current_index, -1), neighbor_at(related, current_index, +1)}
+  end
 
-    next_how_to =
-      if current_index && current_index < length(related) - 1 do
-        {how_to, _} = Enum.at(related, current_index + 1)
-        how_to
-      end
+  defp neighbor_at(_related, nil, _offset), do: nil
 
-    {prev_how_to, next_how_to}
+  defp neighbor_at(related, current_index, offset) do
+    target_index = current_index + offset
+
+    if target_index >= 0 and target_index < length(related) do
+      {how_to, _} = Enum.at(related, target_index)
+      how_to
+    end
   end
 end

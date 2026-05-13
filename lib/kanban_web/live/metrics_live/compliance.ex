@@ -15,21 +15,24 @@ defmodule KanbanWeb.MetricsLive.Compliance do
          true <- Boards.can_modify?(board, user) do
       {:noreply, load_compliance(socket, board)}
     else
-      {:error, :not_found} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Board not found"))
-         |> push_navigate(to: ~p"/boards")}
-
-      false ->
-        {:noreply,
-         socket
-         |> put_flash(
-           :error,
-           gettext("You don't have permission to view compliance metrics for this board.")
-         )
-         |> push_navigate(to: ~p"/boards/#{board_id}")}
+      {:error, :not_found} -> {:noreply, redirect_board_not_found(socket)}
+      false -> {:noreply, redirect_compliance_forbidden(socket, board_id)}
     end
+  end
+
+  defp redirect_board_not_found(socket) do
+    socket
+    |> put_flash(:error, gettext("Board not found"))
+    |> push_navigate(to: ~p"/boards")
+  end
+
+  defp redirect_compliance_forbidden(socket, board_id) do
+    socket
+    |> put_flash(
+      :error,
+      gettext("You don't have permission to view compliance metrics for this board.")
+    )
+    |> push_navigate(to: ~p"/boards/#{board_id}")
   end
 
   defp dispatch_rate_color(rate) when rate >= 80.0, do: "bg-success"

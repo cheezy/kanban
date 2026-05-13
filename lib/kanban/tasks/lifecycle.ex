@@ -57,48 +57,50 @@ defmodule Kanban.Tasks.Lifecycle do
   # Existing single-task update path. Preserves the original side-effect
   # ordering (priority/assignment/dependencies/status histories, then broadcast).
   defp update_without_cascade(task, changeset) do
-    priority_changed? = Map.has_key?(changeset.changes, :priority)
-    assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
-    dependencies_changed? = Map.has_key?(changeset.changes, :dependencies)
-    status_changed? = Map.has_key?(changeset.changes, :status)
-
     case Repo.update(changeset) do
       {:ok, updated_task} ->
-        if priority_changed? do
-          History.create_priority_change_history(
-            task.priority,
-            updated_task.priority,
-            updated_task.id
-          )
-        end
-
-        if assignment_changed? do
-          History.create_assignment_history(
-            task.assigned_to_id,
-            updated_task.assigned_to_id,
-            updated_task.id
-          )
-        end
-
-        if dependencies_changed? do
-          Dependencies.update_task_blocking_status(updated_task)
-        end
-
-        if status_changed? && updated_task.status == :completed do
-          updated_task = Repo.preload(updated_task, :column)
-
-          Dependencies.unblock_dependent_tasks(
-            updated_task.identifier,
-            updated_task.column.board_id
-          )
-        end
-
+        updated_task = fire_update_side_effects(task, updated_task, changeset)
         Broadcaster.broadcast_task_update(updated_task, changeset)
 
         {:ok, updated_task}
 
       error ->
         error
+    end
+  end
+
+  defp fire_update_side_effects(task, updated_task, changeset) do
+    if Map.has_key?(changeset.changes, :priority) do
+      History.create_priority_change_history(
+        task.priority,
+        updated_task.priority,
+        updated_task.id
+      )
+    end
+
+    if Map.has_key?(changeset.changes, :assigned_to_id) do
+      History.create_assignment_history(
+        task.assigned_to_id,
+        updated_task.assigned_to_id,
+        updated_task.id
+      )
+    end
+
+    if Map.has_key?(changeset.changes, :dependencies) do
+      Dependencies.update_task_blocking_status(updated_task)
+    end
+
+    if Map.has_key?(changeset.changes, :status) && updated_task.status == :completed do
+      updated_task = Repo.preload(updated_task, :column)
+
+      Dependencies.unblock_dependent_tasks(
+        updated_task.identifier,
+        updated_task.column.board_id
+      )
+
+      updated_task
+    else
+      updated_task
     end
   end
 
@@ -114,27 +116,7 @@ defmodule Kanban.Tasks.Lifecycle do
   defp update_goal_with_cascade(goal, changeset) do
     new_assigned_to_id = Ecto.Changeset.get_change(changeset, :assigned_to_id)
     children = fetch_eligible_children(goal.id, new_assigned_to_id)
-
-    multi =
-      Multi.new()
-      |> Multi.update(:goal, changeset)
-      |> Multi.insert(
-        :goal_history,
-        build_assignment_history(goal.id, goal.assigned_to_id, new_assigned_to_id)
-      )
-
-    multi =
-      Enum.reduce(children, multi, fn child, acc ->
-        acc
-        |> Multi.update(
-          {:child, child.id},
-          Task.changeset(child, %{assigned_to_id: new_assigned_to_id})
-        )
-        |> Multi.insert(
-          {:child_history, child.id},
-          build_assignment_history(child.id, child.assigned_to_id, new_assigned_to_id)
-        )
-      end)
+    multi = build_cascade_multi(goal, changeset, new_assigned_to_id, children)
 
     case Repo.transaction(multi) do
       {:ok, changes} ->
@@ -153,6 +135,28 @@ defmodule Kanban.Tasks.Lifecycle do
       {:error, _step, failed_changeset, _changes_so_far} ->
         {:error, failed_changeset}
     end
+  end
+
+  defp build_cascade_multi(goal, changeset, new_assigned_to_id, children) do
+    multi =
+      Multi.new()
+      |> Multi.update(:goal, changeset)
+      |> Multi.insert(
+        :goal_history,
+        build_assignment_history(goal.id, goal.assigned_to_id, new_assigned_to_id)
+      )
+
+    Enum.reduce(children, multi, fn child, acc ->
+      acc
+      |> Multi.update(
+        {:child, child.id},
+        Task.changeset(child, %{assigned_to_id: new_assigned_to_id})
+      )
+      |> Multi.insert(
+        {:child_history, child.id},
+        build_assignment_history(child.id, child.assigned_to_id, new_assigned_to_id)
+      )
+    end)
   end
 
   # Side effects for fields that may change in the same save as the assignment.

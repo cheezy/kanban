@@ -123,11 +123,13 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   defp calculate_regression_sums(daily_times) do
     daily_times
     |> Enum.with_index()
-    |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, fn {day, index}, {sx, sy, sxy, sx2} ->
-      x = index * 1.0
-      y = day.average_hours
-      {sx + x, sy + y, sxy + x * y, sx2 + x * x}
-    end)
+    |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, &accumulate_regression_sums/2)
+  end
+
+  defp accumulate_regression_sums({day, index}, {sx, sy, sxy, sx2}) do
+    x = index * 1.0
+    y = day.average_hours
+    {sx + x, sy + y, sxy + x * y, sx2 + x * x}
   end
 
   defp calculate_slope(n, sum_x, sum_y, sum_xy, sum_x_squared) do

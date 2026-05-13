@@ -103,48 +103,51 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
       true ->
         ready_column = get_column_by_name(task.column.board_id, "Ready")
-
-        result =
-          Repo.transaction(fn ->
-            next_position = Positioning.get_next_position_locked(ready_column)
-
-            changeset =
-              task
-              |> Ecto.Changeset.change(%{
-                status: :open,
-                claimed_at: nil,
-                claim_expires_at: nil,
-                assigned_to_id: nil,
-                column_id: ready_column.id,
-                position: next_position
-              })
-
-            case Repo.update(changeset) do
-              {:ok, updated_task} -> updated_task
-              {:error, changeset} -> Repo.rollback(changeset)
-            end
-          end)
-
-        case result do
-          {:ok, updated_task} ->
-            updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
-
-            if reason do
-              Logger.info("Task #{task.id} unclaimed by user #{user.id}. Reason: #{reason}")
-            end
-
-            Phoenix.PubSub.broadcast(
-              Kanban.PubSub,
-              "board:#{task.column.board_id}",
-              {:task_updated, updated_task}
-            )
-
-            {:ok, updated_task}
-
-          {:error, changeset} ->
-            {:error, changeset}
-        end
+        result = perform_unclaim_transaction(task, ready_column)
+        handle_unclaim_result(result, task, user, reason)
     end
+  end
+
+  defp perform_unclaim_transaction(task, ready_column) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(ready_column)
+
+      changeset =
+        task
+        |> Ecto.Changeset.change(%{
+          status: :open,
+          claimed_at: nil,
+          claim_expires_at: nil,
+          assigned_to_id: nil,
+          column_id: ready_column.id,
+          position: next_position
+        })
+
+      case Repo.update(changeset) do
+        {:ok, updated_task} -> updated_task
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp handle_unclaim_result({:ok, updated_task}, task, user, reason) do
+    updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
+
+    if reason do
+      Logger.info("Task #{task.id} unclaimed by user #{user.id}. Reason: #{reason}")
+    end
+
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{task.column.board_id}",
+      {:task_updated, updated_task}
+    )
+
+    {:ok, updated_task}
+  end
+
+  defp handle_unclaim_result({:error, changeset}, _task, _user, _reason) do
+    {:error, changeset}
   end
 
   @doc """
@@ -167,22 +170,26 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :not_authorized}
 
       true ->
-        review_column = get_column_by_name(board_id, "Review")
+        do_complete_task(task, user, params, board, board_id, agent_name)
+    end
+  end
 
-        case move_to_review(task, user, params, review_column) do
-          {:ok, updated_task} ->
-            handle_successful_completion(
-              task,
-              updated_task,
-              user,
-              %{board: board, review: review_column},
-              params,
-              agent_name
-            )
+  defp do_complete_task(task, user, params, board, board_id, agent_name) do
+    review_column = get_column_by_name(board_id, "Review")
 
-          {:error, changeset} ->
-            {:error, changeset}
-        end
+    case move_to_review(task, user, params, review_column) do
+      {:ok, updated_task} ->
+        handle_successful_completion(
+          task,
+          updated_task,
+          user,
+          %{board: board, review: review_column},
+          params,
+          agent_name
+        )
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
@@ -325,64 +332,74 @@ defmodule Kanban.Tasks.AgentWorkflow do
     now = DateTime.utc_now()
     expires_at = now |> DateTime.add(60 * 60, :second)
 
-    result =
-      Repo.transaction(fn ->
-        next_position = Positioning.get_next_position_locked(doing_column)
+    result = run_claim_transaction(task, user, doing_column, now, expires_at)
+    handle_claim_result(result, task, board, board_id, doing_column, agent_name)
+  end
 
-        # The atomic update_query carries the assignment predicate so that a
-        # concurrent claim attempt by a different user cannot race past an
-        # Elixir-level guard while the row is still :open. If 0 rows update,
-        # disambiguate the failure by inspecting the row inside the same
-        # transaction.
-        update_query =
-          from(t in Task,
-            where: t.id == ^task.id,
-            where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
-            where: is_nil(t.assigned_to_id) or t.assigned_to_id == ^user.id
-          )
+  defp run_claim_transaction(task, user, doing_column, now, expires_at) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(doing_column)
 
-        case Repo.update_all(
-               update_query,
-               set: [
-                 status: :in_progress,
-                 claimed_at: now,
-                 claim_expires_at: expires_at,
-                 assigned_to_id: user.id,
-                 column_id: doing_column.id,
-                 position: next_position,
-                 updated_at: now
-               ]
-             ) do
-          {1, _} ->
-            :claimed
-
-          {0, _} ->
-            Repo.rollback(claim_zero_row_reason(task.id, user.id))
-        end
-      end)
-
-    case result do
-      {:ok, :claimed} ->
-        updated_task = Queries.get_task_for_view!(task.id)
-
-        Goals.update_parent_goal_position(updated_task, task.column_id, doing_column.id)
-
-        Phoenix.PubSub.broadcast(
-          Kanban.PubSub,
-          "board:#{board_id}",
-          {:task_updated, updated_task}
+      # The atomic update_query carries the assignment predicate so that a
+      # concurrent claim attempt by a different user cannot race past an
+      # Elixir-level guard while the row is still :open. If 0 rows update,
+      # disambiguate the failure by inspecting the row inside the same
+      # transaction.
+      update_query =
+        from(t in Task,
+          where: t.id == ^task.id,
+          where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+          where: is_nil(t.assigned_to_id) or t.assigned_to_id == ^user.id
         )
 
-        {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
-        {:ok, updated_task, hook_info}
+      case Repo.update_all(
+             update_query,
+             set: [
+               status: :in_progress,
+               claimed_at: now,
+               claim_expires_at: expires_at,
+               assigned_to_id: user.id,
+               column_id: doing_column.id,
+               position: next_position,
+               updated_at: now
+             ]
+           ) do
+        {1, _} ->
+          :claimed
 
-      {:error, :no_tasks_available} ->
-        {:error, :no_tasks_available}
-
-      {:error, :assigned_to_other_user} ->
-        {:error, :assigned_to_other_user}
-    end
+        {0, _} ->
+          Repo.rollback(claim_zero_row_reason(task.id, user.id))
+      end
+    end)
   end
+
+  defp handle_claim_result({:ok, :claimed}, task, board, board_id, doing_column, agent_name) do
+    updated_task = Queries.get_task_for_view!(task.id)
+
+    Goals.update_parent_goal_position(updated_task, task.column_id, doing_column.id)
+
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{board_id}",
+      {:task_updated, updated_task}
+    )
+
+    {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
+    {:ok, updated_task, hook_info}
+  end
+
+  defp handle_claim_result({:error, :no_tasks_available}, _task, _board, _board_id, _col, _agent),
+    do: {:error, :no_tasks_available}
+
+  defp handle_claim_result(
+         {:error, :assigned_to_other_user},
+         _task,
+         _board,
+         _board_id,
+         _col,
+         _agent
+       ),
+       do: {:error, :assigned_to_other_user}
 
   # After the atomic update_all returns 0 rows, inspect the live row to decide
   # whether the failure was caused by a competing claim/state change
@@ -454,26 +471,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
        ) do
     board_id = board.id
     done_column = get_column_by_name(board_id, "Done")
-
-    result =
-      Repo.transaction(fn ->
-        next_position = Positioning.get_next_position_locked(done_column)
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-        done_changeset =
-          updated_task
-          |> Ecto.Changeset.change(%{
-            status: :completed,
-            completed_at: updated_task.completed_at || now,
-            column_id: done_column.id,
-            position: next_position
-          })
-
-        case Repo.update(done_changeset) do
-          {:ok, _final_task} -> :ok
-          {:error, changeset} -> Repo.rollback(changeset)
-        end
-      end)
+    result = run_auto_done_transaction(updated_task, done_column)
 
     case result do
       {:ok, :ok} ->
@@ -489,6 +487,27 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  defp run_auto_done_transaction(updated_task, done_column) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(done_column)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      done_changeset =
+        updated_task
+        |> Ecto.Changeset.change(%{
+          status: :completed,
+          completed_at: updated_task.completed_at || now,
+          column_id: done_column.id,
+          position: next_position
+        })
+
+      case Repo.update(done_changeset) do
+        {:ok, _final_task} -> :ok
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   defp move_to_review(task, user, params, review_column) do
@@ -626,27 +645,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
     done_column = get_column_by_name(board_id, "Done")
-
-    result =
-      Repo.transaction(fn ->
-        next_position = Positioning.get_next_position_locked(done_column)
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-        changeset =
-          task
-          |> Ecto.Changeset.change(%{
-            status: :completed,
-            completed_at: task.completed_at || now,
-            reviewed_by_id: user.id,
-            column_id: done_column.id,
-            position: next_position
-          })
-
-        case Repo.update(changeset) do
-          {:ok, _updated_task} -> :ok
-          {:error, changeset} -> Repo.rollback(changeset)
-        end
-      end)
+    result = run_move_to_done_transaction(task, user, done_column)
 
     case result do
       {:ok, :ok} ->
@@ -660,6 +659,28 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  defp run_move_to_done_transaction(task, user, done_column) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(done_column)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      changeset =
+        task
+        |> Ecto.Changeset.change(%{
+          status: :completed,
+          completed_at: task.completed_at || now,
+          reviewed_by_id: user.id,
+          column_id: done_column.id,
+          position: next_position
+        })
+
+      case Repo.update(changeset) do
+        {:ok, _updated_task} -> :ok
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   defp move_to_doing(task, user, board_id) do

@@ -16,23 +16,29 @@ defmodule KanbanWeb.ResourcesLive.Show do
 
     case HowToData.get_how_to(id) do
       {:ok, how_to} ->
-        {prev_how_to, next_how_to} = HowToData.get_navigation(how_to)
-
-        {:ok,
-         socket
-         |> assign(:page_title, how_to.title)
-         |> assign(:how_to, how_to)
-         |> assign(:prev_how_to, prev_how_to)
-         |> assign(:next_how_to, next_how_to)}
+        {:ok, assign_how_to(socket, how_to)}
 
       :error ->
-        {:ok,
-         socket
-         |> assign(:page_title, gettext("Not Found"))
-         |> assign(:how_to, nil)
-         |> assign(:prev_how_to, nil)
-         |> assign(:next_how_to, nil)}
+        {:ok, assign_how_to_not_found(socket)}
     end
+  end
+
+  defp assign_how_to(socket, how_to) do
+    {prev_how_to, next_how_to} = HowToData.get_navigation(how_to)
+
+    socket
+    |> assign(:page_title, how_to.title)
+    |> assign(:how_to, how_to)
+    |> assign(:prev_how_to, prev_how_to)
+    |> assign(:next_how_to, next_how_to)
+  end
+
+  defp assign_how_to_not_found(socket) do
+    socket
+    |> assign(:page_title, gettext("Not Found"))
+    |> assign(:how_to, nil)
+    |> assign(:prev_how_to, nil)
+    |> assign(:next_how_to, nil)
   end
 
   # Delegate helper functions to shared module

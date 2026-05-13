@@ -59,17 +59,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   end
 
   defp load_throughput_data(socket) do
-    opts = [
-      time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
-    ]
-
-    opts =
-      if socket.assigns.agent_name do
-        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
-      else
-        opts
-      end
+    opts = build_throughput_opts(socket)
 
     {:ok, throughput} = Metrics.get_throughput(socket.assigns.board.id, opts)
     stats = calculate_summary_stats(throughput)
@@ -83,6 +73,19 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     |> assign(:tasks, tasks)
     |> assign(:grouped_tasks, grouped_tasks)
     |> assign(:completed_goals, goals)
+  end
+
+  defp build_throughput_opts(socket) do
+    opts = [
+      time_range: socket.assigns.time_range,
+      exclude_weekends: socket.assigns.exclude_weekends
+    ]
+
+    if socket.assigns.agent_name do
+      Keyword.put(opts, :agent_name, socket.assigns.agent_name)
+    else
+      opts
+    end
   end
 
   defp get_throughput_tasks(board_id, opts) do
