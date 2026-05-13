@@ -112,40 +112,48 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
       assert start_date.second == 0
     end
 
-    test "returns 7 days ago for :last_7_days" do
+    test "returns midnight 6 days ago for :last_7_days" do
       start_date = Helpers.get_start_date(:last_7_days)
-      expected = DateTime.add(DateTime.utc_now(), -7, :day)
+      expected_date = Date.utc_today() |> Date.add(-6)
 
-      diff = DateTime.diff(expected, start_date, :second)
-      assert abs(diff) < 2
+      assert DateTime.to_date(start_date) == expected_date
+      assert start_date.hour == 0
+      assert start_date.minute == 0
+      assert start_date.second == 0
     end
 
-    test "returns 30 days ago for :last_30_days" do
+    test "returns midnight 29 days ago for :last_30_days" do
       start_date = Helpers.get_start_date(:last_30_days)
-      expected = DateTime.add(DateTime.utc_now(), -30, :day)
+      expected_date = Date.utc_today() |> Date.add(-29)
 
-      diff = DateTime.diff(expected, start_date, :second)
-      assert abs(diff) < 2
+      assert DateTime.to_date(start_date) == expected_date
+      assert start_date.hour == 0
+      assert start_date.minute == 0
+      assert start_date.second == 0
     end
 
-    test "returns 90 days ago for :last_90_days" do
+    test "returns midnight 89 days ago for :last_90_days" do
       start_date = Helpers.get_start_date(:last_90_days)
-      expected = DateTime.add(DateTime.utc_now(), -90, :day)
+      expected_date = Date.utc_today() |> Date.add(-89)
 
-      diff = DateTime.diff(expected, start_date, :second)
-      assert abs(diff) < 2
+      assert DateTime.to_date(start_date) == expected_date
+      assert start_date.hour == 0
+      assert start_date.minute == 0
+      assert start_date.second == 0
     end
 
     test "returns fixed date for :all_time" do
       assert Helpers.get_start_date(:all_time) == ~U[2020-01-01 00:00:00Z]
     end
 
-    test "returns 30 days ago for invalid input" do
+    test "returns midnight 29 days ago for invalid input" do
       start_date = Helpers.get_start_date(:invalid)
-      expected = DateTime.add(DateTime.utc_now(), -30, :day)
+      expected_date = Date.utc_today() |> Date.add(-29)
 
-      diff = DateTime.diff(expected, start_date, :second)
-      assert abs(diff) < 2
+      assert DateTime.to_date(start_date) == expected_date
+      assert start_date.hour == 0
+      assert start_date.minute == 0
+      assert start_date.second == 0
     end
   end
 

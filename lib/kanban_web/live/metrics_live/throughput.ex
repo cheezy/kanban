@@ -7,6 +7,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias KanbanWeb.MetricsLive.Helpers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -87,7 +88,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   defp get_throughput_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = get_start_date(time_range)
+    start_date = Helpers.get_start_date(time_range)
 
     query =
       Task
@@ -120,7 +121,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   defp get_completed_goals(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = get_start_date(time_range)
+    start_date = Helpers.get_start_date(time_range)
 
     query =
       Task
@@ -153,42 +154,6 @@ defmodule KanbanWeb.MetricsLive.Throughput do
       end
 
     Repo.all(query)
-  end
-
-  defp get_start_date(:today) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_7_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-6)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_30_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-29)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:last_90_days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-89)
-    |> DateTime.new!(~T[00:00:00])
-  end
-
-  defp get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-
-  defp get_start_date(_) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-29)
-    |> DateTime.new!(~T[00:00:00])
   end
 
   defp calculate_summary_stats([_ | _] = throughput) do

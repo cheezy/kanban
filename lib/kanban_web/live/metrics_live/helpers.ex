@@ -50,17 +50,28 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     Calendar.strftime(datetime, "%I:%M %p")
   end
 
+  # Midnight-anchored calendar-day windows: `:last_7_days` includes the last 7
+  # calendar days (today + 6 prior days starting at 00:00:00 UTC). Filtering on
+  # calendar days rather than exact hours is what users expect from "last week"
+  # — see throughput_test.exs "filters by calendar days, not exact hours".
   def get_start_date(:today) do
     DateTime.utc_now()
     |> DateTime.to_date()
     |> DateTime.new!(~T[00:00:00])
   end
 
-  def get_start_date(:last_7_days), do: DateTime.add(DateTime.utc_now(), -7, :day)
-  def get_start_date(:last_30_days), do: DateTime.add(DateTime.utc_now(), -30, :day)
-  def get_start_date(:last_90_days), do: DateTime.add(DateTime.utc_now(), -90, :day)
+  def get_start_date(:last_7_days), do: midnight_days_ago(6)
+  def get_start_date(:last_30_days), do: midnight_days_ago(29)
+  def get_start_date(:last_90_days), do: midnight_days_ago(89)
   def get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-  def get_start_date(_), do: DateTime.add(DateTime.utc_now(), -30, :day)
+  def get_start_date(_), do: midnight_days_ago(29)
+
+  defp midnight_days_ago(days) do
+    DateTime.utc_now()
+    |> DateTime.to_date()
+    |> Date.add(-days)
+    |> DateTime.new!(~T[00:00:00])
+  end
 
   def parse_time_range(nil), do: :last_30_days
   def parse_time_range(""), do: :last_30_days
