@@ -381,49 +381,38 @@ defmodule KanbanWeb.API.TaskController do
     before_doing_result = params["before_doing_result"]
     agent_skills_version = params["skills_version"]
 
+    agent = %{
+      capabilities: agent_capabilities,
+      name: agent_name,
+      api_token: api_token,
+      skills_version: agent_skills_version
+    }
+
     case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing",
            blocking: true
          ) do
       :ok ->
-        proceed_with_claim(
-          conn,
-          agent_capabilities,
-          user,
-          board,
-          task_identifier,
-          agent_name,
-          api_token,
-          agent_skills_version
-        )
+        proceed_with_claim(conn, user, board, task_identifier, agent)
 
       {:error, reason} ->
         handle_hook_validation_error(conn, "before_doing", reason)
     end
   end
 
-  defp proceed_with_claim(
-         conn,
-         agent_capabilities,
-         user,
-         board,
-         task_identifier,
-         agent_name,
-         api_token,
-         agent_skills_version
-       ) do
-    case Tasks.claim_next_task(agent_capabilities, user, board.id, task_identifier, agent_name) do
+  defp proceed_with_claim(conn, user, board, task_identifier, agent) do
+    case Tasks.claim_next_task(agent.capabilities, user, board.id, task_identifier, agent.name) do
       {:ok, task, hook_info} ->
         emit_telemetry(conn, :task_claimed, %{
           task_id: task.id,
           priority: task.priority,
-          api_token_id: api_token.id,
+          api_token_id: agent.api_token.id,
           specific_task: !!task_identifier
         })
 
         render(conn, :show,
           task: task,
           hook: hook_info,
-          agent_skills_version: agent_skills_version
+          agent_skills_version: agent.skills_version
         )
 
       {:error, :no_tasks_available} ->
@@ -435,7 +424,7 @@ defmodule KanbanWeb.API.TaskController do
       {:error, reason} ->
         handle_unexpected_claim_error(conn, reason,
           task_identifier: task_identifier,
-          agent_name: agent_name
+          agent_name: agent.name
         )
     end
   end
@@ -473,17 +462,13 @@ defmodule KanbanWeb.API.TaskController do
          :ok <- validate_hook(params["after_doing_result"], "after_doing"),
          :ok <- validate_hook(params["before_review_result"], "before_review"),
          :ok <- gate_completion_results(task, params) do
-      agent_name = params["agent_name"] || "Unknown"
+      agent = %{
+        name: params["agent_name"] || "Unknown",
+        api_token: api_token,
+        skills_version: params["skills_version"]
+      }
 
-      proceed_with_complete(
-        conn,
-        task,
-        user,
-        params,
-        api_token,
-        agent_name,
-        params["skills_version"]
-      )
+      proceed_with_complete(conn, task, user, params, agent)
     else
       error -> handle_task_error(conn, error)
     end
@@ -499,18 +484,10 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp proceed_with_complete(
-         conn,
-         task,
-         user,
-         params,
-         api_token,
-         agent_name,
-         agent_skills_version
-       ) do
-    params_with_agent = maybe_add_completed_by_agent(params, api_token, agent_name)
+  defp proceed_with_complete(conn, task, user, params, agent) do
+    params_with_agent = maybe_add_completed_by_agent(params, agent.api_token, agent.name)
 
-    case Tasks.complete_task(task, user, params_with_agent, agent_name) do
+    case Tasks.complete_task(task, user, params_with_agent, agent.name) do
       {:ok, task, hooks} ->
         emit_telemetry(conn, :task_completed, %{
           task_id: task.id,
@@ -520,7 +497,7 @@ defmodule KanbanWeb.API.TaskController do
         render(conn, :show,
           task: task,
           hooks: hooks,
-          agent_skills_version: agent_skills_version
+          agent_skills_version: agent.skills_version
         )
 
       {:error, :invalid_status} ->
@@ -985,25 +962,28 @@ defmodule KanbanWeb.API.TaskController do
   defp stringify_value(value), do: inspect(value)
 
   defp process_batch_goals(goals, column, user, api_token, conn) do
+    ctx = %{column: column, user: user, api_token: api_token, conn: conn}
+
     goals
     |> Enum.with_index()
     |> Enum.reduce_while({:ok, []}, fn {goal_params, index}, {:ok, acc} ->
-      create_single_goal_in_batch(goal_params, index, column, user, api_token, conn, acc)
+      create_single_goal_in_batch(goal_params, index, ctx, acc)
     end)
   end
 
-  defp create_single_goal_in_batch(goal_params, index, column, user, api_token, conn, acc) do
+  defp create_single_goal_in_batch(goal_params, index, ctx, acc) do
     {safe_goal_params, rejected_goal_fields} = filter_forbidden_create_fields(goal_params)
     child_tasks_raw = Map.get(goal_params, "tasks", [])
     {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
 
-    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
+    log_create_mass_assignment(ctx.conn, rejected_goal_fields, rejected_child_fields)
 
-    task_params_with_creator = build_task_params_with_creator(safe_goal_params, user, api_token)
+    task_params_with_creator =
+      build_task_params_with_creator(safe_goal_params, ctx.user, ctx.api_token)
 
-    case Tasks.api_create_goal_with_tasks(column, task_params_with_creator, safe_child_tasks) do
+    case Tasks.api_create_goal_with_tasks(ctx.column, task_params_with_creator, safe_child_tasks) do
       {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
-        handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc)
+        handle_successful_goal_creation(goal, created_child_tasks, index, ctx.conn, acc)
 
       {:error, _operation, changeset} ->
         {:halt, {:error, index, changeset}}

@@ -3872,7 +3872,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
-  describe "proceed_with_claim/8 catch-all error handler" do
+  describe "proceed_with_claim catch-all error handler" do
     test "response body never contains inspect-style internals" do
       body = KanbanWeb.API.TaskController.unexpected_claim_error_body()
 

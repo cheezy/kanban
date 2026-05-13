@@ -175,8 +175,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
               task,
               updated_task,
               user,
-              board,
-              review_column,
+              %{board: board, review: review_column},
               params,
               agent_name
             )
@@ -400,15 +399,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
-  defp handle_successful_completion(
-         task,
-         updated_task,
-         user,
-         board,
-         review_column,
-         params,
-         agent_name
-       ) do
+  defp handle_successful_completion(task, updated_task, user, columns, params, agent_name) do
+    %{board: board, review: review_column} = columns
     board_id = board.id
     updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
     old_column_id = task.column_id
