@@ -7,6 +7,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.TaskComment
+  alias KanbanWeb.TaskLive.Form.OptionBuilders
+  alias KanbanWeb.TaskLive.Form.ParamNormalizer
+  alias KanbanWeb.TaskLive.Form.TaskParams
 
   @impl true
   def update(%{task: task, board: board, action: action} = assigns, socket) do
@@ -27,14 +30,14 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp prepare_task_data(task, board, action, assigns) do
     columns = Columns.list_columns(board)
-    column_id = get_column_id(assigns, task)
-    changeset = build_changeset(task, column_id, action)
-    column_options = build_column_options(columns, task)
+    column_id = OptionBuilders.get_column_id(assigns, task)
+    changeset = OptionBuilders.build_changeset(task, column_id, action)
+    column_options = OptionBuilders.build_column_options(columns, task)
 
     board_users = Kanban.Boards.list_board_users(board)
-    assignable_users = build_assignable_users_options(board_users)
+    assignable_users = OptionBuilders.build_assignable_users_options(board_users)
 
-    goal_options = build_goal_options(board, task)
+    goal_options = OptionBuilders.build_goal_options(board, task)
 
     task_with_associations = load_task_associations(task, action)
     comment_form = to_form(TaskComment.changeset(%TaskComment{}, %{}))
@@ -64,7 +67,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   @impl true
   def handle_event("validate", %{"task" => task_params}, socket) do
     # Normalize params before validation to avoid false validation errors
-    task_params = normalize_array_params(task_params)
+    task_params = ParamNormalizer.normalize_array_params(task_params)
 
     changeset =
       socket.assigns.task
@@ -78,7 +81,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
-    task_params = normalize_array_params(task_params)
+    task_params = ParamNormalizer.normalize_array_params(task_params)
     save_task(socket, socket.assigns.action, task_params)
   end
 
@@ -320,7 +323,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
         {:noreply,
          socket
-         |> assign(:error_message, scope_error_label(field))
+         |> assign(:error_message, TaskParams.scope_error_label(field))
          |> assign_form(changeset)}
     end
   end
@@ -383,7 +386,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
         :ok
 
       parent_id_input ->
-        with {:ok, parent_id} <- coerce_id(parent_id_input),
+        with {:ok, parent_id} <- TaskParams.coerce_id(parent_id_input),
              %{} <- Tasks.get_task_for_board(parent_id, board.id) do
           :ok
         else
@@ -401,7 +404,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
         :ok
 
       assigned_input ->
-        with {:ok, user_id} <- coerce_id(assigned_input),
+        with {:ok, user_id} <- TaskParams.coerce_id(assigned_input),
              true <- board_member?(board, user_id) do
           :ok
         else
@@ -410,25 +413,10 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
-  defp coerce_id(id) when is_integer(id), do: {:ok, id}
-
-  defp coerce_id(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {n, ""} -> {:ok, n}
-      _ -> :error
-    end
-  end
-
-  defp coerce_id(_), do: :error
-
   # Called from validate_assigned_to_scope/2; analyzer regex misses predicate `?` callers.
   defp board_member?(board, user_id) do
     not is_nil(Kanban.Boards.get_user_access(board.id, user_id))
   end
-
-  defp scope_error_label(:column_id), do: gettext("Security error: Invalid column")
-  defp scope_error_label(:parent_id), do: gettext("Security error: Invalid parent goal")
-  defp scope_error_label(:assigned_to_id), do: gettext("Security error: Invalid assignee")
 
   defp perform_task_update(socket, task_params) do
     # Auto-populate review fields when review_status changes
@@ -441,7 +429,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     # Auto-populate completed_at when status is set to completed
     task_params = maybe_add_completed_at(task_params, socket.assigns.task)
 
-    cascade_count = compute_cascade_count(socket.assigns.task, task_params)
+    cascade_count = TaskParams.compute_cascade_count(socket.assigns.task, task_params)
 
     case Tasks.update_task(socket.assigns.task, task_params) do
       {:ok, task} ->
@@ -449,7 +437,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:info, build_update_flash(cascade_count))
+         |> put_flash(:info, TaskParams.build_update_flash(cascade_count))
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -458,43 +446,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
-  end
-
-  # When a goal's `assigned_to_id` is being changed, ask the Tasks context how
-  # many non-completed children will inherit the new assignment via the
-  # cascade in `Lifecycle.update_task/2`. The count is computed BEFORE the
-  # cascade runs, so it reflects the eligible-children set the cascade will
-  # touch. Returns 0 for non-goal tasks or when assignment is unchanged.
-  defp compute_cascade_count(task, task_params) do
-    if task.type == :goal and Map.has_key?(task_params, "assigned_to_id") do
-      target = parse_assignment_target(task_params["assigned_to_id"])
-      Tasks.count_cascade_affected_children(task, target)
-    else
-      0
-    end
-  end
-
-  defp parse_assignment_target(nil), do: nil
-  defp parse_assignment_target(""), do: nil
-  defp parse_assignment_target(value) when is_integer(value), do: value
-
-  defp parse_assignment_target(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {n, ""} -> n
-      _ -> nil
-    end
-  end
-
-  defp parse_assignment_target(_), do: nil
-
-  defp build_update_flash(0), do: gettext("Task updated successfully")
-
-  defp build_update_flash(n) when n > 0 do
-    ngettext(
-      "Task updated successfully. 1 child task was also updated.",
-      "Task updated successfully. %{count} child tasks were also updated.",
-      n
-    )
   end
 
   defp create_task_in_column(socket, column, task_params) do
@@ -570,107 +521,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
-  defp normalize_array_params(params) do
-    array_fields = [
-      "dependencies",
-      "required_capabilities",
-      "technology_requirements",
-      "pitfalls",
-      "out_of_scope",
-      "security_considerations"
-    ]
-
-    params
-    |> normalize_array_fields(array_fields)
-    |> normalize_map_fields()
-  end
-
-  defp normalize_array_fields(params, fields) do
-    Enum.reduce(fields, params, fn field, acc ->
-      # Only normalize if the field is actually present in params
-      # Don't add missing fields - that would incorrectly trigger change detection
-      if Map.has_key?(acc, field) do
-        Map.update(acc, field, [], &filter_empty_strings/1)
-      else
-        acc
-      end
-    end)
-  end
-
-  defp normalize_map_fields(params) do
-    params
-    |> normalize_testing_strategy()
-    |> normalize_integration_points()
-    |> normalize_embedded_fields()
-  end
-
-  defp normalize_embedded_fields(params) do
-    params
-    |> normalize_embedded_field("key_files")
-    |> normalize_embedded_field("verification_steps")
-  end
-
-  defp normalize_embedded_field(params, field_name) do
-    case Map.get(params, field_name) do
-      # If it's already a list, leave it as is
-      value when is_list(value) ->
-        params
-
-      # If it's a map with numeric string keys (from inputs_for), convert to list
-      value when is_map(value) ->
-        list =
-          value
-          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
-          |> Enum.map(fn {_k, v} -> Map.delete(v, "_persistent_id") end)
-
-        Map.put(params, field_name, list)
-
-      # If it's nil or missing, don't add it to params
-      # Schema defaults will handle nil values appropriately
-      # Adding empty arrays here would incorrectly trigger change detection
-      _ ->
-        params
-    end
-  end
-
-  defp normalize_testing_strategy(params) do
-    normalize_map_with_arrays(params, "testing_strategy", [
-      "unit_tests",
-      "integration_tests",
-      "manual_tests"
-    ])
-  end
-
-  defp normalize_integration_points(params) do
-    normalize_map_with_arrays(params, "integration_points", [
-      "telemetry_events",
-      "pubsub_broadcasts",
-      "phoenix_channels",
-      "external_apis"
-    ])
-  end
-
-  defp normalize_map_with_arrays(params, field_name, array_keys) do
-    case Map.get(params, field_name) do
-      # If field is present and is a map, normalize its array fields
-      field_map when is_map(field_map) ->
-        normalized_map = normalize_array_fields(field_map, array_keys)
-        Map.put(params, field_name, normalized_map)
-
-      # If it's nil or missing, don't add it to params
-      # Schema defaults will handle nil values appropriately
-      # Adding default maps here would incorrectly trigger change detection
-      _ ->
-        params
-    end
-  end
-
-  defp filter_empty_strings(list) when is_list(list) do
-    Enum.reject(list, &(&1 == "" || is_nil(&1)))
-  end
-
-  defp filter_empty_strings(value), do: value
-
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
   defp do_add_comment(socket, comment_params) do
@@ -718,81 +568,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     else
       _ -> false
     end
-  end
-
-  defp get_column_id(%{column_id: col_id}, _task) when not is_nil(col_id), do: col_id
-  defp get_column_id(_assigns, task), do: task.column_id
-
-  defp build_changeset(task, nil, action) do
-    task
-    |> Tasks.Task.changeset(%{})
-    |> maybe_default_human_task(action)
-  end
-
-  defp build_changeset(task, column_id, action) do
-    task
-    |> Tasks.Task.changeset(%{})
-    |> Ecto.Changeset.put_change(:column_id, column_id)
-    |> maybe_default_human_task(action)
-  end
-
-  defp maybe_default_human_task(changeset, :new_task) do
-    Ecto.Changeset.put_change(changeset, :human_task, true)
-  end
-
-  defp maybe_default_human_task(changeset, _action), do: changeset
-
-  defp build_column_options(columns, task) do
-    columns
-    |> Enum.map(&column_option(&1, task))
-    |> Enum.reject(&reject_full_column?(&1, task))
-  end
-
-  defp column_option(column, task) do
-    can_add = Tasks.can_add_task?(column)
-
-    label =
-      if can_add || column.id == task.column_id do
-        column.name
-      else
-        "#{column.name} (WIP limit reached)"
-      end
-
-    {label, column.id}
-  end
-
-  # Passed as capture to Enum.reject/2 in build_column_options/2; analyzer regex misses predicate `?` callers.
-  defp reject_full_column?({label, id}, task) do
-    String.contains?(label, "WIP limit reached") && id != task.column_id
-  end
-
-  defp build_assignable_users_options(board_users) do
-    users_list =
-      board_users
-      |> Enum.map(fn %{user: user} ->
-        display_name = if user.name && user.name != "", do: user.name, else: user.email
-        {display_name, user.id}
-      end)
-
-    [{gettext("Unassigned"), nil} | users_list]
-  end
-
-  defp build_goal_options(board, task) do
-    goals =
-      from(t in Tasks.Task,
-        join: c in assoc(t, :column),
-        where: c.board_id == ^board.id,
-        where: t.type == :goal,
-        where: t.id != ^(task.id || 0),
-        order_by: [asc: t.identifier],
-        select: {t.identifier, t.title, t.id}
-      )
-      |> Repo.all()
-      |> Enum.map(fn {identifier, title, id} ->
-        {"#{identifier} - #{title}", id}
-      end)
-
-    [{gettext("No parent goal"), nil} | goals]
   end
 
   # Used in form_component.html.heex (analyzer does not scan HEEx files).
