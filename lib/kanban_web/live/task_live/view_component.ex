@@ -37,6 +37,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     end
   end
 
+  # Used inside the inline ~H render block; analyzer regex misses predicate `?` callers.
   defp field_visible?(field_visibility, field_name) do
     Map.get(field_visibility, field_name, false)
   end
@@ -990,6 +991,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     """
   end
 
+  # Used inside the inline ~H render block; analyzer regex misses predicate `?` callers.
   defp has_test_items?(value) when is_list(value), do: value != []
   defp has_test_items?(value) when is_binary(value), do: String.trim(value) != ""
   defp has_test_items?(_), do: false

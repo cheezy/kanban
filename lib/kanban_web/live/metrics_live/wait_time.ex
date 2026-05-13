@@ -228,6 +228,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
     |> load_data_fn.()
   end
 
+  # Used in wait_time.html.heex (analyzer does not scan HEEx files).
   defp format_wait_time(seconds), do: Helpers.format_time(seconds)
   defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
   defp format_date(date), do: Helpers.format_date(date)

@@ -208,18 +208,21 @@ defmodule KanbanWeb.MetricsLive.Throughput do
 
   defp calculate_summary_stats(_), do: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
 
+  # Used in throughput.html.heex (analyzer does not scan HEEx files).
   defp format_date(nil), do: "N/A"
 
   defp format_date(date) do
     Calendar.strftime(date, "%b %d, %Y")
   end
 
+  # Used in throughput.html.heex (analyzer does not scan HEEx files).
   defp format_datetime(nil), do: "N/A"
 
   defp format_datetime(datetime) do
     Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
   end
 
+  # Used in throughput.html.heex (analyzer does not scan HEEx files).
   defp calculate_bar_width(_count, 0), do: 0
   defp calculate_bar_width(0, _peak), do: 0
 

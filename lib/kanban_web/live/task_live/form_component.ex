@@ -56,6 +56,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp load_task_associations(task, _action), do: task
 
+  # Used in form_component.html.heex (analyzer does not scan HEEx files).
   defp field_visible?(field_visibility, field_name) do
     Map.get(field_visibility, field_name, false)
   end
@@ -420,6 +421,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp coerce_id(_), do: :error
 
+  # Called from validate_assigned_to_scope/2; analyzer regex misses predicate `?` callers.
   defp board_member?(board, user_id) do
     not is_nil(Kanban.Boards.get_user_access(board.id, user_id))
   end
@@ -705,6 +707,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # spoofing the author via comment_params is structurally impossible —
   # this gate covers the second half of the security review's concern
   # ("verify the user is authorized to comment on socket.assigns.task").
+  # Called from handle_event("add_comment", ...); analyzer regex misses
+  # predicate `?` callers, hence the unused-defp false positive.
   defp commenter_authorized?(socket) do
     with %{user: %{id: user_id}} <- Map.get(socket.assigns, :current_scope),
          %{} = board <- socket.assigns[:board],
@@ -757,6 +761,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     {label, column.id}
   end
 
+  # Passed as capture to Enum.reject/2 in build_column_options/2; analyzer regex misses predicate `?` callers.
   defp reject_full_column?({label, id}, task) do
     String.contains?(label, "WIP limit reached") && id != task.column_id
   end
@@ -790,6 +795,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     [{gettext("No parent goal"), nil} | goals]
   end
 
+  # Used in form_component.html.heex (analyzer does not scan HEEx files).
   defp ensure_list(nil), do: []
   defp ensure_list(value) when is_list(value), do: value
   defp ensure_list(value) when is_binary(value), do: [value]

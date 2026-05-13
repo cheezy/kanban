@@ -104,6 +104,7 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
     end
   end
 
+  # Called from handle_event/4; analyzer regex misses predicate `?` callers.
   defp vm_metric?(metric_name) when is_list(metric_name) do
     case metric_name do
       [:vm | _] -> true
@@ -113,6 +114,7 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   defp vm_metric?(_), do: false
 
+  # Called from handle_event/4; analyzer regex misses predicate `?` callers.
   defp metrics_table_query?(metadata) do
     # Check if this is a query against the metrics_events table
     case metadata do

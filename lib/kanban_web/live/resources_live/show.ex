@@ -101,6 +101,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
     end)
   end
 
+  # XSS guard called from convert_links/1; analyzer regex misses predicate `?` callers.
   defp safe_url?(url) do
     normalized = url |> String.trim() |> String.downcase()
     not String.starts_with?(normalized, ["javascript:", "data:", "vbscript:"])
@@ -143,6 +144,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
     end
   end
 
+  # Called from convert_lists/1; analyzer regex misses predicate `?` callers.
   defp has_list_items?(content) do
     String.contains?(content, "\n- ") or String.starts_with?(content, "- ")
   end
