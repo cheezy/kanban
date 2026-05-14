@@ -1,7 +1,10 @@
 <Layouts.flash_group flash={@flash} />
 
 <div class="stride-marketing">
-  <.marketing_nav current_scope={@current_scope} />
+  <.marketing_nav
+    current_scope={@current_scope}
+    current_locale={Gettext.get_locale(KanbanWeb.Gettext)}
+  />
   <.marketing_hero current_scope={@current_scope} />
   <.marketing_belief_band />
   <.marketing_how_it_works />

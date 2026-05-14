@@ -139,12 +139,11 @@ defmodule KanbanWeb.MarketingClosing do
       style="border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3);"
     >
       <div class="flex items-center gap-2">
-        <span
-          class="inline-flex items-center justify-center text-white font-bold"
-          style="width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%); font-size: 10px;"
-        >
-          S
-        </span>
+        <img
+          src={~p"/images/logos/abstract-s-motion.svg"}
+          alt={gettext("Stride logo")}
+          class="w-5 h-5"
+        />
         <span style="font-weight: 500; color: var(--ink-2);">{gettext("Stride")}</span>
         <span>· StrideLikeABoss.com</span>
       </div>

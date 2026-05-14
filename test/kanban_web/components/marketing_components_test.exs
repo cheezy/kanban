@@ -18,9 +18,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Logo wordmark
       assert html =~ "Stride"
 
-      # Gradient logo uses the brand tokens
-      assert html =~ "var(--stride-orange)"
-      assert html =~ "var(--stride-violet)"
+      # Uses the canonical Stride logo SVG (shared with the app nav)
+      assert html =~ "/images/logos/abstract-s-motion.svg"
 
       # The 5 marketing nav links (link text)
       assert html =~ "Product"
@@ -47,8 +46,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ "Go to boards"
     end
 
-    test "authenticated state renders Go to boards instead of Sign in / Start free" do
-      assigns = %{current_scope: %{user: %{email: "alice@example.com"}}}
+    test "authenticated state renders Sign out + Go to boards instead of Sign in / Start free" do
+      assigns = %{current_scope: %{user: %{email: "alice@example.com", type: :member}}}
 
       html =
         rendered_to_string(~H"""
@@ -58,9 +57,63 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Go to boards"
       assert html =~ ~s|href="/boards"|
 
+      # Sign out appears next to Go to boards and DELETEs the session
+      assert html =~ "Sign out"
+      assert html =~ ~s|href="/users/log-out"|
+
       # Anonymous CTAs must NOT appear
       refute html =~ "Sign in"
       refute html =~ "Start free"
+
+      # Non-admin must NOT see admin-only links
+      refute html =~ "Dashboard"
+      refute html =~ "Error Tracker"
+    end
+
+    test "renders the language switcher with the current locale active" do
+      assigns = %{current_scope: nil, current_locale: "fr"}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav
+          current_scope={@current_scope}
+          current_locale={@current_locale}
+        />
+        """)
+
+      # Switcher trigger shows the active locale code uppercase
+      assert html =~ ~r/>\s*FR\s*</
+      # Dropdown lists every supported locale by display name
+      assert html =~ "English"
+      assert html =~ "Français"
+      assert html =~ "Español"
+      assert html =~ "Português"
+      assert html =~ "Deutsch"
+      assert html =~ "日本語"
+      assert html =~ "中文"
+      # Each locale option POSTs to /locale/:code
+      assert html =~ ~s|action="/locale/en"|
+      assert html =~ ~s|action="/locale/fr"|
+      # Phoenix dropdown hook is wired
+      assert html =~ ~s|phx-hook="Dropdown"|
+    end
+
+    test "admin user sees Dashboard and Error Tracker links" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Dashboard"
+      assert html =~ ~s|href="/admin/dashboard"|
+      assert html =~ "Error Tracker"
+      assert html =~ ~s|href="/admin/errors"|
+
+      # Sign out and Go to boards still appear for admins
+      assert html =~ "Sign out"
+      assert html =~ "Go to boards"
     end
 
     test "renders the dark pill button using --ink (unauthenticated)" do
@@ -75,7 +128,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
 
     test "renders the dark pill button using --ink (authenticated)" do
-      assigns = %{current_scope: %{user: %{email: "bob@example.com"}}}
+      assigns = %{current_scope: %{user: %{email: "bob@example.com", type: :member}}}
 
       html =
         rendered_to_string(~H"""
@@ -95,15 +148,17 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_hero current_scope={@current_scope} />
         """)
 
-      # Release pill copy + colors
-      assert html =~ "v2.4 · Atomic claims w/ capability matching"
+      # Release pill — assert the violet-pill styling and that a version
+      # prefix is present, but do NOT pin the exact version or release-copy
+      # since both change with every release.
       assert html =~ "var(--stride-violet-soft)"
       assert html =~ "var(--stride-violet-ink)"
-      assert html =~ "Now in beta"
+      assert html =~ ~r/v\d+\.\d/,
+             "expected a 'v<major>.<minor>' release version somewhere in the pill"
 
       # Headline split across two lines (line 2 uses --ink-4)
       assert html =~ "Tasks are conversations."
-      assert html =~ "Your kanban can speak both ways."
+      assert html =~ "speak both ways."
       assert html =~ "color: var(--ink-4)"
 
       # Sub-copy
@@ -501,7 +556,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
   end
 
   describe "marketing_footer/1" do
-    test "renders the gradient logo, wordmark, domain, copyright, and 4 legal links" do
+    test "renders the Stride logo, wordmark, domain, copyright, and 4 legal links" do
       assigns = %{}
 
       html =
@@ -509,9 +564,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <KanbanWeb.MarketingClosing.marketing_footer />
         """)
 
-      # Gradient logo uses both brand tokens
-      assert html =~ "var(--stride-orange)"
-      assert html =~ "var(--stride-violet)"
+      # Uses the canonical Stride logo SVG (shared with the app nav)
+      assert html =~ "/images/logos/abstract-s-motion.svg"
 
       # Wordmark + domain + copyright
       assert html =~ "Stride"

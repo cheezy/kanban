@@ -15,6 +15,8 @@ defmodule KanbanWeb.MarketingComponents do
 
   import KanbanWeb.MarketingMiniBoard
 
+  alias KanbanWeb.NavComponents
+
   @doc """
   Renders the top navigation bar used on the landing page.
 
@@ -34,6 +36,10 @@ defmodule KanbanWeb.MarketingComponents do
     default: nil,
     doc: "The `@current_scope` assign — `nil` when no user is signed in."
 
+  attr :current_locale, :string,
+    default: "en",
+    doc: "Active locale code (e.g. \"en\", \"fr\"). Drives the language switcher."
+
   def marketing_nav(assigns) do
     ~H"""
     <nav
@@ -41,12 +47,11 @@ defmodule KanbanWeb.MarketingComponents do
       style="border-bottom: 1px solid var(--line);"
     >
       <.link href={~p"/"} class="flex items-center gap-2">
-        <span
-          class="inline-flex items-center justify-center rounded-md text-white text-xs font-bold"
-          style="width: 22px; height: 22px; background: linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%); letter-spacing: -0.02em;"
-        >
-          S
-        </span>
+        <img
+          src={~p"/images/logos/abstract-s-motion.svg"}
+          alt={gettext("Stride logo")}
+          class="w-7 h-7"
+        />
         <span class="text-sm font-semibold" style="letter-spacing: -0.015em;">
           {gettext("Stride")}
         </span>
@@ -83,6 +88,30 @@ defmodule KanbanWeb.MarketingComponents do
       <span class="flex-1"></span>
 
       <%= if @current_scope do %>
+        <%= if @current_scope.user.type == :admin do %>
+          <.link
+            href={~p"/admin/dashboard"}
+            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+            style="color: var(--ink-2);"
+          >
+            {gettext("Dashboard")}
+          </.link>
+          <.link
+            href={~p"/admin/errors"}
+            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+            style="color: var(--ink-2);"
+          >
+            {gettext("Error Tracker")}
+          </.link>
+        <% end %>
+        <.link
+          href={~p"/users/log-out"}
+          method="delete"
+          class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+          style="color: var(--ink-2);"
+        >
+          {gettext("Sign out")}
+        </.link>
         <.link
           href={~p"/boards"}
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white hover:opacity-90 transition-opacity"
@@ -109,6 +138,8 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
       <% end %>
 
+      <.marketing_language_switcher current_locale={@current_locale} />
+
       <button
         type="button"
         class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md hover:opacity-70 transition-opacity"
@@ -118,6 +149,70 @@ defmodule KanbanWeb.MarketingComponents do
         <.icon name="hero-bars-3" class="w-5 h-5" />
       </button>
     </nav>
+    """
+  end
+
+  @doc false
+  attr :current_locale, :string, required: true
+
+  defp marketing_language_switcher(assigns) do
+    assigns = assign(assigns, :locales, NavComponents.supported_locales())
+
+    ~H"""
+    <div
+      class="relative hidden md:flex items-center"
+      id="marketing-language-switcher"
+      phx-hook="Dropdown"
+    >
+      <button
+        type="button"
+        data-dropdown-toggle
+        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12.5px] hover:opacity-70 transition-opacity"
+        style="color: var(--ink-2);"
+        aria-label={gettext("Change language")}
+      >
+        <NavComponents.locale_flag locale={@current_locale} />
+        <span style="font-family: var(--font-mono);">
+          {String.upcase(@current_locale)}
+        </span>
+        <.icon name="hero-chevron-down" class="w-2.5 h-2.5" />
+      </button>
+      <div
+        data-dropdown-menu
+        class="hidden absolute top-full right-0 mt-1 py-1 z-50"
+        style="background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow-md); min-width: 160px;"
+      >
+        <form
+          :for={locale <- @locales}
+          action={~p"/locale/#{locale.code}"}
+          method="post"
+        >
+          <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+          <button
+            type="submit"
+            class={[
+              "flex items-center gap-2 w-full px-3 py-2 text-[13px] text-left transition-colors row-hover",
+              if(@current_locale == locale.code,
+                do: "font-medium",
+                else: ""
+              )
+            ]}
+            style={
+              if(@current_locale == locale.code,
+                do: "color: var(--stride-orange-ink); background: var(--stride-orange-soft);",
+                else: "color: var(--ink-2);"
+              )
+            }
+          >
+            <NavComponents.locale_flag locale={locale.code} />
+            <span>{locale.name}</span>
+            <%= if @current_locale == locale.code do %>
+              <.icon name="hero-check" class="w-3 h-3 ml-auto" />
+            <% end %>
+          </button>
+        </form>
+      </div>
+    </div>
     """
   end
 
@@ -154,10 +249,10 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
           <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          {gettext("v2.4 · Atomic claims w/ capability matching")}
+          {gettext("v1.29.0 · Goal-driven assignment workflow")}
         </span>
         <span class="text-xs" style="color: var(--ink-3);">
-          {gettext("Now in beta →")}
+          {gettext("Now in release →")}
         </span>
       </div>
 
@@ -168,7 +263,7 @@ defmodule KanbanWeb.MarketingComponents do
         {gettext("Tasks are conversations.")}
         <br />
         <span style="color: var(--ink-4);">
-          {gettext("Your kanban can speak both ways.")}
+          {gettext("Stride can speak both ways.")}
         </span>
       </h1>
 

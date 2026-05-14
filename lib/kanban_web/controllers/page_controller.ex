@@ -2,7 +2,9 @@ defmodule KanbanWeb.PageController do
   use KanbanWeb, :controller
 
   def home(conn, _params) do
-    render(conn, :home)
+    conn
+    |> put_root_layout(html: {KanbanWeb.Layouts, :marketing})
+    |> render(:home)
   end
 
   def about(conn, _params) do

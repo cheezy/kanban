@@ -75,8 +75,6 @@ defmodule KanbanWeb.NavComponents do
     """
   end
 
-  attr :current_locale, :string, required: true
-
   @supported_locales [
     %{code: "en", name: "English", flag: :uk_flag},
     %{code: "fr", name: "Français", flag: :french_flag},
@@ -86,6 +84,15 @@ defmodule KanbanWeb.NavComponents do
     %{code: "ja", name: "日本語", flag: :japanese_flag},
     %{code: "zh", name: "中文", flag: :chinese_flag}
   ]
+
+  @doc """
+  Returns the list of supported locales (code + name + flag-atom). Exposed
+  publicly so sibling component modules (e.g. `MarketingComponents`) can
+  render their own locale switchers without duplicating this list.
+  """
+  def supported_locales, do: @supported_locales
+
+  attr :current_locale, :string, required: true
 
   def language_switcher(assigns) do
     assigns = assign(assigns, :locales, @supported_locales)
@@ -137,14 +144,20 @@ defmodule KanbanWeb.NavComponents do
     """
   end
 
-  defp locale_flag(%{locale: "en"} = assigns), do: uk_flag(assigns)
-  defp locale_flag(%{locale: "fr"} = assigns), do: french_flag(assigns)
-  defp locale_flag(%{locale: "es"} = assigns), do: spanish_flag(assigns)
-  defp locale_flag(%{locale: "pt"} = assigns), do: portuguese_flag(assigns)
-  defp locale_flag(%{locale: "de"} = assigns), do: german_flag(assigns)
-  defp locale_flag(%{locale: "ja"} = assigns), do: japanese_flag(assigns)
-  defp locale_flag(%{locale: "zh"} = assigns), do: chinese_flag(assigns)
-  defp locale_flag(assigns), do: ~H""
+  @doc """
+  Renders a small SVG flag for the given locale code. Public so sibling
+  component modules can reuse the flag SVG bank.
+  """
+  attr :locale, :string, required: true
+
+  def locale_flag(%{locale: "en"} = assigns), do: uk_flag(assigns)
+  def locale_flag(%{locale: "fr"} = assigns), do: french_flag(assigns)
+  def locale_flag(%{locale: "es"} = assigns), do: spanish_flag(assigns)
+  def locale_flag(%{locale: "pt"} = assigns), do: portuguese_flag(assigns)
+  def locale_flag(%{locale: "de"} = assigns), do: german_flag(assigns)
+  def locale_flag(%{locale: "ja"} = assigns), do: japanese_flag(assigns)
+  def locale_flag(%{locale: "zh"} = assigns), do: chinese_flag(assigns)
+  def locale_flag(assigns), do: ~H""
 
   defp french_flag(assigns) do
     ~H"""

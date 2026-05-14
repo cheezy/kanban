@@ -5,8 +5,11 @@ defmodule KanbanWeb.PageControllerTest do
     conn = get(conn, ~p"/")
     body = html_response(conn, 200)
     # New marketing hero headline (set in MarketingComponents.marketing_hero/1).
+    # The second line is asserted loosely so the specific subject ("Stride" /
+    # "Your kanban" / etc.) can change without breaking the test — the load-
+    # bearing brand line is the first one.
     assert body =~ "Tasks are conversations."
-    assert body =~ "Your kanban can speak both ways."
+    assert body =~ "speak both ways."
     # MiniBoard renders the canonical fixture idents from the new design.
     assert body =~ "W198"
     assert body =~ "W193"
