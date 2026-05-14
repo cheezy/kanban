@@ -1,6 +1,11 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
+/* Geist + Geist Mono fonts — used by the .stride-marketing scope only.
+   Loaded for the marketing surfaces (landing page, etc.); other routes
+   continue to use the daisyUI / system font stack. */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
 @import "tailwindcss" source(none);
 @source "../css";
 @source "../js";
@@ -768,3 +773,126 @@
 .feature-description {
   color: rgb(75, 85, 99);
 }
+
+/* ============================================================
+   Stride Marketing — design tokens + Geist typography
+   Source of truth: design_handoff_stride/design_source/tokens.css
+   Values copied verbatim (oklch preserved).
+   Scoped under .stride-marketing so they don't leak into the
+   daisyUI-themed surfaces in the rest of the app.
+   ============================================================ */
+.stride-marketing {
+  /* Brand */
+  --stride-orange: oklch(68% 0.17 47);
+  --stride-orange-soft: oklch(96% 0.04 60);
+  --stride-orange-ink: oklch(45% 0.18 40);
+  --stride-violet: oklch(60% 0.18 277);
+  --stride-violet-soft: oklch(96% 0.04 280);
+  --stride-violet-ink: oklch(40% 0.18 280);
+
+  /* Neutrals (warm, very subtle) */
+  --bg: oklch(98.8% 0.003 80);          /* canvas */
+  --surface: #ffffff;                    /* cards, panels */
+  --surface-2: oklch(98% 0.003 80);     /* nested surfaces */
+  --surface-sunken: oklch(97% 0.003 80);
+  --ink: oklch(18% 0.005 270);
+  --ink-2: oklch(35% 0.005 270);
+  --ink-3: oklch(52% 0.005 270);
+  --ink-4: oklch(68% 0.005 270);
+  --line: oklch(93% 0.003 270);
+  --line-2: oklch(89% 0.004 270);
+  --line-strong: oklch(82% 0.005 270);
+
+  /* Status — calm */
+  --st-backlog: oklch(68% 0.005 270);
+  --st-ready:   oklch(60% 0.13 240);
+  --st-doing:   oklch(70% 0.15 70);
+  --st-review:  oklch(60% 0.18 277);
+  --st-done:    oklch(60% 0.14 155);
+  --st-blocked: oklch(60% 0.20 25);
+
+  --st-backlog-soft: oklch(96% 0.003 270);
+  --st-ready-soft:   oklch(96% 0.03 240);
+  --st-doing-soft:   oklch(96% 0.04 70);
+  --st-review-soft:  oklch(96% 0.03 277);
+  --st-done-soft:    oklch(96% 0.03 155);
+  --st-blocked-soft: oklch(96% 0.03 25);
+
+  /* Priority dots */
+  --pri-critical: oklch(58% 0.22 25);
+  --pri-high:    oklch(68% 0.18 50);
+  --pri-medium:  oklch(68% 0.12 80);
+  --pri-low:     oklch(68% 0.005 270);
+
+  /* Type */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  /* Shadows — extremely subtle */
+  --shadow-sm: 0 1px 0 rgba(20,18,15,.03), 0 1px 2px rgba(20,18,15,.04);
+  --shadow-md: 0 1px 0 rgba(20,18,15,.04), 0 2px 6px rgba(20,18,15,.05), 0 8px 24px rgba(20,18,15,.04);
+  --shadow-lg: 0 1px 0 rgba(20,18,15,.04), 0 4px 12px rgba(20,18,15,.06), 0 24px 48px rgba(20,18,15,.08);
+
+  /* Base typography for everything inside the scope */
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.stride-marketing *,
+.stride-marketing *::before,
+.stride-marketing *::after {
+  box-sizing: border-box;
+}
+
+/* Mono caps section label — used by section headers across the marketing surfaces */
+.stride-marketing .ucase {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* Mono identifier (e.g. W198) — task idents on the mini-board */
+.stride-marketing .ident {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: -0.01em;
+}
+
+/* Inline kbd style */
+.stride-marketing .kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 5px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 1.5px;
+  border-radius: 4px;
+  color: var(--ink-3);
+  line-height: 1.2;
+  display: inline-block;
+}
+
+/* Type tone variants for task type icons */
+.stride-marketing .tone-work { color: var(--st-ready); background: var(--st-ready-soft); }
+.stride-marketing .tone-defect { color: var(--st-blocked); background: var(--st-blocked-soft); }
+.stride-marketing .tone-goal { color: var(--stride-violet); background: var(--stride-violet-soft); }
+
+/* Linear-ish row hover */
+.stride-marketing .row-hover:hover { background: var(--surface-sunken); }
