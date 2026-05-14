@@ -7,6 +7,7 @@ defmodule KanbanWeb.PageHTML do
   use KanbanWeb, :html
 
   import KanbanWeb.HomeComponents
+  import KanbanWeb.MarketingComponents
 
   embed_templates "page_html/*"
 end
