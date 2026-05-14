@@ -298,7 +298,9 @@ defmodule KanbanWeb.MarketingComponents do
         <% end %>
 
         <.link
-          href={~p"/resources"}
+          href="https://github.com/cheezy/kanban/blob/main/docs/api/README.md"
+          target="_blank"
+          rel="noopener noreferrer"
           class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
           style="background: transparent; color: var(--ink); border: 1px solid var(--line-strong);"
         >

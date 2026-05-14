@@ -200,7 +200,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ "Start free"
     end
 
-    test "secondary CTA is Read the agent API and links to /resources" do
+    test "secondary CTA is Read the agent API and links to the GitHub README" do
       assigns = %{current_scope: nil}
 
       html =
@@ -209,7 +209,10 @@ defmodule KanbanWeb.MarketingComponentsTest do
         """)
 
       assert html =~ "Read the agent API"
-      assert html =~ ~s|href="/resources"|
+      # External link to the agent API README on GitHub
+      assert html =~ ~s|href="https://github.com/cheezy/kanban/blob/main/docs/api/README.md"|
+      assert html =~ ~s|target="_blank"|
+      assert html =~ ~s|rel="noopener noreferrer"|
     end
 
     test "hero embeds the mini-board" do
@@ -581,10 +584,13 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Legal links
       assert html =~ "Privacy"
       assert html =~ "Security"
-      assert html =~ "Status"
       assert html =~ "GitHub"
       # GitHub link is external
       assert html =~ "https://github.com/cheezy/kanban"
+
+      # Status link is removed for now (no status page wired up yet)
+      refute html =~ ~s|>\nStatus\n<|
+      refute html =~ ~s|> Status <|
     end
   end
 end

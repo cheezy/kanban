@@ -156,9 +156,6 @@ defmodule KanbanWeb.MarketingClosing do
         <.link href={~p"/security"} class="hover:opacity-70 transition-opacity">
           {gettext("Security")}
         </.link>
-        <.link href={~p"/changelog"} class="hover:opacity-70 transition-opacity">
-          {gettext("Status")}
-        </.link>
         <.link
           href="https://github.com/cheezy/kanban"
           target="_blank"
