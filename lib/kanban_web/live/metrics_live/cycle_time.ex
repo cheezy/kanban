@@ -1,66 +1,18 @@
 defmodule KanbanWeb.MetricsLive.CycleTime do
   use KanbanWeb, :live_view
+  use KanbanWeb.MetricsLive.Base, page_title: "Cycle Time Metrics"
 
   import Ecto.Query
   import KanbanWeb.MetricsLive.Components
 
-  alias Kanban.Boards
   alias Kanban.Metrics
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
   alias KanbanWeb.MetricsLive.Helpers
 
-  @impl true
-  def mount(_params, _session, socket) do
-    {:ok,
-     assign(socket,
-       time_range: :last_30_days,
-       agent_name: nil,
-       exclude_weekends: false
-     )}
-  end
-
-  @impl true
-  def handle_params(%{"id" => board_id} = params, _, socket) do
-    user = socket.assigns.current_scope.user
-
-    case Boards.get_board(board_id, user) do
-      {:ok, board} ->
-        {:noreply,
-         assign_metrics_state(
-           socket,
-           board,
-           params,
-           "Cycle Time Metrics",
-           &load_cycle_time_data/1
-         )}
-
-      {:error, :not_found} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Board not found"))
-         |> push_navigate(to: ~p"/boards")}
-    end
-  end
-
-  @impl true
-  def handle_event("filter_change", params, socket) do
-    time_range_atom = String.to_existing_atom(params["time_range"])
-    agent_name = if params["agent_name"] == "", do: nil, else: params["agent_name"]
-    exclude_weekends = Map.get(params, "exclude_weekends") == "true"
-
-    socket =
-      socket
-      |> assign(:time_range, time_range_atom)
-      |> assign(:agent_name, agent_name)
-      |> assign(:exclude_weekends, exclude_weekends)
-      |> load_cycle_time_data()
-
-    {:noreply, socket}
-  end
-
-  defp load_cycle_time_data(socket) do
+  @impl KanbanWeb.MetricsLive.Base
+  def load_data(socket) do
     opts = [
       time_range: socket.assigns.time_range,
       exclude_weekends: socket.assigns.exclude_weekends
@@ -167,23 +119,6 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
         )
     })
     |> Repo.all()
-  end
-
-  defp assign_metrics_state(socket, board, params, page_title, load_data_fn) do
-    {:ok, agents} = Metrics.get_agents(board.id)
-
-    socket
-    |> assign(:page_title, page_title)
-    |> assign(:board, board)
-    |> assign(
-      :user_access,
-      Boards.get_user_access(board.id, socket.assigns.current_scope.user.id)
-    )
-    |> assign(:agents, agents)
-    |> assign(:time_range, Helpers.parse_time_range(params["time_range"]))
-    |> assign(:agent_name, Helpers.parse_agent_name(params["agent_name"]))
-    |> assign(:exclude_weekends, Helpers.parse_exclude_weekends(params["exclude_weekends"]))
-    |> load_data_fn.()
   end
 
   # Used in cycle_time.html.heex (analyzer does not scan HEEx files).
