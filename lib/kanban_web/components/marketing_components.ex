@@ -37,7 +37,7 @@ defmodule KanbanWeb.MarketingComponents do
   def marketing_nav(assigns) do
     ~H"""
     <nav
-      class="flex items-center gap-6 h-14 px-9"
+      class="flex items-center gap-3 md:gap-6 h-14 px-4 md:px-9"
       style="border-bottom: 1px solid var(--line);"
     >
       <.link href={~p"/"} class="flex items-center gap-2">
@@ -94,7 +94,7 @@ defmodule KanbanWeb.MarketingComponents do
       <% else %>
         <.link
           href={~p"/users/log-in"}
-          class="text-[13px] hover:opacity-70 transition-opacity"
+          class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
           style="color: var(--ink-2);"
         >
           {gettext("Sign in")}
@@ -108,6 +108,15 @@ defmodule KanbanWeb.MarketingComponents do
           <.icon name="hero-arrow-right" class="w-3 h-3" />
         </.link>
       <% end %>
+
+      <button
+        type="button"
+        class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md hover:opacity-70 transition-opacity"
+        style="color: var(--ink-2);"
+        aria-label={gettext("Open menu")}
+      >
+        <.icon name="hero-bars-3" class="w-5 h-5" />
+      </button>
     </nav>
     """
   end
@@ -135,8 +144,11 @@ defmodule KanbanWeb.MarketingComponents do
 
   def marketing_hero(assigns) do
     ~H"""
-    <section class="px-16 pt-20 pb-14" style="border-bottom: 1px solid var(--line);">
-      <div class="flex items-center gap-2 mb-6">
+    <section
+      class="px-5 pt-10 pb-10 md:px-16 md:pt-20 md:pb-14"
+      style="border-bottom: 1px solid var(--line);"
+    >
+      <div class="flex flex-wrap items-center gap-2 mb-6">
         <span
           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
@@ -151,7 +163,7 @@ defmodule KanbanWeb.MarketingComponents do
 
       <h1
         class="m-0 font-semibold"
-        style="font-size: clamp(40px, 6vw, 72px); letter-spacing: -0.04em; line-height: 0.98; max-width: 1100px; color: var(--ink); text-wrap: pretty;"
+        style="font-size: clamp(36px, 6vw, 72px); letter-spacing: -0.04em; line-height: 0.98; max-width: 1100px; color: var(--ink); text-wrap: pretty;"
       >
         {gettext("Tasks are conversations.")}
         <br />
@@ -169,7 +181,7 @@ defmodule KanbanWeb.MarketingComponents do
         )}
       </p>
 
-      <div class="flex flex-wrap items-center gap-3.5 mt-8">
+      <div class="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 md:gap-3.5 mt-8">
         <%= if @current_scope do %>
           <.link
             href={~p"/boards"}
@@ -208,8 +220,10 @@ defmodule KanbanWeb.MarketingComponents do
         </span>
       </div>
 
-      <div class="mt-16" style="max-width: 1200px;">
-        <.marketing_mini_board />
+      <div class="mt-10 md:mt-16 overflow-x-auto md:overflow-x-visible" style="max-width: 1200px;">
+        <div class="min-w-[640px] md:min-w-0">
+          <.marketing_mini_board />
+        </div>
       </div>
     </section>
     """
@@ -227,16 +241,16 @@ defmodule KanbanWeb.MarketingComponents do
   """
   def marketing_belief_band(assigns) do
     ~H"""
-    <section class="px-16 py-16" style="border-bottom: 1px solid var(--line); padding-bottom: 56px;">
-      <div
-        class="grid gap-20 items-baseline"
-        style="grid-template-columns: 1.2fr 1fr;"
-      >
+    <section
+      class="px-5 py-10 md:px-16 md:py-16 md:pb-14"
+      style="border-bottom: 1px solid var(--line);"
+    >
+      <div class="grid grid-cols-1 gap-8 md:gap-20 items-baseline md:[grid-template-columns:1.2fr_1fr]">
         <div>
           <span class="ucase">{gettext("A new contract")}</span>
           <h2
             class="font-semibold"
-            style="margin: 12px 0 0; font-size: 40px; letter-spacing: -0.03em; line-height: 1.1; text-wrap: pretty;"
+            style="margin: 12px 0 0; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; text-wrap: pretty;"
           >
             {gettext("AI agents are first-class teammates,")}
             <br />
@@ -280,8 +294,8 @@ defmodule KanbanWeb.MarketingComponents do
     assigns = assign(assigns, :steps, how_it_works_steps())
 
     ~H"""
-    <section class="px-16 pt-16 pb-8">
-      <div class="flex items-baseline gap-3.5 mb-9">
+    <section class="px-5 pt-10 pb-6 md:px-16 md:pt-16 md:pb-8">
+      <div class="flex flex-wrap items-baseline gap-3.5 mb-7 md:mb-9">
         <span class="ucase">{gettext("How it works")}</span>
         <span class="text-[13px]" style="color: var(--ink-3);">
           {gettext("One loop. Two roles.")}
@@ -289,16 +303,16 @@ defmodule KanbanWeb.MarketingComponents do
       </div>
 
       <div
-        class="grid overflow-hidden"
-        style="grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 12px;"
+        class="grid grid-cols-1 lg:grid-cols-4 overflow-hidden"
+        style="gap: 0; border: 1px solid var(--line); border-radius: 12px;"
       >
         <div
           :for={{step, index} <- Enum.with_index(@steps)}
-          class="flex flex-col gap-3"
-          style={[
-            "padding: 24px 22px 26px; background: var(--surface);",
-            if(index < 3, do: " border-right: 1px solid var(--line);", else: "")
+          class={[
+            "flex flex-col gap-3 p-6 md:p-[24px_22px_26px]",
+            index < 3 && "border-b lg:border-b-0 lg:border-r"
           ]}
+          style="background: var(--surface); border-color: var(--line);"
         >
           <div class="flex items-center gap-2.5">
             <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); font-weight: 500;">
@@ -338,11 +352,8 @@ defmodule KanbanWeb.MarketingComponents do
     assigns = assign(assigns, :features, feature_grid_cards())
 
     ~H"""
-    <section style="padding: 32px 64px 64px;">
-      <div
-        class="grid gap-3.5"
-        style="grid-template-columns: repeat(3, 1fr);"
-      >
+    <section class="px-5 pt-6 pb-10 md:px-16 md:pt-8 md:pb-16">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         <div
           :for={feature <- @features}
           class="flex flex-col gap-2"

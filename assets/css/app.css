@@ -857,6 +857,13 @@
   box-sizing: border-box;
 }
 
+/* Slightly larger body text on mobile, per the design handoff. */
+@media (max-width: 767px) {
+  .stride-marketing {
+    font-size: 14.5px;
+  }
+}
+
 /* Mono caps section label — used by section headers across the marketing surfaces */
 .stride-marketing .ucase {
   font-family: var(--font-mono);

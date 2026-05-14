@@ -275,7 +275,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Humans get a fast, calm board"
     end
 
-    test "uses the 1.2fr / 1fr two-column grid layout" do
+    test "uses the 1.2fr / 1fr two-column grid layout on md+" do
       assigns = %{}
 
       html =
@@ -283,7 +283,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_belief_band />
         """)
 
-      assert html =~ "grid-template-columns: 1.2fr 1fr"
+      # Responsive Tailwind arbitrary-value variant; mobile is single-column.
+      assert html =~ "md:[grid-template-columns:1.2fr_1fr]"
+      assert html =~ "grid-cols-1"
     end
   end
 
@@ -326,7 +328,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "approves and runs after_review"
     end
 
-    test "renders the 4-column grid with border-right separators on the first 3 cells" do
+    test "renders the 4-column grid with separator borders on the first 3 cells (lg+)" do
       assigns = %{}
 
       html =
@@ -334,16 +336,18 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_how_it_works />
         """)
 
-      assert html =~ "grid-template-columns: repeat(4, 1fr)"
-      # The first three cells get a right border separator
+      # Responsive: stacked on mobile, 4 cols on lg
+      assert html =~ "grid-cols-1"
+      assert html =~ "lg:grid-cols-4"
+      # First 3 cells get border-b (mobile separator) + lg:border-r (desktop separator)
       separator_count =
         html
-        |> String.split(" border-right: 1px solid var(--line);")
+        |> String.split("lg:border-r")
         |> length()
         |> Kernel.-(1)
 
       assert separator_count == 3,
-             "expected exactly 3 border-right separators on the first 3 cells, got #{separator_count}"
+             "expected exactly 3 lg:border-r separators on the first 3 cells, got #{separator_count}"
     end
 
     test "step icons use the colored token per step" do
@@ -363,7 +367,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
   end
 
   describe "marketing_feature_grid/1" do
-    test "renders 6 feature cards in a 3-column grid" do
+    test "renders 6 feature cards in a 3-column grid on lg+" do
       assigns = %{}
 
       html =
@@ -371,7 +375,10 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_feature_grid />
         """)
 
-      assert html =~ "grid-template-columns: repeat(3, 1fr)"
+      # Responsive: 1 col mobile / 2 cols md / 3 cols lg
+      assert html =~ "grid-cols-1"
+      assert html =~ "md:grid-cols-2"
+      assert html =~ "lg:grid-cols-3"
 
       # All 6 titles present
       assert html =~ "Capability matching"
@@ -442,8 +449,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # the rendered output (`&quot;tnum&quot;`), so check for the
       # `font-feature-settings: ` prefix with the escaped `tnum` token.
       assert html =~ "font-feature-settings: &quot;tnum&quot;"
-      # 4-column grid
-      assert html =~ "grid-template-columns: repeat(4, 1fr)"
+      # Responsive: 2 cols on mobile, 4 cols on md+
+      assert html =~ "grid-cols-2"
+      assert html =~ "md:grid-cols-4"
     end
   end
 

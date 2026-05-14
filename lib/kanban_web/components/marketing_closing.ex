@@ -26,12 +26,15 @@ defmodule KanbanWeb.MarketingClosing do
     assigns = assign(assigns, :metrics, numbers_band_metrics())
 
     ~H"""
-    <section style="padding: 56px 64px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface);">
-      <div class="grid gap-9" style="grid-template-columns: repeat(4, 1fr);">
+    <section
+      class="px-5 py-10 md:px-16 md:py-14"
+      style="border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface);"
+    >
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-9">
         <div :for={metric <- @metrics} class="flex flex-col gap-1">
           <span
             class="font-semibold"
-            style={"font-size: 44px; letter-spacing: -0.035em; font-feature-settings: \"tnum\";"}
+            style={"font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.035em; font-feature-settings: \"tnum\";"}
           >
             {metric.value}
           </span>
@@ -70,10 +73,10 @@ defmodule KanbanWeb.MarketingClosing do
 
   def marketing_cta_section(assigns) do
     ~H"""
-    <section style="padding: 64px 64px 80px; text-align: center;">
+    <section class="px-5 pt-12 pb-14 md:px-16 md:pt-16 md:pb-20 text-center">
       <h2
         class="font-semibold"
-        style="margin: 0; font-size: 44px; letter-spacing: -0.035em; line-height: 1.05; text-wrap: pretty;"
+        style="margin: 0; font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.035em; line-height: 1.05; text-wrap: pretty;"
       >
         {gettext("Stop writing every line.")}
         <br />
@@ -87,11 +90,11 @@ defmodule KanbanWeb.MarketingClosing do
           "Free for solo developers and small teams. Self-host the whole thing. Bring any agent — Claude, Cursor, Aider, Codex, your own."
         )}
       </p>
-      <div class="flex justify-center gap-3" style="margin-top: 22px;">
+      <div class="flex flex-col md:flex-row md:justify-center gap-3 mt-5 md:mt-[22px]">
         <%= if @current_scope do %>
           <.link
             href={~p"/boards"}
-            class="inline-flex items-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity"
+            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Go to my boards")}
@@ -100,7 +103,7 @@ defmodule KanbanWeb.MarketingClosing do
         <% else %>
           <.link
             href={~p"/users/register"}
-            class="inline-flex items-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity"
+            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Start free")}
@@ -109,7 +112,7 @@ defmodule KanbanWeb.MarketingClosing do
         <% end %>
         <.link
           href={~p"/about"}
-          class="inline-flex items-center font-medium hover:opacity-90 transition-opacity"
+          class="inline-flex items-center justify-center font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
           style="padding: 12px 22px; border-radius: 7px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); font-size: 14px;"
         >
           {gettext("Talk to a human")}
@@ -132,8 +135,8 @@ defmodule KanbanWeb.MarketingClosing do
   def marketing_footer(assigns) do
     ~H"""
     <footer
-      class="flex items-center"
-      style="padding: 32px 64px; border-top: 1px solid var(--line); gap: 28px; font-size: 12px; color: var(--ink-3);"
+      class="flex flex-col md:flex-row md:items-center gap-4 md:gap-7 px-5 py-6 md:px-16 md:py-8"
+      style="border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3);"
     >
       <div class="flex items-center gap-2">
         <span
@@ -145,25 +148,27 @@ defmodule KanbanWeb.MarketingClosing do
         <span style="font-weight: 500; color: var(--ink-2);">{gettext("Stride")}</span>
         <span>· StrideLikeABoss.com</span>
       </div>
-      <span>© 2026</span>
-      <span class="flex-1"></span>
-      <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
-        {gettext("Privacy")}
-      </.link>
-      <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
-        {gettext("Security")}
-      </.link>
-      <.link href={~p"/changelog"} class="hover:opacity-70 transition-opacity">
-        {gettext("Status")}
-      </.link>
-      <.link
-        href="https://github.com/cheezy/kanban"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hover:opacity-70 transition-opacity"
-      >
-        {gettext("GitHub")}
-      </.link>
+      <span class="md:inline">© 2026</span>
+      <span class="hidden md:inline flex-1"></span>
+      <div class="flex flex-wrap gap-4 md:gap-7">
+        <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
+          {gettext("Privacy")}
+        </.link>
+        <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
+          {gettext("Security")}
+        </.link>
+        <.link href={~p"/changelog"} class="hover:opacity-70 transition-opacity">
+          {gettext("Status")}
+        </.link>
+        <.link
+          href="https://github.com/cheezy/kanban"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:opacity-70 transition-opacity"
+        >
+          {gettext("GitHub")}
+        </.link>
+      </div>
     </footer>
     """
   end

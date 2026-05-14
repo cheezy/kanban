@@ -6,7 +6,6 @@ defmodule KanbanWeb.PageHTML do
   """
   use KanbanWeb, :html
 
-  import KanbanWeb.HomeComponents
   import KanbanWeb.MarketingClosing
   import KanbanWeb.MarketingComponents
 
