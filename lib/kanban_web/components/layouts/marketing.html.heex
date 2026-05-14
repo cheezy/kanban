@@ -47,6 +47,13 @@
     >
     </div>
 
-    {@inner_content}
+    <div class="stride-marketing">
+      <.marketing_nav
+        current_scope={@current_scope}
+        current_locale={Gettext.get_locale(KanbanWeb.Gettext)}
+      />
+      {@inner_content}
+      <.marketing_footer />
+    </div>
   </body>
 </html>

@@ -6,6 +6,8 @@ defmodule KanbanWeb.Layouts do
   use KanbanWeb, :html
 
   import KanbanWeb.NavComponents
+  import KanbanWeb.MarketingComponents
+  import KanbanWeb.MarketingClosing
 
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML

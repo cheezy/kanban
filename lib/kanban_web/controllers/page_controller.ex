@@ -1,10 +1,15 @@
 defmodule KanbanWeb.PageController do
   use KanbanWeb, :controller
 
+  # Public marketing surfaces — render under the marketing layout (which
+  # provides the marketing nav + footer chrome) instead of the default
+  # app layout (which provides the in-app nav).
+  plug :put_root_layout,
+       [html: {KanbanWeb.Layouts, :marketing}]
+       when action in [:home, :about, :privacy, :security, :tango, :changelog]
+
   def home(conn, _params) do
-    conn
-    |> put_root_layout(html: {KanbanWeb.Layouts, :marketing})
-    |> render(:home)
+    render(conn, :home)
   end
 
   def about(conn, _params) do
