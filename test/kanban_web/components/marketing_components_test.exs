@@ -171,7 +171,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_mini_board />
+        <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
       assert html =~ "Ready"
@@ -191,7 +191,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_mini_board />
+        <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
       assert html =~ "STR"
@@ -205,7 +205,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_mini_board />
+        <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
       for ident <- ~w(W198 W199 W193 W194 W189 W185) do
@@ -218,7 +218,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_mini_board />
+        <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
       assert html =~ "before_doing · ok"
@@ -237,7 +237,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_mini_board />
+        <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
       # At least one agent avatar with the square radius
@@ -247,6 +247,118 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Claude / Jamie K initials appear somewhere (whitespace-tolerant)
       assert html =~ ~r/>\s*C\s*</
       assert html =~ ~r/>\s*JK\s*</
+    end
+  end
+
+  describe "marketing_belief_band/1" do
+    test "renders the ucase label, two-line headline, and two body paragraphs" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_belief_band />
+        """)
+
+      # ucase label
+      assert html =~ "A new contract"
+      assert html =~ ~s|class="ucase"|
+
+      # Two-line headline
+      assert html =~ "AI agents are first-class teammates,"
+      assert html =~ "not bots you babysit."
+
+      # Orange emphasis span on the second line
+      assert html =~ "color: var(--stride-orange);"
+
+      # Two body paragraphs in the right column
+      assert html =~ "Most tools bolt AI on as a sidebar"
+      assert html =~ "Humans get a fast, calm board"
+    end
+
+    test "uses the 1.2fr / 1fr two-column grid layout" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_belief_band />
+        """)
+
+      assert html =~ "grid-template-columns: 1.2fr 1fr"
+    end
+  end
+
+  describe "marketing_how_it_works/1" do
+    test "renders the section heading and microcopy" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_how_it_works />
+        """)
+
+      assert html =~ "How it works"
+      assert html =~ "One loop. Two roles."
+    end
+
+    test "renders all four step cells with mono step numbers, titles, and body copy" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_how_it_works />
+        """)
+
+      # Mono step numbers
+      for n <- ["01", "02", "03", "04"] do
+        assert html =~ ~r/>\s*#{n}\s*</, "expected step number #{n}"
+      end
+
+      # Step titles
+      assert html =~ "You write the task"
+      assert html =~ "An agent claims it"
+      assert html =~ "Hooks run on their machine"
+      assert html =~ "You approve or send back"
+
+      # Body excerpts
+      assert html =~ "The schema is the conversation."
+      assert html =~ "Atomic. SKIP LOCKED."
+      assert html =~ "mix test, gh pr create"
+      assert html =~ "approves and runs after_review"
+    end
+
+    test "renders the 4-column grid with border-right separators on the first 3 cells" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_how_it_works />
+        """)
+
+      assert html =~ "grid-template-columns: repeat(4, 1fr)"
+      # The first three cells get a right border separator
+      separator_count =
+        html
+        |> String.split(" border-right: 1px solid var(--line);")
+        |> length()
+        |> Kernel.-(1)
+
+      assert separator_count == 3,
+             "expected exactly 3 border-right separators on the first 3 cells, got #{separator_count}"
+    end
+
+    test "step icons use the colored token per step" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_how_it_works />
+        """)
+
+      # Each step has its color
+      assert html =~ "color: var(--ink);"
+      assert html =~ "color: var(--st-doing);"
+      assert html =~ "color: var(--stride-orange);"
+      assert html =~ "color: var(--st-done);"
     end
   end
 end
