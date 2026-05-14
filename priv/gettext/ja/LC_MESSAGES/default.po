@@ -114,7 +114,7 @@ msgstr "アカウント設定"
 msgid "Already registered?"
 msgstr "既に登録済みですか？"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:45
+#: lib/kanban_web/live/user_live/reset_password.ex:30
 #: lib/kanban_web/live/user_live/settings.ex:71
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
@@ -140,8 +140,8 @@ msgstr "アカウントを作成中..."
 msgid "Don't have an account?"
 msgstr "アカウントをお持ちでないですか？"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:37
-#: lib/kanban_web/live/user_live/forgot_password.ex:38
+#: lib/kanban_web/live/user_live/forgot_password.ex:20
+#: lib/kanban_web/live/user_live/forgot_password.ex:21
 #: lib/kanban_web/live/user_live/login.ex:57
 #: lib/kanban_web/live/user_live/registration.ex:60
 #: lib/kanban_web/live/user_live/settings.ex:34
@@ -164,7 +164,7 @@ msgstr "メールが正常に変更されました。"
 msgid "Manage your account email address and password settings"
 msgstr "アカウントのメールアドレスとパスワード設定を管理"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:38
+#: lib/kanban_web/live/user_live/reset_password.ex:23
 #: lib/kanban_web/live/user_live/settings.ex:64
 #, elixir-autogen, elixir-format
 msgid "New password"
@@ -1102,45 +1102,44 @@ msgstr "このアプリケーションの完全なバージョン履歴と機能
 msgid "Work With Us"
 msgstr "一緒に働く"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:52
-#: lib/kanban_web/live/user_live/reset_password.ex:58
+#: lib/kanban_web/components/auth_components.ex:52
 #, elixir-autogen, elixir-format
 msgid "Back to log in"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:24
+#: lib/kanban_web/live/user_live/forgot_password.ex:13
 #: lib/kanban_web/live/user_live/login.ex:84
 #, elixir-autogen, elixir-format
 msgid "Forgot your password?"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:76
+#: lib/kanban_web/live/user_live/forgot_password.ex:49
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/reset_password.ex:94
+#: lib/kanban_web/live/user_live/reset_password.ex:69
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/reset_password.ex:24
-#: lib/kanban_web/live/user_live/reset_password.ex:49
+#: lib/kanban_web/live/user_live/reset_password.ex:12
+#: lib/kanban_web/live/user_live/reset_password.ex:34
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/reset_password.ex:107
+#: lib/kanban_web/live/user_live/reset_password.ex:82
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:43
+#: lib/kanban_web/live/user_live/forgot_password.ex:26
 #, elixir-autogen, elixir-format
 msgid "Send password reset instructions"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:27
+#: lib/kanban_web/live/user_live/forgot_password.ex:14
 #, elixir-autogen, elixir-format
 msgid "We'll send you an email with instructions to reset your password."
 msgstr ""
@@ -2950,12 +2949,12 @@ msgstr "タスク完了"
 #: lib/kanban_web/live/board_live/form.ex:273
 #: lib/kanban_web/live/board_live/index.ex:53
 #: lib/kanban_web/live/board_live/show.ex:1159
-#: lib/kanban_web/live/metrics_live/base.ex:63
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/compliance.ex:25
-#: lib/kanban_web/live/metrics_live/dashboard.ex:31
-#: lib/kanban_web/live/metrics_live/lead_time.ex:35
-#: lib/kanban_web/live/metrics_live/throughput.ex:41
-#: lib/kanban_web/live/metrics_live/wait_time.ex:36
 #, elixir-autogen, elixir-format
 msgid "Board not found"
 msgstr ""
