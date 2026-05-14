@@ -1,0 +1,204 @@
+<main class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-base-content mb-2">
+        {gettext("Privacy Policy")}
+      </h1>
+      <p class="text-sm text-base-content opacity-60 mb-10">
+        {gettext("Last updated: %{date}", date: "May 14, 2026")}
+      </p>
+
+      <div class="prose prose-lg max-w-none">
+        <section class="mb-10">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride is task-management software you can use as a hosted service at stridelikeaboss.com or self-host on your own infrastructure. This Privacy Policy describes what data Stride collects, how it is used, and the choices you have. It applies to the hosted service operated by the Stride team. If you self-host Stride, you are the operator of your own instance — none of the data you process flows to us."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Information we collect")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("Account information")}</strong>
+              {gettext(
+                " — your email address, the password hash, and the display name and locale you choose."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Workspace content")}</strong>
+              {gettext(
+                " — boards, columns, tasks, comments, attachments, and the metadata you author (titles, descriptions, acceptance criteria, key files, hooks, and so on)."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Agent activity")}</strong>
+              {gettext(
+                " — when an AI agent claims a task, runs a hook, or completes work, we record the agent's identifier, the task affected, and a timestamp."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("API tokens")}</strong>
+              {gettext(
+                " — we store the hashed token, the issuing user, the scope, and the last-used timestamp. The plaintext token is shown only once at issuance."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Telemetry")}</strong>
+              {gettext(
+                " — request paths, status codes, response durations, and aggregate usage counts. We do not record full request bodies or individual user-agent strings beyond what is needed to keep the service available."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("How we use your information")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>{gettext("Operate the service and authenticate you and your agents.")}</li>
+            <li>
+              {gettext(
+                "Render the boards, tasks, and activity feeds you have access to."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Send transactional email — account confirmation, password reset, security notifications. We do not send marketing email unless you explicitly opt in."
+              )}
+            </li>
+          </ul>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Data sharing")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "We share your information only in narrowly limited circumstances:"
+            )}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("Service providers")}</strong>
+              {gettext(
+                " — hosting, transactional email, and error tracking. These vendors process data on our behalf under written agreements that prohibit secondary use."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Legal requests")}</strong>
+              {gettext(
+                " — when we are required by valid legal process. We push back on overbroad requests and notify the affected user where the law allows."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Workspace collaborators")}</strong>
+              {gettext(
+                " — content you put in a board is visible to the people you invite to that board."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Data retention")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "We keep your account and workspace data for as long as your account is active. When you delete your account, we delete your account record and your workspace content within 30 days, except where we are required by law to retain a record (for example, financial records for billing)."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Your rights")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext("Depending on where you live, you may have the right to:")}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>{gettext("Access the personal data we hold about you.")}</li>
+            <li>{gettext("Correct inaccurate personal data.")}</li>
+            <li>{gettext("Delete your account and your personal data.")}</li>
+            <li>{gettext("Export your workspace content in a machine-readable format.")}</li>
+            <li>{gettext("Object to or restrict certain processing.")}</li>
+          </ul>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("To exercise any of these rights, contact us at the address below.")}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Cookies and local storage")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Security")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Changes to this policy")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
+            )}
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Contact us")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Questions, concerns, or requests about this policy? Email "
+            )}<a
+              href="mailto:privacy@stridelikeaboss.com"
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >privacy@stridelikeaboss.com</a>{gettext(
+              " and we will respond within a reasonable time."
+            )}
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

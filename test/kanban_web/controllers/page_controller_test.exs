@@ -20,6 +20,24 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "GET /privacy", %{conn: conn} do
+    conn = get(conn, ~p"/privacy")
+    body = html_response(conn, 200)
+    assert body =~ "Privacy Policy"
+    assert body =~ "Information we collect"
+    assert body =~ "Your rights"
+    assert body =~ "Contact us"
+  end
+
+  test "GET /security", %{conn: conn} do
+    conn = get(conn, ~p"/security")
+    body = html_response(conn, 200)
+    assert body =~ "Authentication and access"
+    assert body =~ "Transport and storage"
+    assert body =~ "Vulnerability disclosure"
+    assert body =~ "security@stridelikeaboss.com"
+  end
+
   test "GET /tango", %{conn: conn} do
     conn = get(conn, ~p"/tango")
     assert html_response(conn, 200)

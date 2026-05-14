@@ -1,0 +1,216 @@
+<main class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-base-content mb-2">
+        {gettext("Security")}
+      </h1>
+      <p class="text-sm text-base-content opacity-60 mb-10">
+        {gettext("Last updated: %{date}", date: "May 14, 2026")}
+      </p>
+
+      <div class="prose prose-lg max-w-none">
+        <section class="mb-10">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride is task-management software built around the idea that AI agents are first-class participants in the work. That premise has security implications — agents authenticate, claim tasks, and run code on developer machines. This page describes how we approach security on the hosted service at stridelikeaboss.com and what you can rely on as a user. If you self-host Stride, you are the operator of your own instance and most of these guarantees become things you control rather than things we provide."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Authentication and access")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("Passwords")}</strong>
+              {gettext(
+                " are hashed with bcrypt using a per-user salt. Plaintext passwords are never written to logs, never persisted, and never transmitted to third parties."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Sessions")}</strong>
+              {gettext(
+                " are tied to a signed cookie with a CSRF token. Sessions expire after a period of inactivity and can be invalidated from the user settings page."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("API tokens")}</strong>
+              {gettext(
+                " for agents are shown once at issuance and stored as a hash afterward. Each token is scoped to a board and can be rotated; a 60-second grace window keeps in-flight agent claims from being killed mid-execution by a rotation."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Atomic claiming")}</strong>
+              {gettext(
+                " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Transport and storage")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              {gettext(
+                "All traffic to and from stridelikeaboss.com is served over TLS 1.2 or newer. HTTP Strict Transport Security is enabled."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "The PostgreSQL database backing the hosted service is encrypted at rest. Backups are encrypted, retained for 30 days, and access is restricted to the Stride operations team."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Secrets (database URLs, signing keys, SMTP credentials) are stored in the hosting provider's secret manager and injected at runtime. They are not committed to the repository or logged."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Application-level protections")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("CSRF protection")}</strong>
+              {gettext(" on every state-changing browser request.")}
+            </li>
+            <li>
+              <strong>{gettext("Strict Content Security Policy")}</strong>
+              {gettext(
+                " with per-request nonces — inline scripts are blocked unless explicitly trusted."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Parameterized queries everywhere")}</strong>
+              {gettext(
+                " — Stride uses Ecto, which constructs SQL parametrically and is not vulnerable to classic SQL injection."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Rate limiting")}</strong>
+              {gettext(
+                " on the agent API and on authentication endpoints to defeat credential-stuffing and runaway-agent scenarios."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Sobelow")}</strong>
+              {gettext(
+                " static-analysis runs in CI on every commit; the build fails on a finding."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Hooks run on your machine, not ours")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride's `before_doing`, `after_doing`, `before_review`, and `after_review` hooks are shell commands that run on the agent's machine — never on Stride's servers. This is a deliberate architectural choice: you hold the keys; agents hold the loop. Stride never executes user-supplied code or untrusted input on its own infrastructure."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Inside your hooks you are responsible for what runs — review your own .stride.md before pointing an agent at it."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Dependency hygiene")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Dependencies are audited with mix deps.audit and mix hex.audit on every dependency change. Outdated dependencies are surfaced with mix hex.outdated and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Vulnerability disclosure")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "If you believe you have found a security vulnerability in Stride, please report it to us privately rather than filing a public issue. We will acknowledge receipt within 72 hours, investigate promptly, and credit reporters who follow this responsible-disclosure path."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("Report vulnerabilities to ")}<a
+              href="mailto:security@stridelikeaboss.com"
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >security@stridelikeaboss.com</a>{gettext(
+              ". For sensitive reports, request our PGP key in the first message and we will reply with it."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Scope")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext("The following are in-scope for responsible disclosure:")}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>{gettext("Authentication and session-management bypasses.")}</li>
+            <li>
+              {gettext(
+                "Authorization bugs that let one user access another user's workspace data."
+              )}
+            </li>
+            <li>{gettext("Server-side or client-side injection (SQL, XSS, SSRF, etc.).")}</li>
+            <li>{gettext("Cryptographic flaws affecting passwords, tokens, or data at rest.")}</li>
+            <li>{gettext("API token leakage or scope-escape via the agent API.")}</li>
+          </ul>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext("The following are explicitly out of scope:")}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              {gettext(
+                "Denial-of-service attacks, traffic-flooding, and rate-limit-bypass-by-volume."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Reports generated purely from automated scanners without manual validation."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Issues that require physical access to a user's device or compromise of a third-party service we do not operate."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Contact")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("Security issues: ")}<a
+              href="mailto:security@stridelikeaboss.com"
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >security@stridelikeaboss.com</a>{gettext(
+              ". For non-security questions about how Stride handles your data, see the "
+            )}<.link
+              href={~p"/privacy"}
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >{gettext("Privacy Policy")}</.link>{gettext(".")}
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

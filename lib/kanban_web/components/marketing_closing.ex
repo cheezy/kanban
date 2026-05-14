@@ -150,10 +150,10 @@ defmodule KanbanWeb.MarketingClosing do
       <span class="md:inline">© 2026</span>
       <span class="hidden md:inline flex-1"></span>
       <div class="flex flex-wrap gap-4 md:gap-7">
-        <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
+        <.link href={~p"/privacy"} class="hover:opacity-70 transition-opacity">
           {gettext("Privacy")}
         </.link>
-        <.link href={~p"/tango"} class="hover:opacity-70 transition-opacity">
+        <.link href={~p"/security"} class="hover:opacity-70 transition-opacity">
           {gettext("Security")}
         </.link>
         <.link href={~p"/changelog"} class="hover:opacity-70 transition-opacity">

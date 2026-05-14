@@ -11,6 +11,14 @@ defmodule KanbanWeb.PageController do
     render(conn, :about)
   end
 
+  def privacy(conn, _params) do
+    render(conn, :privacy)
+  end
+
+  def security(conn, _params) do
+    render(conn, :security)
+  end
+
   def tango(conn, _params) do
     render(conn, :tango)
   end
