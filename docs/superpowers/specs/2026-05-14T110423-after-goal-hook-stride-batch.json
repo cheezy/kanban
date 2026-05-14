@@ -1,0 +1,841 @@
+{
+  "source_spec": "docs/superpowers/specs/2026-05-14T110423-after-goal-hook-requirements.md",
+  "source_spec_sha256": "0acf0e29b4a4e5e26589c5b3ea2dd0f80bd5eb7968af5c214edbcc1eed2f706c",
+  "decomposition_notes": "Multi-goal split along Phoenix layer seams identified from the requirements doc. The work spans three orthogonal seams: (1) server-side protocol & data layer \u2014 detecting goal completion atomically, returning after_goal hook metadata in the completion/mark_reviewed response, and gating goal Done transition; (2) agent-side hook execution \u2014 parsing the new ## after_goal section from .stride.md, executing the hook with GOAL_* env vars, reporting results back; (3) observability \u2014 telemetry counters, adoption metric, goal-to-Done latency SLO. Plus a fourth goal for the plugin/marketplace version bump release coordination. CLAIM ORDER: G1 (server protocol) must land first because G2 (agent execution) depends on receiving the new hook metadata shape; G3 (observability) depends on both G1 and G2 emitting the events it observes; G4 (release coordination) is claimed last after G1+G2 land in main. Within each goal, sibling tasks use array-index dependencies. Cross-goal sequencing lives here in decomposition_notes only.",
+  "goals": [
+    {
+      "title": "Add server-side after_goal hook detection and delivery protocol",
+      "type": "goal",
+      "complexity": "large",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Goal-level work (consolidated PRs, single deploy promotions, single release notes) currently has no protocol-blessed home. Without server-side detection of 'last child task completed', agents cannot know which completion response should carry the after_goal hook metadata, and concurrent sibling completions risk firing the hook twice or skipping it entirely.",
+      "what": "Detect when a child-task completion finishes its parent goal under a transactional boundary, bundle after_goal hook metadata into that completion / mark_reviewed response alongside the existing four hooks, and gate the goal's transition to Done on the agent reporting the hook succeeded.",
+      "where_context": "Server-side completion and mark_reviewed endpoints; goal status transition logic; hook metadata serialization shared with the existing four hooks.",
+      "description": "This goal owns the server-side plumbing: race-free detection of 'this completion finishes the parent goal', extending the hook-metadata response shape with a fifth entry, and ensuring the goal cannot reach Done until the agent reports after_goal exited 0. Back-compat: an agent that does not report after_goal back (older agents) must still be able to complete goals \u2014 the server treats missing/empty after_goal as a no-op.",
+      "acceptance_criteria": "Final child-task completion response includes after_goal hook metadata with name, timeout, blocking, env, execute_before, execute_after fields\nDetection of 'last child \u2192 goal complete' is serialized with the child-task Done transition under one transactional boundary\nConcurrent sibling completions cannot produce duplicate after_goal deliveries or skip after_goal entirely\nGoal status transitions to Done only after agent reports after_goal exit_code == 0\nIf hook execution fails (non-zero exit), goal stays In Progress and is re-runnable\nOlder agents that don't send after_goal results can still complete goals (empty-hook back-compat path)\nIntegration test covers both needs_review=false (auto-Done after after_doing) and needs_review=true (Done after mark_reviewed) flows",
+      "pitfalls": [
+        "Do not introduce a new endpoint for primary after_goal delivery \u2014 bundle into the existing completion / mark_reviewed response",
+        "Do not break the existing array-of-hooks shape that older agents parse",
+        "Do not skip the transactional boundary \u2014 race-free detection is the riskiest assumption in the doc"
+      ],
+      "tasks": [
+        {
+          "title": "Add after_goal to the hook-metadata serializer alongside the existing four hooks",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Extend the hook-metadata serializer used by completion and mark_reviewed responses so it can emit a fifth entry, after_goal, with the same field shape (name, timeout, blocking, env, execute_before, execute_after) as the existing four. The serializer must be safe to call when no after_goal is applicable (returns the existing four-hook payload unchanged for non-final-child completions).",
+          "why": "Every downstream task in this goal depends on a serializer that can emit a fifth hook entry. Landing this first keeps later tasks small.",
+          "what": "Add an after_goal branch to the hook-metadata builder; ensure non-final-child completions still emit the existing four-hook payload.",
+          "where_context": "Hook metadata builder/serializer module used by the completion endpoint.",
+          "acceptance_criteria": "Serializer can produce after_goal metadata with the same field shape as the other four hooks\nNon-final-child completion responses are byte-identical to the pre-change four-hook payload\nUnit test covers both shapes (four-hook and five-hook)",
+          "patterns_to_follow": "Mirror the existing structure of the four existing hooks in the serializer\nDo not invent a new field type \u2014 name, timeout, blocking, env, execute_before, execute_after only",
+          "pitfalls": [
+            "Do not change field ordering or naming for the existing four hooks \u2014 older agents parse by name"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/hooks/metadata.ex",
+              "note": "Hook metadata serializer \u2014 add after_goal branch",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/hooks/metadata_test.exs",
+              "note": "Cover four-hook and five-hook payload shapes",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/hooks/metadata_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Serializer emits four-hook payload when after_goal is not applicable",
+              "Serializer emits five-hook payload with after_goal when applicable",
+              "Field shape of after_goal matches the existing four hooks"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "Empty after_goal definition still serializes a valid (empty) entry"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add transactional last-child-completion detection for parent goal",
+          "type": "work",
+          "complexity": "small",
+          "priority": "critical",
+          "needs_review": false,
+          "description": "Add a context function that, inside the same transaction as the child-task Done transition, determines whether the just-completed child is the final child of its parent goal. The check must be race-free under concurrent sibling completions \u2014 exactly one completion sees 'last child \u2192 goal complete' and is therefore eligible to receive after_goal in its response.",
+          "why": "This is the riskiest assumption in the requirements doc: concurrent final-child completions must not produce duplicate after_goals or silently skip the hook. Solving it transactionally is the only safe answer.",
+          "what": "Add Kanban.Tasks.finalize_child_and_check_goal_complete/2 (or equivalent context function) that wraps the child Done transition and the sibling-count check in one Ecto.Multi.",
+          "where_context": "Tasks context module that owns the child-task Done transition.",
+          "acceptance_criteria": "Function runs the child Done transition and the 'is parent goal now complete?' check inside a single transaction\nReturns {:ok, :last_child} or {:ok, :not_last_child} unambiguously\nConcurrent sibling completions cannot both return :last_child (verified by a concurrency test)\nUnit + concurrency test covers both branches",
+          "patterns_to_follow": "Use Ecto.Multi for transactional composition\nFollow existing context-function patterns in lib/kanban/tasks.ex",
+          "pitfalls": [
+            "Do not perform the sibling-count check outside the transaction \u2014 that is the race",
+            "Do not use a separate advisory lock when row-level locking on the parent goal will do"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Add finalize_child_and_check_goal_complete/2 context function",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/tasks_test.exs",
+              "note": "Concurrency test for last-child detection",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks_test.exs",
+              "expected_result": "All tests pass including the concurrency test",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Happy path: last child returns :last_child",
+              "Sibling still open returns :not_last_child"
+            ],
+            "integration_tests": [
+              "Two concurrent sibling completions \u2014 only one returns :last_child"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Goal with a single child task",
+              "Goal with a child whose status flapped"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Wire after_goal into completion endpoint response when last child detected",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Update the completion endpoint (PATCH /api/tasks/:id/complete) so that when the transactional last-child check returns :last_child, the response payload includes after_goal hook metadata alongside the existing four hooks. Covers the needs_review=false path where a child task goes straight to Done after after_doing.",
+          "why": "The completion endpoint is the primary delivery channel for after_goal in the needs_review=false flow.",
+          "what": "Call the new context function, branch on :last_child, and add after_goal to the hook-metadata payload.",
+          "where_context": "Completion endpoint controller and its response builder.",
+          "acceptance_criteria": "PATCH /api/tasks/:id/complete returns after_goal in hook metadata when the completed child is the last child of a parent goal AND the goal is in needs_review=false flow\nWhen the completed child is NOT the last child, response shape is unchanged\nIntegration test covers both branches",
+          "patterns_to_follow": "Mirror how the existing four hooks are added to the response\nDo not call the serializer directly from the controller \u2014 go through the context",
+          "pitfalls": [
+            "Do not duplicate the transactional check in the controller \u2014 call the context function from task 1"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_controller.ex",
+              "note": "Completion endpoint \u2014 wire after_goal into response",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban_web/controllers/api/task_controller_test.exs",
+              "note": "Integration test for both branches",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/task_controller_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Last-child completion returns five-hook payload",
+              "Non-last-child completion returns four-hook payload"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Child has no parent goal \u2014 response is unchanged"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Wire after_goal into mark_reviewed endpoint response when last child detected",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Update PATCH /api/tasks/:id/mark_reviewed so that when the reviewed child is the last child of its parent goal (needs_review=true flow), the response includes after_goal hook metadata. This is the parallel path to the completion endpoint for tasks that require review.",
+          "why": "The requirements doc explicitly calls out that 'goal is ready for after_goal exactly when all child tasks are in Done' covers BOTH needs_review=false (Done after after_doing) and needs_review=true (Done after mark_reviewed).",
+          "what": "Add the same last-child / after_goal wiring to the mark_reviewed endpoint that task 2 added to the completion endpoint.",
+          "where_context": "mark_reviewed endpoint controller.",
+          "acceptance_criteria": "PATCH /api/tasks/:id/mark_reviewed returns after_goal in hook metadata when the reviewed child is the last child of its parent goal\nWhen the reviewed child is NOT the last child, response shape is unchanged\nIntegration test covers both branches in the needs_review=true flow",
+          "patterns_to_follow": "Reuse the context function from task 1\nMirror the wiring added to the completion endpoint in task 2",
+          "pitfalls": [
+            "Do not fork the after_goal logic \u2014 call the same context function used by the completion endpoint"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_controller.ex",
+              "note": "mark_reviewed endpoint \u2014 wire after_goal into response",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban_web/controllers/api/task_controller_test.exs",
+              "note": "Cover mark_reviewed branches",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/task_controller_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "mark_reviewed of last child returns five-hook payload",
+              "mark_reviewed of non-last child returns four-hook payload"
+            ],
+            "manual_tests": [],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Gate goal Done transition on agent-reported after_goal success",
+          "type": "work",
+          "complexity": "small",
+          "priority": "critical",
+          "needs_review": false,
+          "description": "Add an endpoint (or extend an existing one) for the agent to report after_goal execution results. While the goal has an outstanding after_goal whose result has not yet arrived OR whose last reported exit_code was non-zero, the goal remains In Progress. Only on a reported exit_code == 0 does the goal transition to Done. Back-compat: if the agent never reports back (older agent), the goal can still reach Done via the empty-hook path (decision: server treats missing report after a grace window as success, matching the requirements doc's 'treat missing ## after_goal as no-op').",
+          "why": "The goal must not reach Done while after_goal has not yet succeeded \u2014 this is the core protocol guarantee of the feature.",
+          "what": "Add the agent-result endpoint, gate the goal Done transition on its success, and implement the back-compat path for agents that don't report.",
+          "where_context": "Goal status transition logic + new (or extended) agent-result endpoint.",
+          "acceptance_criteria": "Endpoint accepts {exit_code, output, duration_ms} from the agent and updates the goal's after_goal status\nGoal stays In Progress while after_goal has not succeeded\nGoal transitions to Done on reported exit_code == 0\nFailed runs (non-zero exit) leave the goal in In Progress and re-runnable\nOlder agents that don't report still produce a Done transition via the back-compat path\nIntegration test covers success, failure, and back-compat branches",
+          "patterns_to_follow": "Mirror existing agent-result reporting patterns from the four existing hooks if any exist\nReuse the {exit_code, output, duration_ms} shape from the existing hook protocol",
+          "pitfalls": [
+            "Do not auto-transition goals to Done on a non-zero exit \u2014 the doc is explicit that failure leaves goal in In Progress",
+            "Do not allow the same after_goal attempt to be reported twice with different exit codes \u2014 the latest report wins but must be auditable"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_controller.ex",
+              "note": "Agent-result endpoint for after_goal",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Goal Done transition gating",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/controllers/api/task_controller_test.exs",
+              "note": "Integration tests for success/failure/back-compat",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/task_controller_test.exs test/kanban/tasks_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Goal stays In Progress on non-zero exit",
+              "Goal transitions to Done on exit_code == 0"
+            ],
+            "integration_tests": [
+              "Full success flow: last-child completion \u2192 agent reports success \u2192 goal Done",
+              "Failure flow: agent reports non-zero \u2192 goal still In Progress \u2192 second report succeeds \u2192 goal Done",
+              "Back-compat: agent never reports \u2192 goal eventually Done via empty-hook path"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Duplicate reports for the same attempt",
+              "Report arrives after goal already Done (idempotent)"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add agent-side after_goal hook parsing and execution",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "The server can deliver after_goal metadata, but until the agent-side code knows how to (a) parse the new ## after_goal section from .stride.md, (b) execute the hook with GOAL_* environment variables, and (c) report the result back to the new endpoint, the protocol is half-built.",
+      "what": "Extend the hook-execution skill / orchestrator to recognize the fifth hook, populate GOAL_* env vars, execute the user's command from .stride.md, and POST the result back.",
+      "where_context": "stride skills repo: hook execution orchestrator and .stride.md parser.",
+      "description": "This goal is agent-side only. It depends on G1's response shape landing in main so the agent has something real to receive.",
+      "acceptance_criteria": ".stride.md parser recognizes a ## after_goal section and treats missing as empty no-op\nHook executor runs the after_goal command with GOAL_ID, GOAL_IDENTIFIER, GOAL_TITLE, GOAL_DESCRIPTION env vars set\nHook is blocking \u2014 agent waits for exit before reporting\nResult {exit_code, output, duration_ms} is POSTed to the server's agent-result endpoint\nOlder .stride.md files without ## after_goal continue to work (no error)\nIntegration test exercises the full agent-side flow against a stubbed server response",
+      "pitfalls": [
+        "Do not couple the executor to the PR-creation use case \u2014 the hook is general-purpose",
+        "Do not break the existing four-hook execution paths"
+      ],
+      "tasks": [
+        {
+          "title": "Extend .stride.md parser to recognize ## after_goal section",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Update the .stride.md parser used by the stride skills plugin to recognize a fifth hook section, ## after_goal, following the same single-section parsing rule as the existing four hooks. A missing section parses to an empty/no-op hook definition.",
+          "why": "The agent needs to know what command to run when the server delivers after_goal metadata.",
+          "what": "Add 'after_goal' to the parser's recognized section list; cover the missing-section case as no-op.",
+          "where_context": "stride skills repo .stride.md parser.",
+          "acceptance_criteria": "Parser recognizes ## after_goal alongside the four existing hooks\nMissing section returns an empty/no-op definition (back-compat)\nMultiple ## after_goal sections \u2014 only the first is used (matching existing single-section rule)\nUnit test covers all three cases",
+          "patterns_to_follow": "Mirror parsing of the four existing sections exactly \u2014 same single-section, first-wins rule",
+          "pitfalls": [
+            "Do not change how the existing four sections are parsed"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "stride/skills/stride-workflow/parser.md",
+              "note": "Document the new section and parsing rule",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Author a .stride.md with ## after_goal and verify the parser surfaces the command; author one without the section and verify it parses to an empty no-op",
+              "expected_result": "Both cases handled correctly",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Section present",
+              "Section absent (back-compat)",
+              "Multiple sections \u2014 first wins"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Hand-author .stride.md and verify parser output"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add GOAL_* environment variable population to hook executor",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Extend the hook executor so that when it runs after_goal, it sets GOAL_ID, GOAL_IDENTIFIER, GOAL_TITLE, GOAL_DESCRIPTION (and the existing BOARD_* / COLUMN_* / AGENT_NAME / HOOK_NAME) in the child process environment, parallel to how TASK_* is set for the four existing hooks.",
+          "why": "User commands in ## after_goal need access to goal-scoped metadata (e.g., to construct a PR title that names the goal).",
+          "what": "Add the GOAL_* env var mapping in the executor; pull values from the server-supplied hook.env block.",
+          "where_context": "stride skills repo hook executor.",
+          "acceptance_criteria": "GOAL_ID, GOAL_IDENTIFIER, GOAL_TITLE, GOAL_DESCRIPTION are present in the after_goal child process environment\nValues come from the server-supplied hook.env (no client-side lookup)\nExisting TASK_* / BOARD_* / COLUMN_* / AGENT_NAME / HOOK_NAME pattern is followed",
+          "patterns_to_follow": "Mirror the TASK_* env var pattern exactly\nUse the server-supplied env block as the source of truth",
+          "pitfalls": [
+            "Do not invent GOAL_* values client-side \u2014 only forward what the server supplies"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "stride/skills/stride-workflow/hook-execution.md",
+              "note": "Document GOAL_* env var mapping",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Run after_goal with a command that echoes GOAL_ID / GOAL_TITLE; verify the values match the goal that finished",
+              "expected_result": "Echoed values match",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Env vars set from hook.env"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Echo command verifies env vars at runtime"
+            ],
+            "edge_cases": [
+              "Server omits GOAL_DESCRIPTION \u2014 executor sets it to empty string, does not error"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Execute after_goal as a blocking hook and capture result",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Run the user's after_goal command as a blocking hook (agent waits for the child process to exit), capture exit_code, stdout/stderr output, and duration_ms. Apply the same timeout budget the existing blocking hooks use (60-120s window).",
+          "why": "The goal cannot reach Done until after_goal succeeds \u2014 the executor must block on the command and report the precise result back to the server.",
+          "what": "Add the blocking-execution path for after_goal, parallel to before_doing / after_doing.",
+          "where_context": "stride skills repo hook executor.",
+          "acceptance_criteria": "Executor blocks on after_goal until child process exits or timeout elapses\nResult is captured as {exit_code, output, duration_ms}\nTimeout matches the server-supplied hook.timeout (within the 60-120s window)\nTimeout produces a recognizable non-zero result so the server keeps the goal In Progress",
+          "patterns_to_follow": "Mirror the existing blocking-hook execution path used by before_doing / after_doing",
+          "pitfalls": [
+            "Do not silently swallow non-zero exits \u2014 they must be reported back",
+            "Do not exceed the server-supplied timeout"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "stride/skills/stride-workflow/hook-execution.md",
+              "note": "Document after_goal as blocking and how timeouts are honored",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Run after_goal with a command that exits 0 (verify success result) and one that exits 1 (verify failure result); time both and confirm duration_ms is plausible",
+              "expected_result": "Both results captured correctly",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Success and failure exit captured"
+            ],
+            "manual_tests": [
+              "Sleep-then-exit command verifies duration_ms"
+            ],
+            "edge_cases": [
+              "Command exceeds timeout",
+              "Command produces large stdout"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Report after_goal result back to server agent-result endpoint",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "After executing after_goal, POST {exit_code, output, duration_ms} to the server's agent-result endpoint added in G1. On success (exit_code == 0), the server transitions the goal to Done; on failure, the agent surfaces the failure to the user and the goal stays In Progress for re-run.",
+          "why": "Without the report, the server cannot transition the goal to Done \u2014 the result reporting is what closes the protocol loop.",
+          "what": "Add the HTTP POST to the agent-result endpoint and surface failures to the user.",
+          "where_context": "stride skills repo hook executor / API client.",
+          "acceptance_criteria": "POST sent to the agent-result endpoint with the correct payload shape\nOn 2xx response, agent considers the hook reported\nOn non-zero exit_code, agent surfaces the failure to the user (does not silently retry)\nNetwork errors are retried with bounded backoff",
+          "patterns_to_follow": "Use the same HTTP client and auth pattern as the existing four-hook reporting (if any)\nMirror the {exit_code, output, duration_ms} shape exactly",
+          "pitfalls": [
+            "Do not retry on non-zero exit_code \u2014 the user must fix and re-run",
+            "Do not block the agent indefinitely on network failures \u2014 bounded backoff only"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2
+          ],
+          "key_files": [
+            {
+              "file_path": "stride/skills/stride-workflow/hook-execution.md",
+              "note": "Document the result-reporting POST",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Run a full end-to-end goal-completion flow against a dev server and verify the goal transitions to Done after after_goal succeeds",
+              "expected_result": "Goal moves to Done in the kanban UI",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "End-to-end goal completion with after_goal exit 0",
+              "End-to-end with after_goal exit 1 \u2014 goal stays In Progress, user re-runs, second attempt succeeds"
+            ],
+            "manual_tests": [
+              "Verify Done transition in kanban UI"
+            ],
+            "edge_cases": [
+              "Network drop during POST \u2014 bounded retry",
+              "Server returns 5xx \u2014 bounded retry then surface error"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add after_goal observability (telemetry, adoption metric, latency SLO)",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "The requirements doc names three measurable success signals: a protocol-plumbing telemetry counter (leading), an adoption metric (riskiest assumption \u2014 leading), and a goal-to-Done latency p95 SLO (lagging). Without instrumentation, the team cannot know whether the feature is succeeding on its own terms \u2014 and the doc explicitly flags that adoption stalling near zero is the premortem-selected failure mode.",
+      "what": "Emit a telemetry counter on every after_goal delivery, track adoption from after_goal-result reports, and measure goal-to-Done latency from final after_review completion to goal Done transition.",
+      "where_context": "Server-side telemetry handlers, metrics dashboards.",
+      "description": "All three metrics are server-side. Adoption is inferred from completion telemetry (per the doc's open question \u2014 this is the cleanest answer without requiring agents to upload .stride.md snapshots).",
+      "acceptance_criteria": "Telemetry counter emitted on every after_goal delivery in completion / mark_reviewed responses\nAdoption metric: count of distinct projects that have reported at least one non-empty after_goal result in a rolling 7-day window, exposed on the metrics dashboard\nGoal-to-Done latency: p50/p95 measured server-side from final after_review/after_doing completion timestamp to goal Done transition timestamp, exposed on the metrics dashboard\nGoals with no after_goal declaration are excluded from the latency metric",
+      "pitfalls": [
+        "Do not measure latency on goals that never had an after_goal \u2014 that pollutes the SLO",
+        "Do not infer adoption from .stride.md uploads \u2014 agents do not send them per the open questions"
+      ],
+      "tasks": [
+        {
+          "title": "Emit after_goal delivery telemetry event from completion endpoints",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a :telemetry.execute call when the completion or mark_reviewed endpoint includes after_goal in its response. Event name follows the existing kanban telemetry convention.",
+          "why": "Leading indicator \u2014 verifies the protocol plumbing works in production.",
+          "what": "Emit [:kanban, :hooks, :after_goal, :delivered] with goal_id and project_id metadata.",
+          "where_context": "Completion and mark_reviewed endpoints; telemetry handler module.",
+          "acceptance_criteria": "Event emitted exactly once per after_goal delivery\nEvent metadata includes goal_id and project_id\nUnit test asserts the event is emitted",
+          "patterns_to_follow": "Mirror existing :telemetry.execute calls in the codebase",
+          "pitfalls": [
+            "Do not emit the event when the after_goal is the back-compat empty no-op \u2014 that pollutes the counter"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_controller.ex",
+              "note": "Emit telemetry on delivery",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/telemetry.ex",
+              "note": "Register the new event",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/task_controller_test.exs",
+              "expected_result": "All tests including the telemetry assertion pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Event emitted on after_goal delivery",
+              "Event NOT emitted on back-compat empty no-op"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add after_goal adoption metric (distinct projects reporting in 7-day window)",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a metric that counts the number of distinct projects that have reported at least one non-empty after_goal result in the trailing 7 days. Surface it on the existing metrics dashboard.",
+          "why": "Speaks directly to the riskiest assumption: if adoption stalls near zero, the lagging latency metric will have too few samples to matter.",
+          "what": "Add a query in the metrics context and a tile/row on the metrics dashboard.",
+          "where_context": "Metrics context module; metrics LiveView.",
+          "acceptance_criteria": "Metric counts distinct projects with at least one non-empty after_goal result in trailing 7 days\nMetric visible on the existing metrics dashboard\nUnit test covers the metric query",
+          "patterns_to_follow": "Use the existing metrics context for the query\nUse existing dashboard tile components",
+          "pitfalls": [
+            "Do not count back-compat empty no-op reports as adoption \u2014 only non-empty after_goal results count"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/metrics.ex",
+              "note": "Adoption query",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/metrics_live.ex",
+              "note": "Surface the metric tile",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/metrics_test.exs",
+              "note": "Cover the query",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/metrics_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Counts distinct projects in window",
+              "Excludes empty no-op reports",
+              "Window boundaries handled correctly"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Tile renders on metrics dashboard"
+            ],
+            "edge_cases": [
+              "Zero projects",
+              "Same project reports multiple times \u2014 counted once"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add goal-to-Done latency p50/p95 metric for after_goal goals",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a metric measuring the elapsed time between the final child task's after_doing/after_review completion timestamp and the parent goal's Done transition timestamp. Excludes goals that had no after_goal declaration. Surface p50 and p95 on the metrics dashboard.",
+          "why": "Lagging SLO \u2014 verifies the feature is not stranding goals in In Progress.",
+          "what": "Add a query that joins goal status transitions with final child completion timestamps and computes percentiles; surface on the dashboard.",
+          "where_context": "Metrics context module; metrics LiveView.",
+          "acceptance_criteria": "Metric computes elapsed seconds from final child completion to goal Done\nGoals with no after_goal declaration are excluded\np50 and p95 visible on the metrics dashboard\nUnit test covers the percentile calculation",
+          "patterns_to_follow": "Use the existing metrics context\nReuse existing percentile helpers if any exist",
+          "pitfalls": [
+            "Do not include goals that finished via the back-compat empty no-op path \u2014 they would skew p95 toward zero",
+            "Do not use agent-reported duration_ms alone \u2014 the doc's open question prefers server-side timing"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/metrics.ex",
+              "note": "Latency query with percentile computation",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/metrics_live.ex",
+              "note": "Surface p50/p95 tiles",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/metrics_test.exs",
+              "note": "Cover percentile calculation and exclusion rule",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/metrics_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "p50/p95 percentile calculation",
+              "Empty no-op goals excluded",
+              "Goals with no after_goal excluded"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "p50/p95 tiles render"
+            ],
+            "edge_cases": [
+              "Single goal in window",
+              "Zero goals in window \u2014 metric returns nil, not crash"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Release after_goal hook in stride and stride-marketplace plugin repos",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "Per the requirements doc constraints and the long-standing release rule, a plugin bump in the stride repo alone is not releasable \u2014 the stride-marketplace repo must also bump to publish to users. Without this coordinated release, agents in the wild will not pick up the new after_goal section parsing or the GOAL_* env vars.",
+      "what": "Bump version in both stride and stride-marketplace, update changelogs and skill docs to document the new hook, and tag releases.",
+      "where_context": "stride/ repo (skill plugin source) and stride-marketplace/ repo (marketplace publishing).",
+      "description": "Pure release-coordination goal. Claimed last, after G1 and G2 have landed in main.",
+      "acceptance_criteria": "stride repo version bumped and changelog updated with after_goal entry\nstride-marketplace repo version bumped and changelog updated\nSkill documentation describes ## after_goal section, blocking semantics, and GOAL_* env vars\nBoth repos tagged at the new version",
+      "pitfalls": [
+        "Do not release stride alone \u2014 marketplace bump is required for end-user pickup",
+        "Do not forget to document the back-compat behavior (missing section = no-op)"
+      ],
+      "tasks": [
+        {
+          "title": "Update stride skill documentation to describe after_goal hook",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Update the stride-workflow skill SKILL.md and related docs to describe the new ## after_goal section, its blocking semantics, GOAL_* env vars, back-compat behavior, and the canonical PR-creation example.",
+          "why": "Without documentation, users cannot adopt the feature \u2014 and adoption is the riskiest assumption in the doc.",
+          "what": "Add after_goal to the hooks table, document the env vars, add an example .stride.md snippet.",
+          "where_context": "stride/ repo skill documentation.",
+          "acceptance_criteria": "Hooks table includes after_goal with timing, blocking, timeout columns\nGOAL_* env vars documented alongside TASK_* / BOARD_* / COLUMN_*\nBack-compat behavior documented (missing section = no-op)\nCanonical PR-creation example included",
+          "patterns_to_follow": "Mirror the existing four-hook documentation structure exactly",
+          "pitfalls": [
+            "Do not couple documentation to the PR-creation use case \u2014 note that the hook is general-purpose"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "stride/skills/stride-workflow/SKILL.md",
+              "note": "Add after_goal to hooks table and document env vars",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Read the updated SKILL.md end-to-end and verify the hooks table, env vars, back-compat, and example are all present and correct",
+              "expected_result": "All four documentation items present",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Doc review"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Bump stride repo version and update changelog",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump the stride repo version (semver minor for a new feature) and add a changelog entry describing the after_goal hook addition.",
+          "why": "The skill plugin source repo must be versioned before the marketplace can pick it up.",
+          "what": "Update version metadata and CHANGELOG.md in the stride repo.",
+          "where_context": "stride/ repo.",
+          "acceptance_criteria": "Version bumped to next minor\nCHANGELOG.md entry describes after_goal, GOAL_* env vars, and back-compat\nCommit tagged at the new version",
+          "patterns_to_follow": "Mirror the format of previous CHANGELOG entries in the stride repo",
+          "pitfalls": [
+            "Do not bump major \u2014 this is additive and back-compat"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "stride/CHANGELOG.md",
+              "note": "Add release entry",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Confirm the version bump and changelog entry are committed and the repo is tagged",
+              "expected_result": "Tag exists at the new version",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Tag verification"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Bump stride-marketplace repo version to publish after_goal release",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump the stride-marketplace repo version so end users picking up the marketplace plugin receive the after_goal-aware skill update. Per the long-standing release rule, the marketplace bump is the releasable step \u2014 the stride bump alone is not.",
+          "why": "Without the marketplace bump, users in the wild will not see the new hook even though the source repo is updated.",
+          "what": "Update version metadata and changelog in stride-marketplace, point at the stride repo's new version.",
+          "where_context": "stride-marketplace/ repo.",
+          "acceptance_criteria": "stride-marketplace version bumped\nChangelog entry mentions after_goal feature pickup\nCommit tagged at the new version\nUsers running /plugin install stride@stride-marketplace pick up the new skill",
+          "patterns_to_follow": "Mirror previous coordinated release bumps between stride and stride-marketplace",
+          "pitfalls": [
+            "Do not skip this step \u2014 stride bump alone is not user-visible"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "stride-marketplace/CHANGELOG.md",
+              "note": "Add release entry",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "From a fresh project, run /plugin install stride@stride-marketplace and verify the new skill version is installed with after_goal documented",
+              "expected_result": "Installed version matches the bump",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Fresh-install verification"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        }
+      ]
+    }
+  ]
+}
