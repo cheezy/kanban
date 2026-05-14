@@ -324,6 +324,111 @@ defmodule KanbanWeb.MarketingComponents do
     """
   end
 
+  @doc """
+  Renders the 6-card audience-tagged feature grid.
+
+  Three audiences: agents (`--stride-orange-ink` tag), humans (`--stride-violet-ink`
+  tag), teams (`--ink-3` tag). Mirrors lines ~285-324 of `landing.jsx`.
+
+  ## Examples
+
+      <.marketing_feature_grid />
+  """
+  def marketing_feature_grid(assigns) do
+    assigns = assign(assigns, :features, feature_grid_cards())
+
+    ~H"""
+    <section style="padding: 32px 64px 64px;">
+      <div
+        class="grid gap-3.5"
+        style="grid-template-columns: repeat(3, 1fr);"
+      >
+        <div
+          :for={feature <- @features}
+          class="flex flex-col gap-2"
+          style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px; min-height: 154px;"
+        >
+          <span class="ucase" style={"font-size: 9.5px; color: #{tag_color(feature.audience)};"}>
+            {feature.tag}
+          </span>
+          <h3
+            class="font-semibold"
+            style="margin: 0; font-size: 15.5px; letter-spacing: -0.015em;"
+          >
+            {feature.title}
+          </h3>
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty;">
+            {feature.body}
+          </p>
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  defp tag_color(:agents), do: "var(--stride-orange-ink)"
+  defp tag_color(:humans), do: "var(--stride-violet-ink)"
+  defp tag_color(:teams), do: "var(--ink-3)"
+
+  defp feature_grid_cards do
+    [
+      %{
+        audience: :agents,
+        tag: gettext("For agents"),
+        title: gettext("Capability matching"),
+        body:
+          gettext(
+            "Agents declare what they can do. They only see — and can only claim — work that matches."
+          )
+      },
+      %{
+        audience: :agents,
+        tag: gettext("For agents"),
+        title: gettext("Client-side hooks"),
+        body:
+          gettext(
+            "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
+          )
+      },
+      %{
+        audience: :agents,
+        tag: gettext("For agents"),
+        title: gettext("Conflict prevention"),
+        body:
+          gettext(
+            "Tasks declare key_files. Two agents can't touch the same code at the same time."
+          )
+      },
+      %{
+        audience: :humans,
+        tag: gettext("For humans"),
+        title: gettext("Review at the speed of approval"),
+        body:
+          gettext(
+            "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
+          )
+      },
+      %{
+        audience: :humans,
+        tag: gettext("For humans"),
+        title: gettext("Goals → tasks → outcomes"),
+        body:
+          gettext(
+            "Plan at the level you think at. Stride decomposes into the work agents can actually claim."
+          )
+      },
+      %{
+        audience: :teams,
+        tag: gettext("For teams"),
+        title: gettext("Real metrics that include AI"),
+        body:
+          gettext(
+            "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
+          )
+      }
+    ]
+  end
+
   defp how_it_works_steps do
     [
       %{

@@ -361,4 +361,59 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "color: var(--st-done);"
     end
   end
+
+  describe "marketing_feature_grid/1" do
+    test "renders 6 feature cards in a 3-column grid" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_feature_grid />
+        """)
+
+      assert html =~ "grid-template-columns: repeat(3, 1fr)"
+
+      # All 6 titles present
+      assert html =~ "Capability matching"
+      assert html =~ "Client-side hooks"
+      assert html =~ "Conflict prevention"
+      assert html =~ "Review at the speed of approval"
+      assert html =~ "Goals → tasks → outcomes"
+      assert html =~ "Real metrics that include AI"
+    end
+
+    test "audience tags use the correct ink color per audience" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_feature_grid />
+        """)
+
+      # Agents: orange-ink
+      assert html =~ "color: var(--stride-orange-ink);"
+      # Humans: violet-ink
+      assert html =~ "color: var(--stride-violet-ink);"
+      # Teams: neutral ink-3
+      assert html =~ "color: var(--ink-3);"
+
+      # All 3 audience labels appear
+      assert html =~ "For agents"
+      assert html =~ "For humans"
+      assert html =~ "For teams"
+    end
+
+    test "cards use --surface background, --line border, and 154px min-height" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_feature_grid />
+        """)
+
+      assert html =~ "background: var(--surface);"
+      assert html =~ "border: 1px solid var(--line);"
+      assert html =~ "min-height: 154px;"
+    end
+  end
 end
