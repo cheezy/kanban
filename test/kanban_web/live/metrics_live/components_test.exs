@@ -1027,4 +1027,209 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "text-center py-12"
     end
   end
+
+  describe "export_dropdown/1" do
+    test "renders PDF and Excel links with shared filter params" do
+      assigns = %{
+        export_base_path: "/boards/1/metrics/cycle-time/export",
+        time_range: :last_30_days,
+        agent_name: nil,
+        exclude_weekends: false
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.export_dropdown
+          export_base_path={@export_base_path}
+          time_range={@time_range}
+          agent_name={@agent_name}
+          exclude_weekends={@exclude_weekends}
+        />
+        """)
+
+      assert html =~ "PDF"
+      assert html =~ "Excel"
+      assert html =~ "/boards/1/metrics/cycle-time/export?"
+      assert html =~ "time_range=last_30_days"
+      assert html =~ "format=excel"
+      assert html =~ "phx-hook=\"Dropdown\""
+    end
+
+    test "encodes agent_name and exclude_weekends in query string" do
+      assigns = %{
+        export_base_path: "/boards/1/metrics/throughput/export",
+        time_range: :last_7_days,
+        agent_name: "Claude Sonnet 4.5",
+        exclude_weekends: true
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.export_dropdown
+          export_base_path={@export_base_path}
+          time_range={@time_range}
+          agent_name={@agent_name}
+          exclude_weekends={@exclude_weekends}
+        />
+        """)
+
+      assert html =~ "agent_name=Claude+Sonnet+4.5"
+      assert html =~ "exclude_weekends=true"
+      assert html =~ "time_range=last_7_days"
+    end
+
+    test "renders dark mode classes on dropdown menu" do
+      assigns = %{
+        export_base_path: "/x/export",
+        time_range: :all_time,
+        agent_name: nil,
+        exclude_weekends: false
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.export_dropdown
+          export_base_path={@export_base_path}
+          time_range={@time_range}
+          agent_name={@agent_name}
+          exclude_weekends={@exclude_weekends}
+        />
+        """)
+
+      assert html =~ "dark:bg-zinc-800"
+      assert html =~ "dark:border-zinc-700"
+    end
+  end
+
+  describe "task_list_panel/1" do
+    test "renders title, subtitle, tasks, slots, and identifiers" do
+      assigns = %{
+        title: "Completed Tasks",
+        subtitle: "Grouped by completion date",
+        icon_name: "hero-list-bullet-solid",
+        icon_gradient: "from-purple-500 to-indigo-600",
+        grouped_tasks: [
+          {~D[2024-01-15],
+           [
+             %{
+               identifier: "W123",
+               title: "First task",
+               cycle: "2.5h"
+             },
+             %{
+               identifier: "W124",
+               title: "Second task",
+               cycle: "1.0h"
+             }
+           ]}
+        ],
+        date_accent: :purple,
+        empty_message: "Nothing here"
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.task_list_panel
+          title={@title}
+          subtitle={@subtitle}
+          icon_name={@icon_name}
+          icon_gradient={@icon_gradient}
+          grouped_tasks={@grouped_tasks}
+          date_accent={@date_accent}
+          empty_message={@empty_message}
+        >
+          <:task_metadata :let={task}>
+            <span class="meta-row">cycle={task.cycle}</span>
+          </:task_metadata>
+          <:task_badge :let={task}>
+            <span class="badge">{task.cycle}</span>
+          </:task_badge>
+        </Components.task_list_panel>
+        """)
+
+      assert html =~ "Completed Tasks"
+      assert html =~ "Grouped by completion date"
+      assert html =~ "hero-list-bullet-solid"
+      assert html =~ "from-purple-500 to-indigo-600"
+      assert html =~ "W123"
+      assert html =~ "W124"
+      assert html =~ "First task"
+      assert html =~ "Second task"
+      assert html =~ "cycle=2.5h"
+      assert html =~ "cycle=1.0h"
+      assert html =~ "<span class=\"badge\">2.5h</span>"
+      assert html =~ "<span class=\"badge\">1.0h</span>"
+      # Purple accent for date header
+      assert html =~ "border-purple-500"
+    end
+
+    test "renders empty state when grouped_tasks is empty" do
+      assigns = %{
+        title: "Nothing",
+        subtitle: nil,
+        icon_name: "hero-list-bullet-solid",
+        icon_gradient: "from-amber-500 to-yellow-600",
+        grouped_tasks: [],
+        date_accent: :amber,
+        empty_icon: "hero-clock",
+        empty_message: "No tasks waiting for review in this time range"
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.task_list_panel
+          title={@title}
+          subtitle={@subtitle}
+          icon_name={@icon_name}
+          icon_gradient={@icon_gradient}
+          grouped_tasks={@grouped_tasks}
+          date_accent={@date_accent}
+          empty_icon={@empty_icon}
+          empty_message={@empty_message}
+        >
+          <:task_metadata :let={_task}>meta</:task_metadata>
+          <:task_badge :let={_task}>badge</:task_badge>
+        </Components.task_list_panel>
+        """)
+
+      assert html =~ "No tasks waiting for review in this time range"
+      assert html =~ "hero-clock"
+      refute html =~ "border-amber-500"
+    end
+
+    test "applies blue date accent for throughput-style panels" do
+      assigns = %{
+        title: "Tasks",
+        subtitle: nil,
+        icon_name: "hero-list-bullet-solid",
+        icon_gradient: "from-green-500 to-teal-600",
+        grouped_tasks: [
+          {~D[2024-02-01], [%{identifier: "W1", title: "t"}]}
+        ],
+        date_accent: :blue,
+        empty_message: "none",
+        show_day_count: true
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Components.task_list_panel
+          title={@title}
+          subtitle={@subtitle}
+          icon_name={@icon_name}
+          icon_gradient={@icon_gradient}
+          grouped_tasks={@grouped_tasks}
+          date_accent={@date_accent}
+          empty_message={@empty_message}
+          show_day_count={@show_day_count}
+        >
+          <:task_metadata :let={_task}>meta</:task_metadata>
+          <:task_badge :let={_task}>badge</:task_badge>
+        </Components.task_list_panel>
+        """)
+
+      assert html =~ "border-blue-500"
+      assert html =~ "1 task"
+    end
+  end
 end

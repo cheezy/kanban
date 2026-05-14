@@ -587,6 +587,211 @@ defmodule KanbanWeb.MetricsLive.Components do
     """
   end
 
+  @doc """
+  Renders the metrics export dropdown (PDF + Excel) with shared filter query params.
+
+  The `export_base_path` is the URL path to the export endpoint without
+  query parameters (e.g., `"/boards/1/metrics/cycle-time/export"`). The
+  current filter values are appended as a query string for the PDF link
+  and an additional `format=excel` parameter is added for the Excel link.
+  """
+  attr :export_base_path, :string, required: true
+  attr :time_range, :atom, required: true
+  attr :agent_name, :string, default: nil
+  attr :exclude_weekends, :boolean, default: false
+
+  def export_dropdown(assigns) do
+    assigns =
+      assign(assigns,
+        pdf_href: build_export_href(assigns, :pdf),
+        excel_href: build_export_href(assigns, :excel)
+      )
+
+    ~H"""
+    <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
+      <button
+        type="button"
+        data-dropdown-toggle
+        class="btn btn-primary btn-soft inline-flex items-center gap-2"
+      >
+        <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> {gettext("Export")}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+      <div
+        data-dropdown-menu
+        class="hidden absolute right-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+      >
+        <a
+          href={@pdf_href}
+          target="_blank"
+          class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+        >
+          <.icon name="hero-document" class="h-4 w-4" /> {gettext("PDF")}
+        </a>
+        <a
+          href={@excel_href}
+          class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+        >
+          <.icon name="hero-table-cells" class="h-4 w-4" /> {gettext("Excel")}
+        </a>
+      </div>
+    </div>
+    """
+  end
+
+  defp build_export_href(assigns, format) do
+    params = [
+      {"time_range", Atom.to_string(assigns.time_range)},
+      {"agent_name", assigns.agent_name || ""},
+      {"exclude_weekends", to_string(assigns.exclude_weekends)}
+    ]
+
+    params =
+      case format do
+        :excel -> [{"format", "excel"} | params]
+        _ -> params
+      end
+
+    "#{assigns.export_base_path}?#{URI.encode_query(params)}"
+  end
+
+  @doc """
+  Renders a panel containing a date-grouped list of tasks with per-task slots.
+
+  The `:task_metadata` slot is rendered as the small metadata row beneath the
+  task title; the `:task_badge` slot renders the right-aligned summary badge
+  (e.g., the cycle-time pill). Both slots receive the current task as `task`.
+
+  `date_accent` selects the color used for date group headers. Supported
+  values are `:purple`, `:blue`, `:amber`, and `:indigo`.
+  """
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  attr :icon_name, :string, required: true
+  attr :icon_gradient, :string, required: true
+  attr :grouped_tasks, :list, required: true
+  attr :date_accent, :atom, default: :purple
+  attr :empty_icon, :string, default: "hero-clock"
+  attr :empty_message, :string, required: true
+  attr :show_day_count, :boolean, default: false
+
+  slot :task_metadata, required: true do
+    attr :task, :map
+  end
+
+  slot :task_badge, required: true do
+    attr :task, :map
+  end
+
+  def task_list_panel(assigns) do
+    ~H"""
+    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
+      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
+        <div class={["p-2 bg-gradient-to-br rounded-lg shadow-lg", @icon_gradient]}>
+          <.icon name={@icon_name} class="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{@title}</h3>
+          <p :if={@subtitle} class="text-xs text-gray-600 dark:text-gray-400">
+            {@subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div :if={length(@grouped_tasks) > 0} class="space-y-6">
+        <div :for={{date, day_tasks} <- @grouped_tasks} class="space-y-2">
+          <div class={[
+            "flex items-center gap-3 px-4 py-2 rounded-lg bg-gradient-to-r border-l-4",
+            date_header_classes(@date_accent)
+          ]}>
+            <.icon
+              name="hero-calendar"
+              class={"h-5 w-5 flex-shrink-0 " <> date_icon_classes(@date_accent)}
+            />
+            <div class="flex-1 flex items-center justify-between">
+              <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+                {KanbanWeb.MetricsLive.Helpers.format_date(date)}
+              </h4>
+              <span
+                :if={@show_day_count}
+                class="text-sm font-medium text-gray-600 dark:text-gray-400"
+              >
+                {length(day_tasks)} {if length(day_tasks) == 1,
+                  do: gettext("task"),
+                  else: gettext("tasks")}
+              </span>
+            </div>
+          </div>
+
+          <div class="ml-4 space-y-2">
+            <div
+              :for={task <- day_tasks}
+              class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                      {task.identifier}
+                    </span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {task.title}
+                    </span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                    {render_slot(@task_metadata, task)}
+                  </div>
+                </div>
+                <div class="flex-shrink-0">
+                  {render_slot(@task_badge, task)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div :if={length(@grouped_tasks) == 0} class="text-center py-12">
+        <.icon
+          name={@empty_icon}
+          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
+        />
+        <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
+          {@empty_message}
+        </p>
+      </div>
+    </div>
+    """
+  end
+
+  defp date_header_classes(:purple),
+    do:
+      "from-purple-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 border-purple-500 dark:border-purple-400"
+
+  defp date_header_classes(:blue),
+    do:
+      "from-blue-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 border-blue-500 dark:border-blue-400"
+
+  defp date_header_classes(:amber),
+    do:
+      "from-amber-50 to-yellow-50 dark:from-zinc-700 dark:to-zinc-700/50 border-amber-500 dark:border-amber-400"
+
+  defp date_header_classes(:indigo),
+    do:
+      "from-indigo-50 to-violet-50 dark:from-zinc-700 dark:to-zinc-700/50 border-indigo-500 dark:border-indigo-400"
+
+  defp date_icon_classes(:purple), do: "text-purple-600 dark:text-purple-400"
+  defp date_icon_classes(:blue), do: "text-blue-600 dark:text-blue-400"
+  defp date_icon_classes(:amber), do: "text-amber-600 dark:text-amber-400"
+  defp date_icon_classes(:indigo), do: "text-indigo-600 dark:text-indigo-400"
+
   # Helper function to calculate percentage for bar chart
   defp calculate_percentage(_value, 0), do: 0
 

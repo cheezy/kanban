@@ -13,45 +13,12 @@
         }>
           <.button>{gettext("Back to Dashboard")}</.button>
         </.link>
-        <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
-          <button
-            type="button"
-            data-dropdown-toggle
-            class="btn btn-primary btn-soft inline-flex items-center gap-2"
-          >
-            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> {gettext("Export")}
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          <div
-            data-dropdown-menu
-            class="hidden absolute right-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
-          >
-            <a
-              href={
-                ~p"/boards/#{@board}/metrics/cycle-time/export?time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
-              }
-              target="_blank"
-              class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-            >
-              <.icon name="hero-document" class="h-4 w-4" /> {gettext("PDF")}
-            </a>
-            <a
-              href={
-                ~p"/boards/#{@board}/metrics/cycle-time/export?format=excel&time_range=#{Atom.to_string(@time_range)}&agent_name=#{@agent_name || ""}&exclude_weekends=#{to_string(@exclude_weekends)}"
-              }
-              class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-            >
-              <.icon name="hero-table-cells" class="h-4 w-4" /> {gettext("Excel")}
-            </a>
-          </div>
-        </div>
+        <.export_dropdown
+          export_base_path={~p"/boards/#{@board}/metrics/cycle-time/export"}
+          time_range={@time_range}
+          agent_name={@agent_name}
+          exclude_weekends={@exclude_weekends}
+        />
       </:actions>
     </.header>
 
@@ -74,89 +41,38 @@
       empty_message="No cycle time data available"
     />
 
-    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
-        <div class="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg shadow-lg">
-          <.icon name="hero-list-bullet-solid" class="h-5 w-5 text-white" />
+    <.task_list_panel
+      title={gettext("Completed Tasks")}
+      subtitle={gettext("Grouped by completion date with cycle time metrics")}
+      icon_name="hero-list-bullet-solid"
+      icon_gradient="from-purple-500 to-indigo-600"
+      grouped_tasks={@grouped_tasks}
+      date_accent={:purple}
+      empty_message={gettext("No tasks completed in this time range")}
+    >
+      <:task_metadata :let={task}>
+        <div class="flex items-center gap-1">
+          <.icon name="hero-play" class="h-3.5 w-3.5" />
+          <span>
+            {if @board.ai_optimized_board,
+              do: gettext("Claimed:"),
+              else: gettext("Started:")} {format_datetime(task.claimed_at)}
+          </span>
         </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {gettext("Completed Tasks")}
-          </h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            {gettext("Grouped by completion date with cycle time metrics")}
-          </p>
+        <div class="flex items-center gap-1">
+          <.icon name="hero-clock" class="h-3.5 w-3.5" />
+          <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
         </div>
-      </div>
-
-      <div :if={length(@grouped_tasks) > 0} class="space-y-6">
-        <div :for={{date, day_tasks} <- @grouped_tasks} class="space-y-2">
-          <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-lg border-l-4 border-purple-500 dark:border-purple-400">
-            <.icon
-              name="hero-calendar"
-              class="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0"
-            />
-            <div class="flex-1">
-              <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
-                {format_date(date)}
-              </h4>
-            </div>
-          </div>
-
-          <div class="ml-4 space-y-2">
-            <div
-              :for={task <- day_tasks}
-              class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
-            >
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                      {task.identifier}
-                    </span>
-                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                      {task.title}
-                    </span>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-                    <div class="flex items-center gap-1">
-                      <.icon name="hero-play" class="h-3.5 w-3.5" />
-                      <span>
-                        {if @board.ai_optimized_board,
-                          do: gettext("Claimed:"),
-                          else: gettext("Started:")} {format_datetime(task.claimed_at)}
-                      </span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <.icon name="hero-clock" class="h-3.5 w-3.5" />
-                      <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
-                    </div>
-                    <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
-                      <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
-                      <span>{task.completed_by_agent || gettext("Agent Unknown")}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="flex-shrink-0">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
-                    {format_cycle_time(task.cycle_time_seconds)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
+          <.icon name="hero-user-circle" class="h-3.5 w-3.5" />
+          <span>{task.completed_by_agent || gettext("Agent Unknown")}</span>
         </div>
-      </div>
-
-      <div :if={length(@grouped_tasks) == 0} class="text-center py-12">
-        <.icon
-          name="hero-clock"
-          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-        />
-        <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
-          {gettext("No tasks completed in this time range")}
-        </p>
-      </div>
-    </div>
+      </:task_metadata>
+      <:task_badge :let={task}>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
+          {format_cycle_time(task.cycle_time_seconds)}
+        </span>
+      </:task_badge>
+    </.task_list_panel>
   </div>
 </Layouts.app>

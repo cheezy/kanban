@@ -2,6 +2,7 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   use KanbanWeb, :live_view
 
   import Ecto.Query
+  import KanbanWeb.MetricsLive.Components
 
   alias Kanban.Boards
   alias Kanban.Metrics

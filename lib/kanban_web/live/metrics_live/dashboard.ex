@@ -1,6 +1,8 @@
 defmodule KanbanWeb.MetricsLive.Dashboard do
   use KanbanWeb, :live_view
 
+  import KanbanWeb.MetricsLive.Components
+
   alias Kanban.Boards
   alias Kanban.Metrics
 

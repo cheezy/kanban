@@ -137,7 +137,6 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
   defp format_lead_time(seconds), do: Helpers.format_time(seconds)
   defp format_lead_time_hours(hours), do: Helpers.format_time_hours(hours)
   defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
-  defp format_date(date), do: Helpers.format_date(date)
 
   defp group_tasks_by_date(tasks), do: Helpers.group_tasks_by_completion_date(tasks)
 
