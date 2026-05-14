@@ -509,4 +509,52 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert length(HowToData.all_how_tos()) == 19
     end
   end
+
+  describe "type_icons/0" do
+    test "returns the content-type to icon mapping" do
+      icons = HowToData.type_icons()
+
+      assert is_map(icons)
+      assert Map.has_key?(icons, "guide")
+      assert Map.has_key?(icons, "tutorial")
+      assert Map.has_key?(icons, "reference")
+      assert Map.has_key?(icons, "video")
+    end
+
+    test "icon values match what type_icon/1 returns for each content type" do
+      icons = HowToData.type_icons()
+
+      for {content_type, icon} <- icons do
+        assert HowToData.type_icon(content_type) == icon
+      end
+    end
+  end
+
+  describe "get_navigation/1 edge cases" do
+    test "returns {nil, nil} when current_how_to has no tags" do
+      orphan = %{id: "no-tags", tags: []}
+
+      assert HowToData.get_navigation(orphan) == {nil, nil}
+    end
+
+    test "returns {nil, nil} when current_how_to's primary tag matches no guides" do
+      orphan = %{id: "isolated", tags: ["this-tag-does-not-exist-anywhere"]}
+
+      assert HowToData.get_navigation(orphan) == {nil, nil}
+    end
+
+    test "returns nil for next when at the end of the related list" do
+      # Walk the developer tag list to find the last guide, then assert that
+      # get_navigation returns nil for `next` on that last guide. This exercises
+      # the neighbor_at clause where target_index is out-of-bounds on the right.
+      developer_guides =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("developer" in &1.tags))
+
+      last_developer_guide = List.last(developer_guides)
+      {_prev, next} = HowToData.get_navigation(last_developer_guide)
+
+      assert next == nil
+    end
+  end
 end
