@@ -416,4 +416,107 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "min-height: 154px;"
     end
   end
+
+  describe "marketing_numbers_band/1" do
+    test "renders 4 tabular-numeral metrics with labels" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_numbers_band />
+        """)
+
+      # Values
+      assert html =~ "0.4s"
+      assert html =~ "94.6%"
+      assert html =~ "17m"
+      assert html =~ "23.6 / day"
+
+      # Labels
+      assert html =~ "Agent-to-task latency · p95"
+      assert html =~ "Test coverage in core"
+      assert html =~ "Median time to human review"
+      assert html =~ "Tasks shipped per active board"
+
+      # Tabular-numerals feature for line-up — quotes are HTML-escaped in
+      # the rendered output (`&quot;tnum&quot;`), so check for the
+      # `font-feature-settings: ` prefix with the escaped `tnum` token.
+      assert html =~ "font-feature-settings: &quot;tnum&quot;"
+      # 4-column grid
+      assert html =~ "grid-template-columns: repeat(4, 1fr)"
+    end
+  end
+
+  describe "marketing_cta_section/1" do
+    test "renders headline with orange emphasis on 'approving them.'" do
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_cta_section current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Stop writing every line."
+      assert html =~ "approving them."
+      # Orange emphasis on the second-line phrase
+      assert html =~ "color: var(--stride-orange);"
+
+      # Sub-copy
+      assert html =~ "Free for solo developers and small teams"
+    end
+
+    test "unauthenticated state shows Start free linking to /users/register" do
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_cta_section current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Start free"
+      assert html =~ ~s|href="/users/register"|
+      assert html =~ "Talk to a human"
+    end
+
+    test "authenticated state swaps CTA to Go to my boards linking to /boards" do
+      assigns = %{current_scope: %{user: %{email: "alice@example.com"}}}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_cta_section current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Go to my boards"
+      assert html =~ ~s|href="/boards"|
+      refute html =~ "Start free"
+    end
+  end
+
+  describe "marketing_footer/1" do
+    test "renders the gradient logo, wordmark, domain, copyright, and 4 legal links" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      # Gradient logo uses both brand tokens
+      assert html =~ "var(--stride-orange)"
+      assert html =~ "var(--stride-violet)"
+
+      # Wordmark + domain + copyright
+      assert html =~ "Stride"
+      assert html =~ "StrideLikeABoss.com"
+      assert html =~ "© 2026"
+
+      # Legal links
+      assert html =~ "Privacy"
+      assert html =~ "Security"
+      assert html =~ "Status"
+      assert html =~ "GitHub"
+      # GitHub link is external
+      assert html =~ "https://github.com/cheezy/kanban"
+    end
+  end
 end
