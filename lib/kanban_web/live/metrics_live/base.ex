@@ -15,6 +15,24 @@ defmodule KanbanWeb.MetricsLive.Base do
   `use KanbanWeb.MetricsLive.Base, ...` so that the generated code can
   resolve `assign/2`, `put_flash/2`, `push_navigate/2`, `gettext/1`,
   and the `~p` sigil at the call site.
+
+  ## Relationship to `KanbanWeb.MetricsLive.Helpers`
+
+  This module is kept distinct from `KanbanWeb.MetricsLive.Helpers` on
+  purpose. The two modules serve different layers:
+
+    * `Base` is a LiveView mixin — it injects callback implementations,
+      depends on `Phoenix.Component`, and operates on sockets. It is the
+      lifecycle layer.
+
+    * `Helpers` is a pure-function utility module — formatters, param
+      parsers, date math, statistical helpers. It has no LiveView
+      dependency and is consumed by `Base` and by each metric module.
+
+  `Base` calls into `Helpers`; the reverse is not true. Merging the two
+  would mix a LiveView mixin with pure utilities and would couple every
+  Helpers caller (including tests) to the LiveView dependency. Keep them
+  separate.
   """
 
   import Phoenix.Component, only: [assign: 3]

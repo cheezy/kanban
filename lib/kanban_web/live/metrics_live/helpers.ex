@@ -1,7 +1,15 @@
 defmodule KanbanWeb.MetricsLive.Helpers do
   @moduledoc """
-  Shared helper functions for metrics LiveView modules.
-  Provides common formatting, parsing, and calculation utilities.
+  Pure-function utility module for metrics LiveView modules: formatters,
+  param parsers, date-window math, and statistical helpers (averages,
+  trend lines, daily-time aggregation).
+
+  This module is intentionally separate from `KanbanWeb.MetricsLive.Base`.
+  `Base` is the LiveView lifecycle mixin (macro-injected `mount/3`,
+  `handle_params/3`, `handle_event/3` plus socket-aware helpers); this
+  module is the stateless utility layer. `Base` depends on `Helpers`;
+  the reverse is not true. See the moduledoc on
+  `KanbanWeb.MetricsLive.Base` for the full rationale.
   """
 
   def format_time(%Decimal{} = seconds) do
