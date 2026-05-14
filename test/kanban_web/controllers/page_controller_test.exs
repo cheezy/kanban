@@ -3,7 +3,13 @@ defmodule KanbanWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Where AI Agents and Humans Work Together"
+    body = html_response(conn, 200)
+    # New marketing hero headline (set in MarketingComponents.marketing_hero/1).
+    assert body =~ "Tasks are conversations."
+    assert body =~ "Your kanban can speak both ways."
+    # MiniBoard renders the canonical fixture idents from the new design.
+    assert body =~ "W198"
+    assert body =~ "W193"
   end
 
   test "GET /about", %{conn: conn} do
