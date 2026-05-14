@@ -38,6 +38,47 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "security@stridelikeaboss.com"
   end
 
+  test "GET /pricing", %{conn: conn} do
+    conn = get(conn, ~p"/pricing")
+    body = html_response(conn, 200)
+    # Three tiers
+    assert body =~ "Solo"
+    assert body =~ "Team"
+    assert body =~ "Enterprise"
+    # FAQ section
+    assert body =~ "Frequently asked questions"
+  end
+
+  test "GET /product", %{conn: conn} do
+    conn = get(conn, ~p"/product")
+    body = html_response(conn, 200)
+    # Hero + at least the first three feature sections render
+    assert body =~ "Five-column flow"
+    assert body =~ "Structured schema"
+    assert body =~ "Plan at the level you think at"
+    # Image placeholders are present so screenshots can be dropped in
+    assert body =~ "image-placeholder"
+    assert body =~ "[ image placeholder ]"
+  end
+
+  test "GET /workflows", %{conn: conn} do
+    conn = get(conn, ~p"/workflows")
+    body = html_response(conn, 200)
+    # Lifecycle column names
+    assert body =~ "Backlog"
+    assert body =~ "Ready"
+    assert body =~ "Doing"
+    assert body =~ "Review"
+    assert body =~ "Done"
+    # All four hook names render as code
+    assert body =~ "before_doing"
+    assert body =~ "after_doing"
+    assert body =~ "before_review"
+    assert body =~ "after_review"
+    # The hooks-on-your-machine architectural callout
+    assert body =~ "Hooks live in your repo, not ours"
+  end
+
   test "GET /tango", %{conn: conn} do
     conn = get(conn, ~p"/tango")
     assert html_response(conn, 200)

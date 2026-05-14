@@ -1,0 +1,207 @@
+<main class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
+        {gettext("Pricing")}
+      </h1>
+      <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
+        {gettext(
+          "Stride is free to self-host on day one. Pay us only if you want it managed for you."
+        )}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+      <div class="bg-base-100 rounded-2xl shadow-md border border-base-300 p-8 flex flex-col">
+        <div class="mb-6">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content opacity-60 mb-2">
+            {gettext("Solo")}
+          </h2>
+          <div class="flex items-baseline gap-1 mb-2">
+            <span class="text-5xl font-bold text-base-content">{gettext("Free")}</span>
+          </div>
+          <p class="text-base-content opacity-70">
+            {gettext("Self-host. Forever. No card required.")}
+          </p>
+        </div>
+
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Unlimited boards, tasks, goals")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Bring any agent — Claude, Cursor, Aider, Codex, your own")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Full agent API + client-side hooks")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Single user")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Community support on GitHub")}</span>
+          </li>
+        </ul>
+
+        <.link
+          href={~p"/users/register"}
+          class="block w-full text-center px-5 py-3 rounded-lg border-2 border-base-300 text-base-content font-semibold hover:bg-base-200 transition-colors"
+        >
+          {gettext("Get started")}
+        </.link>
+      </div>
+
+      <div class="bg-base-100 rounded-2xl shadow-xl border-2 border-primary p-8 flex flex-col relative">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-content text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
+          {gettext("Most popular")}
+        </span>
+        <div class="mb-6">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content opacity-60 mb-2">
+            {gettext("Team")}
+          </h2>
+          <div class="flex items-baseline gap-1 mb-2">
+            <span class="text-5xl font-bold text-base-content">{gettext("$12")}</span>
+            <span class="text-base-content opacity-70">{gettext("/ user / month")}</span>
+          </div>
+          <p class="text-base-content opacity-70">
+            {gettext("Hosted by us. For teams that don't want to run a server.")}
+          </p>
+        </div>
+
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Everything in Solo, plus:")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Up to 25 users on one workspace")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Goal-driven assignment + per-user agent fleets")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Daily backups, encrypted at rest")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Email support, 1-business-day response")}</span>
+          </li>
+        </ul>
+
+        <.link
+          href={~p"/users/register"}
+          class="block w-full text-center px-5 py-3 rounded-lg bg-primary text-primary-content font-semibold hover:opacity-90 transition-opacity"
+        >
+          {gettext("Start free trial")}
+        </.link>
+      </div>
+
+      <div class="bg-base-100 rounded-2xl shadow-md border border-base-300 p-8 flex flex-col">
+        <div class="mb-6">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content opacity-60 mb-2">
+            {gettext("Enterprise")}
+          </h2>
+          <div class="flex items-baseline gap-1 mb-2">
+            <span class="text-5xl font-bold text-base-content">{gettext("Custom")}</span>
+          </div>
+          <p class="text-base-content opacity-70">
+            {gettext("Self-host or hosted. Whatever your security team needs.")}
+          </p>
+        </div>
+
+        <ul class="space-y-3 mb-8 flex-1">
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Everything in Team, plus:")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Unlimited users")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("SSO (SAML / OIDC) and SCIM provisioning")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Audit log export, custom retention policies")}</span>
+          </li>
+          <li class="flex items-start gap-2 text-base-content opacity-80">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{gettext("Dedicated success manager + custom SLA")}</span>
+          </li>
+        </ul>
+
+        <a
+          href="mailto:enterprise@stridelikeaboss.com"
+          class="block w-full text-center px-5 py-3 rounded-lg border-2 border-base-300 text-base-content font-semibold hover:bg-base-200 transition-colors"
+        >
+          {gettext("Talk to us")}
+        </a>
+      </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Frequently asked questions")}
+      </h2>
+
+      <div class="space-y-4">
+        <details class="bg-base-100 rounded-xl border border-base-300 p-5 cursor-pointer">
+          <summary class="font-semibold text-base-content">
+            {gettext("Is Stride really free if I self-host?")}
+          </summary>
+          <p class="mt-3 text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
+            )}
+          </p>
+        </details>
+
+        <details class="bg-base-100 rounded-xl border border-base-300 p-5 cursor-pointer">
+          <summary class="font-semibold text-base-content">
+            {gettext("What counts as a user on the Team plan?")}
+          </summary>
+          <p class="mt-3 text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Any human with a login. Agents — Claude, Cursor, Aider, Codex, your own — are not billable. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee."
+            )}
+          </p>
+        </details>
+
+        <details class="bg-base-100 rounded-xl border border-base-300 p-5 cursor-pointer">
+          <summary class="font-semibold text-base-content">
+            {gettext("Can I switch between self-hosted and hosted later?")}
+          </summary>
+          <p class="mt-3 text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Yes — both ways. The data model is the same. Export your workspace from one and import it into the other."
+            )}
+          </p>
+        </details>
+
+        <details class="bg-base-100 rounded-xl border border-base-300 p-5 cursor-pointer">
+          <summary class="font-semibold text-base-content">
+            {gettext("Do you offer a discount for non-profits or open-source projects?")}
+          </summary>
+          <p class="mt-3 text-base-content opacity-70 leading-relaxed">
+            {gettext("Yes. Email ")}<a
+              href="mailto:hello@stridelikeaboss.com"
+              class="text-blue-600 hover:text-blue-800 underline font-medium"
+            >hello@stridelikeaboss.com</a>{gettext(
+              " with a short note about your project and we will set you up."
+            )}
+          </p>
+        </details>
+      </div>
+    </div>
+  </div>
+</main>

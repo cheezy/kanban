@@ -6,7 +6,17 @@ defmodule KanbanWeb.PageController do
   # app layout (which provides the in-app nav).
   plug :put_root_layout,
        [html: {KanbanWeb.Layouts, :marketing}]
-       when action in [:home, :about, :privacy, :security, :tango, :changelog]
+       when action in [
+              :home,
+              :about,
+              :pricing,
+              :privacy,
+              :product,
+              :security,
+              :tango,
+              :workflows,
+              :changelog
+            ]
 
   def home(conn, _params) do
     render(conn, :home)
@@ -16,12 +26,24 @@ defmodule KanbanWeb.PageController do
     render(conn, :about)
   end
 
+  def pricing(conn, _params) do
+    render(conn, :pricing)
+  end
+
   def privacy(conn, _params) do
     render(conn, :privacy)
   end
 
+  def product(conn, _params) do
+    render(conn, :product)
+  end
+
   def security(conn, _params) do
     render(conn, :security)
+  end
+
+  def workflows(conn, _params) do
+    render(conn, :workflows)
   end
 
   def tango(conn, _params) do

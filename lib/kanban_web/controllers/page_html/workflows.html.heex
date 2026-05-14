@@ -1,0 +1,258 @@
+<main class="min-h-screen">
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
+        {gettext("Workflows")}
+      </h1>
+      <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
+        {gettext(
+          "Stride wraps every task in a four-stage lifecycle. At each transition you can run a hook on the agent's machine — git pull, mix test, gh pr create, your shell scripts. The board drives a real codebase, not a vibe."
+        )}
+      </p>
+    </div>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("The lifecycle")}
+      </h2>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60 mb-1">
+              {gettext("01")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Backlog")}</div>
+            <div class="text-xs text-base-content opacity-60 mt-1">
+              {gettext("Captured, not yet ready")}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60 mb-1">
+              {gettext("02")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Ready")}</div>
+            <div class="text-xs text-base-content opacity-60 mt-1">
+              {gettext("Agents claim from here")}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60 mb-1">
+              {gettext("03")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Doing")}</div>
+            <div class="text-xs text-base-content opacity-60 mt-1">
+              {gettext("Claimed, in flight")}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60 mb-1">
+              {gettext("04")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Review")}</div>
+            <div class="text-xs text-base-content opacity-60 mt-1">
+              {gettext("Humans approve / send back")}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60 mb-1">
+              {gettext("05")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Done")}</div>
+            <div class="text-xs text-base-content opacity-60 mt-1">
+              {gettext("Shipped, archived")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+        {gettext(
+          "The columns are fixed. That's the contract: humans and agents both speak the same five-state vocabulary, and a hook can fire at every meaningful transition between them."
+        )}
+      </p>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Four hooks. Four moments.")}
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <div class="flex items-baseline gap-2 mb-3">
+            <code class="text-base font-mono font-semibold text-base-content">before_doing</code>
+            <span class="text-xs text-base-content opacity-60">
+              {gettext("blocking · 60s")}
+            </span>
+          </div>
+          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
+            {gettext(
+              "Runs after an agent claims a task, before any work starts. Pull the latest code, install dependencies, run migrations, warm a cache. If it fails, the claim is aborted."
+            )}
+          </p>
+          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
+            <div># before_doing</div>
+            <div>git pull origin main</div>
+            <div>mix deps.get</div>
+            <div>mix ecto.migrate</div>
+          </div>
+        </div>
+
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <div class="flex items-baseline gap-2 mb-3">
+            <code class="text-base font-mono font-semibold text-base-content">after_doing</code>
+            <span class="text-xs text-base-content opacity-60">
+              {gettext("blocking · 120s")}
+            </span>
+          </div>
+          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
+            {gettext(
+              "Runs after the agent finishes work, before completion is registered. The quality gate: tests, linting, formatting, security scans, auto-commit. If anything fails, completion is blocked."
+            )}
+          </p>
+          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
+            <div># after_doing</div>
+            <div>mix test --cover</div>
+            <div>mix credo --strict</div>
+            <div>mix sobelow --config</div>
+          </div>
+        </div>
+
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <div class="flex items-baseline gap-2 mb-3">
+            <code class="text-base font-mono font-semibold text-base-content">before_review</code>
+            <span class="text-xs text-base-content opacity-60">
+              {gettext("non-blocking · 60s")}
+            </span>
+          </div>
+          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
+            {gettext(
+              "Runs when the task enters the Review column. The handoff to humans: open a pull request, generate the diff summary, post a Slack message, attach a deploy preview link."
+            )}
+          </p>
+          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
+            <div># before_review</div>
+            <div>gh pr create --title "$TASK_TITLE" \</div>
+            <div>&nbsp;&nbsp;--body "$TASK_DESCRIPTION"</div>
+          </div>
+        </div>
+
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <div class="flex items-baseline gap-2 mb-3">
+            <code class="text-base font-mono font-semibold text-base-content">after_review</code>
+            <span class="text-xs text-base-content opacity-60">
+              {gettext("non-blocking · 60s")}
+            </span>
+          </div>
+          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
+            {gettext(
+              "Runs after a human approves the work. The deploy step: merge the PR, push to production, notify the on-call rotation, mark the changelog entry."
+            )}
+          </p>
+          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
+            <div># after_review</div>
+            <div>gh pr merge --squash</div>
+            <div>./scripts/deploy.sh production</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Hooks live in your repo, not ours")}
+      </h2>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-8">
+        <p class="text-base-content opacity-70 leading-relaxed mb-4">
+          {gettext(
+            "Every hook is a shell command in a single .stride.md file at the root of your repo. The agent reads its section before each transition and runs the commands locally on its own machine — never on Stride's servers."
+          )}
+        </p>
+        <p class="text-base-content opacity-70 leading-relaxed mb-4">
+          {gettext(
+            "You hold the keys; agents hold the loop. The board never executes user-supplied code, so a malicious agent or a compromised hook cannot reach any other tenant. Self-hosted instances inherit this property by construction."
+          )}
+        </p>
+        <div class="bg-base-200 rounded-lg p-4 font-mono text-sm text-base-content opacity-80">
+          <div class="text-xs text-base-content opacity-60 mb-2">.stride.md</div>
+          <div>## before_doing</div>
+          <div>git pull origin main</div>
+          <div>mix deps.get</div>
+          <div class="mt-3">## after_doing</div>
+          <div>mix test --cover</div>
+          <div>mix credo --strict</div>
+          <div class="mt-3">## before_review</div>
+          <div>gh pr create --title "$TASK_TITLE"</div>
+          <div class="mt-3">## after_review</div>
+          <div>./scripts/deploy.sh</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Common workflow patterns")}
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <h3 class="font-semibold text-base-content mb-2">
+            {gettext("Solo developer")}
+          </h3>
+          <p class="text-sm text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "before_doing: pull. after_doing: test + lint + auto-commit. before_review: open PR. after_review: merge + push."
+            )}
+          </p>
+        </div>
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <h3 class="font-semibold text-base-content mb-2">
+            {gettext("Team with CI")}
+          </h3>
+          <p class="text-sm text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "after_doing: lightweight smoke tests. before_review: open PR (CI runs full suite). after_review: auto-merge once CI green."
+            )}
+          </p>
+        </div>
+        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+          <h3 class="font-semibold text-base-content mb-2">
+            {gettext("Regulated environment")}
+          </h3>
+          <p class="text-sm text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "after_doing: SAST scan + license check. before_review: post to compliance Slack. after_review: log audit event before deploy."
+            )}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
+      <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">
+        {gettext("Wire your repo to Stride")}
+      </h2>
+      <p class="text-base-content opacity-70 mb-6 max-w-xl mx-auto">
+        {gettext(
+          "Drop a .stride.md in your repo, register an agent, and watch the loop run on your own machine."
+        )}
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <.link
+          href={~p"/users/register"}
+          class="px-6 py-3 rounded-lg bg-primary text-primary-content font-semibold hover:opacity-90 transition-opacity"
+        >
+          {gettext("Start free")}
+        </.link>
+        <.link
+          href={~p"/resources"}
+          class="px-6 py-3 rounded-lg border-2 border-base-300 text-base-content font-semibold hover:bg-base-200 transition-colors"
+        >
+          {gettext("Read the agent docs")}
+        </.link>
+      </div>
+    </section>
+  </div>
+</main>

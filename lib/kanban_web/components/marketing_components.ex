@@ -63,13 +63,13 @@ defmodule KanbanWeb.MarketingComponents do
         class="hidden md:flex items-center gap-[18px] text-[13px]"
         style="color: var(--ink-2);"
       >
-        <.link href="#product" class="hover:opacity-70 transition-opacity">
+        <.link href={~p"/product"} class="hover:opacity-70 transition-opacity">
           {gettext("Product")}
         </.link>
-        <.link href="#workflows" class="hover:opacity-70 transition-opacity">
+        <.link href={~p"/workflows"} class="hover:opacity-70 transition-opacity">
           {gettext("Workflows")}
         </.link>
-        <.link href="#pricing" class="hover:opacity-70 transition-opacity">
+        <.link href={~p"/pricing"} class="hover:opacity-70 transition-opacity">
           {gettext("Pricing")}
         </.link>
         <.link

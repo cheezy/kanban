@@ -1,0 +1,232 @@
+<main class="min-h-screen">
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
+        {gettext("Product")}
+      </h1>
+      <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
+        {gettext(
+          "Stride is an AI-native kanban. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
+        )}
+      </p>
+    </div>
+
+    <%!--
+      Each <section> below pairs a short description with an image placeholder.
+      Drop a screenshot into the placeholder by replacing the <div class="image-placeholder">
+      block with an <img> tag. The placeholder spec (purpose, suggested aspect
+      ratio, what to capture) is right next to the slot for guidance.
+    --%>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("01 · The board")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("Five-column flow, AI-optimized")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "Backlog → Ready → Doing → Review → Done. The columns are fixed because the protocol is fixed: agents pull from Ready, humans live in Review, and the board's shape is the same one your team and your agents both speak."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: full board view at 1440px")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext("Suggested ratio: ~16:9 · capture all 5 columns + the AI activity rail")}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("02 · Task detail")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("Structured schema, not free-text")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "Every task carries why, what, acceptance criteria, key files, hooks, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: task detail view (full-page or right-pane)")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext(
+              "Suggested ratio: ~3:4 portrait · show the schema fields populated with realistic content"
+            )}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("03 · Goals")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("Plan at the level you think at")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "A goal wraps a set of related tasks with aggregate progress, status segmentation, and a dependency-flow diagram. Decompose top-down, claim bottom-up. Goal-level assignment cascades to children atomically."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: goal view with progress bar + child tasks")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext(
+              "Suggested ratio: ~16:9 · include the segmented progress bar and a few child rows with dependencies"
+            )}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("04 · Review queue")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("Approve at the speed of keystrokes")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: review queue split-pane with diff + acceptance checks")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext("Suggested ratio: ~16:9 · the queue list on the left, the diff pane on the right")}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("05 · Agent activity")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("AI ops as a first-class surface")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: agent roster + live event stream")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext("Suggested ratio: ~16:9 · agent cards on top, scrolling event feed below")}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-60">
+          {gettext("06 · Metrics")}
+        </span>
+        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+          {gettext("Cycle time, split by agent vs human")}
+        </h2>
+        <p class="text-base-content opacity-70 leading-relaxed">
+          {gettext(
+            "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
+          )}
+        </p>
+      </div>
+
+      <div class="image-placeholder bg-base-200 border-2 border-dashed border-base-300 rounded-2xl flex items-center justify-center min-h-[480px] my-4">
+        <div class="text-center p-8 max-w-md">
+          <p class="text-xs font-mono uppercase tracking-wide text-base-content opacity-50 mb-2">
+            {gettext("[ image placeholder ]")}
+          </p>
+          <p class="text-base-content opacity-70 font-medium">
+            {gettext("Screenshot: metrics dashboard with the agent/human split chart")}
+          </p>
+          <p class="text-sm text-base-content opacity-60 mt-2">
+            {gettext(
+              "Suggested ratio: ~16:9 · include the 30-day chart and the per-column wait-time bar"
+            )}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
+      <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">
+        {gettext("Ready to see it run?")}
+      </h2>
+      <p class="text-base-content opacity-70 mb-6 max-w-xl mx-auto">
+        {gettext(
+          "Free for solo, self-host on day one. Or start a hosted trial in under a minute."
+        )}
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <.link
+          href={~p"/users/register"}
+          class="px-6 py-3 rounded-lg bg-primary text-primary-content font-semibold hover:opacity-90 transition-opacity"
+        >
+          {gettext("Start free")}
+        </.link>
+        <.link
+          href={~p"/pricing"}
+          class="px-6 py-3 rounded-lg border-2 border-base-300 text-base-content font-semibold hover:bg-base-200 transition-colors"
+        >
+          {gettext("See pricing")}
+        </.link>
+      </div>
+    </section>
+  </div>
+</main>

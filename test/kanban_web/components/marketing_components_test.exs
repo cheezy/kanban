@@ -27,6 +27,12 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Pricing"
       assert html =~ "Resources"
       assert html =~ "About"
+
+      # Product, Workflows, and Pricing point at their dedicated pages
+      # (not in-page anchors)
+      assert html =~ ~s|href="/product"|
+      assert html =~ ~s|href="/workflows"|
+      assert html =~ ~s|href="/pricing"|
     end
 
     test "unauthenticated state renders Sign in and Start free" do
