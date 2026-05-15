@@ -7,7 +7,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
   alias KanbanWeb.MarketingComponents
 
   describe "marketing_nav/1" do
-    test "renders the gradient logo, Stride wordmark, and 5 nav links" do
+    test "renders the gradient logo, Stride wordmark, and nav links" do
       assigns = %{current_scope: nil}
 
       html =
@@ -21,17 +21,42 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Uses the canonical Stride logo SVG (shared with the app nav)
       assert html =~ "/images/logos/abstract-s-motion.svg"
 
-      # The 5 marketing nav links (link text)
+      # The public marketing nav links (Pricing is admin-only and verified separately)
       assert html =~ "Product"
       assert html =~ "Workflows"
-      assert html =~ "Pricing"
       assert html =~ "Resources"
       assert html =~ "About"
 
-      # Product, Workflows, and Pricing point at their dedicated pages
-      # (not in-page anchors)
+      # Product and Workflows point at their dedicated pages (not in-page anchors)
       assert html =~ ~s|href="/product"|
       assert html =~ ~s|href="/workflows"|
+
+      # Pricing is hidden from unauthenticated visitors
+      refute html =~ "Pricing"
+      refute html =~ ~s|href="/pricing"|
+    end
+
+    test "Pricing link is hidden for non-admin users" do
+      assigns = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      refute html =~ "Pricing"
+      refute html =~ ~s|href="/pricing"|
+    end
+
+    test "Pricing link is visible to admin users" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Pricing"
       assert html =~ ~s|href="/pricing"|
     end
 
