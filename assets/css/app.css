@@ -775,13 +775,17 @@
 }
 
 /* ============================================================
-   Stride Marketing — design tokens + Geist typography
+   Stride design tokens + Geist typography
    Source of truth: design_handoff_stride/design_source/tokens.css
    Values copied verbatim (oklch preserved).
-   Scoped under .stride-marketing so they don't leak into the
-   daisyUI-themed surfaces in the rest of the app.
+   Multi-selector keeps tokens single-sourced across both the
+   marketing surfaces (.stride-marketing) and authenticated in-app
+   surfaces (.stride-screen, matching the design source wrapper).
+   Stays scoped — never promote to :root — to avoid colliding with
+   daisyUI's custom-property cascade in the rest of the app.
    ============================================================ */
-.stride-marketing {
+.stride-marketing,
+.stride-screen {
   /* Brand */
   --stride-orange: oklch(68% 0.17 47);
   --stride-orange-soft: oklch(96% 0.04 60);
@@ -853,19 +857,24 @@
 
 .stride-marketing *,
 .stride-marketing *::before,
-.stride-marketing *::after {
+.stride-marketing *::after,
+.stride-screen *,
+.stride-screen *::before,
+.stride-screen *::after {
   box-sizing: border-box;
 }
 
 /* Slightly larger body text on mobile, per the design handoff. */
 @media (max-width: 767px) {
-  .stride-marketing {
+  .stride-marketing,
+  .stride-screen {
     font-size: 14.5px;
   }
 }
 
 /* Mono caps section label — used by section headers across the marketing surfaces */
-.stride-marketing .ucase {
+.stride-marketing .ucase,
+.stride-screen .ucase {
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.04em;
@@ -875,7 +884,8 @@
 }
 
 /* Mono identifier (e.g. W198) — task idents on the mini-board */
-.stride-marketing .ident {
+.stride-marketing .ident,
+.stride-screen .ident {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-3);
@@ -883,7 +893,8 @@
 }
 
 /* Inline kbd style */
-.stride-marketing .kbd {
+.stride-marketing .kbd,
+.stride-screen .kbd {
   font-family: var(--font-mono);
   font-size: 10.5px;
   padding: 1px 5px;
@@ -897,9 +908,13 @@
 }
 
 /* Type tone variants for task type icons */
-.stride-marketing .tone-work { color: var(--st-ready); background: var(--st-ready-soft); }
-.stride-marketing .tone-defect { color: var(--st-blocked); background: var(--st-blocked-soft); }
-.stride-marketing .tone-goal { color: var(--stride-violet); background: var(--stride-violet-soft); }
+.stride-marketing .tone-work,
+.stride-screen .tone-work { color: var(--st-ready); background: var(--st-ready-soft); }
+.stride-marketing .tone-defect,
+.stride-screen .tone-defect { color: var(--st-blocked); background: var(--st-blocked-soft); }
+.stride-marketing .tone-goal,
+.stride-screen .tone-goal { color: var(--stride-violet); background: var(--stride-violet-soft); }
 
 /* Linear-ish row hover */
-.stride-marketing .row-hover:hover { background: var(--surface-sunken); }
+.stride-marketing .row-hover:hover,
+.stride-screen .row-hover:hover { background: var(--surface-sunken); }

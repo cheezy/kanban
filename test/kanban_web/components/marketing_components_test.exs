@@ -159,6 +159,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # since both change with every release.
       assert html =~ "var(--stride-violet-soft)"
       assert html =~ "var(--stride-violet-ink)"
+
       assert html =~ ~r/v\d+\.\d/,
              "expected a 'v<major>.<minor>' release version somewhere in the pill"
 
