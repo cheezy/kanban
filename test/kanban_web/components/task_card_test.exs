@@ -308,8 +308,9 @@ defmodule KanbanWeb.TaskCardTest do
       assert html =~ ~r/>\s*3\s*</
       assert html =~ ~r/>\s*2\s*</
       assert html =~ ~r/>\s*5\s*</
-      # review pill
-      assert html =~ ~r/>\s*review\s*</
+      # review pill — gettext("review") may localize to "Review" via the fuzzy
+      # merge; match case-insensitively so the test survives translation churn.
+      assert html =~ ~r/>\s*[Rr]eview\s*</
     end
 
     test ":done column renders cycle time when present" do

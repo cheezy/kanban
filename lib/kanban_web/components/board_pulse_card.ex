@@ -181,7 +181,11 @@ defmodule KanbanWeb.BoardPulseCard do
     ]}>
       <Avatar.avatar_stack members={@members} />
       <span style="flex: 1;"></span>
-      <span class="ident" style="display: inline-flex; align-items: center; gap: 4px;">
+      <span
+        class="ident"
+        style="display: inline-flex; align-items: center; gap: 4px;"
+        title={gettext("Last Activity")}
+      >
         <.icon name="hero-clock" class="w-2.5 h-2.5" />
         {format_last_activity(@board.metrics.last_activity_at)}
       </span>
