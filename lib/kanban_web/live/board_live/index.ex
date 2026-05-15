@@ -157,10 +157,13 @@ defmodule KanbanWeb.BoardLive.Index do
   end
 
   @accents ~w(orange violet doing ready backlog blocked)a
+  @refresh_interval_ms 30_000
 
   @impl true
   def mount(_params, _session, socket) do
     boards = load_boards(socket.assigns.current_scope.user)
+
+    if connected?(socket), do: schedule_refresh()
 
     {:ok,
      socket
@@ -168,6 +171,22 @@ defmodule KanbanWeb.BoardLive.Index do
      |> assign(:active_count, length(boards))
      |> assign(:nav_active, :boards)
      |> stream(:boards, boards)}
+  end
+
+  defp schedule_refresh do
+    Process.send_after(self(), :refresh_metrics, @refresh_interval_ms)
+  end
+
+  @impl true
+  def handle_info(:refresh_metrics, socket) do
+    boards = load_boards(socket.assigns.current_scope.user)
+    schedule_refresh()
+
+    {:noreply,
+     socket
+     |> assign(:has_boards, not Enum.empty?(boards))
+     |> assign(:active_count, length(boards))
+     |> stream(:boards, boards, reset: true)}
   end
 
   defp load_boards(user) do
