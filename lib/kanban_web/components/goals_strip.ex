@@ -31,7 +31,8 @@ defmodule KanbanWeb.GoalsStrip do
   """
   use KanbanWeb, :html
 
-  @segment_order [:done, :review, :doing, :ready, :backlog]
+  alias KanbanWeb.SegmentedProgressBar
+
   @default_color "var(--stride-violet)"
   @default_ink "var(--stride-violet-ink)"
 
@@ -128,7 +129,7 @@ defmodule KanbanWeb.GoalsStrip do
         {Map.get(@goal, :name) || Map.get(@goal, :short)}
       </span>
 
-      <.segmented_bar flow={@flow} />
+      <SegmentedProgressBar.segmented_progress flow={@flow} size={:sm} />
 
       <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-3);">
         {@done}/{@total}
@@ -147,43 +148,4 @@ defmodule KanbanWeb.GoalsStrip do
     </div>
     """
   end
-
-  attr :flow, :map, required: true
-
-  defp segmented_bar(assigns) do
-    segments =
-      Enum.flat_map(@segment_order, fn status ->
-        count = Map.get(assigns.flow, status, 0)
-        if count > 0, do: [{status, count}], else: []
-      end)
-
-    assigns = assign(assigns, :segments, segments)
-
-    ~H"""
-    <div style={[
-      "display: flex; height: 10px; width: 96px;",
-      "border-radius: 2px; overflow: hidden;",
-      "background: var(--surface-sunken);"
-    ]}>
-      <span
-        :for={{status, count} <- @segments}
-        title={"#{status}: #{count}"}
-        style={[
-          "flex: #{count};",
-          "background: #{status_color(status)};",
-          "opacity: #{if status == :done, do: 1, else: 0.85};"
-        ]}
-      >
-      </span>
-    </div>
-    """
-  end
-
-  # --- Helpers -------------------------------------------------------------
-
-  defp status_color(:done), do: "var(--st-done)"
-  defp status_color(:review), do: "var(--st-review)"
-  defp status_color(:doing), do: "var(--st-doing)"
-  defp status_color(:ready), do: "var(--st-ready)"
-  defp status_color(:backlog), do: "var(--st-backlog)"
 end

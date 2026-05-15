@@ -4813,7 +4813,7 @@ msgstr "Modifier le Tableau"
 msgid "To Do"
 msgstr ""
 
-#: lib/kanban_web/components/goals_strip.ex:69
+#: lib/kanban_web/components/goals_strip.ex:70
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Active goals"
 msgstr "Jetons Actifs"
@@ -4849,7 +4849,7 @@ msgstr ""
 msgid "New Empty Board"
 msgstr "Nouveau Tableau"
 
-#: lib/kanban_web/components/goals_strip.ex:89
+#: lib/kanban_web/components/goals_strip.ex:90
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New goal"
 msgstr "Nouveau Tableau"
@@ -4905,7 +4905,7 @@ msgstr ""
 msgid "review"
 msgstr "Révision"
 
-#: lib/kanban_web/components/goals_strip.ex:145
+#: lib/kanban_web/components/goals_strip.ex:146
 #, elixir-autogen, elixir-format
 msgid "unpromoted"
 msgstr ""
@@ -5176,4 +5176,9 @@ msgstr ""
 #: lib/kanban_web/components/task_activity_log.ex:128
 #, elixir-autogen, elixir-format
 msgid "Unknown history entry"
+msgstr ""
+
+#: lib/kanban_web/components/segmented_progress_bar.ex:90
+#, elixir-autogen, elixir-format
+msgid "Goal progress by status"
 msgstr ""
