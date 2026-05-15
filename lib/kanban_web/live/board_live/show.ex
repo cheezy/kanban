@@ -6,6 +6,8 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Columns
   alias Kanban.Messages
   alias Kanban.Tasks
+  alias KanbanWeb.AgentActivityRail
+  alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardTabs
   alias KanbanWeb.ColumnEmpty
@@ -23,6 +25,7 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(
        viewing_task_id: nil,
        show_task_modal: false,
+       agent_rail_collapsed: true,
        tasks_version: :os.system_time(:millisecond)
      )
      |> stream(:undismissed_messages, undismissed_messages)}
@@ -69,6 +72,10 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_agent_rail", _params, socket) do
+    {:noreply, update(socket, :agent_rail_collapsed, &(!&1))}
+  end
+
   def handle_event("dismiss_message", %{"id" => id}, socket) do
     user = socket.assigns.current_scope.user
     message_id = String.to_integer(id)
@@ -321,8 +328,11 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_info({Kanban.Tasks, :task_moved, task}, socket) do
     # Send event to JavaScript to manually update the DOM
     # This is more reliable than trying to force LiveView to update.
-    # Also refresh the per-board metrics so the BoardHeader KV counts
-    # stay in sync after a remote move from another client.
+    # Also refresh per-board metrics (BoardHeader KV counts) and
+    # reload the column tasks so the GoalsStrip flow segments
+    # recompute after a remote move from another client.
+    columns = Columns.list_columns(socket.assigns.board)
+
     {:noreply,
      socket
      |> push_event("task_moved_remotely", %{
@@ -330,6 +340,7 @@ defmodule KanbanWeb.BoardLive.Show do
        new_column_id: task.column_id,
        new_position: task.position
      })
+     |> load_tasks_for_columns(columns)
      |> refresh_board_metrics()}
   end
 
@@ -612,7 +623,6 @@ defmodule KanbanWeb.BoardLive.Show do
     |> assign(:is_owner, user_access == :owner)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:has_columns, not Enum.empty?(columns))
-    |> assign(:goals, [])
     |> stream(:columns, columns, reset: true)
     |> load_tasks_for_columns(columns)
   end
@@ -630,7 +640,8 @@ defmodule KanbanWeb.BoardLive.Show do
         {:error, _} -> board
       end
 
-    %{board | members: Boards.list_board_members(board.id)}
+    board = %{board | members: Boards.list_board_members(board.id)}
+    Map.put(board, :accent, BoardAccent.for_board(board, user))
   end
 
   defp assign_board_state(socket, board, user_access) do
@@ -795,12 +806,55 @@ defmodule KanbanWeb.BoardLive.Show do
     backlog_goals_with_children = compute_backlog_promotable_goals(columns, tasks_by_column)
     goals_by_id = compute_goals_by_id(tasks_by_column)
 
+    goals =
+      compute_active_goals(tasks_by_column, columns, goals_by_id, backlog_goals_with_children)
+
     socket
     |> assign(:tasks_by_column, tasks_by_column)
     |> assign(:goal_progress, goal_progress)
     |> assign(:backlog_goals_with_children, backlog_goals_with_children)
     |> assign(:goals_by_id, goals_by_id)
+    |> assign(:goals, goals)
     |> assign(:tasks_version, :os.system_time(:millisecond))
+  end
+
+  # Build the list of active goals shaped for KanbanWeb.GoalsStrip.
+  # Each entry has :identifier, :name, :color, :ink, :promoted plus a
+  # :flow map of segmented child-task counts per status. The list is
+  # sorted by identifier so the strip's order is stable across refreshes.
+  defp compute_active_goals(tasks_by_column, columns, goals_by_id, backlog_promotable) do
+    status_by_column_id = Map.new(columns, fn col -> {col.id, column_status(col.name)} end)
+
+    goals_by_id
+    |> Enum.map(&build_active_goal(&1, tasks_by_column, status_by_column_id, backlog_promotable))
+    |> Enum.sort_by(& &1.identifier)
+  end
+
+  defp build_active_goal({goal_id, info}, tasks_by_column, status_by_column_id, promotable) do
+    info
+    |> Map.put(:name, info.short)
+    |> Map.put(:flow, goal_flow_for(goal_id, tasks_by_column, status_by_column_id))
+    |> Map.put(:promoted, not MapSet.member?(promotable, goal_id))
+  end
+
+  # Sums up child-task counts per status bucket for one goal, plus the
+  # total. Children are tasks whose parent_id == goal_id; their column's
+  # status atom (via column_status/1) drives which bucket they land in.
+  defp goal_flow_for(goal_id, tasks_by_column, status_by_column_id) do
+    empty = %{done: 0, review: 0, doing: 0, ready: 0, backlog: 0, total: 0}
+
+    Enum.reduce(tasks_by_column, empty, fn {column_id, tasks}, acc ->
+      status = Map.get(status_by_column_id, column_id, :backlog)
+      n = Enum.count(tasks, fn task -> task.parent_id == goal_id end)
+
+      if n > 0 do
+        acc
+        |> Map.update!(status, &(&1 + n))
+        |> Map.update!(:total, &(&1 + n))
+      else
+        acc
+      end
+    end)
   end
 
   # Build a lookup map keyed by goal task id, value being the small

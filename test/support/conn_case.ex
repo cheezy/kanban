@@ -17,6 +17,8 @@ defmodule KanbanWeb.ConnCase do
 
   use ExUnit.CaseTemplate
 
+  alias Phoenix.Ecto.SQL.Sandbox
+
   using do
     quote do
       # The default endpoint for testing
@@ -33,7 +35,22 @@ defmodule KanbanWeb.ConnCase do
 
   setup tags do
     Kanban.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+
+    # Hand the test's sandbox metadata to the Phoenix.Ecto.SQL.Sandbox
+    # plug via the user-agent header so any LiveView (or other HTTP
+    # request) spawned by the test shares the same DB connection
+    # instead of checking out its own (which logs a disconnect error
+    # at test teardown).
+    metadata =
+      Kanban.Repo
+      |> Sandbox.metadata_for(self())
+      |> Sandbox.encode_metadata()
+
+    conn =
+      Phoenix.ConnTest.build_conn()
+      |> Plug.Conn.put_req_header("user-agent", metadata)
+
+    {:ok, conn: conn}
   end
 
   @doc """

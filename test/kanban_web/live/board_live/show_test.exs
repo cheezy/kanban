@@ -1008,14 +1008,14 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute html =~ "Copy this token now"
     end
 
-    test "owner can see API Tokens button", %{conn: conn, user: user} do
+    test "owner can see the Tokens tab", %{conn: conn, user: user} do
       board = ai_optimized_board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "API Tokens"
+      assert html =~ ~s|href="/boards/#{board.id}/api_tokens"|
     end
 
-    test "user with modify access can see API Tokens button", %{conn: conn, user: _user} do
+    test "user with modify access can see the Tokens tab", %{conn: conn, user: _user} do
       owner = user_fixture()
       board = ai_optimized_board_fixture(owner)
 
@@ -1026,10 +1026,10 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "API Tokens"
+      assert html =~ ~s|href="/boards/#{board.id}/api_tokens"|
     end
 
-    test "user with read-only access cannot see API Tokens button", %{conn: conn, user: _user} do
+    test "user with read-only access cannot see the Tokens tab", %{conn: conn, user: _user} do
       owner = user_fixture()
       board = ai_optimized_board_fixture(owner)
 
@@ -1040,7 +1040,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      refute html =~ "API Tokens"
+      refute html =~ ~s|href="/boards/#{board.id}/api_tokens"|
     end
 
     test "non-AI-optimized boards cannot access API tokens page", %{conn: conn, user: user} do

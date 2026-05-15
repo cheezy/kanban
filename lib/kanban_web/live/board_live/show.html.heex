@@ -8,7 +8,11 @@
       {gettext("Boards")}
     </.link>
     <span style="color: var(--ink-4);">/</span>
-    <span style="color: var(--ink); font-weight: 500;">{@board.name}</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px;">
+      <BoardHeader.identifier_badge board={@board} size={18} />
+      <span style="color: var(--ink); font-weight: 500;">{@board.name}</span>
+      <BoardHeader.ai_pill :if={Map.get(@board, :ai_optimized_board, false)} />
+    </span>
   </:breadcrumbs>
 
   <:actions>
@@ -18,16 +22,6 @@
       class="btn btn-xs btn-ghost"
     >
       {gettext("New Column")}
-    </.link>
-    <.link
-      :if={@can_modify and @board.ai_optimized_board}
-      patch={~p"/boards/#{@board}/api_tokens"}
-      class="btn btn-xs btn-ghost"
-    >
-      {gettext("API Tokens")}
-    </.link>
-    <.link navigate={~p"/boards/#{@board}/archive"} class="btn btn-xs btn-ghost">
-      {gettext("Archived Tasks")}
     </.link>
     <.link navigate={~p"/boards/#{@board}/metrics"} class="btn btn-xs btn-ghost">
       {gettext("Metrics")}
@@ -45,7 +39,12 @@
   </:actions>
 
   <BoardHeader.board_header board={@board} />
-  <BoardTabs.board_tabs board={@board} active={:board} owner?={@is_owner} />
+  <BoardTabs.board_tabs
+    board={@board}
+    active={:board}
+    owner?={@is_owner}
+    can_modify?={@can_modify}
+  />
   <GoalsStrip.goals_strip :if={assigns[:goals] not in [nil, []]} goals={@goals || []} />
 
   <div class="mx-auto max-w-[1920px] px-4 pt-4 pb-2 sm:px-6 lg:px-8">
@@ -120,25 +119,26 @@
           </div>
         </div>
       <% else %>
-        <div
-          class="flex gap-4 overflow-x-auto pb-4"
-          id="columns"
-          phx-update="stream"
-          phx-hook="ColumnSortable"
-          data-responsive-columns="true"
-        >
+        <div class="flex gap-4 items-stretch">
           <div
-            :for={{id, column} <- @streams.columns}
-            id={id}
-            class="flex-shrink-0 w-72 bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
-            data-column-id={column.id}
+            class="flex gap-4 overflow-x-auto pb-4 flex-1 min-w-0"
+            id="columns"
+            phx-update="stream"
+            phx-hook="ColumnSortable"
+            data-responsive-columns="true"
           >
+            <div
+              :for={{id, column} <- @streams.columns}
+              id={id}
+              class="flex-1 min-w-[256px] bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
+              data-column-id={column.id}
+            >
             <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>
             <% task_count = Enum.count(all_tasks, &(&1.type in [:work, :defect])) %>
             <% total_tasks = length(all_tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
-            <div class="flex items-start justify-between mb-4 pb-3 border-b border-base-300/60 group">
+            <div class="flex items-start justify-between mb-2 group">
               <%= if @user_access == :owner and not @board.ai_optimized_board do %>
                 <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
                   <.icon name="hero-bars-3" class="h-5 w-5 text-base-content" />
@@ -264,14 +264,6 @@
                 </div>
 
                 <div
-                  :if={task.status == :blocked}
-                  class="absolute bottom-1 right-1 z-10"
-                  title={gettext("Task is blocked")}
-                >
-                  <.icon name="hero-lock-closed-solid" class="h-3 w-3 text-red-600" />
-                </div>
-
-                <div
                   :if={@can_modify and task.type != :goal}
                   class="drag-handle absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab z-10"
                   aria-label={gettext("Drag to reorder")}
@@ -299,6 +291,12 @@
               </div>
             </div>
           </div>
+          </div>
+
+          <AgentActivityRail.rail
+            tasks_by_column={@tasks_by_column}
+            collapsed={@agent_rail_collapsed}
+          />
         </div>
       <% end %>
     </div>

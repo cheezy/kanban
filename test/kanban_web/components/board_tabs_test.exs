@@ -23,10 +23,12 @@ defmodule KanbanWeb.BoardTabsTest do
         <BoardTabs.board_tabs board={@board} />
         """)
 
-      for label <- ~w(Board List Goals Archive Members) do
+      for label <- ~w(Board Goals Archive Members) do
         assert html =~ ~r/>\s*#{label}\s*</,
                "expected tab label #{label} to render"
       end
+
+      refute html =~ ~r/>\s*List\s*</
     end
 
     test "owner? sees Tokens and Settings tabs" do
@@ -119,7 +121,7 @@ defmodule KanbanWeb.BoardTabsTest do
       assert html =~ ~s(href="/boards/42/api_tokens")
     end
 
-    test "placeholder tabs (List, Goals, Members, Settings) point to the board show page" do
+    test "placeholder tabs (Goals, Members, Settings) point to the board show page" do
       assigns = %{board: board(%{id: 42})}
 
       html =
@@ -127,7 +129,7 @@ defmodule KanbanWeb.BoardTabsTest do
         <BoardTabs.board_tabs board={@board} owner? />
         """)
 
-      # Multiple tabs link to /boards/42 (Board, List, Goals, Members, Settings).
+      # Multiple tabs link to /boards/42 (Board, Goals, Members, Settings).
       # Just verify the href is present at least once.
       assert html =~ ~s(href="/boards/42")
     end

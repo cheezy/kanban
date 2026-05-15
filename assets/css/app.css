@@ -936,3 +936,27 @@
     padding: 0 14px;
   }
 }
+
+/* ============================================================
+   Allow chip tooltips on task cards to break out of the columns
+   row's overflow context. The kanban columns container needs
+   horizontal scrolling but must NOT clip tooltips vertically.
+   Modern browsers honor mismatched overflow axes when both are
+   set explicitly (Chrome 121+, Firefox 113+, Safari 17+).
+   Combined with overflow: visible on the per-card <article>,
+   this lets daisyUI .tooltip bubbles render fully outside the
+   task card boundary instead of being cropped to its area.
+   ============================================================ */
+.stride-screen #columns {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.stride-screen .tooltip {
+  z-index: 50;
+}
+
+.stride-screen .tooltip:before,
+.stride-screen .tooltip:after {
+  z-index: 9999;
+}

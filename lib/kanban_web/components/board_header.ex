@@ -54,7 +54,6 @@ defmodule KanbanWeb.BoardHeader do
           ]}>
             {@board.name}
           </h1>
-          <.ai_pill :if={Map.get(@board, :ai_optimized_board, false)} />
         </div>
         <span
           :if={present?(Map.get(@board, :description))}
@@ -101,7 +100,58 @@ defmodule KanbanWeb.BoardHeader do
     end
   end
 
-  defp ai_pill(assigns) do
+  attr :board, :map, required: true
+  attr :size, :integer, default: 28, doc: "Square size of the badge in pixels."
+
+  @doc "Colored 3-letter identifier badge derived from the board name + accent."
+  def identifier_badge(assigns) do
+    assigns =
+      assigns
+      |> assign(:accent_css, accent_color(Map.get(assigns.board, :accent)))
+      |> assign(:prefix, board_prefix(assigns.board.name))
+
+    ~H"""
+    <span
+      aria-hidden="true"
+      style={[
+        "width: #{@size}px; height: #{@size}px; border-radius: 6px;",
+        "background: #{@accent_css};",
+        "display: inline-flex; align-items: center; justify-content: center;",
+        "color: white; font-size: #{badge_font_size(@size)}px; font-weight: 700;",
+        "font-family: var(--font-mono); letter-spacing: -0.02em; flex-shrink: 0;"
+      ]}
+    >
+      {@prefix}
+    </span>
+    """
+  end
+
+  defp badge_font_size(size) when size <= 20, do: 9
+  defp badge_font_size(_), do: 10.5
+
+  defp accent_color(:orange), do: "var(--stride-orange)"
+  defp accent_color(:ready), do: "var(--st-ready)"
+  defp accent_color(:doing), do: "var(--st-doing)"
+  defp accent_color(:violet), do: "var(--stride-violet)"
+  defp accent_color(:backlog), do: "var(--st-backlog)"
+  defp accent_color(:blocked), do: "var(--st-blocked)"
+  defp accent_color(_other), do: "var(--ink-3)"
+
+  defp board_prefix(name) when is_binary(name) do
+    letters =
+      name
+      |> String.upcase()
+      |> String.replace(~r/[^A-Z]/, "")
+
+    letters
+    |> String.slice(0, 3)
+    |> String.pad_trailing(3, "?")
+  end
+
+  defp board_prefix(_), do: "???"
+
+  @doc "Pill rendered when a board is AI-optimized."
+  def ai_pill(assigns) do
     ~H"""
     <span
       class="ucase"

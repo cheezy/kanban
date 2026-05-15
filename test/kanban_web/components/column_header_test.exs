@@ -149,7 +149,8 @@ defmodule KanbanWeb.ColumnHeaderTest do
         """)
 
       assert html =~ ~s(href="/boards/42/columns/1/tasks/new")
-      assert html =~ ~s(aria-label="Add task")
+      assert html =~ ~s(aria-label="Add Task")
+      assert html =~ ~s(data-tip="Add Task")
       assert html =~ "hero-plus"
     end
 

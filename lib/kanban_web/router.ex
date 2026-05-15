@@ -118,6 +118,7 @@ defmodule KanbanWeb.Router do
 
     live_session :admin,
       on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_admin}
       ],
@@ -133,6 +134,7 @@ defmodule KanbanWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_authenticated}
       ],
@@ -173,6 +175,7 @@ defmodule KanbanWeb.Router do
 
     live_session :current_user,
       on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :mount_current_scope}
       ] do
@@ -184,7 +187,10 @@ defmodule KanbanWeb.Router do
     end
 
     live_session :public,
-      on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}],
+      on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
+        {KanbanWeb.LocaleOnMount, :set_locale}
+      ],
       root_layout: {KanbanWeb.Layouts, :marketing} do
       live "/issue", IssueLive.Form, :new
       live "/resources", ResourcesLive.Index, :index

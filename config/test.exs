@@ -3,6 +3,16 @@ import Config
 # Mark this as test environment
 config :kanban, :env, :test
 
+# Disable the BoardLive.Index periodic metrics refresh during tests so
+# the 30s timer doesn't fire after the Ecto sandbox is checked back in,
+# which would otherwise spray Postgrex disconnect errors into the log.
+config :kanban, :board_index_refresh_ms, 0
+
+# Enable the Phoenix.Ecto.SQL.Sandbox plug in the endpoint so LiveView
+# processes spawned by tests share the test owner's sandbox connection
+# instead of checking out their own (and triggering disconnect logs).
+config :kanban, :sql_sandbox, true
+
 # Only in tests, remove the complexity from the password hashing algorithm
 config :bcrypt_elixir, :log_rounds, 1
 

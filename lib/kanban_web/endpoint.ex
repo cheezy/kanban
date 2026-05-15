@@ -12,8 +12,8 @@ defmodule KanbanWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+    websocket: [connect_info: [session: @session_options, user_agent: true]],
+    longpoll: [connect_info: [session: @session_options, user_agent: true]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -43,6 +43,14 @@ defmodule KanbanWeb.Endpoint do
   plug Phoenix.LiveDashboard.RequestLogger,
     param_key: "request_logger",
     cookie_key: "request_logger"
+
+  # Lets LiveView processes spawned during tests share the test
+  # owner's Ecto sandbox connection, avoiding the noisy
+  # "Postgrex.Protocol disconnected" log when a LiveView checks out
+  # its own connection and exits with the test.
+  if Application.compile_env(:kanban, :sql_sandbox) do
+    plug Phoenix.Ecto.SQL.Sandbox, repo: Kanban.Repo
+  end
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]

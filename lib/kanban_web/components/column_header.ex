@@ -42,7 +42,7 @@ defmodule KanbanWeb.ColumnHeader do
 
     ~H"""
     <div style={[
-      "padding: 8px 10px 8px 8px;",
+      "padding: 4px 10px 4px 8px;",
       "display: flex; align-items: center; gap: 8px;",
       "border-bottom: 1px solid var(--line);"
     ]}>
@@ -70,7 +70,9 @@ defmodule KanbanWeb.ColumnHeader do
       <.link
         :if={@new_task_path}
         patch={@new_task_path}
-        aria-label={gettext("Add task")}
+        aria-label={gettext("Add Task")}
+        class="tooltip tooltip-left"
+        data-tip={gettext("Add Task")}
         style={[
           "width: 22px; height: 22px; border-radius: 4px;",
           "background: transparent; border: none;",

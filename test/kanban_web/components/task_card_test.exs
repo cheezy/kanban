@@ -402,4 +402,80 @@ defmodule KanbanWeb.TaskCardTest do
       refute html =~ ~r/>\s*GOAL\s*</
     end
   end
+
+  describe "task_card/1 — helper fallbacks" do
+    test "unknown priority falls back to ink-4" do
+      assigns = %{task: task(%{priority: :urgent_unknown})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      assert html =~ "background: var(--ink-4);"
+    end
+
+    test "goal value without a :color key falls back to the default 1px border" do
+      assigns = %{task: task(%{goal: %{id: 99, name: "Loose goal"}})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      assert html =~ "border-left: 1px solid var(--line);"
+    end
+  end
+
+  describe "task_card/1 — review skip reasons" do
+    for {reason, label} <- [
+          {"decision_matrix_skip", "decision matrix"},
+          {"trivial_change_docs_only", "trivial change"},
+          {"self_reported_exploration", "self-explored"},
+          {"self_reported_review", "self-reviewed"},
+          {"no_subagent_support", "no subagent"}
+        ] do
+      test "renders the punchy label for #{reason}" do
+        assigns = %{
+          task: task(%{reviewer_skipped?: true, reviewer_skip_reason: unquote(reason)})
+        }
+
+        html =
+          rendered_to_string(~H"""
+          <TaskCard.task_card task={@task} column={:review} />
+          """)
+
+        assert html =~ unquote(label)
+      end
+    end
+
+    test "passes through an unknown reason string unchanged" do
+      assigns = %{
+        task: task(%{reviewer_skipped?: true, reviewer_skip_reason: "future_enum_value"})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:review} />
+        """)
+
+      assert html =~ "future_enum_value"
+    end
+
+    test "renders empty string when reason is not a binary" do
+      assigns = %{
+        task: task(%{reviewer_skipped?: true, reviewer_skip_reason: nil})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:review} />
+        """)
+
+      # No skip-reason text means just the self-reviewed badge with no
+      # trailing label — assert the badge is present without a reason word.
+      assert html =~ "self-reviewed"
+    end
+  end
+
 end

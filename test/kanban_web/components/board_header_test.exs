@@ -69,33 +69,24 @@ defmodule KanbanWeb.BoardHeaderTest do
     end
   end
 
-  describe "board_header/1 — AI pill" do
-    test "renders the AI pill when ai_optimized_board is true" do
-      assigns = %{board: board(%{ai_optimized_board: true})}
+  describe "ai_pill/1" do
+    test "renders the AI pill markup" do
+      assigns = %{}
 
       html =
         rendered_to_string(~H"""
-        <BoardHeader.board_header board={@board} />
+        <BoardHeader.ai_pill />
         """)
 
       assert html =~ ~r/>\s*AI\s*</
       assert html =~ "var(--stride-violet-soft)"
       assert html =~ "var(--stride-violet-ink)"
     end
+  end
 
-    test "does NOT render the AI pill when ai_optimized_board is false" do
-      assigns = %{board: board(%{ai_optimized_board: false})}
-
-      html =
-        rendered_to_string(~H"""
-        <BoardHeader.board_header board={@board} />
-        """)
-
-      refute html =~ ~r/>\s*AI\s*</
-    end
-
-    test "does NOT render the AI pill when ai_optimized_board is missing" do
-      assigns = %{board: board() |> Map.delete(:ai_optimized_board)}
+  describe "board_header/1 — name area" do
+    test "does NOT render the AI pill inside the header (now lives in the breadcrumb)" do
+      assigns = %{board: board(%{ai_optimized_board: true})}
 
       html =
         rendered_to_string(~H"""
@@ -157,6 +148,119 @@ defmodule KanbanWeb.BoardHeaderTest do
         """)
 
       assert html =~ ~r/>\s*0\s*</
+    end
+  end
+
+  describe "identifier_badge/1" do
+    test "renders a 3-letter prefix from the first three letters of the name" do
+      assigns = %{board: board(%{name: "Stride 2.0"})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} />
+        """)
+
+      # Non-letters are stripped, then the first three letters are taken.
+      assert html =~ ~r/>\s*STR\s*</
+    end
+
+    test "pads the prefix with '?' when the name has fewer than three letters" do
+      assigns = %{board: board(%{name: "Z"})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} />
+        """)
+
+      assert html =~ ~r/>\s*Z\?\?\s*</
+    end
+
+    test "renders '???' when the board has no name" do
+      assigns = %{board: board(%{name: nil})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} />
+        """)
+
+      assert html =~ ~r/>\s*\?\?\?\s*</
+    end
+
+    test "uses the smaller font size when size <= 20" do
+      assigns = %{board: board()}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} size={18} />
+        """)
+
+      assert html =~ "font-size: 9px;"
+    end
+
+    test "uses the larger font size when size > 20 (default 28)" do
+      assigns = %{board: board()}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} />
+        """)
+
+      assert html =~ "font-size: 10.5px;"
+    end
+
+    for {accent, css_var} <- [
+          {:orange, "var(--stride-orange)"},
+          {:ready, "var(--st-ready)"},
+          {:doing, "var(--st-doing)"},
+          {:violet, "var(--stride-violet)"},
+          {:backlog, "var(--st-backlog)"},
+          {:blocked, "var(--st-blocked)"}
+        ] do
+      test "accent :#{accent} renders background #{css_var}" do
+        assigns = %{board: board(%{accent: unquote(accent)})}
+
+        html =
+          rendered_to_string(~H"""
+          <BoardHeader.identifier_badge board={@board} />
+          """)
+
+        assert html =~ "background: #{unquote(css_var)};"
+      end
+    end
+
+    test "unknown accent falls back to var(--ink-3)" do
+      assigns = %{board: board(%{accent: :unknown_accent})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.identifier_badge board={@board} />
+        """)
+
+      assert html =~ "background: var(--ink-3);"
+    end
+  end
+
+  describe "board_header/1 — description trimming" do
+    test "treats an empty-string description as absent" do
+      assigns = %{board: board(%{description: ""})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.board_header board={@board} />
+        """)
+
+      refute html =~ "color: var(--ink-3); margin-top: 2px;"
+    end
+
+    test "treats a non-string description as absent" do
+      assigns = %{board: board(%{description: 12_345})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.board_header board={@board} />
+        """)
+
+      refute html =~ "color: var(--ink-3); margin-top: 2px;"
     end
   end
 

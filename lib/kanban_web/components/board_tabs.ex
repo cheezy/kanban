@@ -20,17 +20,25 @@ defmodule KanbanWeb.BoardTabs do
 
     * `board` — board struct or map with `:id`. Required.
     * `active` — the currently active tab atom (one of
-      `:board | :list | :goals | :archive | :members | :tokens | :settings`).
+      `:board | :goals | :archive | :members | :tokens | :settings`).
       An unknown atom renders no active underline. Default `:board`.
-    * `owner?` — when true, the owner-only Tokens and Settings tabs are
-      visible. Default false.
+    * `owner?` — when true, owner-only tabs (Settings) plus tabs
+      gated by `can_modify?` are visible. Default false.
+    * `can_modify?` — when true (or when `owner?` is true), the
+      Tokens tab is visible. Default false.
   """
   attr :board, :map, required: true
   attr :active, :atom, default: :board
   attr :owner?, :boolean, default: false
+  attr :can_modify?, :boolean, default: false
 
   def board_tabs(assigns) do
-    assigns = assign(assigns, :tabs, visible_tabs(assigns.board, assigns.owner?))
+    assigns =
+      assign(
+        assigns,
+        :tabs,
+        visible_tabs(assigns.board, assigns.owner?, assigns.can_modify? || assigns.owner?)
+      )
 
     ~H"""
     <nav
@@ -87,14 +95,16 @@ defmodule KanbanWeb.BoardTabs do
 
   # --- Helpers -------------------------------------------------------------
 
-  defp visible_tabs(board, owner?) do
-    base = all_tabs(board)
-
-    if owner? do
-      base
-    else
-      Enum.reject(base, &(&1.id in [:tokens, :settings]))
-    end
+  defp visible_tabs(board, owner?, tokens_visible?) do
+    board
+    |> all_tabs()
+    |> Enum.reject(fn tab ->
+      case tab.id do
+        :settings -> not owner?
+        :tokens -> not tokens_visible?
+        _ -> false
+      end
+    end)
   end
 
   defp all_tabs(board) do
@@ -102,7 +112,6 @@ defmodule KanbanWeb.BoardTabs do
 
     [
       %{id: :board, label: gettext("Board"), icon: "hero-view-columns", path: "/boards/#{bid}"},
-      %{id: :list, label: gettext("List"), icon: "hero-bars-3", path: "/boards/#{bid}"},
       %{id: :goals, label: gettext("Goals"), icon: "hero-flag", path: "/boards/#{bid}"},
       %{
         id: :archive,

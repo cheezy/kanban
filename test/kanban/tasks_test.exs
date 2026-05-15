@@ -993,6 +993,58 @@ defmodule Kanban.TasksTest do
       assert is_nil(Kanban.Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id)
     end
 
+    test "goal cascade also writes a priority_change history when priority changes", %{
+      alice: alice,
+      goal: goal
+    } do
+      assert {:ok, _updated} =
+               Tasks.update_task(goal, %{assigned_to_id: alice.id, priority: :high})
+
+      priority_histories =
+        Tasks.get_task_with_history!(goal.id).task_histories
+        |> Enum.filter(&(&1.type == :priority_change))
+
+      assert length(priority_histories) == 1
+    end
+
+    test "goal cascade fires the status->completed side effect path", %{
+      alice: alice,
+      goal: goal
+    } do
+      # Combining assignment with status: :completed exercises the cascade
+      # path's status-completed branch, which preloads the column and runs
+      # Dependencies.unblock_dependent_tasks/2. The goal has no dependents
+      # here, so the work is a no-op — but the side-effect code must run.
+      assert {:ok, updated} =
+               Tasks.update_task(goal, %{
+                 assigned_to_id: alice.id,
+                 status: :completed,
+                 completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+               })
+
+      assert updated.status == :completed
+    end
+
+    test "goal cascade fires the dependencies-changed side effect path", %{
+      alice: alice,
+      column: column,
+      goal: goal
+    } do
+      # Create a sibling so we have something to point to; combine
+      # :assigned_to_id with :dependencies on the goal update to exercise
+      # the cascade path's `Map.has_key?(changeset.changes, :dependencies)`
+      # branch.
+      sibling = task_fixture(column, %{title: "Sibling"})
+
+      assert {:ok, updated} =
+               Tasks.update_task(goal, %{
+                 assigned_to_id: alice.id,
+                 dependencies: [sibling.identifier]
+               })
+
+      assert updated.dependencies == [sibling.identifier]
+    end
+
     defp drain_task_broadcasts do
       drain_task_broadcasts([])
     end

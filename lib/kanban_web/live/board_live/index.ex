@@ -2,6 +2,7 @@ defmodule KanbanWeb.BoardLive.Index do
   use KanbanWeb, :live_view
 
   alias Kanban.Boards
+  alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardPulseCard
 
   defp empty_state(assigns) do
@@ -156,8 +157,10 @@ defmodule KanbanWeb.BoardLive.Index do
     """
   end
 
-  @accents ~w(orange violet doing ready backlog blocked)a
-  @refresh_interval_ms 30_000
+  # The boards index polls for fresh metrics every 30 seconds in
+  # production. Tests override this via app env to avoid the timer
+  # firing after the Ecto sandbox is checked back in.
+  @default_refresh_interval_ms 30_000
 
   @impl true
   def mount(_params, _session, socket) do
@@ -174,7 +177,17 @@ defmodule KanbanWeb.BoardLive.Index do
   end
 
   defp schedule_refresh do
-    Process.send_after(self(), :refresh_metrics, @refresh_interval_ms)
+    case refresh_interval_ms() do
+      ms when is_integer(ms) and ms > 0 ->
+        Process.send_after(self(), :refresh_metrics, ms)
+
+      _ ->
+        :noop
+    end
+  end
+
+  defp refresh_interval_ms do
+    Application.get_env(:kanban, :board_index_refresh_ms, @default_refresh_interval_ms)
   end
 
   @impl true
@@ -192,10 +205,7 @@ defmodule KanbanWeb.BoardLive.Index do
   defp load_boards(user) do
     user
     |> Boards.list_boards_with_metrics()
-    |> Enum.with_index()
-    |> Enum.map(fn {board, index} ->
-      Map.put(board, :accent, Enum.at(@accents, rem(index, length(@accents))))
-    end)
+    |> BoardAccent.assign_to_boards()
   end
 
   @impl true

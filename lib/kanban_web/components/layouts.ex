@@ -107,7 +107,7 @@ defmodule KanbanWeb.Layouts do
     <aside
       aria-label={gettext("Primary navigation")}
       style={[
-        "width: 196px; height: 100vh; flex-shrink: 0;",
+        "width: 160px; height: 100vh; flex-shrink: 0;",
         "background: var(--surface-2); border-right: 1px solid var(--line);",
         "display: flex; flex-direction: column;"
       ]}

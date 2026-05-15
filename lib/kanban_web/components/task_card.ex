@@ -68,7 +68,7 @@ defmodule KanbanWeb.TaskCard do
       "border-radius: 6px; padding: #{@padding};",
       "box-shadow: var(--shadow-sm);",
       "display: flex; flex-direction: column; gap: #{@gap}px;",
-      "cursor: grab; position: relative; overflow: hidden;",
+      "cursor: grab; position: relative; overflow: visible;",
       "border-left: #{@left_border};"
     ]}>
       <.top_row task={@task} column={@column} />
@@ -223,7 +223,9 @@ defmodule KanbanWeb.TaskCard do
     >
       <span
         :if={@skipped?}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px; color: var(--ink-3);"
+        data-tip={gettext("Reviewer was skipped — self-reviewed by the author")}
       >
         <.icon name="hero-no-symbol" class="w-2.5 h-2.5" />
         {gettext("self-reviewed")}{if @skip_reason, do: " · #{format_reason(@skip_reason)}", else: ""}
@@ -231,7 +233,9 @@ defmodule KanbanWeb.TaskCard do
 
       <span
         :if={not @skipped? and @criteria}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Acceptance criteria checked by the reviewer")}
       >
         <.icon name="hero-check" class="w-2.5 h-2.5" />
         {ngettext("%{count} criterion", "%{count} criteria", @criteria, count: @criteria)}
@@ -239,10 +243,12 @@ defmodule KanbanWeb.TaskCard do
 
       <span
         :if={not @skipped? and is_integer(@issues)}
+        class="tooltip"
         style={[
           "display: inline-flex; align-items: center; gap: 3px;",
           "color: #{issues_color(@issues)};"
         ]}
+        data-tip={gettext("Issues found by the reviewer")}
       >
         <.icon name={issues_icon(@issues)} class="w-2.5 h-2.5" />
         {ngettext("%{count} issue", "%{count} issues", @issues, count: @issues)}
@@ -250,7 +256,9 @@ defmodule KanbanWeb.TaskCard do
 
       <span
         :if={@files}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Files changed")}
       >
         <.icon name="hero-document" class="w-2.5 h-2.5" />
         {ngettext("%{count} file", "%{count} files", @files, count: @files)}
@@ -282,8 +290,9 @@ defmodule KanbanWeb.TaskCard do
     >
       <span
         :if={@cycle}
-        class="ident"
+        class="ident tooltip"
         style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Cycle time — elapsed from claim to completion")}
       >
         <.icon name="hero-clock" class="w-2.5 h-2.5" />
         {gettext("cycle %{time}", time: @cycle)}
@@ -291,7 +300,9 @@ defmodule KanbanWeb.TaskCard do
 
       <span
         :if={@files}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Files changed")}
       >
         <.icon name="hero-document" class="w-2.5 h-2.5" />
         {ngettext("%{count} file", "%{count} files", @files, count: @files)}
@@ -299,7 +310,9 @@ defmodule KanbanWeb.TaskCard do
 
       <span
         :if={@actual}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Actual complexity recorded after completion")}
       >
         {gettext("actual: %{size}", size: Atom.to_string(@actual))}
       </span>
@@ -331,25 +344,39 @@ defmodule KanbanWeb.TaskCard do
         "color: var(--ink-3); font-size: 10.5px;"
       ]}
     >
-      <span :if={@key_files} style="display: inline-flex; align-items: center; gap: 3px;">
+      <span
+        :if={@key_files}
+        class="tooltip"
+        style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Key files this task will modify")}
+      >
         <.icon name="hero-document" class="w-2.5 h-2.5" />{@key_files}
       </span>
       <span
         :if={@deps && @deps > 0}
+        class="tooltip"
         style="display: inline-flex; align-items: center; gap: 3px; color: var(--st-blocked);"
+        data-tip={gettext("Open dependencies blocking this task")}
       >
         <.icon name="hero-link" class="w-2.5 h-2.5" />{@deps}
       </span>
-      <span :if={@acceptance} style="display: inline-flex; align-items: center; gap: 3px;">
+      <span
+        :if={@acceptance}
+        class="tooltip"
+        style="display: inline-flex; align-items: center; gap: 3px;"
+        data-tip={gettext("Acceptance criteria defined for this task")}
+      >
         <.icon name="hero-check" class="w-2.5 h-2.5" />{@acceptance}
       </span>
       <span
         :if={@needs_review}
+        class="tooltip"
         style={[
           "margin-left: auto; padding: 0 5px; border-radius: 3px;",
           "background: var(--st-review-soft); color: var(--st-review);",
           "font-family: var(--font-mono); font-size: 9.5px; font-weight: 600;"
         ]}
+        data-tip={gettext("Requires a human review before moving to Done")}
       >
         {gettext("review")}
       </span>

@@ -466,7 +466,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Add task"
+      assert html =~ "Add Task"
     end
 
     test "hides Add task button when WIP limit reached", %{conn: conn, user: user} do
@@ -734,7 +734,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Add task"
+      assert html =~ "Add Task"
       assert html =~ ~s(phx-hook="Sortable")
     end
 
@@ -776,7 +776,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Add task"
+      assert html =~ "Add Task"
     end
 
     test "user with modify access can see task edit/delete buttons but not column buttons", %{
@@ -840,7 +840,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      refute html =~ "Add task"
+      refute html =~ "Add Task"
       refute html =~ "hero-plus-circle-solid"
     end
 
