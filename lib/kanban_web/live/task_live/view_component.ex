@@ -7,12 +7,15 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.CommentsSection
   import KanbanWeb.TaskLive.Components.CompletionSection
   import KanbanWeb.TaskLive.Components.DependenciesSection
-  import KanbanWeb.TaskLive.Components.HistorySection
   import KanbanWeb.TaskLive.Components.IntegrationPointsSection
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
 
   alias Kanban.Tasks
+  alias KanbanWeb.AcceptanceChecklist
+  alias KanbanWeb.TaskActivityLog
+  alias KanbanWeb.TaskDetailHeader
+  alias KanbanWeb.TaskMetadataGrid
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
@@ -53,17 +56,8 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     Map.get(field_visibility, field_name, false)
   end
 
-  defp status_badge_class(:open), do: "bg-gray-100 text-gray-800"
-  defp status_badge_class(:in_progress), do: "bg-blue-100 text-blue-800"
-  defp status_badge_class(:completed), do: "bg-green-100 text-green-800"
-  defp status_badge_class(:blocked), do: "bg-red-100 text-red-800"
-  defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
-
-  defp status_label(:open), do: gettext("Open")
-  defp status_label(:in_progress), do: gettext("In Progress")
-  defp status_label(:completed), do: gettext("Completed")
-  defp status_label(:blocked), do: gettext("Blocked")
-  defp status_label(_), do: gettext("Unknown")
+  defp board_name_for(%{column: %{board: %{name: name}}}) when is_binary(name), do: name
+  defp board_name_for(_), do: nil
 
   @impl true
   def render(assigns) do
@@ -80,147 +74,55 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           </p>
         </div>
       <% else %>
-        <div class="border-b border-base-300 pb-4">
-          <div class="flex items-start justify-between mb-2">
-            <div class="flex items-center gap-3 flex-wrap">
-              <h2 class="text-2xl font-bold text-base-content">{@task.identifier}</h2>
-              <span class={[
-                "px-3 py-1 text-xs font-semibold rounded-full",
-                case @task.type do
-                  :work -> "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
-                  :defect -> "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
-                  :goal -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
-                end
-              ]}>
-                {case @task.type do
-                  :work -> gettext("Work")
-                  :defect -> gettext("Defect")
-                  :goal -> gettext("Goal")
-                end}
-              </span>
-              <%= if @task.complexity && field_visible?(@field_visibility, "complexity") do %>
-                <span class={[
-                  "px-3 py-1 text-xs font-semibold rounded-full",
-                  case @task.complexity do
-                    :small ->
-                      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
-
-                    :medium ->
-                      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
-
-                    :large ->
-                      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
-                  end
-                ]}>
-                  {case @task.complexity do
-                    :small -> gettext("Small")
-                    :medium -> gettext("Medium")
-                    :large -> gettext("Large")
-                  end}
-                </span>
-              <% end %>
-              <%= if @task.status do %>
-                <span class={[
-                  "px-3 py-1 text-xs font-semibold rounded-full",
-                  status_badge_class(@task.status)
-                ]}>
-                  {status_label(@task.status)}
-                </span>
-              <% end %>
-            </div>
-            <%= if @can_modify && @board_id do %>
-              <.link
-                patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
-                class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-              >
-                <.icon name="hero-pencil" class="w-4 h-4" />
-                <span class="text-sm font-medium">{gettext("Edit")}</span>
-              </.link>
-            <% end %>
+        <div class="stride-screen">
+          <TaskDetailHeader.detail_header task={@task} variant={:pane} />
+          <div
+            :if={@can_modify && @board_id}
+            style="display: flex; justify-content: flex-end; padding: 6px 22px 0;"
+          >
+            <.link
+              patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
+              class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              <.icon name="hero-pencil" class="w-4 h-4" />
+              <span class="text-sm font-medium">{gettext("Edit")}</span>
+            </.link>
           </div>
-          <h3 class="text-xl text-base-content">{@task.title}</h3>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Column")}
-            </h4>
-            <p class="text-base-content">{@task.column.name}</p>
-          </div>
+        <div class="stride-screen">
+          <TaskMetadataGrid.metadata_grid
+            task={@task}
+            parent_goal={Map.get(@task, :parent)}
+            board_name={board_name_for(@task)}
+          />
+        </div>
 
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Priority")}
-            </h4>
-            <p class={[
-              "font-semibold",
-              case @task.priority do
-                :low -> "text-blue-600"
-                :medium -> "text-yellow-600"
-                :high -> "text-orange-600"
-                :critical -> "text-red-600"
-              end
-            ]}>
-              {case @task.priority do
-                :low -> gettext("Low")
-                :medium -> gettext("Medium")
-                :high -> gettext("High")
-                :critical -> gettext("Critical")
-              end}
-            </p>
-          </div>
-
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Assigned To")}
-            </h4>
-            <p class="text-base-content">
-              <%= if @task.assigned_to do %>
-                {@task.assigned_to.name || @task.assigned_to.email}
-              <% else %>
-                {gettext("Unassigned")}
-              <% end %>
-            </p>
-          </div>
-
-          <%= if @ai_optimized_board do %>
+        <%= if @task.human_task || @task.estimated_files do %>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-                {gettext("Needs Review")}
+                {gettext("Human Task")}
               </h4>
               <p class="text-base-content">
-                <%= if @task.needs_review do %>
+                <%= if @task.human_task do %>
                   {gettext("Yes")}
                 <% else %>
                   {gettext("No")}
                 <% end %>
               </p>
             </div>
-          <% end %>
 
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Human Task")}
-            </h4>
-            <p class="text-base-content">
-              <%= if @task.human_task do %>
-                {gettext("Yes")}
-              <% else %>
-                {gettext("No")}
-              <% end %>
-            </p>
+            <%= if @task.estimated_files do %>
+              <div>
+                <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
+                  {gettext("Estimated Files")}
+                </h4>
+                <p class="text-base-content">{@task.estimated_files}</p>
+              </div>
+            <% end %>
           </div>
-
-          <%= if @task.estimated_files do %>
-            <div>
-              <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-                {gettext("Estimated Files")}
-              </h4>
-              <p class="text-base-content">{@task.estimated_files}</p>
-            </div>
-          <% end %>
-        </div>
+        <% end %>
 
         <%= if @task.created_by || @task.created_by_agent do %>
           <div class="bg-base-200 rounded-lg p-4">
@@ -300,12 +202,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
         <% end %>
 
         <%= if @task.acceptance_criteria && field_visible?(@field_visibility, "acceptance_criteria") do %>
-          <div>
-            <h4 class="text-sm font-semibold text-base-content opacity-80 mb-1">
-              {gettext("Acceptance Criteria")}
-            </h4>
-            <p class="text-base-content whitespace-pre-wrap">{@task.acceptance_criteria}</p>
-          </div>
+          <AcceptanceChecklist.acceptance_checklist acceptance_criteria={@task.acceptance_criteria} />
         <% end %>
 
         <%= if @task.key_files && !Enum.empty?(@task.key_files) && field_visible?(@field_visibility, "key_files") do %>
@@ -563,7 +460,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           <.child_tasks_section children={@task.children} />
         <% end %>
 
-        <.history_section histories={@task.task_histories} />
+        <TaskActivityLog.activity_log histories={@task.task_histories} />
 
         <.comments_section comments={@task.comments} />
       <% end %>

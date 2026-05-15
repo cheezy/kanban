@@ -106,8 +106,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Work"
-      assert result =~ "bg-blue-100 text-blue-800"
+      # New design uses a TypeIcon (hero-document-text for :work) inside the
+      # detail header band rather than a colored text pill.
+      assert result =~ "hero-document-text"
+      assert result =~ "data-detail-header"
     end
 
     test "displays Defect type with red badge", %{board: board} do
@@ -121,8 +123,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Defect"
-      assert result =~ "bg-red-100 text-red-800"
+      assert result =~ "hero-bug-ant"
+      assert result =~ "var(--st-blocked)"
     end
 
     test "displays Goal type with yellow badge", %{board: board} do
@@ -136,8 +138,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Goal"
-      assert result =~ "bg-yellow-100 text-yellow-800"
+      assert result =~ "hero-flag"
+      assert result =~ "var(--stride-violet)"
     end
 
     test "displays Low priority with blue color", %{board: board} do
@@ -152,7 +154,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Low"
-      assert result =~ "text-blue-600"
+      assert result =~ "var(--pri-low)"
     end
 
     test "displays Medium priority with yellow color", %{board: board} do
@@ -167,7 +169,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Medium"
-      assert result =~ "text-yellow-600"
+      assert result =~ "var(--pri-medium)"
     end
 
     test "displays High priority with orange color", %{board: board} do
@@ -182,7 +184,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "High"
-      assert result =~ "text-orange-600"
+      assert result =~ "var(--pri-high)"
     end
 
     test "displays Critical priority with red color", %{board: board} do
@@ -197,7 +199,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Critical"
-      assert result =~ "text-red-600"
+      assert result =~ "var(--pri-critical)"
     end
 
     test "displays assigned user when present", %{board: board} do
@@ -212,7 +214,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Assigned To"
+      # The new metadata grid uses "Author" as the label (matches design).
+      assert result =~ "Author"
       assert result =~ "John Doe"
     end
 
@@ -224,8 +227,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Assigned To"
-      assert result =~ "Unassigned"
+      # New metadata grid omits the Author row entirely when both
+      # assigned_to and created_by are nil — so the absence of an Author
+      # label is the contract.
+      refute result =~ ~r/>\s*Author\s*</
     end
 
     test "displays created date with formatted datetime", %{task: task} do
@@ -270,7 +275,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Created"
       assert result =~ "hero-plus-circle"
-      assert result =~ "text-green-600"
+      assert result =~ "var(--st-done)"
     end
 
     test "displays move history with from and to columns", %{task: task} do
@@ -297,7 +302,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "to"
       assert result =~ "In Progress"
       assert result =~ "hero-arrow-right-circle"
-      assert result =~ "text-blue-600"
+      assert result =~ "var(--st-doing)"
     end
 
     test "displays multiple history entries", %{task: task} do
@@ -491,7 +496,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "to"
       assert result =~ "high"
       assert result =~ "hero-exclamation-circle"
-      assert result =~ "text-orange-600"
+      assert result =~ "var(--stride-orange)"
     end
 
     test "displays assignment history when user is assigned (nil to user)", %{task: task} do
@@ -517,7 +522,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Assigned to"
       assert result =~ "Jane Smith"
       assert result =~ "hero-user-circle"
-      assert result =~ "text-purple-600"
+      assert result =~ "var(--stride-violet)"
     end
 
     test "displays assignment history when user is unassigned (user to nil)", %{task: task} do
@@ -543,7 +548,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Unassigned from"
       assert result =~ "Bob Jones"
       assert result =~ "hero-user-circle"
-      assert result =~ "text-purple-600"
+      assert result =~ "var(--stride-violet)"
     end
 
     test "displays assignment history when user is reassigned (user to user)", %{task: task} do
@@ -573,7 +578,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "to"
       assert result =~ "Charlie Green"
       assert result =~ "hero-user-circle"
-      assert result =~ "text-purple-600"
+      assert result =~ "var(--stride-violet)"
     end
 
     test "displays all history types in order", %{task: task} do
@@ -1402,8 +1407,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         status_label =
           case status do
             :open -> "Open"
-            :in_progress -> "In Progress"
-            :completed -> "Completed"
+            :in_progress -> "Doing"
+            :completed -> "Done"
             :blocked -> "Blocked"
           end
 
@@ -1724,7 +1729,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Assigned To"
+      assert result =~ "Author"
       assert result =~ "testuser@example.com"
     end
 
@@ -1820,7 +1825,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Acceptance Criteria"
+      # New design uses sentence-case "Acceptance criteria" and emits a
+      # data-acceptance-checklist marker on the rendered checklist.
+      assert result =~ "Acceptance criteria"
+      assert result =~ "data-acceptance-checklist"
       assert result =~ "User can log in successfully"
       assert result =~ "Password is validated"
     end
