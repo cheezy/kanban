@@ -1,6 +1,6 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="stride-screen px-4 py-6 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
       <div class="flex items-baseline gap-3">
         <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em;">
           {gettext("Boards")}
@@ -10,7 +10,7 @@
         </span>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <div
           role="tablist"
           aria-label={gettext("View mode")}

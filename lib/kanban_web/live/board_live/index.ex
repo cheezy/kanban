@@ -51,15 +51,21 @@ defmodule KanbanWeb.BoardLive.Index do
     ~H"""
     <div class="flex items-center justify-center px-4" style="min-height: 60vh;">
       <div
-        class="w-full grid gap-12 items-center"
-        style="max-width: 880px; grid-template-columns: 1fr auto;"
+        class="w-full grid gap-8 md:gap-12 items-center grid-cols-1 md:grid-cols-[1fr_auto]"
+        style="max-width: 880px;"
       >
-        <div class="flex flex-col items-start gap-4" style="max-width: 520px;">
-          <h1 style={[
-            "margin: 0; font-size: 30px; font-weight: 600;",
-            "letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);",
-            "text-wrap: balance;"
-          ]}>
+        <div
+          class="flex flex-col items-start gap-4 text-left"
+          style="max-width: 520px;"
+        >
+          <h1
+            class="text-[26px] md:text-[30px]"
+            style={[
+              "margin: 0; font-weight: 600;",
+              "letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);",
+              "text-wrap: balance;"
+            ]}
+          >
             {gettext("No boards yet.")}<br />{gettext("Let's start with one.")}
           </h1>
           <p style="margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty;">
@@ -67,9 +73,12 @@ defmodule KanbanWeb.BoardLive.Index do
               "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
             )}
           </p>
-          <div class="flex items-center gap-2" style="margin-top: 6px;">
-            <.link navigate={~p"/boards/new"}>
-              <.button class="btn-primary btn-sm gap-2">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto"
+            style="margin-top: 6px;"
+          >
+            <.link navigate={~p"/boards/new"} class="w-full sm:w-auto">
+              <.button class="btn-primary btn-sm gap-2 w-full sm:w-auto">
                 <.icon name="hero-plus" class="h-4 w-4" />
                 {gettext("Create your first board")}
               </.button>
@@ -78,7 +87,7 @@ defmodule KanbanWeb.BoardLive.Index do
               type="button"
               disabled
               title={gettext("Coming soon")}
-              class="btn btn-sm btn-outline gap-2"
+              class="btn btn-sm btn-outline gap-2 w-full sm:w-auto"
               style="cursor: not-allowed; opacity: 0.6;"
             >
               <.icon name="hero-link" class="h-4 w-4" />
@@ -95,7 +104,9 @@ defmodule KanbanWeb.BoardLive.Index do
           </p>
         </div>
 
-        <.boards_empty_diagram />
+        <div class="hidden md:flex md:justify-center">
+          <.boards_empty_diagram />
+        </div>
       </div>
     </div>
     """

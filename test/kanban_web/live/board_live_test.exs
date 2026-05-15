@@ -122,6 +122,25 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "No boards yet"
     end
 
+    test "populated state declares the responsive grid columns (1/2/3)",
+         %{conn: conn, user: user} do
+      _b = board_fixture(user)
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      assert html =~ "grid-cols-1"
+      assert html =~ "md:grid-cols-2"
+      assert html =~ "lg:grid-cols-3"
+    end
+
+    test "empty state stacks CTAs on mobile and hides the diagram", %{conn: conn} do
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # CTA container is flex-col on mobile, flex-row at sm+.
+      assert html =~ "flex-col sm:flex-row"
+      # Diagram is hidden on mobile, shown md+.
+      assert html =~ "hidden md:flex"
+    end
+
     test "empty state renders the new design's structure and CTAs",
          %{conn: conn} do
       {:ok, _index_live, html} = live(conn, ~p"/boards")
