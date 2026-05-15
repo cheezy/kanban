@@ -25,6 +25,7 @@ defmodule KanbanWeb.TaskCard do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.GoalCard
+  alias KanbanWeb.TaskTokens
 
   @doc """
   Renders a task card.
@@ -386,11 +387,7 @@ defmodule KanbanWeb.TaskCard do
 
   # --- Helpers -------------------------------------------------------------
 
-  defp priority_color(:critical), do: "var(--pri-critical)"
-  defp priority_color(:high), do: "var(--pri-high)"
-  defp priority_color(:medium), do: "var(--pri-medium)"
-  defp priority_color(:low), do: "var(--pri-low)"
-  defp priority_color(_), do: "var(--ink-4)"
+  defp priority_color(p), do: TaskTokens.priority_color(p)
 
   # The primary avatar slot at the top-right of the card: prefer
   # claimed_by, then column-dependent completed_by, then author.

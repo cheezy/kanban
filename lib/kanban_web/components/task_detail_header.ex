@@ -32,6 +32,7 @@ defmodule KanbanWeb.TaskDetailHeader do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.BoardHeader
+  alias KanbanWeb.TaskTokens
 
   @doc """
   Renders the task-detail header band.
@@ -154,9 +155,9 @@ defmodule KanbanWeb.TaskDetailHeader do
     status = assigns.status
 
     assigns
-    |> assign(:status_label, status_label(status))
-    |> assign(:status_bg, status_soft(status))
-    |> assign(:status_fg, status_ink(status))
+    |> assign(:status_label, TaskTokens.status_label(status))
+    |> assign(:status_bg, TaskTokens.status_soft(status))
+    |> assign(:status_fg, TaskTokens.status_ink(status))
   end
 
   # --- Sub-components ------------------------------------------------------
@@ -190,7 +191,7 @@ defmodule KanbanWeb.TaskDetailHeader do
   attr :priority, :atom, required: true
 
   defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, priority_color(assigns.priority))
+    assigns = assign(assigns, :color, TaskTokens.priority_color(assigns.priority))
 
     ~H"""
     <span
@@ -213,64 +214,11 @@ defmodule KanbanWeb.TaskDetailHeader do
   defp padding_for(:full), do: "20px 32px 16px"
   defp padding_for(_), do: "14px 22px 12px"
 
-  defp status_label(:open), do: gettext("Open")
-  defp status_label(:ready), do: gettext("Ready")
-  defp status_label(:in_progress), do: gettext("Doing")
-  defp status_label(:review), do: gettext("Review")
-  defp status_label(:completed), do: gettext("Done")
-  defp status_label(:blocked), do: gettext("Blocked")
-
-  defp status_label(other) when is_atom(other),
-    do: other |> Atom.to_string() |> String.capitalize()
-
-  defp status_label(_), do: gettext("Open")
-
-  defp status_soft(:open), do: "var(--st-backlog-soft)"
-  defp status_soft(:ready), do: "var(--st-ready-soft)"
-  defp status_soft(:in_progress), do: "var(--st-doing-soft)"
-  defp status_soft(:review), do: "var(--st-review-soft)"
-  defp status_soft(:completed), do: "var(--st-done-soft)"
-  defp status_soft(:blocked), do: "var(--st-blocked-soft)"
-  defp status_soft(_), do: "var(--st-backlog-soft)"
-
-  defp status_ink(:open), do: "var(--st-backlog)"
-  defp status_ink(:ready), do: "var(--st-ready)"
-  defp status_ink(:in_progress), do: "var(--st-doing)"
-  defp status_ink(:review), do: "var(--st-review)"
-  defp status_ink(:completed), do: "var(--st-done)"
-  defp status_ink(:blocked), do: "var(--st-blocked)"
-  defp status_ink(_), do: "var(--st-backlog)"
-
-  defp priority_color(:critical), do: "var(--pri-critical)"
-  defp priority_color(:high), do: "var(--pri-high)"
-  defp priority_color(:medium), do: "var(--pri-medium)"
-  defp priority_color(:low), do: "var(--pri-low)"
-  defp priority_color(_), do: "var(--ink-4)"
-
   defp meta_label(nil, nil), do: ""
-  defp meta_label(complexity, nil), do: complexity_word(complexity)
-  defp meta_label(nil, priority), do: priority_word(priority)
+  defp meta_label(complexity, nil), do: TaskTokens.complexity_word(complexity)
+  defp meta_label(nil, priority), do: TaskTokens.priority_word(priority)
 
   defp meta_label(complexity, priority) do
-    "#{priority_word(priority)} · #{complexity_word(complexity)}"
+    "#{TaskTokens.priority_word(priority)} · #{TaskTokens.complexity_word(complexity)}"
   end
-
-  defp complexity_word(:small), do: gettext("Small")
-  defp complexity_word(:medium), do: gettext("Medium")
-  defp complexity_word(:large), do: gettext("Large")
-
-  defp complexity_word(other) when is_atom(other),
-    do: other |> Atom.to_string() |> String.capitalize()
-
-  defp complexity_word(_), do: ""
-
-  defp priority_word(:critical), do: gettext("Critical")
-  defp priority_word(:high), do: gettext("High")
-  defp priority_word(:medium), do: gettext("Medium")
-  defp priority_word(:low), do: gettext("Low")
-
-  defp priority_word(other) when is_atom(other),
-    do: other |> Atom.to_string() |> String.capitalize()
-
-  defp priority_word(_), do: ""
 end
