@@ -14,6 +14,7 @@ defmodule KanbanWeb.GoalProgressHeader do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Avatar
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.SegmentedProgressBar
   alias KanbanWeb.TaskTokens
@@ -35,6 +36,7 @@ defmodule KanbanWeb.GoalProgressHeader do
   attr :goal, :map, required: true
   attr :flow, :map, required: true
   attr :by_status, :map, default: nil
+  attr :contributors, :list, default: []
 
   def goal_progress_header(assigns) do
     assigns = derive_assigns(assigns)
@@ -110,6 +112,15 @@ defmodule KanbanWeb.GoalProgressHeader do
 
         <div style="display: flex; gap: 18px; flex-wrap: wrap;">
           <.kv :for={{label, count, tone} <- @kv_rows} label={label} count={count} tone={tone} />
+        </div>
+
+        <span style="flex: 1;"></span>
+
+        <div :if={@contributors != []} data-goal-contributors>
+          <div class="ucase" style="font-size: 9.5px; color: var(--ink-3); margin-bottom: 4px;">
+            {gettext("Working on it")}
+          </div>
+          <Avatar.avatar_stack members={@contributors} max={5} size={22} />
         </div>
       </div>
     </header>

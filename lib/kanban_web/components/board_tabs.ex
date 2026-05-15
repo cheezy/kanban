@@ -20,7 +20,7 @@ defmodule KanbanWeb.BoardTabs do
 
     * `board` — board struct or map with `:id`. Required.
     * `active` — the currently active tab atom (one of
-      `:board | :goals | :archive | :metrics | :tokens | :members | :settings`).
+      `:board | :archive | :metrics | :tokens | :members | :settings`).
       An unknown atom renders no active underline. Default `:board`.
     * `owner?` — when true, owner-only tabs (Settings) plus tabs
       gated by `can_modify?` are visible. Default false.
@@ -112,7 +112,6 @@ defmodule KanbanWeb.BoardTabs do
 
     [
       %{id: :board, label: gettext("Board"), icon: "hero-view-columns", path: "/boards/#{bid}"},
-      %{id: :goals, label: gettext("Goals"), icon: "hero-flag", path: "/boards/#{bid}"},
       %{
         id: :archive,
         label: gettext("Archive"),

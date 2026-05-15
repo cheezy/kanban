@@ -39,7 +39,7 @@ defmodule KanbanWeb.Layouts do
     default: nil,
     doc:
       "Highlights the matching SideNav item when rendered inside the app shell. " <>
-        "Accepted values: :boards, :goals, :agents, :review, :metrics, :resources, :settings."
+        "Accepted values: :boards, :agents, :review, :metrics, :resources, :settings."
 
   attr :page_title, :string,
     default: nil,
@@ -243,13 +243,6 @@ defmodule KanbanWeb.Layouts do
   # screens land; Metrics has a real dashboard route.
   defp board_scoped_items(%{id: id}) when is_integer(id) or is_binary(id) do
     [
-      %{
-        id: :goals,
-        label: gettext("Goals"),
-        icon: "hero-flag",
-        path: "/boards/#{id}",
-        badge: nil
-      },
       %{
         id: :agents,
         label: gettext("Agents"),

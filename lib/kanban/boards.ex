@@ -14,12 +14,13 @@ defmodule Kanban.Boards do
   alias Kanban.Columns.Column
   alias Kanban.Tasks.Task
 
+  alias KanbanWeb.AvatarPalette
+
   @pulse_window_days 14
   @open_columns ~w(Backlog Ready)
   @doing_column "Doing"
   @review_column "Review"
   @done_column "Done"
-  @human_palettes ~w(human-blue human-amber human-green human-pink)
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -186,7 +187,7 @@ defmodule Kanban.Boards do
       member = %{
         kind: :human,
         name: member_display_name(name, email),
-        palette: human_palette(user_id)
+        palette: AvatarPalette.for_human(user_id)
       }
 
       Map.update(acc, board_id, [member], &(&1 ++ [member]))
@@ -207,10 +208,6 @@ defmodule Kanban.Boards do
   end
 
   defp email_local_part(_), do: "?"
-
-  defp human_palette(user_id) when is_integer(user_id) do
-    Enum.at(@human_palettes, rem(user_id, length(@human_palettes)))
-  end
 
   defp build_metrics(board_ids, now) do
     today = DateTime.to_date(now)

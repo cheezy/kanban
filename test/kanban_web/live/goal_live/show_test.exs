@@ -4,6 +4,7 @@ defmodule KanbanWeb.GoalLive.ShowTest do
   """
   use KanbanWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
@@ -32,7 +33,7 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       assert html =~ "data-goal-show"
       assert html =~ "data-goal-progress-header"
       assert html =~ "data-goal-hierarchy"
-      assert html =~ "data-goal-meta"
+      assert html =~ "data-goal-sidebar"
       assert html =~ "data-goal-activity"
       assert html =~ goal.identifier
       assert html =~ "Migrate the detail surface"
@@ -190,6 +191,176 @@ defmodule KanbanWeb.GoalLive.ShowTest do
                live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
       assert redirect_to =~ "/users/log-in"
+    end
+  end
+
+  describe "sidebar metrics — counts" do
+    setup [:register_and_log_in_user]
+
+    test "renders done/total reflecting the children's status distribution",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [done | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Counts Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "One", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Two", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Three", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      # Mark one child completed so done=1, total=3, percent=33.
+      from(t in Kanban.Tasks.Task, where: t.id == ^done.id)
+      |> Kanban.Repo.update_all(set: [status: :completed, completed_at: DateTime.utc_now()])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "data-goal-sidebar"
+      assert html =~ "1/3"
+    end
+
+    test "renders Contributors count from the goal + children authors",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Contributors Goal", "created_by_id" => user.id},
+          [%{"title" => "One", "type" => "work", "created_by_id" => user.id}]
+        )
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "Contributors"
+    end
+
+    test "shows the Throughput heading and a sparkline marker",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{
+          "title" => "Throughput Goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "data-goal-velocity"
+      assert html =~ ~r/Throughput\s·\s/
+    end
+
+    test "renders the Time section with --- placeholders for an idle goal",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{
+          "title" => "Idle Goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "Days in flight"
+      assert html =~ "Time spent"
+      assert html =~ "Avg cycle"
+      assert html =~ "Last activity"
+    end
+  end
+
+  describe "sidebar metrics — time" do
+    setup [:register_and_log_in_user]
+
+    test "sums time_spent_minutes across children",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [c1, c2 | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Time Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "First", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Second", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      from(t in Kanban.Tasks.Task, where: t.id in ^[c1.id, c2.id])
+      |> Kanban.Repo.update_all(set: [time_spent_minutes: 45])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # 45 + 45 = 90 minutes → 1h 30m
+      assert html =~ "1h 30m"
+    end
+
+    test "computes the avg cycle from done children only",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [done, in_progress | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Avg Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Finished", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Going", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      # done has 120 minutes, in_progress has 60 — avg should be 120m, not 90m.
+      from(t in Kanban.Tasks.Task, where: t.id == ^done.id)
+      |> Kanban.Repo.update_all(
+        set: [status: :completed, completed_at: DateTime.utc_now(), time_spent_minutes: 120]
+      )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^in_progress.id)
+      |> Kanban.Repo.update_all(set: [time_spent_minutes: 60])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "Avg cycle"
+      # Total spent across both = 180m = 3h, avg of done only = 2h.
+      assert html =~ "3h"
+      assert html =~ "2h"
+    end
+
+    test "renders 'today' for a goal claimed less than 24h ago",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [child | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Hot Goal", "created_by_id" => user.id},
+          [%{"title" => "Just started", "type" => "work", "created_by_id" => user.id}]
+        )
+
+      # Stamp the child with a recent claim so the days-in-flight calculation
+      # has a non-nil earliest signal.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      one_hour_ago = DateTime.add(now, -3600, :second)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^child.id)
+      |> Kanban.Repo.update_all(set: [claimed_at: one_hour_ago])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "today"
+      # Sub-24h earliest signal → throughput unit collapses to hourly.
+      assert html =~ "Throughput · last 12 hours"
     end
   end
 end

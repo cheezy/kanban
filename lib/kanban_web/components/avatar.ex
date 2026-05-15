@@ -139,11 +139,13 @@ defmodule KanbanWeb.Avatar do
 
   defp avatar_color(_kind, _palette), do: "var(--ink-3)"
 
-  defp avatar_initials(name) when is_binary(name) do
+  defp avatar_initials(name) when is_binary(name) and byte_size(name) > 0 do
     name
     |> String.split(" ", trim: true)
     |> Enum.take(2)
     |> Enum.map_join("", &String.first/1)
     |> String.upcase()
   end
+
+  defp avatar_initials(_), do: "?"
 end

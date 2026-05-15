@@ -16,10 +16,11 @@ defmodule KanbanWeb.GoalLive.Show do
 
   alias Kanban.Boards
   alias Kanban.Tasks
+  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.GoalChildRow
   alias KanbanWeb.GoalProgressHeader
+  alias KanbanWeb.GoalSidebar
   alias KanbanWeb.TaskActivityLog
-  alias KanbanWeb.TaskMetadataGrid
 
   @status_order [:backlog, :ready, :in_progress, :review, :completed]
 
@@ -45,17 +46,25 @@ defmodule KanbanWeb.GoalLive.Show do
   end
 
   defp assign_goal_view(socket, board, goal, children) do
-    by_status = group_by_status(children)
-    flow = build_flow(by_status)
+    contributors = contributors_for(goal, children)
 
     socket
     |> assign(:board, board)
     |> assign(:goal, goal)
     |> assign(:children, children)
-    |> assign(:children_by_status, by_status)
-    |> assign(:flow, flow)
-    |> assign(:status_sections, status_sections(by_status))
     |> assign(:page_title, page_title(goal))
+    |> assign_grouping(children)
+    |> assign(:contributors, contributors)
+    |> assign(:metrics, sidebar_metrics(goal, children, contributors))
+  end
+
+  defp assign_grouping(socket, children) do
+    by_status = group_by_status(children)
+
+    socket
+    |> assign(:children_by_status, by_status)
+    |> assign(:flow, build_flow(by_status))
+    |> assign(:status_sections, status_sections(by_status))
   end
 
   defp redirect_not_found(socket) do
@@ -96,7 +105,11 @@ defmodule KanbanWeb.GoalLive.Show do
       </:actions>
 
       <div data-goal-show class="stride-screen">
-        <GoalProgressHeader.goal_progress_header goal={@goal} flow={@flow} />
+        <GoalProgressHeader.goal_progress_header
+          goal={@goal}
+          flow={@flow}
+          contributors={@contributors}
+        />
 
         <div style="display: flex; align-items: stretch; min-height: 0;">
           <section
@@ -165,19 +178,7 @@ defmodule KanbanWeb.GoalLive.Show do
             </div>
           </section>
 
-          <aside
-            data-goal-meta
-            style={[
-              "width: 280px; flex-shrink: 0;",
-              "border-left: 1px solid var(--line);",
-              "background: var(--surface-2); padding: 16px 18px;"
-            ]}
-          >
-            <TaskMetadataGrid.metadata_grid
-              task={@goal}
-              board_name={@board.name}
-            />
-          </aside>
+          <GoalSidebar.goal_sidebar metrics={@metrics} />
         </div>
 
         <section
@@ -266,4 +267,208 @@ defmodule KanbanWeb.GoalLive.Show do
   defp status_dot(:review), do: "var(--st-review)"
   defp status_dot(:completed), do: "var(--st-done)"
   defp status_dot(_), do: "var(--ink-4)"
+
+  # Distinct list of humans + agents who touched the goal or any of its
+  # children — drives the "Working on it" MemberStack in the hero band.
+  # Order: humans (in goal-first, child-position order) then agents.
+  defp contributors_for(goal, children) do
+    tasks = [goal | children]
+    human_avatars(tasks) ++ agent_avatars(tasks)
+  end
+
+  defp human_avatars(tasks) do
+    tasks
+    |> Enum.flat_map(&users_from/1)
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.map(&user_to_avatar/1)
+  end
+
+  defp agent_avatars(tasks) do
+    tasks
+    |> Enum.flat_map(&agents_from/1)
+    |> Enum.uniq()
+    |> Enum.map(&agent_to_avatar/1)
+  end
+
+  defp users_from(task) do
+    Enum.reject(
+      [Map.get(task, :assigned_to), Map.get(task, :created_by)],
+      &(is_nil(&1) or match?(%Ecto.Association.NotLoaded{}, &1))
+    )
+  end
+
+  defp agents_from(task) do
+    [Map.get(task, :created_by_agent), Map.get(task, :completed_by_agent)]
+    |> Enum.reject(&(&1 in [nil, ""]))
+  end
+
+  defp user_to_avatar(user) do
+    %{
+      kind: :human,
+      name: user.name || user.email || "?",
+      palette: AvatarPalette.for_human(user.id)
+    }
+  end
+
+  defp agent_to_avatar(name) do
+    %{kind: :agent, name: name, palette: AvatarPalette.for_agent(name)}
+  end
+
+  # --- Sidebar metric pack ---------------------------------------------
+
+  defp sidebar_metrics(goal, children, contributors) do
+    counts = sidebar_counts(children, length(contributors))
+
+    counts
+    |> Map.merge(sidebar_time_metrics(goal, children))
+    |> Map.merge(sidebar_velocity(goal, children))
+  end
+
+  defp sidebar_counts(children, contributor_count) do
+    statuses = Enum.frequencies_by(children, &Map.get(&1, :status, :open))
+    backlog = Map.get(statuses, :backlog, 0) + Map.get(statuses, :open, 0)
+    ready = Map.get(statuses, :ready, 0)
+    in_flight = Map.get(statuses, :in_progress, 0) + Map.get(statuses, :review, 0)
+    blocked = Map.get(statuses, :blocked, 0)
+    done = Map.get(statuses, :completed, 0)
+    total = length(children)
+    percent = if total > 0, do: round(done / total * 100), else: 0
+
+    %{
+      percent: percent,
+      done: done,
+      total: total,
+      in_flight: in_flight,
+      ready: ready,
+      backlog: backlog,
+      blocked: blocked,
+      contributor_count: contributor_count
+    }
+  end
+
+  defp sidebar_time_metrics(goal, children) do
+    completed = Enum.filter(children, &(Map.get(&1, :status) == :completed))
+    total_minutes = sum_time_spent(children)
+    done_count = length(completed)
+
+    %{
+      days_in_flight: days_in_flight(goal, children),
+      time_spent_minutes: total_minutes,
+      avg_cycle_minutes: avg_minutes(sum_time_spent(completed), done_count),
+      last_activity: last_activity(goal, children)
+    }
+  end
+
+  defp days_in_flight(goal, children) do
+    earliest =
+      [goal | children]
+      |> Enum.map(&Map.get(&1, :claimed_at))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.min(DateTime, fn -> nil end)
+
+    case earliest do
+      nil -> nil
+      %DateTime{} = dt -> max(DateTime.diff(DateTime.utc_now(), dt, :second) |> div(86_400), 0)
+    end
+  end
+
+  defp sum_time_spent(tasks) do
+    tasks
+    |> Enum.map(&Map.get(&1, :time_spent_minutes))
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sum()
+  end
+
+  defp avg_minutes(_total, 0), do: nil
+  defp avg_minutes(total, count), do: div(total, count)
+
+  defp last_activity(goal, children) do
+    [goal | children]
+    |> Enum.map(&Map.get(&1, :updated_at))
+    |> Enum.reject(&is_nil/1)
+    |> Enum.max(NaiveDateTime, fn -> nil end)
+  end
+
+  # --- Velocity sparkline -----------------------------------------------
+
+  @bucket_count 12
+
+  # Distribution of completions across the last 12 time units. Unit
+  # auto-adapts: hourly when the earliest activity (goal claim or any
+  # child completion) is within the last 24 hours, daily otherwise.
+  # Returns `:sparkline_data` (a list of integers) and
+  # `:sparkline_label` (the human-readable range for the caption).
+  defp sidebar_velocity(goal, children) do
+    now = DateTime.utc_now()
+    completions = completed_at_list(children)
+    earliest = earliest_signal(goal, children)
+    unit = bucket_unit(earliest, now)
+    buckets = bucketize(completions, unit, now)
+
+    %{
+      sparkline_data: buckets,
+      sparkline_label: bucket_label(unit, now),
+      sparkline_unit: unit
+    }
+  end
+
+  defp completed_at_list(children) do
+    children
+    |> Enum.map(&Map.get(&1, :completed_at))
+    |> Enum.reject(&is_nil/1)
+    |> Enum.map(&to_datetime/1)
+  end
+
+  defp earliest_signal(goal, children) do
+    candidates =
+      [Map.get(goal, :claimed_at), Map.get(goal, :inserted_at) | completed_at_list(children)]
+      |> Enum.map(&to_datetime/1)
+      |> Enum.reject(&is_nil/1)
+
+    Enum.min(candidates, DateTime, fn -> nil end)
+  end
+
+  defp bucket_unit(nil, _now), do: :hour
+
+  defp bucket_unit(%DateTime{} = earliest, now) do
+    if DateTime.diff(now, earliest, :second) <= 86_400, do: :hour, else: :day
+  end
+
+  defp bucketize(completions, :hour, now) do
+    bucket_indexes(completions, now, 3600)
+  end
+
+  defp bucketize(completions, :day, now) do
+    bucket_indexes(completions, now, 86_400)
+  end
+
+  # For each completion, the bucket index is floor((now - completed_at) / size).
+  # Index 0 is the most recent bucket. We then reverse so the oldest sits on
+  # the left of the sparkline (which is how PulseSparkline reads its data).
+  defp bucket_indexes(completions, now, size_seconds) do
+    counts = List.duplicate(0, @bucket_count)
+
+    Enum.reduce(completions, counts, fn dt, acc ->
+      idx = div(DateTime.diff(now, dt, :second), size_seconds)
+      if idx in 0..(@bucket_count - 1), do: List.update_at(acc, idx, &(&1 + 1)), else: acc
+    end)
+    |> Enum.reverse()
+  end
+
+  defp bucket_label(:hour, now) do
+    earliest = DateTime.add(now, -@bucket_count * 3600, :second)
+    "#{format_clock(earliest)} — #{format_clock(now)}"
+  end
+
+  defp bucket_label(:day, now) do
+    earliest = DateTime.add(now, -@bucket_count * 86_400, :second)
+    "#{format_short_date(earliest)} — #{format_short_date(now)}"
+  end
+
+  defp format_clock(%DateTime{} = dt), do: Calendar.strftime(dt, "%H:%M")
+  defp format_short_date(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %d")
+
+  defp to_datetime(%DateTime{} = dt), do: dt
+  defp to_datetime(%NaiveDateTime{} = dt), do: DateTime.from_naive!(dt, "Etc/UTC")
+  defp to_datetime(_), do: nil
 end

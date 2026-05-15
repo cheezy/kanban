@@ -265,6 +265,23 @@ defmodule Kanban.Tasks.Queries do
     end
   end
 
+  @doc """
+  Returns the non-archived goals (type: :goal) on a board, ordered by
+  identifier. Preloads `:assigned_to` so the index page can render owner
+  avatars without N+1.
+  """
+  def list_goals_for_board(board_id) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
+      where: t.type == :goal,
+      where: is_nil(t.archived_at),
+      order_by: [asc: t.identifier],
+      preload: [:assigned_to]
+    )
+    |> Repo.all()
+  end
+
   defp goal_with_board(goal_id) do
     query =
       from t in Task,

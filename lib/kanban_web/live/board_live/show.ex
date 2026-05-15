@@ -6,6 +6,7 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Columns
   alias Kanban.Messages
   alias Kanban.Tasks
+  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardTabs
@@ -108,8 +109,15 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_event("view_task", %{"id" => id}, socket) do
     case lookup_viewable_task(socket, id) do
-      {:ok, task_id} -> schedule_task_modal(socket, task_id)
-      :error -> reject_view_task(socket, id)
+      {:ok, %{id: task_id, type: :goal}} ->
+        {:noreply,
+         push_navigate(socket, to: ~p"/boards/#{socket.assigns.board}/goals/#{task_id}")}
+
+      {:ok, %{id: task_id}} ->
+        schedule_task_modal(socket, task_id)
+
+      :error ->
+        reject_view_task(socket, id)
     end
   end
 
@@ -1209,8 +1217,8 @@ defmodule KanbanWeb.BoardLive.Show do
 
   defp lookup_viewable_task(socket, id) do
     with {:ok, task_id} <- parse_task_id(id),
-         %{} <- Tasks.get_task_for_board(task_id, socket.assigns.board.id) do
-      {:ok, task_id}
+         %{} = task <- Tasks.get_task_for_board(task_id, socket.assigns.board.id) do
+      {:ok, %{id: task_id, type: task.type}}
     else
       _ -> :error
     end
@@ -1509,7 +1517,11 @@ defmodule KanbanWeb.BoardLive.Show do
   # assigned-user icon for both states; the new card uses the avatar
   # in the same slot.
   defp claimed_by_for(%{assigned_to: %{id: _id} = user}) do
-    %{kind: :human, name: user_display_name(user), palette: human_palette(user.id)}
+    %{
+      kind: :human,
+      name: user_display_name(user),
+      palette: AvatarPalette.for_human(user.id)
+    }
   end
 
   defp claimed_by_for(_), do: nil
@@ -1517,7 +1529,7 @@ defmodule KanbanWeb.BoardLive.Show do
   defp completed_by_for(%{completed_by_agent: nil}), do: nil
 
   defp completed_by_for(%{completed_by_agent: agent}) when is_binary(agent) do
-    %{kind: :agent, name: agent, palette: agent_palette(agent)}
+    %{kind: :agent, name: agent, palette: AvatarPalette.for_agent(agent)}
   end
 
   defp completed_by_for(_), do: nil
@@ -1525,23 +1537,4 @@ defmodule KanbanWeb.BoardLive.Show do
   defp user_display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp user_display_name(%{email: email}) when is_binary(email), do: email
   defp user_display_name(_), do: "?"
-
-  @human_palettes ~w(human-blue human-amber human-green human-pink)
-  defp human_palette(user_id) when is_integer(user_id) do
-    Enum.at(@human_palettes, rem(user_id, length(@human_palettes)))
-  end
-
-  defp human_palette(_), do: "human-blue"
-
-  defp agent_palette(name) when is_binary(name) do
-    case name |> String.downcase() |> String.split() |> List.first() do
-      "claude" -> "agent-claude"
-      "cursor" -> "agent-cursor"
-      "aider" -> "agent-aider"
-      "codex" -> "agent-codex"
-      _ -> "agent-claude"
-    end
-  end
-
-  defp agent_palette(_), do: "agent-claude"
 end

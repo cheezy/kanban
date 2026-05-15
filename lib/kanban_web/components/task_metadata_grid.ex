@@ -25,6 +25,7 @@ defmodule KanbanWeb.TaskMetadataGrid do
   use KanbanWeb, :html
 
   alias KanbanWeb.Avatar
+  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -285,7 +286,17 @@ defmodule KanbanWeb.TaskMetadataGrid do
   end
 
   defp owner_palette(owner) do
-    Map.get(owner, :palette)
+    case Map.get(owner, :palette) do
+      palette when is_binary(palette) -> palette
+      _ -> resolve_owner_palette(owner)
+    end
+  end
+
+  defp resolve_owner_palette(owner) do
+    case owner_kind(owner) do
+      :agent -> owner |> Map.get(:name) |> AvatarPalette.for_agent()
+      _ -> owner |> Map.get(:id) |> AvatarPalette.for_human()
+    end
   end
 
   defp goal_identifier(goal), do: Map.get(goal, :identifier, "")

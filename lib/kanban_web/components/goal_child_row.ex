@@ -11,6 +11,7 @@ defmodule KanbanWeb.GoalChildRow do
   use KanbanWeb, :html
 
   alias KanbanWeb.Avatar
+  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -117,19 +118,48 @@ defmodule KanbanWeb.GoalChildRow do
   end
 
   defp owner_cell(assigns) do
+    assigns =
+      assigns
+      |> assign(:owner_label, owner_label(assigns.owner))
+      |> assign(:owner_kind, owner_kind(assigns.owner))
+      |> assign(:owner_palette, owner_palette(assigns.owner))
+
     ~H"""
     <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;">
       <Avatar.avatar
-        kind={Map.get(@owner, :kind, :human)}
-        name={Map.get(@owner, :name, "")}
-        palette={Map.get(@owner, :palette)}
+        kind={@owner_kind}
+        name={@owner_label}
+        palette={@owner_palette}
         size={16}
       />
       <span style="color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-        {Map.get(@owner, :name)}
+        {@owner_label}
       </span>
     </span>
     """
+  end
+
+  defp owner_label(owner) do
+    Map.get(owner, :name) || Map.get(owner, :email) || ""
+  end
+
+  defp owner_kind(owner), do: Map.get(owner, :kind, :human)
+
+  # Prefer an explicit palette from the caller; fall back to the shared
+  # AvatarPalette so each person/agent renders with a stable color
+  # matching their MemberStack chip.
+  defp owner_palette(owner) do
+    case Map.get(owner, :palette) do
+      palette when is_binary(palette) -> palette
+      _ -> resolve_palette(owner)
+    end
+  end
+
+  defp resolve_palette(owner) do
+    case owner_kind(owner) do
+      :agent -> owner |> Map.get(:name) |> AvatarPalette.for_agent()
+      _ -> owner |> Map.get(:id) |> AvatarPalette.for_human()
+    end
   end
 
   # --- Assign derivation -------------------------------------------------
