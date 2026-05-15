@@ -198,7 +198,7 @@ msgstr "gratis."
 msgid "to your account."
 msgstr "a tu cuenta."
 
-#: lib/kanban_web/live/board_live/index.html.heex:109
+#: lib/kanban_web/live/board_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "¿Estás seguro de que quieres eliminar este tablero?"
@@ -238,7 +238,7 @@ msgstr "Descripción"
 msgid "Edit Board"
 msgstr "Editar Tablero"
 
-#: lib/kanban_web/live/board_live/index.html.heex:102
+#: lib/kanban_web/live/board_live/index.html.heex:28
 #: lib/kanban_web/live/board_live/show.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Edit board"
@@ -259,7 +259,6 @@ msgid "Name"
 msgstr "Nombre"
 
 #: lib/kanban_web/live/board_live/form.html.heex:24
-#: lib/kanban_web/live/board_live/index.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "New Board"
 msgstr "Nuevo Tablero"
@@ -604,8 +603,6 @@ msgid "Assigned To"
 msgstr "Asignado a"
 
 #: lib/kanban_web/live/board_live/form.html.heex:312
-#: lib/kanban_web/live/board_live/index.ex:27
-#: lib/kanban_web/live/board_live/index.ex:30
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "Puede Editar"
@@ -635,7 +632,7 @@ msgstr "Error al eliminar usuario del tablero"
 msgid "Manage Users"
 msgstr "Gestionar Usuarios"
 
-#: lib/kanban_web/live/board_live/index.ex:229
+#: lib/kanban_web/live/board_live/index.ex:209
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "Solo el propietario del tablero puede eliminarlo"
@@ -646,15 +643,11 @@ msgid "Only the board owner can edit this board"
 msgstr "Solo el propietario del tablero puede editarlo"
 
 #: lib/kanban_web/live/board_live/form.html.heex:310
-#: lib/kanban_web/live/board_live/index.ex:14
-#: lib/kanban_web/live/board_live/index.ex:17
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "Propietario"
 
 #: lib/kanban_web/live/board_live/form.html.heex:314
-#: lib/kanban_web/live/board_live/index.ex:40
-#: lib/kanban_web/live/board_live/index.ex:43
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "Solo Lectura"
@@ -1416,16 +1409,6 @@ msgstr ""
 msgid "Needs Review"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:76
-#, elixir-autogen, elixir-format
-msgid "New AI Optimized Board"
-msgstr "Nuevo Tablero Optimizado para IA"
-
-#: lib/kanban_web/live/board_live/index.html.heex:64
-#, elixir-autogen, elixir-format, fuzzy
-msgid "New Empty Board"
-msgstr "Nuevo Tablero Vacío"
-
 #: lib/kanban_web/live/task_live/view_component.ex:196
 #: lib/kanban_web/live/task_live/view_component.ex:210
 #, elixir-autogen, elixir-format
@@ -1456,7 +1439,6 @@ msgstr ""
 msgid "Only board owners can change field visibility"
 msgstr ""
 
-#: lib/kanban_web/components/board_pulse_card.ex:145
 #: lib/kanban_web/live/task_live/form_component.html.heex:117
 #: lib/kanban_web/live/task_live/view_component.ex:62
 #, elixir-autogen, elixir-format
@@ -1496,11 +1478,6 @@ msgstr "Trampas Comunes"
 #, elixir-autogen, elixir-format
 msgid "Pitfalls to Avoid"
 msgstr ""
-
-#: lib/kanban_web/live/board_live/index.html.heex:78
-#, elixir-autogen, elixir-format
-msgid "Pre-configured for AI workflow"
-msgstr "Preconfigurado para flujo de trabajo de IA"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:929
@@ -1564,11 +1541,6 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Small"
 msgstr ""
-
-#: lib/kanban_web/live/board_live/index.html.heex:65
-#, elixir-autogen, elixir-format
-msgid "Start with a blank board"
-msgstr "Comenzar con un tablero en blanco"
 
 #: lib/kanban_web/live/task_live/components/completion_section.ex:35
 #, elixir-autogen, elixir-format
@@ -2062,11 +2034,6 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
-
-#: lib/kanban_web/live/board_live/index.ex:174
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Empty Board"
-msgstr "Editar Tablero"
 
 #: lib/kanban_web/live/task_live/form_component.ex:481
 #, elixir-autogen, elixir-format
@@ -2840,7 +2807,7 @@ msgstr "tareas completadas"
 
 #: lib/kanban_web/live/archive_live/index.ex:18
 #: lib/kanban_web/live/board_live/form.ex:273
-#: lib/kanban_web/live/board_live/index.ex:237
+#: lib/kanban_web/live/board_live/index.ex:217
 #: lib/kanban_web/live/board_live/show.ex:1159
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -4791,82 +4758,72 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/index.ex:180
-#, elixir-autogen, elixir-format, fuzzy
-msgid "AI Optimized"
-msgstr ""
-
 #: lib/kanban_web/live/board_live/index.html.heex:6
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Boards"
 msgstr "Tableros"
 
-#: lib/kanban_web/live/board_live/index.html.heex:33
-#, elixir-autogen, elixir-format
-msgid "Cards"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.ex:157
+#: lib/kanban_web/live/board_live/index.ex:114
 #, elixir-autogen, elixir-format
 msgid "Create new board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:111
+#: lib/kanban_web/live/board_live/index.html.heex:37
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete board"
 msgstr "Eliminar"
 
-#: lib/kanban_web/live/board_live/index.html.heex:47
-#, elixir-autogen, elixir-format
-msgid "List"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.html.heex:40
-#, elixir-autogen, elixir-format
-msgid "List view coming soon"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.ex:168
+#: lib/kanban_web/live/board_live/index.ex:125
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New board"
 msgstr "Nuevo Tablero"
 
-#: lib/kanban_web/live/board_live/index.html.heex:16
-#, elixir-autogen, elixir-format, fuzzy
-msgid "View mode"
-msgstr "Ver Tablero"
-
-#: lib/kanban_web/live/board_live/index.ex:72
+#: lib/kanban_web/live/board_live/index.ex:29
 #, elixir-autogen, elixir-format
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:89
+#: lib/kanban_web/live/board_live/index.ex:46
 #, elixir-autogen, elixir-format
 msgid "Coming soon"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:83
+#: lib/kanban_web/live/board_live/index.ex:40
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create your first board"
 msgstr "Crea tu primera columna"
 
-#: lib/kanban_web/live/board_live/index.ex:94
+#: lib/kanban_web/live/board_live/index.ex:51
 #, elixir-autogen, elixir-format
 msgid "Import from Linear or Jira"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:69
+#: lib/kanban_web/live/board_live/index.ex:26
 #, elixir-autogen, elixir-format
 msgid "Let's start with one."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:69
+#: lib/kanban_web/live/board_live/index.ex:26
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No boards yet."
 msgstr "Aún no hay tableros"
 
-#: lib/kanban_web/live/board_live/index.ex:101
+#: lib/kanban_web/live/board_live/index.ex:58
 #, elixir-autogen, elixir-format
 msgid "Tip: start with the board your team already works in. Stride can backfill history."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:152
+#, elixir-autogen, elixir-format
+msgid "AI Optimized"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:139
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Empty Board"
+msgstr "Editar Tablero"
+
+#: lib/kanban_web/components/board_pulse_card.ex:145
+#, elixir-autogen, elixir-format
+msgid "To Do"
 msgstr ""

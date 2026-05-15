@@ -227,7 +227,7 @@ defmodule KanbanWeb.BoardPulseCardTest do
         <BoardPulseCard.board_pulse_card board={@board} />
         """)
 
-      assert html =~ ~r/>\s*Open\s*</
+      assert html =~ ~r/>\s*To Do\s*</
       assert html =~ ~r/>\s*Doing\s*</
       assert html =~ ~r/>\s*Review\s*</
       assert html =~ ~r/>\s*Done\s*</

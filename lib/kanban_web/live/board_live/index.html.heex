@@ -10,79 +10,6 @@
         </span>
       </div>
 
-      <div class="flex items-center gap-2 flex-wrap">
-        <div
-          role="tablist"
-          aria-label={gettext("View mode")}
-          style={[
-            "display: inline-flex; gap: 2px;",
-            "background: var(--surface-2); border: 1px solid var(--line);",
-            "border-radius: 6px; padding: 2px;"
-          ]}
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected="true"
-            style={[
-              "padding: 4px 10px; border-radius: 4px;",
-              "background: var(--surface); color: var(--ink);",
-              "font-size: 11px; font-weight: 600; box-shadow: var(--shadow-sm);"
-            ]}
-          >
-            {gettext("Cards")}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected="false"
-            disabled
-            title={gettext("List view coming soon")}
-            style={[
-              "padding: 4px 10px; border-radius: 4px;",
-              "background: transparent; color: var(--ink-3);",
-              "font-size: 11px; font-weight: 500; cursor: not-allowed;"
-            ]}
-          >
-            {gettext("List")}
-          </button>
-        </div>
-
-        <div class="dropdown dropdown-end">
-          <label tabindex="0" class="btn btn-primary btn-sm">
-            {gettext("New Board")}
-            <.icon name="hero-chevron-down" class="h-4 w-4 ml-1" />
-          </label>
-          <ul
-            tabindex="0"
-            class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-64 mt-2 border border-base-300"
-          >
-            <li>
-              <.link navigate={~p"/boards/new"} class="flex items-start gap-3 py-3">
-                <.icon name="hero-document" class="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <div>
-                  <div class="font-semibold">{gettext("New Empty Board")}</div>
-                  <div class="text-xs opacity-70">{gettext("Start with a blank board")}</div>
-                </div>
-              </.link>
-            </li>
-            <li>
-              <.link
-                navigate={~p"/boards/new?ai_optimized=true"}
-                class="flex items-start gap-3 py-3"
-              >
-                <.icon name="hero-sparkles" class="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <div>
-                  <div class="font-semibold">{gettext("New AI Optimized Board")}</div>
-                  <div class="text-xs opacity-70">
-                    {gettext("Pre-configured for AI workflow")}
-                  </div>
-                </div>
-              </.link>
-            </li>
-          </ul>
-        </div>
-      </div>
     </div>
 
     <%= if !@has_boards do %>
@@ -94,7 +21,6 @@
             <BoardPulseCard.board_pulse_card board={board} />
 
             <div class="absolute top-2 right-2 flex items-center gap-1">
-              <.access_badge access={Map.get(board, :user_access)} />
               <.link
                 :if={Map.get(board, :user_access) == :owner}
                 navigate={~p"/boards/#{board}/edit"}

@@ -4,49 +4,6 @@ defmodule KanbanWeb.BoardLive.Index do
   alias Kanban.Boards
   alias KanbanWeb.BoardPulseCard
 
-  attr :access, :atom, required: true
-
-  defp access_badge(%{access: :owner} = assigns) do
-    ~H"""
-    <span
-      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-      style="background: var(--st-doing-soft); color: var(--st-doing); border: 1px solid var(--line);"
-      title={gettext("Owner")}
-    >
-      <.icon name="hero-star-solid" class="h-3 w-3" />
-      <span>{gettext("Owner")}</span>
-    </span>
-    """
-  end
-
-  defp access_badge(%{access: :modify} = assigns) do
-    ~H"""
-    <span
-      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-      style="background: var(--st-ready-soft); color: var(--st-ready); border: 1px solid var(--line);"
-      title={gettext("Can Edit")}
-    >
-      <.icon name="hero-pencil-solid" class="h-3 w-3" />
-      <span>{gettext("Can Edit")}</span>
-    </span>
-    """
-  end
-
-  defp access_badge(%{access: :read_only} = assigns) do
-    ~H"""
-    <span
-      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-      style="background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line);"
-      title={gettext("Read Only")}
-    >
-      <.icon name="hero-eye-solid" class="h-3 w-3" />
-      <span>{gettext("Read Only")}</span>
-    </span>
-    """
-  end
-
-  defp access_badge(assigns), do: ~H""
-
   defp empty_state(assigns) do
     ~H"""
     <div class="flex items-center justify-center px-4" style="min-height: 60vh;">
@@ -168,27 +125,50 @@ defmodule KanbanWeb.BoardLive.Index do
         {gettext("New board")}
       </p>
       <div class="flex flex-col gap-2 w-full max-w-[12rem]">
-        <.link navigate={~p"/boards/new"}>
-          <.button class="w-full btn-sm btn-outline gap-2">
-            <.icon name="hero-document" class="h-4 w-4" />
-            <span class="text-xs">{gettext("Empty Board")}</span>
-          </.button>
+        <.link
+          navigate={~p"/boards/new"}
+          class="inline-flex items-center justify-center gap-1.5 cursor-pointer"
+          style={[
+            "padding: 6px 10px; border-radius: 5px;",
+            "background: transparent; color: var(--ink-2);",
+            "border: 1px solid var(--line-strong);",
+            "font-size: 12px; font-weight: 500;"
+          ]}
+        >
+          <.icon name="hero-document" class="h-3.5 w-3.5" />
+          <span>{gettext("Empty Board")}</span>
         </.link>
-        <.link navigate={~p"/boards/new?ai_optimized=true"}>
-          <.button class="w-full btn-sm gap-2">
-            <.icon name="hero-sparkles" class="h-4 w-4" />
-            <span class="text-xs">{gettext("AI Optimized")}</span>
-          </.button>
+        <.link
+          navigate={~p"/boards/new?ai_optimized=true"}
+          class="inline-flex items-center justify-center gap-1.5 cursor-pointer"
+          style={[
+            "padding: 6px 10px; border-radius: 5px;",
+            "background: var(--ink); color: white; border: none;",
+            "font-size: 12px; font-weight: 500;",
+            "box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+          ]}
+        >
+          <.icon name="hero-sparkles" class="h-3.5 w-3.5" />
+          <span>{gettext("AI Optimized")}</span>
         </.link>
       </div>
     </div>
     """
   end
 
+  @accents ~w(orange violet doing ready backlog blocked)a
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
-    boards = Boards.list_boards_with_metrics(user)
+
+    boards =
+      user
+      |> Boards.list_boards_with_metrics()
+      |> Enum.with_index()
+      |> Enum.map(fn {board, index} ->
+        Map.put(board, :accent, Enum.at(@accents, rem(index, length(@accents))))
+      end)
 
     {:ok,
      socket

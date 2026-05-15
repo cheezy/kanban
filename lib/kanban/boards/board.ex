@@ -26,6 +26,7 @@ defmodule Kanban.Boards.Board do
 
     field :user_access, Ecto.Enum, values: [:owner, :read_only, :modify], virtual: true
     field :metrics, :map, virtual: true
+    field :members, {:array, :map}, virtual: true, default: []
 
     has_many :board_users, Kanban.Boards.BoardUser
     has_many :columns, Kanban.Columns.Column

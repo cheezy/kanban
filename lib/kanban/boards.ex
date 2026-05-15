@@ -8,6 +8,7 @@ defmodule Kanban.Boards do
 
   alias Kanban.Repo
 
+  alias Kanban.Accounts.User
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Columns.Column
@@ -18,6 +19,7 @@ defmodule Kanban.Boards do
   @doing_column "Doing"
   @review_column "Review"
   @done_column "Done"
+  @human_palettes ~w(human-blue human-amber human-green human-pink)
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -112,11 +114,60 @@ defmodule Kanban.Boards do
 
       board_ids ->
         metrics_by_board = build_metrics(board_ids, now)
+        members_by_board = members_by_board(board_ids)
 
         Enum.map(boards, fn board ->
-          %{board | metrics: Map.get(metrics_by_board, board.id, empty_metrics(now))}
+          %{
+            board
+            | metrics: Map.get(metrics_by_board, board.id, empty_metrics(now)),
+              members: Map.get(members_by_board, board.id, [])
+          }
         end)
     end
+  end
+
+  # Returns %{board_id => [%{kind: :human, name: string, palette: string}]}
+  # built from the users on each board's `board_users` join. Used to render
+  # the avatar stack in the Boards index pulse card. The Avatar component
+  # accepts at most 5 visible avatars before showing a +N overflow chip,
+  # so this query intentionally returns all members and the component
+  # handles truncation.
+  defp members_by_board(board_ids) do
+    BoardUser
+    |> join(:inner, [bu], u in User, on: u.id == bu.user_id)
+    |> where([bu], bu.board_id in ^board_ids)
+    |> select([bu, u], {bu.board_id, u.id, u.name, u.email})
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn row, acc ->
+      {board_id, user_id, name, email} = row
+
+      member = %{
+        kind: :human,
+        name: member_display_name(name, email),
+        palette: human_palette(user_id)
+      }
+
+      Map.update(acc, board_id, [member], &(&1 ++ [member]))
+    end)
+  end
+
+  defp member_display_name(name, email) when is_binary(name) do
+    case String.trim(name) do
+      "" -> email_local_part(email)
+      trimmed -> trimmed
+    end
+  end
+
+  defp member_display_name(_name, email), do: email_local_part(email)
+
+  defp email_local_part(email) when is_binary(email) do
+    email |> String.split("@", parts: 2) |> List.first()
+  end
+
+  defp email_local_part(_), do: "?"
+
+  defp human_palette(user_id) when is_integer(user_id) do
+    Enum.at(@human_palettes, rem(user_id, length(@human_palettes)))
   end
 
   defp build_metrics(board_ids, now) do
@@ -177,10 +228,14 @@ defmodule Kanban.Boards do
   end
 
   # Returns %{{board_id, :open | :doing | :review | :done} => count}.
+  # Archived tasks (those with a non-nil `archived_at`) and goal-type tasks
+  # are excluded so the board card stats reflect actionable work only.
   defp column_counts_by_board(board_ids) do
     Task
     |> join(:inner, [t], c in Column, on: c.id == t.column_id)
     |> where([t, c], c.board_id in ^board_ids)
+    |> where([t, _c], is_nil(t.archived_at))
+    |> where([t, _c], t.type != :goal)
     |> where(
       [_t, c],
       c.name in ^@open_columns or c.name in [@doing_column, @review_column, @done_column]

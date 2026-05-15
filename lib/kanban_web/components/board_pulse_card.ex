@@ -142,7 +142,7 @@ defmodule KanbanWeb.BoardPulseCard do
       "display: grid; grid-template-columns: repeat(4, 1fr);",
       "border-top: 1px solid var(--line); padding-top: 10px; gap: 4px;"
     ]}>
-      <.stat_cell label={gettext("Open")} value={@metrics.open} tone="var(--ink)" />
+      <.stat_cell label={gettext("To Do")} value={@metrics.open} tone="var(--ink)" />
       <.stat_cell label={gettext("Doing")} value={@metrics.doing} tone="var(--st-doing)" />
       <.stat_cell label={gettext("Review")} value={@metrics.review} tone="var(--st-review)" />
       <.stat_cell label={gettext("Done")} value={@metrics.done} tone="var(--st-done)" />

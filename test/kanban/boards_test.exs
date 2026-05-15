@@ -993,6 +993,31 @@ defmodule Kanban.BoardsTest do
       assert metrics.done == 1
     end
 
+    test "excludes archived tasks from the four buckets", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Archive Board"})
+      cols = columns_by_name(board)
+
+      _active = task_fixture(cols["Ready"], %{title: "Active"})
+      archived = task_fixture(cols["Ready"], %{title: "Archived"})
+      {:ok, _} = Tasks.update_task(archived, %{archived_at: now})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.open == 1
+    end
+
+    test "excludes goals from the four buckets", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Goal Board"})
+      cols = columns_by_name(board)
+
+      _work_task = task_fixture(cols["Ready"], %{title: "Work", type: :work})
+      _goal_task = task_fixture(cols["Ready"], %{title: "Goal", type: :goal})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.open == 1
+    end
+
     test "ignores tasks in custom-named columns for the four buckets", %{user: user, now: now} do
       board = board_fixture(user, %{name: "Custom Board"})
       {:ok, custom_col} = Kanban.Columns.create_column(board, %{name: "Triage", wip_limit: 0})
@@ -1137,6 +1162,32 @@ defmodule Kanban.BoardsTest do
       boards = Boards.list_boards_with_metrics(user, now: now)
       assert length(boards) == 1
       assert hd(boards).name == "Mine Board"
+    end
+
+    test "populates the :members list with each board's users", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Members Board"})
+      teammate = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, teammate, :modify, user)
+
+      [%Board{members: members}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert length(members) == 2
+      assert Enum.all?(members, &(&1.kind == :human))
+
+      palettes = Enum.map(members, & &1.palette)
+      assert Enum.all?(palettes, &(&1 in ~w(human-blue human-amber human-green human-pink)))
+    end
+
+    test "members display name falls back to email local-part when name is blank",
+         %{user: _user, now: now} do
+      user = user_fixture()
+      _board = ai_optimized_board_fixture(user, %{name: "Solo Board"})
+
+      [%Board{members: [member]}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert member.kind == :human
+      assert is_binary(member.name)
+      refute String.contains?(member.name, "@")
     end
 
     test "returns boards in the same order as list_boards/1", %{user: user, now: now} do
