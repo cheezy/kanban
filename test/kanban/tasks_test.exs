@@ -8466,4 +8466,100 @@ defmodule Kanban.TasksTest do
       assert children == []
     end
   end
+
+  describe "list_children_for_goal/2" do
+    setup do
+      owner = user_fixture()
+      outsider = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [first, second, third]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Parent Goal", "created_by_id" => owner.id},
+          [
+            %{"title" => "Child A", "type" => "work", "created_by_id" => owner.id},
+            %{"title" => "Child B", "type" => "work", "created_by_id" => owner.id},
+            %{"title" => "Child C", "type" => "defect", "created_by_id" => owner.id}
+          ]
+        )
+
+      %{
+        owner: owner,
+        outsider: outsider,
+        board: board,
+        column: column,
+        goal: goal,
+        first: first,
+        second: second,
+        third: third
+      }
+    end
+
+    test "returns the goal's children ordered by position", %{
+      owner: owner,
+      goal: goal,
+      first: first,
+      second: second,
+      third: third
+    } do
+      result = Tasks.list_children_for_goal(owner, goal.id)
+
+      assert Enum.map(result, & &1.id) == [first.id, second.id, third.id]
+    end
+
+    test "preloads :assigned_to on each child", %{owner: owner, goal: goal} do
+      result = Tasks.list_children_for_goal(owner, goal.id)
+
+      for child <- result do
+        refute match?(%Ecto.Association.NotLoaded{}, child.assigned_to)
+      end
+    end
+
+    test "preloads :parent on each child", %{owner: owner, goal: goal} do
+      result = Tasks.list_children_for_goal(owner, goal.id)
+
+      assert Enum.all?(result, fn child -> child.parent.id == goal.id end)
+    end
+
+    test "excludes archived children", %{owner: owner, goal: goal, second: second} do
+      {:ok, _} = Tasks.archive_task(second)
+
+      result = Tasks.list_children_for_goal(owner, goal.id)
+
+      refute Enum.any?(result, &(&1.id == second.id))
+    end
+
+    test "returns [] for a non-existent goal id", %{owner: owner} do
+      assert Tasks.list_children_for_goal(owner, -1) == []
+    end
+
+    test "returns [] when the id refers to a non-goal task", %{owner: owner, first: first} do
+      # first is a :work task, not a goal — should not match
+      assert Tasks.list_children_for_goal(owner, first.id) == []
+    end
+
+    test "returns [] when the user has no access to the goal's board", %{
+      outsider: outsider,
+      goal: goal
+    } do
+      assert Tasks.list_children_for_goal(outsider, goal.id) == []
+    end
+
+    test "returns [] when user is nil (read-only / unauthenticated view)", %{goal: goal} do
+      assert Tasks.list_children_for_goal(nil, goal.id) == []
+    end
+
+    test "returns [] when the goal has no children", %{owner: owner, column: column} do
+      {:ok, %{goal: lonely}} =
+        Tasks.create_goal_with_tasks(column, %{
+          "title" => "Lonely",
+          "type" => "goal",
+          "created_by_id" => owner.id
+        })
+
+      assert Tasks.list_children_for_goal(owner, lonely.id) == []
+    end
+  end
 end

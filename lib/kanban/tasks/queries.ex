@@ -233,6 +233,71 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
+  Returns the non-archived child tasks of a goal, scoped to a user's
+  board access. The list is ordered by `position` and preloads
+  `:assigned_to` and `:parent` so the caller can render owner avatars
+  and the parent-goal chip without N+1 queries.
+
+  Returns `[]` when:
+    * the `goal_id` does not exist
+    * the task at `goal_id` is not a goal (defense in depth)
+    * the user has no access to the goal's board
+    * the goal has no non-archived children
+
+  This keeps the function safe for unauthenticated read-only board paths
+  (which pass through `user_access: nil`) — they get an empty list
+  rather than an authorization error.
+  """
+  def list_children_for_goal(user, goal_id) do
+    case goal_with_board(goal_id) do
+      {:ok, board_id} ->
+        if user_has_access?(user, board_id) do
+          children_query(goal_id) |> Repo.all()
+        else
+          []
+        end
+
+      :not_a_goal ->
+        []
+
+      :not_found ->
+        []
+    end
+  end
+
+  defp goal_with_board(goal_id) do
+    query =
+      from t in Task,
+        join: c in assoc(t, :column),
+        where: t.id == ^goal_id,
+        select: %{type: t.type, board_id: c.board_id}
+
+    case Repo.one(query) do
+      nil -> :not_found
+      %{type: :goal, board_id: board_id} -> {:ok, board_id}
+      %{type: _other} -> :not_a_goal
+    end
+  end
+
+  defp children_query(goal_id) do
+    from t in Task,
+      where: t.parent_id == ^goal_id,
+      where: is_nil(t.archived_at),
+      order_by: [asc: t.position],
+      preload: [:assigned_to, :parent]
+  end
+
+  defp user_has_access?(nil, _board_id), do: false
+
+  defp user_has_access?(%{id: user_id}, board_id) do
+    from(bu in Kanban.Boards.BoardUser,
+      where: bu.user_id == ^user_id and bu.board_id == ^board_id,
+      limit: 1
+    )
+    |> Repo.exists?()
+  end
+
+  @doc """
   Sorts tasks so standalone tasks (no parent, not a goal) appear first,
   followed by goals in ascending identifier order with their children
   listed directly underneath each goal.
