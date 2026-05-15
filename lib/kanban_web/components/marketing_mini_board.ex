@@ -16,6 +16,8 @@ defmodule KanbanWeb.MarketingMiniBoard do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Avatar
+
   @doc """
   Renders the 4-column mini-board: titlebar (traffic lights, STR badge,
   "Stride core", agents-online status) + Ready / Doing / Review / Done
@@ -101,7 +103,12 @@ defmodule KanbanWeb.MarketingMiniBoard do
                 </span>
                 <.mini_priority_dot level={task.priority} />
                 <span class="flex-1"></span>
-                <.mini_avatar who={task.who} />
+                <Avatar.avatar
+                  kind={task.who.kind}
+                  name={task.who.name}
+                  palette={task.who.palette}
+                  size={14}
+                />
               </div>
               <div class="text-[10.5px] font-medium" style="line-height: 1.3;">
                 {task.title}
@@ -160,53 +167,6 @@ defmodule KanbanWeb.MarketingMiniBoard do
     >
     </span>
     """
-  end
-
-  attr :who, :map, required: true
-
-  defp mini_avatar(assigns) do
-    ~H"""
-    <span
-      class="inline-flex items-center justify-center text-white font-semibold"
-      style={[
-        "width: 14px; height: 14px; font-size: 6px; letter-spacing: -0.02em;",
-        "background: #{avatar_color(@who)};",
-        "border-radius: #{if @who.kind == :agent, do: "4px", else: "50%"};"
-      ]}
-    >
-      {avatar_initials(@who.name)}
-    </span>
-    """
-  end
-
-  defp avatar_color(%{kind: :agent, palette: palette}) do
-    case palette do
-      "agent-claude" -> "oklch(70% 0.16 47)"
-      "agent-cursor" -> "oklch(60% 0.16 240)"
-      "agent-aider" -> "oklch(60% 0.14 155)"
-      "agent-codex" -> "oklch(60% 0.18 277)"
-      _ -> "var(--ink-3)"
-    end
-  end
-
-  defp avatar_color(%{kind: :human, palette: palette}) when is_binary(palette) do
-    case palette do
-      "human-blue" -> "oklch(60% 0.10 240)"
-      "human-amber" -> "oklch(60% 0.10 60)"
-      "human-green" -> "oklch(60% 0.10 155)"
-      "human-pink" -> "oklch(60% 0.10 320)"
-      _ -> "var(--ink-3)"
-    end
-  end
-
-  defp avatar_color(_), do: "var(--ink-3)"
-
-  defp avatar_initials(name) when is_binary(name) do
-    name
-    |> String.split(" ", trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
   end
 
   defp mini_board_columns do
