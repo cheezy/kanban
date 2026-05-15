@@ -423,6 +423,7 @@ msgstr ""
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:110
 #: lib/kanban_web/live/task_live/components/history_section.ex:38
 #: lib/kanban_web/live/task_live/form_component.html.heex:964
@@ -478,6 +479,7 @@ msgstr ""
 msgid "Medium"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:99
 #: lib/kanban_web/live/task_live/components/history_section.ex:40
 #: lib/kanban_web/live/task_live/form_component.html.heex:997
 #, elixir-autogen, elixir-format
@@ -522,6 +524,9 @@ msgstr ""
 msgid "Work"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:100
+#: lib/kanban_web/components/task_activity_log.ex:110
+#: lib/kanban_web/components/task_activity_log.ex:154
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/components/history_section.ex:46
 #: lib/kanban_web/live/task_live/components/history_section.ex:63
@@ -532,6 +537,9 @@ msgstr ""
 msgid "from"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:102
+#: lib/kanban_web/components/task_activity_log.ex:112
+#: lib/kanban_web/components/task_activity_log.ex:158
 #: lib/kanban_web/live/task_live/components/history_section.ex:42
 #: lib/kanban_web/live/task_live/components/history_section.ex:47
 #: lib/kanban_web/live/task_live/components/history_section.ex:67
@@ -740,6 +748,7 @@ msgstr ""
 msgid "Back to board"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:44
 #: lib/kanban_web/live/task_live/components/history_section.ex:14
 #, elixir-autogen, elixir-format
 msgid "History"
@@ -750,6 +759,7 @@ msgstr ""
 msgid "No comments yet"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:51
 #: lib/kanban_web/live/task_live/components/history_section.ex:17
 #, elixir-autogen, elixir-format
 msgid "No history available"
@@ -932,24 +942,28 @@ msgstr ""
 msgid "Error Tracker"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:109
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/form_component.html.heex:968
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Priority changed"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:135
 #: lib/kanban_web/live/task_live/components/history_section.ex:52
 #: lib/kanban_web/live/task_live/form_component.html.heex:982
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Assigned to"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:153
 #: lib/kanban_web/live/task_live/components/history_section.ex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:988
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassigned"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:144
 #: lib/kanban_web/live/task_live/components/history_section.ex:57
 #: lib/kanban_web/live/task_live/form_component.html.heex:985
 #, elixir-autogen, elixir-format, fuzzy
@@ -1576,6 +1590,7 @@ msgstr ""
 msgid "Time Spent (minutes)"
 msgstr ""
 
+#: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:284
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:63
 #: lib/kanban_web/live/task_live/view_component.ex:66
@@ -5159,4 +5174,29 @@ msgstr ""
 #: lib/kanban_web/components/task_metadata_grid.ex:116
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Started"
+msgstr ""
+
+#: lib/kanban_web/components/acceptance_checklist.ex:50
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Acceptance criteria"
+msgstr ""
+
+#: lib/kanban_web/components/acceptance_checklist.ex:97
+#, elixir-autogen, elixir-format
+msgid "Checked"
+msgstr ""
+
+#: lib/kanban_web/components/acceptance_checklist.ex:65
+#, elixir-autogen, elixir-format
+msgid "No acceptance criteria recorded."
+msgstr ""
+
+#: lib/kanban_web/components/acceptance_checklist.ex:114
+#, elixir-autogen, elixir-format
+msgid "Unchecked"
+msgstr ""
+
+#: lib/kanban_web/components/task_activity_log.ex:128
+#, elixir-autogen, elixir-format
+msgid "Unknown history entry"
 msgstr ""
