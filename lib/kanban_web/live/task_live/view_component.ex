@@ -13,10 +13,12 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   alias Kanban.Tasks
   alias KanbanWeb.AcceptanceChecklist
-  alias KanbanWeb.SectionCard
+  alias KanbanWeb.Avatar
+  alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.MetaItem
+  alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
-  alias KanbanWeb.TaskDetailHeader
-  alias KanbanWeb.TaskMetadataGrid
+  alias KanbanWeb.TaskTokens
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
@@ -60,38 +62,10 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp board_name_for(%{column: %{board: %{name: name}}}) when is_binary(name), do: name
   defp board_name_for(_), do: nil
 
-  attr :label, :string, required: true
-  attr :mono, :boolean, default: false
-  slot :inner_block, required: true
-
-  defp mini(assigns) do
-    assigns =
-      assign(assigns, :font, if(assigns.mono, do: "var(--font-mono)", else: "var(--font-sans)"))
-
-    ~H"""
-    <div>
-      <div class="ucase" style="font-size: 9.5px; margin-bottom: 4px; color: var(--ink-3);">
-        {@label}
-      </div>
-      <div style={[
-        "font-size: 11.5px; color: var(--ink); line-height: 1.5;",
-        "font-family: #{@font};",
-        "white-space: pre-wrap;"
-      ]}>
-        {render_slot(@inner_block)}
-      </div>
-    </div>
-    """
-  end
-
   @impl true
   def render(assigns) do
     ~H"""
-    <div
-      data-task-detail
-      class="stride-screen"
-      style="display: flex; flex-direction: column; gap: 14px;"
-    >
+    <div data-task-detail class="stride-screen" style="display: flex; flex-direction: column;">
       <%= if @task == nil do %>
         <div style={[
           "padding: 24px; text-align: center;",
@@ -108,351 +82,531 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           </p>
         </div>
       <% else %>
-        <div class="stride-screen">
-          <TaskDetailHeader.detail_header task={@task} variant={:pane} />
+        <.detail_band task={@task} can_modify={@can_modify} board_id={@board_id} />
+
+        <div style="display: flex; min-height: 0;">
           <div
-            :if={@can_modify && @board_id}
-            style="display: flex; justify-content: flex-end; padding: 6px 22px 0;"
+            data-task-detail-main
+            style="flex: 1; min-width: 0; padding: 18px 22px; overflow: hidden;"
           >
-            <.link
-              patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
-              class="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            <h2 style="margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; color: var(--ink); text-wrap: pretty;">
+              {@task.title}
+            </h2>
+
+            <p
+              :if={@task.description}
+              style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; white-space: pre-wrap;"
             >
-              <.icon name="hero-pencil" class="w-4 h-4" />
-              <span class="text-sm font-medium">{gettext("Edit")}</span>
-            </.link>
-          </div>
-        </div>
+              {@task.description}
+            </p>
 
-        <div class="stride-screen">
-          <TaskMetadataGrid.metadata_grid
-            task={@task}
-            parent_goal={Map.get(@task, :parent)}
-            board_name={board_name_for(@task)}
-          />
-        </div>
-
-        <div
-          :if={@task.human_task || @task.estimated_files}
-          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;"
-        >
-          <SectionCard.section_card :if={@task.human_task} title={gettext("Human Task")}>
-            {gettext("Yes — humans only; agents will not claim")}
-          </SectionCard.section_card>
-
-          <SectionCard.section_card :if={@task.estimated_files} title={gettext("Estimated Files")}>
-            {@task.estimated_files}
-          </SectionCard.section_card>
-        </div>
-
-        <SectionCard.section_card
-          :if={@task.created_by || @task.created_by_agent}
-          title={gettext("Creator")}
-        >
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div :if={@task.created_by}>
-              <span style="color: var(--ink-3);">{gettext("Created by")}:</span>
-              <span style="font-weight: 500;">
-                {@task.created_by.name || @task.created_by.email}
-              </span>
-            </div>
-            <div :if={@task.created_by_agent}>
-              <span style="color: var(--ink-3);">{gettext("Agent")}:</span>
-              <span style="font-weight: 500; font-family: var(--font-mono);">
-                {@task.created_by_agent}
-              </span>
-            </div>
-            <div :if={@task.claimed_at}>
-              <span style="color: var(--ink-3);">{gettext("Claimed at")}:</span>
-              <span style="font-variant-numeric: tabular-nums;">
-                {Calendar.strftime(@task.claimed_at, "%B %d, %Y at %I:%M %p")}
-              </span>
-            </div>
-            <div :if={@task.claim_expires_at}>
-              <span style="color: var(--ink-3);">{gettext("Claim expires")}:</span>
-              <span style="font-variant-numeric: tabular-nums;">
-                {Calendar.strftime(@task.claim_expires_at, "%B %d, %Y at %I:%M %p")}
-              </span>
-            </div>
-          </div>
-        </SectionCard.section_card>
-
-        <div
-          :if={
-            (@task.why || @task.what || @task.where_context) &&
-              field_visible?(@field_visibility, "context")
-          }
-          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;"
-        >
-          <SectionCard.section_card :if={@task.why} title={gettext("Why")}>
-            <div style="white-space: pre-wrap;">{@task.why}</div>
-          </SectionCard.section_card>
-          <SectionCard.section_card :if={@task.what} title={gettext("What")}>
-            <div style="white-space: pre-wrap;">{@task.what}</div>
-          </SectionCard.section_card>
-          <SectionCard.section_card
-            :if={@task.where_context}
-            title={gettext("Where in the codebase")}
-            mono
-          >
-            <div style="white-space: pre-wrap;">{@task.where_context}</div>
-          </SectionCard.section_card>
-        </div>
-
-        <SectionCard.section_card :if={@task.description} title={gettext("Description")}>
-          <div style="white-space: pre-wrap;">{@task.description}</div>
-        </SectionCard.section_card>
-
-        <%= if @task.acceptance_criteria && field_visible?(@field_visibility, "acceptance_criteria") do %>
-          <AcceptanceChecklist.acceptance_checklist acceptance_criteria={@task.acceptance_criteria} />
-        <% end %>
-
-        <SectionCard.section_card
-          :if={
-            @task.key_files && !Enum.empty?(@task.key_files) &&
-              field_visible?(@field_visibility, "key_files")
-          }
-          title={gettext("Key files")}
-          count_label={Integer.to_string(length(@task.key_files || []))}
-        >
-          <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none;">
-            <li
-              :for={kf <- @task.key_files}
-              style="display: flex; flex-direction: column; gap: 2px; padding: 3px 0;"
+            <div
+              :if={
+                (@task.why || @task.what || @task.where_context) &&
+                  field_visible?(@field_visibility, "context")
+              }
+              style="display: flex; flex-direction: column; gap: 14px; margin-top: 20px;"
             >
-              <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px;">
-                <.icon name="hero-document-text" class="w-3 h-3" />
-                <span>{kf.file_path}</span>
-              </span>
-              <span :if={kf.note} style="font-size: 11px; color: var(--ink-3); padding-left: 18px;">
-                {kf.note}
-              </span>
-            </li>
-          </ul>
-        </SectionCard.section_card>
+              <.block :if={@task.why} label={gettext("Why")}>{@task.why}</.block>
+              <.block :if={@task.what} label={gettext("What")}>{@task.what}</.block>
+              <.block :if={@task.where_context} label={gettext("Where")} mono>
+                {@task.where_context}
+              </.block>
+            </div>
 
-        <SectionCard.section_card
-          :if={
-            @task.verification_steps && !Enum.empty?(@task.verification_steps) &&
-              field_visible?(@field_visibility, "verification_steps")
-          }
-          title={gettext("Verification steps")}
-          mono
-        >
-          <ol style="display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none;">
-            <li
-              :for={{step, idx} <- Enum.with_index(@task.verification_steps, 1)}
-              style="display: grid; grid-template-columns: 24px 1fr; gap: 8px;"
-            >
-              <span style="color: var(--ink-4); font-size: 11.5px;">{idx}.</span>
-              <div style="display: flex; flex-direction: column; gap: 3px;">
-                <span style="font-size: 11.5px; color: var(--ink);">{step.step_text}</span>
-                <span
-                  :if={step.expected_result}
-                  style="font-size: 11px; color: var(--ink-3); font-family: var(--font-sans);"
+            <%= if @task.acceptance_criteria && field_visible?(@field_visibility, "acceptance_criteria") do %>
+              <SectionHead.section_head
+                title={gettext("Acceptance criteria")}
+                count_label={acceptance_count_label(@task.acceptance_criteria)}
+              />
+              <AcceptanceChecklist.acceptance_checklist acceptance_criteria={
+                @task.acceptance_criteria
+              } />
+            <% end %>
+
+            <%= if @task.key_files && !Enum.empty?(@task.key_files) && field_visible?(@field_visibility, "key_files") do %>
+              <SectionHead.section_head
+                title={gettext("Key files")}
+                count_label={Integer.to_string(length(@task.key_files))}
+              />
+              <ul style="display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none;">
+                <li
+                  :for={kf <- @task.key_files}
+                  style="display: flex; flex-direction: column; gap: 1px; padding: 3px 0;"
                 >
-                  → {step.expected_result}
-                </span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px;">
+                    <.icon name="hero-document-text" class="w-3 h-3" />
+                    <span>{kf.file_path}</span>
+                  </span>
+                  <span
+                    :if={kf.note}
+                    style="font-size: 11px; color: var(--ink-3); padding-left: 18px;"
+                  >
+                    {kf.note}
+                  </span>
+                </li>
+              </ul>
+            <% end %>
+
+            <%= if @task.patterns_to_follow && field_visible?(@field_visibility, "technical_notes") do %>
+              <SectionHead.section_head title={gettext("Patterns to follow")} />
+              <p style="margin: 0; font-size: 12.5px; color: var(--ink); white-space: pre-wrap; text-wrap: pretty;">
+                {@task.patterns_to_follow}
+              </p>
+            <% end %>
+
+            <%= if @task.database_changes && field_visible?(@field_visibility, "technical_notes") do %>
+              <SectionHead.section_head title={gettext("Database changes")} />
+              <p style="margin: 0; font-size: 12.5px; color: var(--ink); font-family: var(--font-mono); white-space: pre-wrap;">
+                {@task.database_changes}
+              </p>
+            <% end %>
+
+            <%= if @task.validation_rules && field_visible?(@field_visibility, "technical_notes") do %>
+              <SectionHead.section_head title={gettext("Validation rules")} />
+              <p style="margin: 0; font-size: 12.5px; color: var(--ink); white-space: pre-wrap;">
+                {@task.validation_rules}
+              </p>
+            <% end %>
+
+            <%= if @task.verification_steps && !Enum.empty?(@task.verification_steps) && field_visible?(@field_visibility, "verification_steps") do %>
+              <SectionHead.section_head title={gettext("Verification steps")} />
+              <ol style="display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none;">
+                <li
+                  :for={{step, idx} <- Enum.with_index(@task.verification_steps, 1)}
+                  style="display: grid; grid-template-columns: 24px 1fr; gap: 8px;"
+                >
+                  <span style="color: var(--ink-4); font-size: 11.5px; font-family: var(--font-mono);">
+                    {idx}.
+                  </span>
+                  <div style="display: flex; flex-direction: column; gap: 3px;">
+                    <span style="font-size: 12px; color: var(--ink); font-family: var(--font-mono);">
+                      {step.step_text}
+                    </span>
+                    <span :if={step.expected_result} style="font-size: 11px; color: var(--ink-3);">
+                      → {step.expected_result}
+                    </span>
+                  </div>
+                </li>
+              </ol>
+            <% end %>
+
+            <%= if @task.pitfalls && !Enum.empty?(@task.pitfalls) && field_visible?(@field_visibility, "pitfalls") do %>
+              <SectionHead.section_head title={gettext("Pitfalls")} />
+              <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--st-blocked);">
+                <li :for={pitfall <- @task.pitfalls}>{pitfall}</li>
+              </ul>
+            <% end %>
+
+            <%= if @task.out_of_scope && !Enum.empty?(@task.out_of_scope) && field_visible?(@field_visibility, "out_of_scope") do %>
+              <SectionHead.section_head title={gettext("Out of scope")} />
+              <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-3);">
+                <li :for={item <- @task.out_of_scope}>{item}</li>
+              </ul>
+            <% end %>
+
+            <%= if @task.security_considerations && !Enum.empty?(@task.security_considerations) && field_visible?(@field_visibility, "security_considerations") do %>
+              <SectionHead.section_head title={gettext("Security considerations")} />
+              <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink);">
+                <li :for={item <- @task.security_considerations}>{item}</li>
+              </ul>
+            <% end %>
+
+            <%= if @task.technology_requirements && !Enum.empty?(@task.technology_requirements) && field_visible?(@field_visibility, "technology_requirements") do %>
+              <SectionHead.section_head title={gettext("Technology requirements")} />
+              <ul style="display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none;">
+                <li
+                  :for={tech <- @task.technology_requirements}
+                  style={[
+                    "display: inline-flex; align-items: center;",
+                    "padding: 2px 8px; border-radius: 999px;",
+                    "background: var(--surface-sunken); color: var(--ink-2);",
+                    "font-size: 11.5px; font-family: var(--font-mono);",
+                    "border: 1px solid var(--line);"
+                  ]}
+                >
+                  {tech}
+                </li>
+              </ul>
+            <% end %>
+
+            <%= if (@task.telemetry_event || @task.metrics_to_track || @task.logging_requirements) && field_visible?(@field_visibility, "observability") do %>
+              <SectionHead.section_head title={gettext("Observability")} />
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+                <.block :if={@task.telemetry_event} label={gettext("Telemetry")} mono>
+                  {@task.telemetry_event}
+                </.block>
+                <.block :if={@task.metrics_to_track} label={gettext("Metrics")} mono>
+                  {@task.metrics_to_track}
+                </.block>
+                <.block :if={@task.logging_requirements} label={gettext("Logging")} mono>
+                  {@task.logging_requirements}
+                </.block>
               </div>
-            </li>
-          </ol>
-        </SectionCard.section_card>
+            <% end %>
 
-        <div
-          :if={
-            (@task.patterns_to_follow || @task.database_changes || @task.validation_rules) &&
-              field_visible?(@field_visibility, "technical_notes")
-          }
-          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;"
-        >
-          <SectionCard.section_card
-            :if={@task.patterns_to_follow}
-            title={gettext("Patterns to follow")}
+            <%= if (@task.error_user_message || @task.error_on_failure) && field_visible?(@field_visibility, "error_handling") do %>
+              <SectionHead.section_head title={gettext("Error handling")} />
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px;">
+                <div :if={@task.error_user_message} style="white-space: pre-wrap; color: var(--ink);">
+                  {@task.error_user_message}
+                </div>
+                <div :if={@task.error_on_failure} style="font-size: 11.5px; color: var(--ink-3);">
+                  {gettext("On failure")}: {@task.error_on_failure}
+                </div>
+              </div>
+            <% end %>
+
+            <%= if @task.dependencies && !Enum.empty?(@task.dependencies) do %>
+              <SectionHead.section_head title={gettext("Dependencies")} />
+              <.dependencies_section dependencies={@task.dependencies} />
+            <% end %>
+
+            <%= if @task.testing_strategy && map_size(@task.testing_strategy) > 0 && field_visible?(@field_visibility, "testing_strategy") do %>
+              <SectionHead.section_head title={gettext("Testing strategy")} />
+              <.checklist_section testing_strategy={@task.testing_strategy} />
+            <% end %>
+
+            <%= if @task.integration_points && map_size(@task.integration_points) > 0 && field_visible?(@field_visibility, "integration_points") do %>
+              <SectionHead.section_head title={gettext("Integration points")} />
+              <.integration_points_section integration_points={@task.integration_points} />
+            <% end %>
+
+            <%= if @task.status == :completed && (@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes) do %>
+              <SectionHead.section_head title={gettext("Actual vs estimated")} />
+              <.actual_vs_estimated_section task={@task} />
+            <% end %>
+
+            <%= if @task.needs_review && @task.review_status do %>
+              <SectionHead.section_head title={gettext("Review status")} />
+              <.review_status_section task={@task} />
+            <% end %>
+
+            <%= if @task.review_report && @task.review_report != "" do %>
+              <SectionHead.section_head title={gettext("Review report")} />
+              <pre style="margin: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); white-space: pre-wrap; max-height: 384px; overflow-y: auto;"><%= @task.review_report %></pre>
+            <% end %>
+
+            <%= if @task.workflow_steps && @task.workflow_steps != [] do %>
+              <SectionHead.section_head title={gettext("Workflow steps")} />
+              <.workflow_steps_section steps={@task.workflow_steps} />
+            <% end %>
+
+            <%= if @task.status == :completed && (@task.completed_at || @task.completed_by || @task.completed_by_agent || @task.completion_summary) do %>
+              <SectionHead.section_head title={gettext("Completion")} />
+              <.completion_section task={@task} />
+            <% end %>
+
+            <%= if @task.type == :goal && length(@task.children || []) > 0 do %>
+              <SectionHead.section_head
+                title={gettext("Children")}
+                count_label={Integer.to_string(length(@task.children))}
+              />
+              <.child_tasks_section children={@task.children} />
+            <% end %>
+
+            <SectionHead.section_head title={gettext("History")} />
+            <TaskActivityLog.activity_log histories={@task.task_histories} />
+
+            <SectionHead.section_head title={gettext("Comments")} />
+            <.comments_section comments={@task.comments} />
+          </div>
+
+          <aside
+            data-task-detail-aside
+            style={[
+              "width: 280px; flex-shrink: 0;",
+              "border-left: 1px solid var(--line);",
+              "background: var(--surface-2);",
+              "padding: 20px 18px;",
+              "display: flex; flex-direction: column; gap: 16px;"
+            ]}
           >
-            <div style="white-space: pre-wrap;">{@task.patterns_to_follow}</div>
-          </SectionCard.section_card>
-          <SectionCard.section_card
-            :if={@task.database_changes}
-            title={gettext("Database changes")}
-            mono
-          >
-            <div style="white-space: pre-wrap;">{@task.database_changes}</div>
-          </SectionCard.section_card>
-          <SectionCard.section_card
-            :if={@task.validation_rules}
-            title={gettext("Validation rules")}
-          >
-            <div style="white-space: pre-wrap;">{@task.validation_rules}</div>
-          </SectionCard.section_card>
+            <MetaItem.meta_item label={gettext("Status")}>
+              <.status_pill status={@task.status} />
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.assigned_to || @task.created_by} label={gettext("Author")}>
+              <.author_avatar user={@task.assigned_to || @task.created_by} />
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={parent_goal_loaded?(@task)} label={gettext("Goal")}>
+              <span style="color: var(--stride-violet); display: inline-flex;">
+                <.icon name="hero-flag" class="w-3 h-3" />
+              </span>
+              <span class="ident">{@task.parent.identifier}</span>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {@task.parent.title}
+              </span>
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item label={gettext("Type")}>
+              <span style="text-transform: capitalize;">{@task.type}</span>
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.priority} label={gettext("Priority")}>
+              <span
+                aria-hidden="true"
+                style={[
+                  "width: 6px; height: 6px; border-radius: 50%;",
+                  "background: #{TaskTokens.priority_color(@task.priority)};"
+                ]}
+              >
+              </span>
+              <span>{TaskTokens.priority_word(@task.priority)}</span>
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.complexity} label={gettext("Complexity")}>
+              {TaskTokens.complexity_word(@task.complexity)}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.column} label={gettext("Column")}>
+              {@task.column.name}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={board_name_for(@task)} label={gettext("Board")}>
+              {board_name_for(@task)}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item label={gettext("Needs review")}>
+              <span :if={@task.needs_review} style={needs_review_pill_style()}>
+                {gettext("Required")}
+              </span>
+              <span :if={!@task.needs_review} style="color: var(--ink-3); font-style: italic;">
+                {gettext("Auto")}
+              </span>
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item
+              :if={@task.required_capabilities && @task.required_capabilities != []}
+              label={gettext("Capabilities")}
+            >
+              <span
+                :for={capability <- @task.required_capabilities}
+                style={[
+                  "display: inline-flex; align-items: center;",
+                  "padding: 1px 6px; border-radius: 999px;",
+                  "background: var(--stride-violet-soft); color: var(--stride-violet-ink);",
+                  "font-size: 10.5px; font-weight: 600;"
+                ]}
+              >
+                {capability}
+              </span>
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.human_task} label={gettext("Human task")}>
+              {gettext("Yes")}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.estimated_files} label={gettext("Estimated files")}>
+              {@task.estimated_files}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.inserted_at} label={gettext("Created")} mono>
+              {Calendar.strftime(@task.inserted_at, "%b %d, %Y")}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.claimed_at} label={gettext("Claimed")} mono>
+              {Calendar.strftime(@task.claimed_at, "%b %d, %Y %H:%M")}
+            </MetaItem.meta_item>
+
+            <MetaItem.meta_item :if={@task.completed_at} label={gettext("Completed")} mono>
+              {Calendar.strftime(@task.completed_at, "%b %d, %Y")}
+            </MetaItem.meta_item>
+
+            <div
+              :if={@can_modify && @board_id}
+              style="margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--line);"
+            >
+              <.link
+                patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
+                style={[
+                  "display: inline-flex; align-items: center; gap: 6px;",
+                  "padding: 6px 10px; border-radius: 5px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink-2); text-decoration: none;",
+                  "font-size: 11.5px; font-weight: 500;"
+                ]}
+              >
+                <.icon name="hero-pencil" class="w-3 h-3" />
+                <span>{gettext("Edit task")}</span>
+              </.link>
+            </div>
+          </aside>
         </div>
-
-        <SectionCard.section_card
-          :if={
-            (@task.telemetry_event || @task.metrics_to_track || @task.logging_requirements) &&
-              field_visible?(@field_visibility, "observability")
-          }
-          title={gettext("Observability")}
-        >
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
-            <.mini :if={@task.telemetry_event} label={gettext("Telemetry")} mono>
-              {@task.telemetry_event}
-            </.mini>
-            <.mini :if={@task.metrics_to_track} label={gettext("Metrics")} mono>
-              {@task.metrics_to_track}
-            </.mini>
-            <.mini :if={@task.logging_requirements} label={gettext("Logging")} mono>
-              {@task.logging_requirements}
-            </.mini>
-          </div>
-        </SectionCard.section_card>
-
-        <SectionCard.section_card
-          :if={
-            (@task.error_user_message || @task.error_on_failure) &&
-              field_visible?(@field_visibility, "error_handling")
-          }
-          title={gettext("Error handling")}
-        >
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div :if={@task.error_user_message} style="white-space: pre-wrap;">
-              {@task.error_user_message}
-            </div>
-            <div :if={@task.error_on_failure} style="font-size: 11.5px; color: var(--ink-3);">
-              {gettext("On failure")}: {@task.error_on_failure}
-            </div>
-          </div>
-        </SectionCard.section_card>
-
-        <SectionCard.section_card
-          :if={
-            @task.technology_requirements && !Enum.empty?(@task.technology_requirements) &&
-              field_visible?(@field_visibility, "technology_requirements")
-          }
-          title={gettext("Technology requirements")}
-        >
-          <ul style="display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none;">
-            <li
-              :for={tech <- @task.technology_requirements}
-              style={[
-                "display: inline-flex; align-items: center;",
-                "padding: 2px 8px; border-radius: 999px;",
-                "background: var(--surface-sunken); color: var(--ink-2);",
-                "font-size: 11.5px; font-family: var(--font-mono);",
-                "border: 1px solid var(--line);"
-              ]}
-            >
-              {tech}
-            </li>
-          </ul>
-        </SectionCard.section_card>
-
-        <SectionCard.section_card
-          :if={
-            @task.required_capabilities && !Enum.empty?(@task.required_capabilities) &&
-              field_visible?(@field_visibility, "required_capabilities")
-          }
-          title={gettext("Required capabilities")}
-        >
-          <ul style="display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none;">
-            <li
-              :for={capability <- @task.required_capabilities}
-              style={[
-                "display: inline-flex; align-items: center;",
-                "padding: 2px 8px; border-radius: 999px;",
-                "background: var(--stride-violet-soft); color: var(--stride-violet-ink);",
-                "font-size: 11.5px; font-weight: 500;"
-              ]}
-            >
-              {capability}
-            </li>
-          </ul>
-        </SectionCard.section_card>
-
-        <%= if @task.dependencies && !Enum.empty?(@task.dependencies) do %>
-          <.dependencies_section dependencies={@task.dependencies} />
-        <% end %>
-
-        <SectionCard.section_card
-          :if={
-            @task.pitfalls && !Enum.empty?(@task.pitfalls) &&
-              field_visible?(@field_visibility, "pitfalls")
-          }
-          title={gettext("Pitfalls")}
-          tone={:warn}
-        >
-          <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px;">
-            <li :for={pitfall <- @task.pitfalls}>{pitfall}</li>
-          </ul>
-        </SectionCard.section_card>
-
-        <SectionCard.section_card
-          :if={
-            @task.out_of_scope && !Enum.empty?(@task.out_of_scope) &&
-              field_visible?(@field_visibility, "out_of_scope")
-          }
-          title={gettext("Out of scope")}
-          tone={:muted}
-        >
-          <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px;">
-            <li :for={item <- @task.out_of_scope}>{item}</li>
-          </ul>
-        </SectionCard.section_card>
-
-        <SectionCard.section_card
-          :if={
-            @task.security_considerations && !Enum.empty?(@task.security_considerations) &&
-              field_visible?(@field_visibility, "security_considerations")
-          }
-          title={gettext("Security considerations")}
-        >
-          <ul style="display: flex; flex-direction: column; gap: 4px; margin: 0; padding-left: 18px;">
-            <li :for={item <- @task.security_considerations}>{item}</li>
-          </ul>
-        </SectionCard.section_card>
-
-        <%= if @task.testing_strategy && map_size(@task.testing_strategy) > 0 && field_visible?(@field_visibility, "testing_strategy") do %>
-          <.checklist_section testing_strategy={@task.testing_strategy} />
-        <% end %>
-
-        <%= if @task.integration_points && map_size(@task.integration_points) > 0 && field_visible?(@field_visibility, "integration_points") do %>
-          <.integration_points_section integration_points={@task.integration_points} />
-        <% end %>
-
-        <%= if @task.status == :completed && (@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes) do %>
-          <.actual_vs_estimated_section task={@task} />
-        <% end %>
-
-        <%= if @task.needs_review && @task.review_status do %>
-          <.review_status_section task={@task} />
-        <% end %>
-
-        <SectionCard.section_card
-          :if={@task.review_report && @task.review_report != ""}
-          title={gettext("Review report")}
-          mono
-        >
-          <div style="white-space: pre-wrap; max-height: 384px; overflow-y: auto;">
-            {@task.review_report}
-          </div>
-        </SectionCard.section_card>
-
-        <%= if @task.workflow_steps && @task.workflow_steps != [] do %>
-          <.workflow_steps_section steps={@task.workflow_steps} />
-        <% end %>
-
-        <%= if @task.status == :completed && (@task.completed_at || @task.completed_by || @task.completed_by_agent || @task.completion_summary) do %>
-          <.completion_section task={@task} />
-        <% end %>
-
-        <%= if @task.type == :goal && length(@task.children || []) > 0 do %>
-          <.child_tasks_section children={@task.children} />
-        <% end %>
-
-        <TaskActivityLog.activity_log histories={@task.task_histories} />
-
-        <.comments_section comments={@task.comments} />
       <% end %>
     </div>
     """
+  end
+
+  # --- Sub-components -----------------------------------------------------
+
+  attr :task, :map, required: true
+  attr :can_modify, :boolean, required: true
+  attr :board_id, :any, required: true
+
+  defp detail_band(assigns) do
+    ~H"""
+    <div
+      data-task-detail-band
+      style={[
+        "padding: 14px 22px 12px;",
+        "border-bottom: 1px solid var(--line);",
+        "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
+        "background: var(--surface);"
+      ]}
+    >
+      <.type_icon type={@task.type} />
+      <span class="ident" style="font-size: 11.5px; color: var(--ink-2);">
+        {@task.identifier}
+      </span>
+      <.status_pill status={@task.status} />
+      <span
+        :if={@task.priority}
+        aria-hidden="true"
+        style={[
+          "width: 6px; height: 6px; border-radius: 50%;",
+          "background: #{TaskTokens.priority_color(@task.priority)};"
+        ]}
+      >
+      </span>
+      <span :if={@task.priority || @task.complexity} style="font-size: 11px; color: var(--ink-3);">
+        {pretty_meta(@task.priority, @task.complexity)}
+      </span>
+      <span style="flex: 1;"></span>
+    </div>
+    """
+  end
+
+  attr :type, :atom, required: true
+
+  defp type_icon(%{type: :defect} = assigns) do
+    ~H"""
+    <span style="color: var(--st-blocked); display: inline-flex;">
+      <.icon name="hero-bug-ant" class="w-4 h-4" />
+    </span>
+    """
+  end
+
+  defp type_icon(%{type: :goal} = assigns) do
+    ~H"""
+    <span style="color: var(--stride-violet); display: inline-flex;">
+      <.icon name="hero-flag" class="w-4 h-4" />
+    </span>
+    """
+  end
+
+  defp type_icon(assigns) do
+    ~H"""
+    <span style="color: var(--st-ready); display: inline-flex;">
+      <.icon name="hero-document-text" class="w-4 h-4" />
+    </span>
+    """
+  end
+
+  attr :status, :atom, required: true
+
+  defp status_pill(assigns) do
+    assigns =
+      assigns
+      |> assign(:bg, TaskTokens.status_soft(assigns.status))
+      |> assign(:fg, TaskTokens.status_ink(assigns.status))
+      |> assign(:label, TaskTokens.status_label(assigns.status))
+
+    ~H"""
+    <span style={[
+      "display: inline-flex; align-items: center;",
+      "padding: 2px 7px; border-radius: 999px;",
+      "background: #{@bg}; color: #{@fg};",
+      "font-size: 10.5px; font-weight: 600;"
+    ]}>
+      {@label}
+    </span>
+    """
+  end
+
+  attr :user, :map, required: true
+
+  defp author_avatar(assigns) do
+    user = assigns.user
+    name = user_display_name(user)
+    palette = palette_for_user(user)
+
+    assigns =
+      assigns
+      |> assign(:name, name)
+      |> assign(:palette, palette)
+
+    ~H"""
+    <Avatar.avatar kind={:human} name={@name} palette={@palette} size={16} />
+    <span style="font-size: 11.5px; color: var(--ink-2);">{@name}</span>
+    """
+  end
+
+  attr :label, :string, required: true
+  attr :mono, :boolean, default: false
+  slot :inner_block, required: true
+
+  defp block(assigns) do
+    assigns =
+      assign(assigns, :font, if(assigns.mono, do: "var(--font-mono)", else: "var(--font-sans)"))
+
+    ~H"""
+    <div>
+      <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">{@label}</span>
+      <p style={[
+        "margin: 4px 0 0; font-size: 13px; line-height: 1.55;",
+        "color: var(--ink); white-space: pre-wrap;",
+        "font-family: #{@font};",
+        "text-wrap: pretty;"
+      ]}>
+        {render_slot(@inner_block)}
+      </p>
+    </div>
+    """
+  end
+
+  # --- Helpers ------------------------------------------------------------
+
+  defp user_display_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp user_display_name(%{email: email}) when is_binary(email), do: email
+  defp user_display_name(_), do: "?"
+
+  defp palette_for_user(%{id: id}) when is_integer(id), do: AvatarPalette.for_human(id)
+  defp palette_for_user(_), do: "human-blue"
+
+  defp pretty_meta(nil, nil), do: ""
+  defp pretty_meta(priority, nil), do: TaskTokens.priority_word(priority)
+  defp pretty_meta(nil, complexity), do: TaskTokens.complexity_word(complexity)
+
+  defp pretty_meta(priority, complexity) do
+    "#{TaskTokens.priority_word(priority)} · #{TaskTokens.complexity_word(complexity)}"
+  end
+
+  defp acceptance_count_label(criteria) when is_binary(criteria) do
+    total =
+      criteria
+      |> String.split("\n", trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+      |> length()
+
+    "0/#{total}"
+  end
+
+  defp acceptance_count_label(_), do: nil
+
+  defp parent_goal_loaded?(%{parent: %Ecto.Association.NotLoaded{}}), do: false
+  defp parent_goal_loaded?(%{parent: nil}), do: false
+  defp parent_goal_loaded?(%{parent: _}), do: true
+  defp parent_goal_loaded?(_), do: false
+
+  defp needs_review_pill_style do
+    [
+      "display: inline-flex; align-items: center;",
+      "padding: 1px 6px; border-radius: 999px;",
+      "background: var(--st-review-soft); color: var(--st-review);",
+      "font-size: 10.5px; font-weight: 600;"
+    ]
   end
 end

@@ -96,12 +96,14 @@ defmodule KanbanWeb.BoardTabs do
   # --- Helpers -------------------------------------------------------------
 
   defp visible_tabs(board, owner?, tokens_visible?) do
+    ai_optimized? = Map.get(board, :ai_optimized_board, false)
+
     board
     |> all_tabs()
     |> Enum.reject(fn tab ->
       case tab.id do
         :settings -> not owner?
-        :tokens -> not tokens_visible?
+        :tokens -> not (tokens_visible? and ai_optimized?)
         _ -> false
       end
     end)

@@ -146,8 +146,8 @@
 
     <%= if field_visible?(@field_visibility, "complexity") do %>
       <%!-- Complexity & Planning Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Complexity & Planning")}
         </h3>
         <div class="grid grid-cols-2 gap-4">
@@ -174,8 +174,10 @@
 
     <%= if field_visible?(@field_visibility, "context") do %>
       <%!-- Context Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Context")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Context")}
+        </h3>
         <.input
           field={f[:why]}
           type="textarea"
@@ -199,8 +201,8 @@
 
     <%= if field_visible?(@field_visibility, "key_files") do %>
       <%!-- Key Files Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Key Files to Read First")}
         </h3>
         <.error :for={msg <- Enum.map(f[:key_files].errors, &translate_error/1)}>{msg}</.error>
@@ -245,8 +247,8 @@
 
     <%= if field_visible?(@field_visibility, "verification_steps") do %>
       <%!-- Verification Steps Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Verification Steps")}
         </h3>
         <.error :for={msg <- Enum.map(f[:verification_steps].errors, &translate_error/1)}>
@@ -296,8 +298,10 @@
 
     <%= if field_visible?(@field_visibility, "technical_notes") do %>
       <%!-- Technical Notes Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Technical Notes")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Technical Notes")}
+        </h3>
         <.input
           field={f[:patterns_to_follow]}
           type="textarea"
@@ -321,8 +325,8 @@
 
     <%= if field_visible?(@field_visibility, "technology_requirements") do %>
       <%!-- Technology Requirements Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Technology Requirements")}
         </h3>
         <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>
@@ -362,8 +366,10 @@
 
     <%= if field_visible?(@field_visibility, "observability") do %>
       <%!-- Observability Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Observability")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Observability")}
+        </h3>
         <.input
           field={f[:telemetry_event]}
           type="text"
@@ -387,8 +393,10 @@
 
     <%= if field_visible?(@field_visibility, "error_handling") do %>
       <%!-- Error Handling Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Error Handling")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Error Handling")}
+        </h3>
         <.input field={f[:error_user_message]} type="text" label={gettext("User Error Message")} />
         <.input
           field={f[:error_on_failure]}
@@ -401,8 +409,10 @@
 
     <%= if field_visible?(@field_visibility, "pitfalls") do %>
       <%!-- Pitfalls Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Common Pitfalls")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Common Pitfalls")}
+        </h3>
         <.error :for={msg <- Enum.map(f[:pitfalls].errors, &translate_error/1)}>{msg}</.error>
         <input type="hidden" name="task[pitfalls][]" value="" />
         <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :pitfalls) || []) do %>
@@ -438,8 +448,10 @@
 
     <%= if field_visible?(@field_visibility, "out_of_scope") do %>
       <%!-- Out of Scope Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Out of Scope")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Out of Scope")}
+        </h3>
         <.error :for={msg <- Enum.map(f[:out_of_scope].errors, &translate_error/1)}>{msg}</.error>
         <input type="hidden" name="task[out_of_scope][]" value="" />
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :out_of_scope) || []) do %>
@@ -475,8 +487,8 @@
 
     <%= if field_visible?(@field_visibility, "security_considerations") do %>
       <%!-- Security Considerations Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Security Considerations")}
         </h3>
         <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>
@@ -516,8 +528,8 @@
 
     <%= if field_visible?(@field_visibility, "testing_strategy") do %>
       <%!-- Testing Strategy Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Testing Strategy")}
         </h3>
         <.error :for={msg <- Enum.map(f[:testing_strategy].errors, &translate_error/1)}>
@@ -634,8 +646,8 @@
 
     <%= if field_visible?(@field_visibility, "integration_points") do %>
       <%!-- Integration Points Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Integration Points")}
         </h3>
         <.error :for={msg <- Enum.map(f[:integration_points].errors, &translate_error/1)}>
@@ -786,8 +798,10 @@
     <% end %>
 
     <%!-- Dependencies Section --%>
-    <div class="mt-6 pt-6 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Dependencies")}</h3>
+    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        {gettext("Dependencies")}
+      </h3>
       <.error :for={msg <- Enum.map(f[:dependencies].errors, &translate_error/1)}>{msg}</.error>
       <input type="hidden" name="task[dependencies][]" value="" />
       <%= for {dep, index} <- Enum.with_index(Ecto.Changeset.get_field(@form.source, :dependencies) || []) do %>
@@ -822,8 +836,8 @@
 
     <%= if Ecto.Changeset.get_field(@form.source, :created_by_agent) || Ecto.Changeset.get_field(@form.source, :completed_by_agent) do %>
       <%!-- Agent Tracking Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Agent Tracking")}
         </h3>
         <.input field={f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
@@ -839,8 +853,8 @@
 
     <%= if field_visible?(@field_visibility, "required_capabilities") do %>
       <%!-- Claim Tracking Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Claim Tracking & Required Capabilities")}
         </h3>
         <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>
@@ -890,8 +904,10 @@
 
     <%= if Ecto.Changeset.get_field(@form.source, :actual_complexity) || Ecto.Changeset.get_field(@form.source, :actual_files_changed) || Ecto.Changeset.get_field(@form.source, :time_spent_minutes) do %>
       <%!-- Actual Metrics Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Actual Metrics")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Actual Metrics")}
+        </h3>
         <div class="grid grid-cols-3 gap-4">
           <.input
             field={f[:actual_complexity]}
@@ -920,8 +936,10 @@
 
     <%= if @board.ai_optimized_board && (Ecto.Changeset.get_field(@form.source, :review_status) || (Ecto.assoc_loaded?(@task.column) && @task.column.name == "Review") || Ecto.Changeset.get_field(@form.source, :needs_review)) do %>
       <%!-- Review Queue Section --%>
-      <div class="mt-6 pt-6 border-t border-base-300">
-        <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Review Queue")}</h3>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Review Queue")}
+        </h3>
         <.input
           field={f[:review_status]}
           type="select"
@@ -945,7 +963,9 @@
 
   <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
     <div class="mt-8 pt-8 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Task History")}</h3>
+      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        {gettext("Task History")}
+      </h3>
       <div class="space-y-3">
         <%= for history <- @task.task_histories do %>
           <div class="flex items-start gap-3 text-sm">
@@ -1017,7 +1037,9 @@
 
   <%= if @action == :edit_task && @task.id do %>
     <div class="mt-8 pt-8 border-t border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">{gettext("Comments")}</h3>
+      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        {gettext("Comments")}
+      </h3>
 
       <.form
         :let={c}

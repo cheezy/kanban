@@ -32,8 +32,8 @@ defmodule KanbanWeb.BoardTabsTest do
       refute html =~ ~r/>\s*Goals\s*</
     end
 
-    test "owner? sees Tokens and Settings tabs" do
-      assigns = %{board: board()}
+    test "owner? on an AI-optimized board sees Tokens and Settings tabs" do
+      assigns = %{board: board(%{ai_optimized_board: true})}
 
       html =
         rendered_to_string(~H"""
@@ -41,6 +41,18 @@ defmodule KanbanWeb.BoardTabsTest do
         """)
 
       assert html =~ ~r/>\s*Tokens\s*</
+      assert html =~ ~r/>\s*Settings\s*</
+    end
+
+    test "owner? on a non-AI-optimized board does NOT see the Tokens tab" do
+      assigns = %{board: board(%{ai_optimized_board: false})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardTabs.board_tabs board={@board} owner? />
+        """)
+
+      refute html =~ ~r/>\s*Tokens\s*</
       assert html =~ ~r/>\s*Settings\s*</
     end
 
@@ -111,7 +123,7 @@ defmodule KanbanWeb.BoardTabsTest do
 
   describe "board_tabs/1 — link targets" do
     test "real routes resolve to their existing paths" do
-      assigns = %{board: board(%{id: 42})}
+      assigns = %{board: board(%{id: 42, ai_optimized_board: true})}
 
       html =
         rendered_to_string(~H"""

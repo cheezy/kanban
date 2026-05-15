@@ -65,7 +65,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Description"
+      # New design renders description as plain paragraph below the
+      # title — no "Description" label.
+      assert result =~ "This is a test description"
       assert result =~ "This is a test description"
     end
 
@@ -106,10 +108,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      # New design uses a TypeIcon (hero-document-text for :work) inside the
-      # detail header band rather than a colored text pill.
+      # New design uses a TypeIcon (hero-document-text for :work) inside
+      # the inline detail band rather than a colored text pill.
       assert result =~ "hero-document-text"
-      assert result =~ "data-detail-header"
+      assert result =~ "data-task-detail-band"
     end
 
     test "displays Defect type with red badge", %{board: board} do
@@ -654,8 +656,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Creator"
-      assert result =~ "Created by"
+      # New design surfaces the author in the right-rail Author MetaItem
+      # (when assigned_to OR created_by is set) rather than a labeled
+      # "Created by" section.
+      assert result =~ "Author"
       assert result =~ "Alice Creator"
     end
 
@@ -676,9 +680,11 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Creator"
-      assert result =~ "Agent"
-      assert result =~ "Claude-3.5-Sonnet"
+      # The new right rail surfaces an Author row from the user even when
+      # created_by_agent is set; the agent name itself is captured in
+      # history rather than a dedicated label.
+      assert result =~ "Author"
+      assert result =~ "Bob User"
     end
 
     test "displays claim status when task is claimed", %{board: board} do
@@ -701,8 +707,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Claimed at"
-      assert result =~ "Claim expires"
+      # New design moved the claim timestamp into the right-rail "Claimed"
+      # MetaItem; the legacy "Claim expires" callout was retired (the
+      # claim window is now tracked through history + the claim badge).
+      assert result =~ "Claimed"
     end
 
     test "displays why/what/where context section", %{board: board} do
@@ -722,13 +730,13 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      # The Context block is now three separate SectionCards (Why / What
-      # / Where in the codebase) rendered side-by-side.
+      # The Context block is now three stacked Block components in the
+      # left main column (matching the design's pane variant).
       assert result =~ "Why"
       assert result =~ "To improve user experience"
       assert result =~ "What"
       assert result =~ "Add OAuth authentication"
-      assert result =~ "Where in the codebase"
+      assert result =~ "Where"
       assert result =~ "User authentication module"
     end
 
@@ -900,7 +908,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "HTTPoison"
     end
 
-    test "displays required agent capabilities", %{board: board} do
+    test "displays required agent capabilities in the right rail", %{board: board} do
       column = column_fixture(board)
 
       task =
@@ -915,7 +923,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Required capabilities"
+      # New design surfaces required capabilities in the right rail as
+      # the "Capabilities" MetaItem with violet pills.
+      assert result =~ "Capabilities"
       assert result =~ "web_browsing"
       assert result =~ "git"
       assert result =~ "file_operations"
@@ -1390,7 +1400,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Estimated Files"
+      # New design renders estimated_files as a right-rail MetaItem.
+      assert result =~ "Estimated files"
       assert result =~ "7"
     end
 
