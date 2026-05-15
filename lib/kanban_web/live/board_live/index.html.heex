@@ -1,5 +1,58 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="stride-screen px-4 py-6 sm:px-6 lg:px-8">
+  <:breadcrumbs>
+    <span>{gettext("Workspace")}</span>
+    <span style="color: var(--ink-4);">/</span>
+    <span style="color: var(--ink); font-weight: 500;">{gettext("Boards")}</span>
+  </:breadcrumbs>
+
+  <:actions>
+    <div class="dropdown dropdown-end">
+      <label
+        tabindex="0"
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "padding: 4px 10px; border-radius: 5px;",
+          "background: var(--ink); color: var(--surface);",
+          "font-size: 11.5px; font-weight: 600; cursor: pointer;"
+        ]}
+      >
+        <.icon name="hero-plus" class="h-3.5 w-3.5" />
+        {gettext("New board")}
+      </label>
+      <ul
+        tabindex="0"
+        class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-64 mt-2 border border-base-300"
+      >
+        <li>
+          <.link
+            navigate={~p"/boards/new?ai_optimized=true"}
+            class="flex items-start gap-3 py-3"
+          >
+            <.icon name="hero-sparkles" class="h-5 w-5 mt-0.5 flex-shrink-0" />
+            <div>
+              <div class="font-semibold">{gettext("New AI Optimized Board")}</div>
+              <div class="text-xs opacity-70">
+                {gettext("Pre-configured for AI workflow")}
+              </div>
+            </div>
+          </.link>
+        </li>
+        <li>
+          <.link navigate={~p"/boards/new"} class="flex items-start gap-3 py-3">
+            <.icon name="hero-document" class="h-5 w-5 mt-0.5 flex-shrink-0" />
+            <div>
+              <div class="font-semibold">{gettext("New Empty Board")}</div>
+              <div class="text-xs opacity-70">
+                {gettext("Start with a blank board")}
+              </div>
+            </div>
+          </.link>
+        </li>
+      </ul>
+    </div>
+  </:actions>
+
+  <div class="px-4 py-6 sm:px-6 lg:px-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
       <div class="flex items-baseline gap-3">
         <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em;">
@@ -9,7 +62,6 @@
           {ngettext("%{count} active", "%{count} active", @active_count, count: @active_count)}
         </span>
       </div>
-
     </div>
 
     <%= if !@has_boards do %>

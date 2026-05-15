@@ -987,7 +987,10 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
     test "does not show Review wait time for regular board", %{conn: conn, board: board} do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
 
-      refute html =~ "Review"
+      # The Review wait-time row uses a specific text-sm font-medium label.
+      # Match that exact wrapping (not the "Review queue" sidebar nav item)
+      # so we can prove the wait-time row is suppressed for non-AI boards.
+      refute html =~ ~r/text-sm font-medium[^"]*">\s*Review\s*</
     end
 
     test "displays throughput for regular board with completed tasks", %{

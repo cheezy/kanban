@@ -120,7 +120,8 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_admin}
-      ] do
+      ],
+      root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
     end
   end
@@ -134,7 +135,8 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_authenticated}
-      ] do
+      ],
+      root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
 

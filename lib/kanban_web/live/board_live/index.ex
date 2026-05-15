@@ -160,21 +160,23 @@ defmodule KanbanWeb.BoardLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    user = socket.assigns.current_scope.user
-
-    boards =
-      user
-      |> Boards.list_boards_with_metrics()
-      |> Enum.with_index()
-      |> Enum.map(fn {board, index} ->
-        Map.put(board, :accent, Enum.at(@accents, rem(index, length(@accents))))
-      end)
+    boards = load_boards(socket.assigns.current_scope.user)
 
     {:ok,
      socket
      |> assign(:has_boards, not Enum.empty?(boards))
      |> assign(:active_count, length(boards))
+     |> assign(:nav_active, :boards)
      |> stream(:boards, boards)}
+  end
+
+  defp load_boards(user) do
+    user
+    |> Boards.list_boards_with_metrics()
+    |> Enum.with_index()
+    |> Enum.map(fn {board, index} ->
+      Map.put(board, :accent, Enum.at(@accents, rem(index, length(@accents))))
+    end)
   end
 
   @impl true
