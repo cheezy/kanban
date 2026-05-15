@@ -39,7 +39,11 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
       assert is_map(socket.assigns.field_visibility)
     end
 
-    test "carries field_visibility through from the board", %{user: user, board: board, scope: scope} do
+    test "carries field_visibility through from the board", %{
+      user: user,
+      board: board,
+      scope: scope
+    } do
       vis = %{"acceptance_criteria" => true, "complexity" => false}
       {:ok, board} = Boards.update_field_visibility(board, vis, user)
 

@@ -92,7 +92,8 @@ defmodule KanbanWeb.AvatarPaletteTest do
 
   describe "agent_palettes/0 introspection" do
     test "returns the four canonical agent palette strings" do
-      assert AvatarPalette.agent_palettes() == ~w(agent-claude agent-cursor agent-aider agent-codex)
+      assert AvatarPalette.agent_palettes() ==
+               ~w(agent-claude agent-cursor agent-aider agent-codex)
     end
   end
 

@@ -110,7 +110,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       refute html =~ "Remove"
     end
 
-    test "renders a Remove button for non-owner members", %{board: board, scope: scope, user: owner} do
+    test "renders a Remove button for non-owner members", %{
+      board: board,
+      scope: scope,
+      user: owner
+    } do
       member = user_fixture()
       {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
 

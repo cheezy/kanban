@@ -249,14 +249,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             ]}
           >
             <div style="flex: 1; min-width: 0;">
-              <div
-                style="font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-              >
+              <div style="font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 {user.name}
               </div>
-              <div
-                style="font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-              >
+              <div style="font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 {user.email}
               </div>
             </div>

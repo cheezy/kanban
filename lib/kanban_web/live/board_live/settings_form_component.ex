@@ -59,7 +59,11 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
   defp perform_toggle(socket, field_name) do
     new_visibility = build_toggled_visibility(socket.assigns.field_visibility, field_name)
 
-    case Boards.update_field_visibility(socket.assigns.board, new_visibility, socket.assigns.scope.user) do
+    case Boards.update_field_visibility(
+           socket.assigns.board,
+           new_visibility,
+           socket.assigns.scope.user
+         ) do
       {:ok, updated_board} ->
         notify_parent({:field_visibility_updated, updated_board.field_visibility})
         {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
@@ -105,13 +109,11 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
             <.stride_input field={f[:description]} type="textarea" />
           </.stride_field>
 
-          <label
-            style={[
-              "display: flex; align-items: flex-start; gap: 10px;",
-              "margin-top: 14px; padding: 10px 12px; border-radius: 6px;",
-              "background: var(--surface-sunken); cursor: pointer;"
-            ]}
-          >
+          <label style={[
+            "display: flex; align-items: flex-start; gap: 10px;",
+            "margin-top: 14px; padding: 10px 12px; border-radius: 6px;",
+            "background: var(--surface-sunken); cursor: pointer;"
+          ]}>
             <input
               type="checkbox"
               name={f[:read_only].name}
