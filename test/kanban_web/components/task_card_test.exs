@@ -477,5 +477,4 @@ defmodule KanbanWeb.TaskCardTest do
       assert html =~ "self-reviewed"
     end
   end
-
 end

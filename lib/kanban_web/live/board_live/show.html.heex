@@ -133,164 +133,164 @@
               class="flex-1 min-w-[256px] bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
               data-column-id={column.id}
             >
-            <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>
-            <% task_count = Enum.count(all_tasks, &(&1.type in [:work, :defect])) %>
-            <% total_tasks = length(all_tasks) %>
-            <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
-            <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
-            <div class="flex items-start justify-between mb-2 group">
-              <%= if @user_access == :owner and not @board.ai_optimized_board do %>
-                <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
-                  <.icon name="hero-bars-3" class="h-5 w-5 text-base-content" />
+              <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>
+              <% task_count = Enum.count(all_tasks, &(&1.type in [:work, :defect])) %>
+              <% total_tasks = length(all_tasks) %>
+              <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
+              <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
+              <div class="flex items-start justify-between mb-2 group">
+                <%= if @user_access == :owner and not @board.ai_optimized_board do %>
+                  <div class="flex items-center gap-2 column-drag-handle cursor-grab active:cursor-grabbing mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <.icon name="hero-bars-3" class="h-5 w-5 text-base-content" />
+                  </div>
+                <% end %>
+                <div class="flex-1">
+                  <ColumnHeader.column_header
+                    column={column}
+                    count={task_count}
+                    new_task_path={
+                      if @can_modify and not at_limit,
+                        do: ~p"/boards/#{@board}/columns/#{column}/tasks/new"
+                    }
+                  />
+                  <%= if over_limit do %>
+                    <div
+                      title={gettext("WIP limit exceeded")}
+                      class="mt-2 flex items-center gap-1.5 text-xs"
+                    >
+                      <.icon
+                        name="hero-exclamation-triangle-solid"
+                        class="h-3.5 w-3.5 text-red-600"
+                      />
+                      <span class="text-red-700 dark:text-red-400">
+                        {gettext("WIP limit exceeded")}
+                      </span>
+                    </div>
+                  <% end %>
                 </div>
-              <% end %>
-              <div class="flex-1">
-                <ColumnHeader.column_header
-                  column={column}
-                  count={task_count}
-                  new_task_path={
-                    if @can_modify and not at_limit,
-                      do: ~p"/boards/#{@board}/columns/#{column}/tasks/new"
-                  }
-                />
-                <%= if over_limit do %>
-                  <div
-                    title={gettext("WIP limit exceeded")}
-                    class="mt-2 flex items-center gap-1.5 text-xs"
-                  >
-                    <.icon
-                      name="hero-exclamation-triangle-solid"
-                      class="h-3.5 w-3.5 text-red-600"
-                    />
-                    <span class="text-red-700 dark:text-red-400">
-                      {gettext("WIP limit exceeded")}
-                    </span>
+                <%= if @user_access == :owner and not @board.ai_optimized_board do %>
+                  <div class="flex gap-1.5">
+                    <.link
+                      patch={~p"/boards/#{@board}/columns/#{column}/edit"}
+                      aria-label={gettext("Edit column")}
+                      class="p-1.5 bg-base-100/90 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                    >
+                      <.icon
+                        name="hero-pencil-solid"
+                        class="h-4 w-4 text-base-content opacity-50 hover:text-blue-600 transition-colors"
+                      />
+                    </.link>
+                    <.link
+                      phx-click={JS.push("delete_column", value: %{id: column.id})}
+                      data-confirm={
+                        gettext(
+                          "Are you sure you want to delete this column? All tasks in this column will also be deleted."
+                        )
+                      }
+                      aria-label={gettext("Delete column")}
+                      class="p-1.5 bg-base-100/90 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait opacity-0 group-hover:opacity-100"
+                    >
+                      <.icon
+                        name="hero-trash-solid"
+                        class="h-4 w-4 text-base-content opacity-50 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
+                      />
+                    </.link>
                   </div>
                 <% end %>
               </div>
-              <%= if @user_access == :owner and not @board.ai_optimized_board do %>
-                <div class="flex gap-1.5">
-                  <.link
-                    patch={~p"/boards/#{@board}/columns/#{column}/edit"}
-                    aria-label={gettext("Edit column")}
-                    class="p-1.5 bg-base-100/90 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all shadow-sm opacity-0 group-hover:opacity-100"
-                  >
-                    <.icon
-                      name="hero-pencil-solid"
-                      class="h-4 w-4 text-base-content opacity-50 hover:text-blue-600 transition-colors"
-                    />
-                  </.link>
-                  <.link
-                    phx-click={JS.push("delete_column", value: %{id: column.id})}
-                    data-confirm={
-                      gettext(
-                        "Are you sure you want to delete this column? All tasks in this column will also be deleted."
-                      )
-                    }
-                    aria-label={gettext("Delete column")}
-                    class="p-1.5 bg-base-100/90 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all shadow-sm phx-submit-loading:opacity-50 phx-submit-loading:cursor-wait opacity-0 group-hover:opacity-100"
-                  >
-                    <.icon
-                      name="hero-trash-solid"
-                      class="h-4 w-4 text-base-content opacity-50 hover:text-red-600 transition-colors phx-submit-loading:animate-pulse"
-                    />
-                  </.link>
-                </div>
-              <% end %>
-            </div>
-
-            <div
-              class="space-y-2 min-h-[100px] p-1 rounded transition-colors"
-              id={"tasks-#{column.id}"}
-              phx-hook="Sortable"
-              data-column-id={column.id}
-              data-version={@tasks_version}
-              data-group="tasks"
-              data-handle=".drag-handle"
-              data-wip-limit={column.wip_limit}
-              data-task-count={task_count}
-              data-server-sorted={if column.name == "Done", do: "true"}
-            >
-              <div
-                id={"empty-state-#{column.id}"}
-                class={"empty-state #{if total_tasks > 0, do: "hidden"}"}
-              >
-                <ColumnEmpty.column_empty status={column_status(column.name)} />
-              </div>
 
               <div
-                :for={task <- Map.get(@tasks_by_column, column.id, [])}
-                id={"task-#{task.id}"}
-                data-id={task.id}
-                data-position={task.position}
-                class="group relative"
+                class="space-y-2 min-h-[100px] p-1 rounded transition-colors"
+                id={"tasks-#{column.id}"}
+                phx-hook="Sortable"
+                data-column-id={column.id}
+                data-version={@tasks_version}
+                data-group="tasks"
+                data-handle=".drag-handle"
+                data-wip-limit={column.wip_limit}
+                data-task-count={task_count}
+                data-server-sorted={if column.name == "Done", do: "true"}
               >
                 <div
-                  :if={@can_modify}
-                  class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  id={"empty-state-#{column.id}"}
+                  class={"empty-state #{if total_tasks > 0, do: "hidden"}"}
                 >
-                  <.link
-                    patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
-                    aria-label={gettext("Edit task")}
-                    class="p-1 rounded hover:bg-base-200"
-                  >
-                    <.icon
-                      name="hero-pencil-square"
-                      class="h-3.5 w-3.5 text-base-content opacity-60"
-                    />
-                  </.link>
-                  <button
-                    type="button"
-                    phx-click="archive_task"
-                    phx-value-id={task.id}
-                    aria-label={gettext("Archive task")}
-                    class="p-1 rounded hover:bg-base-200"
-                  >
-                    <.icon
-                      name="hero-archive-box"
-                      class="h-3.5 w-3.5 text-base-content opacity-60"
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="delete_task"
-                    phx-value-id={task.id}
-                    data-confirm={gettext("Are you sure you want to delete this task?")}
-                    aria-label={gettext("Delete task")}
-                    class="p-1 rounded hover:bg-red-50 text-red-600"
-                  >
-                    <.icon name="hero-trash" class="h-3.5 w-3.5" />
-                  </button>
+                  <ColumnEmpty.column_empty status={column_status(column.name)} />
                 </div>
 
                 <div
-                  :if={@can_modify and task.type != :goal}
-                  class="drag-handle absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab z-10"
-                  aria-label={gettext("Drag to reorder")}
+                  :for={task <- Map.get(@tasks_by_column, column.id, [])}
+                  id={"task-#{task.id}"}
+                  data-id={task.id}
+                  data-position={task.position}
+                  class="group relative"
                 >
-                  <.icon name="hero-bars-3" class="h-3 w-3 text-base-content opacity-50" />
-                </div>
+                  <div
+                    :if={@can_modify}
+                    class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <.link
+                      patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
+                      aria-label={gettext("Edit task")}
+                      class="p-1 rounded hover:bg-base-200"
+                    >
+                      <.icon
+                        name="hero-pencil-square"
+                        class="h-3.5 w-3.5 text-base-content opacity-60"
+                      />
+                    </.link>
+                    <button
+                      type="button"
+                      phx-click="archive_task"
+                      phx-value-id={task.id}
+                      aria-label={gettext("Archive task")}
+                      class="p-1 rounded hover:bg-base-200"
+                    >
+                      <.icon
+                        name="hero-archive-box"
+                        class="h-3.5 w-3.5 text-base-content opacity-60"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="delete_task"
+                      phx-value-id={task.id}
+                      data-confirm={gettext("Are you sure you want to delete this task?")}
+                      aria-label={gettext("Delete task")}
+                      class="p-1 rounded hover:bg-red-50 text-red-600"
+                    >
+                      <.icon name="hero-trash" class="h-3.5 w-3.5" />
+                    </button>
+                  </div>
 
-                <div
-                  phx-click="view_task"
-                  phx-value-id={task.id}
-                  class="cursor-pointer"
-                >
-                  <TaskCard.task_card
-                    task={
-                      task_card_data(
-                        task,
-                        @backlog_goals_with_children,
-                        @goal_progress,
-                        @goals_by_id
-                      )
-                    }
-                    column={column_status(column.name)}
-                  />
+                  <div
+                    :if={@can_modify and task.type != :goal}
+                    class="drag-handle absolute top-1 left-1 opacity-0 group-hover:opacity-100 cursor-grab z-10"
+                    aria-label={gettext("Drag to reorder")}
+                  >
+                    <.icon name="hero-bars-3" class="h-3 w-3 text-base-content opacity-50" />
+                  </div>
+
+                  <div
+                    phx-click="view_task"
+                    phx-value-id={task.id}
+                    class="cursor-pointer"
+                  >
+                    <TaskCard.task_card
+                      task={
+                        task_card_data(
+                          task,
+                          @backlog_goals_with_children,
+                          @goal_progress,
+                          @goals_by_id
+                        )
+                      }
+                      column={column_status(column.name)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </div>
 
           <AgentActivityRail.rail
