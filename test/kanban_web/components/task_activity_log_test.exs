@@ -9,7 +9,7 @@ defmodule KanbanWeb.TaskActivityLogTest do
 
   alias KanbanWeb.TaskActivityLog
 
-  defp entry(overrides \\ %{}) do
+  defp entry(overrides) do
     Map.merge(
       %{
         type: :creation,
