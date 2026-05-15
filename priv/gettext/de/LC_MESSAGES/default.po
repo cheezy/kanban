@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Aktionen"
 
-#: lib/kanban_web/components/layouts.ex:378
-#: lib/kanban_web/components/layouts.ex:390
+#: lib/kanban_web/components/layouts.ex:379
+#: lib/kanban_web/components/layouts.ex:391
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Verbindungsversuch"
 
-#: lib/kanban_web/components/layouts.ex:385
+#: lib/kanban_web/components/layouts.ex:386
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Etwas ist schiefgelaufen!"
 
-#: lib/kanban_web/components/layouts.ex:373
+#: lib/kanban_web/components/layouts.ex:374
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Wir können das Internet nicht finden"
@@ -81,7 +81,7 @@ msgid "Log out"
 msgstr "Abmelden"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:283
+#: lib/kanban_web/components/layouts.ex:284
 #: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -408,7 +408,7 @@ msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
 
 #: lib/kanban_web/components/layouts.ex:130
-#: lib/kanban_web/components/layouts.ex:339
+#: lib/kanban_web/components/layouts.ex:340
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -2182,7 +2182,7 @@ msgstr ""
 msgid "Read more"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:276
+#: lib/kanban_web/components/layouts.ex:277
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2266,7 +2266,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:262
+#: lib/kanban_web/components/layouts.ex:263
 #: lib/kanban_web/live/task_live/view_component.ex:239
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Metrics"
@@ -4725,7 +4725,7 @@ msgstr ""
 msgid "Active goals"
 msgstr "Aktive Tokens"
 
-#: lib/kanban_web/components/layouts.ex:248
+#: lib/kanban_web/components/layouts.ex:237
 #: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agents"
@@ -4771,7 +4771,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:255
+#: lib/kanban_web/components/layouts.ex:256
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Review queue"
 msgstr ""
