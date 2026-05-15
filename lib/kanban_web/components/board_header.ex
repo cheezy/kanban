@@ -33,13 +33,17 @@ defmodule KanbanWeb.BoardHeader do
       |> assign(:shipped, Map.get(metrics, :done, 0))
 
     ~H"""
-    <div style={[
-      "padding: 14px 22px 12px;",
-      "display: flex; align-items: center; gap: 16px;",
-      "border-bottom: 1px solid var(--line);",
-      "background: var(--surface);"
-    ]}>
-      <div style="display: flex; flex-direction: column; min-width: 0;">
+    <div
+      class="board-header-bar"
+      style={[
+        "padding: 14px 22px 12px;",
+        "display: flex; align-items: center; gap: 16px;",
+        "flex-wrap: wrap;",
+        "border-bottom: 1px solid var(--line);",
+        "background: var(--surface);"
+      ]}
+    >
+      <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <h1 style={[
             "margin: 0; font-size: 18px; font-weight: 600;",

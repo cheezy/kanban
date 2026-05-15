@@ -918,3 +918,21 @@
 /* Linear-ish row hover */
 .stride-marketing .row-hover:hover,
 .stride-screen .row-hover:hover { background: var(--surface-sunken); }
+
+/* ============================================================
+   Board kanban — mobile responsive density at <=768px.
+   Scoped to .stride-screen so daisyUI-themed routes (Admin,
+   Settings, etc.) are unaffected. Tightens the BoardHeader and
+   BoardTabs padding so the chrome fits on a 402px viewport and
+   lets the per-column kanban scroll horizontally on narrow
+   screens without redesigning the column layout.
+   ============================================================ */
+@media (max-width: 768px) {
+  .stride-screen .board-header-bar {
+    padding: 10px 14px 10px;
+    gap: 10px;
+  }
+  .stride-screen .board-tabs-bar {
+    padding: 0 14px;
+  }
+}

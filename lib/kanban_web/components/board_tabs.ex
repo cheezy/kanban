@@ -34,12 +34,14 @@ defmodule KanbanWeb.BoardTabs do
 
     ~H"""
     <nav
+      class="board-tabs-bar"
       aria-label={gettext("Board sections")}
       style={[
         "display: flex; align-items: stretch; gap: 0;",
         "padding: 0 22px;",
         "border-bottom: 1px solid var(--line);",
-        "background: var(--surface); flex-shrink: 0;"
+        "background: var(--surface); flex-shrink: 0;",
+        "overflow-x: auto;"
       ]}
     >
       <.tab :for={tab <- @tabs} tab={tab} active={@active == tab.id} />
