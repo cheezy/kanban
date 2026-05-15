@@ -10,6 +10,14 @@ defmodule Kanban.Boards do
 
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.Columns.Column
+  alias Kanban.Tasks.Task
+
+  @pulse_window_days 14
+  @open_columns ~w(Backlog Ready)
+  @doing_column "Doing"
+  @review_column "Review"
+  @done_column "Done"
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -51,6 +59,216 @@ defmodule Kanban.Boards do
       priority_a < priority_b
     end
   end
+
+  @doc """
+  Returns the same list as `list_boards/1` but with each board's virtual
+  `:metrics` field populated for the Boards index card.
+
+  Each metrics map contains:
+
+    * `:open` — tasks currently in `Backlog`/`Ready` columns
+    * `:doing` — tasks currently in the `Doing` column
+    * `:review` — tasks currently in the `Review` column
+    * `:done` — tasks currently in the `Done` column
+    * `:throughput_14d` — total tasks completed in the last 14 days
+    * `:pulse_14d` — exactly 14 daily completion counts, oldest first,
+      most recent day LAST, zero-filled for days with no completions
+    * `:active_agents_14d` — distinct `completed_by_agent` values on
+      tasks completed in the last 14 days. NOTE: the task spec asked for
+      distinct `claimed_by_agent`, but no per-claim agent name is stored
+      anywhere in the schema (`Task` records only `completed_by_agent`,
+      stamped at completion time). `completed_by_agent` on completed
+      tasks within the window is the closest available proxy and matches
+      the intent of "agents who did work recently."
+    * `:last_activity_at` — most recent of `max(claimed_at)` and
+      `max(completed_at)` across the board, or `nil` if neither has ever
+      been set
+
+  Open/Doing/Review/Done are matched by column NAME (Backlog/Ready map to
+  Open; Doing/Review/Done map directly). Columns with other names — on
+  non-AI-optimized boards with custom column names — are not counted in
+  any bucket; their counts simply do not surface in the metrics map.
+
+  All time windows are anchored in UTC; the optional `:now` keyword
+  overrides `DateTime.utc_now/0` for deterministic tests.
+
+  The function issues a fixed number of aggregate queries (one per metric
+  family, all grouped by `board_id`) so cost stays constant regardless of
+  how many boards the user has access to — no N+1.
+
+  ## Examples
+
+      iex> [%Board{metrics: %{open: 3, doing: 1, ...}} | _] =
+      ...>   list_boards_with_metrics(user)
+
+  """
+  def list_boards_with_metrics(user, opts \\ []) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    boards = list_boards(user)
+
+    case Enum.map(boards, & &1.id) do
+      [] ->
+        []
+
+      board_ids ->
+        metrics_by_board = build_metrics(board_ids, now)
+
+        Enum.map(boards, fn board ->
+          %{board | metrics: Map.get(metrics_by_board, board.id, empty_metrics(now))}
+        end)
+    end
+  end
+
+  defp build_metrics(board_ids, now) do
+    today = DateTime.to_date(now)
+    cutoff_dt = today |> Date.add(-(@pulse_window_days - 1)) |> DateTime.new!(~T[00:00:00])
+
+    aggregates = %{
+      column_counts: column_counts_by_board(board_ids),
+      pulse_rows: pulse_rows_by_board(board_ids, cutoff_dt),
+      throughput: throughput_by_board(board_ids, cutoff_dt),
+      active_agents: active_agents_by_board(board_ids, cutoff_dt),
+      last_activity: last_activity_by_board(board_ids),
+      pulse_dates: pulse_date_range(today)
+    }
+
+    Map.new(board_ids, &{&1, metrics_for_board(&1, aggregates)})
+  end
+
+  defp metrics_for_board(board_id, agg) do
+    %{
+      open: Map.get(agg.column_counts, {board_id, :open}, 0),
+      doing: Map.get(agg.column_counts, {board_id, :doing}, 0),
+      review: Map.get(agg.column_counts, {board_id, :review}, 0),
+      done: Map.get(agg.column_counts, {board_id, :done}, 0),
+      throughput_14d: Map.get(agg.throughput, board_id, 0),
+      pulse_14d: build_pulse_array(Map.get(agg.pulse_rows, board_id, %{}), agg.pulse_dates),
+      active_agents_14d: Map.get(agg.active_agents, board_id, 0),
+      last_activity_at: Map.get(agg.last_activity, board_id)
+    }
+  end
+
+  defp empty_metrics(now) do
+    %{
+      open: 0,
+      doing: 0,
+      review: 0,
+      done: 0,
+      throughput_14d: 0,
+      pulse_14d: zero_pulse(now),
+      active_agents_14d: 0,
+      last_activity_at: nil
+    }
+  end
+
+  defp zero_pulse(now) do
+    now |> DateTime.to_date() |> pulse_date_range() |> Enum.map(fn _ -> 0 end)
+  end
+
+  defp pulse_date_range(today) do
+    today
+    |> Date.add(-(@pulse_window_days - 1))
+    |> Date.range(today)
+    |> Enum.to_list()
+  end
+
+  defp build_pulse_array(counts_by_date, pulse_dates) do
+    Enum.map(pulse_dates, fn date -> Map.get(counts_by_date, date, 0) end)
+  end
+
+  # Returns %{{board_id, :open | :doing | :review | :done} => count}.
+  defp column_counts_by_board(board_ids) do
+    Task
+    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where(
+      [_t, c],
+      c.name in ^@open_columns or c.name in [@doing_column, @review_column, @done_column]
+    )
+    |> group_by([_t, c], [c.board_id, c.name])
+    |> select([_t, c], {c.board_id, c.name, count()})
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn {board_id, name, count}, acc ->
+      # Backlog and Ready both bucket to :open, so accumulate when two
+      # column names roll up to the same bucket on the same board.
+      Map.update(acc, {board_id, bucket_for(name)}, count, &(&1 + count))
+    end)
+  end
+
+  defp bucket_for(name) when name in @open_columns, do: :open
+  defp bucket_for(@doing_column), do: :doing
+  defp bucket_for(@review_column), do: :review
+  defp bucket_for(@done_column), do: :done
+
+  # Returns %{board_id => %{Date => count}}.
+  defp pulse_rows_by_board(board_ids, cutoff_dt) do
+    board_ids
+    |> pulse_query(cutoff_dt)
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn {board_id, date, count}, acc ->
+      Map.update(acc, board_id, %{date => count}, &Map.put(&1, date, count))
+    end)
+  end
+
+  defp pulse_query(board_ids, cutoff_dt) do
+    Task
+    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.completed_at >= ^cutoff_dt)
+    |> group_by([t, c], [c.board_id, fragment("DATE(?)", t.completed_at)])
+    |> select([t, c], {c.board_id, fragment("DATE(?)", t.completed_at), count(t.id)})
+  end
+
+  # Returns %{board_id => total_count}.
+  defp throughput_by_board(board_ids, cutoff_dt) do
+    Task
+    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.completed_at >= ^cutoff_dt)
+    |> group_by([_t, c], c.board_id)
+    |> select([t, c], {c.board_id, count(t.id)})
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  # Returns %{board_id => distinct_agent_count}.
+  defp active_agents_by_board(board_ids, cutoff_dt) do
+    Task
+    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t], not is_nil(t.completed_by_agent))
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.completed_at >= ^cutoff_dt)
+    |> group_by([_t, c], c.board_id)
+    |> select([t, c], {c.board_id, count(t.completed_by_agent, :distinct)})
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  # Returns %{board_id => DateTime}. Picks the later of max(claimed_at)
+  # and max(completed_at). Boards with neither timestamp anywhere are
+  # absent from the map; the caller defaults them to nil.
+  defp last_activity_by_board(board_ids) do
+    Task
+    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> group_by([_t, c], c.board_id)
+    |> select([t, c], {c.board_id, max(t.claimed_at), max(t.completed_at)})
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn {board_id, max_claimed, max_completed}, acc ->
+      case latest(max_claimed, max_completed) do
+        nil -> acc
+        dt -> Map.put(acc, board_id, dt)
+      end
+    end)
+  end
+
+  defp latest(nil, nil), do: nil
+  defp latest(nil, dt), do: dt
+  defp latest(dt, nil), do: dt
+  defp latest(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
 
   @doc """
   Gets a single board with authorization check.

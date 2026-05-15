@@ -3,9 +3,11 @@ defmodule Kanban.BoardsTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TasksFixtures
 
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.Tasks
 
   describe "list_boards/1" do
     test "returns all boards for a specific user" do
@@ -936,6 +938,248 @@ defmodule Kanban.BoardsTest do
     test "update_user_access: stranger returns :unauthorized",
          %{board: board, stranger: stranger, read_only_user: target} do
       assert {:error, :unauthorized} = Boards.update_user_access(board, target, :modify, stranger)
+    end
+  end
+
+  describe "list_boards_with_metrics/2" do
+    setup do
+      user = user_fixture()
+      now = ~U[2026-05-15 12:00:00Z]
+      %{user: user, now: now}
+    end
+
+    test "returns empty list when user has no boards", %{user: user, now: now} do
+      assert Boards.list_boards_with_metrics(user, now: now) == []
+    end
+
+    test "returns the expected metrics shape for an empty board", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Empty Board"})
+
+      assert [%Board{id: board_id, metrics: metrics}] =
+               Boards.list_boards_with_metrics(user, now: now)
+
+      assert board_id == board.id
+
+      assert metrics == %{
+               open: 0,
+               doing: 0,
+               review: 0,
+               done: 0,
+               throughput_14d: 0,
+               pulse_14d: List.duplicate(0, 14),
+               active_agents_14d: 0,
+               last_activity_at: nil
+             }
+    end
+
+    test "counts open/doing/review/done by column name", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Counts Board"})
+      cols = columns_by_name(board)
+
+      _backlog_task = task_fixture(cols["Backlog"], %{title: "B1"})
+      _ready_a = task_fixture(cols["Ready"], %{title: "R1"})
+      _ready_b = task_fixture(cols["Ready"], %{title: "R2"})
+      _doing_task = task_fixture(cols["Doing"], %{title: "D1"})
+      _review_a = task_fixture(cols["Review"], %{title: "V1"})
+      _review_b = task_fixture(cols["Review"], %{title: "V2"})
+      _done_task = task_fixture(cols["Done"], %{title: "Z1"})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      # Backlog (1) + Ready (2) -> open: 3
+      assert metrics.open == 3
+      assert metrics.doing == 1
+      assert metrics.review == 2
+      assert metrics.done == 1
+    end
+
+    test "ignores tasks in custom-named columns for the four buckets", %{user: user, now: now} do
+      board = board_fixture(user, %{name: "Custom Board"})
+      {:ok, custom_col} = Kanban.Columns.create_column(board, %{name: "Triage", wip_limit: 0})
+      _task = task_fixture(custom_col)
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.open == 0
+      assert metrics.doing == 0
+      assert metrics.review == 0
+      assert metrics.done == 0
+    end
+
+    test "pulse_14d is exactly 14 elements with the most recent day LAST", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Pulse Board"})
+      cols = columns_by_name(board)
+
+      # Complete one task today (anchored to `now`) and one 5 days ago.
+      done = cols["Done"]
+      today_task = task_fixture(done, %{title: "Today"})
+      old_task = task_fixture(done, %{title: "Five days ago"})
+
+      {:ok, _} =
+        Tasks.update_task(today_task, %{completed_at: now, completed_by_agent: "Claude"})
+
+      five_days_ago = DateTime.add(now, -5, :day)
+
+      {:ok, _} =
+        Tasks.update_task(old_task, %{completed_at: five_days_ago, completed_by_agent: "GPT"})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert length(metrics.pulse_14d) == 14
+      # Today is the LAST element
+      assert List.last(metrics.pulse_14d) == 1
+      # Index 8 (zero-indexed) corresponds to 5 days ago: 13 - 5 = 8.
+      assert Enum.at(metrics.pulse_14d, 8) == 1
+      # Everything else is zero.
+      assert Enum.sum(metrics.pulse_14d) == 2
+      assert metrics.throughput_14d == 2
+    end
+
+    test "completions older than 14 days do not appear in pulse or throughput", %{
+      user: user,
+      now: now
+    } do
+      board = ai_optimized_board_fixture(user, %{name: "Old Completions"})
+      cols = columns_by_name(board)
+      old_task = task_fixture(cols["Done"], %{title: "Ancient"})
+
+      # 30 days ago — well outside the 14-day window.
+      ancient = DateTime.add(now, -30, :day)
+
+      {:ok, _} =
+        Tasks.update_task(old_task, %{completed_at: ancient, completed_by_agent: "Claude"})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.throughput_14d == 0
+      assert metrics.pulse_14d == List.duplicate(0, 14)
+      assert metrics.active_agents_14d == 0
+      # Last activity does pick it up — it's the latest completed_at on record.
+      assert metrics.last_activity_at == DateTime.truncate(ancient, :second)
+    end
+
+    test "no recent activity returns last_activity_at = nil for a fresh board", %{
+      user: user,
+      now: now
+    } do
+      board = ai_optimized_board_fixture(user, %{name: "Fresh Board"})
+      cols = columns_by_name(board)
+      _ = task_fixture(cols["Ready"], %{title: "Open task"})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.last_activity_at == nil
+    end
+
+    test "active_agents_14d counts DISTINCT completed_by_agent within 14 days", %{
+      user: user,
+      now: now
+    } do
+      board = ai_optimized_board_fixture(user, %{name: "Agents Board"})
+      cols = columns_by_name(board)
+
+      one = task_fixture(cols["Done"], %{title: "T1"})
+      two = task_fixture(cols["Done"], %{title: "T2"})
+      three = task_fixture(cols["Done"], %{title: "T3"})
+
+      {:ok, _} = Tasks.update_task(one, %{completed_at: now, completed_by_agent: "Claude"})
+
+      {:ok, _} =
+        Tasks.update_task(two, %{
+          completed_at: DateTime.add(now, -2, :day),
+          completed_by_agent: "Claude"
+        })
+
+      {:ok, _} =
+        Tasks.update_task(three, %{
+          completed_at: DateTime.add(now, -3, :day),
+          completed_by_agent: "GPT-4"
+        })
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.active_agents_14d == 2
+    end
+
+    test "last_activity_at picks the latest of claimed_at and completed_at", %{
+      user: user,
+      now: now
+    } do
+      board = ai_optimized_board_fixture(user, %{name: "Activity Board"})
+      cols = columns_by_name(board)
+
+      claim_time = DateTime.add(now, -2, :hour)
+      older_completion = DateTime.add(now, -10, :hour)
+      claimed = task_fixture(cols["Doing"], %{title: "Recent claim"})
+      older = task_fixture(cols["Done"], %{title: "Older completion"})
+
+      {:ok, _} = Tasks.update_task(claimed, %{claimed_at: claim_time})
+      {:ok, _} = Tasks.update_task(older, %{completed_at: older_completion})
+
+      # Recent claim wins over older completion.
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+      assert metrics.last_activity_at == DateTime.truncate(claim_time, :second)
+
+      # Now add a completion that is more recent than the claim.
+      newest = task_fixture(cols["Done"], %{title: "Newest"})
+      {:ok, _} = Tasks.update_task(newest, %{completed_at: now})
+
+      [%Board{metrics: metrics2}] = Boards.list_boards_with_metrics(user, now: now)
+      assert metrics2.last_activity_at == DateTime.truncate(now, :second)
+    end
+
+    test "does NOT return boards the user has no access to", %{user: user, now: now} do
+      _mine = ai_optimized_board_fixture(user, %{name: "Mine Board"})
+
+      other = user_fixture()
+      _theirs = ai_optimized_board_fixture(other, %{name: "Theirs Board"})
+
+      boards = Boards.list_boards_with_metrics(user, now: now)
+      assert length(boards) == 1
+      assert hd(boards).name == "Mine Board"
+    end
+
+    test "returns boards in the same order as list_boards/1", %{user: user, now: now} do
+      _ = ai_optimized_board_fixture(user, %{name: "First"})
+      _ = ai_optimized_board_fixture(user, %{name: "Second"})
+      _ = ai_optimized_board_fixture(user, %{name: "Third"})
+
+      list_only = Boards.list_boards(user) |> Enum.map(& &1.id)
+      with_metrics = Boards.list_boards_with_metrics(user, now: now) |> Enum.map(& &1.id)
+
+      assert with_metrics == list_only
+    end
+
+    test "aggregates each board independently (no cross-board leakage)", %{user: user, now: now} do
+      a = ai_optimized_board_fixture(user, %{name: "Board A"})
+      b = ai_optimized_board_fixture(user, %{name: "Board B"})
+      cols_a = columns_by_name(a)
+      cols_b = columns_by_name(b)
+
+      _ = task_fixture(cols_a["Ready"], %{title: "A open"})
+      _ = task_fixture(cols_b["Doing"], %{title: "B doing"})
+
+      done_b = task_fixture(cols_b["Done"], %{title: "B done"})
+      {:ok, _} = Tasks.update_task(done_b, %{completed_at: now, completed_by_agent: "Claude"})
+
+      results = Boards.list_boards_with_metrics(user, now: now)
+      by_id = Map.new(results, &{&1.id, &1.metrics})
+
+      assert by_id[a.id].open == 1
+      assert by_id[a.id].doing == 0
+      assert by_id[a.id].throughput_14d == 0
+
+      assert by_id[b.id].open == 0
+      assert by_id[b.id].doing == 1
+      assert by_id[b.id].throughput_14d == 1
+      assert by_id[b.id].active_agents_14d == 1
+    end
+
+    defp columns_by_name(board) do
+      board
+      |> Kanban.Repo.preload(:columns)
+      |> Map.fetch!(:columns)
+      |> Map.new(fn col -> {col.name, col} end)
     end
   end
 end
