@@ -48,14 +48,15 @@ defmodule KanbanWeb.BoardPulseCard do
     <.link
       navigate={~p"/boards/#{@board.id}"}
       class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style="text-decoration: none; color: inherit;"
+      style="text-decoration: none; color: inherit; height: 100%;"
     >
       <div style={[
         "background: var(--surface); border: 1px solid var(--line);",
         "border-radius: 8px; padding: 14px 14px 12px;",
         "box-shadow: var(--shadow-sm);",
         "display: flex; flex-direction: column; gap: 12px;",
-        "position: relative; overflow: hidden;"
+        "position: relative; overflow: hidden;",
+        "height: 100%;"
       ]}>
         <.identifier_and_name board={@board} accent_css={@accent_css} />
         <.pulse_row board={@board} accent_css={@accent_css} />
@@ -177,7 +178,8 @@ defmodule KanbanWeb.BoardPulseCard do
     ~H"""
     <div style={[
       "display: flex; align-items: center; gap: 8px;",
-      "padding-top: 10px; border-top: 1px solid var(--line);"
+      "padding-top: 10px; border-top: 1px solid var(--line);",
+      "margin-top: auto;"
     ]}>
       <Avatar.avatar_stack members={@members} />
       <span style="flex: 1;"></span>

@@ -95,8 +95,8 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Tasks:"
-      assert html =~ "2"
+      # ColumnHeader renders the count inside a font-mono badge.
+      assert html =~ ~r/>\s*2\s*</
     end
 
     test "displays WIP limit when set", %{conn: conn, user: user} do
@@ -105,8 +105,8 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "WIP"
-      assert html =~ "5"
+      # ColumnHeader renders count/wip as "N/M" inside the badge.
+      assert html =~ "0/5"
     end
 
     test "tasks-load query count does not scale with column count (D5 N+1 guard)",

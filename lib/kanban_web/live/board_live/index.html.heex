@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} current_scope={@current_scope}>
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:boards}>
   <:breadcrumbs>
     <span>{gettext("Workspace")}</span>
     <span style="color: var(--ink-4);">/</span>
@@ -69,7 +69,7 @@
     <% else %>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div id="boards" phx-update="stream" class="contents">
-          <div :for={{id, board} <- @streams.boards} id={id} class="relative group">
+          <div :for={{id, board} <- @streams.boards} id={id} class="relative group h-full">
             <BoardPulseCard.board_pulse_card board={board} />
 
             <div class="absolute top-2 right-2 flex items-center gap-1">

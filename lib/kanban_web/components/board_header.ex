@@ -10,6 +10,8 @@ defmodule KanbanWeb.BoardHeader do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Avatar
+
   @doc """
   Renders the board header band.
 
@@ -28,6 +30,7 @@ defmodule KanbanWeb.BoardHeader do
     assigns =
       assigns
       |> assign(:metrics, metrics)
+      |> assign(:to_do, Map.get(metrics, :open, 0))
       |> assign(:in_flight, Map.get(metrics, :doing, 0))
       |> assign(:in_review, Map.get(metrics, :review, 0))
       |> assign(:shipped, Map.get(metrics, :done, 0))
@@ -64,12 +67,38 @@ defmodule KanbanWeb.BoardHeader do
       <span style="flex: 1;"></span>
 
       <div style="display: flex; align-items: center; gap: 14px;">
-        <.kv label={gettext("in flight")} value={@in_flight} tone="var(--st-doing)" />
+        <.kv label={gettext("To Do")} value={@to_do} tone="var(--ink)" />
+        <.kv label={gettext("Doing")} value={@in_flight} tone="var(--st-doing)" />
         <.kv label={gettext("in review")} value={@in_review} tone="var(--st-review)" />
-        <.kv label={gettext("shipped")} value={@shipped} tone="var(--st-done)" />
+        <.kv label={gettext("Done")} value={@shipped} tone="var(--st-done)" />
       </div>
+
+      <.members_divider :if={members_present?(@board)} />
+      <Avatar.avatar_stack
+        :if={members_present?(@board)}
+        members={Map.get(@board, :members, [])}
+        max={6}
+        size={20}
+      />
     </div>
     """
+  end
+
+  defp members_divider(assigns) do
+    ~H"""
+    <span
+      aria-hidden="true"
+      style="width: 1px; height: 24px; background: var(--line);"
+    >
+    </span>
+    """
+  end
+
+  defp members_present?(board) do
+    case Map.get(board, :members) do
+      list when is_list(list) and list != [] -> true
+      _ -> false
+    end
   end
 
   defp ai_pill(assigns) do

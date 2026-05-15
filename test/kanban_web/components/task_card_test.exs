@@ -235,9 +235,14 @@ defmodule KanbanWeb.TaskCardTest do
   end
 
   describe "task_card/1 — column-specific footers" do
-    test ":doing column renders the hook chip with running animation" do
+    test ":doing column renders the planning meta (same as backlog/ready)" do
       assigns = %{
-        task: task(%{hook: %{name: "after_doing", status: :running}})
+        task:
+          task(%{
+            key_files_count: 4,
+            deps_count: 1,
+            acceptance_count: 3
+          })
       }
 
       html =
@@ -245,48 +250,93 @@ defmodule KanbanWeb.TaskCardTest do
         <TaskCard.task_card task={@task} column={:doing} />
         """)
 
-      assert html =~ "after_doing"
-      assert html =~ "running"
-      assert html =~ "var(--st-doing-soft)"
-      assert html =~ "motion-safe:animate-spin"
-    end
-
-    test ":review column renders diff numbers and tests passed/total" do
-      assigns = %{
-        task:
-          task(%{
-            diff: %{added: 42, removed: 7},
-            tests_passed: 12,
-            tests_total: 12
-          })
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <TaskCard.task_card task={@task} column={:review} />
-        """)
-
-      assert html =~ "+42"
-      assert html =~ "−7"
-      assert html =~ "12/12"
-    end
-
-    test ":review tests-failed coloring flips to blocked when passed < total" do
-      assigns = %{
-        task:
-          task(%{
-            diff: %{added: 1, removed: 1},
-            tests_passed: 3,
-            tests_total: 5
-          })
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <TaskCard.task_card task={@task} column={:review} />
-        """)
-
+      # Same fields as backlog/ready (per acceptance criteria override).
+      assert html =~ ~r/>\s*4\s*</
+      assert html =~ ~r/>\s*1\s*</
+      assert html =~ ~r/>\s*3\s*</
+      # Non-zero deps render in the blocked color.
       assert html =~ "color: var(--st-blocked);"
+    end
+
+    test ":review column renders reviewer verdict (criteria/issues/files)" do
+      assigns = %{
+        task:
+          task(%{
+            criteria_checked: 5,
+            issues_found: 0,
+            files_changed_count: 3
+          })
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:review} />
+        """)
+
+      # ngettext renders "5 criteria" (plural form)
+      assert html =~ "5 criteria"
+      assert html =~ "0 issues"
+      assert html =~ "3 files"
+      # Zero issues = clean → done-green icon color
+      assert html =~ "color: var(--st-done);"
+    end
+
+    test ":review column flips issues color to blocked when issues_found > 0" do
+      assigns = %{
+        task:
+          task(%{
+            criteria_checked: 5,
+            issues_found: 2,
+            files_changed_count: 3
+          })
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:review} />
+        """)
+
+      assert html =~ "2 issues"
+      assert html =~ "color: var(--st-blocked);"
+    end
+
+    test ":review column shows self-reviewed badge when reviewer was skipped" do
+      assigns = %{
+        task:
+          task(%{
+            reviewer_skipped?: true,
+            reviewer_skip_reason: "small_task_0_1_key_files"
+          })
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:review} />
+        """)
+
+      assert html =~ "self-reviewed"
+      # Reason enum value mapped to a punchy label
+      assert html =~ "small task"
+    end
+
+    test ":done column renders cycle time, files changed, and actual complexity" do
+      assigns = %{
+        task:
+          task(%{
+            cycle_time: "1h 47m",
+            files_changed_count: 3,
+            actual_complexity: :medium
+          })
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:done} />
+        """)
+
+      assert html =~ "cycle 1h 47m"
+      assert html =~ "3 files"
+      assert html =~ "actual: medium"
     end
 
     test ":backlog column renders meta when present (non-dense)" do

@@ -8,7 +8,10 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Tasks
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardTabs
+  alias KanbanWeb.ColumnEmpty
+  alias KanbanWeb.ColumnHeader
   alias KanbanWeb.GoalsStrip
+  alias KanbanWeb.TaskCard
 
   @impl true
   def mount(_params, _session, socket) do
@@ -317,13 +320,17 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_info({Kanban.Tasks, :task_moved, task}, socket) do
     # Send event to JavaScript to manually update the DOM
-    # This is more reliable than trying to force LiveView to update
+    # This is more reliable than trying to force LiveView to update.
+    # Also refresh the per-board metrics so the BoardHeader KV counts
+    # stay in sync after a remote move from another client.
     {:noreply,
-     push_event(socket, "task_moved_remotely", %{
+     socket
+     |> push_event("task_moved_remotely", %{
        task_id: task.id,
        new_column_id: task.column_id,
        new_position: task.position
-     })}
+     })
+     |> refresh_board_metrics()}
   end
 
   @impl true
@@ -610,16 +617,20 @@ defmodule KanbanWeb.BoardLive.Show do
     |> load_tasks_for_columns(columns)
   end
 
-  # Attach the per-board metrics map to the board struct so the
-  # BoardHeader sub-band can render the in-flight/in-review/shipped
-  # counts. Falls back to an empty metrics map (zeros) when the user
-  # somehow can't read the metrics, which BoardHeader handles via
-  # Map.get fallbacks.
+  # Attach the per-board metrics map AND the members list to the board
+  # struct so the BoardHeader sub-band can render the in-flight/in-
+  # review/shipped counts plus an avatar stack of everyone on the
+  # board to the right of the stats. Falls back to an empty metrics
+  # map (zeros) and an empty member list when the user can't read
+  # them, which BoardHeader handles via Map.get fallbacks.
   defp put_board_metrics(board, user) do
-    case Boards.get_board_metrics(user, board.id) do
-      {:ok, metrics} -> %{board | metrics: metrics}
-      {:error, _} -> board
-    end
+    board =
+      case Boards.get_board_metrics(user, board.id) do
+        {:ok, metrics} -> %{board | metrics: metrics}
+        {:error, _} -> board
+      end
+
+    %{board | members: Boards.list_board_members(board.id)}
   end
 
   defp assign_board_state(socket, board, user_access) do
@@ -731,7 +742,8 @@ defmodule KanbanWeb.BoardLive.Show do
      socket
      |> push_event("move_success", %{})
      |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+     |> load_tasks_for_columns(columns)
+     |> refresh_board_metrics()}
   end
 
   defp handle_task_move_wip_limit(socket, new_column) do
@@ -752,7 +764,8 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply,
      socket
      |> stream(:columns, columns, reset: true)
-     |> load_tasks_for_columns(columns)}
+     |> load_tasks_for_columns(columns)
+     |> refresh_board_metrics()}
   end
 
   defp page_title(:show), do: "Stride"
@@ -780,13 +793,57 @@ defmodule KanbanWeb.BoardLive.Show do
 
     goal_progress = compute_goal_progress(tasks_by_column, socket.assigns.board.id)
     backlog_goals_with_children = compute_backlog_promotable_goals(columns, tasks_by_column)
+    goals_by_id = compute_goals_by_id(tasks_by_column)
 
     socket
     |> assign(:tasks_by_column, tasks_by_column)
     |> assign(:goal_progress, goal_progress)
     |> assign(:backlog_goals_with_children, backlog_goals_with_children)
+    |> assign(:goals_by_id, goals_by_id)
     |> assign(:tasks_version, :os.system_time(:millisecond))
   end
+
+  # Build a lookup map keyed by goal task id, value being the small
+  # chip-shaped map TaskCard's goal_chip reads: identifier, short name,
+  # and a deterministic accent color/ink derived from the goal id.
+  defp compute_goals_by_id(tasks_by_column) do
+    tasks_by_column
+    |> Map.values()
+    |> List.flatten()
+    |> Enum.filter(&(&1.type == :goal))
+    |> Map.new(fn goal ->
+      {goal.id,
+       %{
+         identifier: goal.identifier,
+         short: goal.title,
+         color: goal_accent_color(goal.id),
+         ink: goal_accent_ink(goal.id)
+       }}
+    end)
+  end
+
+  @goal_accents [
+    {"var(--stride-orange)", "var(--stride-orange-ink)"},
+    {"var(--st-ready)", "var(--st-ready)"},
+    {"var(--st-doing)", "var(--st-doing)"},
+    {"var(--stride-violet)", "var(--stride-violet-ink)"},
+    {"var(--st-done)", "var(--st-done)"},
+    {"var(--st-review)", "var(--st-review)"}
+  ]
+
+  defp goal_accent_color(id) when is_integer(id) do
+    {color, _ink} = Enum.at(@goal_accents, rem(id, length(@goal_accents)))
+    color
+  end
+
+  defp goal_accent_color(_), do: "var(--stride-violet)"
+
+  defp goal_accent_ink(id) when is_integer(id) do
+    {_color, ink} = Enum.at(@goal_accents, rem(id, length(@goal_accents)))
+    ink
+  end
+
+  defp goal_accent_ink(_), do: "var(--stride-violet-ink)"
 
   defp compute_goal_progress(tasks_by_column, board_id) do
     tasks_by_column
@@ -832,7 +889,17 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply,
      socket
      |> stream(:columns, columns)
-     |> load_tasks_for_columns(columns)}
+     |> load_tasks_for_columns(columns)
+     |> refresh_board_metrics()}
+  end
+
+  # Re-reads the metrics for the currently-loaded board and reassigns
+  # `:board` so the BoardHeader KV counts stay in sync after every
+  # task move / create / delete / status change.
+  defp refresh_board_metrics(socket) do
+    user = socket.assigns.current_scope.user
+    board = put_board_metrics(socket.assigns.board, user)
+    assign(socket, :board, board)
   end
 
   defp refresh_board_tasks(socket, board) do
@@ -1194,4 +1261,219 @@ defmodule KanbanWeb.BoardLive.Show do
       _ -> column_name
     end
   end
+
+  @doc """
+  Maps a column name to a canonical status atom for the per-column
+  status-colored chrome (status dot color, empty-state hint copy).
+  Falls back to `:backlog` for custom column names on non-AI-optimized
+  boards.
+  """
+  def column_status(name) when is_binary(name) do
+    case String.downcase(name) do
+      "backlog" -> :backlog
+      "ready" -> :ready
+      "doing" -> :doing
+      "review" -> :review
+      "done" -> :done
+      _ -> :backlog
+    end
+  end
+
+  def column_status(_), do: :backlog
+
+  @doc """
+  Adapts a `%Kanban.Tasks.Task{}` into the duck-typed map shape the
+  `KanbanWeb.TaskCard` component expects. Adds `:claimed_by` /
+  `:completed_by` avatar maps when the task has the relevant fields
+  populated, and `:promoted` so `KanbanWeb.GoalCard` knows whether to
+  show the "Promote children to Ready" affordance.
+  """
+  def task_card_data(
+        task,
+        backlog_goals_with_children \\ MapSet.new(),
+        goal_progress \\ %{},
+        goals_by_id \\ %{}
+      ) do
+    task
+    |> Map.from_struct()
+    |> Map.merge(task_card_avatars(task))
+    |> Map.merge(
+      task_card_goal_fields(task, backlog_goals_with_children, goal_progress, goals_by_id)
+    )
+    |> Map.merge(task_card_meta_counts(task))
+    |> Map.merge(task_card_review_fields(task))
+    |> Map.merge(task_card_done_fields(task))
+  end
+
+  defp task_card_avatars(task) do
+    %{claimed_by: claimed_by_for(task), completed_by: completed_by_for(task)}
+  end
+
+  defp task_card_goal_fields(task, backlog_goals_with_children, goal_progress, goals_by_id) do
+    %{
+      promoted: not MapSet.member?(backlog_goals_with_children, task.id),
+      children: children_for(task, goal_progress),
+      goal: Map.get(goals_by_id, task.parent_id)
+    }
+  end
+
+  defp task_card_meta_counts(task) do
+    %{
+      key_files_count: count_or_nil(Map.get(task, :key_files)),
+      deps_count: count_or_nil(Map.get(task, :dependencies)),
+      acceptance_count: acceptance_count(Map.get(task, :acceptance_criteria))
+    }
+  end
+
+  # Reviewer fields surface the task-reviewer subagent's verdict on the
+  # task — populated at completion time. JSONB storage means the map
+  # comes back with string keys; we look them up explicitly.
+  defp task_card_review_fields(task) do
+    reviewer = Map.get(task, :reviewer_result) || %{}
+
+    %{
+      reviewer_skipped?: reviewer_skipped?(reviewer),
+      reviewer_skip_reason: get_in_either(reviewer, [:reason, "reason"]),
+      criteria_checked:
+        get_in_either(reviewer, [:acceptance_criteria_checked, "acceptance_criteria_checked"]),
+      issues_found: get_in_either(reviewer, [:issues_found, "issues_found"]),
+      files_changed_count: count_files_changed(Map.get(task, :actual_files_changed))
+    }
+  end
+
+  defp task_card_done_fields(task) do
+    %{cycle_time: cycle_time_for(task)}
+  end
+
+  defp reviewer_skipped?(reviewer) when is_map(reviewer) do
+    case get_in_either(reviewer, [:dispatched, "dispatched"]) do
+      false -> true
+      _ -> false
+    end
+  end
+
+  defp reviewer_skipped?(_), do: false
+
+  defp get_in_either(map, keys) when is_map(map) and is_list(keys) do
+    Enum.find_value(keys, fn k -> Map.get(map, k) end)
+  end
+
+  defp get_in_either(_, _), do: nil
+
+  defp count_files_changed(str) when is_binary(str) do
+    case str
+         |> String.split(",", trim: true)
+         |> Enum.map(&String.trim/1)
+         |> Enum.reject(&(&1 == ""))
+         |> length() do
+      0 -> nil
+      n -> n
+    end
+  end
+
+  defp count_files_changed(_), do: nil
+
+  # Formats cycle time as "Nh Mm", "Nm", or "Ns" depending on duration.
+  # Returns nil when the task hasn't been both claimed and completed.
+  defp cycle_time_for(%{claimed_at: %DateTime{} = claimed, completed_at: %DateTime{} = completed}) do
+    format_duration(DateTime.diff(completed, claimed, :second))
+  end
+
+  defp cycle_time_for(_), do: nil
+
+  # Cycle time is always rendered in hours and minutes. Hours appear
+  # only when the duration is ≥ 60 minutes; sub-hour durations show
+  # just minutes. Multi-day cycles roll up into hours (a 30-hour cycle
+  # reads "30h 15m", not "1d 6h") to keep the unit consistent.
+  defp format_duration(secs) when is_integer(secs) and secs >= 0 do
+    total_mins = div(secs, 60)
+    hours = div(total_mins, 60)
+    mins = rem(total_mins, 60)
+
+    cond do
+      hours == 0 -> "#{mins}m"
+      mins == 0 -> "#{hours}h"
+      true -> "#{hours}h #{mins}m"
+    end
+  end
+
+  defp format_duration(_), do: nil
+
+  # Returns the length of a non-empty list, or nil for empty/non-list
+  # so TaskCard.backlog_meta hides the chip entirely when there's
+  # nothing to surface.
+  defp count_or_nil(list) when is_list(list) do
+    case length(list) do
+      0 -> nil
+      n -> n
+    end
+  end
+
+  defp count_or_nil(_), do: nil
+
+  defp acceptance_count(text) when is_binary(text) do
+    case text
+         |> String.split("\n", trim: true)
+         |> Enum.reject(&(String.trim(&1) == ""))
+         |> length() do
+      0 -> nil
+      n -> n
+    end
+  end
+
+  defp acceptance_count(_), do: nil
+
+  defp children_for(%{type: :goal, id: id}, goal_progress) do
+    case Map.get(goal_progress, id) do
+      %{total: total, completed: done} when is_integer(total) ->
+        %{total: total, done: done, review: 0, doing: 0, ready: 0}
+
+      _ ->
+        nil
+    end
+  end
+
+  defp children_for(_task, _goal_progress), do: nil
+
+  # Build the top-right avatar from `assigned_to` whenever a user is
+  # assigned to the task — covers both "assigned but not yet claimed"
+  # and "claimed and in progress." The legacy template surfaced an
+  # assigned-user icon for both states; the new card uses the avatar
+  # in the same slot.
+  defp claimed_by_for(%{assigned_to: %{id: _id} = user}) do
+    %{kind: :human, name: user_display_name(user), palette: human_palette(user.id)}
+  end
+
+  defp claimed_by_for(_), do: nil
+
+  defp completed_by_for(%{completed_by_agent: nil}), do: nil
+
+  defp completed_by_for(%{completed_by_agent: agent}) when is_binary(agent) do
+    %{kind: :agent, name: agent, palette: agent_palette(agent)}
+  end
+
+  defp completed_by_for(_), do: nil
+
+  defp user_display_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp user_display_name(%{email: email}) when is_binary(email), do: email
+  defp user_display_name(_), do: "?"
+
+  @human_palettes ~w(human-blue human-amber human-green human-pink)
+  defp human_palette(user_id) when is_integer(user_id) do
+    Enum.at(@human_palettes, rem(user_id, length(@human_palettes)))
+  end
+
+  defp human_palette(_), do: "human-blue"
+
+  defp agent_palette(name) when is_binary(name) do
+    case name |> String.downcase() |> String.split() |> List.first() do
+      "claude" -> "agent-claude"
+      "cursor" -> "agent-cursor"
+      "aider" -> "agent-aider"
+      "codex" -> "agent-codex"
+      _ -> "agent-claude"
+    end
+  end
+
+  defp agent_palette(_), do: "agent-claude"
 end

@@ -83,10 +83,13 @@ defmodule KanbanWeb.GoalCard do
       <button
         :if={not @promoted}
         type="button"
+        phx-click="promote_goal_to_ready"
+        phx-value-id={Map.get(@task, :id)}
+        title={gettext("Move goal and tasks to Ready")}
         style={[
           "margin-top: 2px; padding: 4px 8px; border-radius: 4px;",
           "background: #{@color}; color: white; border: none;",
-          "font-size: 11px; font-weight: 500;",
+          "font-size: 11px; font-weight: 500; cursor: pointer;",
           "display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;"
         ]}
       >

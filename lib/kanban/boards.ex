@@ -161,6 +161,19 @@ defmodule Kanban.Boards do
   # accepts at most 5 visible avatars before showing a +N overflow chip,
   # so this query intentionally returns all members and the component
   # handles truncation.
+  @doc """
+  Returns the human members for a single board, shaped as a list of
+  `%{kind: :human, name, palette}` maps ready to pass to
+  `KanbanWeb.Avatar.avatar_stack/1`. Mirrors the per-board entry from
+  `list_boards_with_metrics/2` so the same component code works on
+  single-board pages.
+  """
+  def list_board_members(board_id) when is_integer(board_id) do
+    [board_id]
+    |> members_by_board()
+    |> Map.get(board_id, [])
+  end
+
   defp members_by_board(board_ids) do
     BoardUser
     |> join(:inner, [bu], u in User, on: u.id == bu.user_id)

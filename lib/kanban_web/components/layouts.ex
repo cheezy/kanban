@@ -45,20 +45,39 @@ defmodule KanbanWeb.Layouts do
     default: nil,
     doc: "Overrides the WinTop breadcrumb title when set."
 
+  attr :board, :any,
+    default: nil,
+    doc:
+      "The current board struct when the LiveView is in a single-board context. " <>
+        "When set with a non-nil id, the SideNav surfaces Goals / Agents / Review / Metrics " <>
+        "links scoped to that board."
+
   slot :breadcrumbs, doc: "WinTop breadcrumbs content (overrides page_title when present)."
   slot :actions, doc: "WinTop right-side actions slot."
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <.win_top
-      breadcrumbs={@breadcrumbs}
-      actions={@actions}
-      page_title={@page_title}
-    />
-    <main class="flex-1 min-h-0 overflow-auto bg-base-100">
-      {render_slot(@inner_block)}
-    </main>
+    <div class="stride-screen flex h-screen w-full overflow-hidden">
+      <%= if @current_scope do %>
+        <.side_nav
+          current_scope={@current_scope}
+          active={@active}
+          board={@board}
+        />
+      <% end %>
+
+      <div class="flex flex-col flex-1 min-w-0">
+        <.win_top
+          breadcrumbs={@breadcrumbs}
+          actions={@actions}
+          page_title={@page_title}
+        />
+        <main class="flex-1 min-h-0 overflow-auto bg-base-100">
+          {render_slot(@inner_block)}
+        </main>
+      </div>
+    </div>
 
     <.flash_group flash={@flash} />
     """

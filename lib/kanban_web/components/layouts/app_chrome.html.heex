@@ -47,16 +47,6 @@
     >
     </div>
 
-    <div class="stride-screen flex h-screen w-full overflow-hidden">
-      <Layouts.side_nav
-        current_scope={@current_scope}
-        active={assigns[:nav_active]}
-        board={assigns[:board]}
-      />
-
-      <div class="flex flex-col flex-1 min-w-0">
-        {@inner_content}
-      </div>
-    </div>
+    {@inner_content}
   </body>
 </html>

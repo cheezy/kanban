@@ -107,7 +107,7 @@ defmodule KanbanWeb.BoardHeaderTest do
   end
 
   describe "board_header/1 — status counts" do
-    test "renders 'in flight' / 'in review' / 'shipped' labels with the right values" do
+    test "renders 'Doing' / 'in review' / 'Done' labels with the right values" do
       assigns = %{board: board(%{metrics: %{open: 0, doing: 7, review: 3, done: 99}})}
 
       html =
@@ -115,9 +115,9 @@ defmodule KanbanWeb.BoardHeaderTest do
         <BoardHeader.board_header board={@board} />
         """)
 
-      assert html =~ "in flight"
+      assert html =~ "Doing"
       assert html =~ "in review"
-      assert html =~ "shipped"
+      assert html =~ "Done"
       assert html =~ ~r/>\s*7\s*</
       assert html =~ ~r/>\s*3\s*</
       assert html =~ ~r/>\s*99\s*</
@@ -144,7 +144,7 @@ defmodule KanbanWeb.BoardHeaderTest do
         <BoardHeader.board_header board={@board} />
         """)
 
-      # Each KV shows 0 for in flight / in review / shipped
+      # Each KV shows 0 for Doing / in review / Done
       assert html =~ ~r/>\s*0\s*</
     end
 
@@ -157,6 +157,40 @@ defmodule KanbanWeb.BoardHeaderTest do
         """)
 
       assert html =~ ~r/>\s*0\s*</
+    end
+  end
+
+  describe "board_header/1 — member stack" do
+    test "renders an avatar stack to the right of the KV stats when members are present" do
+      assigns = %{
+        board:
+          board(%{
+            members: [
+              %{kind: :human, name: "Jamie K", palette: "human-green"},
+              %{kind: :human, name: "Pat S", palette: "human-blue"}
+            ]
+          })
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.board_header board={@board} />
+        """)
+
+      assert html =~ "background: oklch(60% 0.10 155);"
+      assert html =~ "background: oklch(60% 0.10 240);"
+    end
+
+    test "omits the divider and stack when members is empty or absent" do
+      assigns = %{board: board()}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardHeader.board_header board={@board} />
+        """)
+
+      refute html =~ "width: 1px; height: 24px;"
+      refute html =~ "text-white font-semibold"
     end
   end
 end

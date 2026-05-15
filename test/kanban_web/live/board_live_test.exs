@@ -214,8 +214,8 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "WIP"
-      assert html =~ "5"
+      # New ColumnHeader badge renders the count and limit as "N/M".
+      assert html =~ "0/5"
     end
 
     test "does not display WIP limit indicator when limit is 0", %{conn: conn, user: user} do
@@ -252,8 +252,8 @@ defmodule KanbanWeb.BoardLiveTest do
       html = render(show_live)
       assert html =~ "Column created successfully"
       assert html =~ "To Do"
-      assert html =~ "WIP"
-      assert html =~ "5"
+      # New ColumnHeader badge renders count/limit as "N/M".
+      assert html =~ "0/5"
     end
 
     test "creates column with default WIP limit of 0", %{conn: conn, user: user} do
@@ -289,7 +289,9 @@ defmodule KanbanWeb.BoardLiveTest do
 
     test "edits existing column", %{conn: conn, user: user} do
       board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do", wip_limit: 3})
+      # Use a column name that doesn't collide with BoardHeader's "To Do"
+      # KV stat label so the rename-refute is unambiguous.
+      column = column_fixture(board, %{name: "Inbox", wip_limit: 3})
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
@@ -305,7 +307,7 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Column updated successfully"
       assert html =~ "In Progress"
       assert html =~ "5"
-      refute html =~ "To Do"
+      refute html =~ "Inbox"
     end
 
     test "rejects negative WIP limit when editing column", %{conn: conn, user: user} do
@@ -328,17 +330,19 @@ defmodule KanbanWeb.BoardLiveTest do
 
     test "deletes column", %{conn: conn, user: user} do
       board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
+      # Use a column name that doesn't collide with BoardHeader's "To Do"
+      # KV stat label so the post-delete refute is unambiguous.
+      column = column_fixture(board, %{name: "Inbox"})
 
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
-      assert html =~ "To Do"
+      assert html =~ "Inbox"
 
       # Trigger the delete_column event directly
       show_live |> render_click("delete_column", %{"id" => column.id})
 
       html = render(show_live)
       assert html =~ "Column deleted successfully"
-      refute html =~ "To Do"
+      refute html =~ "Inbox"
     end
 
     test "displays New Column button", %{conn: conn, user: user} do
@@ -360,8 +364,9 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
+      # Task titles appear on the card. (Descriptions live in the task
+      # detail modal, not the kanban card — keeps the card terse.)
       assert html =~ task1.title
-      assert html =~ task1.description
       assert html =~ task2.title
     end
 
@@ -371,7 +376,10 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "No tasks yet"
+      # ColumnEmpty marks itself with data-column-empty for any column
+      # name (custom names fall back to the :backlog status hint).
+      assert html =~ "data-column-empty"
+      assert html =~ "Unrefined ideas"
     end
 
     test "displays task count in column", %{conn: conn, user: user} do
@@ -382,8 +390,8 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "Tasks"
-      assert html =~ ">2<"
+      # ColumnHeader emits the count inside a font-mono badge.
+      assert html =~ ~r/>\s*2\s*</
     end
 
     test "creates new task", %{conn: conn, user: user} do
@@ -410,7 +418,6 @@ defmodule KanbanWeb.BoardLiveTest do
       html = render(show_live)
       assert html =~ "Task created successfully"
       assert html =~ "New Task"
-      assert html =~ "Task description"
     end
 
     test "edits existing task", %{conn: conn, user: user} do
@@ -433,7 +440,6 @@ defmodule KanbanWeb.BoardLiveTest do
       html = render(show_live)
       assert html =~ "Task updated successfully"
       assert html =~ "Updated Title"
-      assert html =~ "Updated description"
       refute html =~ "Original Title"
     end
 
@@ -471,8 +477,10 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "WIP limit reached"
-      refute html =~ "Add task"
+      # ColumnHeader hides the + task link when new_task_path is nil
+      # (the LiveView passes nil at the WIP limit).
+      refute html =~ ~s(href="/boards/#{board.id}/columns/#{column.id}/tasks/new")
+      assert html =~ "2/2"
     end
 
     test "shows warning indicator when column exceeds WIP limit", %{conn: conn, user: user} do
@@ -488,24 +496,26 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Check for red warning badge indicating limit exceeded
-      assert html =~ "from-red-50 to-red-100"
-      assert html =~ "dark:from-red-900/30 dark:to-red-800/30"
+      # New ColumnHeader uses --st-blocked-soft for the over-WIP highlight
+      # on the badge bg + the status-dot ring.
+      assert html =~ "var(--st-blocked-soft)"
+      assert html =~ "var(--st-blocked)"
     end
 
-    test "displays blue indicator when column under WIP limit", %{conn: conn, user: user} do
+    test "displays neutral indicator when column under WIP limit", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "In Progress", wip_limit: 3})
       _task1 = task_fixture(column, %{title: "Task 1"})
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Check for blue badge when under limit
-      assert html =~ "from-blue-50 to-blue-100"
-      assert html =~ "dark:from-blue-900/30 dark:to-blue-800/30"
+      # ColumnHeader uses --ink-3 + --surface-sunken when under WIP
+      # (no --st-blocked-soft highlight).
+      assert html =~ "1/3"
+      refute html =~ "var(--st-blocked-soft);"
     end
 
-    test "displays blue indicator when column at WIP limit", %{conn: conn, user: user} do
+    test "displays neutral indicator when column at WIP limit", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "In Progress", wip_limit: 2})
       _task1 = task_fixture(column, %{title: "Task 1"})
@@ -513,10 +523,9 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Check for blue badge when at limit (not exceeding)
-      assert html =~ "from-blue-50 to-blue-100"
-      assert html =~ "dark:from-blue-900/30 dark:to-blue-800/30"
-      refute html =~ "from-red-50 to-red-100"
+      # At-limit (count == wip) is NOT over-WIP — badge stays neutral.
+      assert html =~ "2/2"
+      refute html =~ "var(--st-blocked-soft);"
     end
 
     test "cannot create task when WIP limit reached", %{conn: conn, user: user} do
@@ -526,9 +535,9 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      # Try to navigate to new task form - should show WIP limit message instead
+      # The + task affordance is hidden at the WIP limit.
       html = render(show_live)
-      assert html =~ "WIP limit reached"
+      refute html =~ ~s(href="/boards/#{board.id}/columns/#{column.id}/tasks/new")
     end
   end
 
@@ -879,7 +888,7 @@ defmodule KanbanWeb.BoardLiveTest do
   describe "Task Assignment Display" do
     setup [:register_and_log_in_user]
 
-    test "displays person icon for assigned tasks", %{conn: conn, user: user} do
+    test "displays assignee avatar for assigned tasks", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
 
@@ -891,11 +900,14 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert html =~ "Assigned Task"
-      assert html =~ "hero-user-solid"
-      assert html =~ "Assigned User"
+      # New TaskCard renders a 16px circular Avatar instead of the
+      # legacy hero-user-solid icon. The Avatar component uses
+      # text-white font-semibold on a colored circle.
+      assert html =~ "text-white font-semibold"
+      assert html =~ "width: 16px; height: 16px"
     end
 
-    test "does not display person icon for unassigned tasks", %{conn: conn, user: user} do
+    test "does not display assignee avatar for unassigned tasks", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
       _task = task_fixture(column, %{title: "Unassigned Task"})
@@ -903,9 +915,9 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert html =~ "Unassigned Task"
-      # Count hero-user-solid occurrences - should be 0 for unassigned tasks
-      user_icon_count = html |> String.split("hero-user-solid") |> length() |> Kernel.-(1)
-      assert user_icon_count == 0
+      # No assignee → no 16px avatar inside the task card. (The 24px
+      # avatar in the SideNav footer is a different size and stays.)
+      refute html =~ "width: 16px; height: 16px"
     end
   end
 
@@ -1176,7 +1188,7 @@ defmodule KanbanWeb.BoardLiveTest do
   describe "Goal Cards" do
     setup [:register_and_log_in_user]
 
-    test "displays goal card with yellow styling", %{conn: conn, user: user} do
+    test "displays goal card with violet styling", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
       _goal = task_fixture(column, %{title: "Goal Task", type: :goal})
@@ -1184,7 +1196,9 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert html =~ "Goal Task"
-      assert html =~ "from-yellow-50 to-yellow-100"
+      # GoalCard variant uses --stride-violet-* design tokens.
+      assert html =~ "var(--stride-violet-soft)"
+      assert html =~ ~r/>\s*GOAL\s*</
     end
 
     test "displays progress bar for goal with children", %{conn: conn, user: user} do
