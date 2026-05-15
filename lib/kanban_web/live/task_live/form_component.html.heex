@@ -1,4 +1,4 @@
-<div>
+<div class="stride-screen" data-form-chrome>
   <.header>
     {@title}
     <:subtitle>
@@ -11,20 +11,16 @@
   </.header>
 
   <%= if @error_message do %>
-    <div class="alert alert-error mb-4">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="stroke-current shrink-0 h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
+    <div
+      role="alert"
+      style={[
+        "display: flex; align-items: center; gap: 8px;",
+        "padding: 10px 14px; margin-bottom: 16px; border-radius: 6px;",
+        "background: var(--st-blocked-soft); color: var(--st-blocked);",
+        "border: 1px solid var(--st-blocked);"
+      ]}
+    >
+      <.icon name="hero-exclamation-triangle" class="w-5 h-5 shrink-0" />
       <span>{@error_message}</span>
     </div>
   <% end %>
@@ -56,25 +52,33 @@
     <% end %>
 
     <%= if @board.ai_optimized_board do %>
-      <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 my-4">
+      <div style={[
+        "padding: 12px 14px; margin: 16px 0; border-radius: 6px;",
+        "background: var(--stride-violet-soft);",
+        "border: 1px solid var(--stride-violet);"
+      ]}>
         <.input
           field={f[:needs_review]}
           type="checkbox"
           label={gettext("Needs Review")}
         />
-        <p class="text-sm text-blue-700 dark:text-blue-300 mt-1 ml-6">
+        <p style="font-size: 13px; color: var(--stride-violet-ink); margin: 4px 0 0 24px;">
           {gettext("Check this box if this task requires review before completion")}
         </p>
       </div>
     <% end %>
 
-    <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 my-4">
+    <div style={[
+      "padding: 12px 14px; margin: 16px 0; border-radius: 6px;",
+      "background: var(--stride-violet-soft);",
+      "border: 1px solid var(--stride-violet);"
+    ]}>
       <.input
         field={f[:human_task]}
         type="checkbox"
         label={gettext("Human Task")}
       />
-      <p class="text-sm text-blue-700 dark:text-blue-300 mt-1 ml-6">
+      <p style="font-size: 13px; color: var(--stride-violet-ink); margin: 4px 0 0 24px;">
         {gettext(
           "Check this box if this task is for human workers only and should not be claimed by AI agents"
         )}
