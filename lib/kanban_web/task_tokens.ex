@@ -65,4 +65,35 @@ defmodule KanbanWeb.TaskTokens do
   def complexity_word(:medium), do: gettext("Medium")
   def complexity_word(:large), do: gettext("Large")
   def complexity_word(_), do: ""
+
+  # --- Agent activity event kinds ----------------------------------------
+
+  @doc "Hero icon name for an `Kanban.Agents.Event` kind atom."
+  def kind_icon(:claim), do: "hero-arrow-right"
+  def kind_icon(:complete), do: "hero-check"
+  def kind_icon(:review), do: "hero-check"
+  def kind_icon(:create), do: "hero-plus"
+  def kind_icon(:unclaim), do: "hero-arrow-uturn-left"
+  def kind_icon(_), do: "hero-bolt"
+
+  @doc """
+  Foreground/ink CSS var for the icon and label of an event kind.
+
+  Delegates to `status_ink/1` so the kind palette stays in sync with the
+  task-status palette: a claim shares the doing tone, a complete shares
+  the review tone, a review shares the done tone. Unmapped kinds fall
+  back to a neutral ink.
+  """
+  def kind_tone(:claim), do: status_ink(:in_progress)
+  def kind_tone(:complete), do: status_ink(:review)
+  def kind_tone(:review), do: status_ink(:completed)
+  def kind_tone(_), do: "var(--ink-3)"
+
+  @doc "Gettext label for an event kind."
+  def kind_label(:claim), do: gettext("claimed")
+  def kind_label(:complete), do: gettext("completed")
+  def kind_label(:review), do: gettext("reviewed")
+  def kind_label(:create), do: gettext("created")
+  def kind_label(:unclaim), do: gettext("unclaimed")
+  def kind_label(_), do: ""
 end

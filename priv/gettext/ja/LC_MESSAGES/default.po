@@ -2626,7 +2626,7 @@ msgstr "作業が始まるまでキューで待機する時間"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
 
-#: lib/kanban_web/components/agent_roster_card.ex:155
+#: lib/kanban_web/components/agent_roster_card.ex:156
 #: lib/kanban_web/live/metrics_live/components.ex:290
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -5362,7 +5362,7 @@ msgstr "検証ステップ"
 msgid "today"
 msgstr "今日"
 
-#: lib/kanban_web/components/agent_roster_card.ex:156
+#: lib/kanban_web/components/agent_roster_card.ex:157
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr ""
@@ -5387,7 +5387,8 @@ msgstr ""
 msgid "Claimed"
 msgstr "担当開始:"
 
-#: lib/kanban_web/components/agent_roster_card.ex:158
+#: lib/kanban_web/components/agent_activity_feed.ex:264
+#: lib/kanban_web/components/agent_roster_card.ex:159
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Claims"
 msgstr "担当開始:"
@@ -5402,7 +5403,7 @@ msgstr ""
 msgid "Human task"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:197
+#: lib/kanban_web/components/agent_roster_card.ex:194
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr ""
@@ -5417,7 +5418,7 @@ msgstr "統合ポイント"
 msgid "Review status"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:157
+#: lib/kanban_web/components/agent_roster_card.ex:158
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr ""
@@ -5427,7 +5428,7 @@ msgstr ""
 msgid "Testing strategy"
 msgstr "テスト戦略"
 
-#: lib/kanban_web/components/agent_roster_card.ex:196
+#: lib/kanban_web/components/agent_roster_card.ex:193
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr ""
@@ -5442,7 +5443,7 @@ msgstr ""
 msgid "Workflow steps"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:195
+#: lib/kanban_web/components/agent_roster_card.ex:192
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Working"
 msgstr "作業"
@@ -5451,3 +5452,58 @@ msgstr "作業"
 #, elixir-autogen, elixir-format
 msgid "Yes"
 msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:275
+#, elixir-autogen, elixir-format
+msgid "%{h}h %{m}m"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:279
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{m}m"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:263
+#, elixir-autogen, elixir-format
+msgid "All"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:266
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Completions"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:265
+#, elixir-autogen, elixir-format
+msgid "Hooks"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:71
+#, elixir-autogen, elixir-format
+msgid "No recent activity."
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:93
+#, elixir-autogen, elixir-format, fuzzy
+msgid "claimed"
+msgstr "担当開始:"
+
+#: lib/kanban_web/task_tokens.ex:94
+#, elixir-autogen, elixir-format, fuzzy
+msgid "completed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:96
+#, elixir-autogen, elixir-format, fuzzy
+msgid "created"
+msgstr "作成日"
+
+#: lib/kanban_web/task_tokens.ex:95
+#, elixir-autogen, elixir-format, fuzzy
+msgid "reviewed"
+msgstr "レビュー"
+
+#: lib/kanban_web/task_tokens.ex:97
+#, elixir-autogen, elixir-format, fuzzy
+msgid "unclaimed"
+msgstr "担当開始:"

@@ -2628,7 +2628,7 @@ msgstr ""
 msgid "Time tasks spend waiting for human review after completion"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:155
+#: lib/kanban_web/components/agent_roster_card.ex:156
 #: lib/kanban_web/live/metrics_live/components.ex:290
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -5370,7 +5370,7 @@ msgstr ""
 msgid "today"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:156
+#: lib/kanban_web/components/agent_roster_card.ex:157
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr ""
@@ -5395,7 +5395,8 @@ msgstr ""
 msgid "Claimed"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:158
+#: lib/kanban_web/components/agent_activity_feed.ex:264
+#: lib/kanban_web/components/agent_roster_card.ex:159
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr ""
@@ -5410,7 +5411,7 @@ msgstr ""
 msgid "Human task"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:197
+#: lib/kanban_web/components/agent_roster_card.ex:194
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr ""
@@ -5425,7 +5426,7 @@ msgstr ""
 msgid "Review status"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:157
+#: lib/kanban_web/components/agent_roster_card.ex:158
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr ""
@@ -5435,7 +5436,7 @@ msgstr ""
 msgid "Testing strategy"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:196
+#: lib/kanban_web/components/agent_roster_card.ex:193
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr ""
@@ -5450,7 +5451,7 @@ msgstr ""
 msgid "Workflow steps"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:195
+#: lib/kanban_web/components/agent_roster_card.ex:192
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr ""
@@ -5458,4 +5459,59 @@ msgstr ""
 #: lib/kanban_web/live/task_live/view_component.ex:398
 #, elixir-autogen, elixir-format
 msgid "Yes"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:275
+#, elixir-autogen, elixir-format
+msgid "%{h}h %{m}m"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:279
+#, elixir-autogen, elixir-format
+msgid "%{m}m"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:263
+#, elixir-autogen, elixir-format
+msgid "All"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:266
+#, elixir-autogen, elixir-format
+msgid "Completions"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:265
+#, elixir-autogen, elixir-format
+msgid "Hooks"
+msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:71
+#, elixir-autogen, elixir-format
+msgid "No recent activity."
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:93
+#, elixir-autogen, elixir-format
+msgid "claimed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:94
+#, elixir-autogen, elixir-format
+msgid "completed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:96
+#, elixir-autogen, elixir-format
+msgid "created"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:95
+#, elixir-autogen, elixir-format
+msgid "reviewed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:97
+#, elixir-autogen, elixir-format
+msgid "unclaimed"
 msgstr ""
