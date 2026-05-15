@@ -333,10 +333,11 @@ defmodule KanbanWeb.TaskCardTest do
         <TaskCard.task_card task={@task} />
         """)
 
-      # GoalCard stub (W533) marks itself with a data-attribute so the
-      # delegation is observable from the test without coupling to its
-      # full visual treatment (which W534 will add).
-      assert html =~ ~s(data-goal-card-stub="true")
+      # GoalCard renders the violet GOAL pill — a clean signal that the
+      # delegation branch was taken without coupling to internal markup
+      # of the regular task card.
+      assert html =~ ~r/>\s*GOAL\s*</
+      assert html =~ "var(--stride-violet)"
     end
 
     test "does NOT delegate when task.type is not :goal" do
@@ -347,7 +348,7 @@ defmodule KanbanWeb.TaskCardTest do
         <TaskCard.task_card task={@task} />
         """)
 
-      refute html =~ ~s(data-goal-card-stub="true")
+      refute html =~ ~r/>\s*GOAL\s*</
     end
   end
 end
