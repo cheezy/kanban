@@ -733,6 +733,7 @@ msgid "Only the board owner can reorder columns"
 msgstr "Apenas o proprietário do quadro pode reordenar colunas"
 
 #: lib/kanban_web/live/board_live/form.html.heex:10
+#: lib/kanban_web/live/goal_live/show.ex:72
 #, elixir-autogen, elixir-format
 msgid "Back to board"
 msgstr "Voltar ao quadro"
@@ -1969,6 +1970,7 @@ msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:65
 #: lib/kanban_web/components/task_metadata_grid.ex:83
+#: lib/kanban_web/live/goal_live/show.ex:117
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:92
 #, elixir-autogen, elixir-format
@@ -4748,6 +4750,7 @@ msgstr[1] ""
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:59
 #: lib/kanban_web/live/board_live/show.html.heex:8
+#: lib/kanban_web/live/goal_live/show.ex:55
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Boards"
 msgstr "Quadros"
@@ -4892,6 +4895,7 @@ msgstr "Stride"
 
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
+#: lib/kanban_web/live/goal_live/show.ex:51
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Workspace"
 msgstr ""
@@ -5208,3 +5212,13 @@ msgstr "Prioridade"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "unassigned"
 msgstr "Não atribuído"
+
+#: lib/kanban_web/live/goal_live/show.ex:41
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Goal not found"
+msgstr ""
+
+#: lib/kanban_web/live/goal_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Goal view scaffold — body composition lands in W552."
+msgstr ""

@@ -164,6 +164,8 @@ defmodule KanbanWeb.Router do
            :edit_task_in_column
 
       live "/boards/:id/tasks/:task_id/edit", BoardLive.Show, :edit_task
+
+      live "/boards/:id/goals/:goal_id", GoalLive.Show, :show
     end
 
     get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export
