@@ -1,36 +1,54 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="mx-auto max-w-[1920px] px-4 pt-4 pb-2 sm:px-6 lg:px-8">
-    <.header>
-      {@board.name}
-      <:subtitle>{@board.description}</:subtitle>
-      <:actions>
-        <.link
-          :if={@user_access == :owner and not @board.ai_optimized_board}
-          patch={~p"/boards/#{@board}/columns/new"}
-        >
-          <.button>{gettext("New Column")}</.button>
-        </.link>
-        <.link
-          :if={@can_modify and @board.ai_optimized_board}
-          patch={~p"/boards/#{@board}/api_tokens"}
-        >
-          <.button>{gettext("API Tokens")}</.button>
-        </.link>
-        <.link navigate={~p"/boards/#{@board}/archive"}>
-          <.button>{gettext("Archived Tasks")}</.button>
-        </.link>
-        <.link navigate={~p"/boards/#{@board}/metrics"}>
-          <.button>{gettext("Metrics")}</.button>
-        </.link>
-        <.link :if={@user_access == :owner} navigate={~p"/boards/#{@board}/edit"}>
-          <.button>{gettext("Edit board")}</.button>
-        </.link>
-        <.link navigate={~p"/boards"}>
-          <.button>{gettext("Back to boards")}</.button>
-        </.link>
-      </:actions>
-    </.header>
+  <:breadcrumbs>
+    <.link navigate={~p"/boards"} style="color: var(--ink-3); text-decoration: none;">
+      {gettext("Workspace")}
+    </.link>
+    <span style="color: var(--ink-4);">/</span>
+    <.link navigate={~p"/boards"} style="color: var(--ink-3); text-decoration: none;">
+      {gettext("Boards")}
+    </.link>
+    <span style="color: var(--ink-4);">/</span>
+    <span style="color: var(--ink); font-weight: 500;">{@board.name}</span>
+  </:breadcrumbs>
 
+  <:actions>
+    <.link
+      :if={@user_access == :owner and not @board.ai_optimized_board}
+      patch={~p"/boards/#{@board}/columns/new"}
+      class="btn btn-xs btn-ghost"
+    >
+      {gettext("New Column")}
+    </.link>
+    <.link
+      :if={@can_modify and @board.ai_optimized_board}
+      patch={~p"/boards/#{@board}/api_tokens"}
+      class="btn btn-xs btn-ghost"
+    >
+      {gettext("API Tokens")}
+    </.link>
+    <.link navigate={~p"/boards/#{@board}/archive"} class="btn btn-xs btn-ghost">
+      {gettext("Archived Tasks")}
+    </.link>
+    <.link navigate={~p"/boards/#{@board}/metrics"} class="btn btn-xs btn-ghost">
+      {gettext("Metrics")}
+    </.link>
+    <.link
+      :if={@user_access == :owner}
+      navigate={~p"/boards/#{@board}/edit"}
+      class="btn btn-xs btn-ghost"
+    >
+      {gettext("Edit board")}
+    </.link>
+    <.link navigate={~p"/boards"} class="btn btn-xs btn-ghost">
+      {gettext("Back to boards")}
+    </.link>
+  </:actions>
+
+  <BoardHeader.board_header board={@board} />
+  <BoardTabs.board_tabs board={@board} active={:board} owner?={@is_owner} />
+  <GoalsStrip.goals_strip :if={assigns[:goals] not in [nil, []]} goals={@goals || []} />
+
+  <div class="mx-auto max-w-[1920px] px-4 pt-4 pb-2 sm:px-6 lg:px-8">
     <div
       id="undismissed_messages"
       phx-update="stream"

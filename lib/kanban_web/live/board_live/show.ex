@@ -6,6 +6,9 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Columns
   alias Kanban.Messages
   alias Kanban.Tasks
+  alias KanbanWeb.BoardHeader
+  alias KanbanWeb.BoardTabs
+  alias KanbanWeb.GoalsStrip
 
   @impl true
   def mount(_params, _session, socket) do
@@ -591,16 +594,32 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp assign_common_board_state(socket, board, user_access, columns) do
+    user = socket.assigns.current_scope.user
+    board_with_metrics = put_board_metrics(board, user)
+
     socket
     |> assign(:page_title, page_title(socket.assigns.live_action))
-    |> assign(:board, board)
+    |> assign(:board, board_with_metrics)
     |> assign(:user_access, user_access)
     |> assign(:can_modify, user_access in [:owner, :modify])
     |> assign(:is_owner, user_access == :owner)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:has_columns, not Enum.empty?(columns))
+    |> assign(:goals, [])
     |> stream(:columns, columns, reset: true)
     |> load_tasks_for_columns(columns)
+  end
+
+  # Attach the per-board metrics map to the board struct so the
+  # BoardHeader sub-band can render the in-flight/in-review/shipped
+  # counts. Falls back to an empty metrics map (zeros) when the user
+  # somehow can't read the metrics, which BoardHeader handles via
+  # Map.get fallbacks.
+  defp put_board_metrics(board, user) do
+    case Boards.get_board_metrics(user, board.id) do
+      {:ok, metrics} -> %{board | metrics: metrics}
+      {:error, _} -> board
+    end
   end
 
   defp assign_board_state(socket, board, user_access) do
