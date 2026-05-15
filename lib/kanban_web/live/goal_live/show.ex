@@ -175,7 +175,6 @@ defmodule KanbanWeb.GoalLive.Show do
           >
             <TaskMetadataGrid.metadata_grid
               task={@goal}
-              parent_goal={nil}
               board_name={@board.name}
             />
           </aside>
