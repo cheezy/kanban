@@ -853,8 +853,8 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
-      assert html =~ "API Tokens"
-      assert html =~ "Generate Token"
+      assert html =~ "API tokens"
+      assert html =~ "Generate token"
     end
 
     test "user with modify access can access API tokens page", %{conn: conn, user: _user} do
@@ -868,7 +868,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
-      assert html =~ "API Tokens"
+      assert html =~ "API tokens"
     end
 
     test "user with read-only access cannot access API tokens page", %{conn: conn, user: _user} do
@@ -912,7 +912,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       |> render_submit()
 
       html = render(show_live)
-      assert html =~ "Token created successfully"
+      assert html =~ "Token created"
       assert html =~ "New Token"
       assert html =~ "stride_"
     end
@@ -947,7 +947,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       |> render_click()
 
       html = render(show_live)
-      assert html =~ "revoked successfully" or html =~ "Revoked"
+      assert html =~ "revoked successfully" or html =~ "revoked"
     end
 
     test "deletes revoked API token", %{conn: conn, user: user} do
@@ -998,14 +998,14 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       html = render(show_live)
       assert html =~ "stride_"
-      assert html =~ "Copy this token now"
+      assert html =~ "Token created"
 
       # Navigate away and back
       {:ok, _show_live, _html} = live(conn, ~p"/boards/#{board}")
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
       # Plain-text token should not be visible anymore
-      refute html =~ "Copy this token now"
+      refute html =~ "Token created"
     end
 
     test "owner can see the Tokens tab", %{conn: conn, user: user} do

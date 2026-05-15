@@ -13,7 +13,6 @@ msgstr ""
 
 #: lib/kanban_web/components/core_components.ex:439
 #: lib/kanban_web/live/archive_live/index.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:537
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Ações"
@@ -260,7 +259,6 @@ msgstr "Comece criando colunas para o seu quadro."
 
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:100
-#: lib/kanban_web/live/board_live/show.html.heex:534
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/user_live/registration.ex:52
 #: lib/kanban_web/live/user_live/settings.ex:28
@@ -1675,11 +1673,6 @@ msgstr ""
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:398
-#, elixir-autogen, elixir-format
-msgid "API Tokens for %{board_name}"
-msgstr "Tokens de API para %{board_name}"
-
 #: lib/kanban_web/live/task_live/form_component.html.heex:762
 #, elixir-autogen, elixir-format
 msgid "API endpoint or service"
@@ -1689,11 +1682,6 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "Token de API revogado com sucesso"
-
-#: lib/kanban_web/live/board_live/show.html.heex:523
-#, elixir-autogen, elixir-format
-msgid "Active Tokens"
-msgstr "Tokens Ativos"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:782
 #, elixir-autogen, elixir-format
@@ -1735,28 +1723,18 @@ msgstr ""
 msgid "Add Unit Test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:488
-#, elixir-autogen, elixir-format
-msgid "Agent Model (Optional)"
-msgstr "Modelo de Agente (Opcional)"
-
-#: lib/kanban_web/live/board_live/show.html.heex:567
+#: lib/kanban_web/live/board_live/show.html.heex:668
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to revoke this token?"
 msgstr "Tem certeza de que deseja excluir este quadro?"
 
-#: lib/kanban_web/live/board_live/show.html.heex:456
-#: lib/kanban_web/live/board_live/show.html.heex:460
+#: lib/kanban_web/live/board_live/show.html.heex:441
+#: lib/kanban_web/live/board_live/show.html.heex:471
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "Copiar"
 
-#: lib/kanban_web/live/board_live/show.html.heex:421
-#, elixir-autogen, elixir-format
-msgid "Copy this token now - you won't be able to see it again:"
-msgstr "Copie este token agora - você não poderá vê-lo novamente:"
-
-#: lib/kanban_web/live/board_live/show.html.heex:513
+#: lib/kanban_web/live/board_live/show.html.heex:574
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Creating..."
 msgstr "Criando conta..."
@@ -1771,11 +1749,6 @@ msgstr ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to revoke token"
 msgstr "Falha ao mover tarefa"
-
-#: lib/kanban_web/live/board_live/show.html.heex:514
-#, elixir-autogen, elixir-format
-msgid "Generate Token"
-msgstr "Gerar Token"
 
 #: lib/kanban_web/live/board_live/form.html.heex:228
 #: lib/kanban_web/live/board_live/settings_form_component.ex:276
@@ -1796,11 +1769,6 @@ msgstr ""
 msgid "Integration test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:536
-#, elixir-autogen, elixir-format
-msgid "Last Used"
-msgstr ""
-
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:42
 #: lib/kanban_web/live/task_live/form_component.html.heex:600
 #, elixir-autogen, elixir-format, fuzzy
@@ -1812,17 +1780,12 @@ msgstr ""
 msgid "Manual test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:481
+#: lib/kanban_web/live/board_live/show.html.heex:513
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "Meu Agente IA"
 
-#: lib/kanban_web/live/board_live/show.html.heex:557
-#, elixir-autogen, elixir-format
-msgid "Never"
-msgstr "Nunca"
-
-#: lib/kanban_web/live/board_live/show.html.heex:527
+#: lib/kanban_web/live/board_live/show.html.heex:599
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "Ainda não há tokens de API. Gere um acima para começar."
@@ -1839,20 +1802,10 @@ msgstr ""
 msgid "PubSub Broadcasts"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:495
-#, elixir-autogen, elixir-format
-msgid "Purpose (Optional)"
-msgstr "Propósito (Opcional)"
-
-#: lib/kanban_web/live/board_live/show.html.heex:569
+#: lib/kanban_web/live/board_live/show.html.heex:676
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Revoke"
 msgstr "Remover"
-
-#: lib/kanban_web/live/board_live/show.html.heex:572
-#, elixir-autogen, elixir-format
-msgid "Revoked"
-msgstr "Revogado"
 
 #: lib/kanban_web/live/board_live/form.html.heex:208
 #: lib/kanban_web/live/board_live/settings_form_component.ex:274
@@ -1881,16 +1834,6 @@ msgstr ""
 msgid "Testing Strategy"
 msgstr "Estratégia de Testes"
 
-#: lib/kanban_web/live/board_live/show.html.heex:480
-#, elixir-autogen, elixir-format
-msgid "Token Name"
-msgstr "Nome do Token"
-
-#: lib/kanban_web/live/board_live/show.html.heex:419
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Token created successfully!"
-msgstr "Coluna criada com sucesso"
-
 #: lib/kanban_web/live/board_live/show.ex:546
 #: lib/kanban_web/live/board_live/show.ex:568
 #, elixir-autogen, elixir-format
@@ -1906,11 +1849,6 @@ msgstr ""
 #: lib/kanban_web/live/task_live/form_component.html.heex:539
 #, elixir-autogen, elixir-format
 msgid "Unit test description"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/show.html.heex:535
-#, elixir-autogen, elixir-format
-msgid "User"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/show.ex:1182
@@ -1934,12 +1872,12 @@ msgstr ""
 msgid "topic:event"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:469
+#: lib/kanban_web/live/board_live/show.html.heex:478
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "Descartar"
 
-#: lib/kanban_web/live/board_live/show.html.heex:457
+#: lib/kanban_web/live/board_live/show.html.heex:442
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "Copiado!"
@@ -2074,12 +2012,12 @@ msgstr ""
 msgid "Please fix the errors below"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:496
+#: lib/kanban_web/live/board_live/show.html.heex:546
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "Automatização de tarefas"
 
-#: lib/kanban_web/live/board_live/show.html.heex:489
+#: lib/kanban_web/live/board_live/show.html.heex:533
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr ""
@@ -2099,7 +2037,7 @@ msgstr ""
 msgid "mix test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:458
+#: lib/kanban_web/live/board_live/show.html.heex:443
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr ""
@@ -2137,7 +2075,7 @@ msgstr "Quadros"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/archive_live/index.html.heex:91
-#: lib/kanban_web/live/board_live/show.html.heex:580
+#: lib/kanban_web/live/board_live/show.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "Excluir"
@@ -2201,12 +2139,7 @@ msgstr ""
 msgid "Select capability to add..."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:502
-#, elixir-autogen, elixir-format
-msgid "Agent Capabilities"
-msgstr "Capacidades do Agente"
-
-#: lib/kanban_web/live/board_live/show.html.heex:503
+#: lib/kanban_web/live/board_live/show.html.heex:560
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2216,7 +2149,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "Token de API excluído com sucesso"
 
-#: lib/kanban_web/live/board_live/show.html.heex:578
+#: lib/kanban_web/live/board_live/show.html.heex:683
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "Tem certeza de que deseja excluir este token?"
@@ -2268,11 +2201,6 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
 msgstr ""
-
-#: lib/kanban_web/live/board_live/show.html.heex:507
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Comma-separated list. Valid capabilities: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
-msgstr "Lista separada por vírgulas. Capacidades válidas: code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops. Deixe vazio para permitir todas as tarefas."
 
 #: lib/kanban_web/live/resources_live/show.html.heex:87
 #, elixir-autogen, elixir-format, fuzzy
@@ -3926,6 +3854,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
+#: lib/kanban_web/live/board_live/show.html.heex:400
 #, elixir-autogen, elixir-format, fuzzy
 msgid "API tokens"
 msgstr "Tokens de API"
@@ -5311,3 +5240,68 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Manage members"
 msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:590
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Active tokens"
+msgstr "Tokens Ativos"
+
+#: lib/kanban_web/live/board_live/show.html.heex:554
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Agent capabilities"
+msgstr "Capacidades do Agente"
+
+#: lib/kanban_web/live/board_live/show.html.heex:527
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Agent model (optional)"
+msgstr "Modelo de Agente (Opcional)"
+
+#: lib/kanban_web/live/board_live/show.html.heex:403
+#, elixir-autogen, elixir-format
+msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:565
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
+msgstr "Lista separada por vírgulas. Capacidades válidas: code_generation, code_review, database_design, testing, documentation, debugging, refactoring, api_design, ui_implementation, performance_optimization, security_analysis, devops. Deixe vazio para permitir todas as tarefas."
+
+#: lib/kanban_web/live/board_live/show.html.heex:426
+#, elixir-autogen, elixir-format
+msgid "Copy it now — you won't be able to see it again."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:494
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Create new token"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:582
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Generate token"
+msgstr "Gerar Token"
+
+#: lib/kanban_web/live/board_live/show.html.heex:659
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Never used"
+msgstr "Nunca"
+
+#: lib/kanban_web/live/board_live/show.html.heex:540
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Purpose (optional)"
+msgstr "Propósito (Opcional)"
+
+#: lib/kanban_web/live/board_live/show.html.heex:423
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Token created"
+msgstr "Coluna criada com sucesso"
+
+#: lib/kanban_web/live/board_live/show.html.heex:505
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Token name"
+msgstr "Nome do Token"
+
+#: lib/kanban_web/live/board_live/show.html.heex:645
+#, elixir-autogen, elixir-format, fuzzy
+msgid "revoked"
+msgstr "Revogado"

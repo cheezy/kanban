@@ -1318,7 +1318,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/api_tokens")
 
-      assert html =~ "API Tokens"
+      assert html =~ "API tokens"
     end
 
     test "redirects non-AI boards from API tokens page", %{conn: conn, user: user} do

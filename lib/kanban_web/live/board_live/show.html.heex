@@ -394,200 +394,307 @@
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
   >
-    <h2 class="text-2xl font-bold mb-6">
-      {gettext("API Tokens for %{board_name}", board_name: @board.name)}
-    </h2>
-
-    <div class="space-y-6">
-      <%= if @new_token do %>
-        <div class="alert alert-success">
-          <div class="flex-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="stroke-current flex-shrink-0 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div class="flex-1">
-              <h3 class="font-bold">{gettext("Token created successfully!")}</h3>
-              <div class="text-sm">
-                {gettext("Copy this token now - you won't be able to see it again:")}
-              </div>
-              <div class="mt-2 flex gap-2">
-                <code
-                  id="new-token-value"
-                  class="bg-base-300 px-3 py-2 rounded font-mono text-sm flex-1 break-all"
-                >
-                  {@new_token}
-                </code>
-                <button
-                  type="button"
-                  class="btn btn-sm"
-                  onclick="
-                      const text = this.getAttribute('data-token-value');
-                      const copiedText = this.getAttribute('data-copied-text');
-                      const copyText = this.getAttribute('data-copy-text');
-                      const failedMsg = this.getAttribute('data-failed-msg');
-                      const textarea = document.createElement('textarea');
-                      textarea.value = text;
-                      textarea.style.position = 'fixed';
-                      textarea.style.opacity = '0';
-                      document.body.appendChild(textarea);
-                      textarea.select();
-                      try {
-                        document.execCommand('copy');
-                        this.innerHTML = copiedText;
-                        setTimeout(() => { this.innerHTML = copyText; }, 2000);
-                      } catch (err) {
-                        console.error('Copy failed:', err);
-                        alert(failedMsg + ': ' + err.message);
-                      } finally {
-                        document.body.removeChild(textarea);
-                      }
-                    "
-                  data-token-value={@new_token}
-                  data-copy-text={gettext("Copy")}
-                  data-copied-text={"✓ " <> gettext("Copied!")}
-                  data-failed-msg={gettext("Failed to copy")}
-                >
-                  {gettext("Copy")}
-                </button>
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="btn btn-sm btn-ghost"
-            phx-click="dismiss_token"
-            title={gettext("Dismiss")}
-          >
-            ×
-          </button>
-        </div>
-      <% end %>
-
-      <.form for={@token_form} phx-submit="create_token">
-        <.input
-          field={@token_form[:name]}
-          type="text"
-          label={gettext("Token Name")}
-          placeholder={gettext("My AI Agent")}
-          required
-        />
-
-        <.input
-          field={@token_form[:agent_model]}
-          type="text"
-          label={gettext("Agent Model (Optional)")}
-          placeholder={gettext("claude-4.5-opus")}
-        />
-
-        <.input
-          field={@token_form[:agent_purpose]}
-          type="text"
-          label={gettext("Purpose (Optional)")}
-          placeholder={gettext("Task automation")}
-        />
-
-        <.input
-          field={@token_form[:agent_capabilities]}
-          type="text"
-          label={gettext("Agent Capabilities")}
-          placeholder={gettext("code_generation, testing, documentation")}
-          phx-debounce="blur"
-        />
-        <p class="mt-1 text-sm text-base-content opacity-60">
+    <div class="stride-screen">
+      <div style="margin-bottom: 14px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
+          {gettext("API tokens")}
+        </h2>
+        <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.5;">
           {gettext(
-            "Comma-separated list. Valid capabilities: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
+            "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window.",
+            board_name: @board.name
           )}
         </p>
+      </div>
 
-        <div class="mt-4">
-          <.button phx-disable-with={gettext("Creating...")}>
-            {gettext("Generate Token")}
-          </.button>
+      <section
+        :if={@new_token}
+        style={[
+          "background: var(--stride-orange-soft); border: 1px solid var(--line);",
+          "border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;",
+          "display: flex; align-items: flex-start; gap: 12px;"
+        ]}
+      >
+        <span style="color: var(--stride-orange-ink); display: inline-flex; margin-top: 2px;">
+          <.icon name="hero-check-circle" class="w-5 h-5" />
+        </span>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.005em;">
+            {gettext("Token created")}
+          </div>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.5;">
+            {gettext("Copy it now — you won't be able to see it again.")}
+          </p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+            <code
+              id="new-token-value"
+              style={[
+                "flex: 1; padding: 6px 10px; border-radius: 5px;",
+                "background: var(--surface); border: 1px solid var(--line-strong);",
+                "color: var(--ink); font-family: var(--font-mono);",
+                "font-size: 11.5px; word-break: break-all;"
+              ]}
+            >{@new_token}</code>
+            <button
+              type="button"
+              data-token-value={@new_token}
+              data-copy-text={gettext("Copy")}
+              data-copied-text={"✓ " <> gettext("Copied!")}
+              data-failed-msg={gettext("Failed to copy")}
+              onclick="
+                const text = this.getAttribute('data-token-value');
+                const copiedText = this.getAttribute('data-copied-text');
+                const copyText = this.getAttribute('data-copy-text');
+                const failedMsg = this.getAttribute('data-failed-msg');
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                  document.execCommand('copy');
+                  this.innerHTML = copiedText;
+                  setTimeout(() => { this.innerHTML = copyText; }, 2000);
+                } catch (err) {
+                  alert(failedMsg + ': ' + err.message);
+                } finally {
+                  document.body.removeChild(textarea);
+                }
+              "
+              style={[
+                "padding: 6px 12px; border-radius: 5px; border: none;",
+                "background: var(--ink); color: white;",
+                "font-size: 12px; font-weight: 500; cursor: pointer;"
+              ]}
+            >
+              {gettext("Copy")}
+            </button>
+          </div>
         </div>
-      </.form>
+        <button
+          type="button"
+          phx-click="dismiss_token"
+          aria-label={gettext("Dismiss")}
+          style={[
+            "padding: 4px; border-radius: 4px; border: none;",
+            "background: transparent; cursor: pointer; color: var(--ink-3);"
+          ]}
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </section>
 
-      <div class="divider"></div>
+      <section style={[
+        "background: var(--surface); border: 1px solid var(--line);",
+        "border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;"
+      ]}>
+        <div style="margin-bottom: 12px;">
+          <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
+            {gettext("Create new token")}
+          </h3>
+        </div>
 
-      <div>
-        <h3 class="text-lg font-semibold text-base-content mb-3">
-          {gettext("Active Tokens")}
-        </h3>
+        <.form
+          for={@token_form}
+          phx-submit="create_token"
+          style="display: flex; flex-direction: column; gap: 12px;"
+        >
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">
+              {gettext("Token name")}
+            </span>
+            <input
+              id={@token_form[:name].id}
+              name={@token_form[:name].name}
+              type="text"
+              required
+              value={Phoenix.HTML.Form.normalize_value("text", @token_form[:name].value)}
+              placeholder={gettext("My AI Agent")}
+              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+            />
+            <span
+              :for={msg <- Enum.map(@token_form[:name].errors, &translate_error(&1))}
+              style="font-size: 11px; color: var(--st-blocked);"
+            >
+              {msg}
+            </span>
+          </label>
+
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 5px;">
+              <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">
+                {gettext("Agent model (optional)")}
+              </span>
+              <input
+                id={@token_form[:agent_model].id}
+                name={@token_form[:agent_model].name}
+                type="text"
+                placeholder={gettext("claude-4.5-opus")}
+                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+              />
+            </label>
+
+            <label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 5px;">
+              <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">
+                {gettext("Purpose (optional)")}
+              </span>
+              <input
+                id={@token_form[:agent_purpose].id}
+                name={@token_form[:agent_purpose].name}
+                type="text"
+                placeholder={gettext("Task automation")}
+                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+              />
+            </label>
+          </div>
+
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">
+              {gettext("Agent capabilities")}
+            </span>
+            <input
+              id={@token_form[:agent_capabilities].id}
+              name={@token_form[:agent_capabilities].name}
+              type="text"
+              placeholder={gettext("code_generation, testing, documentation")}
+              phx-debounce="blur"
+              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+            />
+            <span style="font-size: 11px; color: var(--ink-3); line-height: 1.5; text-wrap: pretty;">
+              {gettext(
+                "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
+              )}
+            </span>
+          </label>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button
+              type="submit"
+              phx-disable-with={gettext("Creating...")}
+              style={[
+                "padding: 6px 12px; border-radius: 5px; border: none;",
+                "background: var(--ink); color: white;",
+                "font-size: 12px; font-weight: 500; cursor: pointer;",
+                "box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+              ]}
+            >
+              {gettext("Generate token")}
+            </button>
+          </div>
+        </.form>
+      </section>
+
+      <section>
+        <div class="ucase" style="font-size: 10.5px; color: var(--ink-3); margin-bottom: 8px;">
+          {gettext("Active tokens")}
+        </div>
+
         <%= if Enum.empty?(@api_tokens) do %>
-          <p class="text-base-content opacity-60 italic">
+          <p style={[
+            "margin: 0; padding: 18px 16px;",
+            "background: var(--surface); border: 1px solid var(--line); border-radius: 10px;",
+            "font-size: 12.5px; color: var(--ink-3); line-height: 1.5;"
+          ]}>
             {gettext("No API tokens yet. Generate one above to get started.")}
           </p>
         <% else %>
-          <div class="overflow-x-auto">
-            <table class="table table-zebra w-full table-sm">
-              <thead>
-                <tr>
-                  <th>{gettext("Name")}</th>
-                  <th>{gettext("User")}</th>
-                  <th>{gettext("Last Used")}</th>
-                  <th>{gettext("Actions")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <%= for token <- @api_tokens do %>
-                  <tr>
-                    <td>
-                      {token.name}
-                      <%= if token.agent_model do %>
-                        <br />
-                        <span class="text-xs opacity-60">
-                          {token.agent_model}
-                        </span>
-                      <% end %>
-                    </td>
-                    <td>{token.user.email}</td>
-                    <td>
-                      <%= if token.last_used_at do %>
-                        {Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M")}
-                      <% else %>
-                        <span class="opacity-60">{gettext("Never")}</span>
-                      <% end %>
-                    </td>
-                    <td>
-                      <%= if is_nil(token.revoked_at) do %>
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-error"
-                          phx-click="revoke_token"
-                          phx-value-id={token.id}
-                          data-confirm={gettext("Are you sure you want to revoke this token?")}
-                        >
-                          {gettext("Revoke")}
-                        </button>
-                      <% else %>
-                        <span class="badge badge-error mr-2">{gettext("Revoked")}</span>
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-ghost"
-                          phx-click="delete_token"
-                          phx-value-id={token.id}
-                          data-confirm={gettext("Are you sure you want to delete this token?")}
-                        >
-                          {gettext("Delete")}
-                        </button>
-                      <% end %>
-                    </td>
-                  </tr>
+          <div style={[
+            "background: var(--surface); border: 1px solid var(--line);",
+            "border-radius: 10px; overflow: hidden;",
+            "display: flex; flex-direction: column;"
+          ]}>
+            <div
+              :for={{token, idx} <- Enum.with_index(@api_tokens)}
+              style={[
+                "display: flex; align-items: center; gap: 12px;",
+                "padding: 12px 14px;",
+                if(idx > 0, do: "border-top: 1px solid var(--line);", else: ""),
+                if(token.revoked_at, do: "opacity: 0.55;", else: "")
+              ]}
+            >
+              <span style={[
+                "width: 28px; height: 28px; border-radius: 6px;",
+                "background: var(--surface-sunken); color: var(--ink-3);",
+                "display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;"
+              ]}>
+                <.icon name="hero-key" class="w-4 h-4" />
+              </span>
+
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {token.name}
+                  </span>
+                  <span
+                    :if={token.agent_model}
+                    class="ident"
+                    style="font-size: 10.5px;"
+                  >
+                    {token.agent_model}
+                  </span>
+                  <span
+                    :if={token.revoked_at}
+                    class="ucase"
+                    style={[
+                      "padding: 2px 6px; border-radius: 999px;",
+                      "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                      "font-size: 9px; font-weight: 600; letter-spacing: 0.04em;"
+                    ]}
+                  >
+                    {gettext("revoked")}
+                  </span>
+                </div>
+                <div style="margin-top: 2px; font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  {token.user.email}
+                </div>
+              </div>
+
+              <div style="font-size: 11.5px; color: var(--ink-3); white-space: nowrap;">
+                <%= if token.last_used_at do %>
+                  <span class="ident">
+                    {Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M")}
+                  </span>
+                <% else %>
+                  <span style="color: var(--ink-4);">{gettext("Never used")}</span>
                 <% end %>
-              </tbody>
-            </table>
+              </div>
+
+              <%= if is_nil(token.revoked_at) do %>
+                <button
+                  type="button"
+                  phx-click="revoke_token"
+                  phx-value-id={token.id}
+                  data-confirm={gettext("Are you sure you want to revoke this token?")}
+                  style={[
+                    "padding: 4px 10px; border-radius: 4px;",
+                    "background: transparent; border: 1px solid var(--st-blocked);",
+                    "color: var(--st-blocked); font-size: 11.5px; font-weight: 500;",
+                    "cursor: pointer;"
+                  ]}
+                >
+                  {gettext("Revoke")}
+                </button>
+              <% else %>
+                <button
+                  type="button"
+                  phx-click="delete_token"
+                  phx-value-id={token.id}
+                  data-confirm={gettext("Are you sure you want to delete this token?")}
+                  style={[
+                    "padding: 4px 10px; border-radius: 4px;",
+                    "background: transparent; border: 1px solid var(--line-strong);",
+                    "color: var(--ink-2); font-size: 11.5px; font-weight: 500;",
+                    "cursor: pointer;"
+                  ]}
+                >
+                  {gettext("Delete")}
+                </button>
+              <% end %>
+            </div>
           </div>
         <% end %>
-      </div>
+      </section>
     </div>
   </.modal>
 </Layouts.app>
