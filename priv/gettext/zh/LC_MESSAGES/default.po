@@ -635,7 +635,7 @@ msgstr "从看板移除用户失败"
 msgid "Manage Users"
 msgstr "管理用户"
 
-#: lib/kanban_web/live/board_live/index.ex:218
+#: lib/kanban_web/live/board_live/index.ex:229
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "只有看板所有者可以删除此看板"
@@ -2063,7 +2063,7 @@ msgstr ""
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:163
+#: lib/kanban_web/live/board_live/index.ex:174
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Empty Board"
 msgstr "编辑看板"
@@ -2838,7 +2838,7 @@ msgstr "任务已完成"
 
 #: lib/kanban_web/live/archive_live/index.ex:18
 #: lib/kanban_web/live/board_live/form.ex:273
-#: lib/kanban_web/live/board_live/index.ex:226
+#: lib/kanban_web/live/board_live/index.ex:237
 #: lib/kanban_web/live/board_live/show.ex:1159
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -4787,7 +4787,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] ""
 
-#: lib/kanban_web/live/board_live/index.ex:169
+#: lib/kanban_web/live/board_live/index.ex:180
 #, elixir-autogen, elixir-format, fuzzy
 msgid "AI Optimized"
 msgstr ""
@@ -4802,7 +4802,7 @@ msgstr "看板"
 msgid "Cards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:146
+#: lib/kanban_web/live/board_live/index.ex:157
 #, elixir-autogen, elixir-format
 msgid "Create new board"
 msgstr ""
@@ -4822,7 +4822,7 @@ msgstr ""
 msgid "List view coming soon"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:157
+#: lib/kanban_web/live/board_live/index.ex:168
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New board"
 msgstr "新建看板"
@@ -4832,37 +4832,37 @@ msgstr "新建看板"
 msgid "View mode"
 msgstr "查看看板"
 
-#: lib/kanban_web/live/board_live/index.ex:66
+#: lib/kanban_web/live/board_live/index.ex:72
 #, elixir-autogen, elixir-format
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:80
+#: lib/kanban_web/live/board_live/index.ex:89
 #, elixir-autogen, elixir-format
 msgid "Coming soon"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:74
+#: lib/kanban_web/live/board_live/index.ex:83
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create your first board"
 msgstr "创建您的第一列"
 
-#: lib/kanban_web/live/board_live/index.ex:85
+#: lib/kanban_web/live/board_live/index.ex:94
 #, elixir-autogen, elixir-format
 msgid "Import from Linear or Jira"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:63
+#: lib/kanban_web/live/board_live/index.ex:69
 #, elixir-autogen, elixir-format
 msgid "Let's start with one."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:63
+#: lib/kanban_web/live/board_live/index.ex:69
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No boards yet."
 msgstr "尚无看板"
 
-#: lib/kanban_web/live/board_live/index.ex:92
+#: lib/kanban_web/live/board_live/index.ex:101
 #, elixir-autogen, elixir-format
 msgid "Tip: start with the board your team already works in. Stride can backfill history."
 msgstr ""
