@@ -3793,6 +3793,7 @@ msgstr ""
 msgid "Account information"
 msgstr "アカウントが確認されました！"
 
+#: lib/kanban_web/components/agents_header.ex:51
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Agent activity"
@@ -5387,7 +5388,7 @@ msgstr ""
 msgid "Claimed"
 msgstr "担当開始:"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:264
+#: lib/kanban_web/components/agent_activity_feed.ex:273
 #: lib/kanban_web/components/agent_roster_card.ex:159
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Claims"
@@ -5453,32 +5454,34 @@ msgstr "作業"
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:275
+#: lib/kanban_web/components/agent_activity_feed.ex:284
+#: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:279
+#: lib/kanban_web/components/agent_activity_feed.ex:288
+#: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:263
+#: lib/kanban_web/components/agent_activity_feed.ex:272
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:266
+#: lib/kanban_web/components/agent_activity_feed.ex:275
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Completions"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:265
+#: lib/kanban_web/components/agent_activity_feed.ex:274
 #, elixir-autogen, elixir-format
 msgid "Hooks"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:71
+#: lib/kanban_web/components/agent_activity_feed.ex:76
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
 msgstr ""
@@ -5507,3 +5510,29 @@ msgstr "レビュー"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "unclaimed"
 msgstr "担当開始:"
+
+#: lib/kanban_web/components/agents_header.ex:84
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Approved today"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex:72
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Claimed today"
+msgstr "担当開始:"
+
+#: lib/kanban_web/components/agents_header.ex:78
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Completed today"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex:90
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Cycle time · avg"
+msgstr "サイクルタイム"
+
+#: lib/kanban_web/components/agents_header.ex:131
+#, elixir-autogen, elixir-format
+msgid "last 24h · %{count} event"
+msgid_plural "last 24h · %{count} events"
+msgstr[0] ""
