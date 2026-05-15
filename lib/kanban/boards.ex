@@ -126,6 +126,35 @@ defmodule Kanban.Boards do
     end
   end
 
+  @doc """
+  Returns the same `:metrics` map shape as `list_boards_with_metrics/2`
+  but for a single board, scope-filtered through `get_board/2` so a user
+  cannot read metrics for a board they have no access to.
+
+  Returns `{:ok, metrics_map}` when the user has access and the board
+  exists, or `{:error, :not_found}` otherwise.
+
+  ## Examples
+
+      iex> get_board_metrics(user, 42)
+      {:ok, %{open: 3, doing: 1, ...}}
+
+      iex> get_board_metrics(user, 999_999)
+      {:error, :not_found}
+
+  """
+  def get_board_metrics(user, board_id, opts \\ []) do
+    case get_board(board_id, user) do
+      {:ok, board} ->
+        now = Keyword.get(opts, :now, DateTime.utc_now())
+        metrics_by_board = build_metrics([board.id], now)
+        {:ok, Map.get(metrics_by_board, board.id, empty_metrics(now))}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
+  end
+
   # Returns %{board_id => [%{kind: :human, name: string, palette: string}]}
   # built from the users on each board's `board_users` join. Used to render
   # the avatar stack in the Boards index pulse card. The Avatar component

@@ -1225,6 +1225,55 @@ defmodule Kanban.BoardsTest do
       assert by_id[b.id].throughput_14d == 1
       assert by_id[b.id].active_agents_14d == 1
     end
+  end
+
+  describe "get_board_metrics/3" do
+    setup do
+      user = user_fixture()
+      now = ~U[2026-05-15 12:00:00Z]
+      %{user: user, now: now}
+    end
+
+    test "returns the same shape as list_boards_with_metrics for a single board",
+         %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Metrics Board"})
+      cols = columns_by_name(board)
+      _ = task_fixture(cols["Ready"], %{title: "open task"})
+      _ = task_fixture(cols["Doing"], %{title: "doing task"})
+
+      assert {:ok, metrics} = Boards.get_board_metrics(user, board.id, now: now)
+
+      assert is_integer(metrics.open) and metrics.open == 1
+      assert metrics.doing == 1
+      assert metrics.review == 0
+      assert metrics.done == 0
+      assert metrics.throughput_14d == 0
+      assert is_list(metrics.pulse_14d) and length(metrics.pulse_14d) == 14
+      assert metrics.active_agents_14d == 0
+      assert metrics.last_activity_at == nil
+    end
+
+    test "returns {:error, :not_found} when the board does not exist",
+         %{user: user, now: now} do
+      assert {:error, :not_found} = Boards.get_board_metrics(user, 999_999, now: now)
+    end
+
+    test "returns {:error, :not_found} for boards the user has no access to",
+         %{user: user, now: now} do
+      other = user_fixture()
+      other_board = ai_optimized_board_fixture(other, %{name: "Other Board"})
+
+      assert {:error, :not_found} = Boards.get_board_metrics(user, other_board.id, now: now)
+    end
+
+    test "returns metrics for boards the user has read-only access on",
+         %{user: user, now: now} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner, %{name: "Shared Board"})
+      {:ok, _} = Boards.add_user_to_board(board, user, :read_only, owner)
+
+      assert {:ok, _metrics} = Boards.get_board_metrics(user, board.id, now: now)
+    end
 
     defp columns_by_name(board) do
       board
