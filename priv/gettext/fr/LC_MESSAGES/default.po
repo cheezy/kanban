@@ -49,6 +49,7 @@ msgstr " · Gestion des Tâches"
 
 #: lib/kanban_web/components/board_header.ex:72
 #: lib/kanban_web/components/board_pulse_card.ex:149
+#: lib/kanban_web/components/goal_progress_header.ex:212
 #: lib/kanban_web/components/marketing_mini_board.ex:232
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
 #: lib/kanban_web/task_tokens.ex:23
@@ -1966,6 +1967,7 @@ msgstr "Crochets de Flux de Travail Côté Client"
 msgid "Comprehensive API Documentation"
 msgstr ""
 
+#: lib/kanban_web/components/goal_progress_header.ex:65
 #: lib/kanban_web/components/task_metadata_grid.ex:83
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:92
@@ -2417,6 +2419,7 @@ msgstr "Moyenne par jour"
 msgid "Back to Dashboard"
 msgstr "Retour au tableau de bord"
 
+#: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:162
 #, elixir-autogen, elixir-format
@@ -2642,6 +2645,7 @@ msgid "Queue and wait time analysis"
 msgstr "Analyse de la file d'attente et du temps d'attente"
 
 #: lib/kanban_web/components/board_pulse_card.ex:148
+#: lib/kanban_web/components/goal_progress_header.ex:211
 #: lib/kanban_web/components/marketing_mini_board.ex:216
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:154
@@ -3357,6 +3361,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_header.ex:70
 #: lib/kanban_web/components/board_pulse_card.ex:147
+#: lib/kanban_web/components/goal_progress_header.ex:210
 #: lib/kanban_web/components/marketing_mini_board.ex:195
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
 #: lib/kanban_web/task_tokens.ex:21
@@ -3485,6 +3490,7 @@ msgstr ""
 msgid "Read the agent API"
 msgstr ""
 
+#: lib/kanban_web/components/goal_progress_header.ex:209
 #: lib/kanban_web/components/marketing_mini_board.ex:176
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
 #: lib/kanban_web/task_tokens.ex:20
@@ -5182,3 +5188,23 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Goal progress by status"
 msgstr ""
+
+#: lib/kanban_web/components/goal_progress_header.ex:101
+#, elixir-autogen, elixir-format
+msgid "%{done} of %{total} complete"
+msgstr ""
+
+#: lib/kanban_web/components/goal_progress_header.ex:107
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Goal progress by child status"
+msgstr ""
+
+#: lib/kanban_web/components/goal_progress_header.ex:70
+#, elixir-autogen, elixir-format, fuzzy
+msgid "priority"
+msgstr "Priorité"
+
+#: lib/kanban_web/components/goal_child_row.ex:114
+#, elixir-autogen, elixir-format, fuzzy
+msgid "unassigned"
+msgstr "Non assigné"
