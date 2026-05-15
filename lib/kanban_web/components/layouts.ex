@@ -231,6 +231,13 @@ defmodule KanbanWeb.Layouts do
         icon: "hero-squares-2x2",
         path: "/boards",
         badge: nil
+      },
+      %{
+        id: :agents,
+        label: gettext("Agents"),
+        icon: "hero-cpu-chip",
+        path: "/agents",
+        badge: nil
       }
     ]
 
@@ -238,18 +245,12 @@ defmodule KanbanWeb.Layouts do
   end
 
   # Board-scoped items only appear when the current page has a `:board`
-  # assign — i.e., the user is inside a specific board. Goals / Agents /
-  # Review queue currently point to the board show page until those
-  # screens land; Metrics has a real dashboard route.
+  # assign — i.e., the user is inside a specific board. Review queue
+  # currently points to the board show page until that screen lands;
+  # Metrics has a real dashboard route. The Agents link is workspace-level
+  # and lives in `primary_nav_items/1` so it stays visible everywhere.
   defp board_scoped_items(%{id: id}) when is_integer(id) or is_binary(id) do
     [
-      %{
-        id: :agents,
-        label: gettext("Agents"),
-        icon: "hero-cpu-chip",
-        path: "/boards/#{id}",
-        badge: nil
-      },
       %{
         id: :review,
         label: gettext("Review queue"),
