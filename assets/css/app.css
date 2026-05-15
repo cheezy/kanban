@@ -457,6 +457,19 @@
   }
 }
 
+/* Status-dot pulse used by the Agents roster card. Kept subtle so the
+   dot reads as "live" without grabbing focus. */
+@keyframes sp-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
 /* Mock Board Styles */
 .mock-board {
   position: relative;
