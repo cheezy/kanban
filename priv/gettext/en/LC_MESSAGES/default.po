@@ -198,7 +198,7 @@ msgstr ""
 msgid "to your account."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:135
+#: lib/kanban_web/live/board_live/index.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr ""
@@ -238,7 +238,7 @@ msgstr ""
 msgid "Edit Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:128
+#: lib/kanban_web/live/board_live/index.html.heex:102
 #: lib/kanban_web/live/board_live/show.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Edit board"
@@ -635,7 +635,7 @@ msgstr ""
 msgid "Manage Users"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:126
+#: lib/kanban_web/live/board_live/index.ex:218
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr ""
@@ -938,16 +938,6 @@ msgstr ""
 #: lib/kanban_web/live/board_live/show.html.heex:239
 #, elixir-autogen, elixir-format
 msgid "Drag tasks here or click + to add"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.html.heex:97
-#, elixir-autogen, elixir-format
-msgid "Get started by creating your first board to organize your tasks and projects."
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.html.heex:94
-#, elixir-autogen, elixir-format, fuzzy
-msgid "No boards yet"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/show.html.heex:180
@@ -2073,13 +2063,7 @@ msgstr ""
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:111
-#, elixir-autogen, elixir-format, fuzzy
-msgid "AI Optimized Board"
-msgstr ""
-
-#: lib/kanban_web/live/board_live/index.ex:71
-#: lib/kanban_web/live/board_live/index.html.heex:105
+#: lib/kanban_web/live/board_live/index.ex:163
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Empty Board"
 msgstr ""
@@ -2856,7 +2840,7 @@ msgstr ""
 
 #: lib/kanban_web/live/archive_live/index.ex:18
 #: lib/kanban_web/live/board_live/form.ex:273
-#: lib/kanban_web/live/board_live/index.ex:134
+#: lib/kanban_web/live/board_live/index.ex:226
 #: lib/kanban_web/live/board_live/show.ex:1159
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -4807,7 +4791,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/index.ex:77
+#: lib/kanban_web/live/board_live/index.ex:169
 #, elixir-autogen, elixir-format, fuzzy
 msgid "AI Optimized"
 msgstr ""
@@ -4822,12 +4806,12 @@ msgstr ""
 msgid "Cards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:54
+#: lib/kanban_web/live/board_live/index.ex:146
 #, elixir-autogen, elixir-format
 msgid "Create new board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:137
+#: lib/kanban_web/live/board_live/index.html.heex:111
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete board"
 msgstr ""
@@ -4842,7 +4826,7 @@ msgstr ""
 msgid "List view coming soon"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:65
+#: lib/kanban_web/live/board_live/index.ex:157
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New board"
 msgstr ""
@@ -4850,4 +4834,39 @@ msgstr ""
 #: lib/kanban_web/live/board_live/index.html.heex:16
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View mode"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:66
+#, elixir-autogen, elixir-format
+msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:80
+#, elixir-autogen, elixir-format
+msgid "Coming soon"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:74
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Create your first board"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:85
+#, elixir-autogen, elixir-format
+msgid "Import from Linear or Jira"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:63
+#, elixir-autogen, elixir-format
+msgid "Let's start with one."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:63
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No boards yet."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/index.ex:92
+#, elixir-autogen, elixir-format
+msgid "Tip: start with the board your team already works in. Stride can backfill history."
 msgstr ""

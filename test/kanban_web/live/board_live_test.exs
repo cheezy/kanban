@@ -121,6 +121,29 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Boards"
       assert html =~ "No boards yet"
     end
+
+    test "empty state renders the new design's structure and CTAs",
+         %{conn: conn} do
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # New heading lines (both phrases present, joined by a <br />).
+      assert html =~ "No boards yet."
+      assert html =~ "Let&#39;s start with one."
+
+      # Body copy from the design — substring match on a stable phrase.
+      assert html =~ "5-column AI flow"
+
+      # Primary CTA navigates to /boards/new.
+      assert html =~ ~s(href="/boards/new")
+      assert html =~ "Create your first board"
+
+      # Secondary CTA is disabled (no crash, no href).
+      assert html =~ "Import from Linear or Jira"
+      assert html =~ ~s(disabled)
+
+      # Footnote mono tip.
+      assert html =~ "Stride can backfill history"
+    end
   end
 
   describe "Show" do

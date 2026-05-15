@@ -86,33 +86,7 @@
     </div>
 
     <%= if !@has_boards do %>
-      <div class="text-center py-12">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 mb-6">
-          <.icon name="hero-clipboard-document-list" class="h-10 w-10 text-blue-600" />
-        </div>
-        <h2 class="text-2xl font-bold text-base-content mb-2">
-          {gettext("No boards yet")}
-        </h2>
-        <p class="text-base-content opacity-70 mb-8 max-w-md mx-auto leading-relaxed">
-          {gettext(
-            "Get started by creating your first board to organize your tasks and projects."
-          )}
-        </p>
-        <div class="flex justify-center gap-4">
-          <.link navigate={~p"/boards/new"}>
-            <.button class="btn-outline gap-2">
-              <.icon name="hero-document" class="h-5 w-5" />
-              {gettext("Empty Board")}
-            </.button>
-          </.link>
-          <.link navigate={~p"/boards/new?ai_optimized=true"}>
-            <.button class="gap-2">
-              <.icon name="hero-sparkles" class="h-5 w-5" />
-              {gettext("AI Optimized Board")}
-            </.button>
-          </.link>
-        </div>
-      </div>
+      <.empty_state />
     <% else %>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div id="boards" phx-update="stream" class="contents">

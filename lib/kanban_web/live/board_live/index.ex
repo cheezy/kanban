@@ -47,6 +47,98 @@ defmodule KanbanWeb.BoardLive.Index do
 
   defp access_badge(assigns), do: ~H""
 
+  defp empty_state(assigns) do
+    ~H"""
+    <div class="flex items-center justify-center px-4" style="min-height: 60vh;">
+      <div
+        class="w-full grid gap-12 items-center"
+        style="max-width: 880px; grid-template-columns: 1fr auto;"
+      >
+        <div class="flex flex-col items-start gap-4" style="max-width: 520px;">
+          <h1 style={[
+            "margin: 0; font-size: 30px; font-weight: 600;",
+            "letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);",
+            "text-wrap: balance;"
+          ]}>
+            {gettext("No boards yet.")}<br />{gettext("Let's start with one.")}
+          </h1>
+          <p style="margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty;">
+            {gettext(
+              "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
+            )}
+          </p>
+          <div class="flex items-center gap-2" style="margin-top: 6px;">
+            <.link navigate={~p"/boards/new"}>
+              <.button class="btn-primary btn-sm gap-2">
+                <.icon name="hero-plus" class="h-4 w-4" />
+                {gettext("Create your first board")}
+              </.button>
+            </.link>
+            <button
+              type="button"
+              disabled
+              title={gettext("Coming soon")}
+              class="btn btn-sm btn-outline gap-2"
+              style="cursor: not-allowed; opacity: 0.6;"
+            >
+              <.icon name="hero-link" class="h-4 w-4" />
+              {gettext("Import from Linear or Jira")}
+            </button>
+          </div>
+          <p
+            class="ident"
+            style="margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3);"
+          >
+            {gettext(
+              "Tip: start with the board your team already works in. Stride can backfill history."
+            )}
+          </p>
+        </div>
+
+        <.boards_empty_diagram />
+      </div>
+    </div>
+    """
+  end
+
+  defp boards_empty_diagram(assigns) do
+    ~H"""
+    <div
+      aria-hidden="true"
+      style={[
+        "width: 320px; height: 220px; padding: 14px;",
+        "background: var(--surface); border: 1px solid var(--line);",
+        "border-radius: 12px; box-shadow: var(--shadow-md);",
+        "display: flex; flex-direction: column; gap: 10px;"
+      ]}
+    >
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 26px; height: 26px; border-radius: 6px; background: var(--line);"></span>
+        <span style="flex: 1; height: 10px; border-radius: 3px; background: var(--surface-sunken);">
+        </span>
+      </div>
+      <span style="height: 8px; border-radius: 3px; background: var(--surface-sunken); width: 60%;">
+      </span>
+      <div style="height: 36px; background: var(--surface-sunken); border-radius: 6px; margin-top: 6px;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin-top: 6px;">
+        <div :for={_ <- 1..4} style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="height: 6px; background: var(--surface-sunken); border-radius: 2px; width: 60%;">
+          </span>
+          <span style="height: 14px; background: var(--line); border-radius: 3px; width: 50%;"></span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 4px; margin-top: auto;">
+        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line);"></span>
+        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;">
+        </span>
+        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;">
+        </span>
+      </div>
+    </div>
+    """
+  end
+
   defp new_board_affordance(assigns) do
     ~H"""
     <div
