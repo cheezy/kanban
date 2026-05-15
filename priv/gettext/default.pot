@@ -52,6 +52,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:212
 #: lib/kanban_web/components/marketing_mini_board.ex:232
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
+#: lib/kanban_web/live/goal_live/show.ex:261
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
 msgid "Done"
@@ -733,7 +734,7 @@ msgid "Only the board owner can reorder columns"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:10
-#: lib/kanban_web/live/goal_live/show.ex:72
+#: lib/kanban_web/live/goal_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Back to board"
 msgstr ""
@@ -1424,6 +1425,7 @@ msgstr ""
 msgid "Only board owners can change field visibility"
 msgstr ""
 
+#: lib/kanban_web/live/goal_live/show.ex:262
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:19
 #: lib/kanban_web/task_tokens.ex:25
@@ -1970,7 +1972,7 @@ msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:65
 #: lib/kanban_web/components/task_metadata_grid.ex:83
-#: lib/kanban_web/live/goal_live/show.ex:117
+#: lib/kanban_web/live/goal_live/show.ex:227
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:92
 #, elixir-autogen, elixir-format
@@ -2423,6 +2425,7 @@ msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
+#: lib/kanban_web/live/goal_live/show.ex:257
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -2650,6 +2653,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:211
 #: lib/kanban_web/components/marketing_mini_board.ex:216
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
+#: lib/kanban_web/live/goal_live/show.ex:260
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:154
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
@@ -3366,6 +3370,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:210
 #: lib/kanban_web/components/marketing_mini_board.ex:195
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
+#: lib/kanban_web/live/goal_live/show.ex:259
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
 msgid "Doing"
@@ -3495,6 +3500,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:209
 #: lib/kanban_web/components/marketing_mini_board.ex:176
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
+#: lib/kanban_web/live/goal_live/show.ex:258
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
 msgid "Ready"
@@ -4750,7 +4756,7 @@ msgstr[1] ""
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:59
 #: lib/kanban_web/live/board_live/show.html.heex:8
-#: lib/kanban_web/live/goal_live/show.ex:55
+#: lib/kanban_web/live/goal_live/show.ex:77
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr ""
@@ -4895,7 +4901,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
-#: lib/kanban_web/live/goal_live/show.ex:51
+#: lib/kanban_web/live/goal_live/show.ex:73
 #, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr ""
@@ -5213,12 +5219,24 @@ msgstr ""
 msgid "unassigned"
 msgstr ""
 
-#: lib/kanban_web/live/goal_live/show.ex:41
+#: lib/kanban_web/live/goal_live/show.ex:63
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
 msgstr ""
 
-#: lib/kanban_web/live/goal_live/show.ex:81
+#: lib/kanban_web/live/goal_live/show.ex:114
 #, elixir-autogen, elixir-format
-msgid "Goal view scaffold — body composition lands in W552."
+msgid "%{count} child"
+msgid_plural "%{count} children"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban_web/live/goal_live/show.ex:111
+#, elixir-autogen, elixir-format
+msgid "Hierarchy"
+msgstr ""
+
+#: lib/kanban_web/live/goal_live/show.ex:128
+#, elixir-autogen, elixir-format
+msgid "This goal has no children yet."
 msgstr ""

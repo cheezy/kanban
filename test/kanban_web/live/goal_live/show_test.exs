@@ -30,9 +30,75 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
       assert html =~ "data-goal-show"
+      assert html =~ "data-goal-progress-header"
+      assert html =~ "data-goal-hierarchy"
+      assert html =~ "data-goal-meta"
+      assert html =~ "data-goal-activity"
       assert html =~ goal.identifier
       assert html =~ "Migrate the detail surface"
       assert html =~ board.name
+    end
+
+    test "groups children by status with a section per status that has any children",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [first | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Body Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Child One", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Child Two", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "Child One"
+      assert html =~ "Child Two"
+      assert html =~ first.identifier
+      # Newly-created children default to :open, which collapses to :backlog
+      # via normalize_status/1 so they render inside the Backlog section.
+      assert html =~ ~r/>\s*Backlog\s*</
+    end
+
+    test "renders the empty-state when the goal has no children",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{
+          "title" => "Lonely Goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "This goal has no children yet."
+      refute html =~ "data-goal-child-row"
+    end
+
+    test "open_child event navigates to the task edit URL",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [child | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Nav Goal", "created_by_id" => user.id},
+          [%{"title" => "Click me", "type" => "work", "created_by_id" => user.id}]
+        )
+
+      {:ok, live, _html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert {:error, {:live_redirect, %{to: edit_path}}} =
+               render_click(live, "open_child", %{"id" => child.id})
+
+      assert edit_path == ~p"/boards/#{board}/tasks/#{child.id}/edit"
     end
 
     test "page_title combines identifier and goal title",
