@@ -93,19 +93,24 @@ defmodule KanbanWeb.Layouts do
         "display: flex; flex-direction: column;"
       ]}
     >
-      <div style="padding: 14px 14px 12px; display: flex; align-items: center; gap: 8px;">
-        <span style={[
-          "width: 20px; height: 20px; border-radius: 5px;",
-          "background: linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%);",
-          "display: inline-flex; align-items: center; justify-content: center;",
-          "color: white; font-size: 11px; font-weight: 700;"
-        ]}>
-          S
-        </span>
-        <span style="font-weight: 600; font-size: 13px; letter-spacing: -0.01em;">
+      <.link
+        href={~p"/"}
+        aria-label={gettext("Stride home")}
+        style={[
+          "padding: 14px 14px 12px; display: flex; align-items: center; gap: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
+      >
+        <img
+          src={~p"/images/logos/abstract-s-motion.svg"}
+          alt=""
+          aria-hidden="true"
+          style="width: 22px; height: 22px;"
+        />
+        <span style="font-weight: 600; font-size: 13px; letter-spacing: -0.01em; color: var(--ink);">
           {gettext("Stride")}
         </span>
-      </div>
+      </.link>
 
       <nav style="padding: 6px; display: flex; flex-direction: column; gap: 1px;">
         <.side_nav_item :for={item <- @primary_items} item={item} active={@active} />
