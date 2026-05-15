@@ -19,7 +19,8 @@ defmodule KanbanWeb.BoardLiveTest do
       board = board_fixture(user)
       {:ok, _index_live, html} = live(conn, ~p"/boards")
 
-      assert html =~ "Listing Boards"
+      assert html =~ "Boards"
+      assert html =~ "1 active"
       assert html =~ board.name
     end
 
@@ -117,7 +118,8 @@ defmodule KanbanWeb.BoardLiveTest do
       # appears. (Tests upstream of this one have already covered the populated
       # branch.)
       refute html =~ ~r/<li id="boards-\d+"/
-      assert html =~ "Listing Boards" or html =~ "boards"
+      assert html =~ "Boards"
+      assert html =~ "No boards yet"
     end
   end
 
