@@ -4722,6 +4722,7 @@ msgid "Active goals"
 msgstr "活动令牌"
 
 #: lib/kanban_web/components/layouts.ex:248
+#: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agents"
 msgstr ""
@@ -4781,6 +4782,7 @@ msgstr ""
 msgid "Stride home"
 msgstr "Stride"
 
+#: lib/kanban_web/live/agents_live.ex:80
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:82
@@ -5536,3 +5538,19 @@ msgstr "周期时间"
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] ""
+
+#: lib/kanban_web/live/agents_live.ex:185
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{count} connected"
+msgid_plural "%{count} connected"
+msgstr[0] ""
+
+#: lib/kanban_web/live/agents_live.ex:135
+#, elixir-autogen, elixir-format
+msgid "No agents have activity yet."
+msgstr ""
+
+#: lib/kanban_web/live/agents_live.ex:109
+#, elixir-autogen, elixir-format
+msgid "live"
+msgstr ""

@@ -34,6 +34,8 @@ defmodule Kanban.Tasks.Broadcaster do
         {Kanban.Tasks, event, task_with_column}
       )
 
+      broadcast_agent_event(task_with_column, event)
+
       :telemetry.execute(
         [:kanban, :pubsub, :broadcast],
         %{count: 1},
@@ -43,6 +45,46 @@ defmodule Kanban.Tasks.Broadcaster do
       Logger.warning("Cannot broadcast #{event} for task #{task.id} - no column found")
     end
   end
+
+  defp broadcast_agent_event(task, event) do
+    case agent_event_kind(event) do
+      nil ->
+        :ok
+
+      kind ->
+        payload = %{
+          kind: kind,
+          task_id: task.id,
+          agent_name: agent_actor(task, kind),
+          at: timestamp_for(task, kind)
+        }
+
+        Phoenix.PubSub.broadcast(Kanban.PubSub, "agents", {:agent_event, payload})
+    end
+  end
+
+  defp agent_event_kind(:task_created), do: :create
+  defp agent_event_kind(:task_claimed), do: :claim
+  defp agent_event_kind(:task_completed), do: :complete
+  defp agent_event_kind(:task_reviewed), do: :review
+  defp agent_event_kind(_), do: nil
+
+  defp agent_actor(task, :complete), do: task.completed_by_agent
+  # Review events reuse `completed_by_agent` because the agent surface tracks
+  # AI actors; the human reviewer lives on `reviewed_by_id` and is rendered
+  # elsewhere.
+  defp agent_actor(task, :review), do: task.completed_by_agent
+  defp agent_actor(task, _), do: task.created_by_agent
+
+  defp timestamp_for(task, :claim), do: task.claimed_at || DateTime.utc_now()
+  defp timestamp_for(task, :complete), do: task.completed_at || DateTime.utc_now()
+  defp timestamp_for(task, :review), do: task.reviewed_at || DateTime.utc_now()
+
+  defp timestamp_for(%{inserted_at: %NaiveDateTime{} = ndt}, :create) do
+    DateTime.from_naive!(ndt, "Etc/UTC")
+  end
+
+  defp timestamp_for(_task, _kind), do: DateTime.utc_now()
 
   @doc """
   Broadcasts a specific event based on changeset changes.

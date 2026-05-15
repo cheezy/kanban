@@ -12,6 +12,7 @@ defmodule Kanban.Application do
       Kanban.Repo,
       {DNSCluster, query: Application.get_env(:kanban, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Kanban.PubSub},
+      KanbanWeb.AgentsPresence,
       # Start a worker by calling: Kanban.Worker.start_link(arg)
       # {Kanban.Worker, arg},
       # ChromicPDF for server-side PDF generation

@@ -3475,6 +3475,70 @@ defmodule Kanban.TasksTest do
       assert broadcasted_task.id == moved_task.id
     end
 
+    test "also broadcasts a :create agent_event on the 'agents' topic for task_created",
+         %{column: column} do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      {:ok, task} = Tasks.create_task(column, %{title: "New task"})
+
+      assert_received {:agent_event, payload}
+      assert payload.kind == :create
+      assert payload.task_id == task.id
+    end
+
+    test "broadcasts :claim agent_event on the 'agents' topic when claimed_at is set",
+         %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, _} = Tasks.update_task(task, %{claimed_at: claimed_at})
+
+      assert_received {:agent_event, %{kind: :claim, task_id: task_id}}
+      assert task_id == task.id
+    end
+
+    test "broadcasts :complete agent_event on the 'agents' topic when completed_at is set",
+         %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          completed_by_agent: "Codex"
+        })
+
+      assert_received {:agent_event, payload}
+      assert payload.kind == :complete
+      assert payload.agent_name == "Codex"
+    end
+
+    test "broadcasts :review agent_event on the 'agents' topic when review_status changes",
+         %{column: column, user: user} do
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          review_status: :approved,
+          reviewed_by_id: user.id,
+          reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert_received {:agent_event, %{kind: :review}}
+    end
+
+    test "does NOT broadcast on the 'agents' topic for unrelated updates like :task_moved",
+         %{column: column, board: board} do
+      column2 = column_fixture(board, %{position: 1})
+      {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      {:ok, _} = Tasks.move_task(task, column2, 0)
+
+      refute_received {:agent_event, _}
+    end
+
     test "includes telemetry data for broadcasts", %{column: column, board: board} do
       # Attach a test telemetry handler
       test_pid = self()
