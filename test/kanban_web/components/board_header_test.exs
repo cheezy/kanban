@@ -98,7 +98,7 @@ defmodule KanbanWeb.BoardHeaderTest do
   end
 
   describe "board_header/1 — status counts" do
-    test "renders 'Doing' / 'in review' / 'Done' labels with the right values" do
+    test "renders 'Doing' / 'Review' / 'Done' labels with the right values" do
       assigns = %{board: board(%{metrics: %{open: 0, doing: 7, review: 3, done: 99}})}
 
       html =
@@ -107,7 +107,7 @@ defmodule KanbanWeb.BoardHeaderTest do
         """)
 
       assert html =~ "Doing"
-      assert html =~ "in review"
+      assert html =~ ">Review<" or html =~ ">\n    Review\n  <"
       assert html =~ "Done"
       assert html =~ ~r/>\s*7\s*</
       assert html =~ ~r/>\s*3\s*</
@@ -135,7 +135,7 @@ defmodule KanbanWeb.BoardHeaderTest do
         <BoardHeader.board_header board={@board} />
         """)
 
-      # Each KV shows 0 for Doing / in review / Done
+      # Each KV shows 0 for Doing / Review / Done
       assert html =~ ~r/>\s*0\s*</
     end
 

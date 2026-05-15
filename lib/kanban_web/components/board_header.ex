@@ -68,7 +68,7 @@ defmodule KanbanWeb.BoardHeader do
       <div style="display: flex; align-items: center; gap: 14px;">
         <.kv label={gettext("To Do")} value={@to_do} tone="var(--ink)" />
         <.kv label={gettext("Doing")} value={@in_flight} tone="var(--st-doing)" />
-        <.kv label={gettext("in review")} value={@in_review} tone="var(--st-review)" />
+        <.kv label={gettext("Review")} value={@in_review} tone="var(--st-review)" />
         <.kv label={gettext("Done")} value={@shipped} tone="var(--st-done)" />
       </div>
 

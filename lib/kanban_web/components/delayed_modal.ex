@@ -6,6 +6,15 @@ defmodule KanbanWeb.DelayedModal do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_cancel, JS, default: %JS{}
+
+  attr :max_width, :string,
+    default: "max-w-3xl",
+    doc: "Tailwind max-w-* class controlling the modal's maximum width."
+
+  attr :padding, :string,
+    default: "p-14",
+    doc: "Tailwind padding class applied to the inner container."
+
   slot :inner_block, required: true
 
   def delayed_modal(assigns) do
@@ -32,13 +41,16 @@ defmodule KanbanWeb.DelayedModal do
         tabindex="0"
       >
         <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
+          <div class={["w-full", @max_width, "p-4 sm:p-6 lg:py-8"]}>
             <div
               id={"#{@id}-container"}
               data-modal-container
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 p-14 shadow-lg ring-1 transition"
+              class={[
+                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 shadow-lg ring-1 transition",
+                @padding
+              ]}
             >
               <div class="absolute top-6 right-5">
                 <button

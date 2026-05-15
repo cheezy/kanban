@@ -374,6 +374,8 @@
       id="task-view-modal"
       show
       on_cancel={JS.push("close_task_view")}
+      max_width="max-w-6xl"
+      padding="p-6 sm:p-8"
     >
       <.live_component
         module={KanbanWeb.TaskLive.ViewComponent}

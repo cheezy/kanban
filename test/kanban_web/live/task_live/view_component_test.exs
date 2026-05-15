@@ -654,7 +654,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Creator Info"
+      assert result =~ "Creator"
       assert result =~ "Created by"
       assert result =~ "Alice Creator"
     end
@@ -676,7 +676,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Creator Info"
+      assert result =~ "Creator"
       assert result =~ "Agent"
       assert result =~ "Claude-3.5-Sonnet"
     end
@@ -722,12 +722,13 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Context"
+      # The Context block is now three separate SectionCards (Why / What
+      # / Where in the codebase) rendered side-by-side.
       assert result =~ "Why"
       assert result =~ "To improve user experience"
       assert result =~ "What"
       assert result =~ "Add OAuth authentication"
-      assert result =~ "Where"
+      assert result =~ "Where in the codebase"
       assert result =~ "User authentication module"
     end
 
@@ -753,7 +754,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Key Files"
+      assert result =~ "Key files"
       assert result =~ "lib/kanban/auth.ex"
       assert result =~ "Main auth module"
       assert result =~ "lib/kanban_web/controllers/auth_controller.ex"
@@ -788,11 +789,13 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Verification Steps"
-      assert result =~ "command"
+      assert result =~ "Verification steps"
+      # The new design renders step text inline with a `→ expected result`
+      # subdued caption; the step_type pill ("command" / "manual") was
+      # dropped because the design treats every step as a list item with
+      # the same affordance.
       assert result =~ "mix test"
       assert result =~ "All tests pass"
-      assert result =~ "manual"
       assert result =~ "Log in with OAuth"
       assert result =~ "User successfully authenticated"
     end
@@ -814,12 +817,13 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Implementation Guidance"
-      assert result =~ "Patterns to Follow"
+      # The legacy "Implementation Guidance" wrapper was replaced with
+      # three side-by-side SectionCards.
+      assert result =~ "Patterns to follow"
       assert result =~ "Follow existing authentication patterns"
-      assert result =~ "Database Changes"
+      assert result =~ "Database changes"
       assert result =~ "Add oauth_tokens table"
-      assert result =~ "Validation Rules"
+      assert result =~ "Validation rules"
       assert result =~ "Email must be unique"
     end
 
@@ -841,11 +845,13 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Observability"
-      assert result =~ "Telemetry Event"
+      # New design uses condensed sub-labels (Telemetry / Metrics / Logging)
+      # inside a single SectionCard. Match the labels as standalone words.
+      assert result =~ ~r/>\s*Telemetry\s*</
       assert result =~ "[:kanban, :auth, :login]"
-      assert result =~ "Metrics to Track"
+      assert result =~ ~r/>\s*Metrics\s*</
       assert result =~ "Login success rate, OAuth latency"
-      assert result =~ "Logging Requirements"
+      assert result =~ ~r/>\s*Logging\s*</
       assert result =~ "Log all authentication attempts"
     end
 
@@ -865,10 +871,11 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Error Handling"
-      assert result =~ "User Message"
+      assert result =~ "Error handling"
+      # New design renders the user message text directly; "On failure"
+      # becomes an inline subdued label.
       assert result =~ "Authentication failed. Please try again."
-      assert result =~ "On Failure"
+      assert result =~ "On failure"
       assert result =~ "Redirect to login page and show error message"
     end
 
@@ -887,7 +894,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Technology Requirements"
+      assert result =~ "Technology requirements"
       assert result =~ "Ueberauth"
       assert result =~ "Ueberauth.Strategy.Google"
       assert result =~ "HTTPoison"
@@ -908,7 +915,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Required Agent Capabilities"
+      assert result =~ "Required capabilities"
       assert result =~ "web_browsing"
       assert result =~ "git"
       assert result =~ "file_operations"
@@ -956,8 +963,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Pitfalls to Avoid"
-      assert result =~ "bg-yellow-50"
+      assert result =~ "Pitfalls"
+      # SectionCard tone={:warn} shifts the title color to the blocked token.
+      assert result =~ "color: var(--st-blocked)"
       assert result =~ "Don&#39;t store OAuth tokens in plain text"
       assert result =~ "Remember to refresh expired tokens"
     end
@@ -977,8 +985,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Out of Scope"
-      assert result =~ "bg-red-50"
+      assert result =~ "Out of scope"
+      # SectionCard tone={:muted} shifts the title color to ink-3.
+      assert result =~ "color: var(--ink-3)"
       assert result =~ "Multi-factor authentication"
       assert result =~ "Password reset functionality"
     end
@@ -1122,8 +1131,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Review Report"
-      assert result =~ "bg-blue-50"
+      assert result =~ "Review report"
+      # SectionCard mono renders the body in the monospace stack.
+      assert result =~ "font-family: var(--font-mono)"
       assert result =~ "All acceptance criteria met."
       assert result =~ "No issues found."
     end
@@ -1136,7 +1146,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Review Report"
+      refute result =~ "Review report"
     end
 
     test "does not display review_report section when review_report is empty string",
@@ -1151,7 +1161,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Review Report"
+      refute result =~ "Review report"
     end
 
     test "displays workflow_steps section when workflow_steps is non-empty", %{board: board} do
@@ -1289,7 +1299,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Creator Info"
+      refute result =~ "Creator"
     end
 
     test "does not display context section when all context fields are nil", %{task: task} do
@@ -1311,7 +1321,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Key Files"
+      refute result =~ "Key files"
     end
 
     test "does not display verification steps section when verification_steps is empty",
@@ -1323,7 +1333,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Verification Steps"
+      refute result =~ "Verification steps"
     end
 
     test "does not display actual vs estimated section for non-completed tasks", %{
@@ -1459,8 +1469,9 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Security Considerations"
-      assert result =~ "bg-purple-50"
+      assert result =~ "Security considerations"
+      # SectionCard at default tone renders the surface token.
+      assert result =~ "background: var(--surface)"
       assert result =~ "Hash all passwords with bcrypt"
       assert result =~ "Never log sensitive data"
       assert result =~ "Validate all user input"
@@ -1483,7 +1494,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: %{"security_considerations" => false}
         )
 
-      refute result =~ "Security Considerations"
+      refute result =~ "Security considerations"
       refute result =~ "Hash passwords"
     end
 
@@ -1498,7 +1509,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      refute result =~ "Security Considerations"
+      refute result =~ "Security considerations"
     end
 
     test "displays testing strategy section with cyan background and all test types", %{
@@ -1709,7 +1720,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "Security Considerations"
+      assert result =~ "Security considerations"
       assert result =~ "Use HTTPS"
       assert result =~ "Testing Strategy"
       assert result =~ "Test auth module"
