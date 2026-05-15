@@ -248,4 +248,52 @@ defmodule KanbanWeb.GoalsStripTest do
       assert html =~ "padding: 10px 22px 12px;"
     end
   end
+
+  describe "goals_strip/1 — navigate-to-goal" do
+    test "wraps the goal pill in a navigate link when a board is provided" do
+      assigns = %{
+        goals: [
+          %{
+            id: 42,
+            identifier: "G7",
+            name: "Migrate the detail surface",
+            flow: %{done: 1, total: 1},
+            promoted: true
+          }
+        ],
+        board: %{id: 99, name: "Stride core"}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <GoalsStrip.goals_strip goals={@goals} board={@board} />
+        """)
+
+      assert html =~ "data-goal-pill"
+      assert html =~ ~s(href="/boards/99/goals/42")
+      assert html =~ ~s(aria-label="Open goal G7")
+    end
+
+    test "renders the pill as a non-link div when board is nil" do
+      assigns = %{
+        goals: [
+          %{
+            id: 42,
+            identifier: "G7",
+            name: "No board",
+            flow: %{done: 0, total: 1},
+            promoted: true
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <GoalsStrip.goals_strip goals={@goals} />
+        """)
+
+      assert html =~ "data-goal-pill"
+      refute html =~ "href=\"/boards/"
+    end
+  end
 end

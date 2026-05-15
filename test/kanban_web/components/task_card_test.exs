@@ -477,4 +477,51 @@ defmodule KanbanWeb.TaskCardTest do
       assert html =~ "self-reviewed"
     end
   end
+
+  describe "task_card/1 — goal chip navigation" do
+    test "renders the goal chip with phx-click=\"open_goal\" when board_id is set" do
+      assigns = %{
+        task: task(%{goal: %{id: 7, identifier: "G7", name: "Detail surface"}})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} board_id={99} />
+        """)
+
+      assert html =~ ~s(data-goal-chip)
+      assert html =~ ~s(phx-click="open_goal")
+      assert html =~ ~s(phx-value-board-id="99")
+      assert html =~ ~s(phx-value-goal-id="7")
+      assert html =~ "cursor: pointer;"
+    end
+
+    test "omits phx-click on the goal chip when board_id is nil" do
+      assigns = %{
+        task: task(%{goal: %{id: 7, identifier: "G7", name: "Detail surface"}})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      assert html =~ ~s(data-goal-chip)
+      refute html =~ ~s(phx-click="open_goal")
+    end
+
+    test "omits phx-click when the goal has no :id" do
+      assigns = %{
+        task: task(%{goal: %{identifier: "G7", name: "Lite chip"}})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} board_id={99} />
+        """)
+
+      assert html =~ ~s(data-goal-chip)
+      refute html =~ ~s(phx-click="open_goal")
+    end
+  end
 end

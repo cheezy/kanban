@@ -120,6 +120,11 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("open_goal", %{"board-id" => board_id, "goal-id" => goal_id}, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/boards/#{board_id}/goals/#{goal_id}")}
+  end
+
+  @impl true
   def handle_event("close_task_view", _, socket) do
     require Logger
     Logger.debug("close_task_view event")
@@ -868,6 +873,7 @@ defmodule KanbanWeb.BoardLive.Show do
     |> Map.new(fn goal ->
       {goal.id,
        %{
+         id: goal.id,
          identifier: goal.identifier,
          short: goal.title,
          color: goal_accent_color(goal.id),

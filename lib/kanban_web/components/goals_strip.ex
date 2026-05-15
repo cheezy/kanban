@@ -47,6 +47,7 @@ defmodule KanbanWeb.GoalsStrip do
   """
   attr :goals, :list, required: true
   attr :compact, :boolean, default: false
+  attr :board, :map, default: nil
 
   def goals_strip(%{goals: []} = assigns) do
     ~H""
@@ -74,7 +75,7 @@ defmodule KanbanWeb.GoalsStrip do
       <div style="width: 1px; height: 18px; background: var(--line);"></div>
 
       <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;">
-        <.goal_pill :for={goal <- @goals} goal={goal} />
+        <.goal_pill :for={goal <- @goals} goal={goal} board={@board} />
       </div>
 
       <button
@@ -96,6 +97,7 @@ defmodule KanbanWeb.GoalsStrip do
   # --- Sub-renderers -------------------------------------------------------
 
   attr :goal, :map, required: true
+  attr :board, :map, default: nil
 
   defp goal_pill(assigns) do
     color = Map.get(assigns.goal, :color, @default_color)
@@ -103,6 +105,7 @@ defmodule KanbanWeb.GoalsStrip do
     flow = Map.get(assigns.goal, :flow, %{})
     total = Map.get(flow, :total, 0)
     done = Map.get(flow, :done, 0)
+    href = navigate_href(assigns.board, assigns.goal)
 
     assigns =
       assigns
@@ -112,40 +115,93 @@ defmodule KanbanWeb.GoalsStrip do
       |> assign(:total, total)
       |> assign(:done, done)
       |> assign(:promoted, Map.get(assigns.goal, :promoted, false))
+      |> assign(:href, href)
 
     ~H"""
-    <div style={[
+    <.link
+      :if={@href}
+      navigate={@href}
+      style={pill_style(@color)}
+      data-goal-pill
+      aria-label={gettext("Open goal %{id}", id: Map.get(@goal, :identifier))}
+    >
+      <.goal_pill_body
+        goal={@goal}
+        ink={@ink}
+        flow={@flow}
+        done={@done}
+        total={@total}
+        promoted={@promoted}
+      />
+    </.link>
+    <div :if={is_nil(@href)} style={pill_style(@color)} data-goal-pill>
+      <.goal_pill_body
+        goal={@goal}
+        ink={@ink}
+        flow={@flow}
+        done={@done}
+        total={@total}
+        promoted={@promoted}
+      />
+    </div>
+    """
+  end
+
+  attr :goal, :map, required: true
+  attr :ink, :string, required: true
+  attr :flow, :map, required: true
+  attr :done, :integer, required: true
+  attr :total, :integer, required: true
+  attr :promoted, :boolean, required: true
+
+  defp goal_pill_body(assigns) do
+    ~H"""
+    <span class="ident" style={"font-size: 10.5px; color: #{@ink}; font-weight: 600;"}>
+      {Map.get(@goal, :identifier) || Map.get(@goal, :id)}
+    </span>
+    <span style="font-size: 12px; font-weight: 500; color: var(--ink);">
+      {Map.get(@goal, :name) || Map.get(@goal, :short)}
+    </span>
+
+    <SegmentedProgressBar.segmented_progress flow={@flow} size={:sm} />
+
+    <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-3);">
+      {@done}/{@total}
+    </span>
+
+    <span
+      :if={not @promoted}
+      style={[
+        "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
+        "background: var(--st-backlog-soft); color: var(--st-backlog);",
+        "font-family: var(--font-mono); font-weight: 600;"
+      ]}
+    >
+      {gettext("unpromoted")}
+    </span>
+    """
+  end
+
+  defp pill_style(color) do
+    [
       "display: inline-flex; align-items: center; gap: 8px;",
       "padding: 5px 10px 5px 8px;",
       "background: var(--surface);",
-      "border: 1px solid #{@color};",
-      "border-left: 3px solid #{@color};",
-      "border-radius: 5px;"
-    ]}>
-      <span class="ident" style={"font-size: 10.5px; color: #{@ink}; font-weight: 600;"}>
-        {Map.get(@goal, :identifier) || Map.get(@goal, :id)}
-      </span>
-      <span style="font-size: 12px; font-weight: 500; color: var(--ink);">
-        {Map.get(@goal, :name) || Map.get(@goal, :short)}
-      </span>
+      "border: 1px solid #{color};",
+      "border-left: 3px solid #{color};",
+      "border-radius: 5px;",
+      "text-decoration: none;"
+    ]
+  end
 
-      <SegmentedProgressBar.segmented_progress flow={@flow} size={:sm} />
+  defp navigate_href(nil, _goal), do: nil
 
-      <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-3);">
-        {@done}/{@total}
-      </span>
+  defp navigate_href(board, goal) do
+    goal_id = Map.get(goal, :id)
+    board_id = Map.get(board, :id)
 
-      <span
-        :if={not @promoted}
-        style={[
-          "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
-          "background: var(--st-backlog-soft); color: var(--st-backlog);",
-          "font-family: var(--font-mono); font-weight: 600;"
-        ]}
-      >
-        {gettext("unpromoted")}
-      </span>
-    </div>
-    """
+    if goal_id && board_id do
+      "/boards/#{board_id}/goals/#{goal_id}"
+    end
   end
 end

@@ -42,6 +42,7 @@ defmodule KanbanWeb.TaskCard do
   attr :task, :map, required: true
   attr :column, :atom, default: :backlog
   attr :dense, :boolean, default: false
+  attr :board_id, :any, default: nil
 
   def task_card(assigns) do
     if assigns.task.type == :goal do
@@ -85,7 +86,7 @@ defmodule KanbanWeb.TaskCard do
       >
         {@task.description}
       </p>
-      <.goal_chip :if={@goal} goal={@goal} />
+      <.goal_chip :if={@goal} goal={@goal} board_id={@board_id} />
       <.review_footer :if={@column == :review} task={@task} />
       <.done_footer :if={@column == :done} task={@task} />
       <.backlog_meta
@@ -182,17 +183,33 @@ defmodule KanbanWeb.TaskCard do
   end
 
   attr :goal, :map, required: true
+  attr :board_id, :any, default: nil
 
   defp goal_chip(assigns) do
+    goal_id = Map.get(assigns.goal, :id)
+    clickable? = not is_nil(assigns.board_id) and not is_nil(goal_id)
+
+    assigns =
+      assigns
+      |> assign(:goal_id, goal_id)
+      |> assign(:clickable?, clickable?)
+
     ~H"""
-    <div style={[
-      "display: inline-flex; align-items: center; gap: 4px;",
-      "font-size: 10.5px; color: #{Map.get(@goal, :ink, "var(--ink-3)")};",
-      "align-self: flex-start;"
-    ]}>
+    <div
+      data-goal-chip
+      phx-click={@clickable? && "open_goal"}
+      phx-value-board-id={@clickable? && @board_id}
+      phx-value-goal-id={@clickable? && @goal_id}
+      style={[
+        "display: inline-flex; align-items: center; gap: 4px;",
+        "font-size: 10.5px; color: #{Map.get(@goal, :ink, "var(--ink-3)")};",
+        "align-self: flex-start;",
+        if(@clickable?, do: "cursor: pointer;", else: "")
+      ]}
+    >
       <.icon name="hero-flag" class="w-2.5 h-2.5" />
       <span class="ident" style="font-size: 10px; opacity: 0.85;">
-        {Map.get(@goal, :identifier) || Map.get(@goal, :id)}
+        {Map.get(@goal, :identifier) || @goal_id}
       </span>
       <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;">
         {Map.get(@goal, :short) || Map.get(@goal, :name)}
