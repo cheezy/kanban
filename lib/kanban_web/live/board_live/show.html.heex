@@ -23,19 +23,6 @@
     >
       {gettext("New Column")}
     </.link>
-    <.link navigate={~p"/boards/#{@board}/metrics"} class="btn btn-xs btn-ghost">
-      {gettext("Metrics")}
-    </.link>
-    <.link
-      :if={@user_access == :owner}
-      navigate={~p"/boards/#{@board}/edit"}
-      class="btn btn-xs btn-ghost"
-    >
-      {gettext("Edit board")}
-    </.link>
-    <.link navigate={~p"/boards"} class="btn btn-xs btn-ghost">
-      {gettext("Back to boards")}
-    </.link>
   </:actions>
 
   <BoardHeader.board_header board={@board} />
@@ -51,7 +38,7 @@
     board={@board}
   />
 
-  <div class="mx-auto max-w-[1920px] px-4 pt-4 pb-2 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-[1920px] px-2 pt-2 pb-2 sm:px-3 lg:px-4">
     <div
       id="undismissed_messages"
       phx-update="stream"
@@ -123,14 +110,13 @@
           </div>
         </div>
       <% else %>
-        <div class="flex gap-4 items-stretch">
-          <div
-            class="flex gap-4 overflow-x-auto pb-4 flex-1 min-w-0"
-            id="columns"
-            phx-update="stream"
-            phx-hook="ColumnSortable"
-            data-responsive-columns="true"
-          >
+        <div
+          class="flex gap-4 overflow-x-auto pb-4"
+          id="columns"
+          phx-update="stream"
+          phx-hook="ColumnSortable"
+          data-responsive-columns="true"
+        >
             <div
               :for={{id, column} <- @streams.columns}
               id={id}
@@ -297,12 +283,6 @@
               </div>
             </div>
           </div>
-
-          <AgentActivityRail.rail
-            tasks_by_column={@tasks_by_column}
-            collapsed={@agent_rail_collapsed}
-          />
-        </div>
       <% end %>
     </div>
   </div>
@@ -338,6 +318,52 @@
       board={@board}
       task={(@live_action in [:edit_task, :edit_task_in_column] && @task) || %Kanban.Tasks.Task{}}
       column_id={(@live_action == :new_task && Map.get(assigns, :column_id)) || nil}
+      current_scope={@current_scope}
+      patch={~p"/boards/#{@board}"}
+    />
+  </KanbanWeb.DelayedModal.delayed_modal>
+
+  <KanbanWeb.DelayedModal.delayed_modal
+    :if={@live_action == :board_settings}
+    id="board-settings-modal"
+    show
+    on_cancel={JS.patch(~p"/boards/#{@board}")}
+  >
+    <div class="stride-screen" style="margin-bottom: 14px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
+        {gettext("Board settings")}
+      </h2>
+      <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.5;">
+        {gettext("Update board details and choose which task fields appear on cards.")}
+      </p>
+    </div>
+    <.live_component
+      module={KanbanWeb.BoardLive.SettingsFormComponent}
+      id={"board-settings-#{@board.id}"}
+      board={@board}
+      current_scope={@current_scope}
+      patch={~p"/boards/#{@board}"}
+    />
+  </KanbanWeb.DelayedModal.delayed_modal>
+
+  <KanbanWeb.DelayedModal.delayed_modal
+    :if={@live_action == :manage_members}
+    id="board-members-modal"
+    show
+    on_cancel={JS.patch(~p"/boards/#{@board}")}
+  >
+    <div class="stride-screen" style="margin-bottom: 14px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
+        {gettext("Manage members")}
+      </h2>
+      <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.5;">
+        {gettext("Invite registered users and control their access to this board.")}
+      </p>
+    </div>
+    <.live_component
+      module={KanbanWeb.BoardLive.MembersFormComponent}
+      id={"board-members-#{@board.id}"}
+      board={@board}
       current_scope={@current_scope}
       patch={~p"/boards/#{@board}"}
     />

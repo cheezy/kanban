@@ -969,24 +969,6 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "New Column"
       assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/new"]))
     end
-
-    test "displays Edit board button", %{conn: conn, user: user} do
-      board = board_fixture(user)
-
-      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
-
-      assert html =~ "Edit board"
-      assert has_element?(show_live, ~s([href="/boards/#{board.id}/edit"]))
-    end
-
-    test "displays Back to boards button", %{conn: conn, user: user} do
-      board = board_fixture(user)
-
-      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
-
-      assert html =~ "Back to boards"
-      assert has_element?(show_live, ~s([href="/boards"]))
-    end
   end
 
   describe "Navigation with Modals" do

@@ -155,6 +155,8 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/metrics/compliance", MetricsLive.Compliance, :compliance
       live "/boards/:id/archive", ArchiveLive.Index, :index
       live "/boards/:id/api_tokens", BoardLive.Show, :api_tokens
+      live "/boards/:id/members", BoardLive.Show, :manage_members
+      live "/boards/:id/settings", BoardLive.Show, :board_settings
       live "/boards/:id/columns/new", BoardLive.Show, :new_column
       live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
       live "/boards/:id/columns/:column_id/tasks/new", BoardLive.Show, :new_task

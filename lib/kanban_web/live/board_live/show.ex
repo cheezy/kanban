@@ -6,7 +6,6 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Columns
   alias Kanban.Messages
   alias Kanban.Tasks
-  alias KanbanWeb.AgentActivityRail
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardTabs
@@ -25,7 +24,6 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(
        viewing_task_id: nil,
        show_task_modal: false,
-       agent_rail_collapsed: true,
        tasks_version: :os.system_time(:millisecond)
      )
      |> stream(:undismissed_messages, undismissed_messages)}
@@ -72,10 +70,6 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
-  def handle_event("toggle_agent_rail", _params, socket) do
-    {:noreply, update(socket, :agent_rail_collapsed, &(!&1))}
-  end
-
   def handle_event("dismiss_message", %{"id" => id}, socket) do
     user = socket.assigns.current_scope.user
     message_id = String.to_integer(id)
@@ -314,6 +308,18 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_info({KanbanWeb.TaskLive.FormComponent, {:saved, _task}}, socket) do
     Process.send_after(self(), :clear_skip_reload, 100)
     {:noreply, assign(socket, :skip_next_reload, true)}
+  end
+
+  def handle_info({KanbanWeb.BoardLive.SettingsFormComponent, {:saved, board}}, socket) do
+    user = socket.assigns.current_scope.user
+    {:noreply, assign(socket, :board, put_board_metrics(board, user))}
+  end
+
+  def handle_info(
+        {KanbanWeb.BoardLive.SettingsFormComponent, {:field_visibility_updated, vis}},
+        socket
+      ) do
+    {:noreply, assign(socket, :field_visibility, vis)}
   end
 
   @impl true
@@ -791,6 +797,8 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:api_tokens), do: "Stride"
   defp page_title(:edit_task), do: "Edit Task"
   defp page_title(:edit_task_in_column), do: "Edit Task"
+  defp page_title(:manage_members), do: "Manage Members"
+  defp page_title(:board_settings), do: "Board Settings"
 
   defp load_tasks_for_columns(socket, columns) do
     grouped = Tasks.list_tasks_by_columns(columns)
