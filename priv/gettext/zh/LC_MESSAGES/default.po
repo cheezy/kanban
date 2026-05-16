@@ -2554,6 +2554,7 @@ msgstr "每日完成任务数"
 msgid "Tasks completed per day with detailed breakdown"
 msgstr "每日完成任务数及详细分析"
 
+#: lib/kanban_web/components/metrics_kpi_strip.ex:65
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Throughput"
@@ -5844,4 +5845,35 @@ msgstr ""
 #: lib/kanban_web/live/archive_live/index.ex:206
 #, elixir-autogen, elixir-format
 msgid "Undated"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:47
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Cycle time · median"
+msgstr "周期时间"
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:56
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Lead time · p75"
+msgstr "前置时间"
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:74
+#, elixir-autogen, elixir-format
+msgid "Wait time · Review"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:78
+#, elixir-autogen, elixir-format
+msgid "human response avg"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:60
+#, elixir-autogen, elixir-format
+msgid "idea → done"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:51
+#: lib/kanban_web/components/metrics_kpi_strip.ex:69
+#, elixir-autogen, elixir-format
+msgid "vs prev 14d"
 msgstr ""
