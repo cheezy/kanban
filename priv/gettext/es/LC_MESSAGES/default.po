@@ -5633,3 +5633,20 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "needs attention"
 msgstr ""
+
+#: lib/kanban_web/components/review_diff_panel.ex:66
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{count} failing test"
+msgid_plural "%{count} failing tests"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban_web/components/review_diff_panel.ex:52
+#, elixir-autogen, elixir-format
+msgid "Changed files (%{count})"
+msgstr ""
+
+#: lib/kanban_web/components/review_diff_panel.ex:83
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No files changed."
+msgstr ""
