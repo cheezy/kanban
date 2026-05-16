@@ -4,7 +4,11 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   Provides reusable function components for displaying metrics data,
   including stat cards, bar charts, and filter controls. All components
-  support dark mode and are optimized for PDF export (no JavaScript).
+  support light and dark mode via the stride-screen CSS variable system
+  (`var(--surface)`, `var(--line)`, `var(--ink)`, `var(--ink-3)`) and are
+  optimized for PDF export (no JavaScript). Originally daisyUI-styled;
+  re-skinned to the stride-screen aesthetic in W588 to match the
+  workspace `/metrics` page shipped in W580-W585.
   """
   use Phoenix.Component
   use Gettext, backend: KanbanWeb.Gettext
@@ -26,40 +30,64 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def stat_card(assigns) do
     ~H"""
-    <div class={["bg-white dark:bg-zinc-800 overflow-hidden shadow rounded-lg", @class]}>
-      <div class="p-5">
-        <div class="flex items-center">
-          <div :if={@icon} class="flex-shrink-0">
-            <.icon name={@icon} class="h-6 w-6 text-gray-400 dark:text-gray-500" />
-          </div>
-          <div class={["w-0 flex-1", @icon && "ml-5"]}>
+    <div
+      class={@class}
+      style={[
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;",
+        "overflow: hidden;"
+      ]}
+    >
+      <div style="padding: 14px 18px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span :if={@icon} style="display: inline-flex; color: var(--ink-3);">
+            <.icon name={@icon} class="h-5 w-5" />
+          </span>
+          <div style="flex: 1; min-width: 0;">
             <dl>
-              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+              <dt style={[
+                "margin: 0;",
+                "font-size: 9.5px; font-weight: 600;",
+                "text-transform: uppercase; letter-spacing: 0.08em;",
+                "color: var(--ink-3);",
+                "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+              ]}>
                 {@title}
               </dt>
-              <dd class="flex items-baseline">
-                <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {@value}
-                </div>
+              <dd style={[
+                "margin: 4px 0 0;",
+                "font-size: 24px; font-weight: 600;",
+                "letter-spacing: -0.025em;",
+                "color: var(--ink);",
+                "font-variant-numeric: tabular-nums;"
+              ]}>
+                {@value}
               </dd>
-              <dd :if={@subtitle} class="mt-1 flex items-baseline">
-                <div class="text-sm text-gray-900 dark:text-gray-100">
-                  {@subtitle}
-                </div>
+              <dd
+                :if={@subtitle}
+                style={[
+                  "margin: 2px 0 0;",
+                  "font-size: 11.5px; color: var(--ink-3);"
+                ]}
+              >
+                {@subtitle}
               </dd>
             </dl>
           </div>
         </div>
       </div>
-      <div :if={@link} class="bg-gray-50 dark:bg-zinc-900 px-5 py-3">
-        <div class="text-sm">
-          <a
-            href={@link}
-            class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-          >
-            {gettext("View details")}
-          </a>
-        </div>
+      <div
+        :if={@link}
+        style={[
+          "padding: 8px 18px;",
+          "background: var(--surface-sunken);",
+          "border-top: 1px solid var(--line);",
+          "font-size: 12px;"
+        ]}
+      >
+        <a href={@link} style="color: var(--ink-2); text-decoration: underline;">
+          {gettext("View details")}
+        </a>
       </div>
     </div>
     """
@@ -87,22 +115,41 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def bar_chart(assigns) do
     ~H"""
-    <div class={["bg-white dark:bg-zinc-800 shadow rounded-lg p-5", @class]}>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{@title}</h3>
-      <div class="space-y-3">
-        <div :for={item <- @data} class="relative">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div
+      class={@class}
+      style={[
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;",
+        "padding: 18px;"
+      ]}
+    >
+      <h3 style={[
+        "margin: 0 0 14px;",
+        "font-size: 13.5px; font-weight: 600;",
+        "color: var(--ink);"
+      ]}>
+        {@title}
+      </h3>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div :for={item <- @data} style="position: relative;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink);">
               {item.label}
             </span>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span style="font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); font-variant-numeric: tabular-nums;">
               {item.value}
             </span>
           </div>
-          <div class="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
+          <div style={[
+            "width: 100%; height: 6px; border-radius: 3px;",
+            "background: var(--surface-sunken); overflow: hidden;"
+          ]}>
             <div
-              class="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all duration-300"
-              style={"width: #{calculate_percentage(item.value, item.max)}%"}
+              style={[
+                "height: 100%; border-radius: 3px;",
+                "background: var(--stride-orange);",
+                "width: #{calculate_percentage(item.value, item.max)}%;"
+              ]}
               role="progressbar"
               aria-valuenow={item.value}
               aria-valuemin="0"
@@ -112,7 +159,13 @@ defmodule KanbanWeb.MetricsLive.Components do
             </div>
           </div>
         </div>
-        <div :if={Enum.empty?(@data)} class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div
+          :if={Enum.empty?(@data)}
+          style={[
+            "text-align: center; padding: 24px 0;",
+            "font-size: 12px; color: var(--ink-3); font-style: italic;"
+          ]}
+        >
           {gettext("No data available")}
         </div>
       </div>
@@ -136,14 +189,25 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def time_range_filter(assigns) do
     ~H"""
-    <div class={["flex-1 min-w-[200px]", @class]}>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+    <div class={@class} style="flex: 1; min-width: 200px;">
+      <label style={[
+        "display: block; margin-bottom: 6px;",
+        "font-size: 11px; font-weight: 600;",
+        "text-transform: uppercase; letter-spacing: 0.08em;",
+        "color: var(--ink-3);"
+      ]}>
         {gettext("Time Range")}
       </label>
       <select
         phx-change={@on_change}
         name="time_range"
-        class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        style={[
+          "display: block; width: 100%;",
+          "padding: 6px 10px; border-radius: 6px;",
+          "border: 1px solid var(--line);",
+          "background: var(--surface); color: var(--ink);",
+          "font-size: 12.5px;"
+        ]}
         aria-label="Select time range"
       >
         <option value="last_7_days" selected={@current_range == :last_7_days}>
@@ -179,14 +243,25 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def agent_filter(assigns) do
     ~H"""
-    <div class={["flex-1 min-w-[200px]", @class]}>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+    <div class={@class} style="flex: 1; min-width: 200px;">
+      <label style={[
+        "display: block; margin-bottom: 6px;",
+        "font-size: 11px; font-weight: 600;",
+        "text-transform: uppercase; letter-spacing: 0.08em;",
+        "color: var(--ink-3);"
+      ]}>
         {gettext("Agent Filter")}
       </label>
       <select
         phx-change={@on_change}
         name="agent_name"
-        class="block w-full rounded-md border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        style={[
+          "display: block; width: 100%;",
+          "padding: 6px 10px; border-radius: 6px;",
+          "border: 1px solid var(--line);",
+          "background: var(--surface); color: var(--ink);",
+          "font-size: 12.5px;"
+        ]}
         aria-label="Filter by agent"
       >
         <option value="" selected={is_nil(@current_agent)}>{gettext("All Agents")}</option>
@@ -218,7 +293,10 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def weekend_toggle(assigns) do
     ~H"""
-    <div class={["flex items-center gap-2 mt-6", @class]}>
+    <div
+      class={@class}
+      style="display: inline-flex; align-items: center; gap: 8px; margin-top: 24px;"
+    >
       <input
         type="checkbox"
         id="exclude_weekends"
@@ -226,12 +304,12 @@ defmodule KanbanWeb.MetricsLive.Components do
         name="exclude_weekends"
         value={to_string(!@exclude_weekends)}
         checked={@exclude_weekends}
-        class="h-4 w-4 rounded border-gray-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500"
+        style="width: 14px; height: 14px; accent-color: var(--stride-orange);"
         aria-label="Exclude weekends from calculations"
       />
       <label
         for="exclude_weekends"
-        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+        style="font-size: 12px; font-weight: 500; color: var(--ink-2);"
       >
         {gettext("Exclude Weekends")}
       </label>
@@ -250,7 +328,7 @@ defmodule KanbanWeb.MetricsLive.Components do
   end
 
   @doc """
-  Renders an elaborate metrics filter form with time range, agent, and weekend toggle.
+  Renders the metrics filter form with time range, agent, and weekend toggle.
   """
   attr :time_range, :atom, required: true
   attr :agent_name, :string, default: nil
@@ -261,162 +339,194 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def metric_filters(assigns) do
     ~H"""
-    <div class="mt-8 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 shadow-xl rounded-2xl p-6 border-2 border-indigo-100 dark:border-zinc-700 backdrop-blur-sm">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-indigo-100 dark:border-zinc-700">
-        <div class="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
-          <.icon name="hero-funnel-solid" class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{gettext("Filters")}</h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            {gettext("Customize your %{view_name} view", view_name: @view_name)}
-          </p>
-        </div>
-      </div>
+    <section
+      data-metric-filters
+      style={[
+        "margin-top: 18px; padding: 14px 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}
+    >
+      <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="display: inline-flex; color: var(--ink-3);">
+          <.icon name="hero-funnel-solid" class="h-4 w-4" />
+        </span>
+        <h3 style={[
+          "margin: 0;",
+          "font-size: 9.5px; font-weight: 600;",
+          "text-transform: uppercase; letter-spacing: 0.08em;",
+          "color: var(--ink-3);"
+        ]}>
+          {gettext("Filters")}
+        </h3>
+        <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+          {gettext("Customize your %{view_name} view", view_name: @view_name)}
+        </span>
+      </header>
       <form phx-change="filter_change">
-        <div class="flex flex-wrap gap-4 items-center">
-          <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 flex-1 min-w-[280px]">
-            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
-              <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-md">
-                <.icon name="hero-calendar" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <span class="uppercase tracking-wide text-xs">{gettext("Time Range")}</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;">
+            <label style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Time Range")}
             </label>
             <select
               name="time_range"
-              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm font-medium transition-all duration-200"
+              style={[
+                "padding: 6px 10px; border-radius: 6px;",
+                "border: 1px solid var(--line);",
+                "background: var(--surface); color: var(--ink);",
+                "font-size: 12.5px;"
+              ]}
             >
-              <option value="today" selected={@time_range == :today}>
-                {"🌅 " <> gettext("Today")}
-              </option>
+              <option value="today" selected={@time_range == :today}>{gettext("Today")}</option>
               <option value="last_7_days" selected={@time_range == :last_7_days}>
-                {"📅 " <> gettext("Last 7 Days")}
+                {gettext("Last 7 Days")}
               </option>
               <option value="last_30_days" selected={@time_range == :last_30_days}>
-                {"📅 " <> gettext("Last 30 Days")}
+                {gettext("Last 30 Days")}
               </option>
               <option value="last_90_days" selected={@time_range == :last_90_days}>
-                {"📅 " <> gettext("Last 90 Days")}
+                {gettext("Last 90 Days")}
               </option>
               <option value="all_time" selected={@time_range == :all_time}>
-                {"♾️ " <> gettext("All Time")}
+                {gettext("All Time")}
               </option>
             </select>
           </div>
 
           <div
             :if={@show_agent_filter}
-            class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200 flex-1 min-w-[280px]"
+            style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;"
           >
-            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap">
-              <div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-md">
-                <.icon
-                  name="hero-user-circle"
-                  class="h-4 w-4 text-purple-600 dark:text-purple-400"
-                />
-              </div>
-              <span class="uppercase tracking-wide text-xs">{gettext("Agent Filter")}</span>
+            <label style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Agent Filter")}
             </label>
             <select
               name="agent_name"
-              class="flex-1 rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 sm:text-sm font-medium transition-all duration-200"
+              style={[
+                "padding: 6px 10px; border-radius: 6px;",
+                "border: 1px solid var(--line);",
+                "background: var(--surface); color: var(--ink);",
+                "font-size: 12.5px;"
+              ]}
             >
-              <option value="" selected={is_nil(@agent_name)}>{"🤖 " <> gettext("All Agents")}</option>
+              <option value="" selected={is_nil(@agent_name)}>{gettext("All Agents")}</option>
               <option :for={agent <- @agents} value={agent} selected={@agent_name == agent}>
                 {agent}
               </option>
             </select>
           </div>
 
-          <div class="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-zinc-700 dark:to-zinc-700/50 rounded-xl border-2 border-gray-200 dark:border-zinc-600 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all duration-200 cursor-pointer group">
+          <label style={[
+            "display: inline-flex; align-items: center; gap: 8px;",
+            "padding: 6px 10px; border-radius: 6px;",
+            "background: var(--surface-sunken);",
+            "border: 1px solid var(--line);",
+            "cursor: pointer;"
+          ]}>
             <input
               type="checkbox"
               id="exclude_weekends"
               name="exclude_weekends"
               value="true"
               checked={@exclude_weekends}
-              class="h-5 w-5 rounded-md border-2 border-gray-300 dark:border-zinc-500 text-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all cursor-pointer"
+              style="width: 14px; height: 14px; accent-color: var(--stride-orange);"
             />
-            <label
-              for="exclude_weekends"
-              class="text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2"
-            >
-              <.icon
-                name="hero-calendar-days"
-                class="h-4 w-4 text-gray-500 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
-              />
-              <span>{gettext("Exclude Weekends")}</span>
-            </label>
-          </div>
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+              {gettext("Exclude Weekends")}
+            </span>
+          </label>
         </div>
       </form>
-    </div>
+    </section>
     """
   end
 
   @doc """
-  Renders a 4-card summary statistics display with gradient styling.
+  Renders a 4-card summary statistics display.
+
+  Cards (Average / Median / Min / Max) share a neutral stride-screen
+  surface; the value is the visual anchor via 24px tabular-numerics.
   """
   attr :stats, :map, required: true
   attr :format_fn, :any, required: true
 
   def summary_stats(assigns) do
     ~H"""
-    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
-      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <.icon name="hero-clock-solid" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Average")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@format_fn.(@stats.average_hours * 3600)}
-        </div>
-      </div>
+    <div style={[
+      "margin-top: 18px;",
+      "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;"
+    ]}>
+      <.summary_stat_cell
+        marker="average"
+        label={gettext("Average")}
+        value={@format_fn.(@stats.average_hours * 3600)}
+        icon="hero-clock-solid"
+      />
+      <.summary_stat_cell
+        marker="median"
+        label={gettext("Median")}
+        value={@format_fn.(@stats.median_hours * 3600)}
+        icon="hero-chart-bar-solid"
+      />
+      <.summary_stat_cell
+        marker="min"
+        label={gettext("Min")}
+        value={@format_fn.(@stats.min_hours * 3600)}
+        icon="hero-arrow-down-solid"
+      />
+      <.summary_stat_cell
+        marker="max"
+        label={gettext("Max")}
+        value={@format_fn.(@stats.max_hours * 3600)}
+        icon="hero-arrow-up-solid"
+      />
+    </div>
+    """
+  end
 
-      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-            <.icon name="hero-chart-bar-solid" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Median")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@format_fn.(@stats.median_hours * 3600)}
-        </div>
-      </div>
+  attr :marker, :string, required: true
+  attr :label, :string, required: true
+  attr :value, :string, required: true
+  attr :icon, :string, required: true
 
-      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <.icon name="hero-arrow-down-solid" class="h-6 w-6 text-green-600 dark:text-green-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Min")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@format_fn.(@stats.min_hours * 3600)}
-        </div>
-      </div>
-
-      <div class="group bg-gradient-to-br from-white to-red-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-red-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-            <.icon name="hero-arrow-up-solid" class="h-6 w-6 text-red-600 dark:text-red-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Max")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@format_fn.(@stats.max_hours * 3600)}
-        </div>
+  defp summary_stat_cell(assigns) do
+    ~H"""
+    <div
+      data-metric-summary-cell={@marker}
+      style={[
+        "padding: 14px 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}
+    >
+      <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <span style="display: inline-flex; color: var(--ink-3);">
+          <.icon name={@icon} class="h-4 w-4" />
+        </span>
+        <span style={[
+          "font-size: 9.5px; font-weight: 600;",
+          "text-transform: uppercase; letter-spacing: 0.08em;",
+          "color: var(--ink-3);"
+        ]}>
+          {@label}
+        </span>
+      </header>
+      <div style={[
+        "font-size: 24px; font-weight: 600;",
+        "letter-spacing: -0.025em;",
+        "color: var(--ink);",
+        "font-variant-numeric: tabular-nums;"
+      ]}>
+        {@value}
       </div>
     </div>
     """
@@ -433,36 +543,45 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def trend_chart(assigns) do
     ~H"""
-    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
-        <div class="p-2 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg shadow-lg">
-          <.icon name="hero-chart-bar-solid" class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{@title}</h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            {@subtitle}
-          </p>
-        </div>
-      </div>
+    <section
+      data-metric-trend-chart
+      style={[
+        "margin-top: 18px; padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}
+    >
+      <header style={[
+        "display: flex; align-items: center; gap: 8px;",
+        "margin-bottom: 14px; padding-bottom: 10px;",
+        "border-bottom: 1px solid var(--line);"
+      ]}>
+        <span style="display: inline-flex; color: var(--stride-orange);">
+          <.icon name="hero-chart-bar-solid" class="h-4 w-4" />
+        </span>
+        <h3 style="margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+          {@title}
+        </h3>
+        <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+          {@subtitle}
+        </span>
+      </header>
 
-      <div :if={length(@daily_times) > 0} class="relative">
-        <svg viewBox="0 0 800 400" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:rgb(99, 102, 241);stop-opacity:1" />
-              <stop offset="100%" style="stop-color:rgb(59, 130, 246);stop-opacity:1" />
-            </linearGradient>
-          </defs>
+      <div :if={length(@daily_times) > 0} style="position: relative;">
+        <svg
+          viewBox="0 0 800 400"
+          style="width: 100%; height: auto;"
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <%= for i <- 0..4 do %>
             <line
               x1="60"
               y1={50 + i * 75}
               x2="780"
               y2={50 + i * 75}
-              stroke="currentColor"
-              class="stroke-gray-200 dark:stroke-zinc-700"
+              stroke="var(--line-2)"
               stroke-width="1"
+              stroke-dasharray="2,3"
             />
           <% end %>
           <%= if length(@daily_times) > 0 do %>
@@ -480,8 +599,8 @@ defmodule KanbanWeb.MetricsLive.Components do
             <polyline
               points={points}
               fill="none"
-              stroke="url(#lineGradient)"
-              stroke-width="3"
+              stroke="oklch(68% 0.17 47)"
+              stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
@@ -498,8 +617,8 @@ defmodule KanbanWeb.MetricsLive.Components do
               <polyline
                 points={trend_points}
                 fill="none"
-                stroke="#9ca3af"
-                stroke-width="2"
+                stroke="var(--ink-4)"
+                stroke-width="1.5"
                 stroke-dasharray="5,5"
                 stroke-linecap="round"
                 opacity="0.7"
@@ -514,14 +633,22 @@ defmodule KanbanWeb.MetricsLive.Components do
               <% distance_from_last = last_index - index %>
               <% show_label =
                 is_interval_match or (is_last and distance_from_last >= div(label_interval, 2)) %>
-              <circle cx={x} cy={y} r="5" fill="rgb(59, 130, 246)" stroke="white" stroke-width="2" />
+              <circle
+                cx={x}
+                cy={y}
+                r="3"
+                fill="oklch(68% 0.17 47)"
+                stroke="var(--surface)"
+                stroke-width="1.5"
+              />
               <%= if show_label do %>
                 <text
                   x={x}
                   y="380"
                   text-anchor="middle"
-                  class="fill-gray-600 dark:fill-gray-400 text-xs"
-                  font-size="12"
+                  fill="var(--ink-3)"
+                  font-size="11"
+                  font-family="var(--font-mono)"
                 >
                   {Calendar.strftime(day.date, "%m/%d")}
                 </text>
@@ -533,8 +660,9 @@ defmodule KanbanWeb.MetricsLive.Components do
                 x="50"
                 y={55 + i * 75}
                 text-anchor="end"
-                class="fill-gray-600 dark:fill-gray-400 text-xs"
-                font-size="12"
+                fill="var(--ink-3)"
+                font-size="11"
+                font-family="var(--font-mono)"
               >
                 {@format_fn.(value)}
               </text>
@@ -543,14 +671,18 @@ defmodule KanbanWeb.MetricsLive.Components do
         </svg>
       </div>
 
-      <div :if={length(@daily_times) == 0} class="text-center py-8">
-        <.icon
-          name="hero-chart-bar"
-          class="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3"
-        />
-        <p class="text-gray-500 dark:text-gray-400">{@empty_message}</p>
+      <div
+        :if={length(@daily_times) == 0}
+        style="text-align: center; padding: 32px 0;"
+      >
+        <span style="display: inline-flex; color: var(--ink-4);">
+          <.icon name="hero-chart-bar" class="h-8 w-8" />
+        </span>
+        <p style="margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); font-style: italic;">
+          {@empty_message}
+        </p>
       </div>
-    </div>
+    </section>
     """
   end
 
@@ -564,23 +696,22 @@ defmodule KanbanWeb.MetricsLive.Components do
   def empty_state(assigns) do
     icon_class =
       if assigns.size == "large",
-        do: "h-16 w-16",
-        else: "h-12 w-12"
+        do: "h-12 w-12",
+        else: "h-8 w-8"
 
-    text_class =
+    text_size_px =
       if assigns.size == "large",
-        do: "text-lg font-medium",
-        else: "text-base"
+        do: "14px",
+        else: "12.5px"
 
-    assigns = assign(assigns, icon_class: icon_class, text_class: text_class)
+    assigns = assign(assigns, icon_class: icon_class, text_size_px: text_size_px)
 
     ~H"""
-    <div class="text-center py-12">
-      <.icon
-        name={@icon_name}
-        class={"#{@icon_class} text-gray-300 dark:text-gray-600 mx-auto mb-4"}
-      />
-      <p class={"text-gray-500 dark:text-gray-400 #{@text_class}"}>
+    <div style="text-align: center; padding: 48px 0;">
+      <span style="display: inline-flex; color: var(--ink-4);">
+        <.icon name={@icon_name} class={@icon_class} />
+      </span>
+      <p style={"margin: 12px 0 0; font-size: #{@text_size_px}; color: var(--ink-3); font-style: italic;"}>
         {@message}
       </p>
     </div>
@@ -608,36 +739,58 @@ defmodule KanbanWeb.MetricsLive.Components do
       )
 
     ~H"""
-    <div class="relative ml-2" id="export-dropdown" phx-hook="Dropdown">
+    <div style="position: relative; margin-left: 8px;" id="export-dropdown" phx-hook="Dropdown">
       <button
         type="button"
         data-dropdown-toggle
-        class="btn btn-primary btn-soft inline-flex items-center gap-2"
+        style={[
+          "display: inline-flex; align-items: center; gap: 6px;",
+          "padding: 6px 10px; border-radius: 6px;",
+          "background: var(--surface); color: var(--ink-2);",
+          "border: 1px solid var(--line);",
+          "font: inherit; font-size: 12px; font-weight: 500;",
+          "cursor: pointer;"
+        ]}
       >
-        <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> {gettext("Export")}
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+        <span style="display: inline-flex; color: var(--ink-3);">
+          <.icon name="hero-arrow-down-tray" class="h-4 w-4" />
+        </span>
+        {gettext("Export")}
+        <span style="display: inline-flex; color: var(--ink-4);">
+          <.icon name="hero-chevron-down" class="h-3 w-3" />
+        </span>
       </button>
       <div
         data-dropdown-menu
-        class="hidden absolute right-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+        class="hidden"
+        style={[
+          "position: absolute; right: 0; top: 100%; margin-top: 4px;",
+          "min-width: 140px; padding: 4px 0; z-index: 50;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 6px;",
+          "box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);"
+        ]}
       >
         <a
           href={@pdf_href}
           target="_blank"
-          class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+          style={[
+            "display: flex; align-items: center; gap: 8px;",
+            "padding: 8px 12px;",
+            "font-size: 12px; color: var(--ink-2);",
+            "text-decoration: none;"
+          ]}
         >
           <.icon name="hero-document" class="h-4 w-4" /> {gettext("PDF")}
         </a>
         <a
           href={@excel_href}
-          class="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+          style={[
+            "display: flex; align-items: center; gap: 8px;",
+            "padding: 8px 12px;",
+            "font-size: 12px; color: var(--ink-2);",
+            "text-decoration: none;"
+          ]}
         >
           <.icon name="hero-table-cells" class="h-4 w-4" /> {gettext("Excel")}
         </a>
@@ -670,7 +823,10 @@ defmodule KanbanWeb.MetricsLive.Components do
   (e.g., the cycle-time pill). Both slots receive the current task as `task`.
 
   `date_accent` selects the color used for date group headers. Supported
-  values are `:purple`, `:blue`, `:amber`, and `:indigo`.
+  values are `:purple`, `:blue`, `:amber`, and `:indigo` — under the
+  restyle every accent collapses to the same neutral var(--ink-3) tone
+  since the new aesthetic uses uniform header chrome; the attribute is
+  preserved for downstream-caller API compatibility.
   """
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
@@ -692,36 +848,54 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def task_list_panel(assigns) do
     ~H"""
-    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
-        <div class={["p-2 bg-gradient-to-br rounded-lg shadow-lg", @icon_gradient]}>
-          <.icon name={@icon_name} class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{@title}</h3>
-          <p :if={@subtitle} class="text-xs text-gray-600 dark:text-gray-400">
-            {@subtitle}
-          </p>
-        </div>
-      </div>
+    <section
+      data-metric-task-list
+      style={[
+        "margin-top: 18px; padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}
+    >
+      <header style={[
+        "display: flex; align-items: center; gap: 8px;",
+        "margin-bottom: 14px; padding-bottom: 10px;",
+        "border-bottom: 1px solid var(--line);"
+      ]}>
+        <span style="display: inline-flex; color: var(--stride-orange);">
+          <.icon name={@icon_name} class="h-4 w-4" />
+        </span>
+        <h3 style="margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+          {@title}
+        </h3>
+        <span
+          :if={@subtitle}
+          style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);"
+        >
+          {@subtitle}
+        </span>
+      </header>
 
-      <div :if={length(@grouped_tasks) > 0} class="space-y-6">
-        <div :for={{date, day_tasks} <- @grouped_tasks} class="space-y-2">
-          <div class={[
-            "flex items-center gap-3 px-4 py-2 rounded-lg bg-gradient-to-r border-l-4",
-            date_header_classes(@date_accent)
+      <div :if={length(@grouped_tasks) > 0} style="display: flex; flex-direction: column; gap: 16px;">
+        <div
+          :for={{date, day_tasks} <- @grouped_tasks}
+          style="display: flex; flex-direction: column; gap: 6px;"
+        >
+          <div style={[
+            "display: flex; align-items: center; gap: 8px;",
+            "padding: 6px 10px; border-radius: 6px;",
+            "background: var(--surface-sunken);",
+            "border-left: 2px solid var(--ink-3);"
           ]}>
-            <.icon
-              name="hero-calendar"
-              class={"h-5 w-5 flex-shrink-0 " <> date_icon_classes(@date_accent)}
-            />
-            <div class="flex-1 flex items-center justify-between">
-              <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+            <span style="display: inline-flex; color: var(--ink-3);">
+              <.icon name="hero-calendar" class="h-3 w-3" />
+            </span>
+            <div style="flex: 1; display: flex; align-items: center; justify-content: space-between;">
+              <h4 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--ink);">
                 {KanbanWeb.MetricsLive.Helpers.format_date(date)}
               </h4>
               <span
                 :if={@show_day_count}
-                class="text-sm font-medium text-gray-600 dark:text-gray-400"
+                style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);"
               >
                 {length(day_tasks)} {if length(day_tasks) == 1,
                   do: gettext("task"),
@@ -730,26 +904,37 @@ defmodule KanbanWeb.MetricsLive.Components do
             </div>
           </div>
 
-          <div class="ml-4 space-y-2">
+          <div style="margin-left: 12px; display: flex; flex-direction: column; gap: 6px;">
             <div
               :for={task <- day_tasks}
-              class="p-4 bg-gray-50 dark:bg-zinc-700/30 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors border border-gray-200 dark:border-zinc-700"
+              style={[
+                "padding: 10px 12px; border-radius: 6px;",
+                "background: var(--surface-sunken);",
+                "border: 1px solid var(--line);"
+              ]}
             >
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span style={[
+                      "display: inline-flex; padding: 1px 7px; border-radius: 4px;",
+                      "background: var(--st-done-soft); color: var(--st-done);",
+                      "font-size: 10.5px; font-weight: 500; font-family: var(--font-mono);"
+                    ]}>
                       {task.identifier}
                     </span>
-                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    <span style={[
+                      "font-size: 12.5px; font-weight: 500; color: var(--ink);",
+                      "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    ]}>
                       {task.title}
                     </span>
                   </div>
-                  <div class="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 11px; color: var(--ink-3);">
                     {render_slot(@task_metadata, task)}
                   </div>
                 </div>
-                <div class="flex-shrink-0">
+                <div style="flex-shrink: 0;">
                   {render_slot(@task_badge, task)}
                 </div>
               </div>
@@ -758,39 +943,17 @@ defmodule KanbanWeb.MetricsLive.Components do
         </div>
       </div>
 
-      <div :if={length(@grouped_tasks) == 0} class="text-center py-12">
-        <.icon
-          name={@empty_icon}
-          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-        />
-        <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">
+      <div :if={length(@grouped_tasks) == 0} style="text-align: center; padding: 48px 0;">
+        <span style="display: inline-flex; color: var(--ink-4);">
+          <.icon name={@empty_icon} class="h-12 w-12" />
+        </span>
+        <p style="margin: 12px 0 0; font-size: 13px; font-weight: 500; color: var(--ink-3); font-style: italic;">
           {@empty_message}
         </p>
       </div>
-    </div>
+    </section>
     """
   end
-
-  defp date_header_classes(:purple),
-    do:
-      "from-purple-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 border-purple-500 dark:border-purple-400"
-
-  defp date_header_classes(:blue),
-    do:
-      "from-blue-50 to-indigo-50 dark:from-zinc-700 dark:to-zinc-700/50 border-blue-500 dark:border-blue-400"
-
-  defp date_header_classes(:amber),
-    do:
-      "from-amber-50 to-yellow-50 dark:from-zinc-700 dark:to-zinc-700/50 border-amber-500 dark:border-amber-400"
-
-  defp date_header_classes(:indigo),
-    do:
-      "from-indigo-50 to-violet-50 dark:from-zinc-700 dark:to-zinc-700/50 border-indigo-500 dark:border-indigo-400"
-
-  defp date_icon_classes(:purple), do: "text-purple-600 dark:text-purple-400"
-  defp date_icon_classes(:blue), do: "text-blue-600 dark:text-blue-400"
-  defp date_icon_classes(:amber), do: "text-amber-600 dark:text-amber-400"
-  defp date_icon_classes(:indigo), do: "text-indigo-600 dark:text-indigo-400"
 
   # Helper function to calculate percentage for bar chart
   defp calculate_percentage(_value, 0), do: 0

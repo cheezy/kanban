@@ -552,6 +552,160 @@ defmodule KanbanWeb.ArchiveLiveTest do
       closed = render_click(index_live, "close_archive_menu", %{})
       refute closed =~ "data-archive-row-menu"
     end
+
+    test "opening the menu for a second task closes the first menu",
+         %{conn: conn, board: board, column: column} do
+      a = task_fixture(column, %{title: "First"})
+      b = task_fixture(column, %{title: "Second"})
+      Tasks.archive_task(a)
+      Tasks.archive_task(b)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      _ = render_click(index_live, "open_archive_menu", %{"id" => a.id})
+      html = render_click(index_live, "open_archive_menu", %{"id" => b.id})
+
+      # The :menu_open_for assign holds only one id at a time, so only one
+      # menu overlay should be rendered after switching.
+      menus = Regex.scan(~r/data-archive-row-menu/, html)
+      assert length(menus) == 1
+    end
+
+    test "filter_archive correctly buckets :completed including legacy nil-reason rows",
+         %{conn: conn, board: board, column: column} do
+      legacy = task_fixture(column, %{title: "Legacy archived"})
+      explicit = task_fixture(column, %{title: "Explicitly completed"})
+
+      {:ok, _} = Tasks.archive_task(legacy, %{archive_reason: nil})
+      {:ok, _} = Tasks.archive_task(explicit, %{archive_reason: :completed})
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "filter_archive", %{"reason" => "completed"})
+
+      assert html =~ "Legacy archived"
+      assert html =~ "Explicitly completed"
+    end
+
+    for reason <- ["cancelled", "wontdo", "duplicate", "deferred"] do
+      test "filter_archive narrows to :#{reason} reason",
+           %{conn: conn, board: board, column: column} do
+        own = task_fixture(column, %{title: "Keeper"})
+        other = task_fixture(column, %{title: "Excluded"})
+
+        own_reason = String.to_existing_atom(unquote(reason))
+
+        own_attrs =
+          if own_reason == :duplicate do
+            canonical = task_fixture(column, %{title: "Canonical"})
+            %{archive_reason: :duplicate, duplicate_of_id: canonical.id}
+          else
+            %{archive_reason: own_reason, archive_note: "necessary"}
+          end
+
+        {:ok, _} = Tasks.archive_task(own, own_attrs)
+        {:ok, _} = Tasks.archive_task(other, %{archive_reason: :completed})
+
+        {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+        html = render_click(index_live, "filter_archive", %{"reason" => unquote(reason)})
+
+        assert html =~ "Keeper"
+        refute html =~ "Excluded"
+      end
+    end
+
+    test "filter_archive with an unknown reason falls back to :all and renders every row",
+         %{conn: conn, board: board, column: column} do
+      keeper = task_fixture(column, %{title: "Stays visible"})
+      {:ok, _} = Tasks.archive_task(keeper, %{archive_reason: :completed})
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "filter_archive", %{"reason" => "totally-bogus"})
+
+      assert html =~ "Stays visible"
+      # Logger.warning is fired on the server side; we don't assert log
+      # contents here, but the absence of a crash + the keeper still
+      # rendering proves the :all fallback path executes.
+    end
+
+    test "filter narrowed to zero rows shows the empty-state copy",
+         %{conn: conn, board: board, column: column} do
+      task = task_fixture(column, %{title: "Only completed"})
+      {:ok, _} = Tasks.archive_task(task, %{archive_reason: :completed})
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Narrow to :cancelled — no rows match
+      html = render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+
+      assert html =~ "data-archive-empty"
+      assert html =~ "No archived tasks match this filter."
+      refute html =~ "Only completed"
+    end
+
+    test "handle_info :task_deleted PubSub event triggers a reload",
+         %{conn: conn, board: board, column: column} do
+      keeper = task_fixture(column, %{title: "Sticks around"})
+      gone = task_fixture(column, %{title: "Will disappear"})
+      Tasks.archive_task(keeper)
+      Tasks.archive_task(gone)
+
+      {:ok, index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+      assert html =~ "Sticks around"
+      assert html =~ "Will disappear"
+
+      {:ok, _} = Tasks.delete_task(gone)
+
+      html = render(index_live)
+      assert html =~ "Sticks around"
+      refute html =~ "Will disappear"
+    end
+
+    test "renders the footer hint copy and Export CSV trigger",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Test Task"}) |> Tasks.archive_task()
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "data-archive-footer"
+      assert html =~ "Archive is read-only after 180 days."
+      assert html =~ "data-archive-export-csv"
+      assert html =~ "Export CSV"
+    end
+
+    test "month grouping renders newest-month headers first",
+         %{conn: conn, board: board, column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sixty_days_ago = DateTime.add(now, -60 * 86_400, :second)
+
+      this_month = task_fixture(column, %{title: "This month"})
+      old = task_fixture(column, %{title: "Two months back"})
+
+      {:ok, _} = Tasks.archive_task(this_month)
+
+      {:ok, _} =
+        Kanban.Tasks.update_task(old, %{archived_at: sixty_days_ago})
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      this_month_label =
+        Date.utc_today() |> Calendar.strftime("%B %Y")
+
+      old_month_label =
+        sixty_days_ago
+        |> DateTime.to_date()
+        |> Calendar.strftime("%B %Y")
+
+      # Both month headers render
+      assert html =~ this_month_label
+      assert html =~ old_month_label
+
+      # Newest first — current-month header appears before the older one.
+      assert :binary.match(html, this_month_label) <
+               :binary.match(html, old_month_label)
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

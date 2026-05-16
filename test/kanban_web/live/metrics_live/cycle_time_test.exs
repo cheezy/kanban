@@ -456,7 +456,10 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
 
       assert html =~ "<polyline"
       assert html =~ "fill=\"none\""
-      assert html =~ "stroke=\"url(#lineGradient)\""
+      # Under the W588 restyle the trend line strokes with the stride-orange
+      # oklch token directly (the legacy <linearGradient> + url(#lineGradient)
+      # indirection was inert since both stops collapsed to the same color).
+      assert html =~ "stroke=\"oklch(68% 0.17 47)\""
     end
 
     test "chart includes data point circles for each day", %{
@@ -473,7 +476,10 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
       assert html =~ "<circle"
-      assert html =~ "fill=\"rgb(59, 130, 246)\""
+      # Under the W588 restyle, the trend chart's data-point circles
+      # use the stride-orange oklch token instead of the legacy blue
+      # rgb literal.
+      assert html =~ "fill=\"oklch(68% 0.17 47)\""
     end
 
     test "chart displays date labels on x-axis", %{conn: conn, board: board, column: column} do
@@ -529,7 +535,9 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
-      assert html =~ "stroke=\"#9ca3af\""
+      # Under the W588 restyle the trend line uses the var(--ink-4)
+      # CSS var instead of the legacy #9ca3af literal.
+      assert html =~ "stroke=\"var(--ink-4)\""
       assert html =~ "stroke-dasharray=\"5,5\""
       assert html =~ "opacity=\"0.7\""
     end

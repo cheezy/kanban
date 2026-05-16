@@ -1035,6 +1035,87 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
     end
   end
 
+  describe "mount/3 — unauthorized board" do
+    setup [:register_and_log_in_user]
+
+    test "non-existent board id redirects to /boards with a flash",
+         %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: redirect_to, flash: flash}}} =
+               live(conn, ~p"/boards/99999999/metrics")
+
+      assert redirect_to == "/boards"
+      assert flash["error"] =~ "Board not found" or flash["error"] != nil
+    end
+
+    test "another user's board is treated as not-found and redirects to /boards",
+         %{conn: conn} do
+      other = user_fixture()
+      foreign_board = board_fixture(other)
+
+      assert {:error, {:live_redirect, %{to: redirect_to}}} =
+               live(conn, ~p"/boards/#{foreign_board}/metrics")
+
+      assert redirect_to == "/boards"
+    end
+  end
+
+  describe "unauthenticated access" do
+    test "anonymous user is redirected to log-in", %{conn: conn} do
+      assert {:error, {:redirect, %{to: redirect_to}}} =
+               live(conn, ~p"/boards/1/metrics")
+
+      assert redirect_to =~ "/users/log-in"
+    end
+  end
+
+  describe "Dashboard - filter event coverage" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "filter_change exclude_weekends=true re-derives the page without crashing",
+         %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      html =
+        render_change(view, "filter_change", %{
+          "time_range" => "last_30_days",
+          "agent_name" => "",
+          "exclude_weekends" => "true"
+        })
+
+      # The page re-renders without crashing; the value here is the
+      # no-crash guarantee on the toggle-to-true branch.
+      assert html =~ "Metrics Dashboard"
+    end
+
+    test "filter_change with an unknown agent_name leaves the dashboard rendering",
+         %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      html =
+        render_change(view, "filter_change", %{
+          "time_range" => "last_30_days",
+          "agent_name" => "nonexistent-agent-9999",
+          "exclude_weekends" => "false"
+        })
+
+      assert html =~ "Metrics Dashboard"
+    end
+  end
+
+  describe "Dashboard - regular (non-AI) board conditional rendering" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "Compliance card is HIDDEN on regular boards",
+         %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      # The Compliance card is wrapped in :if={@board.ai_optimized_board}
+      # on AI-optimized boards. On a regular board its label should not
+      # surface in the dashboard chrome.
+      refute html =~ "Compliance"
+    end
+  end
+
   defp create_board_with_column(%{user: user}) do
     board = ai_optimized_board_fixture(user)
     column = column_fixture(board)

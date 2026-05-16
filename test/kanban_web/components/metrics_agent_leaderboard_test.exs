@@ -157,5 +157,98 @@ defmodule KanbanWeb.MetricsAgentLeaderboardTest do
       # Avatar renders the first letter of each of the first two words.
       assert html =~ ">\n  JK\n<"
     end
+
+    test "human row without a :user_id key falls back to the default human palette" do
+      # for_human(0) === "human-blue" per AvatarPalette
+      html = render_board([%{name: "Anon", kind: :human, completed: 1, success_pct: 100.0}])
+      assert html =~ "Anon"
+      # The blue palette CSS var should appear inline on the avatar swatch
+      assert html =~ "background: oklch(60% 0.10 240)"
+    end
+
+    test "human row with a non-integer :user_id falls back to the default palette" do
+      html =
+        render_board([
+          %{name: "Bad ID", kind: :human, completed: 1, success_pct: 100.0, user_id: "abc"}
+        ])
+
+      assert html =~ "background: oklch(60% 0.10 240)"
+    end
+  end
+
+  describe "leaderboard/1 — bar scaling edge cases" do
+    test "all-zero completions render bars at 0% (peak floor of 1 prevents NaN)" do
+      html =
+        render_board([
+          %{name: "Zero One", kind: :agent, completed: 0, success_pct: 0.0},
+          %{name: "Zero Two", kind: :agent, completed: 0, success_pct: 0.0}
+        ])
+
+      # peak_completed/1 floors to 1 so width = round(0 / 1 * 100) = 0%
+      bars = Regex.scan(~r/data-metrics-agent-leaderboard-bar[^>]*width: (\d+)%/, html)
+      assert length(bars) == 2
+      assert Enum.all?(bars, fn [_, pct] -> pct == "0" end)
+    end
+
+    test "renders more than 6 rows when the caller passes them (no internal cap)" do
+      # Cap is enforced upstream by Kanban.Metrics.agent_leaderboard/1; the
+      # component itself trusts the caller and renders every row.
+      rows = for i <- 1..7, do: agent_row(%{name: "Agent#{i}", completed: i})
+      html = render_board(rows)
+      assert length(Regex.scan(~r/data-metrics-agent-leaderboard-row/, html)) == 7
+    end
+  end
+
+  describe "leaderboard/1 — success formatting fallbacks" do
+    test "integer success_pct is rendered as 'N%' (no decimal noise)" do
+      html = render_board([agent_row(%{success_pct: 96})])
+      assert html =~ "96%"
+    end
+
+    test "nil success_pct renders an em-dash placeholder" do
+      html = render_board([agent_row(%{success_pct: nil})])
+
+      success_cell =
+        Regex.run(
+          ~r/data-metrics-agent-leaderboard-success[^>]*>[\s\S]*?<\/span>/,
+          html
+        )
+        |> List.first()
+
+      assert success_cell =~ "—"
+    end
+
+    test "non-numeric success_pct renders an em-dash placeholder" do
+      html = render_board([agent_row(%{success_pct: "n/a"})])
+
+      success_cell =
+        Regex.run(
+          ~r/data-metrics-agent-leaderboard-success[^>]*>[\s\S]*?<\/span>/,
+          html
+        )
+        |> List.first()
+
+      assert success_cell =~ "—"
+    end
+  end
+
+  describe "leaderboard/1 — grid layout and accessibility markers" do
+    test "uses the 24px/1fr/36px/48px grid template per the design source" do
+      html = render_board([agent_row()])
+      assert html =~ "grid-template-columns: 24px 1fr 36px 48px"
+    end
+
+    test "the bar background is aria-hidden so screen readers skip the decorative track" do
+      html = render_board([agent_row()])
+      assert html =~ ~s(aria-hidden="true")
+    end
+
+    test "every row carries name + completed + success per-cell markers" do
+      html = render_board([agent_row()])
+      assert html =~ "data-metrics-agent-leaderboard-name"
+      assert html =~ "data-metrics-agent-leaderboard-completed"
+      assert html =~ "data-metrics-agent-leaderboard-success"
+      assert html =~ "data-metrics-agent-leaderboard-bar"
+    end
   end
 end

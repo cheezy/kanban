@@ -2250,6 +2250,165 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "view_task event — goal type" do
+    setup [:register_and_log_in_user]
+
+    test "navigates to the per-goal route when the viewed task is a :goal",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Kanban.Tasks.create_goal_with_tasks(column, %{
+          "title" => "View me",
+          "created_by_id" => user.id
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert {:error, {:live_redirect, %{to: redirect_to}}} =
+               render_click(view, "view_task", %{"id" => Integer.to_string(goal.id)})
+
+      assert redirect_to == "/boards/#{board.id}/goals/#{goal.id}"
+    end
+  end
+
+  describe "open_goal event" do
+    setup [:register_and_log_in_user]
+
+    test "navigates to the per-goal route with the supplied board+goal ids",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal}} =
+        Kanban.Tasks.create_goal_with_tasks(column, %{
+          "title" => "Open me",
+          "created_by_id" => user.id
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert {:error, {:live_redirect, %{to: redirect_to}}} =
+               render_click(view, "open_goal", %{
+                 "board-id" => Integer.to_string(board.id),
+                 "goal-id" => Integer.to_string(goal.id)
+               })
+
+      assert redirect_to == "/boards/#{board.id}/goals/#{goal.id}"
+    end
+  end
+
+  describe "PubSub :task_created event" do
+    setup [:register_and_log_in_user]
+
+    test "task_created broadcast triggers a board reload that surfaces the new task",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Create a task and fire the broadcast on the board topic that the
+      # LiveView is subscribed to.
+      task = task_fixture(column, %{title: "Newly created"})
+      send(view.pid, {Kanban.Tasks, :task_created, task})
+
+      html = render(view)
+      assert html =~ "Newly created"
+    end
+  end
+
+  describe "PubSub :task_deleted event with skip_next_reload" do
+    setup [:register_and_log_in_user]
+
+    test "respects the skip_next_reload flag and does NOT reload",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      keeper = task_fixture(column, %{title: "Sentinel"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Simulate a TaskLive.FormComponent :saved message which sets
+      # skip_next_reload=true, then a follow-up :task_deleted broadcast
+      # which should be ignored.
+      send(view.pid, {KanbanWeb.TaskLive.FormComponent, {:saved, keeper}})
+      send(view.pid, {Kanban.Tasks, :task_deleted, keeper})
+
+      # The sentinel task is still in the DB and still in the rendered
+      # column stream because the reload was skipped.
+      html = render(view)
+      assert html =~ "Sentinel"
+    end
+  end
+
+  describe "ColumnLive.FormComponent saved-message handler" do
+    setup [:register_and_log_in_user]
+
+    test "reloads columns and the has_columns flag when a column form saves",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "No columns yet"
+
+      # Create a column out-of-band, then fire the form-saved message the
+      # ColumnLive.FormComponent would normally send to its parent.
+      column = column_fixture(board, %{name: "Fresh column"})
+      send(view.pid, {KanbanWeb.ColumnLive.FormComponent, {:saved, column}})
+
+      html = render(view)
+      assert html =~ "Fresh column"
+      refute html =~ "No columns yet"
+    end
+  end
+
+  describe "TaskLive.FormComponent saved-message handler" do
+    setup [:register_and_log_in_user]
+
+    test "sets the skip_next_reload flag (verified via downstream task_updated suppression)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Original title"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Form-saved sets skip_next_reload=true. The follow-up :task_updated
+      # broadcast should now be a no-op (it would otherwise re-derive
+      # all columns and overwrite the streamed state).
+      send(view.pid, {KanbanWeb.TaskLive.FormComponent, {:saved, task}})
+
+      {:ok, _} = Kanban.Tasks.update_task(task, %{title: "Updated remotely"})
+      send(view.pid, {Kanban.Tasks, :task_updated, task})
+
+      html = render(view)
+      # Because the reload was skipped, the stream still carries the
+      # original title until something else (clear_skip_reload + a fresh
+      # broadcast) refreshes it.
+      assert html =~ "Original title"
+    end
+  end
+
+  describe "toggle_field — owner gate" do
+    setup [:register_and_log_in_user]
+
+    test "non-owner is rejected from toggle_field with a permission flash",
+         %{conn: conn, user: viewer} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      _column = column_fixture(board)
+      Kanban.Boards.add_user_to_board(board, viewer, :read_only, owner)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      html = render_click(view, "toggle_field", %{"field" => "key_files"})
+
+      assert html =~ "Only board owners can change field visibility"
+    end
+  end
+
   defp admin_user_fixture do
     user = user_fixture()
     {:ok, admin} = Kanban.Accounts.update_user_type(user, :admin)

@@ -134,8 +134,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "dark:bg-zinc-800"
-      assert html =~ "dark:text-gray-100"
+      assert html =~ "background: var(--surface)"
+      assert html =~ "color: var(--ink)"
+      refute html =~ "dark:bg-zinc-800"
+      refute html =~ "bg-gradient"
     end
   end
 
@@ -577,7 +579,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "checked"
     end
 
-    test "includes gradient styling and icons" do
+    test "renders the funnel header icon and stride-screen chrome" do
       assigns = %{
         time_range: :last_30_days,
         agent_name: nil,
@@ -597,14 +599,12 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "bg-gradient-to-br"
       assert html =~ "hero-funnel-solid"
-      assert html =~ "hero-calendar"
-      assert html =~ "hero-user-circle"
-      assert html =~ "hero-calendar-days"
+      assert html =~ "data-metric-filters"
+      refute html =~ "bg-gradient"
     end
 
-    test "includes dark mode classes" do
+    test "uses stride-screen theme tokens" do
       assigns = %{
         time_range: :last_30_days,
         agent_name: nil,
@@ -624,9 +624,11 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "dark:from-zinc-800"
-      assert html =~ "dark:to-zinc-900"
-      assert html =~ "dark:border-zinc-700"
+      assert html =~ "background: var(--surface)"
+      assert html =~ "border: 1px solid var(--line)"
+      assert html =~ "color: var(--ink-3)"
+      refute html =~ "dark:from-zinc-800"
+      refute html =~ "bg-gradient"
     end
   end
 
@@ -697,7 +699,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "hero-arrow-up-solid"
     end
 
-    test "uses gradient backgrounds with different colors" do
+    test "renders the four summary cells with per-cell markers" do
       assigns = %{
         stats: %{
           average_hours: 1.0,
@@ -713,17 +715,16 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.summary_stats stats={@stats} format_fn={@format_fn} />
         """)
 
-      assert html =~ "from-white to-blue-50"
-      assert html =~ "border-blue-500"
-      assert html =~ "from-white to-purple-50"
-      assert html =~ "border-purple-500"
-      assert html =~ "from-white to-green-50"
-      assert html =~ "border-green-500"
-      assert html =~ "from-white to-red-50"
-      assert html =~ "border-red-500"
+      for marker <- ~w(average median min max) do
+        assert html =~ ~s(data-metric-summary-cell="#{marker}")
+      end
+
+      refute html =~ "bg-gradient"
+      refute html =~ "border-blue-500"
+      refute html =~ "from-white"
     end
 
-    test "includes dark mode classes" do
+    test "uses stride-screen theme tokens" do
       assigns = %{
         stats: %{
           average_hours: 1.0,
@@ -739,9 +740,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.summary_stats stats={@stats} format_fn={@format_fn} />
         """)
 
-      assert html =~ "dark:from-zinc-800"
-      assert html =~ "dark:to-zinc-900"
-      assert html =~ "dark:text-gray-100"
+      assert html =~ "background: var(--surface)"
+      assert html =~ "color: var(--ink)"
+      assert html =~ "color: var(--ink-3)"
+      refute html =~ "dark:from-zinc-800"
     end
 
     test "handles zero values" do
@@ -820,7 +822,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       refute html =~ "<svg"
     end
 
-    test "includes gradient and icons" do
+    test "renders the chart-bar header icon and stride-screen chrome" do
       assigns = %{
         title: "Test Chart",
         subtitle: "Test subtitle",
@@ -842,8 +844,9 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "bg-gradient-to-br from-indigo-500 to-blue-600"
       assert html =~ "hero-chart-bar-solid"
+      assert html =~ "data-metric-trend-chart"
+      refute html =~ "bg-gradient"
     end
 
     test "renders SVG elements when data present" do
@@ -869,10 +872,13 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "<linearGradient"
+      # Restyle dropped the inert <linearGradient> + url(#lineGradient)
+      # indirection — the trend line now strokes with the stride-orange
+      # oklch token directly.
       assert html =~ "<polyline"
       assert html =~ "<circle"
       assert html =~ "<text"
+      assert html =~ "stroke=\"oklch(68% 0.17 47)\""
     end
 
     test "formats dates in chart labels" do
@@ -900,7 +906,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "01/15"
     end
 
-    test "includes dark mode classes" do
+    test "uses stride-screen theme tokens" do
       assigns = %{
         title: "Test Chart",
         subtitle: "Test subtitle",
@@ -920,9 +926,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "dark:bg-zinc-800"
-      assert html =~ "dark:border-zinc-700"
-      assert html =~ "dark:text-gray-100"
+      assert html =~ "background: var(--surface)"
+      assert html =~ "border: 1px solid var(--line)"
+      assert html =~ "color: var(--ink)"
+      refute html =~ "dark:bg-zinc-800"
     end
 
     test "uses default empty message when not provided" do
@@ -964,7 +971,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "No tasks found"
     end
 
-    test "renders large size by default" do
+    test "renders large size by default with a 12-unit icon and 14px copy" do
       assigns = %{
         icon_name: "hero-chart-bar",
         message: "No metrics data",
@@ -976,11 +983,11 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.empty_state icon_name={@icon_name} message={@message} size={@size} />
         """)
 
-      assert html =~ "h-16 w-16"
-      assert html =~ "text-lg font-medium"
+      assert html =~ "h-12 w-12"
+      assert html =~ "font-size: 14px"
     end
 
-    test "renders small size when specified" do
+    test "renders small size when specified with an 8-unit icon and 12.5px copy" do
       assigns = %{
         icon_name: "hero-document",
         message: "No documents",
@@ -992,11 +999,11 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.empty_state icon_name={@icon_name} message={@message} size={@size} />
         """)
 
-      assert html =~ "h-12 w-12"
-      assert html =~ "text-base"
+      assert html =~ "h-8 w-8"
+      assert html =~ "font-size: 12.5px"
     end
 
-    test "includes dark mode classes" do
+    test "uses stride-screen theme tokens for icon and copy" do
       assigns = %{
         icon_name: "hero-inbox",
         message: "Empty",
@@ -1008,8 +1015,9 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.empty_state icon_name={@icon_name} message={@message} size={@size} />
         """)
 
-      assert html =~ "dark:text-gray-600"
-      assert html =~ "dark:text-gray-400"
+      assert html =~ "color: var(--ink-4)"
+      assert html =~ "color: var(--ink-3)"
+      refute html =~ "dark:text-gray-600"
     end
 
     test "centers content with padding" do
@@ -1024,7 +1032,8 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         <Components.empty_state icon_name={@icon_name} message={@message} size={@size} />
         """)
 
-      assert html =~ "text-center py-12"
+      assert html =~ "text-align: center"
+      assert html =~ "padding: 48px 0"
     end
   end
 
@@ -1078,7 +1087,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "time_range=last_7_days"
     end
 
-    test "renders dark mode classes on dropdown menu" do
+    test "dropdown menu uses stride-screen theme tokens" do
       assigns = %{
         export_base_path: "/x/export",
         time_range: :all_time,
@@ -1096,8 +1105,9 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "dark:bg-zinc-800"
-      assert html =~ "dark:border-zinc-700"
+      assert html =~ "background: var(--surface)"
+      assert html =~ "border: 1px solid var(--line)"
+      refute html =~ "dark:bg-zinc-800"
     end
   end
 
@@ -1150,7 +1160,6 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "Completed Tasks"
       assert html =~ "Grouped by completion date"
       assert html =~ "hero-list-bullet-solid"
-      assert html =~ "from-purple-500 to-indigo-600"
       assert html =~ "W123"
       assert html =~ "W124"
       assert html =~ "First task"
@@ -1159,8 +1168,11 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "cycle=1.0h"
       assert html =~ "<span class=\"badge\">2.5h</span>"
       assert html =~ "<span class=\"badge\">1.0h</span>"
-      # Purple accent for date header
-      assert html =~ "border-purple-500"
+      # Date header uses the stride-screen neutral border accent under
+      # the restyle (was border-purple-500 in the old daisyUI design;
+      # the :date_accent attr is preserved for caller-API compat but
+      # collapses to a neutral var(--ink-3) tone).
+      assert html =~ "border-left: 2px solid var(--ink-3)"
     end
 
     test "renders empty state when grouped_tasks is empty" do
@@ -1197,7 +1209,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       refute html =~ "border-amber-500"
     end
 
-    test "applies blue date accent for throughput-style panels" do
+    test "renders the day-count meta when show_day_count is true" do
       assigns = %{
         title: "Tasks",
         subtitle: nil,
@@ -1228,8 +1240,12 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         </Components.task_list_panel>
         """)
 
-      assert html =~ "border-blue-500"
+      # The restyled task_list_panel collapses every :date_accent atom to
+      # a neutral var(--ink-3) border-left. The :show_day_count branch
+      # still renders the per-day pluralized count.
+      assert html =~ "border-left: 2px solid var(--ink-3)"
       assert html =~ "1 task"
+      refute html =~ "border-blue-500"
     end
   end
 end
