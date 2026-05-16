@@ -359,8 +359,8 @@ msgstr "Coluna"
 msgid "Create a new task"
 msgstr "Criar uma nova tarefa"
 
-#: lib/kanban_web/live/archive_live/index.ex:242
-#: lib/kanban_web/live/archive_live/index.ex:267
+#: lib/kanban_web/live/archive_live/index.ex:237
+#: lib/kanban_web/live/archive_live/index.ex:262
 #: lib/kanban_web/live/board_live/show.ex:170
 #: lib/kanban_web/live/board_live/show.ex:1282
 #, elixir-autogen, elixir-format
@@ -377,7 +377,7 @@ msgstr "Salvar Tarefa"
 msgid "Task created successfully"
 msgstr "Tarefa criada com sucesso"
 
-#: lib/kanban_web/live/archive_live/index.ex:238
+#: lib/kanban_web/live/archive_live/index.ex:233
 #: lib/kanban_web/live/board_live/show.ex:1268
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -2009,8 +2009,8 @@ msgstr "Excluir"
 msgid "Failed to archive task"
 msgstr "Falha ao mover tarefa"
 
-#: lib/kanban_web/live/archive_live/index.ex:229
-#: lib/kanban_web/live/archive_live/index.ex:263
+#: lib/kanban_web/live/archive_live/index.ex:224
+#: lib/kanban_web/live/archive_live/index.ex:258
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to unarchive task"
 msgstr "Falha ao mover tarefa"
@@ -2020,7 +2020,7 @@ msgstr "Falha ao mover tarefa"
 msgid "Task archived successfully"
 msgstr "Tarefa criada com sucesso"
 
-#: lib/kanban_web/live/archive_live/index.ex:225
+#: lib/kanban_web/live/archive_live/index.ex:220
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Task unarchived successfully"
 msgstr "Tarefa criada com sucesso"
@@ -2656,7 +2656,7 @@ msgstr "tarefas"
 msgid "tasks completed"
 msgstr "tarefas concluídas"
 
-#: lib/kanban_web/live/archive_live/index.ex:34
+#: lib/kanban_web/live/archive_live/index.ex:35
 #: lib/kanban_web/live/board_live/form.ex:273
 #: lib/kanban_web/live/board_live/index.ex:248
 #: lib/kanban_web/live/board_live/show.ex:1321
@@ -3008,7 +3008,7 @@ msgstr ""
 msgid "You do not have permission to archive tasks on this board"
 msgstr ""
 
-#: lib/kanban_web/live/archive_live/index.ex:258
+#: lib/kanban_web/live/archive_live/index.ex:253
 #: lib/kanban_web/live/board_live/show.ex:166
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3031,7 +3031,7 @@ msgstr ""
 msgid "You do not have permission to promote goals on this board"
 msgstr ""
 
-#: lib/kanban_web/live/archive_live/index.ex:250
+#: lib/kanban_web/live/archive_live/index.ex:245
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr ""
@@ -5823,12 +5823,12 @@ msgstr ""
 msgid "Delete forever"
 msgstr "Excluir"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:190
+#: lib/kanban_web/live/archive_live/index.html.heex:192
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Export CSV"
 msgstr "Exportar"
 
-#: lib/kanban_web/live/archive_live/index.ex:67
+#: lib/kanban_web/live/archive_live/index.ex:68
 #, elixir-autogen, elixir-format
 msgid "Export CSV — coming soon."
 msgstr ""
@@ -5853,7 +5853,7 @@ msgstr ""
 msgid "Restore"
 msgstr ""
 
-#: lib/kanban_web/live/archive_live/index.ex:211
+#: lib/kanban_web/live/archive_live/index.ex:206
 #, elixir-autogen, elixir-format
 msgid "Undated"
 msgstr ""
