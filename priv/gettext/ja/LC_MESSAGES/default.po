@@ -5958,7 +5958,7 @@ msgstr ""
 msgid "Filter"
 msgstr "フィルター"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:134
+#: lib/kanban_web/live/metrics_live/workspace.ex:135
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr ""
