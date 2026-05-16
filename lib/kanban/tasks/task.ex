@@ -379,6 +379,16 @@ defmodule Kanban.Tasks.Task do
     # When archived (soft delete)
     field :archived_at, :utc_datetime
 
+    # Why the task was archived. nil for legacy archived rows; the LiveView
+    # treats nil as :completed at render time. Drives the per-reason filter
+    # and the reason-pill copy on the Archive view.
+    field :archive_reason, Ecto.Enum,
+      values: [:completed, :duplicate, :wontdo, :deferred, :cancelled]
+
+    # Free-text justification. Required when :archive_reason is :wontdo,
+    # :deferred, or :cancelled; optional otherwise.
+    field :archive_note, :string
+
     # Hierarchy
     belongs_to :parent, __MODULE__, foreign_key: :parent_id
     has_many :children, __MODULE__, foreign_key: :parent_id
@@ -388,6 +398,11 @@ defmodule Kanban.Tasks.Task do
     belongs_to :created_by, Kanban.Accounts.User
     belongs_to :completed_by, Kanban.Accounts.User
     belongs_to :reviewed_by, Kanban.Accounts.User
+    belongs_to :archived_by, Kanban.Accounts.User
+    # Self-FK for :duplicate reason — points at the canonical task this one
+    # duplicates. Required when archive_reason is :duplicate, forbidden
+    # otherwise. The DB enforces id <> duplicate_of_id via check constraint.
+    belongs_to :duplicate_of, __MODULE__, foreign_key: :duplicate_of_id
     has_many :task_histories, Kanban.Tasks.TaskHistory
     has_many :comments, Kanban.Tasks.TaskComment
 
@@ -469,7 +484,11 @@ defmodule Kanban.Tasks.Task do
       :reviewed_by_id,
       :reviewed_at,
       # Archive tracking
-      :archived_at
+      :archived_at,
+      :archive_reason,
+      :archive_note,
+      :archived_by_id,
+      :duplicate_of_id
     ])
     |> validate_embed_type(:key_files, attrs)
     |> validate_embed_type(:verification_steps, attrs)
@@ -502,6 +521,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_claim_expiration()
     |> validate_completion_fields()
     |> validate_review_fields()
+    |> validate_archive_fields()
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
@@ -510,6 +530,12 @@ defmodule Kanban.Tasks.Task do
     |> foreign_key_constraint(:created_by_id)
     |> foreign_key_constraint(:completed_by_id)
     |> foreign_key_constraint(:reviewed_by_id)
+    |> foreign_key_constraint(:archived_by_id)
+    |> foreign_key_constraint(:duplicate_of_id)
+    |> check_constraint(:duplicate_of_id,
+      name: :duplicate_of_id_not_self,
+      message: "must not reference the task itself"
+    )
     |> unique_constraint([:column_id, :position])
     |> unique_constraint(:identifier)
   end
@@ -930,6 +956,72 @@ defmodule Kanban.Tasks.Task do
       changeset
     end
   end
+
+  # Archive-reason conditional validations:
+  #
+  #   :completed                          → no extra fields required
+  #   :wontdo / :deferred / :cancelled    → archive_note required
+  #   :duplicate                          → duplicate_of_id required
+  #   anything other than :duplicate      → duplicate_of_id forbidden
+  #
+  # Reason whitelist is enforced by `Ecto.Enum` on the field itself.
+  defp validate_archive_fields(changeset) do
+    reason = get_field(changeset, :archive_reason)
+
+    changeset
+    |> validate_archive_note_required(reason)
+    |> validate_duplicate_of_id_required(reason)
+    |> validate_duplicate_of_id_forbidden(reason)
+  end
+
+  @archive_reasons_requiring_note [:wontdo, :deferred, :cancelled]
+
+  defp validate_archive_note_required(changeset, reason)
+       when reason in @archive_reasons_requiring_note do
+    if blank_string?(get_field(changeset, :archive_note)) do
+      add_error(
+        changeset,
+        :archive_note,
+        "must be set when archive_reason is :wontdo, :deferred, or :cancelled"
+      )
+    else
+      changeset
+    end
+  end
+
+  defp validate_archive_note_required(changeset, _reason), do: changeset
+
+  defp validate_duplicate_of_id_required(changeset, :duplicate) do
+    if is_nil(get_field(changeset, :duplicate_of_id)) do
+      add_error(
+        changeset,
+        :duplicate_of_id,
+        "must be set when archive_reason is :duplicate"
+      )
+    else
+      changeset
+    end
+  end
+
+  defp validate_duplicate_of_id_required(changeset, _reason), do: changeset
+
+  defp validate_duplicate_of_id_forbidden(changeset, :duplicate), do: changeset
+
+  defp validate_duplicate_of_id_forbidden(changeset, _reason) do
+    if is_nil(get_field(changeset, :duplicate_of_id)) do
+      changeset
+    else
+      add_error(
+        changeset,
+        :duplicate_of_id,
+        "may only be set when archive_reason is :duplicate"
+      )
+    end
+  end
+
+  defp blank_string?(nil), do: true
+  defp blank_string?(s) when is_binary(s), do: String.trim(s) == ""
+  defp blank_string?(_), do: true
 
   defp validate_security_considerations(changeset) do
     validate_string_list_field(changeset, :security_considerations)
