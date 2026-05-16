@@ -5893,3 +5893,33 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "agent vs human · last 14 days"
 msgstr ""
+
+#: lib/kanban_web/components/metrics_throughput_chart.ex:65
+#, elixir-autogen, elixir-format, fuzzy
+msgid "14 days"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_agent_leaderboard.ex:53
+#, elixir-autogen, elixir-format
+msgid "Agents · last 14 days"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_agent_leaderboard.ex:68
+#, elixir-autogen, elixir-format
+msgid "No completions in the last 14 days."
+msgstr ""
+
+#: lib/kanban_web/components/metrics_throughput_chart.ex:79
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Throughput sparkline"
+msgstr "スループットメトリクス"
+
+#: lib/kanban_web/components/metrics_throughput_chart.ex:62
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Throughput · tasks completed per day"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_agent_leaderboard.ex:56
+#, elixir-autogen, elixir-format, fuzzy
+msgid "by completed"
+msgstr ""
