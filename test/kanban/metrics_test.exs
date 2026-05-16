@@ -6,6 +6,7 @@ defmodule Kanban.MetricsTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Metrics
   alias Kanban.Tasks
 
@@ -1480,5 +1481,339 @@ defmodule Kanban.MetricsTest do
       )
 
     Tasks.update_task(task, attrs)
+  end
+
+  # =====================================================================
+  # Workspace-level functions (W579)
+  # =====================================================================
+
+  defp ws_setup do
+    user = user_fixture()
+    board = board_fixture(user)
+    column = column_fixture(board)
+    %{user: user, board: board, column: column, scope: Scope.for_user(user)}
+  end
+
+  defp ws_complete!(task, days_ago, attrs \\ %{}) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    completed_at = DateTime.add(now, -days_ago * 86_400, :second)
+    claimed_at = DateTime.add(completed_at, -3600, :second)
+
+    final =
+      Map.merge(
+        %{claimed_at: claimed_at, completed_at: completed_at},
+        Map.new(attrs)
+      )
+
+    {:ok, t} = Tasks.update_task(task, final)
+    t
+  end
+
+  describe "workspace_kpis/1 — zero / nil scope" do
+    test "returns the zero map for a user with no boards" do
+      user = user_fixture()
+      scope = Scope.for_user(user)
+      stats = Metrics.workspace_kpis(scope: scope)
+
+      assert stats.cycle_time_median_minutes == 0
+      assert stats.lead_time_p75_minutes == 0
+      assert stats.throughput_per_day == 0.0
+      assert stats.review_wait_minutes == 0
+      assert stats.cycle_time_delta_pct == 0.0
+      assert stats.lead_time_delta_pct == 0.0
+      assert stats.throughput_delta_pct == 0.0
+      assert stats.review_wait_delta_pct == 0.0
+    end
+
+    test "returns the zero map when :scope is nil" do
+      stats = Metrics.workspace_kpis(scope: nil)
+      assert stats.cycle_time_median_minutes == 0
+      assert stats.throughput_per_day == 0.0
+    end
+
+    test "returns the zero map when :scope is a Scope with a nil user" do
+      assert Metrics.workspace_kpis(scope: %Scope{user: nil}).cycle_time_median_minutes == 0
+    end
+  end
+
+  describe "workspace_kpis/1 — aggregation + deltas" do
+    test "aggregates cycle time across two boards", %{} do
+      user = user_fixture()
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      col1 = column_fixture(board1)
+      col2 = column_fixture(board2)
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -1 * 86_400, :second)
+
+      Enum.each(1..3, fn _ ->
+        t = task_fixture(col1)
+        claimed = DateTime.add(completed_at, -60 * 60, :second)
+        Tasks.update_task(t, %{claimed_at: claimed, completed_at: completed_at})
+      end)
+
+      Enum.each(1..2, fn _ ->
+        t = task_fixture(col2)
+        # 180-minute cycle on the second board.
+        claimed = DateTime.add(completed_at, -180 * 60, :second)
+        Tasks.update_task(t, %{claimed_at: claimed, completed_at: completed_at})
+      end)
+
+      stats = Metrics.workspace_kpis(scope: Scope.for_user(user))
+      # 5 tasks total: median of [60, 60, 60, 180, 180] = 60
+      assert stats.cycle_time_median_minutes == 60
+    end
+
+    test "delta_pct is computed against the previous 14-day window",
+         %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      # Current window: 3 tasks completed in the last 14 days
+      Enum.each(1..3, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+
+      # Previous window: 1 task completed in the prior 14-day window
+      column |> task_fixture() |> ws_complete!(20)
+
+      stats = Metrics.workspace_kpis(scope: scope)
+
+      # Throughput delta: current = 3/14, previous = 1/14, delta = +200%
+      assert_in_delta stats.throughput_delta_pct, 200.0, 0.1
+    end
+
+    test "delta_pct is 0.0 when the previous window was empty (divide-by-zero guard)",
+         %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      Enum.each(1..3, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+
+      stats = Metrics.workspace_kpis(scope: scope)
+      assert stats.cycle_time_delta_pct == 0.0
+      assert stats.throughput_delta_pct == 0.0
+    end
+
+    test "filters strictly to boards the scoped user belongs to",
+         %{} do
+      %{column: column, scope: scope} = ws_setup()
+      column |> task_fixture() |> ws_complete!(1)
+
+      # A second user with their own board — must not leak into the
+      # original user's stats.
+      other = user_fixture()
+      other_board = board_fixture(other)
+      other_col = column_fixture(other_board)
+      Enum.each(1..10, fn _ -> other_col |> task_fixture() |> ws_complete!(1) end)
+
+      stats = Metrics.workspace_kpis(scope: scope)
+      assert stats.throughput_per_day == 1 / 14
+    end
+  end
+
+  describe "cycle_time_daily/1" do
+    test "returns 14 entries ordered oldest-to-newest with date keys",
+         %{} do
+      %{scope: scope} = ws_setup()
+      entries = Metrics.cycle_time_daily(scope: scope)
+
+      assert length(entries) == 14
+      dates = Enum.map(entries, & &1.date)
+      assert dates == Enum.sort(dates, Date)
+
+      for %{date: d, agent_minutes: a, human_minutes: h} <- entries do
+        assert %Date{} = d
+        assert is_integer(a)
+        assert is_integer(h)
+      end
+    end
+
+    test "splits agent vs human minutes by created_by_agent presence",
+         %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      # 2-hour cycle for the agent task today
+      agent_task = task_fixture(column, %{created_by_agent: "Claude"})
+
+      ws_complete!(agent_task, 0,
+        claimed_at: DateTime.add(DateTime.utc_now(), -2 * 3600, :second)
+      )
+
+      # 30-minute cycle for the human task today
+      human_task = task_fixture(column, %{created_by_agent: nil})
+
+      ws_complete!(human_task, 0, claimed_at: DateTime.add(DateTime.utc_now(), -30 * 60, :second))
+
+      entries = Metrics.cycle_time_daily(scope: scope)
+      today = List.last(entries)
+
+      assert today.agent_minutes == 120
+      assert today.human_minutes == 30
+    end
+
+    test "returns 14 zero entries for an empty workspace" do
+      scope = Scope.for_user(user_fixture())
+      entries = Metrics.cycle_time_daily(scope: scope)
+      assert length(entries) == 14
+      assert Enum.all?(entries, &(&1.agent_minutes == 0 and &1.human_minutes == 0))
+    end
+  end
+
+  describe "throughput_daily/1" do
+    test "returns 14 integer counts ordered oldest-to-newest", %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      # 2 today, 1 three days ago
+      Enum.each(1..2, fn _ -> column |> task_fixture() |> ws_complete!(0) end)
+      column |> task_fixture() |> ws_complete!(3)
+
+      counts = Metrics.throughput_daily(scope: scope)
+      assert length(counts) == 14
+      assert List.last(counts) == 2
+      assert Enum.at(counts, length(counts) - 1 - 3) == 1
+    end
+
+    test "returns 14 zeros for an empty workspace" do
+      counts = Metrics.throughput_daily(scope: Scope.for_user(user_fixture()))
+      assert counts == List.duplicate(0, 14)
+    end
+  end
+
+  describe "agent_leaderboard/1" do
+    test "places agents before humans regardless of completed counts",
+         %{} do
+      %{column: column, scope: scope, user: user} = ws_setup()
+
+      # 1 agent completion vs 5 human completions — agent must still
+      # appear first because :agent contributors precede :human.
+      agent_t = task_fixture(column, %{completed_by_agent: "Claude"})
+      ws_complete!(agent_t, 1)
+
+      Enum.each(1..5, fn _ ->
+        t = task_fixture(column)
+        ws_complete!(t, 1, %{completed_by_id: user.id})
+      end)
+
+      leaderboard = Metrics.agent_leaderboard(scope: scope)
+      assert hd(leaderboard).kind == :agent
+      assert hd(leaderboard).name == "Claude"
+    end
+
+    test "caps the leaderboard at 6 entries", %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      for i <- 1..10 do
+        t = task_fixture(column, %{completed_by_agent: "Agent#{i}"})
+        ws_complete!(t, 1)
+      end
+
+      leaderboard = Metrics.agent_leaderboard(scope: scope)
+      assert length(leaderboard) == 6
+    end
+
+    test "computes success_pct from review_status / needs_review",
+         %{} do
+      %{column: column, scope: scope, user: user} = ws_setup()
+
+      # 2 tasks for Claude: one approved (needs_review=true + :approved),
+      # one no-review (needs_review=false) — both successful → 100%.
+      t1 = task_fixture(column, %{completed_by_agent: "Claude", needs_review: true})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      ws_complete!(t1, 1, %{
+        review_status: :approved,
+        reviewed_at: now,
+        reviewed_by_id: user.id
+      })
+
+      t2 = task_fixture(column, %{completed_by_agent: "Claude", needs_review: false})
+      ws_complete!(t2, 1)
+
+      # 1 changes_requested task — failure → 66.66% across the 3-task set.
+      t3 = task_fixture(column, %{completed_by_agent: "Claude", needs_review: true})
+
+      ws_complete!(t3, 1, %{
+        review_status: :changes_requested,
+        reviewed_at: now,
+        reviewed_by_id: user.id
+      })
+
+      [%{name: "Claude", success_pct: pct, completed: completed}] =
+        Metrics.agent_leaderboard(scope: scope)
+
+      assert completed == 3
+      assert_in_delta pct, 66.66, 0.5
+    end
+
+    test "is empty when no completed tasks exist" do
+      assert Metrics.agent_leaderboard(scope: Scope.for_user(user_fixture())) == []
+    end
+  end
+
+  describe "cumulative_flow/1" do
+    test "returns 14 snapshots with all five integer fields",
+         %{} do
+      %{scope: scope} = ws_setup()
+      flow = Metrics.cumulative_flow(scope: scope)
+
+      assert length(flow) == 14
+
+      for snapshot <- flow do
+        assert %Date{} = snapshot.date
+
+        for k <- [:backlog, :ready, :doing, :review, :done] do
+          assert is_integer(Map.fetch!(snapshot, k))
+        end
+      end
+    end
+
+    test "buckets tasks at the end-of-day cutoff", %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      # A task that's been in backlog forever (no claimed_at)
+      _backlog = task_fixture(column)
+
+      # A doing task (claimed yesterday, not completed)
+      doing = task_fixture(column)
+      yesterday = DateTime.add(DateTime.utc_now(), -86_400, :second)
+      Tasks.update_task(doing, %{claimed_at: yesterday})
+
+      # A done task (completed yesterday, no needs_review)
+      done = task_fixture(column, %{needs_review: false})
+      ws_complete!(done, 0)
+
+      [today_snapshot] = scope |> then(&Metrics.cumulative_flow(scope: &1)) |> Enum.take(-1)
+
+      assert today_snapshot.backlog >= 1
+      assert today_snapshot.doing >= 1
+      assert today_snapshot.done >= 1
+      assert today_snapshot.ready == 0
+    end
+
+    test "returns 14 zero snapshots for an empty workspace" do
+      flow = Metrics.cumulative_flow(scope: Scope.for_user(user_fixture()))
+      assert length(flow) == 14
+
+      for snapshot <- flow do
+        assert snapshot.backlog == 0
+        assert snapshot.ready == 0
+        assert snapshot.doing == 0
+        assert snapshot.review == 0
+        assert snapshot.done == 0
+      end
+    end
+
+    test "excludes archived tasks from every bucket", %{} do
+      %{column: column, scope: scope} = ws_setup()
+
+      archived = task_fixture(column)
+
+      Tasks.update_task(archived, %{
+        archived_at: DateTime.add(DateTime.utc_now(), -86_400, :second)
+      })
+
+      [today_snapshot] = scope |> then(&Metrics.cumulative_flow(scope: &1)) |> Enum.take(-1)
+
+      # The archived task should not contribute to backlog (or any bucket).
+      assert today_snapshot.backlog == 0
+    end
   end
 end
