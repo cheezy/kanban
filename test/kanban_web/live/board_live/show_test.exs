@@ -2182,6 +2182,74 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "with_board — not found" do
+    setup [:register_and_log_in_user]
+
+    test "non-existent board id redirects to /boards with an error flash",
+         %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => "Board not found"}}}} =
+               live(conn, ~p"/boards/99999999")
+    end
+
+    test "board owned by another user redirects to /boards", %{conn: conn} do
+      other_user = user_fixture()
+      foreign_board = board_fixture(other_user)
+
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => "Board not found"}}}} =
+               live(conn, ~p"/boards/#{foreign_board}")
+    end
+  end
+
+  describe "delete_task — dependents" do
+    setup [:register_and_log_in_user]
+
+    test "rejects deletion when the task has dependents and surfaces the error flash",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      dependency = task_fixture(column, %{title: "Blocking task"})
+      dependent = task_fixture(column, %{title: "Dependent task"})
+
+      # Wire the dependency AFTER both tasks exist so the fixture doesn't
+      # auto-substitute placeholder identifiers.
+      {:ok, _} =
+        Kanban.Tasks.update_task(dependent, %{dependencies: [dependency.identifier]})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      html =
+        render_click(show_live, "delete_task", %{"id" => Integer.to_string(dependency.id)})
+
+      assert html =~ "other tasks depend on it"
+      # The dependency task is still present in the board after the failed delete
+      assert render(show_live) =~ dependency.identifier
+    end
+  end
+
+  describe "toggle_field — invalid input" do
+    setup [:register_and_log_in_user]
+
+    test "rejects a field name that is not on the canonical allow-list",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      html =
+        render_click(show_live, "toggle_field", %{"field" => "__not_a_real_field__"})
+
+      assert html =~ "Invalid field name"
+    end
+  end
+
+  describe "unauthenticated access" do
+    test "anonymous user is redirected to log-in", %{conn: conn} do
+      assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/boards/1")
+      assert redirect_to =~ "/users/log-in"
+    end
+  end
+
   defp admin_user_fixture do
     user = user_fixture()
     {:ok, admin} = Kanban.Accounts.update_user_type(user, :admin)

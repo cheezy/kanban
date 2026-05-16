@@ -363,4 +363,50 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       assert html =~ "Throughput · last 12 hours"
     end
   end
+
+  describe "mount/3 — malformed id" do
+    setup [:register_and_log_in_user]
+
+    test "redirects to /boards when goal_id is non-numeric",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => "Goal not found"}}}} =
+               live(conn, ~p"/boards/#{board}/goals/not-a-number")
+    end
+  end
+
+  describe "status grouping — multiple statuses" do
+    setup [:register_and_log_in_user]
+
+    test "renders a Done section for children with status :completed",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [done, other | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Mixed-status Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Finished", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Open", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^done.id)
+      |> Kanban.Repo.update_all(set: [status: :completed, completed_at: DateTime.utc_now()])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ ~r/>\s*Done\s*</
+      assert html =~ ~r/>\s*Backlog\s*</
+      assert html =~ "Finished"
+      assert html =~ "Open"
+      # Both children render
+      assert html =~ done.identifier
+      assert html =~ other.identifier
+    end
+  end
 end

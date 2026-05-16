@@ -47,10 +47,7 @@ defmodule KanbanWeb.Layouts do
 
   attr :board, :any,
     default: nil,
-    doc:
-      "The current board struct when the LiveView is in a single-board context. " <>
-        "When set with a non-nil id, the SideNav surfaces Goals / Agents / Review / Metrics " <>
-        "links scoped to that board."
+    doc: "The current board struct when the LiveView is in a single-board context."
 
   slot :breadcrumbs, doc: "WinTop breadcrumbs content (overrides page_title when present)."
   slot :actions, doc: "WinTop right-side actions slot."
@@ -85,7 +82,7 @@ defmodule KanbanWeb.Layouts do
 
   @doc """
   The authenticated-app SideNav. Renders the Stride logo header, primary nav
-  items (Boards/Goals/Agents/Review/Metrics) styled to the design source, plus
+  items (Boards/Agents/Review queue/Metrics) styled to the design source, plus
   a small secondary section for Resources/Settings, and a footer with the
   current user's identity + log-out.
   """
@@ -94,10 +91,7 @@ defmodule KanbanWeb.Layouts do
 
   attr :board, :map,
     default: nil,
-    doc:
-      "When set, the SideNav surfaces board-scoped items (Goals / Agents / " <>
-        "Review queue / Metrics) pointing into that board. When nil, only " <>
-        "the workspace-level Boards item is shown."
+    doc: "Reserved for future board-aware nav state. Currently unused by the nav itself."
 
   def side_nav(assigns) do
     assigns = assign(assigns, :primary_items, primary_nav_items(assigns.board))
@@ -223,8 +217,8 @@ defmodule KanbanWeb.Layouts do
     """
   end
 
-  defp primary_nav_items(board) do
-    workspace = [
+  defp primary_nav_items(_board) do
+    [
       %{
         id: :boards,
         label: gettext("Boards"),
@@ -238,37 +232,23 @@ defmodule KanbanWeb.Layouts do
         icon: "hero-cpu-chip",
         path: "/agents",
         badge: nil
-      }
-    ]
-
-    workspace ++ board_scoped_items(board)
-  end
-
-  # Board-scoped items only appear when the current page has a `:board`
-  # assign — i.e., the user is inside a specific board. Review queue
-  # currently points to the board show page until that screen lands;
-  # Metrics has a real dashboard route. The Agents link is workspace-level
-  # and lives in `primary_nav_items/1` so it stays visible everywhere.
-  defp board_scoped_items(%{id: id}) when is_integer(id) or is_binary(id) do
-    [
+      },
       %{
         id: :review,
         label: gettext("Review queue"),
         icon: "hero-check-circle",
-        path: "/boards/#{id}",
+        path: "/review",
         badge: nil
       },
       %{
         id: :metrics,
         label: gettext("Metrics"),
         icon: "hero-chart-bar",
-        path: "/boards/#{id}/metrics",
+        path: "/metrics",
         badge: nil
       }
     ]
   end
-
-  defp board_scoped_items(_), do: []
 
   defp secondary_nav_items do
     [
