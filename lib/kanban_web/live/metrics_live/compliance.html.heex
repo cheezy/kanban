@@ -1,150 +1,219 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} board={@board}>
-  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
-    <.header>
-      {@board.name} - {gettext("Compliance Metrics")}
-      <:subtitle>
-        {gettext("Workflow step dispatch, skip reasons, and per-agent compliance")}
-      </:subtitle>
-      <:actions>
-        <.link navigate={~p"/boards/#{@board}/metrics"}>
-          <.button>{gettext("Back to Dashboard")}</.button>
-        </.link>
-      </:actions>
-    </.header>
-
-    <section class="mt-8">
-      <h2 class="text-lg font-bold text-base-content mb-4">
-        {gettext("Step Dispatch Rates")}
-      </h2>
-      <div
-        :if={map_size(@dispatch_rates) > 0}
-        class="card bg-base-100 border border-base-300 overflow-x-auto"
+  <div
+    class="stride-screen"
+    data-metrics-board-compliance
+    style="display: flex; flex-direction: column; padding: 18px 0;"
+  >
+    <header style={[
+      "padding: 0 28px 4px;",
+      "display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;"
+    ]}>
+      <h1 style={[
+        "margin: 0;",
+        "font-size: 18px; font-weight: 600;",
+        "letter-spacing: -0.01em;",
+        "color: var(--ink);"
+      ]}>
+        {gettext("Compliance Metrics")}
+      </h1>
+      <span style="font-size: 12.5px; color: var(--ink-3);">
+        {gettext("Board:")} {@board.name}
+      </span>
+      <span style="flex: 1;" />
+      <.link
+        navigate={~p"/boards/#{@board}/metrics"}
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "font-size: 12px; color: var(--ink-2); text-decoration: none;"
+        ]}
       >
-        <table class="table">
-          <thead>
-            <tr>
-              <th>{gettext("Step")}</th>
-              <th class="w-1/2">{gettext("Dispatch Rate")}</th>
-              <th class="text-right">{gettext("Dispatched")}</th>
-              <th class="text-right">{gettext("Total")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={
-              {step_name, stats} <-
-                Enum.sort_by(@dispatch_rates, fn {name, _} -> name end)
-            }>
-              <td class="font-medium text-base-content">{step_name}</td>
-              <td>
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 h-2.5 rounded-full bg-base-300 overflow-hidden">
-                    <div
-                      class={[
-                        "h-full rounded-full transition-all duration-500",
-                        dispatch_rate_color(stats.rate)
-                      ]}
-                      style={"width: #{stats.rate}%"}
-                    >
+        <.icon name="hero-arrow-left" class="w-3 h-3" /> {gettext("Back to Dashboard")}
+      </.link>
+    </header>
+
+    <p style={[
+      "margin: 0; padding: 0 28px 14px;",
+      "font-size: 12.5px; color: var(--ink-3);"
+    ]}>
+      {gettext("Workflow step dispatch, skip reasons, and per-agent compliance")}
+    </p>
+
+    <div style="padding: 0 28px 28px; display: flex; flex-direction: column; gap: 14px;">
+      <section style={[
+        "padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}>
+        <h2 style="margin: 0 0 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+          {gettext("Step Dispatch Rates")}
+        </h2>
+
+        <div :if={map_size(@dispatch_rates) > 0} style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line);">
+                <th style="text-align: left; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Step")}
+                </th>
+                <th style="text-align: left; padding: 8px 12px; width: 50%; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Dispatch Rate")}
+                </th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Dispatched")}
+                </th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Total")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                :for={
+                  {step_name, stats} <-
+                    Enum.sort_by(@dispatch_rates, fn {name, _} -> name end)
+                }
+                style="border-bottom: 1px solid var(--line);"
+              >
+                <td style="padding: 8px 12px; font-weight: 500; color: var(--ink);">
+                  {step_name}
+                </td>
+                <td style="padding: 8px 12px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style={[
+                      "flex: 1; height: 6px; border-radius: 3px;",
+                      "background: var(--surface-sunken); overflow: hidden;"
+                    ]}>
+                      <div style={"height: 100%; border-radius: 3px; background: #{dispatch_rate_color(stats.rate)}; width: #{stats.rate}%;"}>
+                      </div>
                     </div>
+                    <span style={[
+                      "width: 56px; text-align: right;",
+                      "font-size: 12px; font-weight: 600; color: var(--ink);",
+                      "font-variant-numeric: tabular-nums; font-family: var(--font-mono);"
+                    ]}>
+                      {:erlang.float_to_binary(stats.rate, decimals: 1)}%
+                    </span>
                   </div>
-                  <span class="text-sm font-semibold text-base-content tabular-nums w-14 text-right">
-                    {:erlang.float_to_binary(stats.rate, decimals: 1)}%
-                  </span>
-                </div>
-              </td>
-              <td class="text-right text-base-content">{stats.dispatched}</td>
-              <td class="text-right text-base-content">{stats.total}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div
-        :if={map_size(@dispatch_rates) == 0}
-        class="card bg-base-100 border border-base-300 p-8 text-center"
-      >
-        <.icon
-          name="hero-paper-airplane"
-          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
-        />
-        <p class="text-base-content opacity-70">
-          {gettext("No workflow step data yet")}
-        </p>
-      </div>
-    </section>
-
-    <section class="mt-8">
-      <h2 class="text-lg font-bold text-base-content mb-4">
-        {gettext("Skip Reasons")}
-      </h2>
-      <div
-        :if={map_size(@skip_reasons) > 0}
-        class="card bg-base-100 border border-base-300 divide-y divide-base-300"
-      >
-        <div
-          :for={{reason, count} <- Enum.sort_by(@skip_reasons, fn {_, c} -> -c end)}
-          class="flex items-center justify-between px-4 py-3"
-        >
-          <span class="text-base-content">
-            {if reason == "", do: gettext("(no reason given)"), else: reason}
-          </span>
-          <span class="badge badge-warning">{count}</span>
+                </td>
+                <td style="text-align: right; padding: 8px 12px; color: var(--ink); font-variant-numeric: tabular-nums;">
+                  {stats.dispatched}
+                </td>
+                <td style="text-align: right; padding: 8px 12px; color: var(--ink); font-variant-numeric: tabular-nums;">
+                  {stats.total}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-      <div
-        :if={map_size(@skip_reasons) == 0}
-        class="card bg-base-100 border border-base-300 p-8 text-center"
-      >
-        <.icon
-          name="hero-forward"
-          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
-        />
-        <p class="text-base-content opacity-70">
-          {gettext("No skipped steps recorded")}
-        </p>
-      </div>
-    </section>
 
-    <section class="mt-8">
-      <h2 class="text-lg font-bold text-base-content mb-4">
-        {gettext("Compliance by Agent")}
-      </h2>
-      <div
-        :if={map_size(@agent_compliance) > 0}
-        class="card bg-base-100 border border-base-300 overflow-x-auto"
-      >
-        <table class="table">
-          <thead>
-            <tr>
-              <th>{gettext("Agent")}</th>
-              <th class="text-right">{gettext("Total Tasks")}</th>
-              <th class="text-right">{gettext("Tasks With Steps")}</th>
-              <th class="text-right">{gettext("Avg Steps / Task")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={{agent, stats} <- Enum.sort_by(@agent_compliance, fn {name, _} -> name end)}>
-              <td class="font-medium text-base-content">{agent}</td>
-              <td class="text-right text-base-content">{stats.total_tasks}</td>
-              <td class="text-right text-base-content">{stats.tasks_with_steps}</td>
-              <td class="text-right text-base-content">
-                {:erlang.float_to_binary(stats.avg_steps, decimals: 2)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div
-        :if={map_size(@agent_compliance) == 0}
-        class="card bg-base-100 border border-base-300 p-8 text-center"
-      >
-        <.icon
-          name="hero-user-group"
-          class="h-12 w-12 text-base-content opacity-30 mx-auto mb-3"
-        />
-        <p class="text-base-content opacity-70">
-          {gettext("No agent activity recorded")}
-        </p>
-      </div>
-    </section>
+        <div :if={map_size(@dispatch_rates) == 0} style="text-align: center; padding: 32px 0;">
+          <span style="display: inline-flex; color: var(--ink-4);">
+            <.icon name="hero-paper-airplane" class="h-12 w-12" />
+          </span>
+          <p style="margin: 12px 0 0; font-size: 12.5px; color: var(--ink-3); font-style: italic;">
+            {gettext("No workflow step data yet")}
+          </p>
+        </div>
+      </section>
+
+      <section style={[
+        "padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}>
+        <h2 style="margin: 0 0 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+          {gettext("Skip Reasons")}
+        </h2>
+
+        <div :if={map_size(@skip_reasons) > 0} style="display: flex; flex-direction: column;">
+          <div
+            :for={{reason, count} <- Enum.sort_by(@skip_reasons, fn {_, c} -> -c end)}
+            style={[
+              "display: flex; align-items: center; justify-content: space-between;",
+              "padding: 10px 12px; border-top: 1px solid var(--line);"
+            ]}
+          >
+            <span style="font-size: 12.5px; color: var(--ink);">
+              {if reason == "", do: gettext("(no reason given)"), else: reason}
+            </span>
+            <span style={[
+              "padding: 2px 8px; border-radius: 999px;",
+              "background: var(--st-blocked-soft); color: var(--st-blocked);",
+              "font-size: 11px; font-weight: 500; font-family: var(--font-mono);"
+            ]}>
+              {count}
+            </span>
+          </div>
+        </div>
+
+        <div :if={map_size(@skip_reasons) == 0} style="text-align: center; padding: 32px 0;">
+          <span style="display: inline-flex; color: var(--ink-4);">
+            <.icon name="hero-forward" class="h-12 w-12" />
+          </span>
+          <p style="margin: 12px 0 0; font-size: 12.5px; color: var(--ink-3); font-style: italic;">
+            {gettext("No skipped steps recorded")}
+          </p>
+        </div>
+      </section>
+
+      <section style={[
+        "padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}>
+        <h2 style="margin: 0 0 14px; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+          {gettext("Compliance by Agent")}
+        </h2>
+
+        <div :if={map_size(@agent_compliance) > 0} style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line);">
+                <th style="text-align: left; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Agent")}
+                </th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Total Tasks")}
+                </th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Tasks With Steps")}
+                </th>
+                <th style="text-align: right; padding: 8px 12px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">
+                  {gettext("Avg Steps / Task")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                :for={{agent, stats} <- Enum.sort_by(@agent_compliance, fn {name, _} -> name end)}
+                style="border-bottom: 1px solid var(--line);"
+              >
+                <td style="padding: 8px 12px; font-weight: 500; color: var(--ink);">
+                  {agent}
+                </td>
+                <td style="text-align: right; padding: 8px 12px; color: var(--ink); font-variant-numeric: tabular-nums;">
+                  {stats.total_tasks}
+                </td>
+                <td style="text-align: right; padding: 8px 12px; color: var(--ink); font-variant-numeric: tabular-nums;">
+                  {stats.tasks_with_steps}
+                </td>
+                <td style="text-align: right; padding: 8px 12px; color: var(--ink); font-variant-numeric: tabular-nums;">
+                  {:erlang.float_to_binary(stats.avg_steps, decimals: 2)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div :if={map_size(@agent_compliance) == 0} style="text-align: center; padding: 32px 0;">
+          <span style="display: inline-flex; color: var(--ink-4);">
+            <.icon name="hero-user-group" class="h-12 w-12" />
+          </span>
+          <p style="margin: 12px 0 0; font-size: 12.5px; color: var(--ink-3); font-style: italic;">
+            {gettext("No agent activity recorded")}
+          </p>
+        </div>
+      </section>
+    </div>
   </div>
 </Layouts.app>

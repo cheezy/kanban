@@ -35,9 +35,11 @@ defmodule KanbanWeb.MetricsLive.Compliance do
     |> push_navigate(to: ~p"/boards/#{board_id}")
   end
 
-  defp dispatch_rate_color(rate) when rate >= 80.0, do: "bg-success"
-  defp dispatch_rate_color(rate) when rate >= 50.0, do: "bg-warning"
-  defp dispatch_rate_color(_rate), do: "bg-error"
+  # W590: dispatch_rate_color/1 now returns a CSS color value
+  # (consumed via inline `background: ...`) instead of a daisyUI class.
+  defp dispatch_rate_color(rate) when rate >= 80.0, do: "var(--st-done)"
+  defp dispatch_rate_color(rate) when rate >= 50.0, do: "var(--st-review)"
+  defp dispatch_rate_color(_rate), do: "var(--st-blocked)"
 
   defp load_compliance(socket, board) do
     user_id = socket.assigns.current_scope.user.id

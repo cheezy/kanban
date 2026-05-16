@@ -1,216 +1,337 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} board={@board}>
-  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
-    <.header>
-      {@board.name} - {gettext("Throughput Metrics")}
-      <:subtitle>{gettext("Tasks completed per day with detailed breakdown")}</:subtitle>
-      <:actions>
-        <.link navigate={
+  <div
+    class="stride-screen"
+    data-metrics-board-throughput
+    style="display: flex; flex-direction: column; padding: 18px 0;"
+  >
+    <header style={[
+      "padding: 0 28px 4px;",
+      "display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;"
+    ]}>
+      <h1 style={[
+        "margin: 0;",
+        "font-size: 18px; font-weight: 600;",
+        "letter-spacing: -0.01em;",
+        "color: var(--ink);"
+      ]}>
+        {gettext("Throughput Metrics")}
+      </h1>
+      <span style="font-size: 12.5px; color: var(--ink-3);">
+        {gettext("Board:")} {@board.name}
+      </span>
+      <span style="flex: 1;" />
+      <.link
+        navigate={
           ~p"/boards/#{@board}/metrics?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
-        }>
-          <.button>{gettext("Back to Dashboard")}</.button>
-        </.link>
-        <.export_dropdown
-          export_base_path={~p"/boards/#{@board}/metrics/throughput/export"}
-          time_range={@time_range}
-          agent_name={@agent_name}
-          exclude_weekends={@exclude_weekends}
-        />
-      </:actions>
-    </.header>
+        }
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "font-size: 12px; color: var(--ink-2); text-decoration: none;"
+        ]}
+      >
+        <.icon name="hero-arrow-left" class="w-3 h-3" /> {gettext("Back to Dashboard")}
+      </.link>
+      <.export_dropdown
+        export_base_path={~p"/boards/#{@board}/metrics/throughput/export"}
+        time_range={@time_range}
+        agent_name={@agent_name}
+        exclude_weekends={@exclude_weekends}
+      />
+    </header>
 
-    <.metric_filters
-      time_range={@time_range}
-      agent_name={@agent_name}
-      exclude_weekends={@exclude_weekends}
-      agents={@agents}
-      view_name="throughput"
-      show_agent_filter={@board.ai_optimized_board}
-    />
+    <p style={[
+      "margin: 0; padding: 0 28px 14px;",
+      "font-size: 12.5px; color: var(--ink-3);"
+    ]}>
+      {gettext("Tasks completed per day with detailed breakdown")}
+    </p>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
-      <div class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <.icon name="hero-check-circle" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+    <div style="padding: 0 28px 28px; display: flex; flex-direction: column; gap: 14px;">
+      <.metric_filters
+        time_range={@time_range}
+        agent_name={@agent_name}
+        exclude_weekends={@exclude_weekends}
+        agents={@agents}
+        view_name="throughput"
+        show_agent_filter={@board.ai_optimized_board}
+      />
+
+      <div
+        data-metrics-throughput-summary
+        style={[
+          "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;"
+        ]}
+      >
+        <div
+          data-metrics-throughput-cell="total-tasks"
+          style={[
+            "padding: 14px 18px;",
+            "background: var(--surface);",
+            "border: 1px solid var(--line); border-radius: 8px;"
+          ]}
+        >
+          <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="display: inline-flex; color: var(--ink-3);">
+              <.icon name="hero-check-circle" class="h-4 w-4" />
+            </span>
+            <span style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Total Tasks")}
+            </span>
+          </header>
+          <div style={[
+            "font-size: 24px; font-weight: 600; letter-spacing: -0.025em;",
+            "color: var(--ink); font-variant-numeric: tabular-nums;"
+          ]}>
+            {@summary_stats.total}
           </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Total Tasks")}
-          </h3>
         </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@summary_stats.total}
+
+        <div
+          data-metrics-throughput-cell="avg-per-day"
+          style={[
+            "padding: 14px 18px;",
+            "background: var(--surface);",
+            "border: 1px solid var(--line); border-radius: 8px;"
+          ]}
+        >
+          <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="display: inline-flex; color: var(--ink-3);">
+              <.icon name="hero-chart-bar-square" class="h-4 w-4" />
+            </span>
+            <span style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Avg Per Day")}
+            </span>
+          </header>
+          <div style={[
+            "font-size: 24px; font-weight: 600; letter-spacing: -0.025em;",
+            "color: var(--ink); font-variant-numeric: tabular-nums;"
+          ]}>
+            {@summary_stats.avg_per_day}
+          </div>
+        </div>
+
+        <div
+          data-metrics-throughput-cell="peak-day"
+          style={[
+            "padding: 14px 18px;",
+            "background: var(--surface);",
+            "border: 1px solid var(--line); border-radius: 8px;"
+          ]}
+        >
+          <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="display: inline-flex; color: var(--ink-3);">
+              <.icon name="hero-calendar" class="h-4 w-4" />
+            </span>
+            <span style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Peak Day")}
+            </span>
+          </header>
+          <div style="font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums;">
+            {format_date(@summary_stats.peak_day)}
+          </div>
+        </div>
+
+        <div
+          data-metrics-throughput-cell="peak-count"
+          style={[
+            "padding: 14px 18px;",
+            "background: var(--surface);",
+            "border: 1px solid var(--line); border-radius: 8px;"
+          ]}
+        >
+          <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="display: inline-flex; color: var(--ink-3);">
+              <.icon name="hero-trophy" class="h-4 w-4" />
+            </span>
+            <span style={[
+              "font-size: 9.5px; font-weight: 600;",
+              "text-transform: uppercase; letter-spacing: 0.08em;",
+              "color: var(--ink-3);"
+            ]}>
+              {gettext("Peak Count")}
+            </span>
+          </header>
+          <div style={[
+            "font-size: 24px; font-weight: 600; letter-spacing: -0.025em;",
+            "color: var(--ink); font-variant-numeric: tabular-nums;"
+          ]}>
+            {@summary_stats.peak_count}
+          </div>
         </div>
       </div>
 
-      <div class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <.icon
-              name="hero-chart-bar-square"
-              class="h-6 w-6 text-green-600 dark:text-green-400"
-            />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Avg Per Day")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@summary_stats.avg_per_day}
-        </div>
-      </div>
-
-      <div class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-            <.icon name="hero-calendar" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Peak Day")}
-          </h3>
-        </div>
-        <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
-          {format_date(@summary_stats.peak_day)}
-        </div>
-      </div>
-
-      <div class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl transition-all duration-300 p-6">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-            <.icon name="hero-trophy" class="h-6 w-6 text-amber-600 dark:text-amber-400" />
-          </div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-            {gettext("Peak Count")}
-          </h3>
-        </div>
-        <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          {@summary_stats.peak_count}
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
-        <div class="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg">
-          <.icon name="hero-chart-bar-solid" class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+      <section style={[
+        "padding: 18px;",
+        "background: var(--surface);",
+        "border: 1px solid var(--line); border-radius: 8px;"
+      ]}>
+        <header style={[
+          "display: flex; align-items: center; gap: 8px;",
+          "margin-bottom: 14px; padding-bottom: 10px;",
+          "border-bottom: 1px solid var(--line);"
+        ]}>
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-chart-bar-solid" class="h-4 w-4" />
+          </span>
+          <h3 style="margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink);">
             {gettext("Daily Completions Bar Chart")}
           </h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
+          <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
             {gettext("Tasks completed per day")}
+          </span>
+        </header>
+
+        <div :if={length(@throughput) == 0} style="text-align: center; padding: 32px 0;">
+          <span style="display: inline-flex; color: var(--ink-4);">
+            <.icon name="hero-chart-bar" class="h-12 w-12" />
+          </span>
+          <p style="margin: 12px 0 0; font-size: 13px; color: var(--ink-3); font-style: italic;">
+            {gettext("No tasks completed in this time range")}
           </p>
         </div>
-      </div>
 
-      <div :if={length(@throughput) == 0} class="text-center py-12">
-        <.icon
-          name="hero-chart-bar"
-          class="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-        />
-        <p class="text-gray-500 dark:text-gray-400 text-lg">
-          {gettext("No tasks completed in this time range")}
-        </p>
-      </div>
-
-      <div :if={length(@throughput) > 0} class="space-y-2">
         <div
-          :for={day <- @throughput}
-          class="flex items-center gap-4 p-2 hover:bg-gray-50 dark:hover:bg-zinc-700/50 rounded-lg transition-colors"
+          :if={length(@throughput) > 0}
+          style="display: flex; flex-direction: column; gap: 6px;"
         >
-          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0">
-            {format_date(day.date)}
-          </div>
-          <div class="flex-1 flex items-center gap-2">
-            <div
-              class="bg-gradient-to-r from-blue-500 to-indigo-600 h-8 rounded-r-lg transition-all duration-300 hover:from-blue-600 hover:to-indigo-700 relative group"
-              style={"width: #{calculate_bar_width(day.count, @summary_stats.peak_count)}%"}
-            >
-              <div class="absolute inset-0 bg-white/20 rounded-r-lg opacity-0 group-hover:opacity-100 transition-opacity">
+          <div
+            :for={day <- @throughput}
+            style="display: flex; align-items: center; gap: 14px; padding: 4px 8px;"
+          >
+            <div style={[
+              "width: 100px; flex-shrink: 0;",
+              "font-size: 11.5px; color: var(--ink-2);",
+              "font-family: var(--font-mono);"
+            ]}>
+              {format_date(day.date)}
+            </div>
+            <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+              <div style={"height: 14px; border-radius: 0 3px 3px 0; background: var(--stride-orange); width: #{calculate_bar_width(day.count, @summary_stats.peak_count)}%;"}>
+              </div>
+              <div style={[
+                "font-size: 12px; font-weight: 600;",
+                "color: var(--ink); font-variant-numeric: tabular-nums;",
+                "width: 32px;"
+              ]}>
+                {day.count}
               </div>
             </div>
-            <div class="text-sm font-bold text-gray-900 dark:text-gray-100 ml-2 w-8">
-              {day.count}
+          </div>
+        </div>
+      </section>
+
+      <section
+        :if={length(@completed_goals) > 0}
+        style={[
+          "padding: 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;"
+        ]}
+      >
+        <header style={[
+          "display: flex; align-items: center; gap: 8px;",
+          "margin-bottom: 14px; padding-bottom: 10px;",
+          "border-bottom: 1px solid var(--line);"
+        ]}>
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-flag-solid" class="h-4 w-4" />
+          </span>
+          <h3 style="margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink);">
+            {gettext("Completed Goals")}
+          </h3>
+          <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+            {gettext("Goals completed in this time range")}
+          </span>
+        </header>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div
+            :for={goal <- @completed_goals}
+            style={[
+              "padding: 8px 12px;",
+              "background: var(--surface-sunken);",
+              "border-left: 2px solid var(--ink-3); border-radius: 4px;"
+            ]}
+          >
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 11.5px;">
+              <span style={[
+                "display: inline-flex; padding: 1px 7px; border-radius: 4px;",
+                "background: var(--st-done-soft); color: var(--st-done);",
+                "font-weight: 500; font-family: var(--font-mono);"
+              ]}>
+                {goal.identifier}
+              </span>
+              <span style={[
+                "font-weight: 600; color: var(--ink); flex: 1; min-width: 0;",
+                "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+              ]}>
+                {goal.title}
+              </span>
+              <span style="color: var(--ink-3); white-space: nowrap;">
+                {gettext("Completed:")} {format_date(goal.completed_at)}
+              </span>
+              <span style="color: var(--ink-4); white-space: nowrap;">
+                {gettext("Created:")} {format_date(goal.inserted_at)}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div
-      :if={length(@completed_goals) > 0}
-      class="mt-8 bg-white dark:bg-zinc-800 shadow-xl rounded-2xl p-6 border-2 border-gray-100 dark:border-zinc-700"
-    >
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100 dark:border-zinc-700">
-        <div class="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg shadow-lg">
-          <.icon name="hero-flag-solid" class="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {gettext("Completed Goals")}
-          </h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            {gettext("Goals completed in this time range")}
-          </p>
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <div
-          :for={goal <- @completed_goals}
-          class="px-3 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-zinc-700/30 dark:to-zinc-700/20 rounded-lg border-l-4 border-purple-500 dark:border-purple-400 hover:shadow-sm transition-shadow"
-        >
-          <div class="flex items-center gap-3 text-xs">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-              {goal.identifier}
-            </span>
-            <span class="font-semibold text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">
-              {goal.title}
-            </span>
-            <span class="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-              {gettext("Completed:")} {format_date(goal.completed_at)}
-            </span>
-            <span class="text-gray-500 dark:text-gray-500 whitespace-nowrap">
-              {gettext("Created:")} {format_date(goal.inserted_at)}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <.task_list_panel
-      title={gettext("Completed Tasks")}
-      subtitle={gettext("Grouped by completion date")}
-      icon_name="hero-list-bullet-solid"
-      icon_gradient="from-green-500 to-teal-600"
-      grouped_tasks={@grouped_tasks}
-      date_accent={:blue}
-      empty_icon="hero-list-bullet"
-      empty_message={gettext("No tasks completed in this time range")}
-      show_day_count={true}
-    >
-      <:task_metadata :let={task}>
-        <div class="flex items-center gap-1">
-          <.icon name="hero-plus-circle" class="h-3.5 w-3.5" />
-          <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
-        </div>
-        <div :if={@board.ai_optimized_board} class="flex items-center gap-1">
-          <.icon name="hero-play" class="h-3.5 w-3.5" />
-          <span>{gettext("Claimed:")} {format_datetime(task.claimed_at)}</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <.icon name="hero-clock" class="h-3.5 w-3.5" />
-          <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
-        </div>
-      </:task_metadata>
-      <:task_badge :let={task}>
-        <div :if={@board.ai_optimized_board} class="flex items-center gap-2">
-          <.icon name="hero-user-circle" class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {task.completed_by_agent || gettext("Agent Unknown")}
+      <.task_list_panel
+        title={gettext("Completed Tasks")}
+        subtitle={gettext("Grouped by completion date")}
+        icon_name="hero-list-bullet-solid"
+        icon_gradient=""
+        grouped_tasks={@grouped_tasks}
+        date_accent={:blue}
+        empty_icon="hero-list-bullet"
+        empty_message={gettext("No tasks completed in this time range")}
+        show_day_count={true}
+      >
+        <:task_metadata :let={task}>
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <.icon name="hero-plus-circle" class="h-3 w-3" />
+            <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
           </span>
-        </div>
-      </:task_badge>
-    </.task_list_panel>
+          <span
+            :if={@board.ai_optimized_board}
+            style="display: inline-flex; align-items: center; gap: 4px;"
+          >
+            <.icon name="hero-play" class="h-3 w-3" />
+            <span>{gettext("Claimed:")} {format_datetime(task.claimed_at)}</span>
+          </span>
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <.icon name="hero-clock" class="h-3 w-3" />
+            <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
+          </span>
+        </:task_metadata>
+        <:task_badge :let={task}>
+          <span
+            :if={@board.ai_optimized_board}
+            style="display: inline-flex; align-items: center; gap: 6px;"
+          >
+            <span style="display: inline-flex; color: var(--ink-4);">
+              <.icon name="hero-user-circle" class="h-3 w-3" />
+            </span>
+            <span style="font-size: 11.5px; font-weight: 500; color: var(--ink-2);">
+              {task.completed_by_agent || gettext("Agent Unknown")}
+            </span>
+          </span>
+        </:task_badge>
+      </.task_list_panel>
+    </div>
   </div>
 </Layouts.app>
