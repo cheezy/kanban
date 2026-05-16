@@ -66,6 +66,50 @@ defmodule KanbanWeb.TaskTokens do
   def complexity_word(:large), do: gettext("Large")
   def complexity_word(_), do: ""
 
+  # --- Archive reason ----------------------------------------------------
+
+  @doc """
+  Gettext word for a `Kanban.Tasks.Task` archive_reason atom.
+
+  Returns the localized "Completed" label for `nil` so legacy archived
+  rows (which pre-date the W570 metadata fields and have a nil reason)
+  render the same pill copy as explicitly :completed rows.
+  """
+  def archive_reason_label(:completed), do: gettext("Completed")
+  def archive_reason_label(:cancelled), do: gettext("Cancelled")
+  def archive_reason_label(:wontdo), do: gettext("Won't do")
+  def archive_reason_label(:duplicate), do: gettext("Duplicate")
+  def archive_reason_label(:deferred), do: gettext("Deferred")
+  def archive_reason_label(_), do: gettext("Completed")
+
+  @doc """
+  Soft background CSS var for the archive reason pill.
+
+  Mapping per design:
+
+    * `:completed`               → `var(--st-done-soft)`
+    * `:cancelled`               → `var(--st-blocked-soft)`
+    * `:wontdo` / `:duplicate`   → `var(--surface-sunken)` (neutral)
+    * `:deferred`                → `var(--st-review-soft)`
+
+  Unknown / nil reasons fall back to the completed token so legacy rows
+  stay visually consistent with the explicit :completed bucket.
+  """
+  def archive_reason_soft(:completed), do: "var(--st-done-soft)"
+  def archive_reason_soft(:cancelled), do: "var(--st-blocked-soft)"
+  def archive_reason_soft(:wontdo), do: "var(--surface-sunken)"
+  def archive_reason_soft(:duplicate), do: "var(--surface-sunken)"
+  def archive_reason_soft(:deferred), do: "var(--st-review-soft)"
+  def archive_reason_soft(_), do: "var(--st-done-soft)"
+
+  @doc "Foreground/ink CSS var for the archive reason pill — see `archive_reason_soft/1`."
+  def archive_reason_ink(:completed), do: "var(--st-done)"
+  def archive_reason_ink(:cancelled), do: "var(--st-blocked)"
+  def archive_reason_ink(:wontdo), do: "var(--ink-3)"
+  def archive_reason_ink(:duplicate), do: "var(--ink-3)"
+  def archive_reason_ink(:deferred), do: "var(--st-review)"
+  def archive_reason_ink(_), do: "var(--st-done)"
+
   # --- Agent activity event kinds ----------------------------------------
 
   @doc "Hero icon name for an `Kanban.Agents.Event` kind atom."

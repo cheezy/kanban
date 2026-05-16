@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/kanban_web/components/layouts.ex:379
-#: lib/kanban_web/components/layouts.ex:391
+#: lib/kanban_web/components/layouts.ex:359
+#: lib/kanban_web/components/layouts.ex:371
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在尝试重新连接"
 
-#: lib/kanban_web/components/layouts.ex:386
+#: lib/kanban_web/components/layouts.ex:366
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "出错了！"
 
-#: lib/kanban_web/components/layouts.ex:374
+#: lib/kanban_web/components/layouts.ex:354
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
@@ -74,14 +74,14 @@ msgstr "进行中"
 msgid "Log in"
 msgstr "登录"
 
-#: lib/kanban_web/components/layouts.ex:176
+#: lib/kanban_web/components/layouts.ex:170
 #: lib/kanban_web/components/layouts/root.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "退出"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:284
+#: lib/kanban_web/components/layouts.ex:264
 #: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -229,7 +229,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:164
-#: lib/kanban_web/live/review_live.ex:247
+#: lib/kanban_web/live/review_live.ex:245
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "取消"
@@ -408,8 +408,8 @@ msgstr "更新任务详情"
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
 
-#: lib/kanban_web/components/layouts.ex:130
-#: lib/kanban_web/components/layouts.ex:340
+#: lib/kanban_web/components/layouts.ex:124
+#: lib/kanban_web/components/layouts.ex:320
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -1227,6 +1227,8 @@ msgstr ""
 #: lib/kanban_web/components/task_metadata_grid.ex:123
 #: lib/kanban_web/live/task_live/form_component.html.heex:124
 #: lib/kanban_web/live/task_live/view_component.ex:413
+#: lib/kanban_web/task_tokens.ex:78
+#: lib/kanban_web/task_tokens.ex:83
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr ""
@@ -2182,7 +2184,7 @@ msgstr ""
 msgid "Read more"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:277
+#: lib/kanban_web/components/layouts.ex:257
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2265,7 +2267,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:263
+#: lib/kanban_web/components/layouts.ex:245
 #: lib/kanban_web/live/task_live/view_component.ex:239
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Metrics"
@@ -4622,7 +4624,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:142
 #: lib/kanban_web/components/review_queue_item.ex:226
-#: lib/kanban_web/live/review_live.ex:361
+#: lib/kanban_web/live/review_live.ex:359
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -4644,7 +4646,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] ""
 
-#: lib/kanban_web/components/layouts.ex:230
+#: lib/kanban_web/components/layouts.ex:224
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:59
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4725,7 +4727,7 @@ msgstr ""
 msgid "Active goals"
 msgstr "活动令牌"
 
-#: lib/kanban_web/components/layouts.ex:237
+#: lib/kanban_web/components/layouts.ex:231
 #: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agents"
@@ -4761,7 +4763,7 @@ msgstr "新建看板"
 msgid "Pre-configured for AI workflow"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:108
+#: lib/kanban_web/components/layouts.ex:102
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr ""
@@ -4771,7 +4773,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:256
+#: lib/kanban_web/components/layouts.ex:238
 #: lib/kanban_web/live/review_live.ex:94
 #: lib/kanban_web/live/review_live.ex:115
 #, elixir-autogen, elixir-format, fuzzy
@@ -4783,7 +4785,7 @@ msgstr ""
 msgid "Start with a blank board"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:117
+#: lib/kanban_web/components/layouts.ex:111
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Stride home"
 msgstr "Stride"
@@ -4883,7 +4885,7 @@ msgstr[0] ""
 #: lib/kanban_web/components/review_queue_item.ex:162
 #: lib/kanban_web/components/task_card.ex:282
 #: lib/kanban_web/components/task_card.ex:326
-#: lib/kanban_web/live/review_live.ex:380
+#: lib/kanban_web/live/review_live.ex:384
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
@@ -5498,28 +5500,28 @@ msgstr ""
 msgid "No recent activity."
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:93
+#: lib/kanban_web/task_tokens.ex:137
 #, elixir-autogen, elixir-format, fuzzy
 msgid "claimed"
 msgstr "认领:"
 
 #: lib/kanban_web/components/review_detail_header.ex:79
-#: lib/kanban_web/task_tokens.ex:94
+#: lib/kanban_web/task_tokens.ex:138
 #, elixir-autogen, elixir-format, fuzzy
 msgid "completed"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:96
+#: lib/kanban_web/task_tokens.ex:140
 #, elixir-autogen, elixir-format, fuzzy
 msgid "created"
 msgstr "创建时间"
 
-#: lib/kanban_web/task_tokens.ex:95
+#: lib/kanban_web/task_tokens.ex:139
 #, elixir-autogen, elixir-format, fuzzy
 msgid "reviewed"
 msgstr "审查"
 
-#: lib/kanban_web/task_tokens.ex:97
+#: lib/kanban_web/task_tokens.ex:141
 #, elixir-autogen, elixir-format, fuzzy
 msgid "unclaimed"
 msgstr "认领:"
@@ -5568,7 +5570,7 @@ msgstr ""
 
 #: lib/kanban_web/components/review_detail_header.ex:149
 #: lib/kanban_web/components/review_queue_item.ex:233
-#: lib/kanban_web/live/review_live.ex:364
+#: lib/kanban_web/live/review_live.ex:365
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{d}d ago"
 msgstr ""
@@ -5582,7 +5584,7 @@ msgstr ""
 
 #: lib/kanban_web/components/review_detail_header.ex:144
 #: lib/kanban_web/components/review_queue_item.ex:228
-#: lib/kanban_web/live/review_live.ex:362
+#: lib/kanban_web/live/review_live.ex:360
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{m}m ago"
 msgstr ""
@@ -5649,13 +5651,13 @@ msgstr ""
 msgid "No files changed."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:346
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] ""
 
-#: lib/kanban_web/live/review_live.ex:341
+#: lib/kanban_web/live/review_live.ex:339
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr ""
@@ -5675,17 +5677,17 @@ msgstr ""
 msgid "Inbox zero — nothing is waiting for review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:291
+#: lib/kanban_web/live/review_live.ex:289
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:231
+#: lib/kanban_web/live/review_live.ex:229
 #, elixir-autogen, elixir-format
 msgid "Notes for the agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:286
+#: lib/kanban_web/live/review_live.ex:284
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr ""
@@ -5695,7 +5697,7 @@ msgstr ""
 msgid "Select a task from the queue to start a review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:250
+#: lib/kanban_web/live/review_live.ex:248
 #, elixir-autogen, elixir-format
 msgid "Send request"
 msgstr ""
@@ -5705,12 +5707,32 @@ msgstr ""
 msgid "Unable to approve task."
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/review_live.ex:295
+#: lib/kanban_web/live/review_live.ex:293
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:356
+#: lib/kanban_web/live/review_live.ex:354
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:79
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Cancelled"
+msgstr "取消"
+
+#: lib/kanban_web/task_tokens.ex:82
+#, elixir-autogen, elixir-format
+msgid "Deferred"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:81
+#, elixir-autogen, elixir-format
+msgid "Duplicate"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:80
+#, elixir-autogen, elixir-format
+msgid "Won't do"
 msgstr ""

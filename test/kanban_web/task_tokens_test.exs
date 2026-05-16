@@ -113,4 +113,62 @@ defmodule KanbanWeb.TaskTokensTest do
       assert TaskTokens.complexity_word(:wat) == ""
     end
   end
+
+  describe "archive_reason_label/1" do
+    for {reason, label} <- [
+          {:completed, "Completed"},
+          {:cancelled, "Cancelled"},
+          {:wontdo, "Won't do"},
+          {:duplicate, "Duplicate"},
+          {:deferred, "Deferred"}
+        ] do
+      test "#{reason} → #{label}" do
+        assert TaskTokens.archive_reason_label(unquote(reason)) == unquote(label)
+      end
+    end
+
+    test "nil falls back to Completed (legacy archived rows)" do
+      assert TaskTokens.archive_reason_label(nil) == "Completed"
+    end
+
+    test "unknown reason falls back to Completed" do
+      assert TaskTokens.archive_reason_label(:nonsense) == "Completed"
+    end
+  end
+
+  describe "archive_reason_soft/1" do
+    for {reason, token} <- [
+          {:completed, "var(--st-done-soft)"},
+          {:cancelled, "var(--st-blocked-soft)"},
+          {:wontdo, "var(--surface-sunken)"},
+          {:duplicate, "var(--surface-sunken)"},
+          {:deferred, "var(--st-review-soft)"}
+        ] do
+      test "#{reason} → #{token}" do
+        assert TaskTokens.archive_reason_soft(unquote(reason)) == unquote(token)
+      end
+    end
+
+    test "nil falls back to st-done-soft" do
+      assert TaskTokens.archive_reason_soft(nil) == "var(--st-done-soft)"
+    end
+  end
+
+  describe "archive_reason_ink/1" do
+    for {reason, token} <- [
+          {:completed, "var(--st-done)"},
+          {:cancelled, "var(--st-blocked)"},
+          {:wontdo, "var(--ink-3)"},
+          {:duplicate, "var(--ink-3)"},
+          {:deferred, "var(--st-review)"}
+        ] do
+      test "#{reason} → #{token}" do
+        assert TaskTokens.archive_reason_ink(unquote(reason)) == unquote(token)
+      end
+    end
+
+    test "nil falls back to st-done" do
+      assert TaskTokens.archive_reason_ink(nil) == "var(--st-done)"
+    end
+  end
 end
