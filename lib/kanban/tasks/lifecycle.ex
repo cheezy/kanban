@@ -260,19 +260,43 @@ defmodule Kanban.Tasks.Lifecycle do
   end
 
   @doc """
-  Archives a task by setting archived_at to the current timestamp.
-  """
-  def archive_task(%Task{} = task) do
-    changeset =
-      Ecto.Changeset.change(task, archived_at: DateTime.utc_now() |> DateTime.truncate(:second))
+  Archives a task by stamping `archived_at` and persisting optional
+  archive metadata.
 
-    case Repo.update(changeset) do
+  ## Attrs
+
+  When `attrs` is empty (the default), only `archived_at` is set — the
+  task looks identical to the legacy archive flow. Callers that want to
+  surface a reason on the Archive view pass any subset of:
+
+    * `:archive_reason` — one of `:completed`, `:duplicate`, `:wontdo`,
+      `:deferred`, `:cancelled`
+    * `:archive_note` — required when `:archive_reason` is `:wontdo`,
+      `:deferred`, or `:cancelled`
+    * `:duplicate_of_id` — required when `:archive_reason` is `:duplicate`,
+      forbidden otherwise
+    * `:archived_by_id` — FK to the user performing the archive
+
+  All validation runs through `Task.changeset/2`, so the conditional
+  required-field rules introduced in W570 are enforced here. The
+  PubSub `:task_updated` event is broadcast so open ArchiveLive /
+  BoardLive sessions refresh.
+  """
+  def archive_task(%Task{} = task, attrs \\ %{}) do
+    archive_attrs =
+      attrs
+      |> Map.new()
+      |> Map.put(:archived_at, DateTime.utc_now() |> DateTime.truncate(:second))
+
+    case task |> Task.archive_changeset(archive_attrs) |> Repo.update() do
       {:ok, updated_task} ->
         :telemetry.execute(
           [:kanban, :task, :archived],
           %{task_id: updated_task.id},
           %{identifier: updated_task.identifier}
         )
+
+        Broadcaster.broadcast_task_change(updated_task, :task_updated)
 
         {:ok, updated_task}
 
@@ -282,18 +306,34 @@ defmodule Kanban.Tasks.Lifecycle do
   end
 
   @doc """
-  Unarchives a task by setting archived_at to nil.
+  Unarchives a task by clearing `archived_at` and every archive-metadata
+  field so the restored task looks fully alive again.
+
+  Per W572 pitfall #3, leaving `archive_reason` set on a restored task
+  would surface it on the Archive view's per-reason filter — not what
+  the user expects after pressing "Restore".
+
+  Broadcasts the PubSub `:task_updated` event so open archive pages
+  drop the row from their list.
   """
   def unarchive_task(%Task{} = task) do
-    changeset = Ecto.Changeset.change(task, archived_at: nil)
+    clear_attrs = %{
+      archived_at: nil,
+      archive_reason: nil,
+      archive_note: nil,
+      archived_by_id: nil,
+      duplicate_of_id: nil
+    }
 
-    case Repo.update(changeset) do
+    case task |> Task.archive_changeset(clear_attrs) |> Repo.update() do
       {:ok, updated_task} ->
         :telemetry.execute(
           [:kanban, :task, :unarchived],
           %{task_id: updated_task.id},
           %{identifier: updated_task.identifier}
         )
+
+        Broadcaster.broadcast_task_change(updated_task, :task_updated)
 
         {:ok, updated_task}
 

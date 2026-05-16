@@ -957,6 +957,35 @@ defmodule Kanban.Tasks.Task do
     end
   end
 
+  @doc """
+  Focused changeset for the archive write path. Casts only the
+  archive-metadata fields plus `archived_at`, runs
+  `validate_archive_fields/1`, and declares the relevant FK + check
+  constraints — but skips the unrelated full-task validations
+  (`validate_review_fields/1`, `validate_completion_fields/1`, etc.) so
+  archiving a task does NOT retroactively reject pre-existing inconsistent
+  state on unrelated fields.
+
+  See `Kanban.Tasks.Lifecycle.archive_task/2` for the caller.
+  """
+  def archive_changeset(task, attrs) do
+    task
+    |> cast(attrs, [
+      :archived_at,
+      :archive_reason,
+      :archive_note,
+      :archived_by_id,
+      :duplicate_of_id
+    ])
+    |> validate_archive_fields()
+    |> foreign_key_constraint(:archived_by_id)
+    |> foreign_key_constraint(:duplicate_of_id)
+    |> check_constraint(:duplicate_of_id,
+      name: :duplicate_of_id_not_self,
+      message: "must not reference the task itself"
+    )
+  end
+
   # Archive-reason conditional validations:
   #
   #   :completed                          → no extra fields required
