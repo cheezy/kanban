@@ -1156,6 +1156,7 @@ msgstr ""
 msgid "Add Verification Step"
 msgstr ""
 
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:73
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:118
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
@@ -5888,4 +5889,19 @@ msgstr ""
 #: lib/kanban_web/components/metrics_kpi_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "vs prev 14d"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:67
+#, elixir-autogen, elixir-format
+msgid "Cycle time · daily median (min)"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:74
+#, elixir-autogen, elixir-format
+msgid "Human"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:70
+#, elixir-autogen, elixir-format
+msgid "agent vs human · last 14 days"
 msgstr ""
