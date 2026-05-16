@@ -2243,6 +2243,8 @@ msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:245
+#: lib/kanban_web/live/metrics_live/workspace.ex:52
+#: lib/kanban_web/live/metrics_live/workspace.ex:73
 #: lib/kanban_web/live/task_live/view_component.ex:239
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -4105,6 +4107,7 @@ msgid "Issues that require physical access to a user's device or compromise of a
 msgstr ""
 
 #: lib/kanban_web/components/board_pulse_card.ex:124
+#: lib/kanban_web/live/metrics_live/workspace.ex:80
 #, elixir-autogen, elixir-format
 msgid "Last 14 days"
 msgstr ""
@@ -4778,6 +4781,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:82
+#: lib/kanban_web/live/metrics_live/workspace.ex:50
 #: lib/kanban_web/live/review_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5954,4 +5958,19 @@ msgstr ""
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:67
 #, elixir-autogen, elixir-format
 msgid "work in each column over time"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:79
+#, elixir-autogen, elixir-format
+msgid "All boards"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:81
+#, elixir-autogen, elixir-format
+msgid "Filter"
+msgstr ""
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:134
+#, elixir-autogen, elixir-format
+msgid "all boards"
 msgstr ""
