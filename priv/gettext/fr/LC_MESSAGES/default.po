@@ -1224,6 +1224,7 @@ msgstr ""
 msgid "Common pitfall to avoid"
 msgstr ""
 
+#: lib/kanban_web/components/archive_filter_chips.ex:169
 #: lib/kanban_web/components/archive_stats_strip.ex:51
 #: lib/kanban_web/components/task_metadata_grid.ex:123
 #: lib/kanban_web/live/task_live/form_component.html.heex:124
@@ -1874,6 +1875,7 @@ msgstr "Crochets de Flux de Travail Côté Client"
 msgid "Comprehensive API Documentation"
 msgstr ""
 
+#: lib/kanban_web/components/archive_filter_chips.ex:87
 #: lib/kanban_web/components/goal_progress_header.ex:67
 #: lib/kanban_web/components/task_metadata_grid.ex:84
 #: lib/kanban_web/live/goal_live/show.ex:227
@@ -5489,6 +5491,7 @@ msgid "%{m}m"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
@@ -5730,22 +5733,26 @@ msgstr ""
 msgid "oldest %{age}"
 msgstr ""
 
+#: lib/kanban_web/components/archive_filter_chips.ex:170
 #: lib/kanban_web/components/archive_stats_strip.ex:59
 #: lib/kanban_web/task_tokens.ex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cancelled"
 msgstr "Annuler"
 
+#: lib/kanban_web/components/archive_filter_chips.ex:173
 #: lib/kanban_web/task_tokens.ex:82
 #, elixir-autogen, elixir-format
 msgid "Deferred"
 msgstr ""
 
+#: lib/kanban_web/components/archive_filter_chips.ex:172
 #: lib/kanban_web/task_tokens.ex:81
 #, elixir-autogen, elixir-format
 msgid "Duplicate"
 msgstr ""
 
+#: lib/kanban_web/components/archive_filter_chips.ex:171
 #: lib/kanban_web/task_tokens.ex:80
 #, elixir-autogen, elixir-format
 msgid "Won't do"
@@ -5789,4 +5796,14 @@ msgstr ""
 #: lib/kanban_web/components/archive_stats_strip.ex:77
 #, elixir-autogen, elixir-format
 msgid "time spent before archive"
+msgstr ""
+
+#: lib/kanban_web/components/archive_filter_chips.ex:88
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Assignee"
+msgstr "Assigné à"
+
+#: lib/kanban_web/components/archive_filter_chips.ex:91
+#, elixir-autogen, elixir-format
+msgid "Date range"
 msgstr ""
