@@ -12,10 +12,11 @@ defmodule KanbanWeb.ArchiveLiveTest do
   describe "Archive Index" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
-    test "displays archived tasks page with board name", %{conn: conn, board: board} do
+    test "displays archive page with board name", %{conn: conn, board: board} do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      assert html =~ "Archived Tasks"
+      assert html =~ "data-archive-screen"
+      assert html =~ "Archive"
       assert html =~ board.name
     end
 
@@ -26,78 +27,68 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ ~p"/boards/#{board}"
     end
 
+    test "displays the new stats strip and filter chips", %{conn: conn, board: board} do
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "data-archive-stats-strip"
+      assert html =~ "data-archive-filter-chips"
+    end
+
     test "displays empty state when no archived tasks exist", %{conn: conn, board: board} do
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      assert html =~ "No archived tasks"
-      assert html =~ "Tasks that are archived will appear here"
+      assert html =~ "data-archive-empty"
+      assert html =~ "No archived tasks match this filter."
     end
 
-    test "displays archived tasks in a table", %{conn: conn, board: board, column: column} do
+    test "displays archived tasks via the ArchiveRow component",
+         %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Test Task", type: :work})
       {:ok, archived_task} = Tasks.archive_task(task)
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      refute html =~ "No archived tasks"
+      refute html =~ "data-archive-empty"
+      assert html =~ "data-archive-row"
       assert html =~ "Test Task"
       assert html =~ archived_task.identifier
-      assert html =~ "Work"
     end
 
-    test "displays task type badges correctly", %{conn: conn, board: board, column: column} do
-      work_task = task_fixture(column, %{title: "Work Task", type: :work})
-      defect_task = task_fixture(column, %{title: "Defect Task", type: :defect})
-      goal_task = task_fixture(column, %{title: "Goal Task", type: :goal})
+    test "renders the type icon for each archived task type",
+         %{conn: conn, board: board, column: column} do
+      work = task_fixture(column, %{title: "Work Task", type: :work})
+      defect = task_fixture(column, %{title: "Defect Task", type: :defect})
+      goal = task_fixture(column, %{title: "Goal Task", type: :goal})
 
-      Tasks.archive_task(work_task)
-      Tasks.archive_task(defect_task)
-      Tasks.archive_task(goal_task)
+      Tasks.archive_task(work)
+      Tasks.archive_task(defect)
+      Tasks.archive_task(goal)
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      assert html =~ "Work"
-      assert html =~ "Defect"
-      assert html =~ "Goal"
+      assert html =~ "hero-document-text"
+      assert html =~ "hero-bug-ant"
+      assert html =~ "hero-flag"
     end
 
-    test "displays task description when present", %{conn: conn, board: board, column: column} do
-      task =
-        task_fixture(column, %{
-          title: "Task with description",
-          description: "This is a detailed description"
-        })
-
-      Tasks.archive_task(task)
-
-      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
-
-      assert html =~ "Task with description"
-      assert html =~ "This is a detailed description"
-    end
-
-    test "displays archived date", %{conn: conn, board: board, column: column} do
+    test "renders a month header above each group of rows",
+         %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Test Task"})
-      {:ok, _archived_task} = Tasks.archive_task(task)
+      {:ok, _} = Tasks.archive_task(task)
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      # Check that the page contains a time element
-      assert html =~ "<time"
+      assert html =~ "data-archive-month-header"
     end
 
-    test "displays unarchive and delete buttons when user can modify", %{
-      conn: conn,
-      board: board,
-      column: column
-    } do
+    test "renders the kebab action menu trigger when user can modify",
+         %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Test Task"})
       Tasks.archive_task(task)
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      assert html =~ "Unarchive"
-      assert html =~ "Delete"
+      assert html =~ "data-archive-row-kebab"
     end
 
     test "unarchive button restores task to board", %{
@@ -258,11 +249,18 @@ defmodule KanbanWeb.ArchiveLiveTest do
       task = task_fixture(column, %{title: "Test Task"})
       Tasks.archive_task(task)
 
-      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
-
+      {:ok, index_live, html} = live(conn, ~p"/boards/#{board}/archive")
       assert html =~ "Test Task"
-      refute html =~ "Unarchive"
-      refute html =~ "Delete"
+
+      # Open the menu for this row — the buttons are gated by @can_modify
+      # so a read-only viewer should see the "Read-only access" placeholder
+      # instead.
+      kebab_html =
+        render_click(index_live, "open_archive_menu", %{"id" => task.id})
+
+      assert kebab_html =~ "data-archive-menu-read-only"
+      refute kebab_html =~ "data-archive-menu-restore"
+      refute kebab_html =~ "data-archive-menu-delete"
     end
 
     test "shows error message when unarchive fails", %{
@@ -489,7 +487,70 @@ defmodule KanbanWeb.ArchiveLiveTest do
       send(index_live.pid, {:something_unrelated, :payload})
 
       # Render must still succeed — the catch-all clause swallows the message.
-      assert render(index_live) =~ "Archived Tasks"
+      assert render(index_live) =~ "data-archive-screen"
+    end
+
+    test "filter_archive event narrows the visible rows to the selected reason",
+         %{conn: conn, board: board, column: column} do
+      completed = task_fixture(column, %{title: "Completed Work"})
+      cancelled = task_fixture(column, %{title: "Cancelled Work"})
+
+      {:ok, _} = Tasks.archive_task(completed, %{archive_reason: :completed})
+
+      {:ok, _} =
+        Tasks.archive_task(cancelled, %{
+          archive_reason: :cancelled,
+          archive_note: "Killed in flight"
+        })
+
+      {:ok, index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+      assert html =~ "Completed Work"
+      assert html =~ "Cancelled Work"
+
+      # Narrow to :cancelled — only that task should remain
+      filtered =
+        render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+
+      refute filtered =~ "Completed Work"
+      assert filtered =~ "Cancelled Work"
+    end
+
+    test "export_csv event flashes a 'coming soon' notice",
+         %{conn: conn, board: board} do
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "export_csv", %{})
+      assert html =~ "Export CSV — coming soon."
+    end
+
+    test "open_archive_menu reveals Restore + Delete buttons for an owner",
+         %{conn: conn, board: board, column: column} do
+      task = task_fixture(column, %{title: "Test Task"})
+      Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "open_archive_menu", %{"id" => task.id})
+
+      assert html =~ "data-archive-row-menu"
+      assert html =~ "data-archive-menu-restore"
+      assert html =~ "data-archive-menu-delete"
+      assert html =~ "Restore"
+      assert html =~ "Delete forever"
+    end
+
+    test "close_archive_menu hides the menu",
+         %{conn: conn, board: board, column: column} do
+      task = task_fixture(column, %{title: "Test Task"})
+      Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      opened = render_click(index_live, "open_archive_menu", %{"id" => task.id})
+      assert opened =~ "data-archive-row-menu"
+
+      closed = render_click(index_live, "close_archive_menu", %{})
+      refute closed =~ "data-archive-row-menu"
     end
   end
 
