@@ -4619,6 +4619,8 @@ msgstr ""
 
 #: lib/kanban_web/components/board_pulse_card.ex:247
 #: lib/kanban_web/components/goal_sidebar.ex:218
+#: lib/kanban_web/components/review_detail_header.ex:142
+#: lib/kanban_web/components/review_queue_item.ex:226
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -4873,6 +4875,7 @@ msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] ""
 
+#: lib/kanban_web/components/review_queue_item.ex:162
 #: lib/kanban_web/components/task_card.ex:282
 #: lib/kanban_web/components/task_card.ex:326
 #, elixir-autogen, elixir-format, fuzzy
@@ -5479,6 +5482,7 @@ msgid "Completions"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:274
+#: lib/kanban_web/components/review_stats_strip.ex:75
 #, elixir-autogen, elixir-format
 msgid "Hooks"
 msgstr ""
@@ -5493,6 +5497,7 @@ msgstr ""
 msgid "claimed"
 msgstr "认领:"
 
+#: lib/kanban_web/components/review_detail_header.ex:79
 #: lib/kanban_web/task_tokens.ex:94
 #, elixir-autogen, elixir-format, fuzzy
 msgid "completed"
@@ -5553,4 +5558,68 @@ msgstr ""
 #: lib/kanban_web/live/agents_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "live"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:149
+#: lib/kanban_web/components/review_queue_item.ex:233
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{d}d ago"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:147
+#: lib/kanban_web/components/review_queue_item.ex:231
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{h}h ago"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:144
+#: lib/kanban_web/components/review_queue_item.ex:228
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{m}m ago"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:143
+#: lib/kanban_web/components/review_queue_item.ex:227
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{s}s ago"
+msgstr ""
+
+#: lib/kanban_web/components/review_stats_strip.ex:54
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Acceptance"
+msgstr "验收标准"
+
+#: lib/kanban_web/components/review_detail_header.ex:121
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Approve"
+msgstr ""
+
+#: lib/kanban_web/components/review_stats_strip.ex:68
+#, elixir-autogen, elixir-format
+msgid "Diff"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:114
+#, elixir-autogen, elixir-format
+msgid "Request changes"
+msgstr ""
+
+#: lib/kanban_web/components/review_stats_strip.ex:61
+#, elixir-autogen, elixir-format
+msgid "Tests"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:72
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Unknown agent"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:111
+#, elixir-autogen, elixir-format
+msgid "View diff"
+msgstr ""
+
+#: lib/kanban_web/components/review_queue_item.ex:116
+#, elixir-autogen, elixir-format
+msgid "needs attention"
 msgstr ""
