@@ -1158,7 +1158,7 @@ msgid "Add Verification Step"
 msgstr ""
 
 #: lib/kanban_web/components/metrics_cycle_time_chart.ex:73
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:118
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:173
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
 msgid "Agent"
@@ -1989,12 +1989,18 @@ msgid "Archive task"
 msgstr ""
 
 #: lib/kanban_web/live/archive_live/index.html.heex:23
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:8
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
 msgstr "ボードに戻る"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:12
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:20
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:20
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:20
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:20
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:20
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:20
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Board:"
 msgstr "ボード"
@@ -2248,48 +2254,48 @@ msgstr ""
 msgid "Metrics"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/components.ex:184
-#: lib/kanban_web/live/metrics_live/components.ex:318
+#: lib/kanban_web/live/metrics_live/components.ex:253
+#: lib/kanban_web/live/metrics_live/components.ex:410
 #, elixir-autogen, elixir-format
 msgid "Agent Filter"
 msgstr "エージェントフィルター"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:68
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:60
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:210
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:70
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:131
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:330
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:102
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Agent Unknown"
 msgstr "不明なエージェント"
 
-#: lib/kanban_web/live/metrics_live/components.ex:192
-#: lib/kanban_web/live/metrics_live/components.ex:324
+#: lib/kanban_web/live/metrics_live/components.ex:267
+#: lib/kanban_web/live/metrics_live/components.ex:421
 #, elixir-autogen, elixir-format
 msgid "All Agents"
 msgstr "すべてのエージェント"
 
-#: lib/kanban_web/live/metrics_live/components.ex:158
-#: lib/kanban_web/live/metrics_live/components.ex:302
+#: lib/kanban_web/live/metrics_live/components.ex:222
+#: lib/kanban_web/live/metrics_live/components.ex:396
 #, elixir-autogen, elixir-format
 msgid "All Time"
 msgstr "全期間"
 
-#: lib/kanban_web/live/metrics_live/components.ex:372
+#: lib/kanban_web/live/metrics_live/components.ex:470
 #, elixir-autogen, elixir-format
 msgid "Average"
 msgstr "平均"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:54
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Avg Per Day"
 msgstr "1日あたりの平均"
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:10
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:14
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:10
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:10
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:14
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:30
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:32
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:32
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:32
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Back to Dashboard"
 msgstr "ダッシュボードに戻る"
@@ -2298,225 +2304,225 @@ msgstr "ダッシュボードに戻る"
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
 #: lib/kanban_web/live/goal_live/show.ex:257
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:162
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr "バックログ"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:86
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Time"
 msgstr "バックログ待ち時間"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:58
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:199
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:125
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:314
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
 msgstr "担当開始:"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:150
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:252
 #, elixir-autogen, elixir-format
 msgid "Completed Goals"
 msgstr "完了した目標"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:45
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:41
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:182
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:72
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:70
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Completed Tasks"
 msgstr "完了したタスク"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:64
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:56
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:171
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:203
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:62
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:91
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:283
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:318
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr "完了:"
 
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:52
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:174
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:195
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:119
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:286
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:307
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Created:"
 msgstr "作成:"
 
-#: lib/kanban_web/live/metrics_live/components.ex:272
+#: lib/kanban_web/live/metrics_live/components.ex:363
 #, elixir-autogen, elixir-format
 msgid "Customize your %{view_name} view"
 msgstr "%{view_name}ビューをカスタマイズ"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:70
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Cycle Time"
 msgstr "サイクルタイム"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:4
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Cycle Time Metrics"
 msgstr "サイクルタイムメトリクス"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:98
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Daily Completions Bar Chart"
 msgstr "日別完了数の棒グラフ"
 
-#: lib/kanban_web/live/metrics_live/components.ex:642
+#: lib/kanban_web/live/metrics_live/components.ex:795
 #, elixir-autogen, elixir-format
 msgid "Excel"
 msgstr "Excel"
 
-#: lib/kanban_web/live/metrics_live/components.ex:236
-#: lib/kanban_web/live/metrics_live/components.ex:348
+#: lib/kanban_web/live/metrics_live/components.ex:314
+#: lib/kanban_web/live/metrics_live/components.ex:444
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr "週末を除外"
 
-#: lib/kanban_web/live/metrics_live/components.ex:617
+#: lib/kanban_web/live/metrics_live/components.ex:758
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr "エクスポート"
 
-#: lib/kanban_web/live/metrics_live/components.ex:270
+#: lib/kanban_web/live/metrics_live/components.ex:360
 #, elixir-autogen, elixir-format
 msgid "Filters"
 msgstr "フィルター"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:153
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:255
 #, elixir-autogen, elixir-format
 msgid "Goals completed in this time range"
 msgstr "この期間に完了した目標"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:183
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:295
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date"
 msgstr "完了日ごとにグループ化"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:46
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date with cycle time metrics"
 msgstr "サイクルタイムメトリクス付きの完了日別グループ"
 
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:42
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date with lead time metrics"
 msgstr "リードタイムメトリクス付きの完了日別グループ"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:7
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Human bottleneck analysis"
 msgstr "ボトルネック分析"
 
-#: lib/kanban_web/live/metrics_live/components.ex:153
-#: lib/kanban_web/live/metrics_live/components.ex:296
+#: lib/kanban_web/live/metrics_live/components.ex:217
+#: lib/kanban_web/live/metrics_live/components.ex:390
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "過去30日間"
 
-#: lib/kanban_web/live/metrics_live/components.ex:150
-#: lib/kanban_web/live/metrics_live/components.ex:293
+#: lib/kanban_web/live/metrics_live/components.ex:214
+#: lib/kanban_web/live/metrics_live/components.ex:387
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "過去7日間"
 
-#: lib/kanban_web/live/metrics_live/components.ex:156
-#: lib/kanban_web/live/metrics_live/components.ex:299
+#: lib/kanban_web/live/metrics_live/components.ex:220
+#: lib/kanban_web/live/metrics_live/components.ex:393
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
 msgstr "過去90日間"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:109
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Lead Time"
 msgstr "リードタイム"
 
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:4
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Lead Time Metrics"
 msgstr "リードタイムメトリクス"
 
-#: lib/kanban_web/live/metrics_live/components.ex:414
+#: lib/kanban_web/live/metrics_live/components.ex:488
 #, elixir-autogen, elixir-format
 msgid "Max"
 msgstr "最大"
 
-#: lib/kanban_web/live/metrics_live/components.ex:386
+#: lib/kanban_web/live/metrics_live/components.ex:476
 #, elixir-autogen, elixir-format
 msgid "Median"
 msgstr "中央値"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:4
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Metrics Dashboard"
 msgstr "メトリクスダッシュボード"
 
-#: lib/kanban_web/live/metrics_live/components.ex:400
+#: lib/kanban_web/live/metrics_live/components.ex:482
 #, elixir-autogen, elixir-format
 msgid "Min"
 msgstr "最小"
 
-#: lib/kanban_web/live/metrics_live/components.ex:116
+#: lib/kanban_web/live/metrics_live/components.ex:169
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr "データがありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:112
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "No tasks claimed in this time range"
 msgstr "この期間に担当されたタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:51
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:47
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:112
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:189
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:78
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:76
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:201
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:301
 #, elixir-autogen, elixir-format
 msgid "No tasks completed in this time range"
 msgstr "この期間に完了したタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:113
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:155
 #, elixir-autogen, elixir-format
 msgid "No tasks started in this time range"
 msgstr "この期間に開始されたタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:57
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "No tasks waiting for review in this time range"
 msgstr "この期間にレビュー待ちのタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/components.ex:636
+#: lib/kanban_web/live/metrics_live/components.ex:784
 #, elixir-autogen, elixir-format
 msgid "PDF"
 msgstr "PDF"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:82
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Peak Count"
 msgstr "ピーク数"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:68
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Peak Day"
 msgstr "ピーク日"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:5
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Performance metrics and insights for your board"
 msgstr "ボードのパフォーマンスメトリクスとインサイト"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:162
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Queue"
 msgstr "キュー"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:87
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Time"
 msgstr "キュー待ち時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:8
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Queue and wait time analysis"
 msgstr "キューと待ち時間の分析"
@@ -2528,135 +2534,135 @@ msgstr "キューと待ち時間の分析"
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
 #: lib/kanban_web/live/goal_live/show.ex:260
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:154
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "レビュー"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:41
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Review Wait Time"
 msgstr "レビュー待ち時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:66
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Reviewed:"
 msgstr "レビュー完了:"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:59
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:126
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:86
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Started:"
 msgstr "開始:"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:101
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Tasks completed per day"
 msgstr "1日あたりの完了タスク数"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:5
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Tasks completed per day with detailed breakdown"
 msgstr "詳細な内訳付きの1日あたりの完了タスク数"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:65
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:36
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Throughput"
 msgstr "スループット"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:4
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Throughput Metrics"
 msgstr "スループットメトリクス"
 
-#: lib/kanban_web/live/metrics_live/components.ex:141
-#: lib/kanban_web/live/metrics_live/components.ex:283
+#: lib/kanban_web/live/metrics_live/components.ex:199
+#: lib/kanban_web/live/metrics_live/components.ex:374
 #, elixir-autogen, elixir-format
 msgid "Time Range"
 msgstr "期間"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:7
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Time from claim to completion"
 msgstr "担当開始から完了までの時間"
 
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:5
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Time from creation to completion"
 msgstr "作成から完了までの時間"
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:8
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Time from start to completion"
 msgstr "開始から完了までの時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:93
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the backlog before being claimed"
 msgstr "タスクが担当されるまでバックログで待機する時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:94
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the queue before work begins"
 msgstr "作業が始まるまでキューで待機する時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:46
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
 
 #: lib/kanban_web/components/agent_roster_card.ex:156
-#: lib/kanban_web/live/metrics_live/components.ex:290
+#: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
 msgstr "今日"
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:119
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:37
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:176
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Total Tasks"
 msgstr "タスク合計"
 
-#: lib/kanban_web/live/metrics_live/components.ex:60
+#: lib/kanban_web/live/metrics_live/components.ex:89
 #, elixir-autogen, elixir-format
 msgid "View details"
 msgstr "詳細を見る"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:146
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:202
 #, elixir-autogen, elixir-format
 msgid "Wait Time"
 msgstr "待ち時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:4
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Wait Time Metrics"
 msgstr "待ち時間メトリクス"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:78
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:117
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:131
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "avg"
 msgstr "平均"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:82
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:121
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:135
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "median"
 msgstr "中央値"
 
-#: lib/kanban_web/live/metrics_live/components.ex:727
+#: lib/kanban_web/live/metrics_live/components.ex:901
 #, elixir-autogen, elixir-format
 msgid "task"
 msgstr "タスク"
 
-#: lib/kanban_web/live/metrics_live/components.ex:728
+#: lib/kanban_web/live/metrics_live/components.ex:902
 #, elixir-autogen, elixir-format
 msgid "tasks"
 msgstr "タスク"
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:43
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "tasks completed"
 msgstr "タスク完了"
@@ -2711,7 +2717,7 @@ msgstr ""
 msgid "(unnamed step)"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:28
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:62
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:65
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
@@ -2743,68 +2749,68 @@ msgstr ""
 msgid "exit %{code}"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:88
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "(no reason given)"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:121
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "Avg Steps / Task"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:46
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:4
+#: lib/kanban_web/live/metrics_live/compliance.ex:48
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:109
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:165
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compliance by Agent"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:145
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:213
 #, elixir-autogen, elixir-format
 msgid "No agent activity recorded"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:102
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "No skipped steps recorded"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:70
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "No workflow step data yet"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:77
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:125
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Skip Reasons"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:17
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Step Dispatch Rates"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:120
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Tasks With Steps"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:6
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Workflow step dispatch, skip reasons, and per-agent compliance"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:189
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:252
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Compliance"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/dashboard.html.heex:193
+#: lib/kanban_web/live/metrics_live/dashboard.html.heex:256
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr ""
@@ -2814,17 +2820,17 @@ msgstr ""
 msgid "You don't have permission to view compliance metrics for this board."
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:27
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:59
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Dispatch Rate"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:26
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Step"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:29
+#: lib/kanban_web/live/metrics_live/compliance.html.heex:65
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Total"
 msgstr "タスク合計"
@@ -3071,7 +3077,7 @@ msgstr ""
 msgid "Assignee does not have access to this board"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:102
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Backlog Wait Tasks"
 msgstr "バックログ待ち時間"
@@ -3111,12 +3117,12 @@ msgstr ""
 msgid "Please wait a moment before submitting another issue."
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Queue Wait Tasks"
 msgstr "キュー待ち時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:52
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Review Wait Tasks"
 msgstr "レビュー待ち時間"
