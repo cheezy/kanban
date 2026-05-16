@@ -834,8 +834,14 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/metrics")
 
-      # Extract the throughput number from the HTML (handles line breaks and whitespace)
-      throughput_match = Regex.run(~r/Throughput.*?text-4xl[^>]*>\s*(\d+)\s*</s, html)
+      # Extract the throughput number from inside the W589-restyled
+      # throughput KPI card (now identified by data-metrics-board-kpi-card="throughput").
+      throughput_match =
+        Regex.run(
+          ~r/data-metrics-board-kpi-card="throughput"[\s\S]*?font-size: 24px[^>]*>\s*(\d+)\s*</,
+          html
+        )
+
       throughput_value = if throughput_match, do: Enum.at(throughput_match, 1), else: nil
 
       assert throughput_value == "8",

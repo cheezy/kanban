@@ -1,207 +1,260 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} board={@board}>
-  <div class="mx-auto max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
-    <.header>
-      {@board.name <> " - " <> gettext("Metrics Dashboard")}
-      <:subtitle>{gettext("Performance metrics and insights for your board")}</:subtitle>
-      <:actions>
-        <.link navigate={~p"/boards/#{@board}"}>
-          <.button>{gettext("Back to Board")}</.button>
-        </.link>
-      </:actions>
-    </.header>
+  <div
+    class="stride-screen"
+    data-metrics-board-dashboard
+    style="display: flex; flex-direction: column; min-height: 0; padding: 18px 0;"
+  >
+    <header style={[
+      "padding: 0 28px 4px;",
+      "display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;"
+    ]}>
+      <h1 style={[
+        "margin: 0;",
+        "font-size: 18px; font-weight: 600;",
+        "letter-spacing: -0.01em;",
+        "color: var(--ink);"
+      ]}>
+        {gettext("Metrics Dashboard")}
+      </h1>
+      <span style="font-size: 12.5px; color: var(--ink-3);">
+        {gettext("Board:")} {@board.name}
+      </span>
+      <span style="flex: 1;" />
+      <.link
+        navigate={~p"/boards/#{@board}"}
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "font-size: 12px; color: var(--ink-2); text-decoration: none;"
+        ]}
+      >
+        <.icon name="hero-arrow-left" class="w-3 h-3" /> {gettext("Back to Board")}
+      </.link>
+    </header>
 
-    <.metric_filters
-      time_range={@time_range}
-      agent_name={@agent_name}
-      exclude_weekends={@exclude_weekends}
-      agents={@agents}
-      view_name="metrics"
-      show_agent_filter={@board.ai_optimized_board}
-    />
+    <p style={[
+      "margin: 0; padding: 0 28px 14px;",
+      "font-size: 12.5px; color: var(--ink-3);"
+    ]}>
+      {gettext("Performance metrics and insights for your board")}
+    </p>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+    <div style="padding: 0 28px;">
+      <.metric_filters
+        time_range={@time_range}
+        agent_name={@agent_name}
+        exclude_weekends={@exclude_weekends}
+        agents={@agents}
+        view_name="metrics"
+        show_agent_filter={@board.ai_optimized_board}
+      />
+    </div>
+
+    <div
+      data-metrics-board-kpi-grid
+      style={[
+        "padding: 18px 28px 28px;",
+        "display: grid; gap: 14px;",
+        "grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"
+      ]}
+    >
       <.link
         navigate={
           ~p"/boards/#{@board}/metrics/throughput?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }
-        class="group bg-gradient-to-br from-white to-blue-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-blue-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+        data-metrics-board-kpi-card="throughput"
+        style={[
+          "display: block; padding: 14px 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
       >
-        <div class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
-                <.icon
-                  name="hero-chart-bar-solid"
-                  class="h-5 w-5 text-blue-600 dark:text-blue-400"
-                /> {gettext("Throughput")}
-              </dt>
-              <dd class="mt-1">
-                <div class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {total_throughput(@throughput)}
-                </div>
-                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {gettext("tasks completed")}
-                </div>
-              </dd>
-            </div>
-            <div class="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <.icon
-                name="hero-chart-bar"
-                class="h-8 w-8 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          </div>
+        <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-chart-bar-solid" class="h-4 w-4" />
+          </span>
+          <span style={[
+            "font-size: 9.5px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("Throughput")}
+          </span>
+        </header>
+        <div style={[
+          "font-size: 24px; font-weight: 600;",
+          "letter-spacing: -0.025em;",
+          "color: var(--ink);",
+          "font-variant-numeric: tabular-nums;"
+        ]}>
+          {total_throughput(@throughput)}
         </div>
+        <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--ink-3);">
+          {gettext("tasks completed")}
+        </p>
       </.link>
 
       <.link
         navigate={
           ~p"/boards/#{@board}/metrics/cycle-time?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }
-        class="group bg-gradient-to-br from-white to-purple-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-purple-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+        data-metrics-board-kpi-card="cycle-time"
+        style={[
+          "display: block; padding: 14px 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
       >
-        <div class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
-                <.icon
-                  name="hero-clock-solid"
-                  class="h-5 w-5 text-purple-600 dark:text-purple-400"
-                /> {gettext("Cycle Time")}
-              </dt>
-              <dd class="mt-1">
-                <div class="flex items-baseline gap-2 mb-2">
-                  <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                    {format_hours(@cycle_time.average_hours)}
-                  </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {gettext("avg")}
-                  </div>
-                </div>
-                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {format_hours(@cycle_time.median_hours)} {gettext("median")}
-                </div>
-              </dd>
-            </div>
-            <div class="flex-shrink-0 p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <.icon
-                name="hero-clock"
-                class="h-8 w-8 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          </div>
+        <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-clock-solid" class="h-4 w-4" />
+          </span>
+          <span style={[
+            "font-size: 9.5px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("Cycle Time")}
+          </span>
+        </header>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style={[
+            "font-size: 24px; font-weight: 600;",
+            "letter-spacing: -0.025em;",
+            "color: var(--ink);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {format_hours(@cycle_time.average_hours)}
+          </span>
+          <span style="font-size: 11.5px; color: var(--ink-3);">
+            {gettext("avg")}
+          </span>
         </div>
+        <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--ink-3);">
+          {format_hours(@cycle_time.median_hours)} {gettext("median")}
+        </p>
       </.link>
 
       <.link
         navigate={
           ~p"/boards/#{@board}/metrics/lead-time?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }
-        class="group bg-gradient-to-br from-white to-green-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-green-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+        data-metrics-board-kpi-card="lead-time"
+        style={[
+          "display: block; padding: 14px 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
       >
-        <div class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
-                <.icon
-                  name="hero-arrow-trending-up-solid"
-                  class="h-5 w-5 text-green-600 dark:text-green-400"
-                /> {gettext("Lead Time")}
-              </dt>
-              <dd class="mt-1">
-                <div class="flex items-baseline gap-2 mb-2">
-                  <div class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                    {format_hours(@lead_time.average_hours)}
-                  </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {gettext("avg")}
-                  </div>
-                </div>
-                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {format_hours(@lead_time.median_hours)} {gettext("median")}
-                </div>
-              </dd>
-            </div>
-            <div class="flex-shrink-0 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <.icon
-                name="hero-arrow-trending-up"
-                class="h-8 w-8 text-green-600 dark:text-green-400 group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          </div>
+        <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-arrow-trending-up-solid" class="h-4 w-4" />
+          </span>
+          <span style={[
+            "font-size: 9.5px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("Lead Time")}
+          </span>
+        </header>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style={[
+            "font-size: 24px; font-weight: 600;",
+            "letter-spacing: -0.025em;",
+            "color: var(--ink);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {format_hours(@lead_time.average_hours)}
+          </span>
+          <span style="font-size: 11.5px; color: var(--ink-3);">
+            {gettext("avg")}
+          </span>
         </div>
+        <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--ink-3);">
+          {format_hours(@lead_time.median_hours)} {gettext("median")}
+        </p>
       </.link>
 
       <.link
         navigate={
           ~p"/boards/#{@board}/metrics/wait-time?time_range=#{@time_range}&agent_name=#{@agent_name || ""}&exclude_weekends=#{@exclude_weekends}"
         }
-        class="group bg-gradient-to-br from-white to-amber-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-amber-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+        data-metrics-board-kpi-card="wait-time"
+        style={[
+          "display: block; padding: 14px 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
       >
-        <div class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
-                <.icon name="hero-pause-solid" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                {gettext("Wait Time")}
-              </dt>
-              <dd class="mt-1 space-y-2">
-                <div :if={@board.ai_optimized_board} class="flex items-center gap-2">
-                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {format_hours(@wait_time.review_wait.average_hours)}
-                  </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {gettext("Review")}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {format_hours(@wait_time.backlog_wait.average_hours)}
-                  </div>
-                  <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {if @board.ai_optimized_board, do: gettext("Backlog"), else: gettext("Queue")}
-                  </div>
-                </div>
-              </dd>
-            </div>
-            <div class="flex-shrink-0 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-              <.icon
-                name="hero-pause"
-                class="h-8 w-8 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          </div>
+        <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-pause-solid" class="h-4 w-4" />
+          </span>
+          <span style={[
+            "font-size: 9.5px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("Wait Time")}
+          </span>
+        </header>
+        <div
+          :if={@board.ai_optimized_board}
+          style="display: flex; align-items: baseline; gap: 8px;"
+        >
+          <span style={[
+            "font-size: 18px; font-weight: 600;",
+            "color: var(--ink);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {format_hours(@wait_time.review_wait.average_hours)}
+          </span>
+          <span style="font-size: 11.5px; color: var(--ink-3);">{gettext("Review")}</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+          <span style={[
+            "font-size: 18px; font-weight: 600;",
+            "color: var(--ink);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {format_hours(@wait_time.backlog_wait.average_hours)}
+          </span>
+          <span style="font-size: 11.5px; color: var(--ink-3);">
+            {if @board.ai_optimized_board, do: gettext("Backlog"), else: gettext("Queue")}
+          </span>
         </div>
       </.link>
 
       <.link
         :if={@board.ai_optimized_board}
         navigate={~p"/boards/#{@board}/metrics/compliance"}
-        class="group bg-gradient-to-br from-white to-teal-50 dark:from-zinc-800 dark:to-zinc-900 overflow-hidden shadow-lg rounded-xl border-l-4 border-teal-500 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer block"
+        data-metrics-board-kpi-card="compliance"
+        style={[
+          "display: block; padding: 14px 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;",
+          "text-decoration: none; color: inherit;"
+        ]}
       >
-        <div class="p-6">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <dt class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">
-                <.icon
-                  name="hero-shield-check-solid"
-                  class="h-5 w-5 text-teal-600 dark:text-teal-400"
-                /> {gettext("Compliance")}
-              </dt>
-              <dd class="mt-1">
-                <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {gettext("Workflow step dispatch rates and agent compliance")}
-                </div>
-              </dd>
-            </div>
-            <div class="flex-shrink-0 p-3 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-              <.icon
-                name="hero-shield-check"
-                class="h-8 w-8 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300"
-              />
-            </div>
-          </div>
-        </div>
+        <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="display: inline-flex; color: var(--stride-orange);">
+            <.icon name="hero-shield-check-solid" class="h-4 w-4" />
+          </span>
+          <span style={[
+            "font-size: 9.5px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("Compliance")}
+          </span>
+        </header>
+        <p style="margin: 4px 0 0; font-size: 12px; color: var(--ink-2); line-height: 1.4;">
+          {gettext("Workflow step dispatch rates and agent compliance")}
+        </p>
       </.link>
     </div>
   </div>
