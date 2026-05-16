@@ -49,6 +49,7 @@ msgstr " · Gestion des Tâches"
 #: lib/kanban_web/components/board_pulse_card.ex:149
 #: lib/kanban_web/components/goal_progress_header.ex:223
 #: lib/kanban_web/components/marketing_mini_board.ex:232
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
 #: lib/kanban_web/live/goal_live/show.ex:261
 #: lib/kanban_web/task_tokens.ex:23
@@ -2294,6 +2295,7 @@ msgid "Back to Dashboard"
 msgstr "Retour au tableau de bord"
 
 #: lib/kanban_web/components/goal_progress_header.ex:219
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
 #: lib/kanban_web/live/goal_live/show.ex:257
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:162
@@ -2523,6 +2525,7 @@ msgstr "Analyse de la file d'attente et du temps d'attente"
 #: lib/kanban_web/components/board_pulse_card.ex:148
 #: lib/kanban_web/components/goal_progress_header.ex:222
 #: lib/kanban_web/components/marketing_mini_board.ex:216
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
 #: lib/kanban_web/live/goal_live/show.ex:260
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:154
@@ -3239,6 +3242,7 @@ msgstr ""
 #: lib/kanban_web/components/board_pulse_card.ex:147
 #: lib/kanban_web/components/goal_progress_header.ex:221
 #: lib/kanban_web/components/marketing_mini_board.ex:195
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
 #: lib/kanban_web/live/goal_live/show.ex:259
 #: lib/kanban_web/task_tokens.ex:21
@@ -3370,6 +3374,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:220
 #: lib/kanban_web/components/goal_sidebar.ex:64
 #: lib/kanban_web/components/marketing_mini_board.ex:176
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
 #: lib/kanban_web/live/goal_live/show.ex:258
 #: lib/kanban_web/task_tokens.ex:20
@@ -5934,4 +5939,19 @@ msgstr ""
 #: lib/kanban_web/components/metrics_agent_leaderboard.ex:56
 #, elixir-autogen, elixir-format, fuzzy
 msgid "by completed"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:64
+#, elixir-autogen, elixir-format
+msgid "Cumulative flow"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:87
+#, elixir-autogen, elixir-format
+msgid "Cumulative flow diagram"
+msgstr ""
+
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:67
+#, elixir-autogen, elixir-format
+msgid "work in each column over time"
 msgstr ""
