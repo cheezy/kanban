@@ -1224,6 +1224,7 @@ msgstr ""
 msgid "Common pitfall to avoid"
 msgstr ""
 
+#: lib/kanban_web/components/archive_stats_strip.ex:51
 #: lib/kanban_web/components/task_metadata_grid.ex:123
 #: lib/kanban_web/live/task_live/form_component.html.heex:124
 #: lib/kanban_web/live/task_live/view_component.ex:413
@@ -5729,6 +5730,7 @@ msgstr ""
 msgid "oldest %{age}"
 msgstr ""
 
+#: lib/kanban_web/components/archive_stats_strip.ex:59
 #: lib/kanban_web/task_tokens.ex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cancelled"
@@ -5747,4 +5749,44 @@ msgstr ""
 #: lib/kanban_web/task_tokens.ex:80
 #, elixir-autogen, elixir-format
 msgid "Won't do"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:75
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Avg cycle · completed"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:43
+#, elixir-autogen, elixir-format
+msgid "Total archived"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:67
+#, elixir-autogen, elixir-format
+msgid "Won't do · duplicate"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:45
+#, elixir-autogen, elixir-format
+msgid "across the workspace"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:61
+#, elixir-autogen, elixir-format
+msgid "killed in flight or before"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:53
+#, elixir-autogen, elixir-format
+msgid "reached Done before archive"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:69
+#, elixir-autogen, elixir-format
+msgid "scope / priority decisions"
+msgstr ""
+
+#: lib/kanban_web/components/archive_stats_strip.ex:77
+#, elixir-autogen, elixir-format
+msgid "time spent before archive"
 msgstr ""
