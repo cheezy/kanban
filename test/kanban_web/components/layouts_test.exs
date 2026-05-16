@@ -97,4 +97,69 @@ defmodule KanbanWeb.LayoutsTest do
       assert row_inner =~ "var(--ink-4)"
     end
   end
+
+  describe "side_nav/1 — Metrics entry (W586)" do
+    test "renders a workspace Metrics link pointing to /metrics outside a board" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: nil, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      assert html =~ "Metrics"
+      assert html =~ ~s(href="/metrics")
+      assert html =~ "hero-chart-bar"
+    end
+
+    test "renders the workspace Metrics link exactly once when inside a board scope" do
+      # The side_nav :board attr is documented as reserved for future
+      # board-aware nav state and is currently unused by the nav itself.
+      # The workspace /metrics entry from primary_nav_items/1 appears
+      # regardless of board context, and there is no second /metrics
+      # link emitted by the SideNav even inside a board.
+      user = user_fixture()
+      board = board_fixture(user)
+      assigns = %{current_scope: scope_for(user), active: nil, board: board}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      hrefs = Regex.scan(~r/href="\/metrics"/, html)
+      assert length(hrefs) == 1
+    end
+
+    test "active state highlights the Metrics entry when :metrics is passed" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: :metrics, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      [_, after_href] = String.split(html, ~s(href="/metrics"), parts: 2)
+      [row_inner, _] = String.split(after_href, "</a>", parts: 2)
+
+      assert row_inner =~ "var(--surface)"
+      assert row_inner =~ "var(--stride-orange)"
+      assert row_inner =~ "Metrics"
+    end
+
+    test "both the new workspace Metrics entry and the existing Boards entry coexist" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: nil, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      assert html =~ ~s(href="/boards")
+      assert html =~ ~s(href="/metrics")
+    end
+  end
 end
