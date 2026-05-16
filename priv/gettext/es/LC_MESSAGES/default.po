@@ -4626,6 +4626,7 @@ msgstr ""
 msgid "blocking · 60s"
 msgstr ""
 
+#: lib/kanban_web/components/archive_row.ex:359
 #: lib/kanban_web/components/board_pulse_card.ex:247
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:142
@@ -5582,6 +5583,7 @@ msgstr ""
 msgid "live"
 msgstr ""
 
+#: lib/kanban_web/components/archive_row.ex:365
 #: lib/kanban_web/components/review_detail_header.ex:149
 #: lib/kanban_web/components/review_queue_item.ex:233
 #: lib/kanban_web/live/review_live.ex:365
@@ -5589,6 +5591,7 @@ msgstr ""
 msgid "%{d}d ago"
 msgstr ""
 
+#: lib/kanban_web/components/archive_row.ex:363
 #: lib/kanban_web/components/review_detail_header.ex:147
 #: lib/kanban_web/components/review_queue_item.ex:231
 #: lib/kanban_web/live/review_live.ex:363
@@ -5596,6 +5599,7 @@ msgstr ""
 msgid "%{h}h ago"
 msgstr ""
 
+#: lib/kanban_web/components/archive_row.ex:360
 #: lib/kanban_web/components/review_detail_header.ex:144
 #: lib/kanban_web/components/review_queue_item.ex:228
 #: lib/kanban_web/live/review_live.ex:360
@@ -5806,4 +5810,29 @@ msgstr "Asignado a"
 #: lib/kanban_web/components/archive_filter_chips.ex:91
 #, elixir-autogen, elixir-format
 msgid "Date range"
+msgstr ""
+
+#: lib/kanban_web/components/archive_row.ex:101
+#, elixir-autogen, elixir-format
+msgid "Open archive actions"
+msgstr ""
+
+#: lib/kanban_web/components/archive_row.ex:313
+#, elixir-autogen, elixir-format
+msgid "by"
+msgstr ""
+
+#: lib/kanban_web/components/archive_row.ex:260
+#, elixir-autogen, elixir-format
+msgid "died at"
+msgstr ""
+
+#: lib/kanban_web/components/archive_row.ex:192
+#, elixir-autogen, elixir-format
+msgid "goal:"
+msgstr ""
+
+#: lib/kanban_web/components/archive_row.ex:250
+#, elixir-autogen, elixir-format, fuzzy
+msgid "unknown"
 msgstr ""
