@@ -51,11 +51,13 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
   end
 
   describe "registration page" do
-    test "renders the shared card framing", %{conn: conn} do
+    # NOTE: Rewritten in W653; whole file slated for deletion in W657.
+    test "renders the editorial auth_frame with Create-your-account title", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      assert_shared_card_chrome(html, "registration")
-      assert html =~ "Create Your Account"
+      assert html =~ "Create your account"
+      # Auth_frame brand panel rotating signup quote
+      assert html =~ "shipped 38"
     end
   end
 

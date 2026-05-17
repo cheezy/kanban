@@ -8,8 +8,32 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
     test "renders registration page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      assert html =~ "Create Your Account"
-      assert html =~ "Log in"
+      assert html =~ "Create your account"
+      assert html =~ "Sign in"
+    end
+
+    test "renders inside the editorial auth_frame", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/register")
+
+      # The auth_frame brand panel renders the rotating signup quote
+      assert html =~ "shipped 38"
+      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+    end
+
+    test "renders the SSO rows (Google + GitHub) per design's Sign Up state", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/register")
+
+      assert html =~ "Continue with"
+      assert html =~ "Google"
+      assert html =~ "GitHub"
+    end
+
+    test "renders the terms-and-conditions checkbox", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/register")
+
+      assert html =~ "I agree to the"
+      assert html =~ "Terms of Service"
+      assert html =~ "Acceptable Use Policy"
     end
 
     test "redirects if already logged in", %{conn: conn} do
@@ -30,7 +54,7 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
         |> element("#registration_form")
         |> render_change(user: %{"email" => "with spaces"})
 
-      assert result =~ "Create Your Account"
+      assert result =~ "Create your account"
       assert result =~ "must have the @ sign and no spaces"
     end
   end
@@ -86,16 +110,16 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
   end
 
   describe "registration navigation" do
-    test "redirects to login page when the Log in button is clicked", %{conn: conn} do
+    test "redirects to login page when the Sign in link is clicked", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/register")
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Log in")
+        |> element("main a", "Sign in")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert login_html =~ "Log in"
+      assert login_html =~ "Sign in"
     end
   end
 end

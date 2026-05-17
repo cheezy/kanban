@@ -86,7 +86,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
         |> render_click()
         |> follow_redirect(conn, ~p"/users/register")
 
-      assert login_html =~ "Create Your Account"
+      assert login_html =~ "Create your account"
     end
   end
 

@@ -1,7 +1,7 @@
 defmodule KanbanWeb.UserLive.Registration do
   use KanbanWeb, :live_view
 
-  import KanbanWeb.AuthComponents
+  import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
@@ -9,65 +9,139 @@ defmodule KanbanWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.auth_form
-        title={gettext("Create Your Account")}
-        icon_gradient="from-orange-500 to-orange-600"
-        icon_path="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-      >
-        <:subtitle>
-          {gettext("Already registered?")}
-          <.link
-            navigate={~p"/users/log-in"}
-            class="font-semibold text-primary hover:underline"
-          >
-            {gettext("Log in")}
-          </.link>
-          {gettext("to your account.")}
-        </:subtitle>
-
-        <.form
-          for={@form}
-          id="registration_form"
-          action={~p"/users/register"}
-          phx-submit="save"
-          phx-change="validate"
-          phx-trigger-action={@trigger_submit}
+    <.auth_frame quote_key={:signup}>
+      <:footer_switch>
+        <span>{gettext("Already have an account?")}</span>
+        <.link
+          navigate={~p"/users/log-in"}
+          style="color: var(--ink); font-weight: 500; margin-left: 4px; text-decoration: none;"
         >
-          <.input
-            field={@form[:name]}
+          {gettext("Sign in")} <span aria-hidden="true">→</span>
+        </.link>
+      </:footer_switch>
+
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+          {gettext("Create your account")}
+        </h1>
+        <p style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3);">
+          {gettext("Free for 30 days. No credit card. Up to 5 agents on the free plan.")}
+        </p>
+      </div>
+
+      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
+        <.sso_row provider={:google} />
+        <.sso_row provider={:github} />
+      </div>
+
+      <div style="margin-top: 18px; display: flex; align-items: center; gap: 10px; color: var(--ink-4); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
+        <span style="flex: 1; height: 1px; background: var(--line);"></span>
+        {gettext("or with email")}
+        <span style="flex: 1; height: 1px; background: var(--line);"></span>
+      </div>
+
+      <.form
+        for={@form}
+        id="registration_form"
+        action={~p"/users/register"}
+        phx-submit="save"
+        phx-change="validate"
+        phx-trigger-action={@trigger_submit}
+        style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;"
+      >
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("Your name")}
+          </span>
+          <input
             type="text"
-            label={gettext("Name")}
+            name={@form[:name].name}
+            id={@form[:name].id}
+            value={Phoenix.HTML.Form.normalize_value("text", @form[:name].value)}
             autocomplete="name"
             phx-mounted={JS.focus()}
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
+          <.field_errors errors={@form[:name].errors} />
+        </label>
 
-          <.input
-            field={@form[:email]}
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("Work email")}
+          </span>
+          <input
             type="email"
-            label={gettext("Email")}
+            name={@form[:email].name}
+            id={@form[:email].id}
+            value={Phoenix.HTML.Form.normalize_value("email", @form[:email].value)}
             autocomplete="username"
             required
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
+          <.field_errors errors={@form[:email].errors} />
+        </label>
 
-          <.input
-            field={@form[:password]}
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("Password")}
+          </span>
+          <input
             type="password"
-            label={gettext("Password")}
+            name={@form[:password].name}
+            id={@form[:password].id}
             autocomplete="new-password"
             required
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
+          <span style="font-size: 11px; color: var(--ink-3); line-height: 1.45;">
+            {gettext("At least 12 characters")}
+          </span>
+          <.field_errors errors={@form[:password].errors} />
+        </label>
 
-          <.button
-            variant="primary"
-            class="btn btn-primary w-full mt-6"
+        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--ink-2); line-height: 1.5; margin-top: 2px;">
+          <span style="padding-top: 2px;">
+            <input
+              type="checkbox"
+              checked
+              required
+              style="width: 14px; height: 14px; border-radius: 3px; accent-color: var(--ink); cursor: pointer; margin: 0;"
+            />
+          </span>
+          <span>
+            {gettext("I agree to the")}
+            <.link navigate={~p"/privacy"} style="color: var(--ink); text-decoration: underline;">
+              {gettext("Terms of Service")}
+            </.link>
+            {gettext("and")}
+            <.link navigate={~p"/privacy"} style="color: var(--ink); text-decoration: underline;">
+              {gettext("Acceptable Use Policy")}
+            </.link>
+            {gettext("— including the agent-action attribution clause.")}
+          </span>
+        </label>
+
+        <div style="margin-top: 4px;">
+          <.primary_full_button
+            kbd="↵"
+            type="submit"
             phx-disable-with={gettext("Creating account...")}
           >
-            {gettext("Create an account")}
-          </.button>
-        </.form>
-      </.auth_form>
-    </Layouts.app>
+            {gettext("Create account")}
+          </.primary_full_button>
+        </div>
+      </.form>
+    </.auth_frame>
+    """
+  end
+
+  attr :errors, :list, default: []
+
+  defp field_errors(assigns) do
+    ~H"""
+    <span :for={msg <- @errors} style="font-size: 11.5px; color: var(--st-blocked);">
+      {translate_error(msg)}
+    </span>
     """
   end
 
