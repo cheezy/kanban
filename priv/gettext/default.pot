@@ -764,7 +764,7 @@ msgstr ""
 msgid "History"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/comments_section.ex:16
+#: lib/kanban_web/live/task_live/components/comments_section.ex:17
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr ""
@@ -1164,7 +1164,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:60
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:74
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -1198,7 +1198,7 @@ msgstr ""
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:61
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:961
 #, elixir-autogen, elixir-format
 msgid "Changes Requested"
@@ -1433,7 +1433,7 @@ msgstr ""
 msgid "Patterns to Follow"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:59
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:73
 #: lib/kanban_web/live/task_live/form_component.html.heex:959
 #, elixir-autogen, elixir-format
 msgid "Pending"
@@ -1446,7 +1446,7 @@ msgstr ""
 msgid "Pitfalls"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:62
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:962
 #, elixir-autogen, elixir-format
 msgid "Rejected"
@@ -1458,7 +1458,7 @@ msgstr ""
 msgid "Required Agent Capabilities"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:35
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:38
 #: lib/kanban_web/live/task_live/form_component.html.heex:966
 #, elixir-autogen, elixir-format
 msgid "Review Notes"
@@ -1475,12 +1475,12 @@ msgstr ""
 msgid "Review Status"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:29
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:32
 #, elixir-autogen, elixir-format
 msgid "Reviewed at"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:23
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:26
 #, elixir-autogen, elixir-format
 msgid "Reviewed by"
 msgstr ""
@@ -1555,7 +1555,7 @@ msgstr ""
 
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:285
-#: lib/kanban_web/live/task_live/components/review_status_section.ex:63
+#: lib/kanban_web/live/task_live/components/review_status_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr ""
