@@ -40,6 +40,14 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   @impl true
+  def handle_event("deselect_item", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected, nil)
+     |> assign(:request_changes_open?, false)}
+  end
+
+  @impl true
   def handle_event("approve", _params, socket) do
     case socket.assigns.selected do
       nil ->
@@ -133,12 +141,14 @@ defmodule KanbanWeb.ReviewLive do
           </span>
         </header>
 
-        <div style="display: flex; flex: 1; min-height: 0;">
+        <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside
             data-review-queue-rail
+            class={[
+              "flex-1 md:flex-none w-full md:w-[380px] md:flex-shrink-0 overflow-y-auto",
+              if(@selected, do: "hidden md:block", else: "block")
+            ]}
             style={[
-              "width: 380px; flex-shrink: 0;",
-              "overflow-y: auto;",
               "border-right: 1px solid var(--line);",
               "background: var(--surface-2);"
             ]}
@@ -165,9 +175,9 @@ defmodule KanbanWeb.ReviewLive do
 
           <section
             data-review-detail
-            style={[
-              "flex: 1; min-width: 0; overflow-y: auto;",
-              "display: flex; flex-direction: column;"
+            class={[
+              "flex-1 min-w-0 overflow-y-auto md:flex md:flex-col",
+              if(@selected, do: "flex flex-col", else: "hidden md:flex")
             ]}
           >
             <div
@@ -182,6 +192,16 @@ defmodule KanbanWeb.ReviewLive do
             </div>
 
             <div :if={@selected != nil}>
+              <button
+                type="button"
+                phx-click="deselect_item"
+                class="md:hidden inline-flex items-center gap-2 min-h-11 px-4 py-2 text-sm font-medium text-base-content hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                style="border-bottom: 1px solid var(--line);"
+                aria-label={gettext("Back to review queue")}
+              >
+                <.icon name="hero-arrow-left" class="w-4 h-4" />
+                {gettext("Back to queue")}
+              </button>
               <ReviewDetailHeader.review_detail_header
                 task={@selected}
                 on_approve="approve"

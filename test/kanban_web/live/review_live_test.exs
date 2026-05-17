@@ -114,6 +114,30 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "deselect_item event" do
+    setup [:register_and_log_in_user]
+
+    test "pushing deselect_item clears the selection and shows the empty-state copy",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{identifier: "W303"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # Select a task to populate the detail panel.
+      view
+      |> element("[data-review-queue-item-id=\"#{task.id}\"]")
+      |> render_click()
+
+      # Push the deselect event (the back button uses phx-click="deselect_item").
+      html = render_click(view, "deselect_item", %{})
+
+      # Empty-state copy is shown, detail header is gone.
+      assert html =~ "Select a task from the queue to start a review."
+      refute html =~ "data-review-detail-header"
+    end
+  end
+
   describe "approve event" do
     setup [:register_and_log_in_user]
 
