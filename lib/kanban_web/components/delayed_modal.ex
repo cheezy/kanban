@@ -15,6 +15,11 @@ defmodule KanbanWeb.DelayedModal do
     default: "p-14",
     doc: "Tailwind padding class applied to the inner container."
 
+  attr :mobile_fullscreen, :boolean,
+    default: false,
+    doc:
+      "When true, the modal renders full-screen below the md breakpoint (no rounding, no outer padding, min-h-screen) and reverts to the centered max_width layout at md+."
+
   slot :inner_block, required: true
 
   def delayed_modal(assigns) do
@@ -41,14 +46,25 @@ defmodule KanbanWeb.DelayedModal do
         tabindex="0"
       >
         <div class="flex min-h-full items-center justify-center">
-          <div class={["w-full", @max_width, "p-4 sm:p-6 lg:py-8"]}>
+          <div class={[
+            "w-full",
+            if(@mobile_fullscreen, do: md_max_width(@max_width), else: @max_width),
+            if(@mobile_fullscreen,
+              do: "p-0 md:p-6 lg:py-8",
+              else: "p-4 sm:p-6 lg:py-8"
+            )
+          ]}>
             <div
               id={"#{@id}-container"}
               data-modal-container
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               class={[
-                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 shadow-lg ring-1 transition",
+                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                if(@mobile_fullscreen,
+                  do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0",
+                  else: "rounded-2xl"
+                ),
                 @padding
               ]}
             >
@@ -117,4 +133,19 @@ defmodule KanbanWeb.DelayedModal do
     |> JS.remove_class("overflow-hidden", to: "body")
     |> JS.pop_focus()
   end
+
+  # Maps a `max-w-*` class to its `md:`-prefixed variant as literal strings so
+  # Tailwind v4's `source(none)` static scanner picks them up. Add a new clause
+  # when a new max_width value is introduced at a call site.
+  defp md_max_width("max-w-sm"), do: "md:max-w-sm"
+  defp md_max_width("max-w-md"), do: "md:max-w-md"
+  defp md_max_width("max-w-lg"), do: "md:max-w-lg"
+  defp md_max_width("max-w-xl"), do: "md:max-w-xl"
+  defp md_max_width("max-w-2xl"), do: "md:max-w-2xl"
+  defp md_max_width("max-w-3xl"), do: "md:max-w-3xl"
+  defp md_max_width("max-w-4xl"), do: "md:max-w-4xl"
+  defp md_max_width("max-w-5xl"), do: "md:max-w-5xl"
+  defp md_max_width("max-w-6xl"), do: "md:max-w-6xl"
+  defp md_max_width("max-w-7xl"), do: "md:max-w-7xl"
+  defp md_max_width(other), do: other
 end

@@ -310,7 +310,8 @@
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     max_width="max-w-6xl"
-    padding="p-6 sm:p-8"
+    padding="p-4 md:p-6 lg:p-8"
+    mobile_fullscreen
   >
     <.live_component
       module={KanbanWeb.TaskLive.FormComponent}
@@ -377,7 +378,8 @@
       show
       on_cancel={JS.push("close_task_view")}
       max_width="max-w-6xl"
-      padding="p-6 sm:p-8"
+      padding="p-4 md:p-6 lg:p-8"
+      mobile_fullscreen
     >
       <.live_component
         module={KanbanWeb.TaskLive.ViewComponent}

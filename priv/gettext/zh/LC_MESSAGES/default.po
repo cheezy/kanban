@@ -205,7 +205,7 @@ msgstr "免费。"
 msgid "to your account."
 msgstr "到您的账户。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:87
+#: lib/kanban_web/live/board_live/index.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "您确定要删除此看板吗？"
@@ -247,7 +247,7 @@ msgstr "描述"
 msgid "Edit Board"
 msgstr "编辑看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:80
+#: lib/kanban_web/live/board_live/index.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "编辑看板"
@@ -1660,18 +1660,18 @@ msgstr ""
 msgid "Add Unit Test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:674
+#: lib/kanban_web/live/board_live/show.html.heex:676
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to revoke this token?"
 msgstr "您确定要删除此看板吗？"
 
-#: lib/kanban_web/live/board_live/show.html.heex:447
-#: lib/kanban_web/live/board_live/show.html.heex:477
+#: lib/kanban_web/live/board_live/show.html.heex:449
+#: lib/kanban_web/live/board_live/show.html.heex:479
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:580
+#: lib/kanban_web/live/board_live/show.html.heex:582
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Creating..."
 msgstr "正在创建账户..."
@@ -1717,12 +1717,12 @@ msgstr ""
 msgid "Manual test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:519
+#: lib/kanban_web/live/board_live/show.html.heex:521
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "我的AI代理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:605
+#: lib/kanban_web/live/board_live/show.html.heex:607
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "还没有API令牌。请在上方生成一个以开始。"
@@ -1739,7 +1739,7 @@ msgstr ""
 msgid "PubSub Broadcasts"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:682
+#: lib/kanban_web/live/board_live/show.html.heex:684
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Revoke"
 msgstr "移除"
@@ -1808,12 +1808,12 @@ msgstr ""
 msgid "topic:event"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:484
+#: lib/kanban_web/live/board_live/show.html.heex:486
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "关闭"
 
-#: lib/kanban_web/live/board_live/show.html.heex:448
+#: lib/kanban_web/live/board_live/show.html.heex:450
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -1951,12 +1951,12 @@ msgstr ""
 msgid "Please fix the errors below"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:552
+#: lib/kanban_web/live/board_live/show.html.heex:554
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "任务自动化"
 
-#: lib/kanban_web/live/board_live/show.html.heex:539
+#: lib/kanban_web/live/board_live/show.html.heex:541
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr ""
@@ -1976,7 +1976,7 @@ msgstr ""
 msgid "mix test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:449
+#: lib/kanban_web/live/board_live/show.html.heex:451
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr ""
@@ -2009,7 +2009,7 @@ msgid "Board:"
 msgstr "看板"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/board_live/show.html.heex:697
+#: lib/kanban_web/live/board_live/show.html.heex:699
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "删除"
@@ -2053,7 +2053,7 @@ msgstr ""
 msgid "Select capability to add..."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:566
+#: lib/kanban_web/live/board_live/show.html.heex:568
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2063,7 +2063,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "API令牌删除成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:689
+#: lib/kanban_web/live/board_live/show.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "您确定要删除此令牌吗？"
@@ -3772,7 +3772,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:404
+#: lib/kanban_web/live/board_live/show.html.heex:406
 #, elixir-autogen, elixir-format, fuzzy
 msgid "API tokens"
 msgstr "API令牌"
@@ -4633,7 +4633,7 @@ msgstr ""
 msgid "throughput"
 msgstr "吞吐量"
 
-#: lib/kanban_web/live/board_live/index.html.heex:62
+#: lib/kanban_web/live/board_live/index.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4641,7 +4641,7 @@ msgstr[0] ""
 
 #: lib/kanban_web/components/layouts.ex:235
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:59
+#: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:86
 #, elixir-autogen, elixir-format, fuzzy
@@ -4653,13 +4653,13 @@ msgstr "看板"
 msgid "Create new board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:89
+#: lib/kanban_web/live/board_live/index.html.heex:90
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete board"
 msgstr "删除"
 
 #: lib/kanban_web/live/board_live/index.ex:126
-#: lib/kanban_web/live/board_live/index.html.heex:20
+#: lib/kanban_web/live/board_live/index.html.heex:21
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New board"
 msgstr "新建看板"
@@ -4736,12 +4736,12 @@ msgstr ""
 msgid "Last Activity"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:33
+#: lib/kanban_web/live/board_live/index.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "New AI Optimized Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:44
+#: lib/kanban_web/live/board_live/index.html.heex:45
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Empty Board"
 msgstr "新建看板"
@@ -4751,7 +4751,7 @@ msgstr "新建看板"
 msgid "New goal"
 msgstr "新建看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:35
+#: lib/kanban_web/live/board_live/index.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Pre-configured for AI workflow"
 msgstr ""
@@ -4773,7 +4773,7 @@ msgstr ""
 msgid "Review queue"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:46
+#: lib/kanban_web/live/board_live/index.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Start with a blank board"
 msgstr ""
@@ -5116,7 +5116,7 @@ msgstr "关闭"
 msgid "Save"
 msgstr "保存任务"
 
-#: lib/kanban_web/live/board_live/show.html.heex:339
+#: lib/kanban_web/live/board_live/show.html.heex:340
 #, elixir-autogen, elixir-format
 msgid "Update board details and choose which task fields appear on cards."
 msgstr ""
@@ -5126,7 +5126,7 @@ msgstr ""
 msgid "Add user by email"
 msgstr "通过电子邮件添加用户"
 
-#: lib/kanban_web/live/board_live/show.html.heex:336
+#: lib/kanban_web/live/board_live/show.html.heex:337
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Board settings"
 msgstr "看板"
@@ -5146,7 +5146,7 @@ msgstr "当前用户"
 msgid "Field visibility"
 msgstr "字段可见性设置"
 
-#: lib/kanban_web/live/board_live/show.html.heex:362
+#: lib/kanban_web/live/board_live/show.html.heex:363
 #, elixir-autogen, elixir-format
 msgid "Invite registered users and control their access to this board."
 msgstr ""
@@ -5161,72 +5161,72 @@ msgstr "用户必须已在系统中注册才能添加到看板"
 msgid "name@example.com"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:359
+#: lib/kanban_web/live/board_live/show.html.heex:360
 #, elixir-autogen, elixir-format
 msgid "Manage members"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:596
+#: lib/kanban_web/live/board_live/show.html.heex:598
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Active tokens"
 msgstr "活动令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:560
+#: lib/kanban_web/live/board_live/show.html.heex:562
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agent capabilities"
 msgstr "代理能力"
 
-#: lib/kanban_web/live/board_live/show.html.heex:533
+#: lib/kanban_web/live/board_live/show.html.heex:535
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agent model (optional)"
 msgstr "代理模型（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:407
+#: lib/kanban_web/live/board_live/show.html.heex:409
 #, elixir-autogen, elixir-format
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:571
+#: lib/kanban_web/live/board_live/show.html.heex:573
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "逗号分隔列表。有效能力：code_generation、code_review、database_design、testing、documentation、debugging、refactoring、api_design、ui_implementation、performance_optimization、security_analysis、devops。留空以允许所有任务。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:430
+#: lib/kanban_web/live/board_live/show.html.heex:432
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:500
+#: lib/kanban_web/live/board_live/show.html.heex:502
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create new token"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:588
+#: lib/kanban_web/live/board_live/show.html.heex:590
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Generate token"
 msgstr "生成令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:665
+#: lib/kanban_web/live/board_live/show.html.heex:667
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Never used"
 msgstr "从未"
 
-#: lib/kanban_web/live/board_live/show.html.heex:546
+#: lib/kanban_web/live/board_live/show.html.heex:548
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Purpose (optional)"
 msgstr "用途（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:427
+#: lib/kanban_web/live/board_live/show.html.heex:429
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Token created"
 msgstr "列创建成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:511
+#: lib/kanban_web/live/board_live/show.html.heex:513
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Token name"
 msgstr "令牌名称"
 
-#: lib/kanban_web/live/board_live/show.html.heex:651
+#: lib/kanban_web/live/board_live/show.html.heex:653
 #, elixir-autogen, elixir-format, fuzzy
 msgid "revoked"
 msgstr "已吊销"
