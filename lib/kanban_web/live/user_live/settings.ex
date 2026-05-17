@@ -231,7 +231,7 @@ defmodule KanbanWeb.UserLive.Settings do
   end
 
   attr :label, :string, required: true
-  attr :hint, :string, default: nil
+  attr :hint, :any, default: nil
   slot :inner_block, required: true
 
   defp set_field(assigns) do

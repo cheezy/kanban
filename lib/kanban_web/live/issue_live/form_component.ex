@@ -9,27 +9,39 @@ defmodule KanbanWeb.IssueLive.FormComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="bg-base-200 rounded-lg p-6 border border-base-300">
-      <h3 class="text-lg font-semibold text-base-content mb-4">
+    <div
+      class="stride-screen"
+      style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px;"
+    >
+      <h3 style="margin: 0 0 16px; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
         {gettext("Submit an Issue")}
       </h3>
 
       <%= if @submitted do %>
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div class="flex items-center gap-2 text-green-800">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
+        <div style="background: var(--st-done-soft); border: 1px solid var(--st-done); border-radius: 8px; padding: 14px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--st-done);">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 13l4 4L19 7" />
             </svg>
-            <span class="font-medium">{gettext("Issue submitted successfully!")}</span>
+            <span style="font-weight: 500;">{gettext("Issue submitted successfully!")}</span>
           </div>
-          <p class="mt-2 text-sm text-green-700">
+          <p style="margin: 8px 0 0; font-size: 13px; color: var(--ink-2);">
             {gettext("View your issue on")}
-            <a href={@issue_url} target="_blank" class="underline hover:text-green-900">
+            <a
+              href={@issue_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style="color: var(--ink); text-decoration: underline;"
+            >
               GitHub
             </a>
           </p>
@@ -37,7 +49,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
             type="button"
             phx-click="reset"
             phx-target={@myself}
-            class="mt-3 text-sm text-green-700 hover:text-green-900 underline"
+            style="margin-top: 12px; font-size: 12.5px; color: var(--ink-2); background: transparent; border: none; padding: 0; cursor: pointer; text-decoration: underline;"
           >
             {gettext("Submit another issue")}
           </button>
@@ -49,120 +61,140 @@ defmodule KanbanWeb.IssueLive.FormComponent do
           phx-target={@myself}
           phx-change="validate"
           phx-submit="save"
+          style="display: flex; flex-direction: column; gap: 14px;"
         >
-          <div class="space-y-4">
-            <div>
-              <label
-                for="issue_title"
-                class="block text-sm font-medium text-base-content opacity-80 mb-1"
-              >
-                {gettext("Title")}
-              </label>
-              <input
-                type="text"
-                name="issue[title]"
-                id="issue_title"
-                value={@form[:title].value}
-                required
-                class={"w-full px-3 py-2 h-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 #{if @form[:title].errors != [], do: "border-red-500", else: "border-base-300"}"}
-                placeholder={gettext("Brief description of the issue")}
-              />
-              <%= for error <- @form[:title].errors do %>
-                <p class="mt-1 text-sm text-red-600">{translate_error(error)}</p>
-              <% end %>
-            </div>
-
-            <div>
-              <label
-                for="issue_label"
-                class="block text-sm font-medium text-base-content opacity-80 mb-1"
-              >
-                {gettext("Type")}
-              </label>
-              <select
-                name="issue[label]"
-                id="issue_label"
-                class={"w-full px-3 py-2 h-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 #{if @form[:label].errors != [], do: "border-red-500", else: "border-base-300"}"}
-              >
-                <%= for {display, value} <- label_options() do %>
-                  <option value={value} selected={@form[:label].value == value}>
-                    {display}
-                  </option>
-                <% end %>
-              </select>
-              <%= for error <- @form[:label].errors do %>
-                <p class="mt-1 text-sm text-red-600">{translate_error(error)}</p>
-              <% end %>
-            </div>
-
-            <div>
-              <label
-                for="issue_body"
-                class="block text-sm font-medium text-base-content opacity-80 mb-1"
-              >
-                {gettext("Description")}
-              </label>
-              <textarea
-                name="issue[body]"
-                id="issue_body"
-                rows="5"
-                required
-                class={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 #{if @form[:body].errors != [], do: "border-red-500", else: "border-base-300"}"}
-                placeholder={gettext("Please provide details about the issue or feature request")}
-              >{@form[:body].value}</textarea>
-              <%= for error <- @form[:body].errors do %>
-                <p class="mt-1 text-sm text-red-600">{translate_error(error)}</p>
-              <% end %>
-            </div>
-
-            <div class="pt-2">
-              <button
-                type="submit"
-                phx-disable-with={gettext("Submitting...")}
-                class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {gettext("Submit Issue")}
-              </button>
-            </div>
-
-            <%= if @error do %>
-              <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div class="flex items-center gap-2 text-red-800">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span class="font-medium">{gettext("Failed to submit issue")}</span>
-                </div>
-                <p class="mt-1 text-sm text-red-700">{@error}</p>
-              </div>
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+              {gettext("Title")}
+            </span>
+            <input
+              type="text"
+              name="issue[title]"
+              id="issue_title"
+              value={@form[:title].value}
+              required
+              placeholder={gettext("Brief description of the issue")}
+              style={[
+                "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid ",
+                if(@form[:title].errors != [],
+                  do: "var(--st-blocked); ",
+                  else: "var(--line-strong); "
+                ),
+                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+              ]}
+            />
+            <%= for error <- @form[:title].errors do %>
+              <span style="font-size: 11.5px; color: var(--st-blocked);">
+                {translate_error(error)}
+              </span>
             <% end %>
+          </label>
+
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+              {gettext("Type")}
+            </span>
+            <select
+              name="issue[label]"
+              id="issue_label"
+              style={[
+                "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid ",
+                if(@form[:label].errors != [],
+                  do: "var(--st-blocked); ",
+                  else: "var(--line-strong); "
+                ),
+                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+              ]}
+            >
+              <%= for {display, value} <- label_options() do %>
+                <option value={value} selected={@form[:label].value == value}>
+                  {display}
+                </option>
+              <% end %>
+            </select>
+            <%= for error <- @form[:label].errors do %>
+              <span style="font-size: 11.5px; color: var(--st-blocked);">
+                {translate_error(error)}
+              </span>
+            <% end %>
+          </label>
+
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+              {gettext("Description")}
+            </span>
+            <textarea
+              name="issue[body]"
+              id="issue_body"
+              rows="5"
+              required
+              placeholder={gettext("Please provide details about the issue or feature request")}
+              style={[
+                "padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid ",
+                if(@form[:body].errors != [],
+                  do: "var(--st-blocked); ",
+                  else: "var(--line-strong); "
+                ),
+                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit; resize: vertical;"
+              ]}
+            >{@form[:body].value}</textarea>
+            <%= for error <- @form[:body].errors do %>
+              <span style="font-size: 11.5px; color: var(--st-blocked);">
+                {translate_error(error)}
+              </span>
+            <% end %>
+          </label>
+
+          <div style="padding-top: 4px;">
+            <button
+              type="submit"
+              phx-disable-with={gettext("Submitting...")}
+              style="height: 40px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: white; border: none; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
+            >
+              {gettext("Submit Issue")}
+            </button>
           </div>
+
+          <%= if @error do %>
+            <div style="background: var(--st-blocked-soft); border: 1px solid var(--st-blocked); border-radius: 8px; padding: 14px;">
+              <div style="display: flex; align-items: center; gap: 8px; color: var(--st-blocked);">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span style="font-weight: 500;">{gettext("Failed to submit issue")}</span>
+              </div>
+              <p style="margin: 4px 0 0; font-size: 13px; color: var(--ink-2);">{@error}</p>
+            </div>
+          <% end %>
         </.form>
 
-        <div class="mt-4 pt-4 border-t border-base-300">
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
           <a
             href="https://github.com/cheezy/kanban/issues"
             target="_blank"
-            class="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            rel="noopener noreferrer"
+            style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); text-decoration: none;"
           >
             <svg
-              class="w-4 h-4"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
+              <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             {gettext("See existing issues")}
           </a>
