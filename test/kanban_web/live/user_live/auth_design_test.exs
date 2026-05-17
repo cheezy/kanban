@@ -89,7 +89,8 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
   end
 
   describe "confirmation page" do
-    test "renders the shared card framing for a valid token", %{conn: conn} do
+    # NOTE: Rewritten in W656; whole file slated for deletion in W657.
+    test "renders the editorial auth_frame with Account-confirmed title", %{conn: conn} do
       user = unconfirmed_user_fixture()
 
       token =
@@ -101,8 +102,8 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
 
       html = render(lv)
 
-      assert_shared_card_chrome(html, "confirmation")
-      assert html =~ "Account Confirmed!"
+      assert html =~ "Account confirmed"
+      assert html =~ "Tokens rotate, claims survive"
     end
   end
 

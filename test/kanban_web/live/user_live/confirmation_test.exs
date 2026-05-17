@@ -20,8 +20,22 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
 
       html = render(lv)
-      assert html =~ "Account Confirmed!"
+      assert html =~ "Account confirmed"
       assert html =~ "Your account has been confirmed successfully"
+    end
+
+    test "renders inside the editorial auth_frame", %{conn: conn, unconfirmed_user: user} do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_confirmation_instructions(user, url)
+        end)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      html = render(lv)
+
+      # Rotating magic-link quote + warm gradient confirm the new shell
+      assert html =~ "Tokens rotate, claims survive"
+      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
     test "renders already confirmed message when trying to confirm again", %{
