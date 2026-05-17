@@ -291,5 +291,55 @@ defmodule KanbanWeb.AvatarTest do
 
       assert html =~ "box-shadow: 0 0 0 2px var(--surface);"
     end
+
+    test "outer span carries a title with the full roster (visible + overflow)" do
+      members =
+        for i <- 1..7 do
+          %{kind: :agent, name: "Agent #{i}", palette: "agent-claude"}
+        end
+
+      assigns = %{members: members}
+
+      html =
+        rendered_to_string(~H"""
+        <Avatar.avatar_stack members={@members} max={5} />
+        """)
+
+      assert html =~
+               ~s(title="Agent 1, Agent 2, Agent 3, Agent 4, Agent 5, Agent 6, Agent 7")
+    end
+
+    test "each visible avatar has its own title attribute with the member's name" do
+      assigns = %{
+        members: [
+          %{kind: :agent, name: "Claude", palette: "agent-claude"},
+          %{kind: :human, name: "Jamie K", palette: "human-green"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <Avatar.avatar_stack members={@members} />
+        """)
+
+      assert html =~ ~s(title="Claude")
+      assert html =~ ~s(title="Jamie K")
+    end
+
+    test "overflow chip carries a title listing the hidden members" do
+      members =
+        for name <- ["A", "B", "C", "D"] do
+          %{kind: :agent, name: name, palette: "agent-claude"}
+        end
+
+      assigns = %{members: members}
+
+      html =
+        rendered_to_string(~H"""
+        <Avatar.avatar_stack members={@members} max={2} />
+        """)
+
+      assert html =~ ~s(title="C, D")
+    end
   end
 end

@@ -80,13 +80,18 @@ defmodule KanbanWeb.Avatar do
   def avatar_stack(assigns) do
     visible = Enum.take(assigns.members, assigns.max)
     overflow = max(length(assigns.members) - assigns.max, 0)
-    assigns = assign(assigns, visible: visible, overflow: overflow)
+
+    assigns =
+      assigns
+      |> assign(visible: visible, overflow: overflow)
+      |> assign(:roster_title, roster_title(assigns.members))
 
     ~H"""
-    <span class="inline-flex items-center">
+    <span class="inline-flex items-center" title={@roster_title}>
       <span
         :for={{member, index} <- Enum.with_index(@visible)}
         style={if index == 0, do: "", else: "margin-left: -5px;"}
+        title={member.name}
       >
         <.avatar
           kind={member.kind}
@@ -105,11 +110,27 @@ defmodule KanbanWeb.Avatar do
           "background: var(--ink-3); border-radius: 50%;",
           "box-shadow: 0 0 0 2px var(--surface);"
         ]}
+        title={overflow_title(@members, @max)}
       >
         +{@overflow}
       </span>
     </span>
     """
+  end
+
+  defp roster_title(members) when is_list(members) do
+    members
+    |> Enum.map(& &1.name)
+    |> Enum.reject(&(is_nil(&1) or &1 == ""))
+    |> Enum.join(", ")
+  end
+
+  defp overflow_title(members, max) when is_list(members) and is_integer(max) do
+    members
+    |> Enum.drop(max)
+    |> Enum.map(& &1.name)
+    |> Enum.reject(&(is_nil(&1) or &1 == ""))
+    |> Enum.join(", ")
   end
 
   # Tuned so size 14 → 6 (legacy marketing-mini-board size) and size 18 → 8.
