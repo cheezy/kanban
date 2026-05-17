@@ -418,7 +418,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "approves and runs after_review"
     end
 
-    test "renders the 4-column grid with separator borders on the first 3 cells (lg+)" do
+    test "renders the responsive grid with separator borders across breakpoints" do
       assigns = %{}
 
       html =
@@ -426,18 +426,19 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_how_it_works />
         """)
 
-      # Responsive: stacked on mobile, 4 cols on lg
+      # Responsive: 1 col mobile, 2 cols at md, 4 cols at lg
       assert html =~ "grid-cols-1"
+      assert html =~ "md:grid-cols-2"
       assert html =~ "lg:grid-cols-4"
-      # First 3 cells get border-b (mobile separator) + lg:border-r (desktop separator)
-      separator_count =
-        html
-        |> String.split("lg:border-r")
-        |> length()
-        |> Kernel.-(1)
 
-      assert separator_count == 3,
-             "expected exactly 3 lg:border-r separators on the first 3 cells, got #{separator_count}"
+      # At lg, the first 3 cards each carry a right-side separator. The separator
+      # may be expressed as either `md:border-r` (persists into lg via min-width
+      # cascade) or `lg:border-r`. Expect exactly 3 such class occurrences total.
+      right_border_count =
+        Regex.scan(~r/(?:md|lg):border-r\b/, html) |> length()
+
+      assert right_border_count == 3,
+             "expected exactly 3 right-border separators across md/lg variants, got #{right_border_count}"
     end
 
     test "step icons use the colored token per step" do

@@ -407,14 +407,14 @@ defmodule KanbanWeb.MarketingComponents do
       </div>
 
       <div
-        class="grid grid-cols-1 lg:grid-cols-4 overflow-hidden"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 overflow-hidden"
         style="gap: 0; border: 1px solid var(--line); border-radius: 12px;"
       >
         <div
           :for={{step, index} <- Enum.with_index(@steps)}
           class={[
             "flex flex-col gap-3 p-6 md:p-[24px_22px_26px]",
-            index < 3 && "border-b lg:border-b-0 lg:border-r"
+            how_it_works_card_borders(index)
           ]}
           style="background: var(--surface); border-color: var(--line);"
         >
@@ -543,6 +543,11 @@ defmodule KanbanWeb.MarketingComponents do
       }
     ]
   end
+
+  defp how_it_works_card_borders(0), do: "border-b md:border-r lg:border-b-0"
+  defp how_it_works_card_borders(1), do: "border-b lg:border-b-0 lg:border-r"
+  defp how_it_works_card_borders(2), do: "border-b md:border-b-0 md:border-r"
+  defp how_it_works_card_borders(_), do: ""
 
   defp how_it_works_steps do
     [
