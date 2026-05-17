@@ -39,6 +39,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
     ~H"""
     <section
       data-metrics-agent-leaderboard
+      class="min-w-[220px]"
       style={[
         "background: var(--surface);",
         "border: 1px solid var(--line); border-radius: 8px;",
