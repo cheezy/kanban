@@ -100,7 +100,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
   defp convert_links(content) do
     Regex.replace(~r/\[([^\]]+)\]\(([^)]+)\)/, content, fn _, text, url ->
       if safe_url?(url) do
-        "<a href=\"#{url}\" class=\"text-blue-600 dark:text-blue-400 hover:underline\" target=\"_blank\" rel=\"noopener noreferrer\">#{text}</a>"
+        "<a href=\"#{url}\" class=\"text-[var(--ink)] hover:text-[var(--stride-orange)] hover:underline\" target=\"_blank\" rel=\"noopener noreferrer\">#{text}</a>"
       else
         text
       end
