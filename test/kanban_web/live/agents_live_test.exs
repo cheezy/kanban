@@ -172,5 +172,25 @@ defmodule KanbanWeb.AgentsLiveTest do
       {:ok, _view, html} = live(conn, ~p"/agents")
       assert html =~ ~r/\d+\s*connected/
     end
+
+    test "two-pane layout renders with mobile stack + md side-by-side responsive classes", %{
+      conn: conn
+    } do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # Outer wrapper: flex-col on mobile, flex-row at md+.
+      assert html =~ "flex-col md:flex-row"
+
+      # Roster: full width on mobile (max 40vh with internal scroll), 380px wide at md+.
+      assert html =~ "w-full md:w-[380px]"
+      assert html =~ "max-h-[40vh] md:max-h-none"
+
+      # Detail panel: flex-1 fills remaining space at md+.
+      assert html =~ "flex-1 min-w-0"
+
+      # No inline width: 380px or flex: 1 style attributes remain.
+      refute html =~ "width: 380px"
+      refute html =~ "flex: 1; min-width: 0;"
+    end
   end
 end

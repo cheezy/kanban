@@ -111,13 +111,12 @@ defmodule KanbanWeb.AgentsLive do
           <span>{live_indicator_label(@connected_count)}</span>
         </div>
 
-        <div style="display: flex; flex: 1; min-height: 0;">
+        <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside
             data-agents-roster
+            class="w-full md:w-[380px] md:flex-shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto"
             style={[
-              "width: 380px; flex-shrink: 0;",
               "padding: 16px;",
-              "overflow-y: auto;",
               "border-right: 1px solid var(--line);",
               "background: var(--surface-2);",
               "display: flex; flex-direction: column; gap: 8px;"
@@ -137,12 +136,7 @@ defmodule KanbanWeb.AgentsLive do
             <AgentRosterCard.card :for={agent <- @agents} agent={agent} />
           </aside>
 
-          <div style={[
-            "flex: 1; min-width: 0;",
-            "padding: 16px;",
-            "display: flex; flex-direction: column;",
-            "min-height: 0;"
-          ]}>
+          <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
             <AgentActivityFeed.feed
               events={@events}
               filter={@filter}
