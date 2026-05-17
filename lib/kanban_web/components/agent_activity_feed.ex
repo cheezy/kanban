@@ -125,6 +125,7 @@ defmodule KanbanWeb.AgentActivityFeed do
       aria-selected={if @active, do: "true", else: "false"}
       phx-click={@on_click}
       phx-value-filter={Atom.to_string(@value)}
+      class="min-h-11 min-w-11 md:min-h-0 md:min-w-0 inline-flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style={[
         "padding: 4px 10px; border-radius: 12px;",
         "font-size: 11.5px; font-weight: 500;",
@@ -152,10 +153,8 @@ defmodule KanbanWeb.AgentActivityFeed do
     <li
       data-agent-feed-row
       data-agent-feed-kind={@event.kind}
+      class="grid grid-cols-[44px_14px_20px_1fr_auto] sm:grid-cols-[54px_18px_26px_1fr_auto] items-center gap-1.5 sm:gap-2"
       style={[
-        "display: grid;",
-        "grid-template-columns: 54px 18px 26px 1fr auto;",
-        "align-items: center; gap: 8px;",
         "padding: 6px 4px;",
         "font-size: 12px;",
         "border-bottom: 1px solid var(--line);"

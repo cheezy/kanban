@@ -2619,7 +2619,7 @@ msgstr "Temps que les tâches passent dans la file d'attente avant le début du 
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Temps que les tâches passent en attente de révision après achèvement"
 
-#: lib/kanban_web/components/agent_roster_card.ex:156
+#: lib/kanban_web/components/agent_roster_card.ex:153
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -5379,7 +5379,7 @@ msgstr "Étapes de Vérification"
 msgid "today"
 msgstr "Aujourd'hui"
 
-#: lib/kanban_web/components/agent_roster_card.ex:157
+#: lib/kanban_web/components/agent_roster_card.ex:154
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr ""
@@ -5404,8 +5404,8 @@ msgstr ""
 msgid "Claimed"
 msgstr "Réclamé :"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:273
-#: lib/kanban_web/components/agent_roster_card.ex:159
+#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Claims"
 msgstr "Réclamé :"
@@ -5420,7 +5420,7 @@ msgstr ""
 msgid "Human task"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:194
+#: lib/kanban_web/components/agent_roster_card.ex:191
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr ""
@@ -5435,7 +5435,7 @@ msgstr "Points d'Intégration"
 msgid "Review status"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:158
+#: lib/kanban_web/components/agent_roster_card.ex:155
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr ""
@@ -5445,7 +5445,7 @@ msgstr ""
 msgid "Testing strategy"
 msgstr "Stratégie de Test"
 
-#: lib/kanban_web/components/agent_roster_card.ex:193
+#: lib/kanban_web/components/agent_roster_card.ex:190
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr ""
@@ -5460,7 +5460,7 @@ msgstr ""
 msgid "Workflow steps"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:192
+#: lib/kanban_web/components/agent_roster_card.ex:189
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Working"
 msgstr "Travail"
@@ -5470,30 +5470,30 @@ msgstr "Travail"
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:284
+#: lib/kanban_web/components/agent_activity_feed.ex:283
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:288
+#: lib/kanban_web/components/agent_activity_feed.ex:287
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:271
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:275
+#: lib/kanban_web/components/agent_activity_feed.ex:274
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Completions"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:274
+#: lib/kanban_web/components/agent_activity_feed.ex:273
 #: lib/kanban_web/components/review_stats_strip.ex:75
 #, elixir-autogen, elixir-format
 msgid "Hooks"
@@ -5557,14 +5557,14 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:185
+#: lib/kanban_web/live/agents_live.ex:179
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:135
+#: lib/kanban_web/live/agents_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr ""

@@ -148,10 +148,7 @@ defmodule KanbanWeb.AgentRosterCard do
     ~H"""
     <dl
       data-agent-stats-grid
-      style={[
-        "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;",
-        "margin: 0; padding: 0;"
-      ]}
+      class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 m-0 p-0"
     >
       <.stat label={gettext("Today")} value={@agent.today} />
       <.stat label={gettext("7d")} value={@agent.last_7d} />
