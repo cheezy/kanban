@@ -168,6 +168,43 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "background: var(--ink)"
     end
+
+    test "renders the mobile menu disclosure with an accessible toggle and panel" do
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      # The hamburger is now a <details>/<summary> disclosure rather than an inert button
+      assert html =~ "<details "
+      assert html =~ "js-mobile-menu"
+      assert html =~ ~s|aria-controls="marketing-mobile-menu"|
+      assert html =~ ~s|aria-label="Toggle menu"|
+      assert html =~ ~s|aria-expanded="false"|
+      assert html =~ ~s|id="marketing-mobile-menu"|
+
+      # Summary is keyboard-focusable and meets the 44x44 tap target (w-11 h-11)
+      assert html =~ "w-11 h-11"
+
+      # The mobile panel mirrors the desktop nav links so they're reachable below md
+      assert html =~ ~s|href="/users/log-in"|
+    end
+
+    test "mobile menu shows admin links when authenticated as admin" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      # Mobile panel is present and renders admin-only links
+      assert html =~ ~s|id="marketing-mobile-menu"|
+      assert html =~ ~s|href="/admin/dashboard"|
+      assert html =~ ~s|href="/admin/errors"|
+    end
   end
 
   describe "marketing_hero/1" do

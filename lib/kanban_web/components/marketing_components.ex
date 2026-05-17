@@ -118,7 +118,7 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
         <.link
           href={~p"/boards"}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white hover:opacity-90 transition-opacity"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-xs font-medium text-white hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="background: var(--ink);"
         >
           {gettext("Go to boards")}
@@ -134,7 +134,7 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
         <.link
           href={~p"/users/register"}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white hover:opacity-90 transition-opacity"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-xs font-medium text-white hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="background: var(--ink);"
         >
           {gettext("Start free")}
@@ -144,14 +144,25 @@ defmodule KanbanWeb.MarketingComponents do
 
       <.marketing_language_switcher current_locale={@current_locale} />
 
-      <button
-        type="button"
-        class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md hover:opacity-70 transition-opacity"
-        style="color: var(--ink-2);"
-        aria-label={gettext("Open menu")}
-      >
-        <.icon name="hero-bars-3" class="w-5 h-5" />
-      </button>
+      <details class="md:hidden relative js-mobile-menu group">
+        <summary
+          class="list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden inline-flex items-center justify-center w-11 h-11 rounded-md cursor-pointer hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style="color: var(--ink-2);"
+          aria-label={gettext("Toggle menu")}
+          aria-controls="marketing-mobile-menu"
+          aria-expanded="false"
+        >
+          <.icon name="hero-bars-3" class="w-5 h-5 group-open:hidden" />
+          <.icon name="hero-x-mark" class="w-5 h-5 hidden group-open:block" />
+        </summary>
+        <div
+          id="marketing-mobile-menu"
+          class="absolute right-0 top-full mt-2 w-64 rounded-xl shadow-lg py-2 z-50"
+          style="background: var(--surface); border: 1px solid var(--line); color: var(--ink-2);"
+        >
+          <.marketing_mobile_menu current_scope={@current_scope} />
+        </div>
+      </details>
     </nav>
     """
   end
@@ -217,6 +228,78 @@ defmodule KanbanWeb.MarketingComponents do
         </form>
       </div>
     </div>
+    """
+  end
+
+  @doc false
+  attr :current_scope, :map, default: nil
+
+  defp marketing_mobile_menu(assigns) do
+    ~H"""
+    <.link
+      href={~p"/product"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Product")}
+    </.link>
+    <.link
+      href={~p"/workflows"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Workflows")}
+    </.link>
+    <.link
+      :if={@current_scope && @current_scope.user.type == :admin}
+      href={~p"/pricing"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Pricing")}
+    </.link>
+    <.link
+      href={~p"/resources"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Resources")}
+    </.link>
+    <.link
+      href={~p"/about"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("About")}
+    </.link>
+
+    <hr class="my-2" style="border-color: var(--line);" />
+
+    <%= if @current_scope do %>
+      <%= if @current_scope.user.type == :admin do %>
+        <.link
+          href={~p"/admin/dashboard"}
+          class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        >
+          {gettext("Dashboard")}
+        </.link>
+        <.link
+          href={~p"/admin/errors"}
+          class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        >
+          {gettext("Error Tracker")}
+        </.link>
+      <% end %>
+      <.link
+        href={~p"/users/log-out"}
+        method="delete"
+        class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+      >
+        {gettext("Sign out")}
+      </.link>
+    <% else %>
+      <.link
+        href={~p"/users/log-in"}
+        class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+      >
+        {gettext("Sign in")}
+      </.link>
+    <% end %>
     """
   end
 

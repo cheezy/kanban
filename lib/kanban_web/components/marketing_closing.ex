@@ -94,7 +94,7 @@ defmodule KanbanWeb.MarketingClosing do
         <%= if @current_scope do %>
           <.link
             href={~p"/boards"}
-            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
+            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Go to my boards")}
@@ -103,7 +103,7 @@ defmodule KanbanWeb.MarketingClosing do
         <% else %>
           <.link
             href={~p"/users/register"}
-            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
+            class="inline-flex items-center justify-center gap-1.5 text-white font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Start free")}
@@ -112,7 +112,7 @@ defmodule KanbanWeb.MarketingClosing do
         <% end %>
         <.link
           href={~p"/about"}
-          class="inline-flex items-center justify-center font-medium hover:opacity-90 transition-opacity h-12 md:h-auto"
+          class="inline-flex items-center justify-center font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="padding: 12px 22px; border-radius: 7px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); font-size: 14px;"
         >
           {gettext("Talk to a human")}
@@ -150,17 +150,23 @@ defmodule KanbanWeb.MarketingClosing do
       <span class="md:inline">© 2026</span>
       <span class="hidden md:inline flex-1"></span>
       <div class="flex flex-wrap gap-4 md:gap-7">
-        <.link href={~p"/privacy"} class="hover:opacity-70 transition-opacity">
+        <.link
+          href={~p"/privacy"}
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           {gettext("Privacy")}
         </.link>
-        <.link href={~p"/security"} class="hover:opacity-70 transition-opacity">
+        <.link
+          href={~p"/security"}
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           {gettext("Security")}
         </.link>
         <.link
           href="https://github.com/cheezy/kanban"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:opacity-70 transition-opacity"
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("GitHub")}
         </.link>

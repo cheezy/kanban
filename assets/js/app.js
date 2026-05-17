@@ -87,6 +87,28 @@ window.addEventListener("phx:task_moved_remotely", (e) => {
   console.log(`Task ${task_id} moved successfully to column ${new_column_id}`)
 })
 
+// Close any open <details class="js-mobile-menu"> when the user presses Escape,
+// and return focus to its summary. Used by the marketing nav disclosure.
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return
+  document.querySelectorAll("details.js-mobile-menu[open]").forEach((el) => {
+    el.removeAttribute("open")
+    const summary = el.querySelector("summary")
+    if (summary) summary.focus()
+  })
+})
+
+// Mirror the <details open> state onto the summary's aria-expanded so screen
+// readers announce the correct toggle state. The `toggle` event does not bubble,
+// so we listen in the capture phase at the document root.
+document.addEventListener("toggle", (e) => {
+  const el = e.target
+  if (!(el instanceof HTMLDetailsElement)) return
+  if (!el.classList.contains("js-mobile-menu")) return
+  const summary = el.querySelector("summary")
+  if (summary) summary.setAttribute("aria-expanded", el.open ? "true" : "false")
+}, true)
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
