@@ -137,6 +137,20 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
+  Updates only the user's display name. Returns `{:ok, user}` on success
+  or `{:error, changeset}` if the name fails validation.
+
+  Used by the Profile form on `/users/settings` when the user submits
+  without changing their email — `change_user_email/3` requires the email
+  to actually change.
+  """
+  def update_user_name(user, attrs) do
+    user
+    |> User.name_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates the user email using the given token.
 
   If the token matches, the user email is updated and the token is deleted.

@@ -247,9 +247,10 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
     test "renders small size variant" do
       html = render_component(&Components.content_type_badge/1, type: "guide", size: :sm)
 
-      # W595 restyle: small size variant tagged via data marker + inline padding
+      # W644 restyle: small size variant tagged via data marker + Tailwind padding utilities
       assert html =~ ~s(data-content-type-size="sm")
-      assert html =~ "padding: 2px 8px"
+      assert html =~ "px-2"
+      assert html =~ "py-0.5"
       assert html =~ "h-3 w-3"
     end
   end

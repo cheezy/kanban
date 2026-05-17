@@ -36,6 +36,17 @@ defmodule Kanban.Accounts.User do
   end
 
   @doc """
+  A user changeset for updating only the display name. Used by the
+  Profile form when the user submits without changing their email,
+  since `email_changeset/3` requires the email to change.
+  """
+  def name_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name])
+    |> validate_name()
+  end
+
+  @doc """
   A user changeset for registration with password.
 
   ## Options

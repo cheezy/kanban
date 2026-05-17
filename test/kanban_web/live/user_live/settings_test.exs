@@ -111,18 +111,33 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert result =~ "must have the @ sign and no spaces"
     end
 
-    test "renders errors with invalid data (phx-submit)", %{conn: conn, user: user} do
+    test "saves a new name without changing the email", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
 
       result =
         lv
         |> form("#email_form", %{
-          "user" => %{"email" => user.email}
+          "user" => %{"name" => "Ada Lovelace", "email" => user.email}
         })
         |> render_submit()
 
-      assert result =~ "Update Profile"
-      assert result =~ "did not change"
+      assert result =~ "Profile updated"
+      assert %{name: "Ada Lovelace"} = Accounts.get_user_by_email(user.email)
+    end
+
+    test "rejects a name with HTML metacharacters", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings")
+
+      result =
+        lv
+        |> form("#email_form", %{
+          "user" => %{"name" => "<script>x", "email" => user.email}
+        })
+        |> render_submit()
+
+      assert result =~ "cannot contain HTML metacharacters"
+      assert %{name: original_name} = Accounts.get_user_by_email(user.email)
+      assert original_name == user.name
     end
   end
 

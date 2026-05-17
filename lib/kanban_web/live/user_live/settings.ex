@@ -141,13 +141,27 @@ defmodule KanbanWeb.UserLive.Settings do
     {:noreply, assign(socket, email_form: email_form)}
   end
 
-  def handle_event("update_email", params, socket) do
-    %{"user" => user_params} = params
+  def handle_event("update_email", %{"user" => user_params}, socket) do
     user = socket.assigns.current_scope.user
 
+    if email_changed?(user_params, user) do
+      request_email_change(socket, user, user_params)
+    else
+      save_name_only(socket, user, user_params)
+    end
+  end
+
+  defp email_changed?(user_params, user) do
+    submitted = Map.get(user_params, "email")
+    is_binary(submitted) and submitted != user.email
+  end
+
+  defp request_email_change(socket, user, user_params) do
     case Accounts.change_user_email(user, user_params) do
       %{valid?: true} = changeset ->
         updated_user = Ecto.Changeset.apply_action!(changeset, :insert)
+
+        _ = Accounts.update_user_name(user, user_params)
 
         Accounts.deliver_user_update_email_instructions(
           updated_user,
@@ -156,10 +170,28 @@ defmodule KanbanWeb.UserLive.Settings do
         )
 
         info = gettext("A link to confirm your email change has been sent to the new address.")
-        {:noreply, socket |> put_flash(:info, info)}
+        {:noreply, put_flash(socket, :info, info)}
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
+    end
+  end
+
+  defp save_name_only(socket, user, user_params) do
+    case Accounts.update_user_name(user, user_params) do
+      {:ok, updated_user} ->
+        email_form =
+          updated_user
+          |> Accounts.change_user_email(%{}, validate_unique: false)
+          |> to_form()
+
+        {:noreply,
+         socket
+         |> assign(:email_form, email_form)
+         |> put_flash(:info, gettext("Profile updated."))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :email_form, to_form(changeset, action: :update))}
     end
   end
 

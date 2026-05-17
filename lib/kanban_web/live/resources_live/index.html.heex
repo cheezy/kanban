@@ -52,11 +52,7 @@
       </div>
     </div>
 
-    <div style={[
-      "text-align: center;",
-      "font-size: 11.5px; color: var(--ink-3);",
-      "font-family: var(--font-mono);"
-    ]}>
+    <div class="text-center text-[11.5px] text-base-content opacity-60 font-mono">
       {ngettext(
         "Showing %{count} guide",
         "Showing %{count} guides",
@@ -68,10 +64,7 @@
     <%= if Enum.empty?(@filtered_how_tos) do %>
       <.empty_state />
     <% else %>
-      <div style={[
-        "display: grid; gap: 18px;",
-        "grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));"
-      ]}>
+      <div class="grid gap-[18px] grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
         <.resource_card :for={how_to <- @filtered_how_tos} how_to={how_to} />
       </div>
     <% end %>

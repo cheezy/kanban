@@ -34,63 +34,32 @@ defmodule KanbanWeb.ResourcesLive.Components do
     ~H"""
     <.link
       navigate={~p"/resources/#{@how_to.id}"}
-      class="group"
-      style={[
-        "display: flex; flex-direction: column; overflow: hidden;",
-        "background: var(--surface);",
-        "border: 1px solid var(--line); border-radius: 10px;",
-        "text-decoration: none;",
-        "transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;"
-      ]}
+      class="group flex flex-col overflow-hidden bg-base-100 border border-base-300 rounded-[10px] no-underline transition-all hover:border-primary hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div class="aspect-video" style="position: relative; overflow: hidden;">
+      <div class="aspect-video relative overflow-hidden">
         <.category_illustration tags={@how_to.tags} />
-        <div style="position: absolute; top: 12px; right: 12px;">
+        <div class="absolute top-3 right-3">
           <.content_type_badge type={@how_to.content_type} />
         </div>
       </div>
-      <div style="padding: 18px; flex: 1; display: flex; flex-direction: column;">
-        <h3
-          class="line-clamp-2"
-          style={[
-            "margin: 0 0 6px;",
-            "font-size: 14px; font-weight: 600; letter-spacing: -0.01em;",
-            "color: var(--ink);"
-          ]}
-        >
+      <div class="p-[18px] flex-1 flex flex-col">
+        <h3 class="line-clamp-2 m-0 mb-1.5 text-[14px] font-semibold tracking-tight text-base-content">
           {@how_to.title}
         </h3>
-        <p
-          class="line-clamp-2"
-          style={[
-            "margin: 0 0 14px;",
-            "font-size: 12.5px; color: var(--ink-3); flex: 1;"
-          ]}
-        >
+        <p class="line-clamp-2 m-0 mb-[14px] text-[12.5px] text-base-content opacity-60 flex-1">
           {@how_to.description}
         </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+        <div class="flex flex-wrap gap-1.5 mb-[14px]">
           <span
             :for={tag <- Enum.take(@how_to.tags, 3)}
-            style={[
-              "padding: 2px 8px; border-radius: 999px;",
-              "background: var(--surface-sunken); color: var(--ink-3);",
-              "font-size: 10.5px; font-family: var(--font-mono);"
-            ]}
+            class="px-2 py-0.5 rounded-full bg-base-200 text-base-content opacity-70 text-[10.5px] font-mono"
           >
             {@format_tag_fn.(tag)}
           </span>
         </div>
-        <div style={[
-          "display: flex; align-items: center; justify-content: space-between;",
-          "padding-top: 12px; border-top: 1px solid var(--line);"
-        ]}>
+        <div class="flex items-center justify-between pt-3 border-t border-base-300">
           <.reading_time minutes={@how_to.reading_time} />
-          <span style={[
-            "display: inline-flex; align-items: center; gap: 4px;",
-            "font-size: 11.5px; font-weight: 500;",
-            "color: var(--stride-orange);"
-          ]}>
+          <span class="inline-flex items-center gap-1 text-[11.5px] font-medium text-primary">
             {gettext("Read more")}
             <span>&rarr;</span>
           </span>
@@ -322,13 +291,11 @@ defmodule KanbanWeb.ResourcesLive.Components do
     ~H"""
     <span
       data-content-type-size={@size}
-      style={
-        if @size == :sm do
-          "display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); font-family: var(--font-mono);"
-        else
-          "display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); font-family: var(--font-mono);"
-        end
-      }
+      class={[
+        "inline-flex items-center gap-1 rounded-full font-medium font-mono",
+        "bg-base-100 text-base-content opacity-80 border border-base-300",
+        if(@size == :sm, do: "px-2 py-0.5 text-[10.5px]", else: "px-2.5 py-1 text-[11px]")
+      ]}
     >
       <.icon name={type_icon(@type)} class={(@size == :sm && "h-3 w-3") || "h-3.5 w-3.5"} />
       {String.capitalize(@type)}
@@ -351,10 +318,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
 
   def reading_time(assigns) do
     ~H"""
-    <span style={[
-      "display: inline-flex; align-items: center; gap: 4px;",
-      "font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);"
-    ]}>
+    <span class="inline-flex items-center gap-1 text-[11px] text-base-content opacity-60 font-mono">
       <.icon name="hero-clock" class="h-3 w-3" />
       {ngettext("%{count} min read", "%{count} min read", @minutes, count: @minutes)}
     </span>
@@ -376,32 +340,20 @@ defmodule KanbanWeb.ResourcesLive.Components do
 
   def empty_state(assigns) do
     ~H"""
-    <div style="text-align: center; padding: 56px 0;">
-      <div style={[
-        "display: inline-flex; align-items: center; justify-content: center;",
-        "width: 64px; height: 64px; border-radius: 999px;",
-        "background: var(--surface-sunken); color: var(--ink-4);",
-        "margin-bottom: 18px;"
-      ]}>
+    <div class="text-center py-14">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 text-base-content opacity-40 mb-[18px]">
         <.icon name="hero-document-magnifying-glass" class="h-8 w-8" />
       </div>
-      <h2 style={[
-        "margin: 0 0 6px;",
-        "font-size: 16px; font-weight: 600; color: var(--ink);"
-      ]}>
+      <h2 class="m-0 mb-1.5 text-[16px] font-semibold text-base-content">
         {gettext("No guides found")}
       </h2>
-      <p style="margin: 0 0 16px; font-size: 12.5px; color: var(--ink-3);">
+      <p class="m-0 mb-4 text-[12.5px] text-base-content opacity-60">
         {gettext("Try adjusting your search or filters to find what you're looking for.")}
       </p>
       <button
+        type="button"
         phx-click={@clear_event}
-        style={[
-          "padding: 6px 14px; border-radius: 6px;",
-          "font-size: 12px; font-weight: 500; cursor: pointer;",
-          "background: var(--stride-orange); color: white;",
-          "border: 1px solid var(--stride-orange);"
-        ]}
+        class="px-3.5 py-1.5 rounded-md text-[12px] font-medium cursor-pointer bg-primary text-primary-content border border-primary"
       >
         {gettext("Clear all filters")}
       </button>
@@ -562,67 +514,52 @@ defmodule KanbanWeb.ResourcesLive.Components do
     assigns =
       assigns
       |> assign(:category, category)
-      |> assign(:bg_style, category_bg_style(category))
-      |> assign(:icon_color, category_icon_color(category))
+      |> assign(:bg_class, category_bg_class(category))
+      |> assign(:icon_class, category_icon_class(category))
 
     ~H"""
-    <div style="position: absolute; inset: 0;">
-      <div data-category={@category} style={@bg_style}></div>
+    <div class="absolute inset-0">
+      <div data-category={@category} class={["absolute inset-0 bg-gradient-to-br", @bg_class]}></div>
 
-      <div style={[
-        "position: absolute; inset: 0;",
-        "display: flex; align-items: center; justify-content: center;"
-      ]}>
-        <div :if={@category == :getting_started} style="position: relative;">
-          <span style={"display: inline-flex; color: #{@icon_color};"}>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <div :if={@category == :getting_started} class="relative">
+          <span class={["inline-flex", @icon_class]}>
             <.icon name="hero-rocket-launch" class="h-16 w-16" />
           </span>
-          <span style={[
-            "position: absolute; top: -8px; right: -8px;",
-            "display: inline-flex; color: var(--stride-orange);"
-          ]}>
+          <span class="absolute -top-2 -right-2 inline-flex text-warning">
             <.icon name="hero-sparkles" class="h-6 w-6" />
           </span>
         </div>
 
-        <div :if={@category == :developer} style="position: relative;">
-          <span style={"display: inline-flex; color: #{@icon_color};"}>
+        <div :if={@category == :developer} class="relative">
+          <span class={["inline-flex", @icon_class]}>
             <.icon name="hero-code-bracket-square" class="h-16 w-16" />
           </span>
-          <span style={[
-            "position: absolute; bottom: -4px; right: -4px;",
-            "display: inline-flex; color: var(--stride-violet);"
-          ]}>
+          <span class="absolute -bottom-1 -right-1 inline-flex text-secondary">
             <.icon name="hero-command-line" class="h-8 w-8" />
           </span>
         </div>
 
-        <div :if={@category == :non_developer} style="position: relative;">
-          <span style={"display: inline-flex; color: #{@icon_color};"}>
+        <div :if={@category == :non_developer} class="relative">
+          <span class={["inline-flex", @icon_class]}>
             <.icon name="hero-users" class="h-16 w-16" />
           </span>
-          <span style={[
-            "position: absolute; top: -4px; right: -4px;",
-            "display: inline-flex; color: var(--stride-orange);"
-          ]}>
+          <span class="absolute -top-1 -right-1 inline-flex text-warning">
             <.icon name="hero-cpu-chip" class="h-8 w-8" />
           </span>
         </div>
 
-        <div :if={@category == :best_practices} style="position: relative;">
-          <span style={"display: inline-flex; color: #{@icon_color};"}>
+        <div :if={@category == :best_practices} class="relative">
+          <span class={["inline-flex", @icon_class]}>
             <.icon name="hero-star" class="h-16 w-16" />
           </span>
-          <span style={[
-            "position: absolute; bottom: -4px; right: -4px;",
-            "display: inline-flex; color: var(--stride-orange);"
-          ]}>
+          <span class="absolute -bottom-1 -right-1 inline-flex text-warning">
             <.icon name="hero-check-badge" class="h-8 w-8" />
           </span>
         </div>
 
-        <div :if={@category == :default} style="position: relative;">
-          <span style={"display: inline-flex; color: #{@icon_color};"}>
+        <div :if={@category == :default} class="relative">
+          <span class={["inline-flex", @icon_class]}>
             <.icon name="hero-book-open" class="h-16 w-16" />
           </span>
         </div>
@@ -631,31 +568,17 @@ defmodule KanbanWeb.ResourcesLive.Components do
     """
   end
 
-  defp category_bg_style(:getting_started) do
-    "position: absolute; inset: 0; background: linear-gradient(135deg, var(--st-done-soft), var(--st-ready-soft));"
-  end
+  defp category_bg_class(:getting_started), do: "from-success/20 to-info/20"
+  defp category_bg_class(:developer), do: "from-secondary/20 to-info/20"
+  defp category_bg_class(:non_developer), do: "from-warning/20 to-error/20"
+  defp category_bg_class(:best_practices), do: "from-accent/20 to-warning/20"
+  defp category_bg_class(:default), do: "from-info/20 to-secondary/20"
 
-  defp category_bg_style(:developer) do
-    "position: absolute; inset: 0; background: linear-gradient(135deg, var(--stride-violet-soft), var(--st-ready-soft));"
-  end
-
-  defp category_bg_style(:non_developer) do
-    "position: absolute; inset: 0; background: linear-gradient(135deg, var(--stride-orange-soft), var(--st-blocked-soft));"
-  end
-
-  defp category_bg_style(:best_practices) do
-    "position: absolute; inset: 0; background: linear-gradient(135deg, var(--st-doing-soft), var(--stride-orange-soft));"
-  end
-
-  defp category_bg_style(:default) do
-    "position: absolute; inset: 0; background: linear-gradient(135deg, var(--st-ready-soft), var(--stride-violet-soft));"
-  end
-
-  defp category_icon_color(:getting_started), do: "var(--st-done)"
-  defp category_icon_color(:developer), do: "var(--stride-violet)"
-  defp category_icon_color(:non_developer), do: "var(--stride-orange)"
-  defp category_icon_color(:best_practices), do: "var(--st-doing)"
-  defp category_icon_color(:default), do: "var(--st-ready)"
+  defp category_icon_class(:getting_started), do: "text-success"
+  defp category_icon_class(:developer), do: "text-secondary"
+  defp category_icon_class(:non_developer), do: "text-warning"
+  defp category_icon_class(:best_practices), do: "text-accent"
+  defp category_icon_class(:default), do: "text-info"
 
   @doc """
   Returns the icon name for a content type.
