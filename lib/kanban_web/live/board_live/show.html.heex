@@ -111,6 +111,19 @@
         </div>
       <% else %>
         <div
+          id="snap-indicator"
+          class="md:hidden flex items-center justify-center gap-1.5 pb-2"
+          phx-hook="SnapIndicator"
+          data-target-id="columns"
+          aria-hidden="true"
+        >
+          <span
+            :for={{id, _column} <- @streams.columns}
+            data-indicator-dot={id}
+            class="w-2 h-2 rounded-full bg-base-content opacity-30 transition-opacity"
+          />
+        </div>
+        <div
           class="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none"
           id="columns"
           phx-update="stream"

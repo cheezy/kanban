@@ -163,6 +163,26 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       # explicitly reset at md+ or columns would freeze at intrinsic width.
       assert html =~ "md:shrink"
     end
+
+    test "snap indicator strip renders below md with one dot per column", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column_fixture(board)
+      column_fixture(board)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}")
+
+      # The indicator strip is md:hidden and mounts the SnapIndicator hook.
+      assert html =~ ~s|id="snap-indicator"|
+      assert html =~ ~s|phx-hook="SnapIndicator"|
+      assert html =~ ~s|data-target-id="columns"|
+      assert html =~ "md:hidden"
+      # One dot per column.
+      dot_count = Regex.scan(~r/data-indicator-dot=/, html) |> length()
+      assert dot_count == 2
+    end
   end
 
   describe "Show with new task" do

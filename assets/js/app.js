@@ -30,6 +30,7 @@ import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import Dropdown from "./hooks/dropdown"
 import PasswordToggle from "./hooks/password_toggle"
 import Sidebar from "./hooks/sidebar"
+import SnapIndicator from "./hooks/snap_indicator"
 import topbar from "../vendor/topbar"
 
 const MyHooks = {
@@ -40,6 +41,7 @@ const MyHooks = {
   Dropdown,
   PasswordToggle,
   Sidebar,
+  SnapIndicator,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
