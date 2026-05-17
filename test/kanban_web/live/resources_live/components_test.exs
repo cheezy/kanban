@@ -113,10 +113,11 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
           selected: ["getting-started"]
         )
 
-      # Active state has bg-blue-600
-      assert html =~ "bg-blue-600"
-      # Inactive state has bg-base-200
-      assert html =~ "bg-base-200"
+      # W595 restyle: active state uses stride-orange token + data marker
+      assert html =~ ~s(data-tag-filter-active="true")
+      assert html =~ "var(--stride-orange)"
+      # Inactive state uses surface-sunken background
+      assert html =~ "var(--surface-sunken)"
     end
 
     test "renders with toggle event" do
@@ -244,7 +245,9 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
     test "renders small size variant" do
       html = render_component(&Components.content_type_badge/1, type: "guide", size: :sm)
 
-      assert html =~ "px-2 py-0.5"
+      # W595 restyle: small size variant tagged via data marker + inline padding
+      assert html =~ ~s(data-content-type-size="sm")
+      assert html =~ "padding: 2px 8px"
       assert html =~ "h-3 w-3"
     end
   end
