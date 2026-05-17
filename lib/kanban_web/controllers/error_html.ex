@@ -38,7 +38,8 @@ defmodule KanbanWeb.ErrorHTML do
             <p class="text-base-content opacity-70 mb-8 leading-relaxed">{@message}</p>
             <a
               href="/"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:-translate-y-0.5"
+              class="stride-screen"
+              style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: white; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-decoration: none; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
             >
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
