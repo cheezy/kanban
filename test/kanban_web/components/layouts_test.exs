@@ -162,4 +162,58 @@ defmodule KanbanWeb.LayoutsTest do
       assert html =~ ~s(href="/metrics")
     end
   end
+
+  describe "side_nav/1 — mobile drawer markup" do
+    test "sidebar renders with the drawer-ready id and responsive classes" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: nil, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      # The sidebar must carry id="app-sidebar" so the JS Sidebar hook can target it.
+      assert html =~ ~s(id="app-sidebar")
+
+      # Mobile drawer: fixed positioning + off-canvas translate by default.
+      assert html =~ "fixed"
+      assert html =~ "-translate-x-full"
+      assert html =~ "transition-transform"
+
+      # Desktop reset: md:static + md:translate-x-0 restores the inline 160px sidebar.
+      assert html =~ "md:static"
+      assert html =~ "md:translate-x-0"
+      assert html =~ "md:w-[160px]"
+    end
+  end
+
+  describe "win_top/1 — sidebar toggle" do
+    test "renders the hamburger toggle when show_sidebar_toggle is true" do
+      assigns = %{show_sidebar_toggle: true}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.win_top show_sidebar_toggle={@show_sidebar_toggle} />
+        """)
+
+      assert html =~ "data-sidebar-toggle"
+      assert html =~ ~s(aria-controls="app-sidebar")
+      assert html =~ ~s(aria-expanded="false")
+      assert html =~ "md:hidden"
+      # 44x44 tap target
+      assert html =~ "w-11 h-11"
+    end
+
+    test "omits the hamburger toggle when show_sidebar_toggle is false" do
+      assigns = %{show_sidebar_toggle: false}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.win_top show_sidebar_toggle={@show_sidebar_toggle} />
+        """)
+
+      refute html =~ "data-sidebar-toggle"
+    end
+  end
 end

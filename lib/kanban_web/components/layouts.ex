@@ -55,8 +55,17 @@ defmodule KanbanWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <div class="stride-screen flex h-screen w-full overflow-hidden">
+    <div
+      id="app-shell"
+      phx-hook="Sidebar"
+      class="stride-screen flex h-screen w-full overflow-hidden"
+    >
       <%= if @current_scope do %>
+        <div
+          data-sidebar-backdrop
+          class="hidden md:hidden fixed inset-0 bg-black/40 z-40"
+          aria-hidden="true"
+        />
         <.side_nav
           current_scope={@current_scope}
           active={@active}
@@ -69,6 +78,7 @@ defmodule KanbanWeb.Layouts do
           breadcrumbs={@breadcrumbs}
           actions={@actions}
           page_title={@page_title}
+          show_sidebar_toggle={@current_scope != nil}
         />
         <main class="flex-1 min-h-0 overflow-auto bg-base-100">
           {render_slot(@inner_block)}
@@ -99,9 +109,10 @@ defmodule KanbanWeb.Layouts do
 
     ~H"""
     <aside
+      id="app-sidebar"
       aria-label={gettext("Primary navigation")}
+      class="w-[200px] md:w-[160px] flex-shrink-0 fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform md:static md:translate-x-0 md:z-auto h-screen"
       style={[
-        "width: 160px; height: 100vh; flex-shrink: 0;",
         "background: var(--surface-2); border-right: 1px solid var(--line);",
         "display: flex; flex-direction: column;"
       ]}
@@ -292,18 +303,32 @@ defmodule KanbanWeb.Layouts do
   attr :breadcrumbs, :any, default: []
   attr :actions, :any, default: []
   attr :page_title, :string, default: nil
+  attr :show_sidebar_toggle, :boolean, default: false
 
   def win_top(assigns) do
     ~H"""
     <div
       class="stride-screen"
       style={[
-        "height: 36px; display: flex; align-items: center; flex-shrink: 0;",
+        "min-height: 36px; display: flex; align-items: center; flex-shrink: 0;",
         "border-bottom: 1px solid var(--line); background: var(--surface);",
         "padding: 0 10px 0 12px; gap: 10px;"
       ]}
     >
-      <div style="display: flex; gap: 6px;" aria-hidden="true">
+      <%= if @show_sidebar_toggle do %>
+        <button
+          type="button"
+          data-sidebar-toggle
+          class="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-md hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style="color: var(--ink-2); margin-left: -6px;"
+          aria-label={gettext("Toggle sidebar")}
+          aria-controls="app-sidebar"
+          aria-expanded="false"
+        >
+          <.icon name="hero-bars-3" class="w-5 h-5" />
+        </button>
+      <% end %>
+      <div class="hidden md:flex" style="gap: 6px;" aria-hidden="true">
         <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(75% 0.13 25); display: inline-block;">
         </span>
         <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(80% 0.13 80); display: inline-block;">

@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:359
-#: lib/kanban_web/components/layouts.ex:371
+#: lib/kanban_web/components/layouts.ex:384
+#: lib/kanban_web/components/layouts.ex:396
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:366
+#: lib/kanban_web/components/layouts.ex:391
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:354
+#: lib/kanban_web/components/layouts.ex:379
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -74,14 +74,14 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:170
+#: lib/kanban_web/components/layouts.ex:181
 #: lib/kanban_web/components/layouts/root.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:264
+#: lib/kanban_web/components/layouts.ex:275
 #: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -408,8 +408,8 @@ msgstr ""
 msgid "WIP limit reached for this column"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:124
-#: lib/kanban_web/components/layouts.ex:320
+#: lib/kanban_web/components/layouts.ex:135
+#: lib/kanban_web/components/layouts.ex:345
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -2167,7 +2167,7 @@ msgstr ""
 msgid "Read more"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:257
+#: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2252,7 +2252,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:245
+#: lib/kanban_web/components/layouts.ex:256
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
 #: lib/kanban_web/live/metrics_live/workspace.ex:73
 #: lib/kanban_web/live/task_live/view_component.ex:239
@@ -4643,7 +4643,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/layouts.ex:224
+#: lib/kanban_web/components/layouts.ex:235
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:59
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4724,7 +4724,7 @@ msgstr ""
 msgid "Active goals"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:231
+#: lib/kanban_web/components/layouts.ex:242
 #: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format
 msgid "Agents"
@@ -4760,7 +4760,7 @@ msgstr ""
 msgid "Pre-configured for AI workflow"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:102
+#: lib/kanban_web/components/layouts.ex:113
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr ""
@@ -4770,7 +4770,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:238
+#: lib/kanban_web/components/layouts.ex:249
 #: lib/kanban_web/live/review_live.ex:94
 #: lib/kanban_web/live/review_live.ex:115
 #, elixir-autogen, elixir-format
@@ -4782,7 +4782,7 @@ msgstr ""
 msgid "Start with a blank board"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:111
+#: lib/kanban_web/components/layouts.ex:122
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr ""
@@ -5988,4 +5988,9 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:151
 #, elixir-autogen, elixir-format
 msgid "Toggle menu"
+msgstr ""
+
+#: lib/kanban_web/components/layouts.ex:324
+#, elixir-autogen, elixir-format
+msgid "Toggle sidebar"
 msgstr ""
