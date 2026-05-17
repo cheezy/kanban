@@ -189,6 +189,7 @@ defmodule KanbanWeb.Layouts do
               method="delete"
               style={[
                 "display: inline-flex; align-items: center; gap: 4px;",
+                "padding-right: 6px;",
                 "font-size: 11.5px; font-weight: 500;",
                 "color: var(--ink-2); text-decoration: underline;",
                 "text-underline-offset: 2px; cursor: pointer;"
