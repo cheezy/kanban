@@ -30,7 +30,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
             label={gettext("Confirm new password")}
             required
           />
-          <.button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-4">
+          <.button variant="primary" class="btn btn-primary w-full mt-4">
             {gettext("Reset password")}
           </.button>
         </.form>

@@ -23,15 +23,12 @@ defmodule KanbanWeb.UserLive.Confirmation do
         </:subtitle>
 
         <%= if @confirmed do %>
-          <.link
-            navigate={~p"/users/log-in"}
-            class="inline-block w-full text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
-          >
+          <.link navigate={~p"/users/log-in"} class="btn btn-primary w-full">
             {gettext("Go to login")} <span aria-hidden="true">→</span>
           </.link>
         <% else %>
           <div class="flex items-center justify-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         <% end %>
       </.auth_form>

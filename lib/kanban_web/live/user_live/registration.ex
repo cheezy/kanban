@@ -19,7 +19,7 @@ defmodule KanbanWeb.UserLive.Registration do
           {gettext("Already registered?")}
           <.link
             navigate={~p"/users/log-in"}
-            class="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+            class="font-semibold text-primary hover:underline"
           >
             {gettext("Log in")}
           </.link>
@@ -59,8 +59,9 @@ defmodule KanbanWeb.UserLive.Registration do
           />
 
           <.button
+            variant="primary"
+            class="btn btn-primary w-full mt-6"
             phx-disable-with={gettext("Creating account...")}
-            class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-6"
           >
             {gettext("Create an account")}
           </.button>

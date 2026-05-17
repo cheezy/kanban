@@ -69,7 +69,7 @@ defmodule KanbanWeb.AuthComponents do
           <% else %>
             <.link
               href={~p"/users/log-in"}
-              class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              class="font-medium text-primary hover:underline"
             >
               {gettext("Back to log in")}
             </.link>
