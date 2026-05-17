@@ -1,49 +1,40 @@
 defmodule KanbanWeb.UserLive.Confirmation do
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuthComponents
+
   alias Kanban.Accounts
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-md space-y-6 py-8">
-        <div class="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300 text-center">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg mb-4">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+      <.auth_form
+        title={
+          if @confirmed,
+            do: gettext("Account Confirmed!"),
+            else: gettext("Confirming your account...")
+        }
+        icon_gradient="from-green-500 to-green-600"
+        icon_path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      >
+        <:subtitle :if={@confirmed}>
+          {gettext("Your account has been confirmed successfully. You can now log in.")}
+        </:subtitle>
+
+        <%= if @confirmed do %>
+          <.link
+            navigate={~p"/users/log-in"}
+            class="inline-block w-full text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+          >
+            {gettext("Go to login")} <span aria-hidden="true">→</span>
+          </.link>
+        <% else %>
+          <div class="flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-
-          <%= if @confirmed do %>
-            <.header>
-              <p class="text-2xl font-bold text-base-content mb-6">{gettext("Account Confirmed!")}</p>
-              <:subtitle>
-                <p class="text-base-content opacity-70 mt-2">
-                  {gettext("Your account has been confirmed successfully. You can now log in.")}
-                </p>
-              </:subtitle>
-            </.header>
-
-            <.link
-              navigate={~p"/users/log-in"}
-              class="inline-block w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
-            >
-              {gettext("Go to login")} <span aria-hidden="true">→</span>
-            </.link>
-          <% else %>
-            <div class="flex items-center justify-center">
-              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-            <p class="text-base-content opacity-70 mt-4">{gettext("Confirming your account...")}</p>
-          <% end %>
-        </div>
-      </div>
+        <% end %>
+      </.auth_form>
     </Layouts.app>
     """
   end
