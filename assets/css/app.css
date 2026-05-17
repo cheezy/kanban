@@ -868,6 +868,44 @@
   text-rendering: optimizeLegibility;
 }
 
+/* Dark-mode overrides for the marketing + app surfaces.
+   Flips the neutral palette (bg, surface*, ink*, line*) and the soft
+   status/brand tints. Brand and status accent hues are unchanged — they
+   keep their identity in both themes. Closes the W607/D32 finding that
+   the .stride-marketing palette had no dark-mode variant. */
+:where([data-theme="dark"]) .stride-marketing,
+:where([data-theme="dark"]) .stride-screen {
+  /* Brand softs — lower lightness, lower chroma so they don't glow on dark */
+  --stride-orange-soft: oklch(28% 0.06 60);
+  --stride-violet-soft: oklch(28% 0.06 280);
+
+  /* Neutrals — inverted lightness ladder */
+  --bg: oklch(15% 0.005 270);          /* canvas */
+  --surface: oklch(20% 0.005 270);     /* cards, panels */
+  --surface-2: oklch(18% 0.005 270);   /* nested surfaces */
+  --surface-sunken: oklch(13% 0.005 270);
+  --ink: oklch(95% 0.005 270);
+  --ink-2: oklch(80% 0.005 270);
+  --ink-3: oklch(62% 0.005 270);
+  --ink-4: oklch(58% 0.005 270);
+  --line: oklch(28% 0.005 270);
+  --line-2: oklch(32% 0.005 270);
+  --line-strong: oklch(40% 0.005 270);
+
+  /* Status softs — dark-tinted backgrounds (low chroma, low lightness) */
+  --st-backlog-soft: oklch(22% 0.005 270);
+  --st-ready-soft:   oklch(22% 0.05 240);
+  --st-doing-soft:   oklch(22% 0.06 70);
+  --st-review-soft:  oklch(22% 0.05 277);
+  --st-done-soft:    oklch(22% 0.05 155);
+  --st-blocked-soft: oklch(22% 0.05 25);
+
+  /* Shadows — heavier in dark mode for visible separation */
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px rgba(0, 0, 0, 0.6);
+}
+
 .stride-marketing *,
 .stride-marketing *::before,
 .stride-marketing *::after,
