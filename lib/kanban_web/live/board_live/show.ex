@@ -813,13 +813,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
     tasks_by_column =
       Enum.into(columns, %{}, fn column ->
-        tasks = Map.get(grouped, column.id, [])
-
-        tasks =
-          if column.name == "Done",
-            do: Tasks.sort_by_goal_hierarchy(tasks),
-            else: tasks
-
+        tasks = grouped |> Map.get(column.id, []) |> sort_column_tasks(column)
         {column.id, tasks}
       end)
 
@@ -838,6 +832,13 @@ defmodule KanbanWeb.BoardLive.Show do
     |> assign(:goals, goals)
     |> assign(:tasks_version, :os.system_time(:millisecond))
   end
+
+  @goal_hierarchy_columns ~w(Backlog Ready Done)
+
+  defp sort_column_tasks(tasks, %{name: name}) when name in @goal_hierarchy_columns,
+    do: Tasks.sort_by_goal_hierarchy(tasks)
+
+  defp sort_column_tasks(tasks, _column), do: tasks
 
   # Build the list of active goals shaped for KanbanWeb.GoalsStrip.
   # Each entry has :identifier, :name, :color, :ink, :promoted plus a
