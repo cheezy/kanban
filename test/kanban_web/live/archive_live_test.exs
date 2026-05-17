@@ -615,6 +615,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       end
     end
 
+    @tag :capture_log
     test "filter_archive with an unknown reason falls back to :all and renders every row",
          %{conn: conn, board: board, column: column} do
       keeper = task_fixture(column, %{title: "Stays visible"})
