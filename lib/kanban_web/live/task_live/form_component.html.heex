@@ -1,14 +1,25 @@
 <div class="stride-screen" data-form-chrome>
-  <.header>
-    {@title}
-    <:subtitle>
+  <header style={[
+    "display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;",
+    "padding-bottom: 16px; margin-bottom: 18px;",
+    "border-bottom: 1px solid var(--line);"
+  ]}>
+    <h1 style={[
+      "margin: 0;",
+      "font-size: 18px; font-weight: 600;",
+      "letter-spacing: -0.01em;",
+      "color: var(--ink);"
+    ]}>
+      {@title}
+    </h1>
+    <span style="font-size: 12.5px; color: var(--ink-3);">
       <%= if @action == :new_task do %>
         {gettext("Create a new task")}
       <% else %>
         {gettext("Update task details")}
       <% end %>
-    </:subtitle>
-  </.header>
+    </span>
+  </header>
 
   <%= if @error_message do %>
     <div
@@ -147,7 +158,7 @@
     <%= if field_visible?(@field_visibility, "complexity") do %>
       <%!-- Complexity & Planning Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Complexity & Planning")}
         </h3>
         <div class="grid grid-cols-2 gap-4">
@@ -175,7 +186,7 @@
     <%= if field_visible?(@field_visibility, "context") do %>
       <%!-- Context Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Context")}
         </h3>
         <.input
@@ -202,7 +213,7 @@
     <%= if field_visible?(@field_visibility, "key_files") do %>
       <%!-- Key Files Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Key Files to Read First")}
         </h3>
         <.error :for={msg <- Enum.map(f[:key_files].errors, &translate_error/1)}>{msg}</.error>
@@ -228,7 +239,7 @@
               phx-click="remove-key-file"
               phx-value-index={kf.index}
               phx-target={@myself}
-              class="btn btn-sm btn-error mt-8"
+              style="margin-top: 32px; padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -238,7 +249,7 @@
           type="button"
           phx-click="add-key-file"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Key File")}
         </button>
@@ -248,7 +259,7 @@
     <%= if field_visible?(@field_visibility, "verification_steps") do %>
       <%!-- Verification Steps Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Verification Steps")}
         </h3>
         <.error :for={msg <- Enum.map(f[:verification_steps].errors, &translate_error/1)}>
@@ -279,7 +290,7 @@
               phx-click="remove-verification-step"
               phx-value-index={vs.index}
               phx-target={@myself}
-              class="btn btn-sm btn-error mt-8"
+              style="margin-top: 32px; padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -289,7 +300,7 @@
           type="button"
           phx-click="add-verification-step"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Verification Step")}
         </button>
@@ -299,7 +310,7 @@
     <%= if field_visible?(@field_visibility, "technical_notes") do %>
       <%!-- Technical Notes Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Technical Notes")}
         </h3>
         <.input
@@ -326,7 +337,7 @@
     <%= if field_visible?(@field_visibility, "technology_requirements") do %>
       <%!-- Technology Requirements Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Technology Requirements")}
         </h3>
         <.error :for={msg <- Enum.map(f[:technology_requirements].errors, &translate_error/1)}>
@@ -340,14 +351,14 @@
               name="task[technology_requirements][]"
               value={tech}
               placeholder={gettext("Technology/library name")}
-              class="input input-bordered flex-1"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             />
             <button
               type="button"
               phx-click="remove-technology"
               phx-value-index={index}
               phx-target={@myself}
-              class="btn btn-sm btn-error"
+              style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -357,7 +368,7 @@
           type="button"
           phx-click="add-technology"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Technology")}
         </button>
@@ -367,7 +378,7 @@
     <%= if field_visible?(@field_visibility, "observability") do %>
       <%!-- Observability Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Observability")}
         </h3>
         <.input
@@ -394,7 +405,7 @@
     <%= if field_visible?(@field_visibility, "error_handling") do %>
       <%!-- Error Handling Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Error Handling")}
         </h3>
         <.input field={f[:error_user_message]} type="text" label={gettext("User Error Message")} />
@@ -410,7 +421,7 @@
     <%= if field_visible?(@field_visibility, "pitfalls") do %>
       <%!-- Pitfalls Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Common Pitfalls")}
         </h3>
         <.error :for={msg <- Enum.map(f[:pitfalls].errors, &translate_error/1)}>{msg}</.error>
@@ -422,14 +433,14 @@
               name="task[pitfalls][]"
               value={pitfall}
               placeholder={gettext("Common pitfall to avoid")}
-              class="input input-bordered flex-1"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             />
             <button
               type="button"
               phx-click="remove-pitfall"
               phx-value-index={index}
               phx-target={@myself}
-              class="btn btn-sm btn-error"
+              style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -439,7 +450,7 @@
           type="button"
           phx-click="add-pitfall"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Pitfall")}
         </button>
@@ -449,7 +460,7 @@
     <%= if field_visible?(@field_visibility, "out_of_scope") do %>
       <%!-- Out of Scope Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Out of Scope")}
         </h3>
         <.error :for={msg <- Enum.map(f[:out_of_scope].errors, &translate_error/1)}>{msg}</.error>
@@ -461,14 +472,14 @@
               name="task[out_of_scope][]"
               value={item}
               placeholder={gettext("Out of scope item")}
-              class="input input-bordered flex-1"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             />
             <button
               type="button"
               phx-click="remove-out-of-scope"
               phx-value-index={index}
               phx-target={@myself}
-              class="btn btn-sm btn-error"
+              style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -478,7 +489,7 @@
           type="button"
           phx-click="add-out-of-scope"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Out of Scope Item")}
         </button>
@@ -488,7 +499,7 @@
     <%= if field_visible?(@field_visibility, "security_considerations") do %>
       <%!-- Security Considerations Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Security Considerations")}
         </h3>
         <.error :for={msg <- Enum.map(f[:security_considerations].errors, &translate_error/1)}>
@@ -502,14 +513,14 @@
               name="task[security_considerations][]"
               value={item}
               placeholder={gettext("Security consideration or requirement")}
-              class="input input-bordered flex-1"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             />
             <button
               type="button"
               phx-click="remove-security-consideration"
               phx-value-index={index}
               phx-target={@myself}
-              class="btn btn-sm btn-error"
+              style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -519,7 +530,7 @@
           type="button"
           phx-click="add-security-consideration"
           phx-target={@myself}
-          class="btn btn-sm btn-secondary"
+          style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
         >
           + {gettext("Add Security Consideration")}
         </button>
@@ -529,7 +540,7 @@
     <%= if field_visible?(@field_visibility, "testing_strategy") do %>
       <%!-- Testing Strategy Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Testing Strategy")}
         </h3>
         <.error :for={msg <- Enum.map(f[:testing_strategy].errors, &translate_error/1)}>
@@ -538,8 +549,8 @@
         <% testing_strategy = Ecto.Changeset.get_field(@form.source, :testing_strategy) || %{} %>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("Unit Tests")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("Unit Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][unit_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "unit_tests", []))) do %>
@@ -549,14 +560,14 @@
                 name="task[testing_strategy][unit_tests][]"
                 value={test}
                 placeholder={gettext("Unit test description")}
-                class="input input-bordered flex-1"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-unit-test"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -566,15 +577,15 @@
             type="button"
             phx-click="add-unit-test"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add Unit Test")}
           </button>
         </div>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("Integration Tests")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("Integration Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][integration_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "integration_tests", []))) do %>
@@ -584,14 +595,14 @@
                 name="task[testing_strategy][integration_tests][]"
                 value={test}
                 placeholder={gettext("Integration test description")}
-                class="input input-bordered flex-1"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-integration-test"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -601,15 +612,15 @@
             type="button"
             phx-click="add-integration-test"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add Integration Test")}
           </button>
         </div>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("Manual Tests")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("Manual Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][manual_tests][]" value="" />
           <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "manual_tests", []))) do %>
@@ -619,14 +630,14 @@
                 name="task[testing_strategy][manual_tests][]"
                 value={test}
                 placeholder={gettext("Manual test description")}
-                class="input input-bordered flex-1"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-manual-test"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -636,7 +647,7 @@
             type="button"
             phx-click="add-manual-test"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add Manual Test")}
           </button>
@@ -647,7 +658,7 @@
     <%= if field_visible?(@field_visibility, "integration_points") do %>
       <%!-- Integration Points Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Integration Points")}
         </h3>
         <.error :for={msg <- Enum.map(f[:integration_points].errors, &translate_error/1)}>
@@ -656,8 +667,8 @@
         <% integration_points = Ecto.Changeset.get_field(@form.source, :integration_points) || %{} %>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("Telemetry Events")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("Telemetry Events")}</span>
           </label>
           <input type="hidden" name="task[integration_points][telemetry_events][]" value="" />
           <%= for {event, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "telemetry_events", []))) do %>
@@ -667,14 +678,14 @@
                 name="task[integration_points][telemetry_events][]"
                 value={event}
                 placeholder={gettext("[:kanban, :domain, :action]")}
-                class="input input-bordered flex-1 font-mono text-xs"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-telemetry-event"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -684,15 +695,15 @@
             type="button"
             phx-click="add-telemetry-event"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add Telemetry Event")}
           </button>
         </div>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("PubSub Broadcasts")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("PubSub Broadcasts")}</span>
           </label>
           <input type="hidden" name="task[integration_points][pubsub_broadcasts][]" value="" />
           <%= for {broadcast, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "pubsub_broadcasts", []))) do %>
@@ -702,14 +713,14 @@
                 name="task[integration_points][pubsub_broadcasts][]"
                 value={broadcast}
                 placeholder={gettext("topic:event")}
-                class="input input-bordered flex-1 font-mono text-xs"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-pubsub-broadcast"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -719,15 +730,15 @@
             type="button"
             phx-click="add-pubsub-broadcast"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add PubSub Broadcast")}
           </button>
         </div>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("Phoenix Channels")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("Phoenix Channels")}</span>
           </label>
           <input type="hidden" name="task[integration_points][phoenix_channels][]" value="" />
           <%= for {channel, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "phoenix_channels", []))) do %>
@@ -737,14 +748,14 @@
                 name="task[integration_points][phoenix_channels][]"
                 value={channel}
                 placeholder={gettext("channel:event")}
-                class="input input-bordered flex-1 font-mono text-xs"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-phoenix-channel"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -754,15 +765,15 @@
             type="button"
             phx-click="add-phoenix-channel"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add Phoenix Channel")}
           </button>
         </div>
 
         <div class="mb-4">
-          <label class="label">
-            <span class="label-text font-semibold">{gettext("External APIs")}</span>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
+            <span>{gettext("External APIs")}</span>
           </label>
           <input type="hidden" name="task[integration_points][external_apis][]" value="" />
           <%= for {api, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "external_apis", []))) do %>
@@ -772,14 +783,14 @@
                 name="task[integration_points][external_apis][]"
                 value={api}
                 placeholder={gettext("API endpoint or service")}
-                class="input input-bordered flex-1 font-mono text-xs"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
               />
               <button
                 type="button"
                 phx-click="remove-external-api"
                 phx-value-index={index}
                 phx-target={@myself}
-                class="btn btn-sm btn-error"
+                style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
               >
                 {gettext("Remove")}
               </button>
@@ -789,7 +800,7 @@
             type="button"
             phx-click="add-external-api"
             phx-target={@myself}
-            class="btn btn-sm btn-secondary btn-xs"
+            style="padding: 5px 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
           >
             + {gettext("Add External API")}
           </button>
@@ -799,7 +810,7 @@
 
     <%!-- Dependencies Section --%>
     <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
         {gettext("Dependencies")}
       </h3>
       <.error :for={msg <- Enum.map(f[:dependencies].errors, &translate_error/1)}>{msg}</.error>
@@ -811,14 +822,14 @@
             name="task[dependencies][]"
             value={dep}
             placeholder={gettext("Task identifier (e.g., W01A)")}
-            class="input input-bordered flex-1"
+            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
           />
           <button
             type="button"
             phx-click="remove-dependency"
             phx-value-index={index}
             phx-target={@myself}
-            class="btn btn-sm btn-error"
+            style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
           >
             {gettext("Remove")}
           </button>
@@ -828,7 +839,7 @@
         type="button"
         phx-click="add-dependency"
         phx-target={@myself}
-        class="btn btn-sm btn-secondary"
+        style="padding: 6px 14px; font-size: 12px; font-weight: 500; background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;"
       >
         + {gettext("Add Dependency")}
       </button>
@@ -837,7 +848,7 @@
     <%= if Ecto.Changeset.get_field(@form.source, :created_by_agent) || Ecto.Changeset.get_field(@form.source, :completed_by_agent) do %>
       <%!-- Agent Tracking Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Agent Tracking")}
         </h3>
         <.input field={f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
@@ -854,7 +865,7 @@
     <%= if field_visible?(@field_visibility, "required_capabilities") do %>
       <%!-- Claim Tracking Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Claim Tracking & Required Capabilities")}
         </h3>
         <.error :for={msg <- Enum.map(f[:required_capabilities].errors, &translate_error/1)}>
@@ -865,7 +876,7 @@
           <div class="flex gap-2 mb-2">
             <select
               name="task[required_capabilities][]"
-              class="select select-bordered flex-1"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             >
               <option value={cap} selected>{String.capitalize(cap)}</option>
               <%= for valid_cap <- Kanban.Tasks.Task.valid_capabilities() do %>
@@ -879,7 +890,7 @@
               phx-click="remove-capability"
               phx-value-index={index}
               phx-target={@myself}
-              class="btn btn-sm btn-error"
+              style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; background: var(--st-blocked-soft); color: var(--st-blocked); border: 1px solid var(--st-blocked-soft); border-radius: 6px; cursor: pointer;"
             >
               {gettext("Remove")}
             </button>
@@ -888,7 +899,7 @@
         <div class="flex gap-2 mb-2">
           <select
             id="new-capability-select"
-            class="select select-bordered flex-1"
+            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
             phx-change="add-capability-from-select"
             phx-target={@myself}
             name="new_capability"
@@ -905,7 +916,7 @@
     <%= if Ecto.Changeset.get_field(@form.source, :actual_complexity) || Ecto.Changeset.get_field(@form.source, :actual_files_changed) || Ecto.Changeset.get_field(@form.source, :time_spent_minutes) do %>
       <%!-- Actual Metrics Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Actual Metrics")}
         </h3>
         <div class="grid grid-cols-3 gap-4">
@@ -937,7 +948,7 @@
     <%= if @board.ai_optimized_board && (Ecto.Changeset.get_field(@form.source, :review_status) || (Ecto.assoc_loaded?(@task.column) && @task.column.name == "Review") || Ecto.Changeset.get_field(@form.source, :needs_review)) do %>
       <%!-- Review Queue Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Review Queue")}
         </h3>
         <.input
@@ -962,70 +973,90 @@
   </.form>
 
   <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
-    <div class="mt-8 pt-8 border-t border-base-300">
-      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+    <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line);">
+      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
         {gettext("Task History")}
       </h3>
-      <div class="space-y-3">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
         <%= for history <- @task.task_histories do %>
-          <div class="flex items-start gap-3 text-sm">
-            <div class="flex-shrink-0 mt-0.5">
+          <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px;">
+            <div style="flex-shrink: 0; margin-top: 2px; display: inline-flex;">
               <%= cond do %>
                 <% history.type == :creation -> %>
-                  <.icon name="hero-plus-circle" class="h-5 w-5 text-green-500" />
+                  <span style="color: var(--st-done); display: inline-flex;">
+                    <.icon name="hero-plus-circle" class="h-4 w-4" />
+                  </span>
                 <% history.type == :priority_change -> %>
-                  <.icon name="hero-arrow-trending-up" class="h-5 w-5 text-orange-500" />
+                  <span style="color: var(--stride-orange); display: inline-flex;">
+                    <.icon name="hero-arrow-trending-up" class="h-4 w-4" />
+                  </span>
                 <% history.type == :assignment -> %>
-                  <.icon name="hero-user-circle" class="h-5 w-5 text-purple-500" />
+                  <span style="color: var(--stride-violet); display: inline-flex;">
+                    <.icon name="hero-user-circle" class="h-4 w-4" />
+                  </span>
                 <% true -> %>
-                  <.icon name="hero-arrow-right-circle" class="h-5 w-5 text-blue-500" />
+                  <span style="color: var(--st-ready); display: inline-flex;">
+                    <.icon name="hero-arrow-right-circle" class="h-4 w-4" />
+                  </span>
               <% end %>
             </div>
-            <div class="flex-1">
+            <div style="flex: 1;">
               <%= cond do %>
                 <% history.type == :creation -> %>
-                  <p class="text-base-content">
-                    <span class="font-medium">{gettext("Created")}</span>
+                  <p style="color: var(--ink); margin: 0;">
+                    <span style="font-weight: 500;">{gettext("Created")}</span>
                   </p>
                 <% history.type == :priority_change -> %>
-                  <p class="text-base-content">
-                    <span class="font-medium">{gettext("Priority changed")}</span>
+                  <p style="color: var(--ink); margin: 0;">
+                    <span style="font-weight: 500;">{gettext("Priority changed")}</span>
                     {gettext("from")}
-                    <span class="font-medium text-orange-600 capitalize">
+                    <span style="font-weight: 500; color: var(--stride-orange-ink); text-transform: capitalize;">
                       {history.from_priority}
                     </span>
                     {gettext("to")}
-                    <span class="font-medium text-orange-600 capitalize">
+                    <span style="font-weight: 500; color: var(--stride-orange-ink); text-transform: capitalize;">
                       {history.to_priority}
                     </span>
                   </p>
                 <% history.type == :assignment -> %>
-                  <p class="text-base-content">
+                  <p style="color: var(--ink); margin: 0;">
                     <%= cond do %>
                       <% history.from_user_id == nil && history.to_user_id != nil -> %>
-                        <span class="font-medium">{gettext("Assigned to")}</span>
-                        <span class="font-medium text-purple-600">{history.to_user.name}</span>
+                        <span style="font-weight: 500;">{gettext("Assigned to")}</span>
+                        <span style="font-weight: 500; color: var(--stride-violet-ink);">
+                          {history.to_user.name}
+                        </span>
                       <% history.from_user_id != nil && history.to_user_id == nil -> %>
-                        <span class="font-medium">{gettext("Unassigned from")}</span>
-                        <span class="font-medium text-purple-600">{history.from_user.name}</span>
+                        <span style="font-weight: 500;">{gettext("Unassigned from")}</span>
+                        <span style="font-weight: 500; color: var(--stride-violet-ink);">
+                          {history.from_user.name}
+                        </span>
                       <% true -> %>
-                        <span class="font-medium">{gettext("Reassigned")}</span>
+                        <span style="font-weight: 500;">{gettext("Reassigned")}</span>
                         {gettext("from")}
-                        <span class="font-medium text-purple-600">{history.from_user.name}</span>
+                        <span style="font-weight: 500; color: var(--stride-violet-ink);">
+                          {history.from_user.name}
+                        </span>
                         {gettext("to")}
-                        <span class="font-medium text-purple-600">{history.to_user.name}</span>
+                        <span style="font-weight: 500; color: var(--stride-violet-ink);">
+                          {history.to_user.name}
+                        </span>
                     <% end %>
                   </p>
                 <% true -> %>
-                  <p class="text-base-content">
-                    <span class="font-medium">{gettext("Moved")}</span>
+                  <p style="color: var(--ink); margin: 0;">
+                    <span style="font-weight: 500;">{gettext("Moved")}</span>
                     {gettext("from")}
-                    <span class="font-medium text-blue-600">{history.from_column}</span>
+                    <span style="font-weight: 500; color: var(--st-ready);">
+                      {history.from_column}
+                    </span>
                     {gettext("to")}
-                    <span class="font-medium text-blue-600">{history.to_column}</span>
+                    <span style="font-weight: 500; color: var(--st-ready);">
+                      {history.to_column}
+                    </span>
                   </p>
               <% end %>
-              <p class="text-xs text-base-content opacity-60 mt-0.5">
+              <p style="font-size: 11px; color: var(--ink-3); margin: 2px 0 0; font-family: var(--font-mono);">
                 {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
@@ -1036,8 +1067,8 @@
   <% end %>
 
   <%= if @action == :edit_task && @task.id do %>
-    <div class="mt-8 pt-8 border-t border-base-300">
-      <h3 class="ucase" style="font-size: 11px; color: var(--ink-3); margin: 0 0 12px;">
+    <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line);">
+      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
         {gettext("Comments")}
       </h3>
 
@@ -1047,7 +1078,7 @@
         id="comment-form"
         phx-target={@myself}
         phx-submit="add_comment"
-        class="mb-6"
+        style="margin-bottom: 24px;"
       >
         <.input
           field={c[:content]}
@@ -1057,7 +1088,7 @@
           placeholder={gettext("Write your comment here...")}
           required
         />
-        <div class="mt-3">
+        <div style="margin-top: 12px;">
           <.button type="submit" phx-disable-with={gettext("Adding...")}>
             {gettext("Add Comment")}
           </.button>
@@ -1065,18 +1096,20 @@
       </.form>
 
       <%= if length(@task.comments || []) > 0 do %>
-        <div class="space-y-4 mt-6">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
           <%= for comment <- @task.comments do %>
-            <div class="bg-base-200 rounded-lg p-4">
-              <p class="text-sm text-base-content whitespace-pre-wrap">{comment.content}</p>
-              <p class="text-xs text-base-content opacity-60 mt-2">
+            <div style="padding: 12px 14px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 6px;">
+              <p style="font-size: 12.5px; color: var(--ink); margin: 0; white-space: pre-wrap;">
+                {comment.content}
+              </p>
+              <p style="font-size: 11px; color: var(--ink-3); margin: 6px 0 0; font-family: var(--font-mono);">
                 {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
           <% end %>
         </div>
       <% else %>
-        <p class="text-sm text-base-content opacity-60 italic mt-6">
+        <p style="font-size: 12.5px; color: var(--ink-3); font-style: italic; margin: 18px 0 0;">
           {gettext("No comments yet. Be the first to comment!")}
         </p>
       <% end %>
