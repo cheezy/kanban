@@ -17,6 +17,39 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert html =~ "Save Password"
     end
 
+    test "renders the account settings page header with title and subtitle", %{conn: conn} do
+      {:ok, _lv, html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings")
+
+      assert html =~ "Account Settings"
+      assert html =~ "Manage your account email address and password settings"
+    end
+
+    test "renders the profile and password sections in their own framed cards", %{conn: conn} do
+      {:ok, _lv, html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings")
+
+      assert html =~ "Profile Information"
+      assert html =~ "Change Password"
+      assert html =~ "bg-base-100"
+      assert html =~ "rounded-2xl"
+      assert html =~ "border-base-300"
+    end
+
+    test "preserves the hidden username field for password managers", %{conn: conn} do
+      {:ok, _lv, html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings")
+
+      assert html =~ ~s(id="hidden_user_email")
+      assert html =~ ~s(autocomplete="username")
+    end
+
     test "redirects if user is not logged in", %{conn: conn} do
       assert {:error, redirect} = live(conn, ~p"/users/settings")
 

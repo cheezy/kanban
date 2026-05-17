@@ -1,8 +1,8 @@
 defmodule KanbanWeb.AuthComponents do
   @moduledoc """
-  Function components for user-authentication LiveViews (forgot password,
-  reset password). Provides the shared card-with-icon framing so each
-  LiveView only declares its own form fields and submit handler.
+  Function components for user-authentication LiveViews (login, registration,
+  forgot password, reset password, settings). Provides the shared card-with-icon
+  framing so each LiveView only declares its own form fields and submit handler.
   """
 
   use Phoenix.Component
@@ -77,6 +77,26 @@ defmodule KanbanWeb.AuthComponents do
         </div>
       </div>
     </div>
+    """
+  end
+
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  @doc """
+  Renders a settings-style card with a heading and content block.
+
+  Uses the same theme-aware card chrome as `auth_form/1` so account-management
+  pages share the visual language of the auth surfaces, but without the
+  centered icon, subtitle, or default "Back to log in" footer (none of which
+  belong on a sub-section card).
+  """
+  def settings_card(assigns) do
+    ~H"""
+    <section class="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300">
+      <h2 class="text-xl font-semibold text-base-content mb-6">{@title}</h2>
+      {render_slot(@inner_block)}
+    </section>
     """
   end
 end

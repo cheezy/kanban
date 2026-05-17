@@ -1,19 +1,39 @@
 defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuthComponents
+
   alias Kanban.Accounts
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="px-4 py-8 sm:px-6 lg:px-8">
-        <.header>
-          {gettext("Account Settings")}
-          <:subtitle>{gettext("Manage your account email address and password settings")}</:subtitle>
-        </.header>
+      <div class="mx-auto max-w-2xl space-y-6 py-8 px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-2">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl shadow-lg mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+          <p class="text-2xl font-bold text-base-content">{gettext("Account Settings")}</p>
+          <p class="text-base-content opacity-70 mt-2">
+            {gettext("Manage your account email address and password settings")}
+          </p>
+        </div>
 
-        <div class="mt-8 max-w-2xl">
+        <.settings_card title={gettext("Profile Information")}>
           <.form
             for={@email_form}
             id="email_form"
@@ -37,9 +57,9 @@ defmodule KanbanWeb.UserLive.Settings do
               {gettext("Update Profile")}
             </.button>
           </.form>
+        </.settings_card>
 
-          <div class="divider" />
-
+        <.settings_card title={gettext("Change Password")}>
           <.form
             for={@password_form}
             id="password_form"
@@ -73,7 +93,7 @@ defmodule KanbanWeb.UserLive.Settings do
               {gettext("Save Password")}
             </.button>
           </.form>
-        </div>
+        </.settings_card>
       </div>
     </Layouts.app>
     """

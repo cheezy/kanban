@@ -155,4 +155,50 @@ defmodule KanbanWeb.AuthComponentsTest do
       refute html =~ "Back to log in"
     end
   end
+
+  describe "settings_card/1" do
+    test "renders the title heading and inner block content" do
+      assigns = %{title: "Profile Information"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.settings_card title={@title}>
+          <form id="profile_form"><input name="email" /></form>
+        </AuthComponents.settings_card>
+        """)
+
+      assert html =~ "Profile Information"
+      assert html =~ ~s(id="profile_form")
+      assert html =~ ~s(name="email")
+    end
+
+    test "uses the same card chrome classes as auth_form" do
+      assigns = %{title: "Change Password"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.settings_card title={@title}>
+          <span>body</span>
+        </AuthComponents.settings_card>
+        """)
+
+      assert html =~ "bg-base-100"
+      assert html =~ "rounded-2xl"
+      assert html =~ "shadow-xl"
+      assert html =~ "border-base-300"
+    end
+
+    test "does not render the auth_form footer or default Back to log in link" do
+      assigns = %{title: "Profile Information"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.settings_card title={@title}>
+          <span>body</span>
+        </AuthComponents.settings_card>
+        """)
+
+      refute html =~ "Back to log in"
+    end
+  end
 end
