@@ -38,7 +38,7 @@ defmodule KanbanWeb.NavComponents do
     ~H"""
     <.link
       href={@href}
-      class="text-base font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+      class="text-base font-medium text-base-content opacity-80 hover:text-[var(--stride-orange)] hover:opacity-100 px-3 py-2 rounded-lg transition-colors"
     >
       {render_slot(@inner_block)}
     </.link>
@@ -106,7 +106,7 @@ defmodule KanbanWeb.NavComponents do
       <button
         type="button"
         data-dropdown-toggle
-        class="flex items-center gap-1 text-sm font-medium text-base-content opacity-80 hover:text-blue-600 hover:opacity-100 px-2 py-1 rounded transition-colors"
+        class="flex items-center gap-1 text-sm font-medium text-base-content opacity-80 hover:text-[var(--stride-orange)] hover:opacity-100 px-2 py-1 rounded transition-colors"
       >
         <.locale_flag locale={@current_locale} />
         <span class="hidden sm:inline">{String.upcase(@current_locale)}</span>
@@ -123,7 +123,7 @@ defmodule KanbanWeb.NavComponents do
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
             <button
               type="submit"
-              class={"flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-base-200 transition-colors #{if @current_locale == locale.code, do: "bg-blue-50 dark:bg-blue-900/20 text-blue-600", else: "text-base-content opacity-80"}"}
+              class={"flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-base-200 transition-colors #{if @current_locale == locale.code, do: "bg-base-200 text-base-content", else: "text-base-content opacity-80"}"}
             >
               <.locale_flag locale={locale.code} />
               <span>{locale.name}</span>
