@@ -158,7 +158,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "w-[calc(100vw-2rem)]"
       assert html =~ "md:w-auto"
       assert html =~ "md:flex-1"
-      assert html =~ "md:min-w-[256px]"
+      assert html =~ "md:min-w-[288px]"
       # Locks the desktop-equivalence contract: shrink-0 from the mobile rules must be
       # explicitly reset at md+ or columns would freeze at intrinsic width.
       assert html =~ "md:shrink"

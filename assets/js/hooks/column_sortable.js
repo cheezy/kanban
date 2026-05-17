@@ -102,6 +102,11 @@ const ColumnSortableHook = {
       forceFallback: false,
       fallbackOnBody: true,
       swapThreshold: 0.65,
+      // 100ms hold + 5px threshold on touch to avoid stealing horizontal
+      // swipe-scroll on the W617 snap-x layout; mouse drag is unaffected.
+      delay: 100,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
 
       onStart: function(evt) {
         // Mark that we're starting a drag

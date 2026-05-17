@@ -120,7 +120,7 @@
           <div
             :for={{id, column} <- @streams.columns}
             id={id}
-            class="snap-start shrink-0 w-[calc(100vw-2rem)] md:w-auto md:flex-1 md:min-w-[256px] md:shrink bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
+            class="snap-start shrink-0 w-[calc(100vw-2rem)] md:w-auto md:flex-1 md:min-w-[288px] md:shrink bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
             data-column-id={column.id}
           >
             <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>
