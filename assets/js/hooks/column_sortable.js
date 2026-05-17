@@ -19,9 +19,20 @@ const ColumnSortableHook = {
   initResponsiveColumns() {
     if (!this.el.dataset.responsiveColumns) return
 
+    const MD_BREAKPOINT_PX = 768
+
     const resizeColumns = () => {
       const columns = Array.from(this.el.children).filter(child => child.dataset.columnId)
       if (columns.length === 0) return
+
+      // Below md, let Tailwind drive the column width (snap-scroll full-viewport).
+      // Clear any previously-set inline width so the CSS w-[calc(...)] rule applies.
+      if (window.innerWidth < MD_BREAKPOINT_PX) {
+        columns.forEach(col => {
+          col.style.width = ""
+        })
+        return
+      }
 
       const columnCount = columns.length
 

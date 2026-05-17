@@ -137,6 +137,32 @@ defmodule KanbanWeb.BoardLive.ShowTest do
              end),
              "expected a batched query using IN / = ANY against column_id"
     end
+
+    test "columns container renders the mobile snap-scroll markup with md reset", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column_fixture(board)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}")
+
+      # Mobile: snap-x + snap-mandatory on the columns container; reset at md+.
+      assert html =~ "snap-x"
+      assert html =~ "snap-mandatory"
+      assert html =~ "md:snap-none"
+
+      # Per-column wrapper: full-viewport width on mobile (w-[calc(100vw-2rem)] +
+      # shrink-0 + snap-start), reset to flex-1 + min-w-[256px] at md+.
+      assert html =~ "snap-start"
+      assert html =~ "w-[calc(100vw-2rem)]"
+      assert html =~ "md:w-auto"
+      assert html =~ "md:flex-1"
+      assert html =~ "md:min-w-[256px]"
+      # Locks the desktop-equivalence contract: shrink-0 from the mobile rules must be
+      # explicitly reset at md+ or columns would freeze at intrinsic width.
+      assert html =~ "md:shrink"
+    end
   end
 
   describe "Show with new task" do
