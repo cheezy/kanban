@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Aktionen"
 
-#: lib/kanban_web/components/layouts.ex:384
-#: lib/kanban_web/components/layouts.ex:396
+#: lib/kanban_web/components/layouts.ex:401
+#: lib/kanban_web/components/layouts.ex:413
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Verbindungsversuch"
 
-#: lib/kanban_web/components/layouts.ex:391
+#: lib/kanban_web/components/layouts.ex:408
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Etwas ist schiefgelaufen!"
 
-#: lib/kanban_web/components/layouts.ex:379
+#: lib/kanban_web/components/layouts.ex:396
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Wir können das Internet nicht finden"
@@ -69,56 +69,57 @@ msgstr "In Bearbeitung"
 
 #: lib/kanban_web/components/layouts/root.html.heex:88
 #: lib/kanban_web/live/user_live/login.ex:58
-#: lib/kanban_web/live/user_live/registration.ex:33
+#: lib/kanban_web/live/user_live/registration.ex:24
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "Anmelden"
 
-#: lib/kanban_web/components/layouts.ex:181
+#: lib/kanban_web/components/layouts.ex:198
 #: lib/kanban_web/components/layouts/root.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Abmelden"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:275
+#: lib/kanban_web/components/layouts.ex:174
+#: lib/kanban_web/components/layouts.ex:175
 #: lib/kanban_web/components/layouts/root.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: lib/kanban_web/live/user_live/settings.ex:138
+#: lib/kanban_web/live/user_live/settings.ex:197
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "Ein Link zur Bestätigung Ihrer E-Mail-Änderung wurde an die neue Adresse gesendet."
 
-#: lib/kanban_web/live/user_live/settings.ex:12
+#: lib/kanban_web/live/user_live/settings.ex:30
 #, elixir-autogen, elixir-format
 msgid "Account Settings"
 msgstr "Kontoeinstellungen"
 
-#: lib/kanban_web/live/user_live/registration.ex:28
+#: lib/kanban_web/live/user_live/registration.ex:19
 #, elixir-autogen, elixir-format
 msgid "Already registered?"
 msgstr "Bereits registriert?"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:30
-#: lib/kanban_web/live/user_live/settings.ex:69
+#: lib/kanban_web/live/user_live/settings.ex:89
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "Neues Passwort bestätigen"
 
-#: lib/kanban_web/live/user_live/registration.ex:25
+#: lib/kanban_web/live/user_live/registration.ex:14
 #, elixir-autogen, elixir-format
 msgid "Create Your Account"
 msgstr "Erstellen Sie Ihr Konto"
 
-#: lib/kanban_web/live/user_live/registration.ex:77
+#: lib/kanban_web/live/user_live/registration.ex:65
 #, elixir-autogen, elixir-format
 msgid "Create an account"
 msgstr "Konto erstellen"
 
-#: lib/kanban_web/live/user_live/registration.ex:74
+#: lib/kanban_web/live/user_live/registration.ex:62
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr "Konto wird erstellt..."
@@ -131,40 +132,40 @@ msgstr "Haben Sie kein Konto?"
 #: lib/kanban_web/live/user_live/forgot_password.ex:20
 #: lib/kanban_web/live/user_live/forgot_password.ex:21
 #: lib/kanban_web/live/user_live/login.ex:40
-#: lib/kanban_web/live/user_live/registration.ex:60
-#: lib/kanban_web/live/user_live/settings.ex:32
+#: lib/kanban_web/live/user_live/registration.ex:48
+#: lib/kanban_web/live/user_live/settings.ex:52
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "E-Mail"
 
-#: lib/kanban_web/live/user_live/settings.ex:90
+#: lib/kanban_web/live/user_live/settings.ex:110
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "Der E-Mail-Änderungslink ist ungültig oder abgelaufen."
 
-#: lib/kanban_web/live/user_live/settings.ex:87
+#: lib/kanban_web/live/user_live/settings.ex:107
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "E-Mail erfolgreich geändert."
 
-#: lib/kanban_web/live/user_live/settings.ex:13
+#: lib/kanban_web/live/user_live/settings.ex:32
 #, elixir-autogen, elixir-format
 msgid "Manage your account email address and password settings"
 msgstr "Verwalten Sie Ihre Konto-E-Mail-Adresse und Passworteinstellungen"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:23
-#: lib/kanban_web/live/user_live/settings.ex:62
+#: lib/kanban_web/live/user_live/settings.ex:82
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr "Neues Passwort"
 
 #: lib/kanban_web/live/user_live/login.ex:48
-#: lib/kanban_web/live/user_live/registration.ex:68
+#: lib/kanban_web/live/user_live/registration.ex:56
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "Passwort"
 
-#: lib/kanban_web/live/user_live/settings.ex:73
+#: lib/kanban_web/live/user_live/settings.ex:93
 #, elixir-autogen, elixir-format
 msgid "Save Password"
 msgstr "Passwort speichern"
@@ -174,8 +175,8 @@ msgstr "Passwort speichern"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:168
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/form_component.html.heex:971
-#: lib/kanban_web/live/user_live/settings.ex:36
-#: lib/kanban_web/live/user_live/settings.ex:72
+#: lib/kanban_web/live/user_live/settings.ex:56
+#: lib/kanban_web/live/user_live/settings.ex:92
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "Wird gespeichert..."
@@ -200,7 +201,7 @@ msgstr "Sie müssen sich erneut authentifizieren, um sensible Aktionen in Ihrem 
 msgid "for free."
 msgstr "kostenlos."
 
-#: lib/kanban_web/live/user_live/registration.ex:35
+#: lib/kanban_web/live/user_live/registration.ex:26
 #, elixir-autogen, elixir-format
 msgid "to your account."
 msgstr "in Ihrem Konto."
@@ -260,8 +261,8 @@ msgstr "Beginnen Sie mit dem Erstellen von Spalten für Ihr Board."
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:104
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/user_live/registration.ex:52
-#: lib/kanban_web/live/user_live/settings.ex:26
+#: lib/kanban_web/live/user_live/registration.ex:40
+#: lib/kanban_web/live/user_live/settings.ex:46
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr "Name"
@@ -409,7 +410,7 @@ msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
 
 #: lib/kanban_web/components/layouts.ex:135
-#: lib/kanban_web/components/layouts.ex:345
+#: lib/kanban_web/components/layouts.ex:362
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -691,7 +692,7 @@ msgstr "Benutzer auswählen"
 msgid "Unassigned"
 msgstr "Nicht zugewiesen"
 
-#: lib/kanban_web/live/user_live/settings.ex:37
+#: lib/kanban_web/live/user_live/settings.ex:57
 #, elixir-autogen, elixir-format
 msgid "Update Profile"
 msgstr "Profil aktualisieren"
@@ -783,17 +784,17 @@ msgstr "Kein Verlauf verfügbar"
 msgid "Status"
 msgstr "Status"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:25
+#: lib/kanban_web/live/user_live/confirmation.ex:15
 #, elixir-autogen, elixir-format
 msgid "Account Confirmed!"
 msgstr "Konto bestätigt!"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:75
+#: lib/kanban_web/live/user_live/confirmation.ex:66
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "Der Bestätigungslink ist ungültig oder abgelaufen."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:43
+#: lib/kanban_web/live/user_live/confirmation.ex:16
 #, elixir-autogen, elixir-format
 msgid "Confirming your account..."
 msgstr "Ihr Konto wird bestätigt..."
@@ -805,7 +806,7 @@ msgstr "Ihr Konto wird bestätigt..."
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:37
+#: lib/kanban_web/live/user_live/confirmation.ex:30
 #, elixir-autogen, elixir-format
 msgid "Go to login"
 msgstr "Zur Anmeldung"
@@ -815,16 +816,17 @@ msgstr "Zur Anmeldung"
 msgid "Stay logged in"
 msgstr "Angemeldet bleiben"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:69
+#: lib/kanban_web/live/user_live/confirmation.ex:60
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "Dieses Konto wurde bereits bestätigt. Sie können sich anmelden."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:28
+#: lib/kanban_web/live/user_live/confirmation.ex:22
 #, elixir-autogen, elixir-format
 msgid "Your account has been confirmed successfully. You can now log in."
 msgstr "Ihr Konto wurde erfolgreich bestätigt. Sie können sich jetzt anmelden."
 
+#: lib/kanban_web/components/layouts.ex:292
 #: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/layouts/root.html.heex:85
 #: lib/kanban_web/components/marketing_components.ex:88
@@ -2073,14 +2075,14 @@ msgstr "Sind Sie sicher, dass Sie dieses Token löschen möchten?"
 msgid "Failed to delete token"
 msgstr "Token konnte nicht gelöscht werden"
 
-#: lib/kanban_web/live/resources_live/components.ex:369
+#: lib/kanban_web/live/resources_live/components.ex:323
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:58
+#: lib/kanban_web/live/resources_live/index.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "A-Z"
 msgstr ""
@@ -2106,12 +2108,12 @@ msgstr ""
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:416
+#: lib/kanban_web/live/resources_live/components.ex:358
 #, elixir-autogen, elixir-format
 msgid "Clear all filters"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:74
+#: lib/kanban_web/live/resources_live/index.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
 msgstr ""
@@ -2121,7 +2123,7 @@ msgstr ""
 msgid "Guide not found"
 msgstr "Benutzer nicht gefunden"
 
-#: lib/kanban_web/live/resources_live/index.html.heex:23
+#: lib/kanban_web/live/resources_live/index.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Learn how to get the most out of Stride with our guides and tutorials."
 msgstr ""
@@ -2132,22 +2134,22 @@ msgstr ""
 msgid "Make board publicly readable"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:52
+#: lib/kanban_web/live/resources_live/index.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Most Relevant"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:55
+#: lib/kanban_web/live/resources_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Newest"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:535
+#: lib/kanban_web/live/resources_live/components.ex:477
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:402
+#: lib/kanban_web/live/resources_live/components.ex:348
 #, elixir-autogen, elixir-format
 msgid "No guides found"
 msgstr ""
@@ -2157,17 +2159,17 @@ msgstr ""
 msgid "Not Found"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:501
+#: lib/kanban_web/live/resources_live/components.ex:443
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:94
+#: lib/kanban_web/live/resources_live/components.ex:63
 #, elixir-autogen, elixir-format
 msgid "Read more"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/components/layouts.ex:285
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2177,24 +2179,24 @@ msgid "Resources"
 msgstr ""
 
 #: lib/kanban_web/live/resources_live/index.ex:18
-#: lib/kanban_web/live/resources_live/index.html.heex:16
+#: lib/kanban_web/live/resources_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Resources & How-Tos"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:125
+#: lib/kanban_web/live/resources_live/components.ex:94
 #, elixir-autogen, elixir-format
 msgid "Search for help..."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:84
+#: lib/kanban_web/live/resources_live/index.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Showing %{count} guide"
 msgid_plural "Showing %{count} guides"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:39
+#: lib/kanban_web/live/resources_live/index.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "Sort:"
 msgstr ""
@@ -2219,7 +2221,7 @@ msgstr ""
 msgid "This task may have been deleted or you may not have permission to view it."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:405
+#: lib/kanban_web/live/resources_live/components.ex:351
 #, elixir-autogen, elixir-format
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr ""
@@ -2235,12 +2237,12 @@ msgstr ""
 msgid "You are viewing this board in read-only mode"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:448
+#: lib/kanban_web/live/resources_live/components.ex:390
 #, elixir-autogen, elixir-format
 msgid "You're all set!"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:451
+#: lib/kanban_web/live/resources_live/components.ex:393
 #, elixir-autogen, elixir-format
 msgid "You've completed all the steps in this guide."
 msgstr ""
@@ -2252,7 +2254,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:256
+#: lib/kanban_web/components/layouts.ex:273
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
 #: lib/kanban_web/live/metrics_live/workspace.ex:70
 #: lib/kanban_web/live/task_live/view_component.ex:239
@@ -4643,7 +4645,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/layouts.ex:235
+#: lib/kanban_web/components/layouts.ex:252
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4724,7 +4726,7 @@ msgstr ""
 msgid "Active goals"
 msgstr "Aktive Tokens"
 
-#: lib/kanban_web/components/layouts.ex:242
+#: lib/kanban_web/components/layouts.ex:259
 #: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Agents"
@@ -4770,7 +4772,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:249
+#: lib/kanban_web/components/layouts.ex:266
 #: lib/kanban_web/live/review_live.ex:102
 #: lib/kanban_web/live/review_live.ex:123
 #, elixir-autogen, elixir-format, fuzzy
@@ -5990,7 +5992,7 @@ msgstr ""
 msgid "Toggle menu"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:324
+#: lib/kanban_web/components/layouts.ex:341
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr ""
@@ -6004,3 +6006,18 @@ msgstr "Zurück zur Startseite"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to review queue"
 msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex:62
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Change Password"
+msgstr "Passwort speichern"
+
+#: lib/kanban_web/live/user_live/settings.ex:36
+#, elixir-autogen, elixir-format
+msgid "Profile Information"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex:216
+#, elixir-autogen, elixir-format
+msgid "Profile updated."
+msgstr "Profil aktualisiert."

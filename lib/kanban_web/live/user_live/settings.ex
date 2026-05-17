@@ -151,6 +151,31 @@ defmodule KanbanWeb.UserLive.Settings do
     end
   end
 
+  def handle_event("validate_password", params, socket) do
+    %{"user" => user_params} = params
+
+    password_form =
+      socket.assigns.current_scope.user
+      |> Accounts.change_user_password(user_params, hash_password: false)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, password_form: password_form)}
+  end
+
+  def handle_event("update_password", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_scope.user
+
+    case Accounts.change_user_password(user, user_params) do
+      %{valid?: true} = changeset ->
+        {:noreply, assign(socket, trigger_submit: true, password_form: to_form(changeset))}
+
+      changeset ->
+        {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
+    end
+  end
+
   defp email_changed?(user_params, user) do
     submitted = Map.get(user_params, "email")
     is_binary(submitted) and submitted != user.email
@@ -192,31 +217,6 @@ defmodule KanbanWeb.UserLive.Settings do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :update))}
-    end
-  end
-
-  def handle_event("validate_password", params, socket) do
-    %{"user" => user_params} = params
-
-    password_form =
-      socket.assigns.current_scope.user
-      |> Accounts.change_user_password(user_params, hash_password: false)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply, assign(socket, password_form: password_form)}
-  end
-
-  def handle_event("update_password", params, socket) do
-    %{"user" => user_params} = params
-    user = socket.assigns.current_scope.user
-
-    case Accounts.change_user_password(user, user_params) do
-      %{valid?: true} = changeset ->
-        {:noreply, assign(socket, trigger_submit: true, password_form: to_form(changeset))}
-
-      changeset ->
-        {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
     end
   end
 end

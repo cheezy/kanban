@@ -39,7 +39,7 @@ defmodule KanbanWeb.Layouts do
     default: nil,
     doc:
       "Highlights the matching SideNav item when rendered inside the app shell. " <>
-        "Accepted values: :boards, :agents, :review, :metrics, :resources, :settings."
+        "Accepted values: :boards, :agents, :review, :metrics, :resources, :about, :settings."
 
   attr :page_title, :string,
     default: nil,
@@ -184,9 +184,9 @@ defmodule KanbanWeb.Layouts do
             >
               <.icon name="hero-cog-6-tooth" class="w-4 h-4" />
             </.link>
-            <a
+            <.link
               href={~p"/users/log-out"}
-              data-method="delete"
+              method="delete"
               style={[
                 "display: inline-flex; align-items: center; gap: 4px;",
                 "font-size: 11.5px; font-weight: 500;",
@@ -196,7 +196,7 @@ defmodule KanbanWeb.Layouts do
             >
               <.icon name="hero-arrow-right-on-rectangle" class="w-3 h-3" />
               {gettext("Log out")}
-            </a>
+            </.link>
           </div>
         <% end %>
       </div>
@@ -285,6 +285,13 @@ defmodule KanbanWeb.Layouts do
         label: gettext("Resources"),
         icon: "hero-book-open",
         path: "/resources",
+        badge: nil
+      },
+      %{
+        id: :about,
+        label: gettext("About"),
+        icon: "hero-information-circle",
+        path: "/about",
         badge: nil
       }
     ]

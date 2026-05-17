@@ -149,6 +149,36 @@ defmodule Kanban.AccountsTest do
     end
   end
 
+  describe "update_user_name/2" do
+    test "updates the name when given a valid value" do
+      user = user_fixture()
+      assert {:ok, updated} = Accounts.update_user_name(user, %{"name" => "Grace Hopper"})
+      assert updated.name == "Grace Hopper"
+      assert Accounts.get_user_by_email(user.email).name == "Grace Hopper"
+    end
+
+    test "ignores email and other fields in attrs" do
+      user = user_fixture()
+      other = unique_user_email()
+
+      assert {:ok, updated} =
+               Accounts.update_user_name(user, %{"name" => "Ada", "email" => other})
+
+      assert updated.name == "Ada"
+      assert updated.email == user.email
+    end
+
+    test "rejects HTML metacharacters in the name" do
+      user = user_fixture()
+
+      assert {:error, changeset} =
+               Accounts.update_user_name(user, %{"name" => "<script>alert(1)"})
+
+      assert %{name: ["cannot contain HTML metacharacters or control characters"]} =
+               errors_on(changeset)
+    end
+  end
+
   describe "deliver_user_update_email_instructions/3" do
     setup do
       %{user: user_fixture()}
