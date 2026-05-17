@@ -1,8 +1,6 @@
 defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
-  on_mount {KanbanWeb.UserAuth, :require_sudo_mode}
-
   alias Kanban.Accounts
 
   @impl true
@@ -126,7 +124,6 @@ defmodule KanbanWeb.UserLive.Settings do
   def handle_event("update_email", params, socket) do
     %{"user" => user_params} = params
     user = socket.assigns.current_scope.user
-    true = Accounts.sudo_mode?(user)
 
     case Accounts.change_user_email(user, user_params) do
       %{valid?: true} = changeset ->
@@ -161,7 +158,6 @@ defmodule KanbanWeb.UserLive.Settings do
   def handle_event("update_password", params, socket) do
     %{"user" => user_params} = params
     user = socket.assigns.current_scope.user
-    true = Accounts.sudo_mode?(user)
 
     case Accounts.change_user_password(user, user_params) do
       %{valid?: true} = changeset ->

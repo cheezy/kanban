@@ -25,16 +25,19 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert %{"error" => "You must log in to access this page."} = flash
     end
 
-    test "redirects if user is not in sudo mode", %{conn: conn} do
+    test "remains accessible for sessions older than the former sudo window", %{conn: conn} do
+      # Sessions authenticated more than 10 minutes ago used to be
+      # bounced back to the log-in screen via the `:require_sudo_mode`
+      # gate. The gate has been removed — an authenticated session is
+      # enough to view the settings page.
       token_authenticated_at = DateTime.utc_now(:second) |> DateTime.add(-11, :minute)
 
-      {:ok, conn} =
+      {:ok, _lv, html} =
         conn
         |> log_in_user(user_fixture(), token_authenticated_at: token_authenticated_at)
         |> live(~p"/users/settings")
-        |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert conn.resp_body =~ "You must re-authenticate to access this page."
+      assert html =~ "Update Profile"
     end
   end
 

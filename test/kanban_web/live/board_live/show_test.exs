@@ -2455,6 +2455,174 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "column_status/1" do
+    alias KanbanWeb.BoardLive.Show
+
+    test "maps each canonical AI-board column name to its status atom regardless of case" do
+      assert Show.column_status("Backlog") == :backlog
+      assert Show.column_status("backlog") == :backlog
+      assert Show.column_status("Ready") == :ready
+      assert Show.column_status("READY") == :ready
+      assert Show.column_status("Doing") == :doing
+      assert Show.column_status("Review") == :review
+      assert Show.column_status("Done") == :done
+    end
+
+    test "falls back to :backlog for custom column names on non-AI boards" do
+      assert Show.column_status("In Progress") == :backlog
+      assert Show.column_status("QA") == :backlog
+      assert Show.column_status("") == :backlog
+    end
+
+    test "non-binary inputs fall through the catch-all and return :backlog" do
+      # exercises the `column_status(_)` clause for nil / atom / number
+      assert Show.column_status(nil) == :backlog
+      assert Show.column_status(:done) == :backlog
+      assert Show.column_status(123) == :backlog
+    end
+  end
+
+  describe "task_card_data/1..4 — review and meta fields" do
+    # NOTE: `reviewer_skipped?/1` is implemented via `get_in_either/2`,
+    # which uses `Enum.find_value/2`. Because `find_value` treats both
+    # `false` and `nil` as "no match", the helper currently has no way
+    # to surface a literal `false` for `dispatched`. The tests below
+    # pin the *actual* behaviour of `task_card_data/1` so any future
+    # change is intentional rather than incidental — flip these
+    # expectations when the underlying lookup is corrected.
+    test "reviewer_skipped? mirrors current get_in_either behaviour for atom-keyed false" do
+      card = card_for(%{reviewer_result: %{dispatched: false, reason: "n/a"}})
+
+      assert card.reviewer_skipped? == false
+      assert card.reviewer_skip_reason == "n/a"
+    end
+
+    test "string-keyed reviewer_result surfaces reason / criteria_checked / issues_found" do
+      card =
+        card_for(%{
+          reviewer_result: %{
+            "dispatched" => true,
+            "reason" => "n/a",
+            "acceptance_criteria_checked" => 3,
+            "issues_found" => 0
+          }
+        })
+
+      assert card.reviewer_skipped? == false
+      assert card.reviewer_skip_reason == "n/a"
+      assert card.criteria_checked == 3
+      assert card.issues_found == 0
+    end
+
+    test "non-zero issues_found is surfaced for string-keyed reviewer_result" do
+      card = card_for(%{reviewer_result: %{"dispatched" => true, "issues_found" => 2}})
+
+      assert card.issues_found == 2
+    end
+
+    test "reviewer_skipped? is false when reviewer_result is missing or nil" do
+      assert card_for(%{reviewer_result: nil}).reviewer_skipped? == false
+      assert card_for(%{reviewer_result: %{}}).reviewer_skipped? == false
+    end
+
+    test "files_changed_count parses comma-separated actual_files_changed strings" do
+      card = card_for(%{actual_files_changed: " lib/a.ex , lib/b.ex , lib/c.ex "})
+
+      assert card.files_changed_count == 3
+    end
+
+    test "files_changed_count is nil for empty, whitespace-only, or non-binary inputs" do
+      assert card_for(%{actual_files_changed: ""}).files_changed_count == nil
+      assert card_for(%{actual_files_changed: "  ,  ,  "}).files_changed_count == nil
+      assert card_for(%{actual_files_changed: nil}).files_changed_count == nil
+    end
+
+    test "key_files count returns the list length, or nil for empty/non-list" do
+      list = [%{file_path: "lib/a.ex"}, %{file_path: "lib/b.ex"}]
+
+      assert card_for(%{key_files: list}).key_files_count == 2
+      assert card_for(%{key_files: []}).key_files_count == nil
+      assert card_for(%{key_files: nil}).key_files_count == nil
+    end
+
+    test "acceptance_count parses newline-separated acceptance_criteria and ignores blanks" do
+      criteria = "All tests pass\n\nCredo clean\n   \nSobelow OK\n"
+
+      assert card_for(%{acceptance_criteria: criteria}).acceptance_count == 3
+      assert card_for(%{acceptance_criteria: ""}).acceptance_count == nil
+      assert card_for(%{acceptance_criteria: nil}).acceptance_count == nil
+    end
+  end
+
+  describe "task_card_data/1..4 — cycle time and completed_by formatting" do
+    test "cycle_time is nil when claimed_at or completed_at is missing" do
+      assert card_for(%{claimed_at: nil, completed_at: nil}).cycle_time == nil
+
+      card =
+        card_for(%{claimed_at: ~U[2026-01-01 00:00:00Z], completed_at: nil})
+
+      assert card.cycle_time == nil
+    end
+
+    test "cycle_time renders minutes only for sub-hour durations" do
+      card =
+        card_for(%{claimed_at: ~U[2026-01-01 10:00:00Z], completed_at: ~U[2026-01-01 10:45:00Z]})
+
+      assert card.cycle_time == "45m"
+    end
+
+    test "cycle_time renders whole hours when minutes round to zero" do
+      card =
+        card_for(%{claimed_at: ~U[2026-01-01 10:00:00Z], completed_at: ~U[2026-01-01 12:00:00Z]})
+
+      assert card.cycle_time == "2h"
+    end
+
+    test "cycle_time renders 'Nh Mm' when both components are non-zero" do
+      card =
+        card_for(%{claimed_at: ~U[2026-01-01 10:00:00Z], completed_at: ~U[2026-01-01 13:15:00Z]})
+
+      assert card.cycle_time == "3h 15m"
+    end
+
+    test "cycle_time renders multi-day durations rolled up into hours" do
+      # 30h 15m elapsed → "30h 15m", not "1d 6h 15m"
+      card =
+        card_for(%{claimed_at: ~U[2026-01-01 00:00:00Z], completed_at: ~U[2026-01-02 06:15:00Z]})
+
+      assert card.cycle_time == "30h 15m"
+    end
+
+    test "completed_by is an :agent avatar when completed_by_agent is set" do
+      card = card_for(%{completed_by_agent: "Claude Sonnet 4.5"})
+
+      assert %{kind: :agent, name: "Claude Sonnet 4.5", palette: _} = card.completed_by
+    end
+
+    test "completed_by is nil when completed_by_agent is nil or absent" do
+      assert card_for(%{completed_by_agent: nil}).completed_by == nil
+    end
+
+    test "claimed_by is a :human avatar when assigned_to user is present" do
+      user = %{id: 42, name: "Alex", email: "alex@example.com"}
+      card = card_for(%{assigned_to: user})
+
+      assert %{kind: :human, name: "Alex", palette: _} = card.claimed_by
+    end
+
+    test "claimed_by falls back to email when name is missing or blank" do
+      user_no_name = %{id: 1, name: nil, email: "alex@example.com"}
+      user_blank = %{id: 2, name: "", email: "blank@example.com"}
+
+      assert card_for(%{assigned_to: user_no_name}).claimed_by.name == "alex@example.com"
+      assert card_for(%{assigned_to: user_blank}).claimed_by.name == "blank@example.com"
+    end
+
+    test "claimed_by is nil when no user is assigned" do
+      assert card_for(%{assigned_to: nil}).claimed_by == nil
+    end
+  end
+
   defp admin_user_fixture do
     user = user_fixture()
     {:ok, admin} = Kanban.Accounts.update_user_type(user, :admin)
@@ -2463,5 +2631,35 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
   defp message_fixture(sender, attrs) do
     Kanban.MessagesFixtures.message_fixture(sender, attrs)
+  end
+
+  # Pipeline-friendly wrapper that constructs a Task struct with the
+  # supplied overrides and pushes it through `task_card_data/1`.
+  defp card_for(overrides) do
+    overrides
+    |> base_task_struct()
+    |> KanbanWeb.BoardLive.Show.task_card_data()
+  end
+
+  # Builds a struct shaped like %Kanban.Tasks.Task{} with the supplied
+  # overrides. Using the real struct keeps `task_card_data/1` happy
+  # (it calls `Map.from_struct/1` and reads typed fields).
+  defp base_task_struct(overrides) do
+    defaults = %{
+      id: 1,
+      type: :work,
+      parent_id: nil,
+      assigned_to: nil,
+      claimed_at: nil,
+      completed_at: nil,
+      completed_by_agent: nil,
+      key_files: [],
+      dependencies: [],
+      acceptance_criteria: nil,
+      actual_files_changed: nil,
+      reviewer_result: nil
+    }
+
+    struct(Kanban.Tasks.Task, Map.merge(defaults, Map.new(overrides)))
   end
 end

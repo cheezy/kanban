@@ -17,6 +17,17 @@ defmodule KanbanWeb.AuthComponents do
 
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
+
+  attr :icon_gradient, :string,
+    default: "from-blue-600 to-blue-700",
+    doc:
+      "Tailwind gradient utility classes (without the bg-gradient-* direction) controlling the icon wrapper background."
+
+  attr :icon_path, :string,
+    default:
+      "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z",
+    doc: "SVG path `d` attribute drawn inside the icon wrapper."
+
   slot :inner_block, required: true
 
   def auth_form(assigns) do
@@ -24,13 +35,16 @@ defmodule KanbanWeb.AuthComponents do
     <div class="mx-auto max-w-md space-y-6 py-8">
       <div class="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300">
         <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg mb-4">
+          <div class={[
+            "inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br rounded-xl shadow-lg mb-4",
+            @icon_gradient
+          ]}>
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                d={@icon_path}
               />
             </svg>
           </div>

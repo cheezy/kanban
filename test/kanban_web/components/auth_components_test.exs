@@ -51,6 +51,58 @@ defmodule KanbanWeb.AuthComponentsTest do
       refute html =~ "opacity-70 mt-2"
     end
 
+    test "renders the default blue gradient icon when no icon attrs are supplied" do
+      assigns = %{title: "Reset password"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.auth_form title={@title}>
+          <span>body</span>
+        </AuthComponents.auth_form>
+        """)
+
+      assert html =~ "from-blue-600"
+      assert html =~ "to-blue-700"
+      assert html =~ "bg-gradient-to-br"
+
+      assert html =~
+               ~s(d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z")
+    end
+
+    test "renders the supplied icon_gradient classes" do
+      assigns = %{
+        title: "Create account",
+        icon_gradient: "from-violet-500 to-purple-600"
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.auth_form title={@title} icon_gradient={@icon_gradient}>
+          <span>body</span>
+        </AuthComponents.auth_form>
+        """)
+
+      assert html =~ "from-violet-500"
+      assert html =~ "to-purple-600"
+      refute html =~ "from-blue-600"
+    end
+
+    test "renders the supplied icon_path inside the SVG element" do
+      custom_path = "M12 4v16m8-8H4"
+
+      assigns = %{title: "Create account", icon_path: custom_path}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.auth_form title={@title} icon_path={@icon_path}>
+          <span>body</span>
+        </AuthComponents.auth_form>
+        """)
+
+      assert html =~ ~s(d="#{custom_path}")
+      refute html =~ "M15 7a2 2 0 012 2m4 0a6"
+    end
+
     test "always renders the Back to log in link to the log-in route" do
       assigns = %{title: "Reset password"}
 
