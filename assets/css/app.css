@@ -162,7 +162,7 @@
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  background: linear-gradient(to bottom right, rgb(37, 99, 235), rgb(29, 78, 216));
+  background: linear-gradient(to bottom right, var(--stride-orange), var(--stride-violet));
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.15s ease-in-out;
@@ -217,8 +217,8 @@
 }
 
 .nav-link:hover {
-  color: rgb(37, 99, 235);
-  background-color: rgb(239, 246, 255);
+  color: var(--stride-orange);
+  background-color: var(--stride-orange-soft);
 }
 
 .nav-btn-primary {
@@ -278,7 +278,7 @@
 }
 
 .lang-btn:hover {
-  color: rgb(37, 99, 235);
+  color: var(--stride-orange);
 }
 
 /* Hero Section Styles */
@@ -329,8 +329,8 @@
   display: inline-flex;
   align-items: center;
   padding: 0.5rem 1rem;
-  background-color: rgb(219, 234, 254);
-  color: rgb(29, 78, 216);
+  background-color: var(--stride-orange-soft);
+  color: var(--stride-violet);
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -360,7 +360,7 @@
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
-  background-image: linear-gradient(to right, rgb(37, 99, 235), rgb(30, 64, 175));
+  background-image: linear-gradient(to right, var(--stride-orange), var(--stride-violet));
 }
 
 .hero-description {
@@ -549,7 +549,7 @@
 }
 
 .mock-column-progress {
-  background-color: rgb(239, 246, 255);
+  background-color: var(--stride-orange-soft);
   border-radius: 0.5rem;
   padding: 0.75rem;
   display: flex;
@@ -577,7 +577,7 @@
 .mock-column-header-progress {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(37, 99, 235);
+  color: var(--stride-orange);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -623,7 +623,7 @@
 
 .mock-card-bar-blue {
   height: 0.5rem;
-  background-color: rgb(59, 130, 246);
+  background-color: var(--stride-orange);
   border-radius: 0.25rem;
   margin-bottom: 0.5rem;
 }
@@ -729,7 +729,7 @@
 }
 
 .feature-card:hover {
-  background-color: rgb(239, 246, 255);
+  background-color: var(--stride-orange-soft);
 }
 
 .feature-card-orange {
@@ -749,7 +749,7 @@
   justify-content: center;
   width: 3.5rem;
   height: 3.5rem;
-  background: linear-gradient(to bottom right, rgb(59, 130, 246), rgb(37, 99, 235));
+  background: linear-gradient(to bottom right, var(--stride-orange), var(--stride-orange));
   color: white;
   border-radius: 0.75rem;
   margin-bottom: 1rem;
@@ -775,7 +775,7 @@
   justify-content: center;
   width: 3.5rem;
   height: 3.5rem;
-  background: linear-gradient(to bottom right, rgb(37, 99, 235), rgb(29, 78, 216));
+  background: linear-gradient(to bottom right, var(--stride-orange), var(--stride-violet));
   color: white;
   border-radius: 0.75rem;
   margin-bottom: 1rem;
