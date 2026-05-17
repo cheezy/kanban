@@ -128,7 +128,7 @@ defmodule KanbanWeb.BoardLive.Index do
       <div class="flex flex-col gap-2 w-full max-w-[12rem]">
         <.link
           navigate={~p"/boards/new"}
-          class="inline-flex items-center justify-center gap-1.5 cursor-pointer"
+          class="inline-flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style={[
             "padding: 6px 10px; border-radius: 5px;",
             "background: transparent; color: var(--ink-2);",
@@ -141,7 +141,7 @@ defmodule KanbanWeb.BoardLive.Index do
         </.link>
         <.link
           navigate={~p"/boards/new?ai_optimized=true"}
-          class="inline-flex items-center justify-center gap-1.5 cursor-pointer"
+          class="inline-flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style={[
             "padding: 6px 10px; border-radius: 5px;",
             "background: var(--ink); color: white; border: none;",
