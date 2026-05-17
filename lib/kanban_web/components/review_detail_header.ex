@@ -105,7 +105,7 @@ defmodule KanbanWeb.ReviewDetailHeader do
 
       <div
         data-review-detail-header-actions
-        style="display: flex; align-items: center; gap: 8px;"
+        class="flex flex-wrap items-center gap-2"
       >
         <.button phx-click={@on_view_diff} data-review-detail-header-view-diff>
           {gettext("View diff")}

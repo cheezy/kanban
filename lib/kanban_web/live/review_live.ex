@@ -260,7 +260,7 @@ defmodule KanbanWeb.ReviewLive do
                     "border: 1px solid var(--line); border-radius: 6px;"
                   ]}
                 ></textarea>
-                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <div class="flex flex-wrap gap-2 justify-end">
                   <.button type="button" phx-click="cancel_request_changes">
                     {gettext("Cancel")}
                   </.button>
