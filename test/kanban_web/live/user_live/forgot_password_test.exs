@@ -10,8 +10,30 @@ defmodule KanbanWeb.UserLive.ForgotPasswordTest do
     test "renders forgot password page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")
 
-      assert html =~ "Forgot your password?"
-      assert html =~ "We&#39;ll send you an email with instructions"
+      assert html =~ "Reset your password"
+      assert html =~ "We&#39;ll email a one-time link"
+    end
+
+    test "renders inside the editorial auth_frame", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")
+
+      # Rotating forgot quote + warm gradient confirm the new shell renders
+      assert html =~ "A task structure that AI agents can actually pull from."
+      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+    end
+
+    test "renders the For-agents callout panel", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")
+
+      assert html =~ "For agents:"
+      assert html =~ "rotate API tokens"
+      assert html =~ "Board → Tokens"
+    end
+
+    test "footer_switch is a Back-to-sign-in link", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")
+
+      assert html =~ "Back to sign in"
     end
   end
 

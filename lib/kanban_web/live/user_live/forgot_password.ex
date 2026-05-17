@@ -1,33 +1,77 @@
 defmodule KanbanWeb.UserLive.ForgotPassword do
   use KanbanWeb, :live_view
 
-  import KanbanWeb.AuthComponents
+  import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.auth_form title={gettext("Forgot your password?")}>
-        <:subtitle>
-          {gettext("We'll send you an email with instructions to reset your password.")}
-        </:subtitle>
-        <.form :let={f} for={@form} id="reset_password_form" phx-submit="send_email">
-          <.input
-            field={f[:email]}
+    <.auth_frame quote_key={:forgot}>
+      <:footer_switch>
+        <.link
+          navigate={~p"/users/log-in"}
+          style="color: var(--ink-2); text-decoration: none;"
+        >
+          <span aria-hidden="true">←</span> {gettext("Back to sign in")}
+        </.link>
+      </:footer_switch>
+
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+          {gettext("Reset your password")}
+        </h1>
+        <p style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3); text-wrap: pretty;">
+          {gettext("We'll email a one-time link. The link expires in 15 minutes.")}
+        </p>
+      </div>
+
+      <.form
+        :let={f}
+        for={@form}
+        id="reset_password_form"
+        phx-submit="send_email"
+        style="margin-top: 28px; display: flex; flex-direction: column; gap: 12px;"
+      >
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("Work email")}
+          </span>
+          <input
             type="email"
+            name={f[:email].name}
+            id={f[:email].id}
+            value={Phoenix.HTML.Form.normalize_value("email", f[:email].value)}
             placeholder={gettext("Email")}
-            label={gettext("Email")}
+            autocomplete="username"
             required
             phx-mounted={JS.focus()}
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
-          <.button variant="primary" class="btn btn-primary w-full mt-4">
-            {gettext("Send password reset instructions")}
-          </.button>
-        </.form>
-      </.auth_form>
-    </Layouts.app>
+        </label>
+
+        <.primary_full_button kbd="↵" type="submit">
+          {gettext("Send reset link")}
+        </.primary_full_button>
+      </.form>
+
+      <div style="margin-top: 28px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+        <span style="width: 24px; height: 24px; border-radius: 6px; background: var(--stride-violet-soft); color: var(--stride-violet-ink); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <.icon name="hero-cpu-chip" class="w-3 h-3" />
+        </span>
+        <div style="font-size: 12px; color: var(--ink-2); line-height: 1.55; text-wrap: pretty;">
+          <strong style="color: var(--ink); font-weight: 600;">{gettext("For agents:")}</strong>
+          {gettext("resetting your operator password does")}
+          <em>{gettext("not")}</em>
+          {gettext("rotate API tokens. Rotate from")}
+          <span style="font-family: var(--font-mono); color: var(--ink);">
+            {gettext("Board → Tokens")}
+          </span>
+          {gettext("if you suspect a key is compromised.")}
+        </div>
+      </div>
+    </.auth_frame>
     """
   end
 
