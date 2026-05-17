@@ -108,16 +108,16 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
   end
 
   describe "settings page" do
-    test "renders the shared card framing for an authenticated user", %{conn: conn} do
+    # NOTE: Rewritten in W658 per board-settings.jsx; whole file slated for deletion in W657.
+    test "renders the section-nav + sectioned cards layout", %{conn: conn} do
       {:ok, _lv, html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      assert_shared_card_chrome(html, "settings")
-      assert html =~ "Account Settings"
-      assert html =~ "Profile Information"
-      assert html =~ "Change Password"
+      assert html =~ "Settings"
+      assert html =~ ~s(id="profile")
+      assert html =~ ~s(id="password")
     end
   end
 end

@@ -1,111 +1,269 @@
 defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
-  import KanbanWeb.AuthComponents
-
   alias Kanban.Accounts
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-2xl space-y-6 py-8 px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-2">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl shadow-lg mb-4">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
+      <div class="stride-screen" style="padding: 20px 28px 28px;">
+        <header style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
+          <div style="flex: 1; min-width: 0;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);">
+              {gettext("Settings")}
+            </h1>
+            <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
+              {gettext(
+                "Manage your account profile and password. Changes apply to your account immediately."
+              )}
+            </p>
           </div>
-          <p class="text-2xl font-bold text-base-content">{gettext("Account Settings")}</p>
-          <p class="text-base-content opacity-70 mt-2">
-            {gettext("Manage your account email address and password settings")}
-          </p>
+        </header>
+
+        <div style="flex: 1; display: flex; min-height: 0; gap: 28px;">
+          <nav style="width: 184px; flex-shrink: 0; padding-top: 4px; display: flex; flex-direction: column; gap: 1px;">
+            <.section_link
+              href="#profile"
+              active
+              label={gettext("Profile")}
+              hint={gettext("name · email")}
+            />
+            <.section_link
+              href="#password"
+              label={gettext("Password")}
+              hint={gettext("change credentials")}
+            />
+          </nav>
+
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px;">
+            <.settings_card
+              id="profile"
+              title={gettext("Profile")}
+              hint={
+                gettext(
+                  "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
+                )
+              }
+            >
+              <.form
+                for={@email_form}
+                id="email_form"
+                phx-submit="update_email"
+                phx-change="validate_email"
+                style="display: flex; flex-direction: column; gap: 14px;"
+              >
+                <.set_field label={gettext("Name")} hint={nil}>
+                  <input
+                    type="text"
+                    name={@email_form[:name].name}
+                    id={@email_form[:name].id}
+                    value={Phoenix.HTML.Form.normalize_value("text", @email_form[:name].value)}
+                    autocomplete="name"
+                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
+                  />
+                  <.field_errors errors={@email_form[:name].errors} />
+                </.set_field>
+
+                <.set_field label={gettext("Email")} hint={nil}>
+                  <input
+                    type="email"
+                    name={@email_form[:email].name}
+                    id={@email_form[:email].id}
+                    value={Phoenix.HTML.Form.normalize_value("email", @email_form[:email].value)}
+                    autocomplete="username"
+                    required
+                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
+                  />
+                  <.field_errors errors={@email_form[:email].errors} />
+                </.set_field>
+
+                <div style="margin-top: 4px;">
+                  <button
+                    type="submit"
+                    phx-disable-with={gettext("Saving...")}
+                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: white; border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+                  >
+                    {gettext("Update profile")}
+                  </button>
+                </div>
+              </.form>
+            </.settings_card>
+
+            <.settings_card
+              id="password"
+              title={gettext("Password")}
+              hint={
+                gettext(
+                  "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
+                )
+              }
+            >
+              <.form
+                for={@password_form}
+                id="password_form"
+                action={~p"/users/update-password"}
+                method="post"
+                phx-change="validate_password"
+                phx-submit="update_password"
+                phx-trigger-action={@trigger_submit}
+                style="display: flex; flex-direction: column; gap: 14px;"
+              >
+                <input
+                  name={@password_form[:email].name}
+                  type="hidden"
+                  id="hidden_user_email"
+                  autocomplete="username"
+                  value={@current_email}
+                />
+
+                <.set_field label={gettext("New password")} hint={gettext("At least 12 characters")}>
+                  <input
+                    type="password"
+                    name={@password_form[:password].name}
+                    id={@password_form[:password].id}
+                    autocomplete="new-password"
+                    required
+                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+                  />
+                  <.field_errors errors={@password_form[:password].errors} />
+                </.set_field>
+
+                <.set_field label={gettext("Confirm new password")} hint={nil}>
+                  <input
+                    type="password"
+                    name={@password_form[:password_confirmation].name}
+                    id={@password_form[:password_confirmation].id}
+                    autocomplete="new-password"
+                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+                  />
+                  <.field_errors errors={@password_form[:password_confirmation].errors} />
+                </.set_field>
+
+                <div style="margin-top: 4px;">
+                  <button
+                    type="submit"
+                    phx-disable-with={gettext("Saving...")}
+                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: white; border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+                  >
+                    {gettext("Save password")}
+                  </button>
+                </div>
+              </.form>
+            </.settings_card>
+          </div>
         </div>
-
-        <.settings_card title={gettext("Profile Information")}>
-          <.form
-            for={@email_form}
-            id="email_form"
-            phx-submit="update_email"
-            phx-change="validate_email"
-          >
-            <.input
-              field={@email_form[:name]}
-              type="text"
-              label={gettext("Name")}
-              autocomplete="name"
-            />
-            <.input
-              field={@email_form[:email]}
-              type="email"
-              label={gettext("Email")}
-              autocomplete="username"
-              required
-            />
-            <.button
-              variant="primary"
-              class="btn btn-primary w-full mt-4"
-              phx-disable-with={gettext("Saving...")}
-            >
-              {gettext("Update Profile")}
-            </.button>
-          </.form>
-        </.settings_card>
-
-        <.settings_card title={gettext("Change Password")}>
-          <.form
-            for={@password_form}
-            id="password_form"
-            action={~p"/users/update-password"}
-            method="post"
-            phx-change="validate_password"
-            phx-submit="update_password"
-            phx-trigger-action={@trigger_submit}
-          >
-            <input
-              name={@password_form[:email].name}
-              type="hidden"
-              id="hidden_user_email"
-              autocomplete="username"
-              value={@current_email}
-            />
-            <.input
-              field={@password_form[:password]}
-              type="password"
-              label={gettext("New password")}
-              autocomplete="new-password"
-              required
-            />
-            <.input
-              field={@password_form[:password_confirmation]}
-              type="password"
-              label={gettext("Confirm new password")}
-              autocomplete="new-password"
-            />
-            <.button
-              variant="primary"
-              class="btn btn-primary w-full mt-4"
-              phx-disable-with={gettext("Saving...")}
-            >
-              {gettext("Save Password")}
-            </.button>
-          </.form>
-        </.settings_card>
       </div>
     </Layouts.app>
     """
   end
+
+  # -------------------------------------------------------------------------
+  # Local components (mirror board-settings.jsx primitives)
+  # -------------------------------------------------------------------------
+
+  attr :href, :string, required: true
+  attr :label, :string, required: true
+  attr :hint, :string, default: nil
+  attr :active, :boolean, default: false
+
+  defp section_link(assigns) do
+    ~H"""
+    <a
+      href={@href}
+      style={[
+        "display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px;",
+        if(@active,
+          do: "background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);",
+          else: "background: transparent;"
+        ),
+        "text-decoration: none; cursor: pointer;"
+      ]}
+    >
+      <span style={[
+        "font-size: 12.5px;",
+        if(@active,
+          do: "font-weight: 600; color: var(--ink);",
+          else: "font-weight: 500; color: var(--ink-2);"
+        )
+      ]}>
+        {@label}
+      </span>
+      <span
+        :if={@hint}
+        style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-4); letter-spacing: -0.01em;"
+      >
+        {@hint}
+      </span>
+    </a>
+    """
+  end
+
+  attr :id, :string, default: nil
+  attr :title, :string, required: true
+  attr :hint, :string, default: nil
+  slot :inner_block, required: true
+
+  defp settings_card(assigns) do
+    ~H"""
+    <section
+      id={@id}
+      style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;"
+    >
+      <header style="padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; gap: 12px; background: var(--surface);">
+        <div style="flex: 1; min-width: 0;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
+            {@title}
+          </h2>
+          <p
+            :if={@hint}
+            style="margin: 4px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; text-wrap: pretty;"
+          >
+            {@hint}
+          </p>
+        </div>
+      </header>
+      <div style="padding: 18px;">
+        {render_slot(@inner_block)}
+      </div>
+    </section>
+    """
+  end
+
+  attr :label, :string, required: true
+  attr :hint, :string, default: nil
+  slot :inner_block, required: true
+
+  defp set_field(assigns) do
+    ~H"""
+    <label style="display: flex; flex-direction: column; gap: 5px;">
+      <span style="display: flex; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ink-2);">
+        {@label}
+      </span>
+      {render_slot(@inner_block)}
+      <span
+        :if={@hint}
+        style="font-size: 11px; color: var(--ink-3); text-wrap: pretty; line-height: 1.45;"
+      >
+        {@hint}
+      </span>
+    </label>
+    """
+  end
+
+  attr :errors, :list, default: []
+
+  defp field_errors(assigns) do
+    ~H"""
+    <span :for={msg <- @errors} style="font-size: 11.5px; color: var(--st-blocked);">
+      {translate_error(msg)}
+    </span>
+    """
+  end
+
+  # -------------------------------------------------------------------------
+  # mount + handle_event — untouched from before W658
+  # -------------------------------------------------------------------------
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
@@ -171,8 +329,7 @@ defmodule KanbanWeb.UserLive.Settings do
     {:noreply, assign(socket, password_form: password_form)}
   end
 
-  def handle_event("update_password", params, socket) do
-    %{"user" => user_params} = params
+  def handle_event("update_password", %{"user" => user_params}, socket) do
     user = socket.assigns.current_scope.user
 
     case Accounts.change_user_password(user, user_params) do

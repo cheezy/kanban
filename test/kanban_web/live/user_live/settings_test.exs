@@ -13,31 +13,31 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      assert html =~ "Update Profile"
-      assert html =~ "Save Password"
+      assert html =~ "Update profile"
+      assert html =~ "Save password"
     end
 
-    test "renders the account settings page header with title and subtitle", %{conn: conn} do
+    test "renders the settings page header with title and subtitle", %{conn: conn} do
       {:ok, _lv, html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      assert html =~ "Account Settings"
-      assert html =~ "Manage your account email address and password settings"
+      assert html =~ "Settings"
+      assert html =~ "Manage your account profile and password"
     end
 
-    test "renders the profile and password sections in their own framed cards", %{conn: conn} do
+    test "renders the profile and password sections in their own SettingsCards", %{conn: conn} do
       {:ok, _lv, html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      assert html =~ "Profile Information"
-      assert html =~ "Change Password"
-      assert html =~ "bg-base-100"
-      assert html =~ "rounded-2xl"
-      assert html =~ "border-base-300"
+      # New design: section nav + sectioned cards per board-settings.jsx
+      assert html =~ ~s(id="profile")
+      assert html =~ ~s(id="password")
+      assert html =~ "var(--surface)"
+      assert html =~ "var(--line)"
     end
 
     test "preserves the hidden username field for password managers", %{conn: conn} do
@@ -70,7 +70,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         |> log_in_user(user_fixture(), token_authenticated_at: token_authenticated_at)
         |> live(~p"/users/settings")
 
-      assert html =~ "Update Profile"
+      assert html =~ "Update profile"
     end
   end
 
@@ -107,7 +107,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
           "user" => %{"email" => "with spaces"}
         })
 
-      assert result =~ "Update Profile"
+      assert result =~ "Update profile"
       assert result =~ "must have the @ sign and no spaces"
     end
 
@@ -188,7 +188,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
           }
         })
 
-      assert result =~ "Save Password"
+      assert result =~ "Save password"
       assert result =~ "should be at least 12 character(s)"
       assert result =~ "does not match password"
     end
@@ -206,7 +206,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         })
         |> render_submit()
 
-      assert result =~ "Save Password"
+      assert result =~ "Save password"
       assert result =~ "should be at least 12 character(s)"
       assert result =~ "does not match password"
     end
