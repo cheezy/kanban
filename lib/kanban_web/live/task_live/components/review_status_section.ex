@@ -86,5 +86,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
     do: "bg-orange-50 border border-orange-200 rounded-lg p-4"
 
   defp review_section_class(:rejected), do: "bg-red-50 border border-red-200 rounded-lg p-4"
-  defp review_section_class(_), do: "bg-gray-50 border border-gray-200 rounded-lg p-4"
+
+  defp review_section_class(_),
+    do: "bg-[var(--surface-sunken)] border border-[var(--line)] rounded-lg p-4"
 end

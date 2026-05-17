@@ -41,7 +41,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
   end
 
   describe "history_section/1 — move event" do
-    test "renders from/to column names and the blue arrow icon" do
+    test "renders from/to column names and the ready-tone arrow icon" do
       assigns = %{
         histories: [
           %{
@@ -62,7 +62,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
       assert html =~ "Ready"
       assert html =~ "Doing"
       assert html =~ "hero-arrow-right-circle"
-      assert html =~ "text-blue-600"
+      assert html =~ "text-[var(--st-ready)]"
     end
   end
 

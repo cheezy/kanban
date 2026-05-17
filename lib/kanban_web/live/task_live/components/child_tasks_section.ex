@@ -57,7 +57,7 @@ defmodule KanbanWeb.TaskLive.Components.ChildTasksSection do
                     "px-2 py-1 text-xs font-semibold rounded-full",
                     case child.type do
                       :work ->
-                        "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
+                        "bg-[var(--st-ready-soft)] text-[var(--st-ready)]"
 
                       :defect ->
                         "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"

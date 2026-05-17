@@ -9,15 +9,17 @@ defmodule KanbanWeb.TaskLive.Components.ActualVsEstimatedSection do
 
   def actual_vs_estimated_section(assigns) do
     ~H"""
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <h4 class="text-sm font-semibold text-blue-900 mb-2">{gettext("Actual vs Estimated")}</h4>
+    <div class="bg-[var(--st-ready-soft)] border border-[var(--st-ready)] rounded-lg p-4">
+      <h4 class="text-sm font-semibold text-[var(--st-ready)] mb-2">
+        {gettext("Actual vs Estimated")}
+      </h4>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <%= if @task.actual_complexity do %>
           <div>
-            <p class="text-xs font-semibold text-blue-900 opacity-70">
+            <p class="text-xs font-semibold text-[var(--st-ready)] opacity-70">
               {gettext("Actual Complexity")}
             </p>
-            <p class="text-blue-900">
+            <p class="text-[var(--st-ready)]">
               {case @task.actual_complexity do
                 :small -> gettext("Small")
                 :medium -> gettext("Medium")
@@ -37,10 +39,10 @@ defmodule KanbanWeb.TaskLive.Components.ActualVsEstimatedSection do
         <% end %>
         <%= if @task.actual_files_changed do %>
           <div>
-            <p class="text-xs font-semibold text-blue-900 opacity-70">
+            <p class="text-xs font-semibold text-[var(--st-ready)] opacity-70">
               {gettext("Actual Files Changed")}
             </p>
-            <p class="text-blue-900">
+            <p class="text-[var(--st-ready)]">
               {@task.actual_files_changed}
               <%= if @task.estimated_files do %>
                 <span class="text-xs opacity-60">
@@ -52,10 +54,10 @@ defmodule KanbanWeb.TaskLive.Components.ActualVsEstimatedSection do
         <% end %>
         <%= if @task.time_spent_minutes do %>
           <div>
-            <p class="text-xs font-semibold text-blue-900 opacity-70">
+            <p class="text-xs font-semibold text-[var(--st-ready)] opacity-70">
               {gettext("Time Spent")}
             </p>
-            <p class="text-blue-900">{@task.time_spent_minutes} {gettext("minutes")}</p>
+            <p class="text-[var(--st-ready)]">{@task.time_spent_minutes} {gettext("minutes")}</p>
           </div>
         <% end %>
       </div>

@@ -24,7 +24,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
                   <% :creation -> %>
                     <.icon name="hero-plus-circle" class="w-4 h-4 text-green-600" />
                   <% :move -> %>
-                    <.icon name="hero-arrow-right-circle" class="w-4 h-4 text-blue-600" />
+                    <.icon name="hero-arrow-right-circle" class="w-4 h-4 text-[var(--st-ready)]" />
                   <% :priority_change -> %>
                     <.icon name="hero-exclamation-circle" class="w-4 h-4 text-orange-600" />
                   <% :assignment -> %>

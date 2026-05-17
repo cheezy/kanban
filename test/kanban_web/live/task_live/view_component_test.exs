@@ -1024,7 +1024,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Actual vs Estimated"
-      assert result =~ "bg-blue-50"
+      assert result =~ "bg-[var(--st-ready-soft)]"
       assert result =~ "Actual Complexity"
       assert result =~ "Large"
       assert result =~ "Est"

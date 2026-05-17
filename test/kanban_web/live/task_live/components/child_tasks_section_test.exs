@@ -50,12 +50,12 @@ defmodule KanbanWeb.TaskLive.Components.ChildTasksSectionTest do
       assert html =~ "Review"
     end
 
-    test "renders work-type badge with Work label and blue styling" do
+    test "renders work-type badge with Work label and ready-tone styling" do
       html = render_section([child(type: :work)])
 
       assert html =~ "Work"
-      assert html =~ "bg-blue-100"
-      assert html =~ "text-blue-800"
+      assert html =~ "bg-[var(--st-ready-soft)]"
+      assert html =~ "text-[var(--st-ready)]"
     end
 
     test "renders defect-type badge with Defect label and red styling" do
