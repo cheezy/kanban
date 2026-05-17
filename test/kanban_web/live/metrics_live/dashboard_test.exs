@@ -1122,6 +1122,234 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
     end
   end
 
+  describe "Dashboard - AI board KPI card rendering (Compliance + Review)" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "Compliance KPI card is SHOWN on AI-optimized boards", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Compliance"
+
+      assert html =~
+               ~s(data-metrics-board-kpi-card="compliance")
+
+      # The Compliance card links to the per-board compliance route.
+      assert html =~ ~p"/boards/#{board}/metrics/compliance"
+    end
+
+    test "Compliance KPI card describes workflow step dispatch rates", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      assert html =~ "Workflow step dispatch rates and agent compliance"
+    end
+
+    test "Wait Time card renders Review row on AI-optimized boards", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      # On AI boards, the Wait Time card renders BOTH a Review row
+      # (:if={@board.ai_optimized_board}) and a Backlog row. This is
+      # the positive case the regular-board describe asserts the absence
+      # of via `refute html =~ ~r/text-sm font-medium[^"]*">\s*Review\s*</`.
+      assert html =~ "Wait Time"
+      assert html =~ "Review"
+      assert html =~ "Backlog"
+    end
+  end
+
+  describe "Dashboard - KPI card links carry current filter state" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "Throughput KPI link includes current filter query params", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} =
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics?time_range=last_7_days&exclude_weekends=true"
+        )
+
+      # The throughput card links to its detail page with the current
+      # filter state encoded in the URL so a click does not reset the
+      # user's filters when drilling in.
+      assert html =~ ~p"/boards/#{board}/metrics/throughput"
+      assert html =~ "time_range=last_7_days"
+      assert html =~ "exclude_weekends=true"
+    end
+
+    test "Cycle Time KPI link includes current filter query params", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_by_agent: "Claude Sonnet 4.5"})
+
+      {:ok, _view, html} =
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics?agent_name=Claude+Sonnet+4.5"
+        )
+
+      assert html =~ ~p"/boards/#{board}/metrics/cycle-time"
+      assert html =~ "agent_name=Claude+Sonnet+4.5"
+    end
+
+    test "Lead Time KPI link includes current filter query params", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics?time_range=all_time")
+
+      assert html =~ ~p"/boards/#{board}/metrics/lead-time"
+      assert html =~ "time_range=all_time"
+    end
+
+    test "Wait Time KPI link includes current filter query params", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} =
+        live(conn, ~p"/boards/#{board}/metrics?time_range=today")
+
+      assert html =~ ~p"/boards/#{board}/metrics/wait-time"
+      assert html =~ "time_range=today"
+    end
+
+    test "Default-filter mount leaves agent_name empty in KPI card links", %{
+      conn: conn,
+      board: board
+    } do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      # No agent filter set → the card href encodes agent_name= (empty)
+      # so the detail page reads "all agents". The point of this test is
+      # to guarantee we do not accidentally URL-encode `nil` into
+      # "agent_name=null" or omit the param entirely.
+      assert html =~ "agent_name=&"
+    end
+  end
+
+  describe "Dashboard - format_hours/1 helper (direct unit tests)" do
+    alias KanbanWeb.MetricsLive.Dashboard
+
+    test "returns 0h for exactly 0" do
+      assert Dashboard.format_hours(0) == "0h"
+      assert Dashboard.format_hours(0.0) == "0h"
+    end
+
+    test "returns minutes for sub-hour values" do
+      assert Dashboard.format_hours(0.5) == "30.0m"
+      assert Dashboard.format_hours(0.25) == "15.0m"
+      assert Dashboard.format_hours(0.01) == "0.6m"
+    end
+
+    test "returns hours for 1..23 values" do
+      assert Dashboard.format_hours(1) == "1.0h"
+      assert Dashboard.format_hours(12.5) == "12.5h"
+      assert Dashboard.format_hours(23.99) == "24.0h"
+    end
+
+    test "returns days for >=24 values" do
+      assert Dashboard.format_hours(24) == "1.0d"
+      assert Dashboard.format_hours(48) == "2.0d"
+      assert Dashboard.format_hours(720) == "30.0d"
+    end
+
+    test "returns N/A for nil" do
+      assert Dashboard.format_hours(nil) == "N/A"
+    end
+
+    test "returns N/A for atom inputs" do
+      assert Dashboard.format_hours(:not_available) == "N/A"
+    end
+
+    test "returns N/A for string inputs" do
+      assert Dashboard.format_hours("12.5") == "N/A"
+    end
+
+    test "returns N/A for binary inputs" do
+      assert Dashboard.format_hours(:erlang.term_to_binary(0)) == "N/A"
+    end
+  end
+
+  describe "Dashboard - error path from Kanban.Metrics" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    # The dashboard's load_data/1 calls `Metrics.get_dashboard_summary/2`
+    # and falls back to an empty-zeros dashboard when it returns
+    # `{:error, _}`. In production `Kanban.Metrics` does not currently
+    # return an error tuple, but the fallback is defensive code for
+    # future failure modes (DB unavailable, calculation crash, etc.).
+    # We use the `:kanban / :metrics_module` Application env seam to
+    # inject a stub that returns `{:error, _}` and assert the fallback
+    # renders the empty-zeros chrome without crashing the LiveView.
+    defmodule MetricsErrorStub do
+      def get_dashboard_summary(_board_id, _opts), do: {:error, :network_unavailable}
+    end
+
+    setup do
+      original = Application.get_env(:kanban, :metrics_module)
+      Application.put_env(:kanban, :metrics_module, MetricsErrorStub)
+
+      on_exit(fn ->
+        if original do
+          Application.put_env(:kanban, :metrics_module, original)
+        else
+          Application.delete_env(:kanban, :metrics_module)
+        end
+      end)
+
+      :ok
+    end
+
+    test "renders the empty-dashboard chrome when Metrics returns an error",
+         %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      # The page should render — not 500. All four KPI cards present.
+      assert html =~ "Metrics Dashboard"
+      assert html =~ "Throughput"
+      assert html =~ "Cycle Time"
+      assert html =~ "Lead Time"
+      assert html =~ "Wait Time"
+
+      # Throughput count is the empty-state zero.
+      assert html =~ ~s(data-metrics-board-kpi-card="throughput")
+      assert html =~ "tasks completed"
+
+      # Cycle/Lead time render as 0h (the empty stats are {average_hours: 0, ...}).
+      assert html =~ "0h"
+    end
+
+    test "filter changes after a Metrics error keep rendering empty zeros",
+         %{conn: conn, board: board} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
+
+      html =
+        view
+        |> element("form")
+        |> render_change(%{"time_range" => "last_7_days"})
+
+      # The LiveView keeps polling Metrics on each filter change; the
+      # stub continues to return {:error, _}, and the empty-state chrome
+      # continues to render. The point of this test is the no-crash
+      # round-trip on the error branch under filter churn.
+      assert html =~ "Metrics Dashboard"
+      assert html =~ "Last 7 Days"
+    end
+  end
+
   defp create_board_with_column(%{user: user}) do
     board = ai_optimized_board_fixture(user)
     column = column_fixture(board)

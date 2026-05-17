@@ -4,19 +4,25 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
 
   import KanbanWeb.MetricsLive.Components
 
-  alias Kanban.Metrics
-
   @impl KanbanWeb.MetricsLive.Base
   def load_data(socket) do
     opts = build_dashboard_opts(socket)
 
-    case Metrics.get_dashboard_summary(socket.assigns.board.id, opts) do
+    case metrics_module().get_dashboard_summary(socket.assigns.board.id, opts) do
       {:ok, summary} ->
         assign_dashboard_summary(socket, summary)
 
       {:error, _reason} ->
         assign_empty_dashboard(socket)
     end
+  end
+
+  # Testability seam: allows the test suite to inject a stub module that
+  # returns `{:error, _}` from `get_dashboard_summary/2` so the
+  # empty-dashboard fallback path can be exercised. Production code always
+  # gets `Kanban.Metrics`.
+  defp metrics_module do
+    Application.get_env(:kanban, :metrics_module, Kanban.Metrics)
   end
 
   defp build_dashboard_opts(socket) do
@@ -54,9 +60,22 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
     )
   end
 
-  defp format_hours(hours) when is_number(hours) and hours == 0, do: "0h"
+  @doc """
+  Formats an hour-count number for display.
 
-  defp format_hours(hours) when is_number(hours) do
+    * `0` → `"0h"`
+    * `<1` → minutes (e.g. `0.5` → `"30.0m"`)
+    * `1..23` → hours (e.g. `1.5` → `"1.5h"`)
+    * `>=24` → days (e.g. `48` → `"2.0d"`)
+    * anything else (e.g. `nil`, `:atom`) → `"N/A"`
+
+  Public so the test suite can exercise the non-numeric catch-all
+  branch directly without having to coerce a Metrics summary into a
+  shape that includes nil hour values.
+  """
+  def format_hours(hours) when is_number(hours) and hours == 0, do: "0h"
+
+  def format_hours(hours) when is_number(hours) do
     hours_float = hours / 1
 
     cond do
@@ -66,7 +85,7 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
     end
   end
 
-  defp format_hours(_), do: "N/A"
+  def format_hours(_), do: "N/A"
 
   defp total_throughput(throughput) do
     Enum.reduce(throughput, 0, fn %{count: count}, acc -> acc + count end)
