@@ -62,46 +62,49 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
         "padding: 18px;"
       ]}
     >
-      <header style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px;">
+      <header class="flex flex-wrap items-baseline gap-3 md:gap-3.5 mb-3.5">
         <span style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
           {gettext("Cycle time · daily median (min)")}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
           {gettext("agent vs human · last 14 days")}
         </span>
-        <span style="flex: 1;" />
+        <span class="hidden md:inline" style="flex: 1;" />
         <.legend_swatch label={gettext("Agent")} color="var(--stride-orange)" />
         <.legend_swatch label={gettext("Human")} color="var(--stride-violet)" />
       </header>
 
-      <div
-        data-metrics-cycle-time-plot
-        style={[
-          "position: relative;",
-          "height: #{@chart_height_px}px;",
-          "display: flex; align-items: flex-end; gap: 8px;"
-        ]}
-      >
-        <span
-          :for={tick <- @ticks}
-          data-metrics-cycle-time-gridline={tick}
+      <div class="overflow-x-auto md:overflow-visible">
+        <div
+          data-metrics-cycle-time-plot
+          class="min-w-[320px]"
           style={[
-            "position: absolute; left: 0; right: 0;",
-            "bottom: #{gridline_bottom_pct(tick, @chart_max)}%;",
-            "border-top: 1px dashed var(--line-2);",
-            "font-size: 10px; font-family: var(--font-mono);",
-            "color: var(--ink-4); padding-left: 2px;"
+            "position: relative;",
+            "height: #{@chart_height_px}px;",
+            "display: flex; align-items: flex-end; gap: 8px;"
           ]}
         >
-          {tick}m
-        </span>
+          <span
+            :for={tick <- @ticks}
+            data-metrics-cycle-time-gridline={tick}
+            style={[
+              "position: absolute; left: 0; right: 0;",
+              "bottom: #{gridline_bottom_pct(tick, @chart_max)}%;",
+              "border-top: 1px dashed var(--line-2);",
+              "font-size: 10px; font-family: var(--font-mono);",
+              "color: var(--ink-4); padding-left: 2px;"
+            ]}
+          >
+            {tick}m
+          </span>
 
-        <.bar
-          :for={entry <- @data}
-          entry={entry}
-          chart_max={@chart_max}
-          bars_area_px={@bars_area_px}
-        />
+          <.bar
+            :for={entry <- @data}
+            entry={entry}
+            chart_max={@chart_max}
+            bars_area_px={@bars_area_px}
+          />
+        </div>
       </div>
     </section>
     """

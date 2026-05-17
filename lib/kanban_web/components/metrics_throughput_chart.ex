@@ -57,7 +57,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
         "padding: 18px;"
       ]}
     >
-      <header style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;">
+      <header class="flex flex-wrap items-baseline gap-3 mb-3.5">
         <span style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
           {gettext("Throughput · tasks completed per day")}
         </span>
