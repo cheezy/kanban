@@ -9,21 +9,25 @@ defmodule KanbanWeb.TaskLive.Components.CommentsSection do
   def comments_section(assigns) do
     ~H"""
     <div>
-      <h4 class="text-sm font-semibold text-base-content opacity-80 mb-2">
+      <h4 style="margin: 0 0 8px; font-size: 11.5px; font-weight: 600; color: var(--ink-2);">
         {gettext("Comments")}
       </h4>
       <%= if Enum.empty?(@comments) do %>
-        <p class="text-base-content opacity-60 text-sm">{gettext("No comments yet")}</p>
+        <p style="margin: 0; font-size: 12px; color: var(--ink-3); font-style: italic;">
+          {gettext("No comments yet")}
+        </p>
       <% else %>
-        <div class="space-y-3 max-h-48 overflow-y-auto">
+        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 12rem; overflow-y: auto;">
           <%= for comment <- @comments do %>
-            <div class="flex items-start gap-2 text-sm">
-              <div class="mt-0.5">
-                <.icon name="hero-chat-bubble-left" class="w-4 h-4 text-base-content opacity-40" />
+            <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px;">
+              <div style="margin-top: 2px; display: inline-flex; color: var(--ink-4);">
+                <.icon name="hero-chat-bubble-left" class="w-3 h-3" />
               </div>
-              <div class="flex-1">
-                <p class="text-base-content whitespace-pre-wrap">{comment.content}</p>
-                <p class="text-xs text-gray-500 mt-1">
+              <div style="flex: 1;">
+                <p style="margin: 0; color: var(--ink); white-space: pre-wrap;">
+                  {comment.content}
+                </p>
+                <p style="margin: 4px 0 0; font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
                   {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
                 </p>
               </div>

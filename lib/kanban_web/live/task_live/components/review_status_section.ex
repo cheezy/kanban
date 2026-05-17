@@ -14,7 +14,10 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
       <div class="space-y-2">
         <p>
           <span class="font-semibold">{gettext("Status")}:</span>
-          <span class={review_status_badge_class(@task.review_status)}>
+          <span
+            class={review_status_badge_class(@task.review_status)}
+            style={review_status_badge_fallback_style(@task.review_status)}
+          >
             {review_status_label(@task.review_status)}
           </span>
         </p>
@@ -54,7 +57,18 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
   defp review_status_badge_class(:rejected),
     do: "px-2 py-1 text-xs rounded bg-red-100 text-red-800"
 
-  defp review_status_badge_class(_), do: "px-2 py-1 text-xs rounded bg-gray-100 text-gray-800"
+  # W593: replaced the daisyUI gray fallback with stride-screen tokens applied
+  # via `review_status_badge_fallback_style/1` on the element's inline `style=`
+  # attribute. The class helper now returns only structural padding/rounding.
+  defp review_status_badge_class(_), do: "px-2 py-1 text-xs rounded"
+
+  defp review_status_badge_fallback_style(:pending), do: nil
+  defp review_status_badge_fallback_style(:approved), do: nil
+  defp review_status_badge_fallback_style(:changes_requested), do: nil
+  defp review_status_badge_fallback_style(:rejected), do: nil
+
+  defp review_status_badge_fallback_style(_),
+    do: "background: var(--surface-sunken); color: var(--ink-3);"
 
   defp review_status_label(:pending), do: gettext("Pending")
   defp review_status_label(:approved), do: gettext("Approved")
