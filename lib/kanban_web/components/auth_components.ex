@@ -16,7 +16,6 @@ defmodule KanbanWeb.AuthComponents do
   import KanbanWeb.CoreComponents
 
   attr :title, :string, required: true
-  attr :subtitle, :string, default: nil
 
   attr :icon_gradient, :string,
     default: "from-blue-600 to-blue-700",
@@ -27,6 +26,12 @@ defmodule KanbanWeb.AuthComponents do
     default:
       "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z",
     doc: "SVG path `d` attribute drawn inside the icon wrapper."
+
+  slot :subtitle, doc: "Optional subtitle markup rendered below the title."
+
+  slot :footer,
+    doc:
+      "Optional footer markup overriding the default 'Back to log in' link rendered below the form."
 
   slot :inner_block, required: true
 
@@ -50,8 +55,8 @@ defmodule KanbanWeb.AuthComponents do
           </div>
           <.header>
             <p class="text-2xl font-bold text-base-content">{@title}</p>
-            <:subtitle :if={@subtitle}>
-              <p class="text-base-content opacity-70 mt-2">{@subtitle}</p>
+            <:subtitle :if={@subtitle != []}>
+              <p class="text-base-content opacity-70 mt-2">{render_slot(@subtitle)}</p>
             </:subtitle>
           </.header>
         </div>
@@ -59,12 +64,16 @@ defmodule KanbanWeb.AuthComponents do
         {render_slot(@inner_block)}
 
         <div class="mt-6 text-center text-sm">
-          <.link
-            href={~p"/users/log-in"}
-            class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            {gettext("Back to log in")}
-          </.link>
+          <%= if @footer != [] do %>
+            {render_slot(@footer)}
+          <% else %>
+            <.link
+              href={~p"/users/log-in"}
+              class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {gettext("Back to log in")}
+            </.link>
+          <% end %>
         </div>
       </div>
     </div>

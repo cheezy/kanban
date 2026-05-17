@@ -9,10 +9,10 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.auth_form
-        title={gettext("Forgot your password?")}
-        subtitle={gettext("We'll send you an email with instructions to reset your password.")}
-      >
+      <.auth_form title={gettext("Forgot your password?")}>
+        <:subtitle>
+          {gettext("We'll send you an email with instructions to reset your password.")}
+        </:subtitle>
         <.form :let={f} for={@form} id="reset_password_form" phx-submit="send_email">
           <.input
             field={f[:email]}

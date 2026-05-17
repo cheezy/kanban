@@ -22,15 +22,15 @@ defmodule KanbanWeb.AuthComponentsTest do
       assert html =~ ~s(name="email")
     end
 
-    test "renders the subtitle when provided" do
-      assigns = %{
-        title: "Forgot your password?",
-        subtitle: "We'll send you an email with instructions to reset your password."
-      }
+    test "renders the subtitle slot when provided" do
+      assigns = %{title: "Forgot your password?"}
 
       html =
         rendered_to_string(~H"""
-        <AuthComponents.auth_form title={@title} subtitle={@subtitle}>
+        <AuthComponents.auth_form title={@title}>
+          <:subtitle>
+            We'll send you an email with instructions to reset your password.
+          </:subtitle>
           <span>body</span>
         </AuthComponents.auth_form>
         """)
@@ -38,7 +38,26 @@ defmodule KanbanWeb.AuthComponentsTest do
       assert html =~ "send you an email with instructions"
     end
 
-    test "omits the subtitle paragraph when no subtitle is provided" do
+    test "renders rich subtitle markup (links, conditional text) inside the subtitle slot" do
+      assigns = %{title: "Welcome Back"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.auth_form title={@title}>
+          <:subtitle>
+            Don't have an account? <a href="/users/register" class="signup-link">Sign up</a> for free.
+          </:subtitle>
+          <span>body</span>
+        </AuthComponents.auth_form>
+        """)
+
+      assert html =~ "Don't have an account?"
+      assert html =~ ~s(href="/users/register")
+      assert html =~ "signup-link"
+      assert html =~ "Sign up"
+    end
+
+    test "omits the subtitle paragraph when no subtitle slot is provided" do
       assigns = %{title: "Reset password"}
 
       html =
@@ -103,7 +122,7 @@ defmodule KanbanWeb.AuthComponentsTest do
       refute html =~ "M15 7a2 2 0 012 2m4 0a6"
     end
 
-    test "always renders the Back to log in link to the log-in route" do
+    test "renders the default Back to log in link when no footer slot is provided" do
       assigns = %{title: "Reset password"}
 
       html =
@@ -115,6 +134,25 @@ defmodule KanbanWeb.AuthComponentsTest do
 
       assert html =~ ~s(href="/users/log-in")
       assert html =~ "Back to log in"
+    end
+
+    test "renders the supplied footer slot instead of the default Back to log in link" do
+      assigns = %{title: "Welcome Back"}
+
+      html =
+        rendered_to_string(~H"""
+        <AuthComponents.auth_form title={@title}>
+          <:footer>
+            <a href="/users/forgot-password" class="forgot-link">Forgot your password?</a>
+          </:footer>
+          <span>body</span>
+        </AuthComponents.auth_form>
+        """)
+
+      assert html =~ ~s(href="/users/forgot-password")
+      assert html =~ "forgot-link"
+      assert html =~ "Forgot your password?"
+      refute html =~ "Back to log in"
     end
   end
 end
