@@ -4,7 +4,7 @@
       <%= if @live_action == :edit do %>
         <.link
           navigate={~p"/boards/#{@board}"}
-          class="text-blue-600 hover:text-blue-800 flex items-center gap-2"
+          class="text-[var(--ink-2)] hover:text-[var(--stride-orange)] flex items-center gap-2"
         >
           <.icon name="hero-arrow-left" class="w-4 h-4" />
           {gettext("Back to board")}
@@ -12,7 +12,7 @@
       <% else %>
         <.link
           navigate={~p"/boards"}
-          class="text-blue-600 hover:text-blue-800 flex items-center gap-2"
+          class="text-[var(--ink-2)] hover:text-[var(--stride-orange)] flex items-center gap-2"
         >
           <.icon name="hero-arrow-left" class="w-4 h-4" />
           {gettext("Back to boards")}
@@ -264,7 +264,7 @@
           </div>
 
           <%= if @searched_user do %>
-            <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div class="mb-6 p-4 bg-[var(--surface)] border border-[var(--line)] rounded-lg">
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <p class="font-medium text-base-content">{@searched_user.name}</p>
@@ -301,9 +301,10 @@
                     <div class="flex items-center gap-3">
                       <span class={[
                         "px-3 py-1 rounded-full text-sm font-medium",
-                        access == :owner && "bg-purple-100 text-purple-800",
-                        access == :modify && "bg-blue-100 text-blue-800",
-                        access == :read_only && "bg-gray-100 text-gray-800"
+                        access == :owner &&
+                          "bg-[var(--stride-violet-soft)] text-[var(--stride-violet-ink)]",
+                        access == :modify && "bg-[var(--st-ready-soft)] text-[var(--st-ready)]",
+                        access == :read_only && "bg-[var(--surface-sunken)] text-[var(--ink-3)]"
                       ]}>
                         <%= case access do %>
                           <% :owner -> %>

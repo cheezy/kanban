@@ -69,19 +69,19 @@
     </div>
 
     <%= if is_nil(@user_access) do %>
-      <div class="mt-4 mb-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm">
+      <div class="mt-4 mb-2 p-4 bg-[var(--surface)] border border-[var(--line)] rounded-lg shadow-sm">
         <div class="flex items-center gap-3">
           <div class="flex-shrink-0">
             <.icon
               name="hero-information-circle"
-              class="h-6 w-6 text-blue-600 dark:text-blue-400"
+              class="h-6 w-6 text-[var(--stride-orange)]"
             />
           </div>
           <div class="flex-1">
-            <p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+            <p class="text-sm font-medium text-[var(--ink)]">
               {gettext("You are viewing this board in read-only mode")}
             </p>
-            <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+            <p class="text-xs text-[var(--ink-2)] mt-0.5">
               {gettext(
                 "This board is shared publicly. You can view all tasks but cannot make any changes."
               )}
@@ -95,8 +95,8 @@
       <%= if !@has_columns do %>
         <div class="p-12 bg-gradient-to-br from-base-100 to-base-200 rounded-xl border-2 border-dashed border-base-300 shadow-sm">
           <div class="text-center max-w-md mx-auto">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 mb-6">
-              <.icon name="hero-queue-list" class="h-10 w-10 text-blue-600" />
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--surface-sunken)] mb-6">
+              <.icon name="hero-queue-list" class="h-10 w-10 text-[var(--ink-2)]" />
             </div>
             <h2 class="text-2xl font-bold text-base-content mb-2">{gettext("No columns yet")}</h2>
             <p class="text-base text-base-content opacity-70 mb-8 leading-relaxed">
@@ -176,11 +176,11 @@
                   <.link
                     patch={~p"/boards/#{@board}/columns/#{column}/edit"}
                     aria-label={gettext("Edit column")}
-                    class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 p-1.5 bg-base-100/90 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 p-1.5 bg-base-100/90 hover:bg-[var(--surface-sunken)] rounded-md transition-all shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     <.icon
                       name="hero-pencil-solid"
-                      class="h-4 w-4 text-base-content opacity-50 hover:text-blue-600 transition-colors"
+                      class="h-4 w-4 text-base-content opacity-50 hover:text-[var(--ink-2)] transition-colors"
                     />
                   </.link>
                   <.link
