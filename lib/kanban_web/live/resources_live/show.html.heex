@@ -1,88 +1,140 @@
-<div class="stride-screen flex flex-col min-h-screen" data-resources-show>
-  <%= if @how_to do %>
-    <div class="bg-base-100 border-b border-base-300">
-      <div class="max-w-4xl mx-auto px-7 py-8">
-        <div class="mb-[18px]">
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:resources}>
+  <:breadcrumbs>
+    <.link
+      navigate={~p"/resources"}
+      style="color: var(--ink-3); text-decoration: none;"
+    >
+      {gettext("Resources")}
+    </.link>
+    <span style="color: var(--ink-4); margin: 0 6px;">/</span>
+    <span style="color: var(--ink); font-weight: 500;">
+      <%= if @how_to, do: @how_to.title, else: gettext("Not found") %>
+    </span>
+  </:breadcrumbs>
+
+  <div class="flex flex-col py-[18px]" data-resources-show>
+    <%= if @how_to do %>
+      <header class="px-7 pb-[18px] flex flex-col gap-3 max-w-4xl">
+        <div>
           <.link
             navigate={~p"/resources"}
-            class="inline-flex items-center gap-1 text-xs text-primary no-underline hover:underline"
+            class="inline-flex items-center gap-1 text-[12.5px] font-medium"
+            style="color: var(--stride-orange); text-decoration: none;"
           >
             <.icon name="hero-arrow-left" class="h-3 w-3" />
             {gettext("Back to Resources")}
           </.link>
         </div>
 
-        <div class="flex items-center gap-2 mb-[14px]">
+        <div class="flex items-center gap-2">
           <.content_type_badge type={@how_to.content_type} />
           <.reading_time minutes={@how_to.reading_time} />
         </div>
 
-        <h1 class="m-0 mb-3 text-2xl font-semibold tracking-tight text-base-content">
+        <h1
+          class="m-0 text-[18px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
           {@how_to.title}
         </h1>
 
-        <p class="m-0 max-w-prose text-sm text-base-content opacity-80 leading-relaxed">
+        <p
+          class="m-0 max-w-prose text-[13px] leading-relaxed"
+          style="color: var(--ink-2);"
+        >
           {@how_to.description}
         </p>
 
-        <div class="flex flex-wrap gap-2 mt-[18px]">
+        <div class="flex flex-wrap gap-1.5">
           <.link
             :for={tag <- @how_to.tags}
             navigate={~p"/resources?tag=#{tag}"}
-            class="px-2.5 py-1 rounded-full bg-base-200 text-base-content opacity-80 text-[11px] font-mono no-underline hover:opacity-100"
+            class="px-2 py-0.5 text-[10.5px] font-mono no-underline"
+            style={[
+              "background: var(--surface-2);",
+              "color: var(--ink-2);",
+              "border: 1px solid var(--line);",
+              "border-radius: 999px;"
+            ]}
           >
             {format_tag(tag)}
           </.link>
         </div>
+      </header>
+
+      <div class="px-7 pt-[18px] pb-7 max-w-4xl w-full">
+        <.how_to_content steps={@how_to.steps} render_markdown_fn={&render_markdown/1} />
+
+        <.completion_message />
+
+        <.how_to_navigation prev_how_to={@prev_how_to} next_how_to={@next_how_to} />
+
+        <div class="mt-6 text-center">
+          <.link
+            navigate={~p"/resources"}
+            class="inline-flex items-center gap-2 px-[14px] py-2 text-[12.5px] font-medium no-underline"
+            style={[
+              "background: var(--surface);",
+              "color: var(--ink);",
+              "border: 1px solid var(--line);",
+              "border-radius: var(--r-md);",
+              "box-shadow: var(--shadow-sm);"
+            ]}
+          >
+            <.icon name="hero-arrow-left" class="h-3.5 w-3.5" />
+            {gettext("Back to all resources")}
+          </.link>
+        </div>
       </div>
-    </div>
-
-    <div class="max-w-4xl mx-auto px-7 py-9 w-full">
-      <.how_to_content steps={@how_to.steps} render_markdown_fn={&render_markdown/1} />
-
-      <.completion_message />
-
-      <.how_to_navigation prev_how_to={@prev_how_to} next_how_to={@next_how_to} />
-
-      <div class="mt-6 text-center">
+    <% else %>
+      <div class="px-7 pb-[18px]">
         <.link
           navigate={~p"/resources"}
-          class="inline-flex items-center gap-2 px-[18px] py-2.5 rounded-lg bg-base-200 text-base-content opacity-80 font-medium text-[13px] border border-base-300 no-underline hover:opacity-100"
-        >
-          <.icon name="hero-arrow-left" class="h-4 w-4" />
-          {gettext("Back to all resources")}
-        </.link>
-      </div>
-    </div>
-  <% else %>
-    <div class="max-w-4xl mx-auto px-7 py-8 w-full">
-      <div class="mb-[18px]">
-        <.link
-          navigate={~p"/resources"}
-          class="inline-flex items-center gap-1 text-xs text-primary no-underline hover:underline"
+          class="inline-flex items-center gap-1 text-[12.5px] font-medium"
+          style="color: var(--stride-orange); text-decoration: none;"
         >
           <.icon name="hero-arrow-left" class="h-3 w-3" />
           {gettext("Back to Resources")}
         </.link>
       </div>
 
-      <div class="text-center py-14">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 text-base-content opacity-40 mb-[18px]">
+      <div class="px-7 py-14 text-center max-w-2xl mx-auto">
+        <div
+          class="inline-flex items-center justify-center w-16 h-16 mb-[18px]"
+          style={[
+            "background: var(--surface-2);",
+            "color: var(--ink-3);",
+            "border: 1px solid var(--line);",
+            "border-radius: 999px;"
+          ]}
+        >
           <.icon name="hero-document-magnifying-glass" class="h-8 w-8" />
         </div>
-        <h1 class="m-0 mb-1.5 text-xl font-semibold text-base-content">
+        <h1
+          class="m-0 mb-1.5 text-[18px] font-semibold"
+          style="color: var(--ink);"
+        >
           {gettext("Guide not found")}
         </h1>
-        <p class="m-0 mb-6 text-[13px] text-base-content opacity-60">
+        <p
+          class="m-0 mb-6 text-[13px]"
+          style="color: var(--ink-2);"
+        >
           {gettext("The guide you're looking for doesn't exist or may have been moved.")}
         </p>
         <.link
           navigate={~p"/resources"}
-          class="inline-flex items-center gap-2 px-[18px] py-2.5 rounded-lg bg-primary text-primary-content font-medium text-[13px] no-underline border border-primary"
+          class="inline-flex items-center gap-2 px-[14px] py-2 text-[12.5px] font-medium no-underline"
+          style={[
+            "background: var(--stride-orange);",
+            "color: white;",
+            "border-radius: var(--r-md);",
+            "box-shadow: var(--shadow-sm);"
+          ]}
         >
           {gettext("Browse all guides")}
         </.link>
       </div>
-    </div>
-  <% end %>
-</div>
+    <% end %>
+  </div>
+</Layouts.app>

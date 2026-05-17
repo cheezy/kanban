@@ -1,58 +1,73 @@
-<main class="min-h-screen">
-  <div class="max-w-4xl mx-auto px-6 py-16">
-    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
-      <div class="mb-6">
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:about}>
+  <:breadcrumbs>
+    <.link
+      navigate={~p"/about"}
+      style="color: var(--ink-3); text-decoration: none;"
+    >
+      {gettext("About")}
+    </.link>
+    <span style="color: var(--ink-4); margin: 0 6px;">/</span>
+    <span style="color: var(--ink); font-weight: 500;">{gettext("Changelog")}</span>
+  </:breadcrumbs>
+
+  <div class="flex flex-col py-[18px]" data-changelog>
+    <header class="px-7 pb-[18px] flex flex-col gap-3 max-w-4xl">
+      <div>
         <.link
           href={~p"/about"}
-          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+          class="inline-flex items-center gap-1 text-[12.5px] font-medium"
+          style="color: var(--stride-orange); text-decoration: none;"
         >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
+          <.icon name="hero-arrow-left" class="h-3 w-3" />
           {gettext("Back to About")}
         </.link>
       </div>
 
-      <h1 class="text-4xl font-bold text-base-content mb-8">
-        Changelog
+      <h1
+        class="m-0 text-[18px] font-semibold tracking-tight"
+        style="color: var(--ink);"
+      >
+        {gettext("Changelog")}
       </h1>
+      <p
+        class="m-0 text-[12.5px] font-mono"
+        style="color: var(--ink-3);"
+      >
+        {gettext("Release notes for the Stride application.")}
+      </p>
+    </header>
 
-      <div class="prose prose-lg max-w-none">
-        <p class="text-base-content opacity-70 mb-4">
-          All notable changes to the Kanban Board application will be documented in this file.
-        </p>
-        <p class="text-base-content opacity-70 mb-8">
-          The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
-        </p>
+    <div class="px-7 pt-[18px] pb-7 flex flex-col gap-3 max-w-4xl">
+      <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+        All notable changes to the Kanban Board application will be documented in this file.
+      </p>
+      <p class="m-0 text-[13px] leading-relaxed mb-4" style="color: var(--ink-2);">
+        The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+      </p>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.29.0] - 2026-05-08</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.29.0] - 2026-05-08</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Goal-Driven Assignment Workflow (G88, G89, G90)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Three coordinated changes that make a goal's <code>assigned_to_id</code>
                 a meaningful boundary across the goal's full lifecycle. Previously, assigning a goal to a person was a no-op for the children — they stayed unassigned, were claimable by any agent, and a freshly added child created a new assignment hole. With this release, "the goal owner owns the goal's work" is a real invariant maintained automatically.
               </p>
 
-              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+              <h5 class="m-0 mt-1 mb-1 ml-4 text-[12.5px] font-semibold" style="color: var(--ink-2);">
                 Cascading goal assignment to existing children (G88)
               </h5>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 When a goal's <code>assigned_to_id</code>
                 is changed via the UI or API, the new assignment cascades atomically to every non-completed child task whose
                 <code>assigned_to_id</code>
@@ -66,18 +81,18 @@
                 to children — the goal-mirrors-children model holds in both directions.
               </p>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 The form_component LiveView now shows a flash after a goal save indicating how many children were also re-assigned:
                 <em>"Task updated successfully. 3 child tasks were also updated."</em>
                 Translated via <code>ngettext</code>
                 for all 7 supported locales. Suppressed when zero children were affected.
               </p>
 
-              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+              <h5 class="m-0 mt-1 mb-1 ml-4 text-[12.5px] font-semibold" style="color: var(--ink-2);">
                 Restricting task claiming to the assigned user (G89)
               </h5>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Tasks with a non-nil <code>assigned_to_id</code>
                 are now visible and claimable ONLY by the named user.
                 <code>GET /api/tasks/next</code>
@@ -90,7 +105,7 @@
                 of <code>perform_claim/4</code>, so two concurrent agents cannot race past it. Unassigned tasks (<code>assigned_to_id IS NULL</code>) remain claimable by anyone — fully backwards compatible.
               </p>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 A new error variant <code>:assigned_to_other_user</code>
                 is documented in the agent onboarding catalog (<code>agent_json.ex</code>
                 <code>common_mistakes_agents_make</code>) with a corresponding
@@ -100,11 +115,11 @@
                 again — the queue endpoint automatically excludes assigned-to-others tasks.
               </p>
 
-              <h5 class="text-lg font-semibold text-base-content mb-2 ml-4">
+              <h5 class="m-0 mt-1 mb-1 ml-4 text-[12.5px] font-semibold" style="color: var(--ink-2);">
                 Inheriting goal's assignment when a new child is added (G90)
               </h5>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 When <code>Tasks.create_task/2</code>
                 is called with a <code>parent_id</code>
                 referencing an assigned goal AND attrs do NOT explicitly set <code>assigned_to_id</code>, the new task inherits the goal's
@@ -118,11 +133,11 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 <code>Kanban.Tasks.AgentQueries.get_next_task/3</code>
                 and <code>get_specific_task_for_claim/4</code>
@@ -147,25 +162,25 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.28.1] - 2026-04-14</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.28.1] - 2026-04-14</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Security
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Prevent Agents from Bypassing Workflow via Column Reassignment
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Agents were able to move tasks from Backlog directly to Ready by sending
                 <code>PATCH /api/tasks/:id</code>
                 with a new <code>column_id</code>, then claiming the task — bypassing the human review gate that gates which tasks are available for AI work. Two production incidents of this behavior were observed.
               </p>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 The API <code>update</code>
                 endpoint now rejects any request that attempts to change a task's <code>column_id</code>, returning
                 <strong>403 Forbidden</strong>
@@ -174,11 +189,11 @@
                 telemetry event fires on every rejected attempt for monitoring.
               </p>
 
-              <p class="text-base-content opacity-80 mb-2 ml-4">
+              <p class="m-0 mb-2 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Column transitions for agents are now strictly limited to:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <code>POST /tasks/claim</code>
                   — Ready → Doing (still verifies the task is in Ready)
@@ -194,7 +209,7 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Human users dragging tasks in the LiveView UI are unaffected — that flow uses a separate code path and is not subject to the restriction.
               </p>
             </div>
@@ -202,19 +217,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.28.0] - 2026-04-13</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.28.0] - 2026-04-13</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Workflow Orchestrator and Enforcement Gates (All Plugins)
               </h4>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>New <code>stride-workflow</code> orchestrator skill</strong>
                   — A single skill that replaces the pattern of remembering to invoke 6+ separate skills at specific moments. Agents invoke it once and follow the complete lifecycle: claim → explore → implement → review → hooks → complete → loop. Includes a decision matrix for when to explore, plan, and review based on task complexity and key_files count. Platform-adaptive with dual paths for Claude Code (subagent dispatch) and other environments (manual exploration/review).
@@ -236,13 +251,13 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Three layers of defense-in-depth: orchestrator guides every step → claiming gate catches orchestrator skippers → completion checklist catches everyone else.
               </p>
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Plugin Releases
               </h4>
 
@@ -257,37 +272,37 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td class="text-base-content opacity-80">stride (Claude Code)</td>
-                      <td class="text-base-content opacity-80">1.7.0</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">stride (Claude Code)</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">1.7.0</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         Orchestrator, reframed notices, claiming gate, verification checklist
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">stride-copilot</td>
-                      <td class="text-base-content opacity-80">2.3.0</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">stride-copilot</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">2.3.0</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         Same changes, adapted for Copilot's <code>activate</code> syntax
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">stride-gemini</td>
-                      <td class="text-base-content opacity-80">1.3.0</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">stride-gemini</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">1.3.0</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         Same changes, with tool.execute hook integration
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">stride-codex</td>
-                      <td class="text-base-content opacity-80">1.2.0</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">stride-codex</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">1.2.0</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         Same changes, with graceful fallback for agents
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">stride-opencode</td>
-                      <td class="text-base-content opacity-80">1.2.0</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">stride-opencode</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">1.2.0</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         Same changes, with tool.execute hook integration
                       </td>
                     </tr>
@@ -297,15 +312,15 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Generic Skills for File-Based Platforms (Cursor, Windsurf, Continue.dev, Kimi Code)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Cursor, Windsurf, Continue.dev, and Kimi Code do not support dedicated plugin repos — they use file-based skill discovery. Previously, these platforms were told to install 4 generic Claude Code skills with no stride-workflow, no enforcement gates, and no enriching/subagent-workflow skills.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>7 generic SKILL.md files</strong>
                   hosted at <code>docs/multi-agent-instructions/skills/</code>
@@ -349,11 +364,11 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 All documentation updated to reference stride-workflow as the primary entry point: AI-WORKFLOW.md, GETTING-STARTED-WITH-AI.md, MULTI-AGENT-INSTRUCTIONS.md, REVIEW-WORKFLOW.md, AGENT-HOOK-EXECUTION-GUIDE.md, STRIDE-SKILLS-PLAN.md, onboarding endpoint docs
               </li>
@@ -365,19 +380,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.27.0] - 2026-03-26</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.27.0] - 2026-03-26</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride OpenCode Plugin (<code>stride-opencode</code>)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Full Stride plugin for <a
                   href="https://opencode.ai"
                   class="text-primary hover:underline"
@@ -387,7 +402,7 @@
                 >cheezy/stride-opencode</a>.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>TypeScript plugin</strong>
                   — Native hook execution engine using OpenCode's <code>tool.execute.before</code>
@@ -428,11 +443,11 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Codex CLI Plugin (<code>stride-codex</code>)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Full Stride plugin for <a
                   href="https://github.com/openai/codex"
                   class="text-primary hover:underline"
@@ -442,7 +457,7 @@
                 >cheezy/stride-codex</a>.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>6 Codex-adapted skills</strong>
                   — All automatic hook sections removed — manual hook execution is the only path. Skills instruct the agent to read
@@ -465,16 +480,16 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Copilot Plugin Updates (<code>stride-copilot</code> v2.0.0 → v2.1.0)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Restructured the Copilot plugin for <code>copilot plugin install</code>
                 support and added automatic hook execution.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Automatic hook execution</strong>
                   — Added <code>hooks/hooks.json</code>
@@ -503,15 +518,15 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Gemini Extension Updates (<code>stride-gemini</code> v1.1.0)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Added automatic hook execution to the Gemini CLI extension.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Automatic hook execution</strong>
                   — Added <code>hooks/hooks.json</code>
@@ -537,11 +552,11 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 <strong>Onboarding endpoint updated</strong>
                 — <code>GET /api/agent/onboarding</code>
@@ -564,24 +579,24 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.26.0] - 2026-03-24</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.26.0] - 2026-03-24</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Automatic Stride Hook Execution via Claude Code Hooks (Stride Plugin v1.5.0)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Stride <code>.stride.md</code>
                 hooks now execute automatically through Claude Code's hook system, eliminating all permission prompts. Previously, every hook command (<code>git pull</code>, <code>mix test</code>, <code>mix credo</code>, <code>git commit</code>, etc.) triggered a CLI permission dialog because commands ran through Claude's Bash tool. The new system runs hooks as shell processes on the harness, bypassing the tool permission layer entirely.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong><code>hooks/stride-hook.sh</code></strong>
                   — Generic bridge script that parses any user's <code>.stride.md</code>
@@ -621,32 +636,32 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80"><code>/api/tasks/claim</code></td>
-                      <td class="text-base-content opacity-80"><code>before_doing</code></td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">PostToolUse (Bash)</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);"><code>/api/tasks/claim</code></td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);"><code>before_doing</code></td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">PreToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">PreToolUse (Bash)</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         <code>/api/tasks/:id/complete</code>
                       </td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         <code>after_doing</code> (blocks on failure)
                       </td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">PostToolUse (Bash)</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         <code>/api/tasks/:id/complete</code>
                       </td>
-                      <td class="text-base-content opacity-80"><code>before_review</code></td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);"><code>before_review</code></td>
                     </tr>
                     <tr>
-                      <td class="text-base-content opacity-80">PostToolUse (Bash)</td>
-                      <td class="text-base-content opacity-80">
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">PostToolUse (Bash)</td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);">
                         <code>/api/tasks/:id/mark_reviewed</code>
                       </td>
-                      <td class="text-base-content opacity-80"><code>after_review</code></td>
+                      <td class="text-[12.5px]" style="color: var(--ink-2);"><code>after_review</code></td>
                     </tr>
                   </tbody>
                 </table>
@@ -654,17 +669,17 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Copilot Extension (GitHub Copilot)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Stride skills have been ported to GitHub Copilot's agent mode, distributed as a
                 <code>.github/copilot-instructions.md</code>
                 configuration with prompt files. This enables Copilot-powered agents to follow the full Stride workflow (claim → implement → complete) with proper hook execution and API field formats.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>6 Prompt Files</strong>
                   — All six Stride workflow skills adapted for Copilot's prompt file system: <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>, <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
@@ -678,15 +693,15 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Gemini Extension (Google Gemini CLI)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Stride skills and custom agents have been ported to Google Gemini CLI's extension format, distributed as a standalone repository installable via <code>gemini extensions install</code>. This brings full Stride workflow support — including custom agents for codebase exploration, code review, goal decomposition, and hook failure diagnosis — to Gemini CLI users.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>6 Skills</strong>
                   — All six Stride workflow skills adapted for Gemini CLI conventions: <code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>, <code>stride-enriching-tasks</code>, and <code>stride-subagent-workflow</code>.
@@ -709,11 +724,11 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 <strong>Multi-agent instructions updated</strong>
                 — <code>docs/MULTI-AGENT-INSTRUCTIONS.md</code>
@@ -731,19 +746,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.25.0] - 2026-03-17</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.25.0] - 2026-03-17</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Review Report Field for Task-Reviewer Agent Traceability
               </h4>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Review Report database field</strong>
                   - Added <code>review_report</code>
@@ -784,19 +799,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.24.0] - 2026-03-12</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.24.0] - 2026-03-12</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Human Task Field
               </h4>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Human Task database field</strong>
                   - Added <code>human_task</code>
@@ -813,18 +828,18 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Stride Plugin (Claude Code Marketplace)
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4 ml-4">
+              <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 Stride's Claude Code skills have been extracted from the project's
                 <code>.claude/skills/</code>
                 directory into a standalone plugin distributed via the Claude Code marketplace (<code>cheezy/stride-marketplace</code>).
                 This enables any project using Stride to install the skills with two commands instead of manually copying files.
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>6 Skills</strong>
                   — The plugin ships with six mandatory workflow skills:
@@ -902,11 +917,11 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 <strong>Onboarding endpoint updated</strong>
                 — <code>GET /api/agent/onboarding</code>
@@ -924,14 +939,14 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.23.0] - 2026-02-25</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.23.0] - 2026-02-25</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
-            <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+            <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
               <li>
                 <strong>Promote Goal to Ready</strong>
                 - Goals in the Backlog column that have child tasks also in the Backlog now display a right-pointing arrow icon next to the priority badge. Clicking the arrow moves the goal and all of its backlog children to the Ready column in a single action, with proper status updates and move history tracking.
@@ -941,19 +956,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.22.0] - 2026-02-08</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.22.0] - 2026-02-08</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Lean Metrics Dashboard System
               </h4>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Comprehensive Metrics Dashboard</strong>
                   - AI-optimized boards now feature a complete lean metrics tracking system for measuring and optimizing workflow performance:
@@ -1126,11 +1141,11 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 PDF Export for Metrics
               </h4>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4 space-y-2">
+              <ul class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Print-Optimized PDF Export</strong>
                   - Export all metrics to professionally formatted PDF documents:
@@ -1159,28 +1174,28 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.21.2] - 2026-02-03</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.21.2] - 2026-02-03</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 GitHub Copilot, Cursor, Windsurf, Gemini, OpenCode, and Kimi Code CLI AI Assistant Support
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Multi-Agent Integration Expansion</strong>
                 - Added comprehensive support for GitHub Copilot agent skills, Cursor agent skills, Windsurf agent skills, Gemini Code Assist skills, OpenCode, and Kimi Code CLI (k2.5):
               </p>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>GitHub Copilot (Claude Code Skills Compatible):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Uses Claude Code Skills</strong>: GitHub Copilot now automatically discovers skills in
                   <code>.claude/skills/</code>
@@ -1205,11 +1220,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Cursor (Claude Code Skills Compatible):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Uses Claude Code Skills</strong>: Cursor now automatically discovers skills in
                   <code>.claude/skills/</code>
@@ -1235,11 +1250,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Windsurf (Claude Code Skills Compatible):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Uses Claude Code Skills</strong>: Windsurf now automatically discovers skills in
                   <code>.windsurf/skills/</code>
@@ -1264,11 +1279,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Gemini Code Assist (Claude Code Skills Compatible):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Uses Claude Code Skills</strong>: Gemini Code Assist now automatically discovers skills in
                   <code>.gemini/skills/</code>
@@ -1293,11 +1308,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>OpenCode (Claude Code Skills Compatible):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Uses Claude Code Skills</strong>: OpenCode automatically discovers skills in
                   <code>.claude/skills/</code>
@@ -1319,11 +1334,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-3">
+              <p class="m-0 mb-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Kimi Code CLI (k2.5):</strong>
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>AGENTS.md Instruction File</strong>: Uses existing AGENTS.md file (~15KB, ~400 lines) with complete Stride integration guidelines
                 </li>
@@ -1339,13 +1354,13 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Onboarding Endpoint Integration</strong>: Updated GitHub Copilot, Cursor, and Windsurf formats, and added OpenCode and Kimi formats to
                 <code>/api/agent/onboarding</code>
                 multi_agent_instructions section with appropriate installation commands
               </p>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Supported AI Assistants (8 Total):</strong>
               </p>
 
@@ -1387,24 +1402,24 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.21.1] - 2026-01-26</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.21.1] - 2026-01-26</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Automatic Task Status Synchronization
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Task Status Now Syncs Automatically When Moving Between Columns</strong>
                 - Fixed data inconsistency issue where task status could be out of sync with column position:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Ready/Backlog Columns</strong>: Automatically sets
                   <code>status: :open</code>
@@ -1434,24 +1449,24 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.21.0] - 2026-01-23</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.21.0] - 2026-01-23</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Read-Only Board Sharing
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Public Board Sharing</strong>
                 - Board owners can now share boards publicly for read-only access:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Read-Only Checkbox</strong>: Added "Make board publicly readable" checkbox to board edit form
                 </li>
@@ -1464,24 +1479,24 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.20.0] - 2026-01-19</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.20.0] - 2026-01-19</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Google Gemini Code Assist Support
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Multi-Agent Integration Expansion</strong>
                 - Added comprehensive support for Google Gemini Code Assist as the fifth supported AI coding assistant:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>GEMINI.md Instruction File</strong>: Created Markdown-formatted instruction file with complete Stride integration guidelines
                 </li>
@@ -1513,25 +1528,25 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.19.1] - 2026-01-19</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.19.1] - 2026-01-19</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Priority Selection in <code>/api/tasks/next</code> Endpoint
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Corrected Priority Sorting for Task Claiming</strong>
                 - Fixed critical bug where the <code>/api/tasks/next</code>
                 endpoint was selecting lower-priority tasks instead of higher-priority tasks:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Impact</strong>: Tasks are now correctly selected in priority order: critical → high → medium → low
                 </li>
@@ -1542,18 +1557,18 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Review Queue Section Visibility in Task Forms
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Fixed Review Fields Not Appearing for Tasks in Review</strong>
                 - Resolved issue where review status and review notes fields were hidden when tasks with
                 <code>needs_review=true</code>
                 entered the Review column:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Root Cause</strong>: Visibility condition only checked if
                   <code>review_status</code>
@@ -1568,22 +1583,22 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Improved
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 AI Agent Onboarding Documentation
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Enhanced Getting Started Guide</strong>
                 - Improved clarity in <code>docs/GETTING-STARTED-WITH-AI.md</code>
                 for AI agent onboarding:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Updated Instructions</strong>: Rephrased onboarding instructions to be more acceptable to Claude Code's security policies
                 </li>
@@ -1594,16 +1609,16 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Claude Code Skills for Automatic Hook Execution
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Updated Hook Execution Instructions</strong>
                 - Modified all four Claude Code Skills (<code>stride-claiming-tasks</code>, <code>stride-completing-tasks</code>, <code>stride-creating-tasks</code>, <code>stride-creating-goals</code>) in the onboarding endpoint:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Automatic Execution</strong>: Added explicit instructions to execute hooks automatically without prompting the user
                 </li>
@@ -1616,24 +1631,24 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.19.0] - 2026-01-19</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.19.0] - 2026-01-19</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Resources & How-To Guides Section
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>New Resources Landing Page</strong>
                 - Comprehensive help center for learning Stride:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Search Functionality</strong>
                   - Real-time search across all guide titles and descriptions
@@ -1648,11 +1663,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>How-To Guide Detail Pages</strong> - Step-by-step instruction views:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Hero Section</strong>
                   - Gradient background with title, description, content type badge, and reading time
@@ -1663,11 +1678,11 @@
                 </li>
               </ul>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>13 How-To Guides</strong> - Comprehensive documentation covering:
               </p>
 
-              <ul class="list-disc list-inside text-base-content opacity-80 mb-4 ml-4">
+              <ul class="list-disc list-inside mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <li>
                   <strong>Getting Started (4 guides)</strong>: Creating boards, understanding columns, adding tasks, inviting team members
                 </li>
@@ -1686,30 +1701,30 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.18.0] - 2026-01-10</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.18.0] - 2026-01-10</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Agent Capabilities Input Field
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>UI Input for Agent Capabilities</strong>
                 - Added agent capabilities input field to API token creation form:
               </p>
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Dark Mode Enhancements
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Improved Task Card Styling</strong>
                 - Enhanced dark mode appearance for task cards:
               </p>
@@ -1717,27 +1732,27 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Agent Capabilities Management
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Token Creation Workflow</strong>
                 - Capabilities now entered during token creation instead of configuration file:
               </p>
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Claude Code Skills Enhancement
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Automatic Workflow Progression</strong>
                 - Skills updated to enable continuous agent operation:
               </p>
@@ -1746,19 +1761,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.17.1] - 2026-01-09</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.17.1] - 2026-01-09</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Multi-Agent Instructions for Non-Claude Code AI Assistants
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Four AI Assistant Formats</strong>
                 - Always-active code completion guidance distributed as downloadable files:
               </p>
@@ -1831,16 +1846,16 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Onboarding Endpoint Optimization
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Multi-Agent Instructions Architecture</strong>
                 - Complementary approach to Claude Code Skills:
               </p>
@@ -1860,19 +1875,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.17.0] - 2026-01-08</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.17.0] - 2026-01-08</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Claude Code Skills for AI Agent Workflow Enforcement
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Four Workflow Enforcement Skills</strong>
                 - Complete set of Claude Code skills distributed via the onboarding endpoint to enforce Stride workflow discipline:
               </p>
@@ -1912,19 +1927,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.16.0] - 2026-01-08</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.16.0] - 2026-01-08</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Archive System
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 <strong>Archive Functionality</strong>
                 - Tasks can now be archived and later restored or permanently deleted:
               </p>
@@ -1959,19 +1974,19 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.15.0] - 2026-01-07</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.15.0] - 2026-01-07</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 ⚠️ BREAKING CHANGE: All Four Hooks Now Blocking with Mandatory API Validation
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 All hooks (<code>before_doing</code>, <code>after_doing</code>, <code>before_review</code>, <code>after_review</code>) are now
                 <strong>blocking</strong>
                 and require <strong>mandatory validation</strong>
@@ -2136,15 +2151,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.14.1] - 2026-01-06</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.14.1] - 2026-01-06</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 WIP Limit Calculation - Goals Exclusion
               </h4>
 
@@ -2157,7 +2172,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Goal Positioning During Drag Operations
               </h4>
 
@@ -2170,7 +2185,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Dependency Blocking Status in Bulk Upload
               </h4>
 
@@ -2185,15 +2200,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.14.0] - 2026-01-05</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.14.0] - 2026-01-05</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 API Enhancements - Agent Onboarding Endpoint
               </h4>
 
@@ -2240,23 +2255,23 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Why This Matters
               </h4>
 
-              <p class="text-base-content opacity-80 mb-4">
+              <p class="m-0 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
                 This release solves the "agent memory problem" - where AI agents would forget how to work with Stride between sessions. The enhanced onboarding endpoint provides a universal, platform-agnostic solution that works for any AI coding agent (Claude Code, Cursor, Windsurf, Aider, Cline, etc.) in any project using Stride.
               </p>
             </div>
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Goal Movement Behavior Enhancement
               </h4>
 
@@ -2271,15 +2286,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.2] - 2026-01-05</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.13.2] - 2026-01-05</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 UI Improvements - Conditional Field Visibility
               </h4>
 
@@ -2341,12 +2356,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Documentation
               </h4>
 
@@ -2371,15 +2386,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.1] - 2026-01-04</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.13.1] - 2026-01-04</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Drag and Drop Improvements
               </h4>
 
@@ -2412,15 +2427,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.13.0] - 2026-01-01</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.13.0] - 2026-01-01</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Enhanced New User Experience
               </h4>
 
@@ -2457,12 +2472,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 UI/UX Improvements
               </h4>
 
@@ -2491,15 +2506,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.12.0] - 2025-12-29</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.12.0] - 2025-12-29</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Agent Onboarding Endpoint
               </h4>
 
@@ -2594,12 +2609,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Homepage Redesign
               </h4>
 
@@ -2637,7 +2652,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 About Page Enhancement
               </h4>
 
@@ -2663,15 +2678,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.11.0] - 2025-12-28</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.11.0] - 2025-12-28</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Workflow Hooks System for AI Agent Integration
               </h4>
 
@@ -2712,15 +2727,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.1] - 2025-12-28</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.10.1] - 2025-12-28</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Bulk Task Creation with Nested Goals
               </h4>
 
@@ -2777,7 +2792,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Automatic Goal Deletion
               </h4>
 
@@ -2812,15 +2827,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.10.0] - 2025-12-28</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.10.0] - 2025-12-28</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Goal → Task Hierarchy System
               </h4>
 
@@ -2971,7 +2986,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Hierarchical Task Tree API Endpoint
               </h4>
 
@@ -3016,15 +3031,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.9.0] - 2025-12-27</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.9.0] - 2025-12-27</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Intelligent Review Workflow with mark_reviewed Endpoint
               </h4>
 
@@ -3117,7 +3132,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 AI Agent Metadata Tracking
               </h4>
 
@@ -3201,15 +3216,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.8.0] - 2025-12-26</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.8.0] - 2025-12-26</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Dependencies and Blocking Logic
               </h4>
 
@@ -3318,12 +3333,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Review Status Update
               </h4>
               <p class="text-base-content opacity-70 mb-2">
@@ -3345,15 +3360,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.7.0] - 2025-12-26</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.7.0] - 2025-12-26</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Completion API Endpoint
               </h4>
 
@@ -3443,7 +3458,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Mark Done API Endpoint
               </h4>
 
@@ -3484,15 +3499,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.6.0] - 2025-12-25</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.6.0] - 2025-12-25</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Claiming API Endpoints
               </h4>
 
@@ -3619,15 +3634,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.5.0] - 2025-12-24</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.5.0] - 2025-12-24</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task CRU API Endpoints
               </h4>
 
@@ -3710,15 +3725,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.4.0] - 2025-12-24</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.4.0] - 2025-12-24</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 API Token Authentication for AI Agents
               </h4>
 
@@ -3780,7 +3795,7 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Changed
             </h3>
 
@@ -3791,15 +3806,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.3.0] - 2025-12-23</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.3.0] - 2025-12-23</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 AI Context Fields for Enhanced Task Intelligence
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -3887,15 +3902,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.2.0] - 2025-12-22</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.2.0] - 2025-12-22</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 AI Optimized Boards
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -3926,15 +3941,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.1.0] - 2025-12-22</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.1.0] - 2025-12-22</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Added
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Rich Task Metadata System
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -3982,7 +3997,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Board-Level Field Visibility System
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4012,7 +4027,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Enhanced Task Forms
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4038,7 +4053,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Detail View Enhancements
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4065,12 +4080,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Technical Improvements
             </h3>
 
             <div class="mb-4">
-              <h4 class="text-lg font-semibold text-base-content mb-2">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Real-Time Collaboration
               </h4>
               <ul class="list-disc list-inside space-y-1 text-base-content opacity-70">
@@ -4083,12 +4098,12 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Developer Experience
             </h3>
 
             <div class="mb-4">
-              <h4 class="text-lg font-semibold text-base-content mb-2">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 AI-Optimized Task Structure
               </h4>
               <p class="text-base-content opacity-70 mb-2">
@@ -4105,7 +4120,7 @@
             </div>
 
             <div class="mb-4">
-              <h4 class="text-lg font-semibold text-base-content mb-2">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Flexible Board Configuration
               </h4>
               <p class="text-base-content opacity-70 mb-2">
@@ -4122,10 +4137,10 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.0.1] - 2025-12-21</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.0.1] - 2025-12-21</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Fixed
             </h3>
 
@@ -4160,15 +4175,15 @@
         </section>
 
         <section class="mb-10">
-          <h2 class="text-3xl font-bold text-base-content mb-4">[1.0.0] - 2025-12-15</h2>
+          <h2 class="m-0 text-[16px] font-semibold font-mono tracking-tight" style="color: var(--ink);">[1.0.0] - 2025-12-15</h2>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Core Features
             </h3>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 User Authentication & Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4184,7 +4199,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Board Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4212,7 +4227,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Column Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4233,7 +4248,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Task Management
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4294,7 +4309,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Real-Time Collaboration
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4314,7 +4329,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 User Experience
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4331,7 +4346,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Error Tracking & Monitoring
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4343,7 +4358,7 @@
             </div>
 
             <div class="mb-6">
-              <h4 class="text-xl font-semibold text-base-content mb-3">
+              <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
                 Internationalization
               </h4>
               <ul class="list-disc list-inside space-y-2 text-base-content opacity-70">
@@ -4362,7 +4377,7 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Release Notes
             </h3>
             <p class="text-base-content opacity-70 leading-relaxed">
@@ -4371,7 +4386,7 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">
               Known Limitations
             </h3>
             <p class="text-base-content opacity-70 leading-relaxed">
@@ -4380,30 +4395,26 @@
           </div>
 
           <div class="mb-8">
-            <h3 class="text-2xl font-semibold text-base-content mb-4">Credits</h3>
+            <h3 class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight" style="color: var(--ink);">Credits</h3>
             <p class="text-base-content opacity-70 leading-relaxed">
               This application was completely Vibecoded by Jeff "Cheezy" Morgan with the help of Claude Code and TideWave.
             </p>
           </div>
         </section>
-      </div>
 
-      <div class="mt-12 pt-8 border-t border-base-300">
+      <div
+        class="mt-6 pt-[18px]"
+        style="border-top: 1px solid var(--line);"
+      >
         <.link
           href={~p"/about"}
-          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+          class="inline-flex items-center gap-1.5 text-[12.5px] font-medium"
+          style="color: var(--stride-orange); text-decoration: none;"
         >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
+          <.icon name="hero-arrow-left" class="w-3 h-3" />
           {gettext("Back to About")}
         </.link>
       </div>
     </div>
   </div>
-</main>
+</Layouts.app>

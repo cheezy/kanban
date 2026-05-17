@@ -70,7 +70,7 @@ defmodule KanbanWeb.AuthComponentsTest do
       refute html =~ "opacity-70 mt-2"
     end
 
-    test "renders the default blue gradient icon when no icon attrs are supplied" do
+    test "renders the default Stride-orange gradient icon when no icon attrs are supplied" do
       assigns = %{title: "Reset password"}
 
       html =
@@ -80,8 +80,8 @@ defmodule KanbanWeb.AuthComponentsTest do
         </AuthComponents.auth_form>
         """)
 
-      assert html =~ "from-blue-600"
-      assert html =~ "to-blue-700"
+      assert html =~ "from-orange-500"
+      assert html =~ "to-orange-600"
       assert html =~ "bg-gradient-to-br"
 
       assert html =~
@@ -103,7 +103,7 @@ defmodule KanbanWeb.AuthComponentsTest do
 
       assert html =~ "from-violet-500"
       assert html =~ "to-purple-600"
-      refute html =~ "from-blue-600"
+      refute html =~ "from-orange-500"
     end
 
     test "renders the supplied icon_path inside the SVG element" do

@@ -1,39 +1,20 @@
 defmodule KanbanWeb.ResourcesLive.DesignTest do
   @moduledoc """
-  Regression guard for the Resources design conversion (W643/W644/W645).
+  Regression guard for the Resources pages against the Stride design system
+  in `design_handoff_stride/`.
 
-  Every Resources page now uses Tailwind utility classes + daisyUI theme
-  tokens instead of inline styles + project-specific CSS variables. If a
-  future template edit reintroduces hardcoded grey/white classes or
-  drops the theme tokens we converted to, these tests fail.
-
-  Notes on scope:
-
-    * The Resources page templates (W643/W644/W645) are converted; the
-      `Layouts.app` wrapper they render inside is NOT yet converted and
-      still emits `var(--ink)` / `var(--surface)` / `var(--stride-orange)`
-      strings in its sidebar and topbar. So we cannot meaningfully assert
-      absence of those CSS variables on the full rendered HTML.
-
-    * Instead we assert (a) the theme tokens introduced by the conversion
-      are PRESENT, and (b) the dark-mode-forbidden hardcoded colour classes
-      from CLAUDE.md (`text-gray-*`, `bg-white`, `border-gray-*`) are
-      absent. A regression that reintroduces those classes into a Resources
-      template will fail these tests; a regression that inlines a `style=`
-      with CSS variables won't — that'd need a separate guard once the
-      layout chrome is converted too.
-
-    * /resources/:id's body still calls three helpers (how_to_content,
-      completion_message, how_to_navigation) that haven't been converted
-      yet — those still emit inline styles, which is why we don't assert
-      against `style=` substrings here either.
+  The pages render against the design tokens defined in `tokens.css`
+  (`--ink`, `--surface`, `--line`, `--stride-orange`, etc.) — not daisyUI
+  semantic classes like `bg-primary` or `text-base-content`. These tests
+  assert the tokens are present and that the dark-mode-forbidden hardcoded
+  greyscale Tailwind classes from CLAUDE.md are absent.
   """
 
   use KanbanWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
 
-  @theme_token_markers ["text-base-content", "bg-base-100", "border-base-300"]
+  @theme_token_markers ["var(--ink)", "var(--surface)", "var(--line)"]
   @forbidden_dark_mode_classes [
     "text-gray-900",
     "text-gray-600",
@@ -87,7 +68,7 @@ defmodule KanbanWeb.ResourcesLive.DesignTest do
     test "not-found state also uses theme tokens", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/resources/nonexistent-guide")
 
-      assert html =~ "text-base-content"
+      assert html =~ "var(--ink)"
       refute html =~ "text-gray-900"
       refute html =~ "bg-white"
     end

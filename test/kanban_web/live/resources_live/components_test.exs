@@ -113,13 +113,12 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
           selected: ["getting-started"]
         )
 
-      # W643 restyle: active state uses theme primary token + data marker
+      # Active state uses the Stride brand orange via design tokens;
+      # inactive state sits on surface-2 with a hairline line border.
       assert html =~ ~s(data-tag-filter-active="true")
-      assert html =~ "bg-primary"
-      assert html =~ "text-primary-content"
-      # Inactive state uses theme base-200 background and base-300 border
-      assert html =~ "bg-base-200"
-      assert html =~ "border-base-300"
+      assert html =~ "var(--stride-orange)"
+      assert html =~ "var(--surface-2)"
+      assert html =~ "var(--line)"
     end
 
     test "renders with toggle event" do

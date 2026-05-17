@@ -18,9 +18,9 @@ defmodule KanbanWeb.AuthComponents do
   attr :title, :string, required: true
 
   attr :icon_gradient, :string,
-    default: "from-blue-600 to-blue-700",
+    default: "from-orange-500 to-orange-600",
     doc:
-      "Tailwind gradient utility classes (without the bg-gradient-* direction) controlling the icon wrapper background."
+      "Tailwind gradient utility classes (without the bg-gradient-* direction) controlling the icon wrapper background. Defaults to the Stride brand orange."
 
   attr :icon_path, :string,
     default:

@@ -34,7 +34,13 @@ defmodule KanbanWeb.ResourcesLive.Components do
     ~H"""
     <.link
       navigate={~p"/resources/#{@how_to.id}"}
-      class="group flex flex-col overflow-hidden bg-base-100 border border-base-300 rounded-[10px] no-underline transition-all hover:border-primary hover:-translate-y-0.5 hover:shadow-md"
+      class="group flex flex-col overflow-hidden no-underline transition-all hover:-translate-y-0.5"
+      style={[
+        "background: var(--surface);",
+        "border: 1px solid var(--line);",
+        "border-radius: var(--r-lg);",
+        "box-shadow: var(--shadow-sm);"
+      ]}
     >
       <div class="aspect-video relative overflow-hidden">
         <.category_illustration tags={@how_to.tags} />
@@ -43,25 +49,43 @@ defmodule KanbanWeb.ResourcesLive.Components do
         </div>
       </div>
       <div class="p-[18px] flex-1 flex flex-col">
-        <h3 class="line-clamp-2 m-0 mb-1.5 text-[14px] font-semibold tracking-tight text-base-content">
+        <h3
+          class="line-clamp-2 m-0 mb-1.5 text-[14px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
           {@how_to.title}
         </h3>
-        <p class="line-clamp-2 m-0 mb-[14px] text-[12.5px] text-base-content opacity-60 flex-1">
+        <p
+          class="line-clamp-2 m-0 mb-[14px] text-[12.5px] flex-1"
+          style="color: var(--ink-2);"
+        >
           {@how_to.description}
         </p>
         <div class="flex flex-wrap gap-1.5 mb-[14px]">
           <span
             :for={tag <- Enum.take(@how_to.tags, 3)}
-            class="px-2 py-0.5 rounded-full bg-base-200 text-base-content opacity-70 text-[10.5px] font-mono"
+            class="px-2 py-0.5 text-[10.5px] font-mono"
+            style={[
+              "background: var(--surface-2);",
+              "color: var(--ink-2);",
+              "border: 1px solid var(--line);",
+              "border-radius: 999px;"
+            ]}
           >
             {@format_tag_fn.(tag)}
           </span>
         </div>
-        <div class="flex items-center justify-between pt-3 border-t border-base-300">
+        <div
+          class="flex items-center justify-between pt-3"
+          style="border-top: 1px solid var(--line);"
+        >
           <.reading_time minutes={@how_to.reading_time} />
-          <span class="inline-flex items-center gap-1 text-[11.5px] font-medium text-primary">
+          <span
+            class="inline-flex items-center gap-1 text-[11.5px] font-medium"
+            style="color: var(--stride-orange);"
+          >
             {gettext("Read more")}
-            <span>&rarr;</span>
+            <.icon name="hero-arrow-right" class="h-3 w-3" />
           </span>
         </div>
       </div>
@@ -95,7 +119,10 @@ defmodule KanbanWeb.ResourcesLive.Components do
 
     ~H"""
     <div class="relative max-w-xl mx-auto">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content opacity-40">
+      <div
+        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+        style="color: var(--ink-3);"
+      >
         <.icon name="hero-magnifying-glass" class="h-4 w-4" />
       </div>
       <input
@@ -105,7 +132,13 @@ defmodule KanbanWeb.ResourcesLive.Components do
         placeholder={@placeholder}
         phx-keyup={@event}
         phx-debounce={@debounce}
-        class="block w-full py-2.5 pr-3 pl-9 text-[13px] text-base-content bg-base-100 border border-base-300 rounded-lg outline-none transition-colors focus:border-primary"
+        class="block w-full py-2.5 pr-3 pl-9 text-[13px] outline-none transition-colors"
+        style={[
+          "background: var(--surface);",
+          "color: var(--ink);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-md);"
+        ]}
       />
     </div>
     """
@@ -139,11 +172,14 @@ defmodule KanbanWeb.ResourcesLive.Components do
         phx-click={@event}
         phx-value-tag={tag}
         data-tag-filter-active={tag in @selected && "true"}
-        class={[
-          "px-3 py-[5px] rounded-full text-xs font-medium cursor-pointer border transition-colors",
+        class="px-3 py-[5px] text-[11.5px] font-medium cursor-pointer transition-colors"
+        style={[
+          "border-radius: 999px;",
           if(tag in @selected,
-            do: "bg-primary text-primary-content border-primary",
-            else: "bg-base-200 text-base-content opacity-80 border-base-300 hover:opacity-100"
+            do:
+              "background: var(--stride-orange); color: white; border: 1px solid var(--stride-orange);",
+            else:
+              "background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);"
           )
         ]}
       >
@@ -292,9 +328,14 @@ defmodule KanbanWeb.ResourcesLive.Components do
     <span
       data-content-type-size={@size}
       class={[
-        "inline-flex items-center gap-1 rounded-full font-medium font-mono",
-        "bg-base-100 text-base-content opacity-80 border border-base-300",
+        "inline-flex items-center gap-1 font-medium font-mono",
         if(@size == :sm, do: "px-2 py-0.5 text-[10.5px]", else: "px-2.5 py-1 text-[11px]")
+      ]}
+      style={[
+        "background: var(--surface);",
+        "color: var(--ink-2);",
+        "border: 1px solid var(--line);",
+        "border-radius: 999px;"
       ]}
     >
       <.icon name={type_icon(@type)} class={(@size == :sm && "h-3 w-3") || "h-3.5 w-3.5"} />
@@ -318,7 +359,10 @@ defmodule KanbanWeb.ResourcesLive.Components do
 
   def reading_time(assigns) do
     ~H"""
-    <span class="inline-flex items-center gap-1 text-[11px] text-base-content opacity-60 font-mono">
+    <span
+      class="inline-flex items-center gap-1 text-[11px] font-mono"
+      style="color: var(--ink-3);"
+    >
       <.icon name="hero-clock" class="h-3 w-3" />
       {ngettext("%{count} min read", "%{count} min read", @minutes, count: @minutes)}
     </span>
@@ -341,19 +385,39 @@ defmodule KanbanWeb.ResourcesLive.Components do
   def empty_state(assigns) do
     ~H"""
     <div class="text-center py-14">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 text-base-content opacity-40 mb-[18px]">
+      <div
+        class="inline-flex items-center justify-center w-16 h-16 mb-[18px]"
+        style={[
+          "background: var(--surface-2);",
+          "color: var(--ink-3);",
+          "border: 1px solid var(--line);",
+          "border-radius: 999px;"
+        ]}
+      >
         <.icon name="hero-document-magnifying-glass" class="h-8 w-8" />
       </div>
-      <h2 class="m-0 mb-1.5 text-[16px] font-semibold text-base-content">
+      <h2
+        class="m-0 mb-1.5 text-[16px] font-semibold"
+        style="color: var(--ink);"
+      >
         {gettext("No guides found")}
       </h2>
-      <p class="m-0 mb-4 text-[12.5px] text-base-content opacity-60">
+      <p
+        class="m-0 mb-4 text-[12.5px]"
+        style="color: var(--ink-2);"
+      >
         {gettext("Try adjusting your search or filters to find what you're looking for.")}
       </p>
       <button
         type="button"
         phx-click={@clear_event}
-        class="px-3.5 py-1.5 rounded-md text-[12px] font-medium cursor-pointer bg-primary text-primary-content border border-primary"
+        class="px-3.5 py-1.5 text-[12px] font-medium cursor-pointer"
+        style={[
+          "background: var(--stride-orange);",
+          "color: white;",
+          "border: 1px solid var(--stride-orange);",
+          "border-radius: var(--r-md);"
+        ]}
       >
         {gettext("Clear all filters")}
       </button>

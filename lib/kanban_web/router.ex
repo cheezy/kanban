@@ -201,6 +201,15 @@ defmodule KanbanWeb.Router do
       ],
       root_layout: {KanbanWeb.Layouts, :marketing} do
       live "/issue", IssueLive.Form, :new
+    end
+
+    live_session :public_app_shell,
+      on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
+        {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.UserAuth, :mount_current_scope}
+      ],
+      root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/resources", ResourcesLive.Index, :index
       live "/resources/:id", ResourcesLive.Show, :show
     end

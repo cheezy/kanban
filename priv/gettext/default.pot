@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:401
-#: lib/kanban_web/components/layouts.ex:413
+#: lib/kanban_web/components/layouts.ex:402
+#: lib/kanban_web/components/layouts.ex:414
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:408
+#: lib/kanban_web/components/layouts.ex:409
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:396
+#: lib/kanban_web/components/layouts.ex:397
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -74,7 +74,7 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:198
+#: lib/kanban_web/components/layouts.ex:199
 #: lib/kanban_web/components/layouts/root.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Log out"
@@ -88,7 +88,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:197
+#: lib/kanban_web/live/user_live/settings.ex:205
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr ""
@@ -104,7 +104,7 @@ msgid "Already registered?"
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:30
-#: lib/kanban_web/live/user_live/settings.ex:89
+#: lib/kanban_web/live/user_live/settings.ex:93
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr ""
@@ -114,12 +114,12 @@ msgstr ""
 msgid "Create Your Account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:65
+#: lib/kanban_web/live/user_live/registration.ex:66
 #, elixir-autogen, elixir-format
 msgid "Create an account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:62
+#: lib/kanban_web/live/user_live/registration.ex:64
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr ""
@@ -138,12 +138,12 @@ msgstr ""
 msgid "Email"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:110
+#: lib/kanban_web/live/user_live/settings.ex:118
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:107
+#: lib/kanban_web/live/user_live/settings.ex:115
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr ""
@@ -154,7 +154,7 @@ msgid "Manage your account email address and password settings"
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:23
-#: lib/kanban_web/live/user_live/settings.ex:82
+#: lib/kanban_web/live/user_live/settings.ex:86
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr ""
@@ -165,7 +165,7 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:93
+#: lib/kanban_web/live/user_live/settings.ex:101
 #, elixir-autogen, elixir-format
 msgid "Save Password"
 msgstr ""
@@ -175,8 +175,8 @@ msgstr ""
 #: lib/kanban_web/live/board_live/settings_form_component.ex:168
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/form_component.html.heex:971
-#: lib/kanban_web/live/user_live/settings.ex:56
-#: lib/kanban_web/live/user_live/settings.ex:92
+#: lib/kanban_web/live/user_live/settings.ex:59
+#: lib/kanban_web/live/user_live/settings.ex:99
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
@@ -410,7 +410,7 @@ msgid "WIP limit reached for this column"
 msgstr ""
 
 #: lib/kanban_web/components/layouts.ex:135
-#: lib/kanban_web/components/layouts.ex:362
+#: lib/kanban_web/components/layouts.ex:363
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -692,7 +692,7 @@ msgstr ""
 msgid "Unassigned"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:57
+#: lib/kanban_web/live/user_live/settings.ex:61
 #, elixir-autogen, elixir-format
 msgid "Update Profile"
 msgstr ""
@@ -789,7 +789,7 @@ msgstr ""
 msgid "Account Confirmed!"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:66
+#: lib/kanban_web/live/user_live/confirmation.ex:63
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr ""
@@ -806,7 +806,7 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:30
+#: lib/kanban_web/live/user_live/confirmation.ex:27
 #, elixir-autogen, elixir-format
 msgid "Go to login"
 msgstr ""
@@ -816,7 +816,7 @@ msgstr ""
 msgid "Stay logged in"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:57
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr ""
@@ -826,41 +826,42 @@ msgstr ""
 msgid "Your account has been confirmed successfully. You can now log in."
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:292
+#: lib/kanban_web/components/layouts.ex:293
 #: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/layouts/root.html.heex:85
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:268
+#: lib/kanban_web/controllers/page_html/about.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "About"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:5
+#: lib/kanban_web/controllers/page_html/about.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "About Stride"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:132
+#: lib/kanban_web/controllers/page_html/about.html.heex:202
 #, elixir-autogen, elixir-format
 msgid "Back to Home"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:11
+#: lib/kanban_web/controllers/page_html/about.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Built with AI"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:14
+#: lib/kanban_web/controllers/page_html/about.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:106
+#: lib/kanban_web/controllers/page_html/about.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:103
+#: lib/kanban_web/controllers/page_html/about.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Report Issues or Request Features"
 msgstr ""
@@ -931,7 +932,7 @@ msgstr ""
 msgid "can't be blank"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:19
+#: lib/kanban_web/controllers/page_html/about.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr ""
@@ -1005,7 +1006,7 @@ msgstr ""
 msgid "Our Mission"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:28
+#: lib/kanban_web/controllers/page_html/about.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Read about the people behind this app"
 msgstr ""
@@ -1048,17 +1049,17 @@ msgstr ""
 msgid "Edit task"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:86
+#: lib/kanban_web/controllers/page_html/about.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Version History"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:96
+#: lib/kanban_web/controllers/page_html/about.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "View Changelog"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:89
+#: lib/kanban_web/controllers/page_html/about.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "View the complete version history and feature list for this application."
 msgstr ""
@@ -1827,40 +1828,15 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:72
 #, elixir-autogen, elixir-format
-msgid " - Complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:60
-#, elixir-autogen, elixir-format
-msgid " - Execute custom code at key moments: before_doing, after_doing, before_review, after_review"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:54
-#, elixir-autogen, elixir-format
-msgid " - Optimistic locking prevents multiple agents from claiming the same task"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:66
-#, elixir-autogen, elixir-format
-msgid " - Optional human approval before tasks move to Done, with request for changes capability"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:48
-#, elixir-autogen, elixir-format
-msgid " - Tasks specify required capabilities, and agents only see tasks matching their skills"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:35
-#, elixir-autogen, elixir-format
 msgid "Human-AI Collaboration Platform"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:53
+#: lib/kanban_web/controllers/page_html/about.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Atomic Task Claiming"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:47
+#: lib/kanban_web/controllers/page_html/about.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Capability Matching"
 msgstr ""
@@ -1870,12 +1846,12 @@ msgstr ""
 msgid "Child Tasks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:59
+#: lib/kanban_web/controllers/page_html/about.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Client-Side Workflow Hooks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:71
+#: lib/kanban_web/controllers/page_html/about.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "Comprehensive API Documentation"
 msgstr ""
@@ -1891,7 +1867,7 @@ msgstr ""
 msgid "Goal"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:65
+#: lib/kanban_web/controllers/page_html/about.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Human Review Workflow"
 msgstr ""
@@ -1900,11 +1876,6 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:24
 #, elixir-autogen, elixir-format
 msgid "ID"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/about.html.heex:43
-#, elixir-autogen, elixir-format
-msgid "Key collaboration features include:"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form/option_builders.ex:109
@@ -1917,12 +1888,12 @@ msgstr ""
 msgid "Parent Goal"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:38
+#: lib/kanban_web/controllers/page_html/about.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/about.html.heex:78
+#: lib/kanban_web/controllers/page_html/about.html.heex:128
 #, elixir-autogen, elixir-format
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
@@ -2082,23 +2053,23 @@ msgid_plural "%{count} min read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:38
+#: lib/kanban_web/live/resources_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "A-Z"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/show.html.heex:22
-#: lib/kanban_web/live/resources_live/show.html.heex:99
+#: lib/kanban_web/live/resources_live/show.html.heex:12
+#: lib/kanban_web/live/resources_live/show.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Back to Resources"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/show.html.heex:83
+#: lib/kanban_web/live/resources_live/show.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Back to all resources"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/show.html.heex:131
+#: lib/kanban_web/live/resources_live/show.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Browse all guides"
 msgstr ""
@@ -2113,17 +2084,17 @@ msgstr ""
 msgid "Clear all filters"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:50
+#: lib/kanban_web/live/resources_live/index.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/show.html.heex:116
+#: lib/kanban_web/live/resources_live/show.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Guide not found"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:7
+#: lib/kanban_web/live/resources_live/index.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Learn how to get the most out of Stride with our guides and tutorials."
 msgstr ""
@@ -2134,12 +2105,12 @@ msgstr ""
 msgid "Make board publicly readable"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:32
+#: lib/kanban_web/live/resources_live/index.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Most Relevant"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:35
+#: lib/kanban_web/live/resources_live/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Newest"
 msgstr ""
@@ -2169,7 +2140,7 @@ msgstr ""
 msgid "Read more"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:285
+#: lib/kanban_web/components/layouts.ex:286
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2179,7 +2150,8 @@ msgid "Resources"
 msgstr ""
 
 #: lib/kanban_web/live/resources_live/index.ex:18
-#: lib/kanban_web/live/resources_live/index.html.heex:4
+#: lib/kanban_web/live/resources_live/index.html.heex:5
+#: lib/kanban_web/live/resources_live/index.html.heex:10
 #, elixir-autogen, elixir-format
 msgid "Resources & How-Tos"
 msgstr ""
@@ -2189,14 +2161,14 @@ msgstr ""
 msgid "Search for help..."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:56
+#: lib/kanban_web/live/resources_live/index.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Showing %{count} guide"
 msgid_plural "Showing %{count} guides"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/resources_live/index.html.heex:23
+#: lib/kanban_web/live/resources_live/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Sort:"
 msgstr ""
@@ -2206,7 +2178,7 @@ msgstr ""
 msgid "Task Not Found"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/show.html.heex:119
+#: lib/kanban_web/live/resources_live/show.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "The guide you're looking for doesn't exist or may have been moved."
 msgstr ""
@@ -2254,7 +2226,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:273
+#: lib/kanban_web/components/layouts.ex:274
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
 #: lib/kanban_web/live/metrics_live/workspace.ex:70
 #: lib/kanban_web/live/task_live/view_component.ex:239
@@ -4645,7 +4617,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/layouts.ex:252
+#: lib/kanban_web/components/layouts.ex:253
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4726,7 +4698,7 @@ msgstr ""
 msgid "Active goals"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:259
+#: lib/kanban_web/components/layouts.ex:260
 #: lib/kanban_web/live/agents_live.ex:82
 #, elixir-autogen, elixir-format
 msgid "Agents"
@@ -4772,7 +4744,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:266
+#: lib/kanban_web/components/layouts.ex:267
 #: lib/kanban_web/live/review_live.ex:102
 #: lib/kanban_web/live/review_live.ex:123
 #, elixir-autogen, elixir-format
@@ -5992,7 +5964,7 @@ msgstr ""
 msgid "Toggle menu"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:341
+#: lib/kanban_web/components/layouts.ex:342
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr ""
@@ -6007,7 +5979,7 @@ msgstr ""
 msgid "Back to review queue"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:62
+#: lib/kanban_web/live/user_live/settings.ex:66
 #, elixir-autogen, elixir-format
 msgid "Change Password"
 msgstr ""
@@ -6017,7 +5989,42 @@ msgstr ""
 msgid "Profile Information"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:216
+#: lib/kanban_web/live/user_live/settings.ex:224
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:122
+#, elixir-autogen, elixir-format
+msgid " — complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:106
+#, elixir-autogen, elixir-format
+msgid " — execute custom code at key moments: before_doing, after_doing, before_review, after_review."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:98
+#, elixir-autogen, elixir-format
+msgid " — optimistic locking prevents multiple agents from claiming the same task."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:114
+#, elixir-autogen, elixir-format
+msgid " — optional human approval before tasks move to Done, with request-for-changes capability."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:90
+#, elixir-autogen, elixir-format
+msgid " — tasks specify required capabilities, and agents only see tasks matching their skills."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "How Stride was built, who it's for, and how to get involved."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/about.html.heex:83
+#, elixir-autogen, elixir-format
+msgid "Key collaboration features"
 msgstr ""

@@ -1,137 +1,207 @@
-<main class="min-h-screen">
-  <div class="max-w-4xl mx-auto px-6 py-16">
-    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
-      <h1 class="text-4xl font-bold text-base-content mb-8">
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:about}>
+  <:breadcrumbs>
+    <span style="color: var(--ink); font-weight: 500;">{gettext("About")}</span>
+  </:breadcrumbs>
+
+  <div class="flex flex-col py-[18px]" data-about>
+    <header class="px-7 pb-1.5 flex flex-col gap-1">
+      <h1
+        class="m-0 text-[18px] font-semibold tracking-tight"
+        style="color: var(--ink);"
+      >
         {gettext("About Stride")}
       </h1>
+      <p
+        class="m-0 text-[12.5px] font-mono"
+        style="color: var(--ink-3);"
+      >
+        {gettext("How Stride was built, who it's for, and how to get involved.")}
+      </p>
+    </header>
 
-      <div class="prose prose-lg max-w-none">
-        <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-base-content mb-4">
-            {gettext("Built with AI")}
-          </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext(
-              "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
-            )}
-          </p>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext(
-              "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
-            )}
-          </p>
-          <p class="text-base-content opacity-70 leading-relaxed">
-            <.link
-              href={~p"/tango"}
-              class="text-blue-600 hover:text-blue-800 underline font-medium"
-            >
-              {gettext("Read about the people behind this app")}
-            </.link>
-          </p>
-        </section>
+    <div class="px-7 pt-[18px] pb-7 flex flex-col gap-[18px] max-w-3xl">
+      <section
+        class="flex flex-col gap-3 p-[18px]"
+        style={[
+          "background: var(--surface);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-lg);",
+          "box-shadow: var(--shadow-sm);"
+        ]}
+      >
+        <h2
+          class="m-0 text-[14px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
+          {gettext("Built with AI")}
+        </h2>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "Stride is a modern task management application that was built entirely using AI-assisted development. This project demonstrates the power of human-AI collaboration in software development."
+          )}
+        </p>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
+          )}
+        </p>
+        <p class="m-0 text-[13px]" style="color: var(--ink-2);">
+          <.link
+            href={~p"/tango"}
+            class="font-medium underline"
+            style="color: var(--stride-orange); text-underline-offset: 2px;"
+          >
+            {gettext("Read about the people behind this app")}
+          </.link>
+        </p>
+      </section>
 
-        <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-base-content mb-4">
-            {gettext("Human-AI Collaboration Platform")}
-          </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+      <section
+        class="flex flex-col gap-3 p-[18px]"
+        style={[
+          "background: var(--surface);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-lg);",
+          "box-shadow: var(--shadow-sm);"
+        ]}
+      >
+        <h2
+          class="m-0 text-[14px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
+          {gettext("Human-AI Collaboration Platform")}
+        </h2>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
+          )}
+        </p>
+        <p
+          class="m-0 text-[12.5px] font-mono uppercase tracking-wide"
+          style="color: var(--ink-3);"
+        >
+          {gettext("Key collaboration features")}
+        </p>
+        <ul class="m-0 p-0 list-none flex flex-col gap-2">
+          <li class="text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            <strong style="color: var(--ink); font-weight: 600;">
+              {gettext("Capability Matching")}
+            </strong>
             {gettext(
-              "Stride is more than a kanban board—it's designed from the ground up to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks through a comprehensive REST API, while humans maintain full control through review workflows and client-side execution hooks."
+              " — tasks specify required capabilities, and agents only see tasks matching their skills."
             )}
-          </p>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext("Key collaboration features include:")}
-          </p>
-          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
-            <li>
-              <strong>{gettext("Capability Matching")}</strong>
-              {gettext(
-                " - Tasks specify required capabilities, and agents only see tasks matching their skills"
-              )}
-            </li>
-            <li>
-              <strong>{gettext("Atomic Task Claiming")}</strong>
-              {gettext(
-                " - Optimistic locking prevents multiple agents from claiming the same task"
-              )}
-            </li>
-            <li>
-              <strong>{gettext("Client-Side Workflow Hooks")}</strong>
-              {gettext(
-                " - Execute custom code at key moments: before_doing, after_doing, before_review, after_review"
-              )}
-            </li>
-            <li>
-              <strong>{gettext("Human Review Workflow")}</strong>
-              {gettext(
-                " - Optional human approval before tasks move to Done, with request for changes capability"
-              )}
-            </li>
-            <li>
-              <strong>{gettext("Comprehensive API Documentation")}</strong>
-              {gettext(
-                " - Complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding"
-              )}
-            </li>
-          </ul>
-          <p class="text-base-content opacity-70 leading-relaxed">
+          </li>
+          <li class="text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            <strong style="color: var(--ink); font-weight: 600;">
+              {gettext("Atomic Task Claiming")}
+            </strong>
             {gettext(
-              "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
+              " — optimistic locking prevents multiple agents from claiming the same task."
             )}
-          </p>
-        </section>
-
-        <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-base-content mb-4">
-            {gettext("Version History")}
-          </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext("View the complete version history and feature list for this application.")}
-          </p>
-          <p class="text-base-content opacity-70 leading-relaxed">
-            <.link
-              href={~p"/changelog"}
-              class="text-blue-600 hover:text-blue-800 underline font-medium"
-            >
-              {gettext("View Changelog")}
-            </.link>
-          </p>
-        </section>
-
-        <section class="mb-10">
-          <h2 class="text-2xl font-semibold text-base-content mb-4">
-            {gettext("Report Issues or Request Features")}
-          </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+          </li>
+          <li class="text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            <strong style="color: var(--ink); font-weight: 600;">
+              {gettext("Client-Side Workflow Hooks")}
+            </strong>
             {gettext(
-              "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
+              " — execute custom code at key moments: before_doing, after_doing, before_review, after_review."
             )}
-          </p>
-          <div class="mt-6">
-            {live_render(@conn, KanbanWeb.IssueLive.Form,
-              id: "issue-form",
-              session: %{"locale" => Gettext.get_locale(KanbanWeb.Gettext)}
+          </li>
+          <li class="text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            <strong style="color: var(--ink); font-weight: 600;">
+              {gettext("Human Review Workflow")}
+            </strong>
+            {gettext(
+              " — optional human approval before tasks move to Done, with request-for-changes capability."
             )}
-          </div>
-        </section>
-      </div>
+          </li>
+          <li class="text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            <strong style="color: var(--ink); font-weight: 600;">
+              {gettext("Comprehensive API Documentation")}
+            </strong>
+            {gettext(
+              " — complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding."
+            )}
+          </li>
+        </ul>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
+          )}
+        </p>
+      </section>
 
-      <div class="mt-12 pt-8 border-t border-base-300">
+      <section
+        class="flex flex-col gap-3 p-[18px]"
+        style={[
+          "background: var(--surface);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-lg);",
+          "box-shadow: var(--shadow-sm);"
+        ]}
+      >
+        <h2
+          class="m-0 text-[14px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
+          {gettext("Version History")}
+        </h2>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext("View the complete version history and feature list for this application.")}
+        </p>
+        <p class="m-0 text-[13px]" style="color: var(--ink-2);">
+          <.link
+            href={~p"/changelog"}
+            class="inline-flex items-center gap-1 font-medium underline"
+            style="color: var(--stride-orange); text-underline-offset: 2px;"
+          >
+            {gettext("View Changelog")}
+            <.icon name="hero-arrow-right" class="w-3 h-3" />
+          </.link>
+        </p>
+      </section>
+
+      <section
+        class="flex flex-col gap-3 p-[18px]"
+        style={[
+          "background: var(--surface);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-lg);",
+          "box-shadow: var(--shadow-sm);"
+        ]}
+      >
+        <h2
+          class="m-0 text-[14px] font-semibold tracking-tight"
+          style="color: var(--ink);"
+        >
+          {gettext("Report Issues or Request Features")}
+        </h2>
+        <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "AI is not perfect and I am sure there are issues hiding in this application. Please report issues or make requests for new features so this application can improve."
+          )}
+        </p>
+        <div class="mt-2">
+          {live_render(@conn, KanbanWeb.IssueLive.Form,
+            id: "issue-form",
+            session: %{"locale" => Gettext.get_locale(KanbanWeb.Gettext)}
+          )}
+        </div>
+      </section>
+
+      <div
+        class="pt-[18px]"
+        style="border-top: 1px solid var(--line);"
+      >
         <.link
           href={~p"/"}
-          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+          class="inline-flex items-center gap-1.5 text-[12.5px] font-medium"
+          style="color: var(--stride-orange); text-decoration: none;"
         >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
+          <.icon name="hero-arrow-left" class="w-3 h-3" />
           {gettext("Back to Home")}
         </.link>
       </div>
     </div>
   </div>
-</main>
+</Layouts.app>

@@ -8,15 +8,19 @@ defmodule KanbanWeb.PageController do
        [html: {KanbanWeb.Layouts, :marketing}]
        when action in [
               :home,
-              :about,
               :pricing,
               :privacy,
               :product,
               :security,
-              :tango,
-              :workflows,
-              :changelog
+              :workflows
             ]
+
+  # Pages reachable from the in-app sidebar (About) or from About itself
+  # (Tango, Changelog) render under the app shell so the sidebar stays
+  # visible for authenticated users.
+  plug :put_root_layout,
+       [html: {KanbanWeb.Layouts, :app_chrome}]
+       when action in [:about, :tango, :changelog]
 
   def home(conn, _params) do
     render(conn, :home)
