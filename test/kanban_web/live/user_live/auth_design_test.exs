@@ -72,7 +72,8 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
   end
 
   describe "reset password page" do
-    test "renders the shared card framing for a valid token", %{conn: conn} do
+    # NOTE: Rewritten in W655; whole file slated for deletion in W657.
+    test "renders the editorial auth_frame with Reset password title", %{conn: conn} do
       user = user_fixture()
 
       token =
@@ -82,8 +83,8 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
 
       {:ok, _lv, html} = live(conn, ~p"/users/reset-password/#{token}")
 
-      assert_shared_card_chrome(html, "reset password")
       assert html =~ "Reset password"
+      assert html =~ "A task structure that AI agents can actually pull from."
     end
   end
 

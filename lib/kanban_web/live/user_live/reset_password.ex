@@ -1,41 +1,91 @@
 defmodule KanbanWeb.UserLive.ResetPassword do
   use KanbanWeb, :live_view
 
-  import KanbanWeb.AuthComponents
+  import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.auth_form title={gettext("Reset password")}>
-        <.form
-          :let={f}
-          for={@form}
-          id="reset_password_form"
-          phx-submit="reset_password"
-          phx-change="validate"
+    <.auth_frame quote_key={:forgot}>
+      <:footer_switch>
+        <.link
+          navigate={~p"/users/log-in"}
+          style="color: var(--ink-2); text-decoration: none;"
         >
-          <.input
-            field={f[:password]}
+          <span aria-hidden="true">←</span> {gettext("Back to sign in")}
+        </.link>
+      </:footer_switch>
+
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+          {gettext("Reset password")}
+        </h1>
+        <p style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3); text-wrap: pretty;">
+          {gettext("Choose a new password for your account.")}
+        </p>
+      </div>
+
+      <.form
+        :let={f}
+        for={@form}
+        id="reset_password_form"
+        phx-submit="reset_password"
+        phx-change="validate"
+        style="margin-top: 28px; display: flex; flex-direction: column; gap: 12px;"
+      >
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("New password")}
+          </span>
+          <input
             type="password"
-            label={gettext("New password")}
+            name={f[:password].name}
+            id={f[:password].id}
+            autocomplete="new-password"
             required
             phx-mounted={JS.focus()}
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
-          <.input
-            field={f[:password_confirmation]}
+          <span style="font-size: 11px; color: var(--ink-3); line-height: 1.45;">
+            {gettext("At least 12 characters")}
+          </span>
+          <.field_errors errors={f[:password].errors} />
+        </label>
+
+        <label style="display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+            {gettext("Confirm new password")}
+          </span>
+          <input
             type="password"
-            label={gettext("Confirm new password")}
+            name={f[:password_confirmation].name}
+            id={f[:password_confirmation].id}
+            autocomplete="new-password"
             required
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
-          <.button variant="primary" class="btn btn-primary w-full mt-4">
+          <.field_errors errors={f[:password_confirmation].errors} />
+        </label>
+
+        <div style="margin-top: 4px;">
+          <.primary_full_button kbd="↵" type="submit">
             {gettext("Reset password")}
-          </.button>
-        </.form>
-      </.auth_form>
-    </Layouts.app>
+          </.primary_full_button>
+        </div>
+      </.form>
+    </.auth_frame>
+    """
+  end
+
+  attr :errors, :list, default: []
+
+  defp field_errors(assigns) do
+    ~H"""
+    <span :for={msg <- @errors} style="font-size: 11.5px; color: var(--st-blocked);">
+      {translate_error(msg)}
+    </span>
     """
   end
 

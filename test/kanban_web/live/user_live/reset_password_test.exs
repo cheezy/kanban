@@ -95,14 +95,14 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
     test "redirects to login page when clicking back to login", %{conn: conn, token: token} do
       {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
 
-      {:ok, conn} =
+      {:ok, _login_live, login_html} =
         lv
-        |> element(~s|main a|, "Back to log in")
+        |> element(~s|main a|, "Back to sign in")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 
       # Login page title was updated to "Sign in" in W652 per design auth.jsx:296.
-      assert conn.resp_body =~ "Sign in"
+      assert login_html =~ "Sign in"
     end
   end
 end
