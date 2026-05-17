@@ -559,6 +559,12 @@ defmodule KanbanWeb.CoreComponents do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_cancel, JS, default: %JS{}
+
+  attr :mobile_fullscreen, :boolean,
+    default: false,
+    doc:
+      "When true, renders full-screen below md with no rounding/outer padding and tightened inner padding; reverts to the centered max-w-3xl layout at md+."
+
   slot :inner_block, required: true
 
   def modal(assigns) do
@@ -584,13 +590,23 @@ defmodule KanbanWeb.CoreComponents do
         tabindex="0"
       >
         <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
+          <div class={[
+            "w-full",
+            if(@mobile_fullscreen, do: "md:max-w-3xl", else: "max-w-3xl"),
+            if(@mobile_fullscreen, do: "p-0 md:p-6 lg:py-8", else: "p-4 sm:p-6 lg:py-8")
+          ]}>
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-base-100 p-14 shadow-lg ring-1 transition"
+              class={[
+                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                if(@mobile_fullscreen,
+                  do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0 p-4 md:p-10 lg:p-14",
+                  else: "rounded-2xl p-14"
+                )
+              ]}
             >
               <div class="absolute top-6 right-5">
                 <button
