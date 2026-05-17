@@ -313,7 +313,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~r/>\s*142\s*</
     end
 
-    test "renders the titlebar with STR badge, Stride core, and agents online" do
+    test "renders the titlebar with STR badge and Stride core (no agents-online chip)" do
       assigns = %{}
 
       html =
@@ -323,8 +323,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "STR"
       assert html =~ "Stride core"
-      assert html =~ "4 agents online"
       assert html =~ "var(--stride-orange)"
+      refute html =~ "agents online"
     end
 
     test "renders every fixture task ident across all 4 columns" do
@@ -340,7 +340,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       end
     end
 
-    test "renders hook output on Doing tasks and diff stats on Review tasks" do
+    test "renders real card metrics on per-column footers (no hook strings, no diff stats)" do
       assigns = %{}
 
       html =
@@ -348,15 +348,28 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <KanbanWeb.MarketingMiniBoard.marketing_mini_board />
         """)
 
-      assert html =~ "before_doing · ok"
-      assert html =~ "running"
+      # Real TaskCard footers — Review shows criteria/issues/files, Done
+      # shows cycle/files/actual, backlog/ready/doing show key_files/deps/
+      # acceptance via hero-document, hero-link, hero-check icons.
+      assert html =~ "5 criteria"
+      assert html =~ "0 issues"
+      assert html =~ "cycle 1h 24m"
+      assert html =~ "actual: medium"
+      assert html =~ "hero-clock"
+      assert html =~ "hero-check-badge"
 
-      # Diff colors and tokens
-      assert html =~ "+142"
-      assert html =~ "−38"
-      assert html =~ "47/47"
+      # Red open-dependency chip + green 0-issues chip still rely on the
+      # status tokens, so the color-token coverage from the previous test
+      # is preserved.
       assert html =~ "var(--st-done)"
       assert html =~ "var(--st-blocked)"
+
+      # Hook-execution state and raw diff stats must NEVER appear — the
+      # real TaskCard does not surface them and the mini-board mocks must
+      # not regress to fabricating them.
+      refute html =~ "before_doing"
+      refute html =~ "+142"
+      refute html =~ "47/47"
     end
 
     test "renders agent avatars as 4px-radius squares and human avatars as circles" do

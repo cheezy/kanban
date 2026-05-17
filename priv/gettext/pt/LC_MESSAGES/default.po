@@ -48,7 +48,7 @@ msgstr " · Gerenciamento de Tarefas"
 #: lib/kanban_web/components/board_header.ex:72
 #: lib/kanban_web/components/board_pulse_card.ex:149
 #: lib/kanban_web/components/goal_progress_header.ex:223
-#: lib/kanban_web/components/marketing_mini_board.ex:267
+#: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
 #: lib/kanban_web/live/goal_live/show.ex:261
@@ -2181,7 +2181,7 @@ msgid "Back to Dashboard"
 msgstr "Voltar ao painel"
 
 #: lib/kanban_web/components/goal_progress_header.ex:219
-#: lib/kanban_web/components/marketing_mini_board.ex:192
+#: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
 #: lib/kanban_web/live/goal_live/show.ex:257
@@ -2411,7 +2411,7 @@ msgstr "Análise de fila e tempo de espera"
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:148
 #: lib/kanban_web/components/goal_progress_header.ex:222
-#: lib/kanban_web/components/marketing_mini_board.ex:251
+#: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
 #: lib/kanban_web/live/goal_live/show.ex:260
@@ -3026,11 +3026,6 @@ msgstr ""
 msgid "must be one of the listed options"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_mini_board.ex:67
-#, elixir-autogen, elixir-format
-msgid "4 agents online"
-msgstr "4 agentes online"
-
 #: lib/kanban_web/components/marketing_components.ex:437
 #, elixir-autogen, elixir-format
 msgid "A new contract"
@@ -3045,11 +3040,6 @@ msgstr "Os agentes de IA são colegas de equipa de pleno direito,"
 #, elixir-autogen, elixir-format
 msgid "API · Docs · Changelog"
 msgstr "API · Documentação · Changelog"
-
-#: lib/kanban_web/components/marketing_mini_board.ex:272
-#, elixir-autogen, elixir-format
-msgid "Add before_review hook (PR creation)"
-msgstr "Adicionar hook before_review (criação de PR)"
 
 #: lib/kanban_web/components/marketing_closing.ex:52
 #, elixir-autogen, elixir-format
@@ -3070,11 +3060,6 @@ msgstr "Um agente reclama-a"
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr "Atómico. SKIP LOCKED. Só um agente a obtém. Faz pull das alterações mais recentes, prepara o ambiente e implementa."
-
-#: lib/kanban_web/components/marketing_mini_board.ex:256
-#, elixir-autogen, elixir-format
-msgid "Capability filter on claim endpoint"
-msgstr "Filtro de capacidades no endpoint de claim"
 
 #: lib/kanban_web/components/marketing_components.ex:576
 #, elixir-autogen, elixir-format, fuzzy
@@ -3109,7 +3094,7 @@ msgstr "Diff, testes, aceitação, telemetria dos hooks — num só painel. Apro
 #: lib/kanban_web/components/board_header.ex:70
 #: lib/kanban_web/components/board_pulse_card.ex:147
 #: lib/kanban_web/components/goal_progress_header.ex:221
-#: lib/kanban_web/components/marketing_mini_board.ex:230
+#: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
 #: lib/kanban_web/live/goal_live/show.ex:259
@@ -3182,11 +3167,6 @@ msgstr "Como funciona"
 msgid "Humans get a fast, calm board to plan and review. Agents get an API rich enough to ship without asking. The same board feels native to both."
 msgstr "Os humanos têm um quadro rápido e tranquilo para planear e rever. Os agentes têm uma API suficientemente rica para entregar sem pedir. O mesmo quadro parece nativo a ambos."
 
-#: lib/kanban_web/components/marketing_mini_board.ex:242
-#, elixir-autogen, elixir-format
-msgid "Inline TaskDetail panel"
-msgstr "Painel TaskDetail integrado"
-
 #: lib/kanban_web/components/marketing_closing.ex:54
 #, elixir-autogen, elixir-format
 msgid "Median time to human review"
@@ -3202,7 +3182,7 @@ msgstr "A maioria das ferramentas acopla a IA como uma barra lateral. O Stride f
 msgid "One loop. Two roles."
 msgstr "Um ciclo. Dois papéis."
 
-#: lib/kanban_web/components/marketing_mini_board.ex:216
+#: lib/kanban_web/components/marketing_mini_board.ex:220
 #, elixir-autogen, elixir-format
 msgid "Persist field_visibility on board edit"
 msgstr "Persistir field_visibility na edição do quadro"
@@ -3239,7 +3219,7 @@ msgstr "Ler a API para agentes"
 
 #: lib/kanban_web/components/goal_progress_header.ex:220
 #: lib/kanban_web/components/goal_sidebar.ex:64
-#: lib/kanban_web/components/marketing_mini_board.ex:211
+#: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
 #: lib/kanban_web/live/goal_live/show.ex:258
@@ -3257,11 +3237,6 @@ msgstr "Métricas reais que incluem IA"
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr "Revisão à velocidade da aprovação"
-
-#: lib/kanban_web/components/marketing_mini_board.ex:222
-#, elixir-autogen, elixir-format
-msgid "Rotate API tokens without breaking claims"
-msgstr "Rodar tokens da API sem quebrar claims"
 
 #: lib/kanban_web/components/auth_frame.ex:144
 #: lib/kanban_web/components/marketing_closing.ex:163
@@ -3300,7 +3275,7 @@ msgstr "Começar grátis"
 msgid "Stop writing every line."
 msgstr "Pare de escrever cada linha."
 
-#: lib/kanban_web/components/marketing_mini_board.ex:235
+#: lib/kanban_web/components/marketing_mini_board.ex:247
 #, elixir-autogen, elixir-format
 msgid "Stream task_moved via PubSub"
 msgstr "Transmitir task_moved via PubSub"
@@ -3367,11 +3342,6 @@ msgstr "Você escreve a tarefa"
 msgid "approving them."
 msgstr "aprovando-as."
 
-#: lib/kanban_web/components/marketing_mini_board.ex:238
-#, elixir-autogen, elixir-format
-msgid "before_doing · ok"
-msgstr "before_doing · ok"
-
 #: lib/kanban_web/components/marketing_components.ex:587
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
@@ -3386,11 +3356,6 @@ msgstr "mix test, gh pr create, o que quer que coloque em .stride.md. Você tem 
 #, elixir-autogen, elixir-format
 msgid "not bots you babysit."
 msgstr "não bots que tem de vigiar."
-
-#: lib/kanban_web/components/marketing_mini_board.ex:245
-#, elixir-autogen, elixir-format
-msgid "running"
-msgstr "em execução"
 
 #: lib/kanban_web/components/marketing_components.ex:187
 #, elixir-autogen, elixir-format
@@ -5944,7 +5909,7 @@ msgstr ""
 msgid "At least 12 characters"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_mini_board.ex:197
+#: lib/kanban_web/components/marketing_mini_board.ex:193
 #, elixir-autogen, elixir-format
 msgid "Audit log for column reordering"
 msgstr ""
@@ -6042,11 +6007,6 @@ msgstr ""
 #: lib/kanban_web/live/user_live/registration.ex:112
 #, elixir-autogen, elixir-format
 msgid "I agree to the"
-msgstr ""
-
-#: lib/kanban_web/components/marketing_mini_board.ex:203
-#, elixir-autogen, elixir-format
-msgid "Inline goal progress on backlog cards"
 msgstr ""
 
 #: lib/kanban_web/components/auth_frame.ex:318
@@ -6253,3 +6213,58 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "— including the agent-action attribution clause."
 msgstr ""
+
+#: lib/kanban_web/components/marketing_mini_board.ex:275
+#, elixir-autogen, elixir-format
+msgid "Add after_goal to hook-metadata serializer"
+msgstr "Adicionar after_goal ao serializador de metadados de hooks"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:203
+#, elixir-autogen, elixir-format
+msgid "Audit untranslated strings in shared chrome"
+msgstr "Auditar strings não traduzidas no chrome compartilhado"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:257
+#, elixir-autogen, elixir-format
+msgid "Replace blue link styling in marketing templates"
+msgstr "Substituir o estilo azul dos links nos templates de marketing"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:230
+#, elixir-autogen, elixir-format
+msgid "Reuse existing large task when splitting fails"
+msgstr "Reutilizar a tarefa grande existente quando a divisão falhar"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:293
+#, elixir-autogen, elixir-format
+msgid "Rewrite UserLive.Settings per board-settings design"
+msgstr "Reescrever UserLive.Settings conforme o design de board-settings"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:280
+#, elixir-autogen, elixir-format
+msgid "0 issues"
+msgstr "0 problemas"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:281
+#, elixir-autogen, elixir-format
+msgid "4 files"
+msgstr "4 arquivos"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:279
+#, elixir-autogen, elixir-format
+msgid "5 criteria"
+msgstr "5 critérios"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:298
+#, elixir-autogen, elixir-format
+msgid "6 files"
+msgstr "6 arquivos"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:299
+#, elixir-autogen, elixir-format
+msgid "actual: medium"
+msgstr "real: médio"
+
+#: lib/kanban_web/components/marketing_mini_board.ex:297
+#, elixir-autogen, elixir-format
+msgid "cycle 1h 24m"
+msgstr "ciclo 1h 24m"

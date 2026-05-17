@@ -1279,7 +1279,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
     end
 
     test "returns N/A for binary inputs" do
-      assert Dashboard.format_hours(:erlang.term_to_binary(0)) == "N/A"
+      assert :erlang.term_to_binary(0) |> Dashboard.format_hours() == "N/A"
     end
   end
 

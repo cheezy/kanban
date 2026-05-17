@@ -1,6 +1,6 @@
 defmodule KanbanWeb.MarketingMiniBoard do
   @moduledoc """
-  Standalone visual mock of a 4-column Stride Kanban board, rendered inside
+  Standalone visual mock of a 5-column Stride Kanban board, rendered inside
   the landing-page hero. Lives in its own module so the parent
   `KanbanWeb.MarketingComponents` stays under the project's 500-line module
   size guideline.
@@ -57,78 +57,71 @@ defmodule KanbanWeb.MarketingMiniBoard do
           </span>
           {gettext("Stride core")}
         </span>
-        <span class="flex-1"></span>
-        <span
-          class="inline-flex items-center gap-1.5 text-[10.5px]"
-          style="color: var(--st-done);"
-        >
-          <span class="rounded-full" style="width: 5px; height: 5px; background: currentColor;">
-          </span>
-          {gettext("4 agents online")}
-        </span>
       </div>
 
       <div
-        class="grid"
-        style="grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line);"
+        class="grid p-2 gap-2"
+        style="grid-template-columns: repeat(5, 1fr); background: var(--surface-sunken);"
       >
-        <div :for={col <- @columns} style="background: var(--surface);">
+        <div
+          :for={col <- @columns}
+          class="rounded-lg p-2"
+          style="background: linear-gradient(to bottom right, var(--surface-2), var(--surface-sunken)); border: 1px solid var(--line); box-shadow: var(--shadow-sm);"
+        >
           <div
-            class="flex items-center gap-1.5 px-2.5 py-1.5"
-            style="border-bottom: 1px solid var(--line);"
+            class="flex items-center gap-2"
+            style="padding: 4px 4px 6px 4px; border-bottom: 1px solid var(--line); margin-bottom: 6px;"
           >
             <span
-              class="rounded-full"
-              style={"width: 7px; height: 7px; background: var(--st-#{col.id});"}
+              aria-hidden="true"
+              style={"width: 8px; height: 8px; border-radius: 50%; background: var(--st-#{col.id}); flex-shrink: 0;"}
             >
             </span>
-            <span class="text-[11.5px] font-semibold">{col.name}</span>
-            <span class="text-[10.5px]" style="font-family: var(--font-mono); color: var(--ink-3);">
+            <span
+              class="text-[11.5px] font-semibold"
+              style="letter-spacing: -0.005em; color: var(--ink);"
+            >
+              {col.name}
+            </span>
+            <span
+              class="text-[10.5px]"
+              style="font-family: var(--font-mono); color: var(--ink-3); background: var(--surface); padding: 0 5px; border-radius: 3px; font-weight: 500;"
+            >
               {col.count}
             </span>
           </div>
-          <div class="flex flex-col gap-1.5 p-1.5">
-            <div
+          <div class="flex flex-col gap-1.5">
+            <article
               :for={task <- col.tasks}
-              class="flex flex-col gap-[3px] p-[6px_7px]"
-              style="background: var(--surface); border: 1px solid var(--line); border-radius: 5px;"
+              class="flex flex-col gap-1.5 p-[8px_10px]"
+              style="background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow-sm); border-left: 1px solid var(--line);"
             >
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1.5" style="min-height: 16px; padding-left: 10px;">
                 <.mini_type_icon />
                 <span
-                  class="text-[9.5px]"
+                  class="text-[10.5px] ident"
                   style="font-family: var(--font-mono); color: var(--ink-3); letter-spacing: -0.01em;"
                 >
                   {task.id}
                 </span>
                 <.mini_priority_dot level={task.priority} />
-                <span class="flex-1"></span>
+              </div>
+              <div class="flex items-start gap-1.5">
+                <div
+                  class="text-[11px] font-medium flex-1 min-w-0"
+                  style="line-height: 1.35; letter-spacing: -0.005em; color: var(--ink);"
+                >
+                  {task.title}
+                </div>
                 <Avatar.avatar
                   kind={task.who.kind}
                   name={task.who.name}
                   palette={task.who.palette}
-                  size={14}
+                  size={16}
                 />
               </div>
-              <div class="text-[10.5px] font-medium" style="line-height: 1.3;">
-                {task.title}
-              </div>
-              <div
-                :if={Map.get(task, :hook)}
-                class="text-[9.5px]"
-                style="color: var(--st-doing); font-family: var(--font-mono);"
-              >
-                {task.hook}
-              </div>
-              <div
-                :if={Map.get(task, :diff_plus)}
-                class="text-[9.5px]"
-                style="color: var(--ink-3); font-family: var(--font-mono);"
-              >
-                <span style="color: var(--st-done);">{task.diff_plus}</span>
-                <span style="color: var(--st-blocked);">{task.diff_minus}</span> · {task.tests} ✓
-              </div>
-            </div>
+              <.mini_meta_row :if={Map.get(task, :meta, []) != []} items={task.meta} />
+            </article>
           </div>
         </div>
       </div>
@@ -157,6 +150,25 @@ defmodule KanbanWeb.MarketingMiniBoard do
     """
   end
 
+  attr :items, :list, required: true
+
+  defp mini_meta_row(assigns) do
+    ~H"""
+    <div
+      class="flex items-center gap-2 flex-wrap text-[9.5px]"
+      style="color: var(--ink-3);"
+    >
+      <span
+        :for={item <- @items}
+        class="inline-flex items-center gap-[3px]"
+        style={"color: #{Map.get(item, :color, "var(--ink-3)")};"}
+      >
+        <.icon :if={Map.get(item, :icon)} name={item.icon} class="w-2.5 h-2.5" />{item.text}
+      </span>
+    </div>
+    """
+  end
+
   attr :level, :string, required: true
 
   defp mini_priority_dot(assigns) do
@@ -172,6 +184,33 @@ defmodule KanbanWeb.MarketingMiniBoard do
   defp mini_board_columns do
     [
       %{
+        id: :backlog,
+        name: gettext("Backlog"),
+        count: 24,
+        tasks: [
+          %{
+            id: "W201",
+            title: gettext("Audit log for column reordering"),
+            priority: "medium",
+            who: %{name: "Jamie K", kind: :human, palette: "human-green"},
+            meta: [
+              %{icon: "hero-document", text: "2"},
+              %{icon: "hero-check", text: "4"}
+            ]
+          },
+          %{
+            id: "W202",
+            title: gettext("Audit untranslated strings in shared chrome"),
+            priority: "high",
+            who: %{name: "Rohan S", kind: :human, palette: "human-green"},
+            meta: [
+              %{icon: "hero-document", text: "5"},
+              %{icon: "hero-link", text: "1", color: "var(--st-blocked)"}
+            ]
+          }
+        ]
+      },
+      %{
         id: :ready,
         name: gettext("Ready"),
         count: 8,
@@ -180,13 +219,21 @@ defmodule KanbanWeb.MarketingMiniBoard do
             id: "W198",
             title: gettext("Persist field_visibility on board edit"),
             priority: "high",
-            who: %{name: "Jamie K", kind: :human, palette: "human-green"}
+            who: %{name: "Jamie K", kind: :human, palette: "human-green"},
+            meta: [
+              %{icon: "hero-document", text: "3"},
+              %{icon: "hero-check", text: "6"}
+            ]
           },
           %{
             id: "W199",
-            title: gettext("Rotate API tokens without breaking claims"),
+            title: gettext("Reuse existing large task when splitting fails"),
             priority: "critical",
-            who: %{name: "Rohan S", kind: :human, palette: "human-green"}
+            who: %{name: "Rohan S", kind: :human, palette: "human-green"},
+            meta: [
+              %{icon: "hero-document", text: "2"},
+              %{icon: "hero-check", text: "5"}
+            ]
           }
         ]
       },
@@ -200,14 +247,21 @@ defmodule KanbanWeb.MarketingMiniBoard do
             title: gettext("Stream task_moved via PubSub"),
             priority: "high",
             who: %{name: "Claude", kind: :agent, palette: "agent-claude"},
-            hook: gettext("before_doing · ok")
+            meta: [
+              %{icon: "hero-document", text: "3"},
+              %{icon: "hero-check", text: "5"}
+            ]
           },
           %{
             id: "W194",
-            title: gettext("Inline TaskDetail panel"),
+            title: gettext("Replace blue link styling in marketing templates"),
             priority: "medium",
             who: %{name: "Cursor", kind: :agent, palette: "agent-cursor"},
-            hook: gettext("running")
+            meta: [
+              %{icon: "hero-document", text: "4"},
+              %{icon: "hero-link", text: "1", color: "var(--st-blocked)"},
+              %{icon: "hero-check", text: "3"}
+            ]
           }
         ]
       },
@@ -218,12 +272,14 @@ defmodule KanbanWeb.MarketingMiniBoard do
         tasks: [
           %{
             id: "W189",
-            title: gettext("Capability filter on claim endpoint"),
+            title: gettext("Add after_goal to hook-metadata serializer"),
             priority: "high",
             who: %{name: "Claude", kind: :agent, palette: "agent-claude"},
-            diff_plus: "+142",
-            diff_minus: "−38",
-            tests: "47/47"
+            meta: [
+              %{icon: "hero-check", text: gettext("5 criteria")},
+              %{icon: "hero-check-badge", text: gettext("0 issues"), color: "var(--st-done)"},
+              %{icon: "hero-document", text: gettext("4 files")}
+            ]
           }
         ]
       },
@@ -234,9 +290,14 @@ defmodule KanbanWeb.MarketingMiniBoard do
         tasks: [
           %{
             id: "W185",
-            title: gettext("Add before_review hook (PR creation)"),
+            title: gettext("Rewrite UserLive.Settings per board-settings design"),
             priority: "high",
-            who: %{name: "Claude", kind: :agent, palette: "agent-claude"}
+            who: %{name: "Claude", kind: :agent, palette: "agent-claude"},
+            meta: [
+              %{icon: "hero-clock", text: gettext("cycle 1h 24m")},
+              %{icon: "hero-document", text: gettext("6 files")},
+              %{icon: nil, text: gettext("actual: medium")}
+            ]
           }
         ]
       }
