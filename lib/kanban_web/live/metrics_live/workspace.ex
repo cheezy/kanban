@@ -59,10 +59,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       >
         <header
           data-metrics-header
-          style={[
-            "display: flex; align-items: baseline; gap: 12px;",
-            "padding: 20px 28px 8px;"
-          ]}
+          class="flex flex-wrap items-baseline gap-3 px-3 md:px-7 pt-5 pb-2"
         >
           <h1 style={[
             "margin: 0;",
@@ -81,16 +78,12 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           <.toolbar_button label={gettext("Filter")} />
         </header>
 
-        <div style={[
-          "flex: 1; overflow-y: auto;",
-          "padding: 8px 28px 28px;",
-          "display: flex; flex-direction: column; gap: 14px;"
-        ]}>
+        <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
           <MetricsKpiStrip.kpi_strip kpis={@kpis} />
 
           <MetricsCycleTimeChart.cycle_time_chart data={@cycle_series} />
 
-          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px;">
+          <div class="flex flex-col md:grid md:grid-cols-[1.4fr_1fr] gap-3.5">
             <MetricsThroughputChart.throughput_chart series={@throughput_series} />
             <MetricsAgentLeaderboard.leaderboard rows={@leaderboard} />
           </div>

@@ -35,11 +35,10 @@ defmodule KanbanWeb.MetricsKpiStrip do
     ~H"""
     <dl
       data-metrics-kpi-strip
+      class="grid grid-cols-2 md:grid-cols-4 m-0 p-0 overflow-hidden"
       style={[
-        "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));",
-        "margin: 0; padding: 0;",
         "background: var(--surface);",
-        "border: 1px solid var(--line); border-radius: 8px; overflow: hidden;"
+        "border: 1px solid var(--line); border-radius: 8px;"
       ]}
     >
       <.cell

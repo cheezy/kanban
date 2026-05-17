@@ -41,8 +41,10 @@ defmodule KanbanWeb.MetricsKpiStripTest do
       end
     end
 
-    test "uses a 4-column CSS grid" do
-      assert render_strip(%{}) =~ "grid-template-columns: repeat(4, minmax(0, 1fr))"
+    test "uses a 2-column mobile grid that expands to 4 columns at md+" do
+      html = render_strip(%{})
+      # Tailwind responsive class — 2-up on mobile, 4-up at md+.
+      assert html =~ "grid grid-cols-2 md:grid-cols-4"
     end
 
     test "renders the four English labels" do
