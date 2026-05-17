@@ -5,92 +5,92 @@
   page_title={gettext("Resources & How-Tos")}
 >
   <div class="flex flex-col py-[18px]" data-resources-index>
-  <header class="px-7 pb-1.5 flex flex-col gap-1">
-    <h1
-      class="m-0 text-[18px] font-semibold tracking-tight"
-      style="color: var(--ink);"
-    >
-      {gettext("Resources & How-Tos")}
-    </h1>
-    <p
-      class="m-0 text-[12.5px] font-mono"
-      style="color: var(--ink-3);"
-    >
-      {gettext("Learn how to get the most out of Stride with our guides and tutorials.")}
-    </p>
-  </header>
+    <header class="px-7 pb-1.5 flex flex-col gap-1">
+      <h1
+        class="m-0 text-[18px] font-semibold tracking-tight"
+        style="color: var(--ink);"
+      >
+        {gettext("Resources & How-Tos")}
+      </h1>
+      <p
+        class="m-0 text-[12.5px] font-mono"
+        style="color: var(--ink-3);"
+      >
+        {gettext("Learn how to get the most out of Stride with our guides and tutorials.")}
+      </p>
+    </header>
 
-  <div class="px-7 pt-[18px] pb-7 flex flex-col gap-[18px]">
-    <div class="flex flex-col gap-[14px]">
-      <.search_bar value={@search_query} />
+    <div class="px-7 pt-[18px] pb-7 flex flex-col gap-[18px]">
+      <div class="flex flex-col gap-[14px]">
+        <.search_bar value={@search_query} />
 
-      <div class="flex flex-wrap items-center justify-center gap-[14px]">
-        <.tag_filter tags={@all_tags} selected={@selected_tags} />
+        <div class="flex flex-wrap items-center justify-center gap-[14px]">
+          <.tag_filter tags={@all_tags} selected={@selected_tags} />
 
-        <div class="flex items-center gap-2">
-          <label
-            for="sort"
-            class="text-[11.5px] font-mono"
-            style="color: var(--ink-3);"
+          <div class="flex items-center gap-2">
+            <label
+              for="sort"
+              class="text-[11.5px] font-mono"
+              style="color: var(--ink-3);"
+            >
+              {gettext("Sort:")}
+            </label>
+            <select
+              id="sort"
+              name="sort_by"
+              phx-change="sort"
+              class="px-2.5 py-1.5 text-[13px]"
+              style={[
+                "background: var(--surface);",
+                "color: var(--ink);",
+                "border: 1px solid var(--line);",
+                "border-radius: var(--r-md);"
+              ]}
+            >
+              <option value="relevance" selected={@sort_by == "relevance"}>
+                {gettext("Most Relevant")}
+              </option>
+              <option value="newest" selected={@sort_by == "newest"}>
+                {gettext("Newest")}
+              </option>
+              <option value="a-z" selected={@sort_by == "a-z"}>
+                {gettext("A-Z")}
+              </option>
+            </select>
+          </div>
+
+          <button
+            :if={@search_query != "" or @selected_tags != []}
+            phx-click="clear_filters"
+            type="button"
+            class="inline-flex items-center gap-1 px-2 py-1 text-[11.5px] bg-transparent border-none cursor-pointer"
+            style="color: var(--stride-orange);"
           >
-            {gettext("Sort:")}
-          </label>
-          <select
-            id="sort"
-            name="sort_by"
-            phx-change="sort"
-            class="px-2.5 py-1.5 text-[13px]"
-            style={[
-              "background: var(--surface);",
-              "color: var(--ink);",
-              "border: 1px solid var(--line);",
-              "border-radius: var(--r-md);"
-            ]}
-          >
-            <option value="relevance" selected={@sort_by == "relevance"}>
-              {gettext("Most Relevant")}
-            </option>
-            <option value="newest" selected={@sort_by == "newest"}>
-              {gettext("Newest")}
-            </option>
-            <option value="a-z" selected={@sort_by == "a-z"}>
-              {gettext("A-Z")}
-            </option>
-          </select>
+            <.icon name="hero-x-mark" class="h-3 w-3" />
+            {gettext("Clear filters")}
+          </button>
         </div>
-
-        <button
-          :if={@search_query != "" or @selected_tags != []}
-          phx-click="clear_filters"
-          type="button"
-          class="inline-flex items-center gap-1 px-2 py-1 text-[11.5px] bg-transparent border-none cursor-pointer"
-          style="color: var(--stride-orange);"
-        >
-          <.icon name="hero-x-mark" class="h-3 w-3" />
-          {gettext("Clear filters")}
-        </button>
       </div>
-    </div>
 
-    <div
-      class="text-center text-[11.5px] font-mono"
-      style="color: var(--ink-3);"
-    >
-      {ngettext(
-        "Showing %{count} guide",
-        "Showing %{count} guides",
-        length(@filtered_how_tos),
-        count: length(@filtered_how_tos)
-      )}
-    </div>
-
-    <%= if Enum.empty?(@filtered_how_tos) do %>
-      <.empty_state />
-    <% else %>
-      <div class="grid gap-[18px] grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-        <.resource_card :for={how_to <- @filtered_how_tos} how_to={how_to} />
+      <div
+        class="text-center text-[11.5px] font-mono"
+        style="color: var(--ink-3);"
+      >
+        {ngettext(
+          "Showing %{count} guide",
+          "Showing %{count} guides",
+          length(@filtered_how_tos),
+          count: length(@filtered_how_tos)
+        )}
       </div>
-    <% end %>
-  </div>
+
+      <%= if Enum.empty?(@filtered_how_tos) do %>
+        <.empty_state />
+      <% else %>
+        <div class="grid gap-[18px] grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+          <.resource_card :for={how_to <- @filtered_how_tos} how_to={how_to} />
+        </div>
+      <% end %>
+    </div>
   </div>
 </Layouts.app>

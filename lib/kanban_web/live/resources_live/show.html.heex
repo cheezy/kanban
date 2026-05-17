@@ -8,7 +8,7 @@
     </.link>
     <span style="color: var(--ink-4); margin: 0 6px;">/</span>
     <span style="color: var(--ink); font-weight: 500;">
-      <%= if @how_to, do: @how_to.title, else: gettext("Not found") %>
+      {if @how_to, do: @how_to.title, else: gettext("Not found")}
     </span>
   </:breadcrumbs>
 

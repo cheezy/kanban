@@ -178,8 +178,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
           if(tag in @selected,
             do:
               "background: var(--stride-orange); color: white; border: 1px solid var(--stride-orange);",
-            else:
-              "background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);"
+            else: "background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);"
           )
         ]}
       >
