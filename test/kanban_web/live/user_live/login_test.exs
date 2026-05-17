@@ -8,11 +8,39 @@ defmodule KanbanWeb.UserLive.LoginTest do
     test "renders login page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      assert html =~ "Welcome Back"
-      assert html =~ "Sign up"
-      assert html =~ "Log in"
-      assert html =~ "Stay logged in"
-      assert html =~ "Forgot your password?"
+      assert html =~ "Sign in"
+      assert html =~ "Create an account"
+      assert html =~ "Keep me signed in"
+      assert html =~ "Forgot?"
+    end
+
+    test "renders inside the editorial auth_frame", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      # The auth_frame brand panel renders the rotating signin quote and
+      # the warm gradient — both unique to the new design's 2-column shell.
+      assert html =~ "Agents finally have somewhere good to work."
+      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+    end
+
+    test "renders the three SSO rows (Google, GitHub, SAML)", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      assert html =~ "Continue with"
+      assert html =~ "Google"
+      assert html =~ "GitHub"
+      assert html =~ "SSO (SAML)"
+    end
+
+    test "no blue Tailwind classes inside the login surface", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      # Scope to the <main> auth-frame column (the surrounding NavComponents
+      # still has blue hover states — covered by W665 in the same goal).
+      [_, main_and_after] = String.split(html, ~r/<main[^>]*>/, parts: 2)
+      [main, _] = String.split(main_and_after, "</main>", parts: 2)
+
+      refute main =~ ~r/(text|bg|from|to|border)-blue-\d+/
     end
   end
 
@@ -54,7 +82,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Sign up")
+        |> element("main a", "Create an account")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/register")
 
@@ -73,7 +101,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
 
       assert html =~ "You need to reauthenticate"
       refute html =~ "Register"
-      assert html =~ "Log in"
+      assert html =~ "Sign in"
 
       assert html =~
                ~s(<input type="email" name="user[email]" id="login_form_password_email" value="#{user.email}")

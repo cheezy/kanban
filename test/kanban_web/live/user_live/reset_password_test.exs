@@ -101,7 +101,8 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert conn.resp_body =~ "Welcome Back"
+      # Login page title was updated to "Sign in" in W652 per design auth.jsx:296.
+      assert conn.resp_body =~ "Sign in"
     end
   end
 end

@@ -36,11 +36,17 @@ defmodule KanbanWeb.UserLive.AuthDesignTest do
   end
 
   describe "log-in page" do
-    test "renders the shared card framing", %{conn: conn} do
+    # NOTE: The W642-style shared-card-chrome assertions no longer apply to
+    # the log-in page — it was rewritten in W652 to use the editorial
+    # auth_frame from design_handoff_stride/design_source/screens/auth.jsx.
+    # This whole file is slated for deletion in W657. Until then, this test
+    # asserts on the new design markers instead of the deprecated chrome.
+    test "renders the editorial auth_frame with Sign in title", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      assert_shared_card_chrome(html, "log-in")
-      assert html =~ "Welcome Back"
+      assert html =~ "Sign in"
+      # The auth_frame brand panel renders the rotating signin quote
+      assert html =~ "Agents finally have somewhere good to work."
     end
   end
 
