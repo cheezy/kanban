@@ -313,7 +313,7 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
 
         <span
-          class="inline-flex items-center gap-1.5 ml-1.5 text-xs"
+          class="inline-flex items-center gap-1.5 md:ml-1.5 text-xs"
           style="color: var(--ink-3);"
         >
           <.icon name="hero-check" class="w-2.5 h-2.5" />
@@ -321,7 +321,10 @@ defmodule KanbanWeb.MarketingComponents do
         </span>
       </div>
 
-      <div class="mt-10 md:mt-16 overflow-x-auto md:overflow-x-visible" style="max-width: 1200px;">
+      <div
+        class="mt-10 md:mt-16 overflow-x-auto md:overflow-x-visible pb-3 md:pb-0 [mask-image:linear-gradient(to_right,black_calc(100%-32px),transparent_100%)] md:[mask-image:none]"
+        style="max-width: 1200px;"
+      >
         <div class="min-w-[640px] md:min-w-0">
           <.marketing_mini_board />
         </div>
