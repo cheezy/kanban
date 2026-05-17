@@ -152,21 +152,38 @@ defmodule KanbanWeb.Layouts do
 
       <div style={[
         "padding: 10px; border-top: 1px solid var(--line);",
-        "display: flex; align-items: center; gap: 8px;"
+        "display: flex; flex-direction: column; gap: 8px;"
       ]}>
         <%= if @current_scope && @current_scope.user do %>
-          <span style={[
-            "width: 24px; height: 24px; border-radius: 50%;",
-            "background: var(--stride-orange-soft); color: var(--stride-orange-ink);",
-            "display: inline-flex; align-items: center; justify-content: center;",
-            "font-size: 10px; font-weight: 600;"
-          ]}>
-            {user_initials(@current_scope.user)}
-          </span>
-          <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
-            <span style="font-size: 12px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <span style={[
+              "width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;",
+              "background: var(--stride-orange-soft); color: var(--stride-orange-ink);",
+              "display: inline-flex; align-items: center; justify-content: center;",
+              "font-size: 10px; font-weight: 600;"
+            ]}>
+              {user_initials(@current_scope.user)}
+            </span>
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;">
               {user_display_name(@current_scope.user)}
             </span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <.link
+              navigate={~p"/users/settings"}
+              aria-label={gettext("Settings")}
+              title={gettext("Settings")}
+              style={[
+                "display: inline-flex; align-items: center; justify-content: center;",
+                "width: 24px; height: 24px; border-radius: 5px;",
+                "color: #{if @active == :settings, do: "var(--stride-orange)", else: "var(--ink-3)"};",
+                "background: #{if @active == :settings, do: "var(--surface)", else: "transparent"};",
+                "box-shadow: #{if @active == :settings, do: "inset 0 0 0 1px var(--line)", else: "none"};",
+                "text-decoration: none;"
+              ]}
+            >
+              <.icon name="hero-cog-6-tooth" class="w-4 h-4" />
+            </.link>
             <a
               href={~p"/users/log-out"}
               data-method="delete"
@@ -268,13 +285,6 @@ defmodule KanbanWeb.Layouts do
         label: gettext("Resources"),
         icon: "hero-book-open",
         path: "/resources",
-        badge: nil
-      },
-      %{
-        id: :settings,
-        label: gettext("Settings"),
-        icon: "hero-cog-6-tooth",
-        path: "/users/settings",
         badge: nil
       }
     ]

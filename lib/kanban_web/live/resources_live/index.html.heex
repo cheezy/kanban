@@ -1,40 +1,24 @@
-<div
-  class="stride-screen"
-  data-resources-index
-  style="display: flex; flex-direction: column; min-height: 100vh; padding: 18px 0;"
->
-  <header style={[
-    "padding: 0 28px 6px;",
-    "display: flex; flex-direction: column; gap: 4px;"
-  ]}>
-    <h1 style={[
-      "margin: 0;",
-      "font-size: 18px; font-weight: 600;",
-      "letter-spacing: -0.01em;",
-      "color: var(--ink);"
-    ]}>
+<div class="stride-screen flex flex-col min-h-screen py-[18px]" data-resources-index>
+  <header class="px-7 pb-1.5 flex flex-col gap-1">
+    <h1 class="m-0 text-[18px] font-semibold tracking-tight text-base-content">
       {gettext("Resources & How-Tos")}
     </h1>
-    <p style={[
-      "margin: 0;",
-      "font-size: 12.5px; color: var(--ink-3);",
-      "font-family: var(--font-mono);"
-    ]}>
+    <p class="m-0 text-[12.5px] text-base-content opacity-60 font-mono">
       {gettext("Learn how to get the most out of Stride with our guides and tutorials.")}
     </p>
   </header>
 
-  <div style="padding: 18px 28px 28px; display: flex; flex-direction: column; gap: 18px;">
-    <div style="display: flex; flex-direction: column; gap: 14px;">
+  <div class="px-7 pt-[18px] pb-7 flex flex-col gap-[18px]">
+    <div class="flex flex-col gap-[14px]">
       <.search_bar value={@search_query} />
 
-      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px;">
+      <div class="flex flex-wrap items-center justify-center gap-[14px]">
         <.tag_filter tags={@all_tags} selected={@selected_tags} />
 
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="flex items-center gap-2">
           <label
             for="sort"
-            style="font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono);"
+            class="text-[11.5px] text-base-content opacity-60 font-mono"
           >
             {gettext("Sort:")}
           </label>
@@ -42,11 +26,7 @@
             id="sort"
             name="sort_by"
             phx-change="sort"
-            style={[
-              "padding: 6px 10px; font-size: 13px;",
-              "background: var(--surface); color: var(--ink);",
-              "border: 1px solid var(--line); border-radius: 6px;"
-            ]}
+            class="px-2.5 py-1.5 text-[13px] text-base-content bg-base-100 border border-base-300 rounded-md"
           >
             <option value="relevance" selected={@sort_by == "relevance"}>
               {gettext("Most Relevant")}
@@ -63,12 +43,8 @@
         <button
           :if={@search_query != "" or @selected_tags != []}
           phx-click="clear_filters"
-          style={[
-            "display: inline-flex; align-items: center; gap: 4px;",
-            "padding: 4px 8px;",
-            "font-size: 11.5px; color: var(--stride-orange);",
-            "background: transparent; border: none; cursor: pointer;"
-          ]}
+          type="button"
+          class="inline-flex items-center gap-1 px-2 py-1 text-[11.5px] text-primary bg-transparent border-none cursor-pointer"
         >
           <.icon name="hero-x-mark" class="h-3 w-3" />
           {gettext("Clear filters")}

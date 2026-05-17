@@ -125,12 +125,8 @@ defmodule KanbanWeb.ResourcesLive.Components do
       assign_new(assigns, :placeholder, fn -> gettext("Search for help...") end)
 
     ~H"""
-    <div style="position: relative; max-width: 36rem; margin: 0 auto;">
-      <div style={[
-        "position: absolute; inset-block: 0; left: 0;",
-        "padding-left: 12px; display: flex; align-items: center;",
-        "pointer-events: none; color: var(--ink-4);"
-      ]}>
+    <div class="relative max-w-xl mx-auto">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content opacity-40">
         <.icon name="hero-magnifying-glass" class="h-4 w-4" />
       </div>
       <input
@@ -140,14 +136,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
         placeholder={@placeholder}
         phx-keyup={@event}
         phx-debounce={@debounce}
-        style={[
-          "display: block; width: 100%;",
-          "padding: 10px 12px 10px 36px;",
-          "font-size: 13px; color: var(--ink);",
-          "background: var(--surface);",
-          "border: 1px solid var(--line); border-radius: 8px;",
-          "outline: none; transition: border-color 160ms ease;"
-        ]}
+        class="block w-full py-2.5 pr-3 pl-9 text-[13px] text-base-content bg-base-100 border border-base-300 rounded-lg outline-none transition-colors focus:border-primary"
       />
     </div>
     """
@@ -174,19 +163,20 @@ defmodule KanbanWeb.ResourcesLive.Components do
 
   def tag_filter(assigns) do
     ~H"""
-    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+    <div class="flex flex-wrap justify-center gap-2">
       <button
         :for={tag <- @tags}
+        type="button"
         phx-click={@event}
         phx-value-tag={tag}
         data-tag-filter-active={tag in @selected && "true"}
-        style={
-          if tag in @selected do
-            "padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; background: var(--stride-orange); color: white; border: 1px solid var(--stride-orange);"
-          else
-            "padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; background: var(--surface-sunken); color: var(--ink-2); border: 1px solid var(--line);"
-          end
-        }
+        class={[
+          "px-3 py-[5px] rounded-full text-xs font-medium cursor-pointer border transition-colors",
+          if(tag in @selected,
+            do: "bg-primary text-primary-content border-primary",
+            else: "bg-base-200 text-base-content opacity-80 border-base-300 hover:opacity-100"
+          )
+        ]}
       >
         {@format_tag_fn.(tag)}
       </button>
