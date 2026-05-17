@@ -18,7 +18,7 @@ defmodule KanbanWeb.UserLive.Login do
             {gettext("Don't have an account?")}
             <.link
               navigate={~p"/users/register"}
-              class="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+              class="font-semibold text-primary hover:underline"
               phx-no-format
             >{gettext("Sign up")}</.link>
             {gettext("for free.")}
@@ -54,7 +54,7 @@ defmodule KanbanWeb.UserLive.Login do
             type="checkbox"
             label={gettext("Stay logged in")}
           />
-          <.button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all mt-4">
+          <.button variant="primary" class="btn btn-primary w-full mt-4">
             {gettext("Log in")} <span aria-hidden="true">→</span>
           </.button>
         </.form>
@@ -62,7 +62,7 @@ defmodule KanbanWeb.UserLive.Login do
         <:footer>
           <.link
             href={~p"/users/forgot-password"}
-            class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            class="font-medium text-primary hover:underline"
           >
             {gettext("Forgot your password?")}
           </.link>

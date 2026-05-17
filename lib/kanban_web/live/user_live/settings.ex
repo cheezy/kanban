@@ -53,7 +53,11 @@ defmodule KanbanWeb.UserLive.Settings do
               autocomplete="username"
               required
             />
-            <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+            <.button
+              variant="primary"
+              class="btn btn-primary w-full mt-4"
+              phx-disable-with={gettext("Saving...")}
+            >
               {gettext("Update Profile")}
             </.button>
           </.form>
@@ -89,7 +93,11 @@ defmodule KanbanWeb.UserLive.Settings do
               label={gettext("Confirm new password")}
               autocomplete="new-password"
             />
-            <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+            <.button
+              variant="primary"
+              class="btn btn-primary w-full mt-4"
+              phx-disable-with={gettext("Saving...")}
+            >
               {gettext("Save Password")}
             </.button>
           </.form>
