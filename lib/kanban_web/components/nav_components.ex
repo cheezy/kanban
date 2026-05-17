@@ -1,6 +1,7 @@
 defmodule KanbanWeb.NavComponents do
   use Phoenix.Component
   use KanbanWeb, :verified_routes
+  use Gettext, backend: KanbanWeb.Gettext
 
   import Phoenix.Controller, only: [get_csrf_token: 0]
 
@@ -11,7 +12,11 @@ defmodule KanbanWeb.NavComponents do
     <div class="flex items-center">
       <.link href={~p"/"} class="flex items-center gap-3 group">
         <div class="flex items-center justify-center w-10 h-10 rounded-lg group-hover:scale-110 transition-transform">
-          <img src={~p"/images/logos/abstract-s-motion.svg"} alt="Stride Logo" class="w-10 h-10" />
+          <img
+            src={~p"/images/logos/abstract-s-motion.svg"}
+            alt={gettext("Stride Logo")}
+            class="w-10 h-10"
+          />
         </div>
         <span class="text-xl font-bold text-base-content hidden sm:block">
           {@brand_text}

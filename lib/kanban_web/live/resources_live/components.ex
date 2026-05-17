@@ -242,7 +242,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
                     <div>
                       <img
                         src={img.url}
-                        alt={img[:alt] || "Step #{index}: #{step.title}"}
+                        alt={img[:alt] || gettext("Step %{n}: %{title}", n: index, title: step.title)}
                         width={img[:width] || 640}
                         height={img[:height] || 360}
                         style={[
@@ -257,7 +257,10 @@ defmodule KanbanWeb.ResourcesLive.Components do
                           "margin: 6px 0 0; text-align: center;",
                           "font-size: 11px; color: var(--ink-4); font-style: italic;"
                         ]}>
-                          Placeholder - {img[:width] || 640} × {img[:height] || 360}px
+                          {gettext("Placeholder - %{w} × %{h}px",
+                            w: img[:width] || 640,
+                            h: img[:height] || 360
+                          )}
                         </p>
                       <% end %>
                     </div>
@@ -268,7 +271,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
                 <div style="margin-top: 18px;">
                   <img
                     src={step.image}
-                    alt={"Step #{index}: #{step.title}"}
+                    alt={gettext("Step %{n}: %{title}", n: index, title: step.title)}
                     width={step[:image_width] || 1280}
                     height={step[:image_height] || 720}
                     style={[
@@ -283,9 +286,10 @@ defmodule KanbanWeb.ResourcesLive.Components do
                       "margin: 6px 0 0; text-align: center;",
                       "font-size: 11px; color: var(--ink-4); font-style: italic;"
                     ]}>
-                      Placeholder image - Replace with actual screenshot ({step[:image_width] || 1280} × {step[
-                        :image_height
-                      ] || 720}px)
+                      {gettext("Placeholder image - Replace with actual screenshot (%{w} × %{h}px)",
+                        w: step[:image_width] || 1280,
+                        h: step[:image_height] || 720
+                      )}
                     </p>
                   <% end %>
                 </div>
@@ -338,10 +342,16 @@ defmodule KanbanWeb.ResourcesLive.Components do
       ]}
     >
       <.icon name={type_icon(@type)} class={(@size == :sm && "h-3 w-3") || "h-3.5 w-3.5"} />
-      {String.capitalize(@type)}
+      {type_label(@type)}
     </span>
     """
   end
+
+  defp type_label("guide"), do: gettext("Guide")
+  defp type_label("tutorial"), do: gettext("Tutorial")
+  defp type_label("reference"), do: gettext("Reference")
+  defp type_label("video"), do: gettext("Video")
+  defp type_label(other) when is_binary(other), do: String.capitalize(other)
 
   @doc """
   Renders reading time with clock icon.

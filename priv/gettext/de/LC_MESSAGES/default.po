@@ -914,7 +914,7 @@ msgid "About Tango"
 msgstr "Über Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:22
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:4917
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:60
 #: lib/kanban_web/controllers/page_html/tango.html.heex:22
 #: lib/kanban_web/controllers/page_html/tango.html.heex:190
 #, elixir-autogen, elixir-format
@@ -1945,7 +1945,7 @@ msgstr "Sind Sie sicher, dass Sie dieses Token löschen möchten?"
 msgid "Failed to delete token"
 msgstr "Token konnte nicht gelöscht werden"
 
-#: lib/kanban_web/live/resources_live/components.ex:366
+#: lib/kanban_web/live/resources_live/components.ex:376
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
@@ -1978,7 +1978,7 @@ msgstr ""
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:421
+#: lib/kanban_web/live/resources_live/components.ex:431
 #, elixir-autogen, elixir-format
 msgid "Clear all filters"
 msgstr ""
@@ -2014,12 +2014,12 @@ msgstr ""
 msgid "Newest"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:540
+#: lib/kanban_web/live/resources_live/components.ex:550
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:402
+#: lib/kanban_web/live/resources_live/components.ex:412
 #, elixir-autogen, elixir-format
 msgid "No guides found"
 msgstr ""
@@ -2029,7 +2029,7 @@ msgstr ""
 msgid "Not Found"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:506
+#: lib/kanban_web/live/resources_live/components.ex:516
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr ""
@@ -2093,7 +2093,7 @@ msgstr ""
 msgid "This task may have been deleted or you may not have permission to view it."
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:408
+#: lib/kanban_web/live/resources_live/components.ex:418
 #, elixir-autogen, elixir-format
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr ""
@@ -2109,12 +2109,12 @@ msgstr ""
 msgid "You are viewing this board in read-only mode"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:453
+#: lib/kanban_web/live/resources_live/components.ex:463
 #, elixir-autogen, elixir-format
 msgid "You're all set!"
 msgstr ""
 
-#: lib/kanban_web/live/resources_live/components.ex:456
+#: lib/kanban_web/live/resources_live/components.ex:466
 #, elixir-autogen, elixir-format
 msgid "You've completed all the steps in this guide."
 msgstr ""
@@ -6268,3 +6268,54 @@ msgstr "tatsächlich: mittel"
 #, elixir-autogen, elixir-format
 msgid "cycle 1h 24m"
 msgstr "Zyklus 1h 24m"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "All notable changes to the Kanban Board application will be documented in this file."
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:350
+#, elixir-autogen, elixir-format
+msgid "Guide"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:260
+#, elixir-autogen, elixir-format
+msgid "Placeholder - %{w} × %{h}px"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:289
+#, elixir-autogen, elixir-format
+msgid "Placeholder image - Replace with actual screenshot (%{w} × %{h}px)"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:352
+#, elixir-autogen, elixir-format
+msgid "Reference"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:245
+#: lib/kanban_web/live/resources_live/components.ex:274
+#, elixir-autogen, elixir-format
+msgid "Step %{n}: %{title}"
+msgstr ""
+
+#: lib/kanban_web/components/nav_components.ex:17
+#, elixir-autogen, elixir-format
+msgid "Stride Logo"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:351
+#, elixir-autogen, elixir-format
+msgid "Tutorial"
+msgstr ""
+
+#: lib/kanban_web/live/resources_live/components.ex:353
+#, elixir-autogen, elixir-format
+msgid "Video"
+msgstr ""
