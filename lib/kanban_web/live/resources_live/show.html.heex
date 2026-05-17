@@ -1,97 +1,132 @@
-<div class="min-h-screen bg-base-100">
+<div
+  class="stride-screen"
+  data-resources-show
+  style="display: flex; flex-direction: column; min-height: 100vh;"
+>
   <%= if @how_to do %>
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-b border-base-300/50">
-      <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Back Link -->
-        <div class="mb-8">
+    <div style={[
+      "background: var(--surface);",
+      "border-bottom: 1px solid var(--line);"
+    ]}>
+      <div style="max-width: 56rem; margin: 0 auto; padding: 32px 28px;">
+        <div style="margin-bottom: 18px;">
           <.link
             navigate={~p"/resources"}
-            class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 group"
+            style={[
+              "display: inline-flex; align-items: center; gap: 4px;",
+              "font-size: 12px; color: var(--stride-orange);",
+              "text-decoration: none;"
+            ]}
           >
-            <span class="group-hover:-translate-x-1 transition-transform">&larr;</span>
+            <.icon name="hero-arrow-left" class="h-3 w-3" />
             {gettext("Back to Resources")}
           </.link>
         </div>
-        
-<!-- Content Type Badge and Reading Time -->
-        <div class="flex items-center gap-2 mb-4">
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
           <.content_type_badge type={@how_to.content_type} />
           <.reading_time minutes={@how_to.reading_time} />
         </div>
-        
-<!-- Title -->
-        <h1 class="text-3xl sm:text-4xl font-bold text-base-content mb-4">
+
+        <h1 style={[
+          "margin: 0 0 12px;",
+          "font-size: 24px; font-weight: 600; letter-spacing: -0.015em;",
+          "color: var(--ink);"
+        ]}>
           {@how_to.title}
         </h1>
-        
-<!-- Description -->
-        <p class="text-lg text-base-content/70 max-w-prose">
+
+        <p
+          class="max-w-prose"
+          style="margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.5;"
+        >
           {@how_to.description}
         </p>
-        
-<!-- Tags -->
-        <div class="flex flex-wrap gap-2 mt-6">
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px;">
           <.link
             :for={tag <- @how_to.tags}
             navigate={~p"/resources?tag=#{tag}"}
-            class="px-3 py-1 rounded-full text-sm bg-base-100/80 dark:bg-base-100/60 text-base-content/70 hover:bg-base-200 transition-colors"
+            style={[
+              "padding: 4px 10px; border-radius: 999px;",
+              "background: var(--surface-sunken); color: var(--ink-2);",
+              "font-size: 11px; font-family: var(--font-mono);",
+              "text-decoration: none;"
+            ]}
           >
             {format_tag(tag)}
           </.link>
         </div>
       </div>
     </div>
-    
-<!-- Content Section -->
-    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
-      <!-- Steps -->
+
+    <div style="max-width: 56rem; margin: 0 auto; padding: 36px 28px; width: 100%;">
       <.how_to_content steps={@how_to.steps} render_markdown_fn={&render_markdown/1} />
-      
-<!-- Completion Message -->
+
       <.completion_message />
-      
-<!-- Navigation -->
+
       <.how_to_navigation prev_how_to={@prev_how_to} next_how_to={@next_how_to} />
-      
-<!-- Back to Resources Button -->
-      <div class="mt-8 text-center">
+
+      <div style="margin-top: 24px; text-align: center;">
         <.link
           navigate={~p"/resources"}
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-base-200 hover:bg-base-300 text-base-content font-medium transition-colors"
+          style={[
+            "display: inline-flex; align-items: center; gap: 8px;",
+            "padding: 10px 18px; border-radius: 8px;",
+            "background: var(--surface-sunken); color: var(--ink-2);",
+            "font-weight: 500; font-size: 13px;",
+            "border: 1px solid var(--line);",
+            "text-decoration: none;"
+          ]}
         >
-          <.icon name="hero-arrow-left" class="h-5 w-5" />
+          <.icon name="hero-arrow-left" class="h-4 w-4" />
           {gettext("Back to all resources")}
         </.link>
       </div>
     </div>
   <% else %>
-    <!-- 404 State -->
-    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
-      <!-- Back Link -->
-      <div class="mb-8">
+    <div style="max-width: 56rem; margin: 0 auto; padding: 32px 28px; width: 100%;">
+      <div style="margin-bottom: 18px;">
         <.link
           navigate={~p"/resources"}
-          class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 group"
+          style={[
+            "display: inline-flex; align-items: center; gap: 4px;",
+            "font-size: 12px; color: var(--stride-orange);",
+            "text-decoration: none;"
+          ]}
         >
-          <span class="group-hover:-translate-x-1 transition-transform">&larr;</span>
+          <.icon name="hero-arrow-left" class="h-3 w-3" />
           {gettext("Back to Resources")}
         </.link>
       </div>
 
-      <div class="text-center py-16">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-base-200 mb-6">
-          <.icon name="hero-document-magnifying-glass" class="h-10 w-10 text-base-content/40" />
+      <div style="text-align: center; padding: 56px 0;">
+        <div style={[
+          "display: inline-flex; align-items: center; justify-content: center;",
+          "width: 64px; height: 64px; border-radius: 999px;",
+          "background: var(--surface-sunken); color: var(--ink-4);",
+          "margin-bottom: 18px;"
+        ]}>
+          <.icon name="hero-document-magnifying-glass" class="h-8 w-8" />
         </div>
-        <h1 class="text-2xl font-bold text-base-content mb-2">
+        <h1 style={[
+          "margin: 0 0 6px;",
+          "font-size: 20px; font-weight: 600; color: var(--ink);"
+        ]}>
           {gettext("Guide not found")}
         </h1>
-        <p class="text-base-content/60 mb-6">
+        <p style="margin: 0 0 24px; font-size: 13px; color: var(--ink-3);">
           {gettext("The guide you're looking for doesn't exist or may have been moved.")}
         </p>
         <.link
           navigate={~p"/resources"}
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+          style={[
+            "display: inline-flex; align-items: center; gap: 8px;",
+            "padding: 10px 18px; border-radius: 8px;",
+            "background: var(--stride-orange); color: white;",
+            "font-weight: 500; font-size: 13px;",
+            "text-decoration: none;"
+          ]}
         >
           {gettext("Browse all guides")}
         </.link>
