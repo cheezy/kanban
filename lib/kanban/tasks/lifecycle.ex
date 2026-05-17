@@ -263,6 +263,23 @@ defmodule Kanban.Tasks.Lifecycle do
   Archives a task by stamping `archived_at` and persisting optional
   archive metadata.
 
+  When the task is a `:goal`, its non-archived child tasks are
+  cascade-archived in the same transaction so the Archive view never
+  shows orphaned children of an archived parent. Child attrs are
+  derived from the parent's attrs:
+
+    * `archive_reason`: inherits the parent's reason when it is
+      `:completed | :wontdo | :deferred | :cancelled`; defaults to
+      `:completed` when the parent has no reason or was archived as a
+      `:duplicate` (children are not duplicates of whatever the parent
+      was a duplicate of).
+    * `archive_note`: inherits the parent's note only when the reason
+      is one that requires it (`:wontdo | :deferred | :cancelled`).
+    * `archived_by_id`: inherits the parent's value.
+    * `duplicate_of_id`: never inherited.
+    * `archived_at`: same timestamp as the parent's archive (so the
+      batch groups cleanly in the Archive view).
+
   ## Attrs
 
   When `attrs` is empty (the default), only `archived_at` is set — the
@@ -279,31 +296,105 @@ defmodule Kanban.Tasks.Lifecycle do
 
   All validation runs through `Task.changeset/2`, so the conditional
   required-field rules introduced in W570 are enforced here. The
-  PubSub `:task_updated` event is broadcast so open ArchiveLive /
-  BoardLive sessions refresh.
+  PubSub `:task_updated` event is broadcast for the parent and for each
+  cascade-archived child so open ArchiveLive / BoardLive sessions
+  refresh.
   """
   def archive_task(%Task{} = task, attrs \\ %{}) do
-    archive_attrs =
-      attrs
-      |> Map.new()
-      |> Map.put(:archived_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    attrs_map = Map.new(attrs)
+    archived_at = DateTime.utc_now() |> DateTime.truncate(:second)
+    archive_attrs = Map.put(attrs_map, :archived_at, archived_at)
 
-    case task |> Task.archive_changeset(archive_attrs) |> Repo.update() do
-      {:ok, updated_task} ->
-        :telemetry.execute(
-          [:kanban, :task, :archived],
-          %{task_id: updated_task.id},
-          %{identifier: updated_task.identifier}
-        )
-
-        Broadcaster.broadcast_task_change(updated_task, :task_updated)
-
-        {:ok, updated_task}
-
-      error ->
-        error
-    end
+    Multi.new()
+    |> Multi.update(:goal, Task.archive_changeset(task, archive_attrs))
+    |> Multi.run(:children, fn repo, %{goal: archived_goal} ->
+      cascade_archive_children(repo, archived_goal, attrs_map, archived_at)
+    end)
+    |> Repo.transaction()
+    |> handle_archive_result()
   end
+
+  defp handle_archive_result({:ok, %{goal: updated_task, children: children}}) do
+    emit_archive_telemetry(updated_task)
+    Broadcaster.broadcast_task_change(updated_task, :task_updated)
+
+    Enum.each(children, fn child ->
+      emit_cascade_telemetry(child, updated_task.id)
+      Broadcaster.broadcast_task_change(child, :task_updated)
+    end)
+
+    {:ok, updated_task}
+  end
+
+  defp handle_archive_result({:error, _step, changeset, _changes}), do: {:error, changeset}
+
+  defp emit_archive_telemetry(task) do
+    :telemetry.execute(
+      [:kanban, :task, :archived],
+      %{task_id: task.id},
+      %{identifier: task.identifier}
+    )
+  end
+
+  defp emit_cascade_telemetry(child, goal_id) do
+    :telemetry.execute(
+      [:kanban, :task, :archived],
+      %{task_id: child.id},
+      %{identifier: child.identifier, via: :goal_cascade, goal_id: goal_id}
+    )
+  end
+
+  defp cascade_archive_children(_repo, %Task{type: type}, _parent_attrs, _archived_at)
+       when type != :goal do
+    {:ok, []}
+  end
+
+  defp cascade_archive_children(repo, %Task{id: goal_id}, parent_attrs, archived_at) do
+    child_attrs = build_child_archive_attrs(parent_attrs, archived_at)
+
+    children =
+      from(t in Task,
+        where: t.parent_id == ^goal_id and is_nil(t.archived_at)
+      )
+      |> repo.all()
+
+    Enum.reduce_while(children, {:ok, []}, fn child, {:ok, acc} ->
+      child
+      |> Task.archive_changeset(child_attrs)
+      |> repo.update()
+      |> case do
+        {:ok, archived} -> {:cont, {:ok, [archived | acc]}}
+        {:error, changeset} -> {:halt, {:error, changeset}}
+      end
+    end)
+  end
+
+  @parent_reasons_that_inherit_to_children [:completed, :wontdo, :deferred, :cancelled]
+  @parent_reasons_that_require_note [:wontdo, :deferred, :cancelled]
+
+  defp build_child_archive_attrs(parent_attrs, archived_at) do
+    parent_reason = Map.get(parent_attrs, :archive_reason)
+    {child_reason, include_note?} = child_reason_for(parent_reason)
+
+    %{archived_at: archived_at, archive_reason: child_reason}
+    |> maybe_put(:archived_by_id, Map.get(parent_attrs, :archived_by_id))
+    |> maybe_put_note(include_note?, Map.get(parent_attrs, :archive_note))
+  end
+
+  defp child_reason_for(reason) when reason in @parent_reasons_that_inherit_to_children do
+    {reason, reason in @parent_reasons_that_require_note}
+  end
+
+  # nil, :duplicate, or any unexpected value → children are :completed,
+  # not duplicates of whatever the parent was a duplicate of.
+  defp child_reason_for(_), do: {:completed, false}
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp maybe_put_note(map, false, _note), do: map
+  defp maybe_put_note(map, true, nil), do: map
+  defp maybe_put_note(map, true, note), do: Map.put(map, :archive_note, note)
 
   @doc """
   Unarchives a task by clearing `archived_at` and every archive-metadata
