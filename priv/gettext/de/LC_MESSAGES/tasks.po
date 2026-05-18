@@ -15,5 +15,5 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Moved 1 task to Ready"
 msgid_plural "Moved %{count} tasks to Ready"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "1 Aufgabe nach „Bereit“ verschoben"
+msgstr[1] "%{count} Aufgaben nach „Bereit“ verschoben"
