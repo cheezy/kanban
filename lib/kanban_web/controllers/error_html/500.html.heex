@@ -1,8 +1,12 @@
 <.error_page
-  page_title="Internal Server Error"
+  page_title={gettext("Internal Server Error")}
   status_code="500"
-  heading="Internal Server Error"
-  message="Oops! Something went wrong on our end. We're working to fix the issue. Please try again later."
+  heading={gettext("Internal Server Error")}
+  message={
+    gettext(
+      "Oops! Something went wrong on our end. We're working to fix the issue. Please try again later."
+    )
+  }
 >
   <:icon>
     <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-red-100 to-orange-100 mb-8">

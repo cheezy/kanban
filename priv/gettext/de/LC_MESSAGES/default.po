@@ -914,7 +914,7 @@ msgid "About Tango"
 msgstr "Über Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:22
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:60
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:64
 #: lib/kanban_web/controllers/page_html/tango.html.heex:22
 #: lib/kanban_web/controllers/page_html/tango.html.heex:190
 #, elixir-autogen, elixir-format
@@ -6305,7 +6305,7 @@ msgstr ""
 msgid "Stride Logo"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:45
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
 msgstr ""
@@ -6318,4 +6318,31 @@ msgstr ""
 #: lib/kanban_web/live/resources_live/components.ex:353
 #, elixir-autogen, elixir-format
 msgid "Video"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:52
+#, elixir-autogen, elixir-format
+msgid "Go Home"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html/500.html.heex:2
+#: lib/kanban_web/controllers/error_html/500.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Internal Server Error"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html/500.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Oops! Something went wrong on our end. We're working to fix the issue. Please try again later."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html/404.html.heex:2
+#: lib/kanban_web/controllers/error_html/404.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Page Not Found"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html/404.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Sorry, we couldn't find the page you're looking for. The resource might have been moved, deleted, or you may not have permission to access it."
 msgstr ""
