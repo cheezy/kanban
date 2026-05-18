@@ -239,7 +239,7 @@ msgstr "Verwenden Sie dieses Formular, um Board-Datensätze in Ihrer Datenbank z
 msgid "Column created successfully"
 msgstr "Spalte erfolgreich erstellt"
 
-#: lib/kanban_web/live/board_live/show.ex:1131
+#: lib/kanban_web/live/board_live/show.ex:1134
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "Spalte erfolgreich gelöscht"
@@ -259,7 +259,7 @@ msgstr "Erstellen Sie eine neue Spalte für Ihr Board"
 msgid "Create your first column"
 msgstr "Erstellen Sie Ihre erste Spalte"
 
-#: lib/kanban_web/live/board_live/show.ex:1136
+#: lib/kanban_web/live/board_live/show.ex:1139
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "Spalte konnte nicht gelöscht werden"
@@ -311,7 +311,7 @@ msgstr "Neue Aufgabe erstellen"
 #: lib/kanban_web/live/archive_live/index.ex:237
 #: lib/kanban_web/live/archive_live/index.ex:262
 #: lib/kanban_web/live/board_live/show.ex:170
-#: lib/kanban_web/live/board_live/show.ex:1283
+#: lib/kanban_web/live/board_live/show.ex:1286
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "Aufgabe konnte nicht gelöscht werden"
@@ -327,7 +327,7 @@ msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
 
 #: lib/kanban_web/live/archive_live/index.ex:233
-#: lib/kanban_web/live/board_live/show.ex:1269
+#: lib/kanban_web/live/board_live/show.ex:1272
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "Aufgabe erfolgreich gelöscht"
@@ -368,7 +368,7 @@ msgstr "WIP-Limit für diese Spalte erreicht"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:785
+#: lib/kanban_web/live/board_live/show.ex:788
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
@@ -1244,7 +1244,7 @@ msgstr "Geschätzte Dateien"
 
 #: lib/kanban_web/live/board_live/form.ex:138
 #: lib/kanban_web/live/board_live/settings_form_component.ex:76
-#: lib/kanban_web/live/board_live/show.ex:1120
+#: lib/kanban_web/live/board_live/show.ex:1123
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr "Feldsichtbarkeit konnte nicht aktualisiert werden"
@@ -1310,7 +1310,7 @@ msgstr "Bei Fehler (was passiert)"
 #: lib/kanban_web/live/board_live/form.ex:135
 #: lib/kanban_web/live/board_live/settings_form_component.ex:73
 #: lib/kanban_web/live/board_live/show.ex:244
-#: lib/kanban_web/live/board_live/show.ex:1117
+#: lib/kanban_web/live/board_live/show.ex:1120
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "Nur Board-Besitzer können die Feldsichtbarkeit ändern"
@@ -1691,7 +1691,7 @@ msgstr "Unit-Tests"
 msgid "Unit test description"
 msgstr "Beschreibung des Unit-Tests"
 
-#: lib/kanban_web/live/board_live/show.ex:1191
+#: lib/kanban_web/live/board_live/show.ex:1194
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "Sie haben keine Berechtigung zum Verwalten von API-Tokens"
@@ -1722,7 +1722,7 @@ msgstr "Schließen"
 msgid "Copied!"
 msgstr "Kopiert!"
 
-#: lib/kanban_web/live/board_live/show.ex:1182
+#: lib/kanban_web/live/board_live/show.ex:1185
 #, elixir-autogen, elixir-format
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "API-Token sind nur für KI-optimierte Boards verfügbar"
@@ -1879,9 +1879,9 @@ msgstr "Zurück zum Board"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:20
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:20
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:20
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Board:"
-msgstr "Boards"
+msgstr "Board:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/board_live/show.html.heex:713
@@ -1890,26 +1890,26 @@ msgid "Delete"
 msgstr "Löschen"
 
 #: lib/kanban_web/live/board_live/show.ex:151
-#: lib/kanban_web/live/board_live/show.ex:1256
+#: lib/kanban_web/live/board_live/show.ex:1259
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "Aufgabe konnte nicht archiviert werden"
 
 #: lib/kanban_web/live/archive_live/index.ex:224
 #: lib/kanban_web/live/archive_live/index.ex:258
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
-msgstr "Aufgabe konnte nicht verschoben werden"
+msgstr "Aufgabe konnte nicht aus dem Archiv geholt werden"
 
-#: lib/kanban_web/live/board_live/show.ex:1250
+#: lib/kanban_web/live/board_live/show.ex:1253
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "Aufgabe erfolgreich archiviert"
 
 #: lib/kanban_web/live/archive_live/index.ex:220
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
-msgstr "Aufgabe erfolgreich erstellt"
+msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
 
 #: lib/kanban_web/live/task_live/form_component.ex:341
 #: lib/kanban_web/live/task_live/form_component.ex:375
@@ -1976,7 +1976,7 @@ msgstr "Zurück zu allen Ressourcen"
 msgid "Browse all guides"
 msgstr "Alle Anleitungen durchsuchen"
 
-#: lib/kanban_web/live/board_live/show.ex:1279
+#: lib/kanban_web/live/board_live/show.ex:1282
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "Aufgabe kann nicht gelöscht werden: andere Aufgaben hängen davon ab. Entfernen Sie zuerst die Abhängigkeiten."
@@ -2554,7 +2554,7 @@ msgstr "Aufgaben abgeschlossen"
 #: lib/kanban_web/live/archive_live/index.ex:35
 #: lib/kanban_web/live/board_live/form.ex:273
 #: lib/kanban_web/live/board_live/index.ex:248
-#: lib/kanban_web/live/board_live/show.ex:1322
+#: lib/kanban_web/live/board_live/show.ex:1325
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -2848,7 +2848,7 @@ msgstr "Nur der Board-Besitzer kann die Board-Mitgliedschaft verwalten"
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tango ist ein in Kanada ansässiges Softwareunternehmen, das moderne, skalierbare digitale Produkte entwickelt, indem es Spitzentechnologie mit KI-gestützter Entwicklung kombiniert. Wir helfen Organisationen, schneller voranzukommen, intelligenter zu bauen und qualitativ hochwertigere Software ohne unnötige Komplexität auszuliefern."
 
-#: lib/kanban_web/live/board_live/show.ex:1238
+#: lib/kanban_web/live/board_live/show.ex:1241
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "Aufgabe nicht gefunden"
@@ -2951,13 +2951,13 @@ msgstr "Backlog-Wartezeit"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
-#: lib/kanban_web/live/board_live/show.ex:1030
-#: lib/kanban_web/live/board_live/show.ex:1096
+#: lib/kanban_web/live/board_live/show.ex:1033
+#: lib/kanban_web/live/board_live/show.ex:1099
 #, elixir-autogen, elixir-format
 msgid "Column not found on this board"
 msgstr "Spalte auf diesem Board nicht gefunden"
 
-#: lib/kanban_web/live/board_live/show.ex:1148
+#: lib/kanban_web/live/board_live/show.ex:1151
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "Spalte oder Aufgabe auf diesem Board nicht gefunden"
@@ -3004,7 +3004,7 @@ msgstr "Sicherheitsfehler: Ungültiger Zugewiesener"
 msgid "Security error: Invalid parent goal"
 msgstr "Sicherheitsfehler: Ungültiges übergeordnetes Ziel"
 
-#: lib/kanban_web/live/board_live/show.ex:1172
+#: lib/kanban_web/live/board_live/show.ex:1175
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "Aufgabe auf diesem Board nicht gefunden"
@@ -5139,7 +5139,7 @@ msgstr "live"
 #: lib/kanban_web/components/review_detail_header.ex:149
 #: lib/kanban_web/components/review_queue_item.ex:233
 #: lib/kanban_web/live/review_live.ex:385
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "vor %{d} Tg."
 
@@ -5147,7 +5147,7 @@ msgstr "vor %{d} Tg."
 #: lib/kanban_web/components/review_detail_header.ex:147
 #: lib/kanban_web/components/review_queue_item.ex:231
 #: lib/kanban_web/live/review_live.ex:383
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "vor %{h} Std."
 
@@ -5155,7 +5155,7 @@ msgstr "vor %{h} Std."
 #: lib/kanban_web/components/review_detail_header.ex:144
 #: lib/kanban_web/components/review_queue_item.ex:228
 #: lib/kanban_web/live/review_live.ex:380
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "vor %{m} Min."
 
@@ -5292,9 +5292,9 @@ msgstr "älteste %{age}"
 #: lib/kanban_web/components/archive_filter_chips.ex:170
 #: lib/kanban_web/components/archive_stats_strip.ex:59
 #: lib/kanban_web/task_tokens.ex:79
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Cancelled"
-msgstr "Abbrechen"
+msgstr "Abgebrochen"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:173
 #: lib/kanban_web/task_tokens.ex:82
@@ -5315,7 +5315,7 @@ msgid "Won't do"
 msgstr "Wird nicht erledigt"
 
 #: lib/kanban_web/components/archive_stats_strip.ex:75
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Avg cycle · completed"
 msgstr "Ø Zyklus · abgeschlossen"
 
@@ -5356,7 +5356,7 @@ msgstr "vor dem Archivieren aufgewendete Zeit"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:88
 #: lib/kanban_web/live/archive_live/index.html.heex:82
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "Zugewiesen an"
 
@@ -5386,7 +5386,7 @@ msgid "goal:"
 msgstr "Ziel:"
 
 #: lib/kanban_web/components/archive_row.ex:231
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "unknown"
 msgstr "unbekannt"
 
@@ -5396,19 +5396,19 @@ msgid "Archive is read-only after 180 days. Older items still appear in search a
 msgstr "Das Archiv ist nach 180 Tagen schreibgeschützt. Ältere Einträge erscheinen weiterhin in Suche und Audit-Log."
 
 #: lib/kanban_web/live/archive_live/index.html.heex:83
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "Archiviert"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Delete forever"
-msgstr "Löschen"
+msgstr "Endgültig löschen"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:192
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Export CSV"
-msgstr "Exportieren"
+msgstr "CSV exportieren"
 
 #: lib/kanban_web/live/archive_live/index.ex:68
 #, elixir-autogen, elixir-format
@@ -5416,7 +5416,7 @@ msgid "Export CSV — coming soon."
 msgstr "CSV exportieren — demnächst."
 
 #: lib/kanban_web/live/archive_live/index.html.heex:52
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No archived tasks match this filter."
 msgstr "Keine archivierten Aufgaben entsprechen diesem Filter."
 
@@ -5431,7 +5431,7 @@ msgid "Read-only access"
 msgstr "Nur-Lese-Zugriff"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:135
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "Wiederherstellen"
 

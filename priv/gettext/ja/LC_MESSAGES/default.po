@@ -239,7 +239,7 @@ msgstr "このフォームを使用してデータベース内のボードレコ
 msgid "Column created successfully"
 msgstr "列が正常に作成されました"
 
-#: lib/kanban_web/live/board_live/show.ex:1131
+#: lib/kanban_web/live/board_live/show.ex:1134
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "列が正常に削除されました"
@@ -259,7 +259,7 @@ msgstr "ボード用の新しい列を作成"
 msgid "Create your first column"
 msgstr "最初の列を作成"
 
-#: lib/kanban_web/live/board_live/show.ex:1136
+#: lib/kanban_web/live/board_live/show.ex:1139
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "列の削除に失敗しました"
@@ -311,7 +311,7 @@ msgstr "新しいタスクを作成"
 #: lib/kanban_web/live/archive_live/index.ex:237
 #: lib/kanban_web/live/archive_live/index.ex:262
 #: lib/kanban_web/live/board_live/show.ex:170
-#: lib/kanban_web/live/board_live/show.ex:1283
+#: lib/kanban_web/live/board_live/show.ex:1286
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "タスクの削除に失敗しました"
@@ -327,7 +327,7 @@ msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
 
 #: lib/kanban_web/live/archive_live/index.ex:233
-#: lib/kanban_web/live/board_live/show.ex:1269
+#: lib/kanban_web/live/board_live/show.ex:1272
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "タスクが正常に削除されました"
@@ -368,7 +368,7 @@ msgstr "この列のWIP制限に達しました"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:785
+#: lib/kanban_web/live/board_live/show.ex:788
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "タスクを移動できません：列がWIP制限に達しています"
@@ -1244,7 +1244,7 @@ msgstr "見積もりファイル"
 
 #: lib/kanban_web/live/board_live/form.ex:138
 #: lib/kanban_web/live/board_live/settings_form_component.ex:76
-#: lib/kanban_web/live/board_live/show.ex:1120
+#: lib/kanban_web/live/board_live/show.ex:1123
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr "フィールド表示の更新に失敗しました"
@@ -1310,7 +1310,7 @@ msgstr "失敗時の動作"
 #: lib/kanban_web/live/board_live/form.ex:135
 #: lib/kanban_web/live/board_live/settings_form_component.ex:73
 #: lib/kanban_web/live/board_live/show.ex:244
-#: lib/kanban_web/live/board_live/show.ex:1117
+#: lib/kanban_web/live/board_live/show.ex:1120
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "フィールド表示を変更できるのはボードの所有者だけです"
@@ -1691,7 +1691,7 @@ msgstr "ユニットテスト"
 msgid "Unit test description"
 msgstr "ユニットテストの説明"
 
-#: lib/kanban_web/live/board_live/show.ex:1191
+#: lib/kanban_web/live/board_live/show.ex:1194
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "APIトークンを管理する権限がありません"
@@ -1722,7 +1722,7 @@ msgstr "閉じる"
 msgid "Copied!"
 msgstr "コピーしました！"
 
-#: lib/kanban_web/live/board_live/show.ex:1182
+#: lib/kanban_web/live/board_live/show.ex:1185
 #, elixir-autogen, elixir-format
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "APIトークンはAI最適化ボード専用です"
@@ -1879,9 +1879,9 @@ msgstr "ボードに戻る"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:20
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:20
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:20
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Board:"
-msgstr "ボード"
+msgstr "ボード:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/board_live/show.html.heex:713
@@ -1890,26 +1890,26 @@ msgid "Delete"
 msgstr "削除"
 
 #: lib/kanban_web/live/board_live/show.ex:151
-#: lib/kanban_web/live/board_live/show.ex:1256
+#: lib/kanban_web/live/board_live/show.ex:1259
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "タスクのアーカイブに失敗しました"
 
 #: lib/kanban_web/live/archive_live/index.ex:224
 #: lib/kanban_web/live/archive_live/index.ex:258
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
-msgstr "タスクの移動に失敗しました"
+msgstr "タスクのアーカイブ解除に失敗しました"
 
-#: lib/kanban_web/live/board_live/show.ex:1250
+#: lib/kanban_web/live/board_live/show.ex:1253
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "タスクをアーカイブしました"
 
 #: lib/kanban_web/live/archive_live/index.ex:220
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
-msgstr "タスクが正常に作成されました"
+msgstr "タスクのアーカイブを解除しました"
 
 #: lib/kanban_web/live/task_live/form_component.ex:341
 #: lib/kanban_web/live/task_live/form_component.ex:375
@@ -1975,7 +1975,7 @@ msgstr "すべてのリソースに戻る"
 msgid "Browse all guides"
 msgstr "すべてのガイドを見る"
 
-#: lib/kanban_web/live/board_live/show.ex:1279
+#: lib/kanban_web/live/board_live/show.ex:1282
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "タスクを削除できません: 他のタスクが依存しています。先に依存関係を削除してください。"
@@ -2552,7 +2552,7 @@ msgstr "タスク完了"
 #: lib/kanban_web/live/archive_live/index.ex:35
 #: lib/kanban_web/live/board_live/form.ex:273
 #: lib/kanban_web/live/board_live/index.ex:248
-#: lib/kanban_web/live/board_live/show.ex:1322
+#: lib/kanban_web/live/board_live/show.ex:1325
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -2845,7 +2845,7 @@ msgstr "ボードの所有者のみがボードのメンバーを管理できま
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tangoはカナダを拠点とするソフトウェア企業で、最先端の技術とAI支援開発を組み合わせて、現代的で拡張性のあるデジタル製品を構築することに注力しています。組織がより速く、賢く、不要な複雑さなしに、より高品質なソフトウェアを届けられるよう支援します。"
 
-#: lib/kanban_web/live/board_live/show.ex:1238
+#: lib/kanban_web/live/board_live/show.ex:1241
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "タスクが見つかりません"
@@ -2948,13 +2948,13 @@ msgstr "バックログ待ち時間"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
-#: lib/kanban_web/live/board_live/show.ex:1030
-#: lib/kanban_web/live/board_live/show.ex:1096
+#: lib/kanban_web/live/board_live/show.ex:1033
+#: lib/kanban_web/live/board_live/show.ex:1099
 #, elixir-autogen, elixir-format
 msgid "Column not found on this board"
 msgstr "このボードに列が見つかりません"
 
-#: lib/kanban_web/live/board_live/show.ex:1148
+#: lib/kanban_web/live/board_live/show.ex:1151
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "このボードに列またはタスクが見つかりません"
@@ -3001,7 +3001,7 @@ msgstr "セキュリティエラー: 無効な担当者"
 msgid "Security error: Invalid parent goal"
 msgstr "セキュリティエラー: 無効な親ゴール"
 
-#: lib/kanban_web/live/board_live/show.ex:1172
+#: lib/kanban_web/live/board_live/show.ex:1175
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "このボードにタスクが見つかりません"
@@ -5129,7 +5129,7 @@ msgstr "ライブ"
 #: lib/kanban_web/components/review_detail_header.ex:149
 #: lib/kanban_web/components/review_queue_item.ex:233
 #: lib/kanban_web/live/review_live.ex:385
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d}日前"
 
@@ -5137,7 +5137,7 @@ msgstr "%{d}日前"
 #: lib/kanban_web/components/review_detail_header.ex:147
 #: lib/kanban_web/components/review_queue_item.ex:231
 #: lib/kanban_web/live/review_live.ex:383
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h}時間前"
 
@@ -5145,7 +5145,7 @@ msgstr "%{h}時間前"
 #: lib/kanban_web/components/review_detail_header.ex:144
 #: lib/kanban_web/components/review_queue_item.ex:228
 #: lib/kanban_web/live/review_live.ex:380
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m}分前"
 
@@ -5280,9 +5280,9 @@ msgstr "最古 %{age}"
 #: lib/kanban_web/components/archive_filter_chips.ex:170
 #: lib/kanban_web/components/archive_stats_strip.ex:59
 #: lib/kanban_web/task_tokens.ex:79
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Cancelled"
-msgstr "キャンセル"
+msgstr "キャンセル済み"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:173
 #: lib/kanban_web/task_tokens.ex:82
@@ -5303,7 +5303,7 @@ msgid "Won't do"
 msgstr "対応しない"
 
 #: lib/kanban_web/components/archive_stats_strip.ex:75
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Avg cycle · completed"
 msgstr "平均サイクル · 完了済み"
 
@@ -5344,7 +5344,7 @@ msgstr "アーカイブ前の経過時間"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:88
 #: lib/kanban_web/live/archive_live/index.html.heex:82
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "担当者"
 
@@ -5374,7 +5374,7 @@ msgid "goal:"
 msgstr "ゴール:"
 
 #: lib/kanban_web/components/archive_row.ex:231
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "unknown"
 msgstr "不明"
 
@@ -5384,19 +5384,19 @@ msgid "Archive is read-only after 180 days. Older items still appear in search a
 msgstr "アーカイブは180日経過後に読み取り専用となります。古いアイテムは検索および監査ログには引き続き表示されます。"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:83
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "アーカイブ済み"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Delete forever"
-msgstr "削除"
+msgstr "完全に削除"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:192
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Export CSV"
-msgstr "エクスポート"
+msgstr "CSV をエクスポート"
 
 #: lib/kanban_web/live/archive_live/index.ex:68
 #, elixir-autogen, elixir-format
@@ -5404,7 +5404,7 @@ msgid "Export CSV — coming soon."
 msgstr "CSVエクスポート — 近日公開。"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:52
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No archived tasks match this filter."
 msgstr "このフィルターに一致するアーカイブ済みタスクはありません。"
 
@@ -5419,7 +5419,7 @@ msgid "Read-only access"
 msgstr "読み取り専用アクセス"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:135
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "復元"
 

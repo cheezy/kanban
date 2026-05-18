@@ -239,7 +239,7 @@ msgstr "使用此表单管理数据库中的看板记录。"
 msgid "Column created successfully"
 msgstr "列创建成功"
 
-#: lib/kanban_web/live/board_live/show.ex:1131
+#: lib/kanban_web/live/board_live/show.ex:1134
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "列删除成功"
@@ -259,7 +259,7 @@ msgstr "为看板创建新列"
 msgid "Create your first column"
 msgstr "创建您的第一列"
 
-#: lib/kanban_web/live/board_live/show.ex:1136
+#: lib/kanban_web/live/board_live/show.ex:1139
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "删除列失败"
@@ -311,7 +311,7 @@ msgstr "创建新任务"
 #: lib/kanban_web/live/archive_live/index.ex:237
 #: lib/kanban_web/live/archive_live/index.ex:262
 #: lib/kanban_web/live/board_live/show.ex:170
-#: lib/kanban_web/live/board_live/show.ex:1283
+#: lib/kanban_web/live/board_live/show.ex:1286
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "删除任务失败"
@@ -327,7 +327,7 @@ msgid "Task created successfully"
 msgstr "任务创建成功"
 
 #: lib/kanban_web/live/archive_live/index.ex:233
-#: lib/kanban_web/live/board_live/show.ex:1269
+#: lib/kanban_web/live/board_live/show.ex:1272
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "任务删除成功"
@@ -368,7 +368,7 @@ msgstr "此列已达到在制品限制"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:785
+#: lib/kanban_web/live/board_live/show.ex:788
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "无法移动任务：列已达到在制品限制"
@@ -1244,7 +1244,7 @@ msgstr "预估文件"
 
 #: lib/kanban_web/live/board_live/form.ex:138
 #: lib/kanban_web/live/board_live/settings_form_component.ex:76
-#: lib/kanban_web/live/board_live/show.ex:1120
+#: lib/kanban_web/live/board_live/show.ex:1123
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr "更新字段可见性失败"
@@ -1310,7 +1310,7 @@ msgstr "失败时(将发生什么)"
 #: lib/kanban_web/live/board_live/form.ex:135
 #: lib/kanban_web/live/board_live/settings_form_component.ex:73
 #: lib/kanban_web/live/board_live/show.ex:244
-#: lib/kanban_web/live/board_live/show.ex:1117
+#: lib/kanban_web/live/board_live/show.ex:1120
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
@@ -1691,7 +1691,7 @@ msgstr "单元测试"
 msgid "Unit test description"
 msgstr "单元测试说明"
 
-#: lib/kanban_web/live/board_live/show.ex:1191
+#: lib/kanban_web/live/board_live/show.ex:1194
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "您没有权限管理API令牌"
@@ -1722,7 +1722,7 @@ msgstr "关闭"
 msgid "Copied!"
 msgstr "已复制！"
 
-#: lib/kanban_web/live/board_live/show.ex:1182
+#: lib/kanban_web/live/board_live/show.ex:1185
 #, elixir-autogen, elixir-format
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "API令牌仅适用于AI优化看板"
@@ -1879,9 +1879,9 @@ msgstr "返回看板"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:20
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:20
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:20
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Board:"
-msgstr "看板"
+msgstr "看板:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/board_live/show.html.heex:713
@@ -1890,26 +1890,26 @@ msgid "Delete"
 msgstr "删除"
 
 #: lib/kanban_web/live/board_live/show.ex:151
-#: lib/kanban_web/live/board_live/show.ex:1256
+#: lib/kanban_web/live/board_live/show.ex:1259
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "归档任务失败"
 
 #: lib/kanban_web/live/archive_live/index.ex:224
 #: lib/kanban_web/live/archive_live/index.ex:258
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
-msgstr "移动任务失败"
+msgstr "取消归档任务失败"
 
-#: lib/kanban_web/live/board_live/show.ex:1250
+#: lib/kanban_web/live/board_live/show.ex:1253
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "任务归档成功"
 
 #: lib/kanban_web/live/archive_live/index.ex:220
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
-msgstr "任务创建成功"
+msgstr "已成功取消归档任务"
 
 #: lib/kanban_web/live/task_live/form_component.ex:341
 #: lib/kanban_web/live/task_live/form_component.ex:375
@@ -1975,7 +1975,7 @@ msgstr "返回所有资源"
 msgid "Browse all guides"
 msgstr "浏览所有指南"
 
-#: lib/kanban_web/live/board_live/show.ex:1279
+#: lib/kanban_web/live/board_live/show.ex:1282
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "无法删除任务:有其他任务依赖它。请先移除依赖。"
@@ -2552,7 +2552,7 @@ msgstr "任务已完成"
 #: lib/kanban_web/live/archive_live/index.ex:35
 #: lib/kanban_web/live/board_live/form.ex:273
 #: lib/kanban_web/live/board_live/index.ex:248
-#: lib/kanban_web/live/board_live/show.ex:1322
+#: lib/kanban_web/live/board_live/show.ex:1325
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
@@ -2845,7 +2845,7 @@ msgstr "只有看板所有者才能管理看板成员"
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tango 是一家总部位于加拿大的软件公司,专注于将前沿技术与 AI 辅助开发结合,构建现代化、可扩展的数字产品。我们帮助组织更快前进、更聪明地构建,并在没有不必要复杂度的前提下交付更高质量的软件。"
 
-#: lib/kanban_web/live/board_live/show.ex:1238
+#: lib/kanban_web/live/board_live/show.ex:1241
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "未找到任务"
@@ -2948,13 +2948,13 @@ msgstr "待办等待时间"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
-#: lib/kanban_web/live/board_live/show.ex:1030
-#: lib/kanban_web/live/board_live/show.ex:1096
+#: lib/kanban_web/live/board_live/show.ex:1033
+#: lib/kanban_web/live/board_live/show.ex:1099
 #, elixir-autogen, elixir-format
 msgid "Column not found on this board"
 msgstr "在此看板中未找到列"
 
-#: lib/kanban_web/live/board_live/show.ex:1148
+#: lib/kanban_web/live/board_live/show.ex:1151
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "在此看板中未找到列或任务"
@@ -3001,7 +3001,7 @@ msgstr "安全错误:无效的被指派人"
 msgid "Security error: Invalid parent goal"
 msgstr "安全错误:无效的父目标"
 
-#: lib/kanban_web/live/board_live/show.ex:1172
+#: lib/kanban_web/live/board_live/show.ex:1175
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "在此看板中未找到任务"
@@ -5129,7 +5129,7 @@ msgstr "实时"
 #: lib/kanban_web/components/review_detail_header.ex:149
 #: lib/kanban_web/components/review_queue_item.ex:233
 #: lib/kanban_web/live/review_live.ex:385
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d} 天前"
 
@@ -5137,7 +5137,7 @@ msgstr "%{d} 天前"
 #: lib/kanban_web/components/review_detail_header.ex:147
 #: lib/kanban_web/components/review_queue_item.ex:231
 #: lib/kanban_web/live/review_live.ex:383
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h} 小时前"
 
@@ -5145,7 +5145,7 @@ msgstr "%{h} 小时前"
 #: lib/kanban_web/components/review_detail_header.ex:144
 #: lib/kanban_web/components/review_queue_item.ex:228
 #: lib/kanban_web/live/review_live.ex:380
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m} 分钟前"
 
@@ -5280,9 +5280,9 @@ msgstr "最早 %{age}"
 #: lib/kanban_web/components/archive_filter_chips.ex:170
 #: lib/kanban_web/components/archive_stats_strip.ex:59
 #: lib/kanban_web/task_tokens.ex:79
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Cancelled"
-msgstr "取消"
+msgstr "已取消"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:173
 #: lib/kanban_web/task_tokens.ex:82
@@ -5303,7 +5303,7 @@ msgid "Won't do"
 msgstr "不会做"
 
 #: lib/kanban_web/components/archive_stats_strip.ex:75
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Avg cycle · completed"
 msgstr "平均周期 · 已完成"
 
@@ -5344,7 +5344,7 @@ msgstr "归档前耗费的时间"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:88
 #: lib/kanban_web/live/archive_live/index.html.heex:82
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "分配给"
 
@@ -5374,7 +5374,7 @@ msgid "goal:"
 msgstr "目标:"
 
 #: lib/kanban_web/components/archive_row.ex:231
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "unknown"
 msgstr "未知"
 
@@ -5384,19 +5384,19 @@ msgid "Archive is read-only after 180 days. Older items still appear in search a
 msgstr "归档在 180 天后变为只读。较早的项仍会出现在搜索和审计日志中。"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:83
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "已归档"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Delete forever"
-msgstr "删除"
+msgstr "永久删除"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:192
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Export CSV"
-msgstr "导出"
+msgstr "导出 CSV"
 
 #: lib/kanban_web/live/archive_live/index.ex:68
 #, elixir-autogen, elixir-format
@@ -5404,7 +5404,7 @@ msgid "Export CSV — coming soon."
 msgstr "导出 CSV — 即将推出。"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:52
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No archived tasks match this filter."
 msgstr "没有归档任务匹配此筛选条件。"
 
@@ -5419,7 +5419,7 @@ msgid "Read-only access"
 msgstr "只读访问"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:135
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "恢复"
 
