@@ -209,7 +209,6 @@
               data-column-id={column.id}
               data-version={@tasks_version}
               data-group="tasks"
-              data-handle=".drag-handle"
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
               data-server-sorted={if goal_hierarchy_column?(column), do: "true"}
@@ -230,7 +229,7 @@
               >
                 <div
                   :if={@can_modify}
-                  class="absolute top-1 right-1 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity z-10"
+                  class="task-actions absolute top-1 right-1 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity z-10"
                 >
                   <.link
                     patch={~p"/boards/#{@board}/tasks/#{task}/edit"}
@@ -267,17 +266,12 @@
                 </div>
 
                 <div
-                  :if={@can_modify and task.type != :goal}
-                  class="drag-handle absolute top-1 left-1 inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 opacity-40 md:opacity-0 md:group-hover:opacity-100 cursor-grab z-10"
-                  aria-label={gettext("Drag to reorder")}
-                >
-                  <.icon name="hero-bars-3" class="h-3 w-3 text-base-content opacity-50" />
-                </div>
-
-                <div
                   phx-click="view_task"
                   phx-value-id={task.id}
-                  class="cursor-pointer"
+                  class={[
+                    "cursor-pointer",
+                    @can_modify and task.type != :goal && "cursor-grab active:cursor-grabbing"
+                  ]}
                 >
                   <TaskCard.task_card
                     task={

@@ -138,15 +138,28 @@ const SortableHook = {
       dragClass: "sortable-drag",
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
-      forceFallback: false,
+      // Force Sortable's own DOM-based drag instead of the native HTML5
+      // DnD API. Native DnD has browser-imposed timing quirks that can delay
+      // the ghost placeholder appearing in the target column by several
+      // seconds — forcing the fallback makes the ghost track the cursor
+      // immediately and lets us style the drag clone reliably.
+      forceFallback: true,
       fallbackOnBody: true,
-      // SortableJS default — invertSwap + 0.5 felt indecisive at column edges.
-      swapThreshold: 1,
+      // 6px tolerance — a short, deliberate mouse-up still registers as a
+      // click and opens the task; pulling the card more than ~6px begins a
+      // drag. Below this, click-vs-drag detection fights small hand jitter.
+      fallbackTolerance: 6,
+      // Lower threshold = swap triggers sooner as the dragged card crosses
+      // a neighbour. 1 (full overlap) felt sluggish in long columns.
+      swapThreshold: 0.65,
       emptyInsertThreshold: 10,
       scrollSensitivity: 60,
       scrollSpeed: 15,
       bubbleScroll: true,
-      filter: ".empty-state",
+      // Pointerdowns on these elements never start a drag — the click is
+      // forwarded normally so the edit/archive/delete buttons still work
+      // and clicks on empty-state placeholders aren't intercepted.
+      filter: ".empty-state, .task-actions, .task-actions *",
       preventOnFilter: false,
       delay: 0,
       delayOnTouchOnly: true,
