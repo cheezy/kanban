@@ -735,8 +735,8 @@ msgid "Confirmation link is invalid or has expired."
 msgstr ""
 
 #: lib/kanban_web/components/layouts/root.html.heex:59
-#: lib/kanban_web/components/marketing_components.ex:101
-#: lib/kanban_web/components/marketing_components.ex:279
+#: lib/kanban_web/components/marketing_components.ex:105
+#: lib/kanban_web/components/marketing_components.ex:284
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
 msgstr ""
@@ -749,8 +749,8 @@ msgstr ""
 #: lib/kanban_web/components/layouts.ex:293
 #: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/layouts/root.html.heex:85
-#: lib/kanban_web/components/marketing_components.ex:88
-#: lib/kanban_web/components/marketing_components.ex:268
+#: lib/kanban_web/components/marketing_components.ex:92
+#: lib/kanban_web/components/marketing_components.ex:273
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -871,8 +871,8 @@ msgid "Add with Edit Access"
 msgstr ""
 
 #: lib/kanban_web/components/layouts/root.html.heex:62
-#: lib/kanban_web/components/marketing_components.ex:108
-#: lib/kanban_web/components/marketing_components.ex:285
+#: lib/kanban_web/components/marketing_components.ex:112
+#: lib/kanban_web/components/marketing_components.ex:290
 #, elixir-autogen, elixir-format
 msgid "Error Tracker"
 msgstr ""
@@ -2045,8 +2045,8 @@ msgstr ""
 #: lib/kanban_web/components/layouts.ex:286
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
-#: lib/kanban_web/components/marketing_components.ex:84
-#: lib/kanban_web/components/marketing_components.ex:262
+#: lib/kanban_web/components/marketing_components.ex:88
+#: lib/kanban_web/components/marketing_components.ex:267
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -3030,57 +3030,57 @@ msgstr ""
 msgid "must be one of the listed options"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:456
+#: lib/kanban_web/components/marketing_components.ex:461
 #, elixir-autogen, elixir-format
 msgid "A new contract"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:461
+#: lib/kanban_web/components/marketing_components.ex:466
 #, elixir-autogen, elixir-format
 msgid "AI agents are first-class teammates,"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:82
+#: lib/kanban_web/components/marketing_components.ex:86
 #, elixir-autogen, elixir-format
 msgid "API · Docs · Changelog"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:607
+#: lib/kanban_web/components/marketing_components.ex:612
 #, elixir-autogen, elixir-format
 msgid "Agents declare what they can do. They only see — and can only claim — work that matches."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:678
+#: lib/kanban_web/components/marketing_components.ex:683
 #, elixir-autogen, elixir-format
 msgid "An agent claims it"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:680
+#: lib/kanban_web/components/marketing_components.ex:685
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:605
+#: lib/kanban_web/components/marketing_components.ex:610
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Capability matching"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:614
+#: lib/kanban_web/components/marketing_components.ex:619
 #, elixir-autogen, elixir-format
 msgid "Client-side hooks"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:623
+#: lib/kanban_web/components/marketing_components.ex:628
 #, elixir-autogen, elixir-format
 msgid "Conflict prevention"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:652
+#: lib/kanban_web/components/marketing_components.ex:657
 #, elixir-autogen, elixir-format
 msgid "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:634
+#: lib/kanban_web/components/marketing_components.ex:639
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
 msgstr ""
@@ -3097,20 +3097,20 @@ msgstr ""
 msgid "Doing"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:604
-#: lib/kanban_web/components/marketing_components.ex:613
-#: lib/kanban_web/components/marketing_components.ex:622
+#: lib/kanban_web/components/marketing_components.ex:609
+#: lib/kanban_web/components/marketing_components.ex:618
+#: lib/kanban_web/components/marketing_components.ex:627
 #, elixir-autogen, elixir-format
 msgid "For agents"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:631
-#: lib/kanban_web/components/marketing_components.ex:640
+#: lib/kanban_web/components/marketing_components.ex:636
+#: lib/kanban_web/components/marketing_components.ex:645
 #, elixir-autogen, elixir-format
 msgid "For humans"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:649
+#: lib/kanban_web/components/marketing_components.ex:654
 #, elixir-autogen, elixir-format
 msgid "For teams"
 msgstr ""
@@ -3120,33 +3120,33 @@ msgstr ""
 msgid "GitHub"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:124
+#: lib/kanban_web/components/marketing_components.ex:128
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Go to boards"
 msgstr ""
 
 #: lib/kanban_web/components/marketing_closing.ex:57
-#: lib/kanban_web/components/marketing_components.ex:383
+#: lib/kanban_web/components/marketing_components.ex:388
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Go to my boards"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:641
+#: lib/kanban_web/components/marketing_components.ex:646
 #, elixir-autogen, elixir-format
 msgid "Goals → tasks → outcomes"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:688
+#: lib/kanban_web/components/marketing_components.ex:693
 #, elixir-autogen, elixir-format
 msgid "Hooks run on their machine"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:508
+#: lib/kanban_web/components/marketing_components.ex:513
 #, elixir-autogen, elixir-format
 msgid "How it works"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:473
+#: lib/kanban_web/components/marketing_components.ex:478
 #, elixir-autogen, elixir-format
 msgid "Most tools bolt AI on as a sidebar. Stride was built around the protocol agents need: atomic claims, capability matching, structured task context, and client-side hooks they fully control."
 msgstr ""
@@ -3156,8 +3156,8 @@ msgstr ""
 msgid "Persist field_visibility on board edit"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:77
-#: lib/kanban_web/components/marketing_components.ex:256
+#: lib/kanban_web/components/marketing_components.ex:81
+#: lib/kanban_web/components/marketing_components.ex:261
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Pricing"
@@ -3170,7 +3170,7 @@ msgid "Privacy"
 msgstr ""
 
 #: lib/kanban_web/components/marketing_components.ex:67
-#: lib/kanban_web/components/marketing_components.ex:243
+#: lib/kanban_web/components/marketing_components.ex:247
 #: lib/kanban_web/controllers/page_html/product.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Product"
@@ -3187,12 +3187,12 @@ msgstr ""
 msgid "Ready"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:650
+#: lib/kanban_web/components/marketing_components.ex:655
 #, elixir-autogen, elixir-format
 msgid "Real metrics that include AI"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:632
+#: lib/kanban_web/components/marketing_components.ex:637
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr ""
@@ -3205,8 +3205,8 @@ msgstr ""
 msgid "Security"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:133
-#: lib/kanban_web/components/marketing_components.ex:300
+#: lib/kanban_web/components/marketing_components.ex:137
+#: lib/kanban_web/components/marketing_components.ex:305
 #: lib/kanban_web/live/user_live/confirmation.ex:55
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:103
@@ -3221,9 +3221,9 @@ msgid "Start"
 msgstr ""
 
 #: lib/kanban_web/components/marketing_closing.ex:66
-#: lib/kanban_web/components/marketing_components.ex:140
-#: lib/kanban_web/components/marketing_components.ex:392
-#: lib/kanban_web/controllers/page_html/product.html.heex:210
+#: lib/kanban_web/components/marketing_components.ex:144
+#: lib/kanban_web/components/marketing_components.ex:397
+#: lib/kanban_web/controllers/page_html/product.html.heex:230
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:247
 #, elixir-autogen, elixir-format
 msgid "Start free"
@@ -3244,24 +3244,24 @@ msgstr ""
 msgid "Stride core"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:361
+#: lib/kanban_web/components/marketing_components.ex:366
 #, elixir-autogen, elixir-format
 msgid "Tasks are conversations."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:625
+#: lib/kanban_web/components/marketing_components.ex:630
 #, elixir-autogen, elixir-format
 msgid "Tasks declare key_files. Two agents can't touch the same code at the same time."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:70
-#: lib/kanban_web/components/marketing_components.ex:249
+#: lib/kanban_web/components/marketing_components.ex:74
+#: lib/kanban_web/components/marketing_components.ex:254
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:5
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Workflows"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:698
+#: lib/kanban_web/components/marketing_components.ex:703
 #, elixir-autogen, elixir-format
 msgid "You approve or send back"
 msgstr ""
@@ -3271,28 +3271,28 @@ msgstr ""
 msgid "approving them."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:616
+#: lib/kanban_web/components/marketing_components.ex:621
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:464
+#: lib/kanban_web/components/marketing_components.ex:469
 #, elixir-autogen, elixir-format
 msgid "not bots you babysit."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:187
+#: lib/kanban_web/components/marketing_components.ex:191
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:117
-#: lib/kanban_web/components/marketing_components.ex:293
+#: lib/kanban_web/components/marketing_components.ex:121
+#: lib/kanban_web/components/marketing_components.ex:298
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Sign out"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:364
+#: lib/kanban_web/components/marketing_components.ex:369
 #, elixir-autogen, elixir-format
 msgid "Stride can speak both ways."
 msgstr ""
@@ -3303,7 +3303,7 @@ msgstr ""
 msgid "Stride logo"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:352
+#: lib/kanban_web/components/marketing_components.ex:357
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Now in release →"
 msgstr ""
@@ -3474,7 +3474,7 @@ msgstr ""
 msgid "AI"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:152
+#: lib/kanban_web/controllers/page_html/product.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "AI ops as a first-class surface"
 msgstr ""
@@ -3527,7 +3527,7 @@ msgstr ""
 msgid "Application-level protections"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:127
+#: lib/kanban_web/controllers/page_html/product.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Approve at the speed of keystrokes"
 msgstr ""
@@ -3672,7 +3672,7 @@ msgstr ""
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:130
+#: lib/kanban_web/controllers/page_html/product.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr ""
@@ -3789,9 +3789,9 @@ msgstr ""
 
 #: lib/kanban_web/components/board_pulse_card.ex:124
 #: lib/kanban_web/live/metrics_live/workspace.ex:77
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Last 14 days"
-msgstr ""
+msgstr "Last 14 days"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:8
 #: lib/kanban_web/controllers/page_html/security.html.heex:8
@@ -3799,7 +3799,7 @@ msgstr ""
 msgid "Last updated: %{date}"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:180
+#: lib/kanban_web/controllers/page_html/product.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
 msgstr ""
@@ -3829,7 +3829,7 @@ msgstr ""
 msgid "Passwords"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:102
+#: lib/kanban_web/controllers/page_html/product.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at"
 msgstr ""
@@ -3850,7 +3850,7 @@ msgstr ""
 msgid "Rate limiting"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:198
+#: lib/kanban_web/controllers/page_html/product.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "Ready to see it run?"
 msgstr ""
@@ -3915,7 +3915,7 @@ msgstr ""
 msgid "Security issues: "
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:155
+#: lib/kanban_web/controllers/page_html/product.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
 msgstr ""
@@ -4005,7 +4005,7 @@ msgstr ""
 msgid "Stride's `before_doing`, `after_doing`, `before_review`, and `after_review` hooks are shell commands that run on the agent's machine — never on Stride's servers. This is a deliberate architectural choice: you hold the keys; agents hold the loop. Stride never executes user-supplied code or untrusted input on its own infrastructure."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:77
+#: lib/kanban_web/controllers/page_html/product.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Structured schema, not free-text"
 msgstr ""
@@ -4219,9 +4219,9 @@ msgid "Create new board"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/index.html.heex:90
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Delete board"
-msgstr ""
+msgstr "Delete board"
 
 #: lib/kanban_web/live/board_live/index.ex:126
 #: lib/kanban_web/live/board_live/index.html.heex:21
@@ -4240,9 +4240,9 @@ msgid "Coming soon"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/index.ex:41
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Create your first board"
-msgstr ""
+msgstr "Create your first board"
 
 #: lib/kanban_web/live/board_live/index.ex:52
 #, elixir-autogen, elixir-format
@@ -4270,9 +4270,9 @@ msgid "AI Optimized"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/index.ex:140
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Empty Board"
-msgstr ""
+msgstr "Empty Board"
 
 #: lib/kanban_web/components/board_header.ex:69
 #: lib/kanban_web/components/board_pulse_card.ex:146
@@ -4307,9 +4307,9 @@ msgid "New AI Optimized Board"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/index.html.heex:45
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "New Empty Board"
-msgstr ""
+msgstr "New Empty Board"
 
 #: lib/kanban_web/components/goals_strip.ex:91
 #, elixir-autogen, elixir-format, fuzzy
@@ -4344,9 +4344,9 @@ msgid "Start with a blank board"
 msgstr ""
 
 #: lib/kanban_web/components/layouts.ex:122
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Stride home"
-msgstr ""
+msgstr "Stride home"
 
 #: lib/kanban_web/live/agents_live.ex:80
 #: lib/kanban_web/live/board_live/index.html.heex:3
@@ -5546,7 +5546,7 @@ msgstr ""
 msgid "all boards"
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:151
+#: lib/kanban_web/components/marketing_components.ex:155
 #, elixir-autogen, elixir-format
 msgid "Toggle menu"
 msgstr ""
@@ -6156,72 +6156,72 @@ msgstr "and updated on a regular cadence. The full dependency tree is published 
 msgid "on every completed task. Outdated dependencies are surfaced with"
 msgstr "on every completed task. Outdated dependencies are surfaced with"
 
-#: lib/kanban_web/components/marketing_components.ex:345
+#: lib/kanban_web/components/marketing_components.ex:350
 #, elixir-autogen, elixir-format
 msgid "v2.0.0 · Updated UI and workspace enhancements"
 msgstr "v2.0.0 · Updated UI and workspace enhancements"
 
-#: lib/kanban_web/components/marketing_components.ex:404
+#: lib/kanban_web/components/marketing_components.ex:409
 #, elixir-autogen, elixir-format
 msgid "Learn about adding team members"
 msgstr "Learn about adding team members"
 
-#: lib/kanban_web/components/marketing_components.ex:413
+#: lib/kanban_web/components/marketing_components.ex:418
 #, elixir-autogen, elixir-format
 msgid "Learn about creating a board"
 msgstr "Learn about creating a board"
 
-#: lib/kanban_web/components/marketing_components.ex:700
+#: lib/kanban_web/components/marketing_components.ex:705
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 msgstr "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 
-#: lib/kanban_web/components/marketing_components.ex:478
+#: lib/kanban_web/components/marketing_components.ex:483
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
 msgstr ""
 
-#: lib/kanban_web/components/marketing_components.ex:643
+#: lib/kanban_web/components/marketing_components.ex:648
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 msgstr "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 
-#: lib/kanban_web/components/marketing_components.ex:668
+#: lib/kanban_web/components/marketing_components.ex:673
 #, elixir-autogen, elixir-format
 msgid "You write or review the task"
 msgstr "You write or review the task"
 
-#: lib/kanban_web/components/marketing_components.ex:690
+#: lib/kanban_web/components/marketing_components.ex:695
 #, elixir-autogen, elixir-format
 msgid "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 msgstr "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 
-#: lib/kanban_web/components/marketing_components.ex:513
+#: lib/kanban_web/components/marketing_components.ex:518
 #, elixir-autogen, elixir-format
 msgid "One loop."
 msgstr "One loop."
 
-#: lib/kanban_web/components/marketing_components.ex:371
+#: lib/kanban_web/components/marketing_components.ex:376
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
 msgstr "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
 
-#: lib/kanban_web/components/marketing_components.ex:515
+#: lib/kanban_web/components/marketing_components.ex:520
 #, elixir-autogen, elixir-format
 msgid "Two roles."
 msgstr "Two roles."
 
-#: lib/kanban_web/components/marketing_components.ex:670
+#: lib/kanban_web/components/marketing_components.ex:675
 #, elixir-autogen, elixir-format
 msgid "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 msgstr "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 
-#: lib/kanban_web/components/marketing_components.ex:571
+#: lib/kanban_web/components/marketing_components.ex:576
 #, elixir-autogen, elixir-format
 msgid "A few features"
 msgstr "A few features"
 
-#: lib/kanban_web/components/marketing_components.ex:422
+#: lib/kanban_web/components/marketing_components.ex:427
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams · self-hosting options available"
 msgstr "Free for you and your teams · self-hosting options available"
@@ -6236,37 +6236,37 @@ msgstr "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini
 msgid "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
 msgstr "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:63
+#: lib/kanban_web/controllers/page_html/product.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Stride kanban board showing the Backlog, Ready, Doing, Review, and Done columns"
 msgstr "Stride kanban board showing the Backlog, Ready, Doing, Review, and Done columns"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:88
+#: lib/kanban_web/controllers/page_html/product.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Stride task detail showing the why, what, acceptance criteria, key files, and hooks fields"
 msgstr "Stride task detail showing the why, what, acceptance criteria, key files, and hooks fields"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:113
+#: lib/kanban_web/controllers/page_html/product.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Stride goal view with the segmented progress bar and child tasks beneath it"
 msgstr "Stride goal view with the segmented progress bar and child tasks beneath it"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:105
+#: lib/kanban_web/controllers/page_html/product.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "A goal wraps a set of related tasks with aggregate progress and status segmentation. Decompose top-down, claim bottom-up. Goal-level assignment cascades to children atomically."
 msgstr "A goal wraps a set of related tasks with aggregate progress and status segmentation. Decompose top-down, claim bottom-up. Goal-level assignment cascades to children atomically."
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:138
+#: lib/kanban_web/controllers/page_html/product.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Stride review queue with the task list and the diff, tests, and acceptance checks pane"
 msgstr "Stride review queue with the task list and the diff, tests, and acceptance checks pane"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:163
+#: lib/kanban_web/controllers/page_html/product.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Stride agent activity surface with the agent roster and the live event stream below it"
 msgstr "Stride agent activity surface with the agent roster and the live event stream below it"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:188
+#: lib/kanban_web/controllers/page_html/product.html.heex:207
 #, elixir-autogen, elixir-format
 msgid "Stride workspace metrics dashboard with lead time, cycle time, wait time, and throughput split by agent and human"
 msgstr "Stride workspace metrics dashboard with lead time, cycle time, wait time, and throughput split by agent and human"
@@ -6281,27 +6281,27 @@ msgstr "01 · Boards"
 msgid "02 · The board"
 msgstr "02 · The board"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:74
+#: lib/kanban_web/controllers/page_html/product.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "03 · Task detail"
 msgstr "03 · Task detail"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:99
+#: lib/kanban_web/controllers/page_html/product.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "04 · Goals"
 msgstr "04 · Goals"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:124
+#: lib/kanban_web/controllers/page_html/product.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "05 · Review queue"
 msgstr "05 · Review queue"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:149
+#: lib/kanban_web/controllers/page_html/product.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "06 · Agent activity"
 msgstr "06 · Agent activity"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:174
+#: lib/kanban_web/controllers/page_html/product.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "07 · Metrics"
 msgstr "07 · Metrics"
@@ -6321,7 +6321,7 @@ msgstr "At a glance, see how work is flowing through the organization with detai
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:201
+#: lib/kanban_web/controllers/page_html/product.html.heex:223
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams."
 msgstr "Free for you and your teams."
@@ -6346,12 +6346,12 @@ msgstr "Wire your project to Stride"
 msgid "Backlog → Ready → Doing → Review → Done. The columns are fixed because the protocol is fixed: humans specify in Backlog, agents pull from Ready, humans focus on Review, and the board's shape is the same one your team and your agents both speak."
 msgstr "Backlog → Ready → Doing → Review → Done. The columns are fixed because the protocol is fixed: humans specify in Backlog, agents pull from Ready, humans focus on Review, and the board's shape is the same one your team and your agents both speak."
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:177
+#: lib/kanban_web/controllers/page_html/product.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Cycle time, split by agent vs human on all levels"
 msgstr "Cycle time, split by agent vs human on all levels"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:80
+#: lib/kanban_web/controllers/page_html/product.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."

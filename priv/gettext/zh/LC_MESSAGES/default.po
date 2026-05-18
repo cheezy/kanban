@@ -735,8 +735,8 @@ msgid "Confirmation link is invalid or has expired."
 msgstr "确认链接无效或已过期。"
 
 #: lib/kanban_web/components/layouts/root.html.heex:59
-#: lib/kanban_web/components/marketing_components.ex:101
-#: lib/kanban_web/components/marketing_components.ex:279
+#: lib/kanban_web/components/marketing_components.ex:105
+#: lib/kanban_web/components/marketing_components.ex:284
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
 msgstr "仪表板"
@@ -749,8 +749,8 @@ msgstr "此账户已确认。您可以登录。"
 #: lib/kanban_web/components/layouts.ex:293
 #: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/layouts/root.html.heex:85
-#: lib/kanban_web/components/marketing_components.ex:88
-#: lib/kanban_web/components/marketing_components.ex:268
+#: lib/kanban_web/components/marketing_components.ex:92
+#: lib/kanban_web/components/marketing_components.ex:273
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -871,8 +871,8 @@ msgid "Add with Edit Access"
 msgstr "添加为可编辑"
 
 #: lib/kanban_web/components/layouts/root.html.heex:62
-#: lib/kanban_web/components/marketing_components.ex:108
-#: lib/kanban_web/components/marketing_components.ex:285
+#: lib/kanban_web/components/marketing_components.ex:112
+#: lib/kanban_web/components/marketing_components.ex:290
 #, elixir-autogen, elixir-format
 msgid "Error Tracker"
 msgstr "错误跟踪器"
@@ -2044,8 +2044,8 @@ msgstr "阅读更多"
 #: lib/kanban_web/components/layouts.ex:286
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/layouts/root.html.heex:82
-#: lib/kanban_web/components/marketing_components.ex:84
-#: lib/kanban_web/components/marketing_components.ex:262
+#: lib/kanban_web/components/marketing_components.ex:88
+#: lib/kanban_web/components/marketing_components.ex:267
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2131,7 +2131,7 @@ msgstr "未找到使用该邮箱的用户"
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
 #: lib/kanban_web/live/metrics_live/workspace.ex:70
 #: lib/kanban_web/live/task_live/view_component.ex:239
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Metrics"
 msgstr "指标"
 
@@ -3027,57 +3027,57 @@ msgstr "不能超过 %{n} 个字符"
 msgid "must be one of the listed options"
 msgstr "必须是列出的选项之一"
 
-#: lib/kanban_web/components/marketing_components.ex:456
+#: lib/kanban_web/components/marketing_components.ex:461
 #, elixir-autogen, elixir-format
 msgid "A new contract"
 msgstr "一种新的协作契约"
 
-#: lib/kanban_web/components/marketing_components.ex:461
+#: lib/kanban_web/components/marketing_components.ex:466
 #, elixir-autogen, elixir-format
 msgid "AI agents are first-class teammates,"
 msgstr "AI agent 是一等队友，"
 
-#: lib/kanban_web/components/marketing_components.ex:82
+#: lib/kanban_web/components/marketing_components.ex:86
 #, elixir-autogen, elixir-format
 msgid "API · Docs · Changelog"
 msgstr "API · 文档 · 更新日志"
 
-#: lib/kanban_web/components/marketing_components.ex:607
+#: lib/kanban_web/components/marketing_components.ex:612
 #, elixir-autogen, elixir-format
 msgid "Agents declare what they can do. They only see — and can only claim — work that matches."
 msgstr "Agent 声明自己能做什么。它们只会看到——也只能认领——与之匹配的任务。"
 
-#: lib/kanban_web/components/marketing_components.ex:678
+#: lib/kanban_web/components/marketing_components.ex:683
 #, elixir-autogen, elixir-format
 msgid "An agent claims it"
 msgstr "Agent 认领任务"
 
-#: lib/kanban_web/components/marketing_components.ex:680
+#: lib/kanban_web/components/marketing_components.ex:685
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr "原子化。SKIP LOCKED。只有一个 agent 能拿到任务。它会拉取最新代码、完成准备，然后开始实现。"
 
-#: lib/kanban_web/components/marketing_components.ex:605
+#: lib/kanban_web/components/marketing_components.ex:610
 #, elixir-autogen, elixir-format
 msgid "Capability matching"
 msgstr "能力匹配"
 
-#: lib/kanban_web/components/marketing_components.ex:614
+#: lib/kanban_web/components/marketing_components.ex:619
 #, elixir-autogen, elixir-format
 msgid "Client-side hooks"
 msgstr "客户端 hooks"
 
-#: lib/kanban_web/components/marketing_components.ex:623
+#: lib/kanban_web/components/marketing_components.ex:628
 #, elixir-autogen, elixir-format
 msgid "Conflict prevention"
 msgstr "冲突预防"
 
-#: lib/kanban_web/components/marketing_components.ex:652
+#: lib/kanban_web/components/marketing_components.ex:657
 #, elixir-autogen, elixir-format
 msgid "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
 msgstr "按 agent 与人类拆分的周期时间。吞吐量。人类成为瓶颈的环节。"
 
-#: lib/kanban_web/components/marketing_components.ex:634
+#: lib/kanban_web/components/marketing_components.ex:639
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
 msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。"
@@ -3094,20 +3094,20 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 msgid "Doing"
 msgstr "进行中"
 
-#: lib/kanban_web/components/marketing_components.ex:604
-#: lib/kanban_web/components/marketing_components.ex:613
-#: lib/kanban_web/components/marketing_components.ex:622
+#: lib/kanban_web/components/marketing_components.ex:609
+#: lib/kanban_web/components/marketing_components.ex:618
+#: lib/kanban_web/components/marketing_components.ex:627
 #, elixir-autogen, elixir-format
 msgid "For agents"
 msgstr "面向 agent"
 
-#: lib/kanban_web/components/marketing_components.ex:631
-#: lib/kanban_web/components/marketing_components.ex:640
+#: lib/kanban_web/components/marketing_components.ex:636
+#: lib/kanban_web/components/marketing_components.ex:645
 #, elixir-autogen, elixir-format
 msgid "For humans"
 msgstr "面向人类"
 
-#: lib/kanban_web/components/marketing_components.ex:649
+#: lib/kanban_web/components/marketing_components.ex:654
 #, elixir-autogen, elixir-format
 msgid "For teams"
 msgstr "面向团队"
@@ -3117,33 +3117,33 @@ msgstr "面向团队"
 msgid "GitHub"
 msgstr "GitHub"
 
-#: lib/kanban_web/components/marketing_components.ex:124
+#: lib/kanban_web/components/marketing_components.ex:128
 #, elixir-autogen, elixir-format
 msgid "Go to boards"
 msgstr "前往看板"
 
 #: lib/kanban_web/components/marketing_closing.ex:57
-#: lib/kanban_web/components/marketing_components.ex:383
+#: lib/kanban_web/components/marketing_components.ex:388
 #, elixir-autogen, elixir-format
 msgid "Go to my boards"
 msgstr "前往我的看板"
 
-#: lib/kanban_web/components/marketing_components.ex:641
+#: lib/kanban_web/components/marketing_components.ex:646
 #, elixir-autogen, elixir-format
 msgid "Goals → tasks → outcomes"
 msgstr "目标 → 任务 → 成果"
 
-#: lib/kanban_web/components/marketing_components.ex:688
+#: lib/kanban_web/components/marketing_components.ex:693
 #, elixir-autogen, elixir-format
 msgid "Hooks run on their machine"
 msgstr "Hooks 在它们自己的机器上运行"
 
-#: lib/kanban_web/components/marketing_components.ex:508
+#: lib/kanban_web/components/marketing_components.ex:513
 #, elixir-autogen, elixir-format
 msgid "How it works"
 msgstr "工作原理"
 
-#: lib/kanban_web/components/marketing_components.ex:473
+#: lib/kanban_web/components/marketing_components.ex:478
 #, elixir-autogen, elixir-format
 msgid "Most tools bolt AI on as a sidebar. Stride was built around the protocol agents need: atomic claims, capability matching, structured task context, and client-side hooks they fully control."
 msgstr "大多数工具只是把 AI 当作侧边栏附加上去。Stride 则围绕 agent 真正需要的协议构建：原子化认领、能力匹配、结构化任务上下文，以及由 agent 完全掌控的客户端 hooks。"
@@ -3153,8 +3153,8 @@ msgstr "大多数工具只是把 AI 当作侧边栏附加上去。Stride 则围�
 msgid "Persist field_visibility on board edit"
 msgstr "在看板编辑时持久化 field_visibility"
 
-#: lib/kanban_web/components/marketing_components.ex:77
-#: lib/kanban_web/components/marketing_components.ex:256
+#: lib/kanban_web/components/marketing_components.ex:81
+#: lib/kanban_web/components/marketing_components.ex:261
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Pricing"
@@ -3167,7 +3167,7 @@ msgid "Privacy"
 msgstr "隐私"
 
 #: lib/kanban_web/components/marketing_components.ex:67
-#: lib/kanban_web/components/marketing_components.ex:243
+#: lib/kanban_web/components/marketing_components.ex:247
 #: lib/kanban_web/controllers/page_html/product.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Product"
@@ -3184,12 +3184,12 @@ msgstr "产品"
 msgid "Ready"
 msgstr "待办"
 
-#: lib/kanban_web/components/marketing_components.ex:650
+#: lib/kanban_web/components/marketing_components.ex:655
 #, elixir-autogen, elixir-format
 msgid "Real metrics that include AI"
 msgstr "把 AI 也算进去的真实指标"
 
-#: lib/kanban_web/components/marketing_components.ex:632
+#: lib/kanban_web/components/marketing_components.ex:637
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr "以批准的速度完成评审"
@@ -3202,8 +3202,8 @@ msgstr "以批准的速度完成评审"
 msgid "Security"
 msgstr "安全"
 
-#: lib/kanban_web/components/marketing_components.ex:133
-#: lib/kanban_web/components/marketing_components.ex:300
+#: lib/kanban_web/components/marketing_components.ex:137
+#: lib/kanban_web/components/marketing_components.ex:305
 #: lib/kanban_web/live/user_live/confirmation.ex:55
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:103
@@ -3218,9 +3218,9 @@ msgid "Start"
 msgstr "开始"
 
 #: lib/kanban_web/components/marketing_closing.ex:66
-#: lib/kanban_web/components/marketing_components.ex:140
-#: lib/kanban_web/components/marketing_components.ex:392
-#: lib/kanban_web/controllers/page_html/product.html.heex:210
+#: lib/kanban_web/components/marketing_components.ex:144
+#: lib/kanban_web/components/marketing_components.ex:397
+#: lib/kanban_web/controllers/page_html/product.html.heex:230
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:247
 #, elixir-autogen, elixir-format
 msgid "Start free"
@@ -3241,24 +3241,24 @@ msgstr "通过 PubSub 推送 task_moved"
 msgid "Stride core"
 msgstr "Stride core"
 
-#: lib/kanban_web/components/marketing_components.ex:361
+#: lib/kanban_web/components/marketing_components.ex:366
 #, elixir-autogen, elixir-format
 msgid "Tasks are conversations."
 msgstr "任务即对话。"
 
-#: lib/kanban_web/components/marketing_components.ex:625
+#: lib/kanban_web/components/marketing_components.ex:630
 #, elixir-autogen, elixir-format
 msgid "Tasks declare key_files. Two agents can't touch the same code at the same time."
 msgstr "任务声明 key_files。两个 agent 不会同时改动同一段代码。"
 
-#: lib/kanban_web/components/marketing_components.ex:70
-#: lib/kanban_web/components/marketing_components.ex:249
+#: lib/kanban_web/components/marketing_components.ex:74
+#: lib/kanban_web/components/marketing_components.ex:254
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Workflows"
 msgstr "工作流"
 
-#: lib/kanban_web/components/marketing_components.ex:698
+#: lib/kanban_web/components/marketing_components.ex:703
 #, elixir-autogen, elixir-format
 msgid "You approve or send back"
 msgstr "你批准或打回"
@@ -3268,28 +3268,28 @@ msgstr "你批准或打回"
 msgid "approving them."
 msgstr "开始批准代码。"
 
-#: lib/kanban_web/components/marketing_components.ex:616
+#: lib/kanban_web/components/marketing_components.ex:621
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
 msgstr "before_doing、after_doing、before_review、after_review。它们在 agent 的机器上运行，而不是你的。"
 
-#: lib/kanban_web/components/marketing_components.ex:464
+#: lib/kanban_web/components/marketing_components.ex:469
 #, elixir-autogen, elixir-format
 msgid "not bots you babysit."
 msgstr "不是要你照看的机器人。"
 
-#: lib/kanban_web/components/marketing_components.ex:187
+#: lib/kanban_web/components/marketing_components.ex:191
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr "切换语言"
 
-#: lib/kanban_web/components/marketing_components.ex:117
-#: lib/kanban_web/components/marketing_components.ex:293
+#: lib/kanban_web/components/marketing_components.ex:121
+#: lib/kanban_web/components/marketing_components.ex:298
 #, elixir-autogen, elixir-format
 msgid "Sign out"
 msgstr "退出登录"
 
-#: lib/kanban_web/components/marketing_components.ex:364
+#: lib/kanban_web/components/marketing_components.ex:369
 #, elixir-autogen, elixir-format
 msgid "Stride can speak both ways."
 msgstr "Stride 能与双方对话。"
@@ -3300,7 +3300,7 @@ msgstr "Stride 能与双方对话。"
 msgid "Stride logo"
 msgstr "Stride 标志"
 
-#: lib/kanban_web/components/marketing_components.ex:352
+#: lib/kanban_web/components/marketing_components.ex:357
 #, elixir-autogen, elixir-format
 msgid "Now in release →"
 msgstr "最新发布 →"
@@ -3471,7 +3471,7 @@ msgstr "05"
 msgid "AI"
 msgstr "AI"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:152
+#: lib/kanban_web/controllers/page_html/product.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "AI ops as a first-class surface"
 msgstr "将 AI 运维作为一等界面"
@@ -3524,7 +3524,7 @@ msgstr "任何拥有登录账号的人。代理(Claude、Cursor、Aider、Codex�
 msgid "Application-level protections"
 msgstr "应用层防护"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:127
+#: lib/kanban_web/controllers/page_html/product.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Approve at the speed of keystrokes"
 msgstr "以按键速度进行批准"
@@ -3669,7 +3669,7 @@ msgstr "视您所在地而定,您可能享有以下权利:"
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr "诊断错误、衡量性能并防止滥用(限速、欺诈检测)。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:130
+#: lib/kanban_web/controllers/page_html/product.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr "差异、测试、验收、钩子遥测 — 都在一个面板内。A 批准、S 退回、J/K 导航。为审核多于编写的人类设计。"
@@ -3786,9 +3786,9 @@ msgstr "需要物理访问用户设备,或涉及我们不运营的第三方服�
 
 #: lib/kanban_web/components/board_pulse_card.ex:124
 #: lib/kanban_web/live/metrics_live/workspace.ex:77
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Last 14 days"
-msgstr "最近7天"
+msgstr "最近14天"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:8
 #: lib/kanban_web/controllers/page_html/security.html.heex:8
@@ -3796,7 +3796,7 @@ msgstr "最近7天"
 msgid "Last updated: %{date}"
 msgstr "最后更新:%{date}"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:180
+#: lib/kanban_web/controllers/page_html/product.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
 msgstr "前置时间、周期时间、等待时间、吞吐量 — 每项指标都按完成工作的对象划分。准确看到您的人类在哪里成为瓶颈,以及代理在哪里表现出色。"
@@ -3826,7 +3826,7 @@ msgstr "处处使用参数化查询"
 msgid "Passwords"
 msgstr "密码"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:102
+#: lib/kanban_web/controllers/page_html/product.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at"
 msgstr "在您思考的层面进行规划"
@@ -3847,7 +3847,7 @@ msgstr "对本政策有疑问、担忧或请求?请发送邮件至 "
 msgid "Rate limiting"
 msgstr "限速"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:198
+#: lib/kanban_web/controllers/page_html/product.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "Ready to see it run?"
 msgstr "准备好看它运行了吗?"
@@ -3912,7 +3912,7 @@ msgstr "机密(数据库 URL、签名密钥、SMTP 凭据)存储在托管提供�
 msgid "Security issues: "
 msgstr "安全问题: "
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:155
+#: lib/kanban_web/controllers/page_html/product.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
 msgstr "查看您代理舰队中的每一次认领、钩子结果、完成与释放。按代理、能力、看板分类的遥测。看板就是操作系统;活动流就是 syslog。"
@@ -4002,7 +4002,7 @@ msgstr "Stride 将每个任务封装在一个四阶段生命周期中。在每�
 msgid "Stride's `before_doing`, `after_doing`, `before_review`, and `after_review` hooks are shell commands that run on the agent's machine — never on Stride's servers. This is a deliberate architectural choice: you hold the keys; agents hold the loop. Stride never executes user-supplied code or untrusted input on its own infrastructure."
 msgstr "Stride 的 `before_doing`、`after_doing`、`before_review` 和 `after_review` 钩子是运行在代理机器上的 shell 命令 — 绝不会在 Stride 的服务器上运行。这是有意的架构选择:钥匙由您持有,循环由代理持有。Stride 从不在自己的基础设施上执行用户提供的代码或不受信任的输入。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:77
+#: lib/kanban_web/controllers/page_html/product.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Structured schema, not free-text"
 msgstr "结构化的模式,而非自由文本"
@@ -4190,7 +4190,7 @@ msgid "non-blocking · 60s"
 msgstr "非阻塞 · 60 秒"
 
 #: lib/kanban_web/components/board_pulse_card.ex:127
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "throughput"
 msgstr "吞吐量"
 
@@ -4205,7 +4205,7 @@ msgstr[0] "%{count} 个活跃"
 #: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:86
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "看板"
 
@@ -4215,13 +4215,13 @@ msgid "Create new board"
 msgstr "创建新看板"
 
 #: lib/kanban_web/live/board_live/index.html.heex:90
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Delete board"
-msgstr "删除"
+msgstr "删除看板"
 
 #: lib/kanban_web/live/board_live/index.ex:126
 #: lib/kanban_web/live/board_live/index.html.heex:21
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "New board"
 msgstr "新建看板"
 
@@ -4236,9 +4236,9 @@ msgid "Coming soon"
 msgstr "即将推出"
 
 #: lib/kanban_web/live/board_live/index.ex:41
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Create your first board"
-msgstr "创建您的第一列"
+msgstr "创建您的第一个看板"
 
 #: lib/kanban_web/live/board_live/index.ex:52
 #, elixir-autogen, elixir-format
@@ -4251,7 +4251,7 @@ msgid "Let's start with one."
 msgstr "让我们从一个开始。"
 
 #: lib/kanban_web/live/board_live/index.ex:27
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "尚无看板"
 
@@ -4266,9 +4266,9 @@ msgid "AI Optimized"
 msgstr "AI 优化"
 
 #: lib/kanban_web/live/board_live/index.ex:140
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Empty Board"
-msgstr "编辑看板"
+msgstr "空白看板"
 
 #: lib/kanban_web/components/board_header.ex:69
 #: lib/kanban_web/components/board_pulse_card.ex:146
@@ -4283,7 +4283,7 @@ msgstr "活动令牌"
 
 #: lib/kanban_web/components/layouts.ex:260
 #: lib/kanban_web/live/agents_live.ex:82
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "代理"
 
@@ -4293,7 +4293,7 @@ msgid "GOAL"
 msgstr "目标"
 
 #: lib/kanban_web/components/board_pulse_card.ex:189
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Last Activity"
 msgstr "最后活动"
 
@@ -4303,9 +4303,9 @@ msgid "New AI Optimized Board"
 msgstr "新建 AI 优化看板"
 
 #: lib/kanban_web/live/board_live/index.html.heex:45
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "New Empty Board"
-msgstr "新建看板"
+msgstr "新建空白看板"
 
 #: lib/kanban_web/components/goals_strip.ex:91
 #, elixir-autogen, elixir-format, fuzzy
@@ -4330,7 +4330,7 @@ msgstr "将子项提升至「就绪」"
 #: lib/kanban_web/components/layouts.ex:267
 #: lib/kanban_web/live/review_live.ex:102
 #: lib/kanban_web/live/review_live.ex:123
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review queue"
 msgstr "审核队列"
 
@@ -4340,9 +4340,9 @@ msgid "Start with a blank board"
 msgstr "从一个空白看板开始"
 
 #: lib/kanban_web/components/layouts.ex:122
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Stride home"
-msgstr "Stride"
+msgstr "Stride 首页"
 
 #: lib/kanban_web/live/agents_live.ex:80
 #: lib/kanban_web/live/board_live/index.html.heex:3
@@ -4350,7 +4350,7 @@ msgstr "Stride"
 #: lib/kanban_web/live/goal_live/show.ex:82
 #: lib/kanban_web/live/metrics_live/workspace.ex:50
 #: lib/kanban_web/live/review_live.ex:100
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr "工作区"
 
@@ -5534,7 +5534,7 @@ msgstr "筛选"
 msgid "all boards"
 msgstr "所有看板"
 
-#: lib/kanban_web/components/marketing_components.ex:151
+#: lib/kanban_web/components/marketing_components.ex:155
 #, elixir-autogen, elixir-format
 msgid "Toggle menu"
 msgstr "切换菜单"
@@ -6144,72 +6144,72 @@ msgstr "检测,并按固定节奏更新。完整的依赖树发布在项目的 m
 msgid "on every completed task. Outdated dependencies are surfaced with"
 msgstr "在每个已完成的任务时执行。过期依赖通过"
 
-#: lib/kanban_web/components/marketing_components.ex:345
+#: lib/kanban_web/components/marketing_components.ex:350
 #, elixir-autogen, elixir-format
 msgid "v2.0.0 · Updated UI and workspace enhancements"
 msgstr "v2.0.0 · 更新的界面与工作区改进"
 
-#: lib/kanban_web/components/marketing_components.ex:404
+#: lib/kanban_web/components/marketing_components.ex:409
 #, elixir-autogen, elixir-format
 msgid "Learn about adding team members"
 msgstr "了解如何添加团队成员"
 
-#: lib/kanban_web/components/marketing_components.ex:413
+#: lib/kanban_web/components/marketing_components.ex:418
 #, elixir-autogen, elixir-format
 msgid "Learn about creating a board"
 msgstr "了解如何创建看板"
 
-#: lib/kanban_web/components/marketing_components.ex:700
+#: lib/kanban_web/components/marketing_components.ex:705
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 msgstr "Diff、测试、验收——全部集中在一个面板。⌘Agent 响应你的评审。完成。"
 
-#: lib/kanban_web/components/marketing_components.ex:478
+#: lib/kanban_web/components/marketing_components.ex:483
 #, elixir-autogen, elixir-format
 msgid "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
 msgstr "人类拥有一块快速、平静的看板用于规划与评审。Agent 拥有足够丰富的 API，无需询问也能交付。同一块看板，对双方都像母语般自然。"
 
-#: lib/kanban_web/components/marketing_components.ex:643
+#: lib/kanban_web/components/marketing_components.ex:648
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 msgstr "在你思考的层级做规划。Stride 会将其拆解为 agent 真正可以认领的任务,并附上其准确执行所需的细节。"
 
-#: lib/kanban_web/components/marketing_components.ex:668
+#: lib/kanban_web/components/marketing_components.ex:673
 #, elixir-autogen, elixir-format
 msgid "You write or review the task"
 msgstr "你写下或评审任务"
 
-#: lib/kanban_web/components/marketing_components.ex:690
+#: lib/kanban_web/components/marketing_components.ex:695
 #, elixir-autogen, elixir-format
 msgid "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 msgstr "运行测试、创建 PR,或者你在 .stride.md 里写下的任何东西。你掌握钥匙,agent 负责循环。"
 
-#: lib/kanban_web/components/marketing_components.ex:513
+#: lib/kanban_web/components/marketing_components.ex:518
 #, elixir-autogen, elixir-format
 msgid "One loop."
 msgstr "一个循环。"
 
-#: lib/kanban_web/components/marketing_components.ex:371
+#: lib/kanban_web/components/marketing_components.ex:376
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
 msgstr "Stride 是一款 AI 原生的工作管理系统。人类负责规划、评审、批准。Agent 负责认领、构建、交付。同一块看板。一套工作流。没有胶水代码。"
 
-#: lib/kanban_web/components/marketing_components.ex:515
+#: lib/kanban_web/components/marketing_components.ex:520
 #, elixir-autogen, elixir-format
 msgid "Two roles."
 msgstr "两种角色。"
 
-#: lib/kanban_web/components/marketing_components.ex:670
+#: lib/kanban_web/components/marketing_components.ex:675
 #, elixir-autogen, elixir-format
 msgid "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 msgstr "为什么、做什么、在哪里、验收标准、测试策略、安全考虑等等。Schema 本身就是对话。"
 
-#: lib/kanban_web/components/marketing_components.ex:571
+#: lib/kanban_web/components/marketing_components.ex:576
 #, elixir-autogen, elixir-format
 msgid "A few features"
 msgstr "一些功能"
 
-#: lib/kanban_web/components/marketing_components.ex:422
+#: lib/kanban_web/components/marketing_components.ex:427
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams · self-hosting options available"
 msgstr "对你和你的团队免费 · 支持自托管"
@@ -6224,37 +6224,37 @@ msgstr "对你和你的团队免费。任意 agent 都可以接入 — Claude、
 msgid "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
 msgstr "Stride 是一款 AI 原生的工作管理系统。每一个界面都被设计成让人类与 agent 都能在同一块看板上工作而互不干扰。以下是各部分的样子。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:63
+#: lib/kanban_web/controllers/page_html/product.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Stride kanban board showing the Backlog, Ready, Doing, Review, and Done columns"
 msgstr "Stride 看板,显示 Backlog、Ready、Doing、Review 和 Done 列"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:88
+#: lib/kanban_web/controllers/page_html/product.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Stride task detail showing the why, what, acceptance criteria, key files, and hooks fields"
 msgstr "Stride 任务详情,显示为什么、做什么、验收标准、关键文件和 hooks 字段"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:113
+#: lib/kanban_web/controllers/page_html/product.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Stride goal view with the segmented progress bar and child tasks beneath it"
 msgstr "Stride 目标视图,带有分段进度条以及下方的子任务"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:105
+#: lib/kanban_web/controllers/page_html/product.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "A goal wraps a set of related tasks with aggregate progress and status segmentation. Decompose top-down, claim bottom-up. Goal-level assignment cascades to children atomically."
 msgstr "目标将一组相关任务打包在一起,提供汇总进度和按状态分段。自上而下分解,自下而上认领。目标层级的分配将原子地级联到子任务。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:138
+#: lib/kanban_web/controllers/page_html/product.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Stride review queue with the task list and the diff, tests, and acceptance checks pane"
 msgstr "Stride 评审队列,左侧任务列表,右侧 diff、测试与验收检查面板"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:163
+#: lib/kanban_web/controllers/page_html/product.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Stride agent activity surface with the agent roster and the live event stream below it"
 msgstr "Stride agent 活动界面,顶部为 agent 列表,下方为实时事件流"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:188
+#: lib/kanban_web/controllers/page_html/product.html.heex:207
 #, elixir-autogen, elixir-format
 msgid "Stride workspace metrics dashboard with lead time, cycle time, wait time, and throughput split by agent and human"
 msgstr "Stride 工作区指标仪表板,按 agent 与人类分别展示提前时间、周期时间、等待时间和吞吐量"
@@ -6269,27 +6269,27 @@ msgstr "01 · 看板"
 msgid "02 · The board"
 msgstr "02 · 看板"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:74
+#: lib/kanban_web/controllers/page_html/product.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "03 · Task detail"
 msgstr "03 · 任务详情"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:99
+#: lib/kanban_web/controllers/page_html/product.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "04 · Goals"
 msgstr "04 · 目标"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:124
+#: lib/kanban_web/controllers/page_html/product.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "05 · Review queue"
 msgstr "05 · 评审队列"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:149
+#: lib/kanban_web/controllers/page_html/product.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "06 · Agent activity"
 msgstr "06 · Agent 活动"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:174
+#: lib/kanban_web/controllers/page_html/product.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "07 · Metrics"
 msgstr "07 · 指标"
@@ -6309,7 +6309,7 @@ msgstr "一目了然地查看工作如何在组织内流动,所有细节与指�
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "在你的项目文件夹里放一个 .stride.md,为你的 agent 获取一个 API token,然后观察循环在你自己的机器上运行。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:201
+#: lib/kanban_web/controllers/page_html/product.html.heex:223
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams."
 msgstr "对你和你的团队免费。"
@@ -6334,12 +6334,12 @@ msgstr "将你的项目接入 Stride"
 msgid "Backlog → Ready → Doing → Review → Done. The columns are fixed because the protocol is fixed: humans specify in Backlog, agents pull from Ready, humans focus on Review, and the board's shape is the same one your team and your agents both speak."
 msgstr "Backlog → Ready → Doing → Review → Done。列固定是因为协议固定:人类在 Backlog 写规格,agent 从 Ready 拉任务,人类专注于 Review,看板的形态正是你的团队与 agent 共同使用的语言。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:177
+#: lib/kanban_web/controllers/page_html/product.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Cycle time, split by agent vs human on all levels"
 msgstr "周期时间,在所有层级按 agent 与人类划分"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:80
+#: lib/kanban_web/controllers/page_html/product.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "每个任务都包含为什么、做什么、验收标准、测试策略、安全考虑、需要规避的陷阱以及可观测性。Agent 在认领时即拥有足够上下文,可以直接执行而无需来回沟通;人类则依据自己写下的标准而非感觉来评审。"
