@@ -2916,6 +2916,7 @@ msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu entarchivieren"
 msgid "accuracy"
 msgstr "Genauigkeit"
 
+#: lib/kanban_web/controllers/page_html/security.html.heex:154
 #: lib/kanban_web/controllers/page_html/tango.html.heex:72
 #: lib/kanban_web/controllers/page_html/tango.html.heex:91
 #: lib/kanban_web/live/user_live/registration.ex:116
@@ -3243,7 +3244,7 @@ msgstr "Überprüfung im Tempo der Genehmigung"
 
 #: lib/kanban_web/components/auth_frame.ex:144
 #: lib/kanban_web/components/marketing_closing.ex:163
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:162
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:160
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Security"
@@ -3392,7 +3393,7 @@ msgstr "v1.29.0 · Zielgetriebener Zuweisungs-Workflow"
 msgid "Now in release →"
 msgstr "Jetzt im Release →"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:188
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
 msgstr " und wir antworten innerhalb angemessener Zeit."
@@ -3422,7 +3423,7 @@ msgstr " bei jeder zustandsändernden Browser-Anfrage."
 msgid " on the agent API and on authentication endpoints to defeat credential-stuffing and runaway-agent scenarios."
 msgstr " für die Agenten-API und Authentifizierungs-Endpunkte, um Credential-Stuffing und außer Kontrolle geratene Agenten abzuwehren."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:104
+#: lib/kanban_web/controllers/page_html/security.html.heex:113
 #, elixir-autogen, elixir-format
 msgid " static-analysis runs in CI on every commit; the build fails on a finding."
 msgstr " Statische Analyse läuft in CI bei jedem Commit; der Build schlägt bei einem Fund fehl."
@@ -3507,17 +3508,17 @@ msgstr "vor %{n} Std."
 msgid "%{n}m ago"
 msgstr "vor %{n} Min."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:212
+#: lib/kanban_web/controllers/page_html/security.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "."
 msgstr "."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:207
+#: lib/kanban_web/controllers/page_html/security.html.heex:229
 #, elixir-autogen, elixir-format
 msgid ". For non-security questions about how Stride handles your data, see the "
 msgstr ". Für nicht sicherheitsrelevante Fragen dazu, wie Stride Ihre Daten behandelt, siehe die "
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:151
+#: lib/kanban_web/controllers/page_html/security.html.heex:173
 #, elixir-autogen, elixir-format
 msgid ". For sensitive reports, request our PGP key in the first message and we will reply with it."
 msgstr ". Für sensible Meldungen fordern Sie in der ersten Nachricht unseren PGP-Schlüssel an und wir antworten damit."
@@ -3598,7 +3599,7 @@ msgstr "KI"
 msgid "AI ops as a first-class surface"
 msgstr "KI-Operationen als erstklassige Oberfläche"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:175
+#: lib/kanban_web/controllers/page_html/security.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "API token leakage or scope-escape via the agent API."
 msgstr "Leck von API-Tokens oder Geltungsbereichs-Ausbruch über die Agenten-API."
@@ -3606,7 +3607,7 @@ msgstr "Leck von API-Tokens oder Geltungsbereichs-Ausbruch über die Agenten-API
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
 #: lib/kanban_web/live/board_live/show.html.heex:420
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "API tokens"
 msgstr "API-Tokens"
 
@@ -3616,9 +3617,9 @@ msgid "Access the personal data we hold about you."
 msgstr "Zugriff auf die personenbezogenen Daten, die wir über Sie speichern."
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:26
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Account information"
-msgstr "Konto bestätigt!"
+msgstr "Kontoinformationen"
 
 #: lib/kanban_web/components/agents_header.ex:51
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:38
@@ -3652,7 +3653,7 @@ msgid "Approve at the speed of keystrokes"
 msgstr "Genehmigen Sie im Tempo Ihrer Tastenanschläge"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:44
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Atomic claiming"
 msgstr "Atomares Beanspruchen"
 
@@ -3666,12 +3667,12 @@ msgstr "Export des Audit-Logs, benutzerdefinierte Aufbewahrungsrichtlinien"
 msgid "Authentication and access"
 msgstr "Authentifizierung und Zugriff"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:165
+#: lib/kanban_web/controllers/page_html/security.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Authentication and session-management bypasses."
 msgstr "Umgehungen der Authentifizierung und Sitzungsverwaltung."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:167
+#: lib/kanban_web/controllers/page_html/security.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Authorization bugs that let one user access another user's workspace data."
 msgstr "Autorisierungsfehler, durch die ein Benutzer auf Workspace-Daten eines anderen Benutzers zugreifen kann."
@@ -3701,7 +3702,7 @@ msgstr "Kann ich später zwischen Selbsthosting und gehostet wechseln?"
 msgid "Captured, not yet ready"
 msgstr "Erfasst, noch nicht bereit"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:173
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Changes to this policy"
 msgstr "Änderungen an dieser Richtlinie"
@@ -3721,17 +3722,17 @@ msgstr "Häufige Workflow-Muster"
 msgid "Community support on GitHub"
 msgstr "Community-Support auf GitHub"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:201
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/controllers/page_html/security.html.heex:223
+#, elixir-autogen, elixir-format
 msgid "Contact"
 msgstr "Kontakt"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:184
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "Kontaktieren Sie uns"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:151
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Cookies and local storage"
 msgstr "Cookies und lokaler Speicher"
@@ -3741,7 +3742,7 @@ msgstr "Cookies und lokaler Speicher"
 msgid "Correct inaccurate personal data."
 msgstr "Unrichtige personenbezogene Daten berichtigen."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:173
+#: lib/kanban_web/controllers/page_html/security.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Cryptographic flaws affecting passwords, tokens, or data at rest."
 msgstr "Kryptografische Mängel, die Passwörter, Tokens oder Daten im Ruhezustand betreffen."
@@ -3781,18 +3782,13 @@ msgstr "Persönlicher Success-Manager + individuelles SLA"
 msgid "Delete your account and your personal data."
 msgstr "Ihr Konto und Ihre personenbezogenen Daten löschen."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:182
+#: lib/kanban_web/controllers/page_html/security.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "Denial-of-service attacks, traffic-flooding, and rate-limit-bypass-by-volume."
 msgstr "Denial-of-Service-Angriffe, Traffic-Flooding und Volumen-basierte Umgehung der Rate-Limits."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:132
+#: lib/kanban_web/controllers/page_html/security.html.heex:151
 #, elixir-autogen, elixir-format
-msgid "Dependencies are audited with mix deps.audit and mix hex.audit on every dependency change. Outdated dependencies are surfaced with mix hex.outdated and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
-msgstr "Abhängigkeiten werden bei jeder Änderung mit mix deps.audit und mix hex.audit auditiert. Veraltete Abhängigkeiten werden mit mix hex.outdated identifiziert und in regelmäßigem Rhythmus aktualisiert. Der vollständige Abhängigkeitsbaum ist in der mix.exs-Datei des Projekts veröffentlicht und im Open-Source-Repository einsehbar."
-
-#: lib/kanban_web/controllers/page_html/security.html.heex:129
-#, elixir-autogen, elixir-format, fuzzy
 msgid "Dependency hygiene"
 msgstr "Abhängigkeits-Hygiene"
 
@@ -3851,11 +3847,6 @@ msgstr "Alles aus Solo, plus:"
 msgid "Everything in Team, plus:"
 msgstr "Alles aus Team, plus:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:141
-#, elixir-autogen, elixir-format
-msgid "Export your workspace content in a machine-readable format."
-msgstr "Ihre Workspace-Inhalte in einem maschinenlesbaren Format exportieren."
-
 #: lib/kanban_web/controllers/page_html/product.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Five-column flow, AI-optimized"
@@ -3901,7 +3892,7 @@ msgstr "Zielgesteuerte Zuweisung + Agentenflotten pro Benutzer"
 msgid "Hooks live in your repo, not ours"
 msgstr "Hooks leben in Ihrem Repo, nicht in unserem"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:113
+#: lib/kanban_web/controllers/page_html/security.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Hooks run on your machine, not ours"
 msgstr "Hooks laufen auf Ihrer Maschine, nicht auf unserer"
@@ -3921,7 +3912,7 @@ msgstr "Wie wir Ihre Informationen nutzen"
 msgid "Humans approve / send back"
 msgstr "Menschen genehmigen / senden zurück"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:143
+#: lib/kanban_web/controllers/page_html/security.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "If you believe you have found a security vulnerability in Stride, please report it to us privately rather than filing a public issue. We will acknowledge receipt within 72 hours, investigate promptly, and credit reporters who follow this responsible-disclosure path."
 msgstr "Falls Sie glauben, eine Sicherheitslücke in Stride entdeckt zu haben, melden Sie sie bitte privat statt einen öffentlichen Issue zu eröffnen. Wir bestätigen den Eingang innerhalb von 72 Stunden, prüfen umgehend und nennen Meldende, die diesen Weg der verantwortungsvollen Offenlegung wählen."
@@ -3931,17 +3922,12 @@ msgstr "Falls Sie glauben, eine Sicherheitslücke in Stride entdeckt zu haben, m
 msgid "Information we collect"
 msgstr "Informationen, die wir erheben"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:121
-#, elixir-autogen, elixir-format
-msgid "Inside your hooks you are responsible for what runs — review your own .stride.md before pointing an agent at it."
-msgstr "Innerhalb Ihrer Hooks sind Sie selbst dafür verantwortlich, was läuft — prüfen Sie Ihre eigene .stride.md, bevor Sie einen Agenten darauf ansetzen."
-
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Is Stride really free if I self-host?"
 msgstr "Ist Stride wirklich kostenlos, wenn ich es selbst hoste?"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:192
+#: lib/kanban_web/controllers/page_html/security.html.heex:214
 #, elixir-autogen, elixir-format
 msgid "Issues that require physical access to a user's device or compromise of a third-party service we do not operate."
 msgstr "Probleme, die physischen Zugriff auf das Gerät eines Benutzers oder die Kompromittierung eines Drittanbieterdienstes erfordern, den wir nicht betreiben."
@@ -3973,11 +3959,6 @@ msgstr "Rechtliche Anfragen"
 msgid "Most popular"
 msgstr "Am beliebtesten"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:142
-#, elixir-autogen, elixir-format
-msgid "Object to or restrict certain processing."
-msgstr "Bestimmten Verarbeitungen widersprechen oder sie einschränken."
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Operate the service and authenticate you and your agents."
@@ -3989,9 +3970,9 @@ msgid "Parameterized queries everywhere"
 msgstr "Überall parametrisierte Abfragen"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:26
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Passwords"
-msgstr "Passwort"
+msgstr "Passwörter"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex:89
 #, elixir-autogen, elixir-format
@@ -3999,12 +3980,12 @@ msgid "Plan at the level you think at"
 msgstr "Planen Sie auf der Ebene, auf der Sie denken"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:5
-#: lib/kanban_web/controllers/page_html/security.html.heex:212
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/controllers/page_html/security.html.heex:234
+#, elixir-autogen, elixir-format
 msgid "Privacy Policy"
 msgstr "Datenschutzerklärung"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:187
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Questions, concerns, or requests about this policy? Email "
 msgstr "Fragen, Bedenken oder Anliegen zu dieser Richtlinie? Schreiben Sie an "
@@ -4034,12 +4015,12 @@ msgstr "Regulierte Umgebung"
 msgid "Render the boards, tasks, and activity feeds you have access to."
 msgstr "Die Boards, Aufgaben und Aktivitäts-Feeds darstellen, auf die Sie Zugriff haben."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:148
+#: lib/kanban_web/controllers/page_html/security.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Report vulnerabilities to "
 msgstr "Melden Sie Schwachstellen an "
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:187
+#: lib/kanban_web/controllers/page_html/security.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Reports generated purely from automated scanners without manual validation."
 msgstr "Berichte, die ausschließlich von automatisierten Scannern ohne manuelle Validierung erzeugt wurden."
@@ -4069,7 +4050,7 @@ msgstr "Läuft, wenn die Aufgabe die Prüfung-Spalte erreicht. Die Übergabe an 
 msgid "SSO (SAML / OIDC) and SCIM provisioning"
 msgstr "SSO (SAML / OIDC) und SCIM-Provisionierung"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:159
+#: lib/kanban_web/controllers/page_html/security.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Scope"
 msgstr "Geltungsbereich"
@@ -4109,8 +4090,8 @@ msgstr "Screenshot: Aufgaben-Detailansicht (Vollseite oder rechter Bereich)"
 msgid "Secrets (database URLs, signing keys, SMTP credentials) are stored in the hosting provider's secret manager and injected at runtime. They are not committed to the repository or logged."
 msgstr "Geheimnisse (Datenbank-URLs, Signaturschlüssel, SMTP-Anmeldedaten) werden im Secret Manager des Hosting-Anbieters gespeichert und zur Laufzeit eingespielt. Sie werden weder ins Repository eingecheckt noch geloggt."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:204
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/controllers/page_html/security.html.heex:226
+#, elixir-autogen, elixir-format
 msgid "Security issues: "
 msgstr "Sicherheitsthemen: "
 
@@ -4139,7 +4120,7 @@ msgstr "Selbst hosten. Für immer. Keine Kreditkarte erforderlich."
 msgid "Send transactional email — account confirmation, password reset, security notifications. We do not send marketing email unless you explicitly opt in."
 msgstr "Transaktions-E-Mails senden — Kontobestätigung, Passwort-Zurücksetzung, Sicherheitsbenachrichtigungen. Wir versenden keine Marketing-E-Mails, sofern Sie dem nicht ausdrücklich zugestimmt haben."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:171
+#: lib/kanban_web/controllers/page_html/security.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Server-side or client-side injection (SQL, XSS, SSRF, etc.)."
 msgstr "Server- oder clientseitige Injection (SQL, XSS, SSRF usw.)."
@@ -4164,7 +4145,7 @@ msgstr "Ausgeliefert, archiviert"
 msgid "Single user"
 msgstr "Einzelner Benutzer"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:103
+#: lib/kanban_web/controllers/page_html/security.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Sobelow"
 msgstr "Sobelow"
@@ -4199,27 +4180,17 @@ msgstr "Stride ist ein KI-natives Kanban. Jede Oberfläche ist so gebaut, dass M
 msgid "Stride is free to self-host on day one. Pay us only if you want it managed for you."
 msgstr "Stride ist ab Tag eins kostenlos selbst hostbar. Sie zahlen uns nur, wenn Sie es verwaltet bekommen möchten."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:165
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
 msgstr "Stride wird auf verschlüsselter Infrastruktur betrieben, Passwörter werden mit bcrypt gehasht und API-Tokens werden im Ruhezustand gehasht. Trotz aller Bemühungen ist kein System perfekt sicher. Falls Sie eine Schwachstelle entdecken, melden Sie sie bitte verantwortungsvoll an die untenstehende Kontaktadresse."
-
-#: lib/kanban_web/controllers/page_html/security.html.heex:14
-#, elixir-autogen, elixir-format
-msgid "Stride is task-management software built around the idea that AI agents are first-class participants in the work. That premise has security implications — agents authenticate, claim tasks, and run code on developer machines. This page describes how we approach security on the hosted service at stridelikeaboss.com and what you can rely on as a user. If you self-host Stride, you are the operator of your own instance and most of these guarantees become things you control rather than things we provide."
-msgstr "Stride ist Aufgabenverwaltungssoftware, die auf der Idee aufbaut, dass KI-Agenten erstklassige Teilnehmer an der Arbeit sind. Diese Prämisse hat Auswirkungen auf die Sicherheit — Agenten authentifizieren sich, beanspruchen Aufgaben und führen Code auf Entwicklermaschinen aus. Diese Seite beschreibt, wie wir Sicherheit beim gehosteten Dienst auf stridelikeaboss.com angehen und worauf Sie sich als Benutzer verlassen können. Wenn Sie Stride selbst hosten, sind Sie der Betreiber Ihrer eigenen Instanz und die meisten dieser Garantien werden zu Dingen, die Sie selbst kontrollieren, statt zu Dingen, die wir bereitstellen."
-
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:14
-#, elixir-autogen, elixir-format
-msgid "Stride is task-management software you can use as a hosted service at stridelikeaboss.com or self-host on your own infrastructure. This Privacy Policy describes what data Stride collects, how it is used, and the choices you have. It applies to the hosted service operated by the Stride team. If you self-host Stride, you are the operator of your own instance — none of the data you process flows to us."
-msgstr "Stride ist Aufgabenverwaltungssoftware, die Sie als gehosteten Dienst auf stridelikeaboss.com nutzen oder auf eigener Infrastruktur selbst hosten können. Diese Datenschutzerklärung beschreibt, welche Daten Stride erhebt, wie sie verwendet werden und welche Wahlmöglichkeiten Sie haben. Sie gilt für den vom Stride-Team betriebenen gehosteten Dienst. Wenn Sie Stride selbst hosten, sind Sie der Betreiber Ihrer eigenen Instanz — keine der von Ihnen verarbeiteten Daten fließt zu uns."
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Stride wraps every task in a four-stage lifecycle. At each transition you can run a hook on the agent's machine — git pull, mix test, gh pr create, your shell scripts. The board drives a real codebase, not a vibe."
 msgstr "Stride umfasst jede Aufgabe in einem vierstufigen Lebenszyklus. Bei jedem Übergang können Sie einen Hook auf der Maschine des Agenten ausführen — git pull, mix test, gh pr create, Ihre Shell-Skripte. Das Board steuert ein echtes Codebase, kein Gefühl."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:116
+#: lib/kanban_web/controllers/page_html/security.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Stride's `before_doing`, `after_doing`, `before_review`, and `after_review` hooks are shell commands that run on the agent's machine — never on Stride's servers. This is a deliberate architectural choice: you hold the keys; agents hold the loop. Stride never executes user-supplied code or untrusted input on its own infrastructure."
 msgstr "Die Hooks `before_doing`, `after_doing`, `before_review` und `after_review` von Stride sind Shell-Befehle, die auf der Maschine des Agenten laufen — niemals auf den Servern von Stride. Dies ist eine bewusste architektonische Entscheidung: Sie halten die Schlüssel; Agenten halten die Schleife. Stride führt niemals vom Benutzer bereitgestellten Code oder nicht vertrauenswürdige Eingaben auf der eigenen Infrastruktur aus."
@@ -4276,7 +4247,7 @@ msgstr "Team mit CI"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:50
 #: lib/kanban_web/live/task_live/view_component.ex:236
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Telemetry"
 msgstr "Telemetrie"
 
@@ -4295,12 +4266,12 @@ msgstr "Die PostgreSQL-Datenbank, die den gehosteten Dienst trägt, ist im Ruhez
 msgid "The columns are fixed. That's the contract: humans and agents both speak the same five-state vocabulary, and a hook can fire at every meaningful transition between them."
 msgstr "Die Spalten sind fix. Das ist der Vertrag: Menschen und Agenten sprechen dasselbe Fünf-Zustands-Vokabular, und an jedem bedeutsamen Übergang zwischen ihnen kann ein Hook ausgelöst werden."
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:178
+#: lib/kanban_web/controllers/page_html/security.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "The following are explicitly out of scope:"
 msgstr "Folgendes liegt ausdrücklich außerhalb des Geltungsbereichs:"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:162
+#: lib/kanban_web/controllers/page_html/security.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "The following are in-scope for responsible disclosure:"
 msgstr "Folgendes fällt in den Geltungsbereich verantwortungsvoller Offenlegung:"
@@ -4309,11 +4280,6 @@ msgstr "Folgendes fällt in den Geltungsbereich verantwortungsvoller Offenlegung
 #, elixir-autogen, elixir-format
 msgid "The lifecycle"
 msgstr "Der Lebenszyklus"
-
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:145
-#, elixir-autogen, elixir-format
-msgid "To exercise any of these rights, contact us at the address below."
-msgstr "Um eines dieser Rechte auszuüben, kontaktieren Sie uns an der untenstehenden Adresse."
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:54
 #, elixir-autogen, elixir-format
@@ -4335,7 +4301,7 @@ msgstr "Unbegrenzte Benutzer"
 msgid "Up to 25 users on one workspace"
 msgstr "Bis zu 25 Benutzer in einem Workspace"
 
-#: lib/kanban_web/controllers/page_html/security.html.heex:140
+#: lib/kanban_web/controllers/page_html/security.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Vulnerability disclosure"
 msgstr "Offenlegung von Schwachstellen"
@@ -4350,7 +4316,7 @@ msgstr "Wir verkaufen Ihre Daten nicht. Wir verwenden Ihre Workspace-Inhalte nic
 msgid "We keep your account and workspace data for as long as your account is active. When you delete your account, we delete your account record and your workspace content within 30 days, except where we are required by law to retain a record (for example, financial records for billing)."
 msgstr "Wir bewahren Ihre Konto- und Workspace-Daten so lange auf, wie Ihr Konto aktiv ist. Wenn Sie Ihr Konto löschen, löschen wir Ihren Kontodatensatz und Ihre Workspace-Inhalte innerhalb von 30 Tagen, außer wir sind gesetzlich verpflichtet, einen Datensatz aufzubewahren (z. B. Finanzunterlagen zur Abrechnung)."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:176
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
 msgstr "Wir können diese Richtlinie von Zeit zu Zeit aktualisieren. Bei wesentlichen Änderungen vermerken wir das neue Inkrafttretensdatum oben auf dieser Seite und benachrichtigen Sie, wo angemessen, per E-Mail oder In-App-Banner, bevor die Änderung wirksam wird."
@@ -4360,7 +4326,7 @@ msgstr "Wir können diese Richtlinie von Zeit zu Zeit aktualisieren. Bei wesentl
 msgid "We share your information only in narrowly limited circumstances:"
 msgstr "Wir geben Ihre Informationen nur unter eng begrenzten Umständen weiter:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:154
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "Wir verwenden eine kleine Anzahl an Cookies und Einträgen im lokalen Browser-Speicher, die für den Betrieb des Dienstes unbedingt erforderlich sind: ein Sitzungs-Cookie, um Sie angemeldet zu halten, einen CSRF-Token zum Schutz von Formularübermittlungen und einen Präferenzeintrag, der Ihre Wahl von hellem/dunklem Design speichert. Wir verwenden keine Werbe- oder Analyse-Cookies von Dritten."
@@ -6374,3 +6340,53 @@ msgstr "Vor Prüfung"
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr "WIP-Limit erreicht"
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:128
+#, elixir-autogen, elixir-format
+msgid " runs for every release detecting any security vulnerabilities."
+msgstr " läuft bei jedem Release und erkennt jegliche Sicherheitslücken."
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:143
+#, elixir-autogen, elixir-format
+msgid "As a user of this system, you have full access to your data to manage it as you see fit."
+msgstr "Als Nutzer dieses Systems haben Sie vollen Zugriff auf Ihre Daten und können sie nach eigenem Ermessen verwalten."
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:145
+#, elixir-autogen, elixir-format
+msgid "Inside your hooks you are responsible for what runs — review your own"
+msgstr "Innerhalb Ihrer Hooks sind Sie selbst dafür verantwortlich, was läuft — prüfen Sie Ihre eigene"
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Stride is a task-management software built around the idea that AI agents are first-class participants in the work. That premise has security implications — agents authenticate, claim tasks, and run code on developer machines. This page describes how we approach security on the hosted service at stridelikeaboss.com and what you can rely on as a user. If you self-host Stride, you are the operator of your own instance and most of these guarantees become things you control rather than things we provide."
+msgstr "Stride ist Aufgabenverwaltungssoftware, die auf der Idee aufbaut, dass KI-Agenten erstklassige Teilnehmer an der Arbeit sind. Diese Prämisse hat Auswirkungen auf die Sicherheit — Agenten authentifizieren sich, beanspruchen Aufgaben und führen Code auf Entwicklermaschinen aus. Diese Seite beschreibt, wie wir Sicherheit beim gehosteten Dienst auf stridelikeaboss.com angehen und worauf Sie sich als Benutzer verlassen können. Wenn Sie Stride selbst hosten, sind Sie der Betreiber Ihrer eigenen Instanz und die meisten dieser Garantien werden zu Dingen, die Sie selbst kontrollieren, statt zu Dingen, die wir bereitstellen."
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Stride is a task-management software you can use as a hosted service at stridelikeaboss.com or self-host on your own infrastructure. This Privacy Policy describes what data Stride collects, how it is used, and the choices you have. It applies to the hosted service operated by the Stride team. If you self-host Stride, you are the operator of your own instance — none of the data you process flows to us."
+msgstr "Stride ist Aufgabenverwaltungssoftware, die Sie als gehosteten Dienst auf stridelikeaboss.com nutzen oder auf eigener Infrastruktur selbst hosten können. Diese Datenschutzerklärung beschreibt, welche Daten Stride erhebt, wie sie verwendet werden und welche Wahlmöglichkeiten Sie haben. Sie gilt für den vom Stride-Team betriebenen gehosteten Dienst. Wenn Sie Stride selbst hosten, sind Sie der Betreiber Ihrer eigenen Instanz — keine der von Ihnen verarbeiteten Daten fließt zu uns."
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "The stride-security-review plugin"
+msgstr "Das stride-security-review-Plugin"
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:145
+#, elixir-autogen, elixir-format
+msgid "before pointing an agent at it."
+msgstr ", bevor Sie einen Agenten darauf ansetzen."
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:154
+#, elixir-autogen, elixir-format
+msgid "Dependencies are audited with"
+msgstr "Abhängigkeiten werden überprüft mit"
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:154
+#, elixir-autogen, elixir-format
+msgid "and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
+msgstr "und in regelmäßigem Rhythmus aktualisiert. Der vollständige Abhängigkeitsbaum ist in der mix.exs-Datei des Projekts veröffentlicht und im Open-Source-Repository einsehbar."
+
+#: lib/kanban_web/controllers/page_html/security.html.heex:154
+#, elixir-autogen, elixir-format
+msgid "on every completed task. Outdated dependencies are surfaced with"
+msgstr "bei jeder abgeschlossenen Aufgabe. Veraltete Abhängigkeiten werden aufgedeckt mit"

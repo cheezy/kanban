@@ -12,7 +12,7 @@
         <section class="mb-10">
           <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
-              "Stride is task-management software built around the idea that AI agents are first-class participants in the work. That premise has security implications — agents authenticate, claim tasks, and run code on developer machines. This page describes how we approach security on the hosted service at stridelikeaboss.com and what you can rely on as a user. If you self-host Stride, you are the operator of your own instance and most of these guarantees become things you control rather than things we provide."
+              "Stride is a task-management software built around the idea that AI agents are first-class participants in the work. That premise has security implications — agents authenticate, claim tasks, and run code on developer machines. This page describes how we approach security on the hosted service at stridelikeaboss.com and what you can rely on as a user. If you self-host Stride, you are the operator of your own instance and most of these guarantees become things you control rather than things we provide."
             )}
           </p>
         </section>
@@ -100,9 +100,33 @@
               )}
             </li>
             <li>
-              <strong>{gettext("Sobelow")}</strong>
+              <strong>
+                <a
+                  href="https://sobelow.io"
+                  target="_blank"
+                  rel="noopener"
+                  class="underline hover:no-underline"
+                >
+                  {gettext("Sobelow")}
+                </a>
+              </strong>
               {gettext(
                 " static-analysis runs in CI on every commit; the build fails on a finding."
+              )}
+            </li>
+            <li>
+              <strong>
+                <a
+                  href="https://github.com/cheezy/stride-security-review"
+                  target="_blank"
+                  rel="noopener"
+                  class="underline hover:no-underline"
+                >
+                  {gettext("The stride-security-review plugin")}
+                </a>
+              </strong>
+              {gettext(
+                " runs for every release detecting any security vulnerabilities."
               )}
             </li>
           </ul>
@@ -118,9 +142,7 @@
             )}
           </p>
           <p class="text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "Inside your hooks you are responsible for what runs — review your own .stride.md before pointing an agent at it."
-            )}
+            {gettext("Inside your hooks you are responsible for what runs — review your own")} <em>.stride.md</em> {gettext("before pointing an agent at it.")}
           </p>
         </section>
 
@@ -129,8 +151,8 @@
             {gettext("Dependency hygiene")}
           </h2>
           <p class="text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "Dependencies are audited with mix deps.audit and mix hex.audit on every dependency change. Outdated dependencies are surfaced with mix hex.outdated and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
+            {gettext("Dependencies are audited with")} <strong>mix deps.audit</strong> {gettext("and")} <strong>mix hex.audit</strong> {gettext("on every completed task. Outdated dependencies are surfaced with")} <strong>mix hex.outdated</strong> {gettext(
+              "and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
             )}
           </p>
         </section>
@@ -146,9 +168,9 @@
           </p>
           <p class="text-base-content opacity-70 leading-relaxed">
             {gettext("Report vulnerabilities to ")}<a
-              href="mailto:security@stridelikeaboss.com"
+              href="mailto:security@letstango.ca"
               class="text-[var(--ink)] hover:text-[var(--stride-orange)] underline font-medium"
-            >security@stridelikeaboss.com</a>{gettext(
+            >security@letstango.ca</a>{gettext(
               ". For sensitive reports, request our PGP key in the first message and we will reply with it."
             )}
           </p>
@@ -202,9 +224,9 @@
           </h2>
           <p class="text-base-content opacity-70 leading-relaxed">
             {gettext("Security issues: ")}<a
-              href="mailto:security@stridelikeaboss.com"
+              href="mailto:security@letstango.ca"
               class="text-[var(--ink)] hover:text-[var(--stride-orange)] underline font-medium"
-            >security@stridelikeaboss.com</a>{gettext(
+            >security@letstango.ca</a>{gettext(
               ". For non-security questions about how Stride handles your data, see the "
             )}<.link
               href={~p"/privacy"}
