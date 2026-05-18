@@ -894,16 +894,16 @@ msgstr ""
 #: lib/kanban_web/components/task_activity_log.ex:153
 #: lib/kanban_web/live/task_live/components/history_section.ex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:1035
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reassigned"
-msgstr ""
+msgstr "Reassigned"
 
 #: lib/kanban_web/components/task_activity_log.ex:144
 #: lib/kanban_web/live/task_live/components/history_section.ex:57
 #: lib/kanban_web/live/task_live/form_component.html.heex:1030
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Unassigned from"
-msgstr ""
+msgstr "Unassigned from"
 
 #: lib/kanban_web/live/issue_live/form_component.ex:199
 #, elixir-autogen, elixir-format
@@ -1203,9 +1203,9 @@ msgid "Control which task fields are visible on the board"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:854
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Created By Agent"
-msgstr ""
+msgstr "Created By Agent"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:325
 #, elixir-autogen, elixir-format
@@ -1393,9 +1393,9 @@ msgid "Reviewed by"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:932
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Select"
-msgstr ""
+msgstr "Select"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:174
 #, elixir-autogen, elixir-format
@@ -4593,9 +4593,9 @@ msgid "Required"
 msgstr ""
 
 #: lib/kanban_web/components/task_metadata_grid.ex:117
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Started"
-msgstr ""
+msgstr "Started"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:50
 #: lib/kanban_web/live/task_live/view_component.ex:119
@@ -4866,9 +4866,9 @@ msgid "Last activity"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/view_component.ex:242
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Logging"
-msgstr ""
+msgstr "Logging"
 
 #: lib/kanban_web/live/task_live/view_component.ex:255
 #, elixir-autogen, elixir-format, fuzzy
@@ -4891,9 +4891,9 @@ msgid "Progress"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/view_component.ex:286
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review report"
-msgstr ""
+msgstr "Review report"
 
 #: lib/kanban_web/live/task_live/view_component.ex:209
 #, elixir-autogen, elixir-format, fuzzy
@@ -4961,9 +4961,9 @@ msgid "Children"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Claimed"
-msgstr "Claimed:"
+msgstr "Claimed"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:272
 #: lib/kanban_web/components/agent_roster_card.ex:156

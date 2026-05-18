@@ -880,30 +880,30 @@ msgstr "エラートラッカー"
 #: lib/kanban_web/components/task_activity_log.ex:109
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/form_component.html.heex:1011
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Priority changed"
 msgstr "優先度変更"
 
 #: lib/kanban_web/components/task_activity_log.ex:135
 #: lib/kanban_web/live/task_live/components/history_section.ex:52
 #: lib/kanban_web/live/task_live/form_component.html.heex:1025
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assigned to"
 msgstr "担当者"
 
 #: lib/kanban_web/components/task_activity_log.ex:153
 #: lib/kanban_web/live/task_live/components/history_section.ex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:1035
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reassigned"
-msgstr "未割り当て"
+msgstr "再割り当て済み"
 
 #: lib/kanban_web/components/task_activity_log.ex:144
 #: lib/kanban_web/live/task_live/components/history_section.ex:57
 #: lib/kanban_web/live/task_live/form_component.html.heex:1030
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Unassigned from"
-msgstr "未割り当て"
+msgstr "から割り当て解除"
 
 #: lib/kanban_web/live/issue_live/form_component.ex:199
 #, elixir-autogen, elixir-format
@@ -1203,9 +1203,9 @@ msgid "Control which task fields are visible on the board"
 msgstr "ボード上に表示するタスクフィールドを制御"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:854
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Created By Agent"
-msgstr "作成日"
+msgstr "エージェントが作成"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:325
 #, elixir-autogen, elixir-format
@@ -1393,9 +1393,9 @@ msgid "Reviewed by"
 msgstr "レビュー者"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:932
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Select"
-msgstr "ユーザーを選択"
+msgstr "選択"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:174
 #, elixir-autogen, elixir-format
@@ -1555,7 +1555,7 @@ msgid "Add Security Consideration"
 msgstr "セキュリティ考慮事項を追加"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:700
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Add Telemetry Event"
 msgstr "テレメトリイベントを追加"
 
@@ -1612,7 +1612,7 @@ msgstr "統合テストの説明"
 
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:42
 #: lib/kanban_web/live/task_live/form_component.html.heex:623
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Manual Tests"
 msgstr "手動テスト"
 
@@ -1662,7 +1662,7 @@ msgstr "セキュリティの考慮事項または要件"
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:21
 #: lib/kanban_web/live/task_live/form_component.html.heex:671
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Telemetry Events"
 msgstr "テレメトリイベント"
 
@@ -1811,7 +1811,7 @@ msgid "Check this box if this task requires review before completion"
 msgstr "完了前にレビューが必要な場合はこのチェックボックスをオンにしてください"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:284
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Expected result"
 msgstr "期待される結果"
 
@@ -2992,12 +2992,12 @@ msgid "Review Wait Tasks"
 msgstr "Review で待機中のタスク"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security error: Invalid assignee"
 msgstr "セキュリティエラー: 無効な担当者"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:35
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security error: Invalid parent goal"
 msgstr "セキュリティエラー: 無効な親ゴール"
 
@@ -4575,7 +4575,7 @@ msgstr "自動"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:107
 #: lib/kanban_web/live/task_live/view_component.ex:371
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Needs review"
 msgstr "レビューが必要"
 
@@ -4586,13 +4586,13 @@ msgid "Required"
 msgstr "必須"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:117
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Started"
-msgstr "開始:"
+msgstr "開始済み"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:50
 #: lib/kanban_web/live/task_live/view_component.ex:119
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "受け入れ基準"
 
@@ -4823,7 +4823,7 @@ msgid "Contributors"
 msgstr "貢献者"
 
 #: lib/kanban_web/live/task_live/view_component.ex:159
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Database changes"
 msgstr "データベースの変更"
 
@@ -4838,7 +4838,7 @@ msgid "Done / total"
 msgstr "完了 / 合計"
 
 #: lib/kanban_web/live/task_live/view_component.ex:249
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Error handling"
 msgstr "エラー処理"
 
@@ -4848,7 +4848,7 @@ msgid "In flight"
 msgstr "進行中"
 
 #: lib/kanban_web/live/task_live/view_component.ex:129
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Key files"
 msgstr "キーファイル"
 
@@ -4858,22 +4858,22 @@ msgid "Last activity"
 msgstr "最終アクティビティ"
 
 #: lib/kanban_web/live/task_live/view_component.ex:242
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Logging"
-msgstr "ログイン"
+msgstr "ロギング"
 
 #: lib/kanban_web/live/task_live/view_component.ex:255
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "On failure"
 msgstr "失敗時"
 
 #: lib/kanban_web/live/task_live/view_component.ex:202
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Out of scope"
 msgstr "スコープ外"
 
 #: lib/kanban_web/live/task_live/view_component.ex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Patterns to follow"
 msgstr "従うべきパターン"
 
@@ -4883,17 +4883,17 @@ msgid "Progress"
 msgstr "進行中"
 
 #: lib/kanban_web/live/task_live/view_component.ex:286
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review report"
-msgstr "レビュー"
+msgstr "レビューレポート"
 
 #: lib/kanban_web/live/task_live/view_component.ex:209
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "セキュリティ考慮事項"
 
 #: lib/kanban_web/live/task_live/view_component.ex:216
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Technology requirements"
 msgstr "技術要件"
 
@@ -4918,12 +4918,12 @@ msgid "Time spent"
 msgstr "経過時間"
 
 #: lib/kanban_web/live/task_live/view_component.ex:166
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Validation rules"
 msgstr "検証ルール"
 
 #: lib/kanban_web/live/task_live/view_component.ex:173
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Verification steps"
 msgstr "検証ステップ"
 
@@ -4938,7 +4938,7 @@ msgid "7d"
 msgstr "7日"
 
 #: lib/kanban_web/live/task_live/view_component.ex:276
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Actual vs estimated"
 msgstr "実際 vs 見積もり"
 
@@ -4953,9 +4953,9 @@ msgid "Children"
 msgstr "子要素"
 
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Claimed"
-msgstr "担当開始:"
+msgstr "クレーム済み"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:272
 #: lib/kanban_web/components/agent_roster_card.ex:156
@@ -4964,12 +4964,12 @@ msgid "Claims"
 msgstr "担当開始:"
 
 #: lib/kanban_web/live/task_live/view_component.ex:401
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Estimated files"
 msgstr "見積もりファイル"
 
 #: lib/kanban_web/live/task_live/view_component.ex:397
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Human task"
 msgstr "人間のタスク"
 
@@ -4979,12 +4979,12 @@ msgid "Idle"
 msgstr "アイドル"
 
 #: lib/kanban_web/live/task_live/view_component.ex:271
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Integration points"
 msgstr "統合ポイント"
 
 #: lib/kanban_web/live/task_live/view_component.ex:281
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review status"
 msgstr "レビュー状態"
 
@@ -4994,7 +4994,7 @@ msgid "Success"
 msgstr "成功"
 
 #: lib/kanban_web/live/task_live/view_component.ex:266
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "テスト戦略"
 
@@ -5009,7 +5009,7 @@ msgid "Where"
 msgstr "どこで"
 
 #: lib/kanban_web/live/task_live/view_component.ex:291
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workflow steps"
 msgstr "ワークフロー手順"
 

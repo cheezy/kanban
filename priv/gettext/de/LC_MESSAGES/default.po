@@ -880,30 +880,30 @@ msgstr "Fehler-Tracker"
 #: lib/kanban_web/components/task_activity_log.ex:109
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/form_component.html.heex:1011
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Priority changed"
 msgstr "Priorität geändert"
 
 #: lib/kanban_web/components/task_activity_log.ex:135
 #: lib/kanban_web/live/task_live/components/history_section.ex:52
 #: lib/kanban_web/live/task_live/form_component.html.heex:1025
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Assigned to"
 msgstr "Zugewiesen an"
 
 #: lib/kanban_web/components/task_activity_log.ex:153
 #: lib/kanban_web/live/task_live/components/history_section.ex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:1035
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reassigned"
-msgstr "Nicht zugewiesen"
+msgstr "Neu zugewiesen"
 
 #: lib/kanban_web/components/task_activity_log.ex:144
 #: lib/kanban_web/live/task_live/components/history_section.ex:57
 #: lib/kanban_web/live/task_live/form_component.html.heex:1030
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Unassigned from"
-msgstr "Nicht zugewiesen"
+msgstr "Zuweisung entfernt von"
 
 #: lib/kanban_web/live/issue_live/form_component.ex:199
 #, elixir-autogen, elixir-format
@@ -1203,9 +1203,9 @@ msgid "Control which task fields are visible on the board"
 msgstr "Steuern Sie, welche Aufgabenfelder auf dem Board sichtbar sind"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:854
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Created By Agent"
-msgstr "Erstellt"
+msgstr "Erstellt von Agent"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:325
 #, elixir-autogen, elixir-format
@@ -1393,9 +1393,9 @@ msgid "Reviewed by"
 msgstr "Geprüft von"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:932
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Select"
-msgstr "Benutzer auswählen"
+msgstr "Auswählen"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:174
 #, elixir-autogen, elixir-format
@@ -1555,7 +1555,7 @@ msgid "Add Security Consideration"
 msgstr "Sicherheitsüberlegung hinzufügen"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:700
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Add Telemetry Event"
 msgstr "Telemetrie-Ereignis hinzufügen"
 
@@ -1612,7 +1612,7 @@ msgstr "Beschreibung des Integrationstests"
 
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:42
 #: lib/kanban_web/live/task_live/form_component.html.heex:623
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Manual Tests"
 msgstr "Manuelle Tests"
 
@@ -1662,7 +1662,7 @@ msgstr "Sicherheitsüberlegung oder -anforderung"
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:21
 #: lib/kanban_web/live/task_live/form_component.html.heex:671
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Telemetry Events"
 msgstr "Telemetrie-Ereignisse"
 
@@ -1811,7 +1811,7 @@ msgid "Check this box if this task requires review before completion"
 msgstr "Aktivieren Sie dieses Kontrollkästchen, wenn diese Aufgabe vor dem Abschluss geprüft werden muss"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:284
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Expected result"
 msgstr "Erwartetes Ergebnis"
 
@@ -2995,12 +2995,12 @@ msgid "Review Wait Tasks"
 msgstr "Aufgaben in Review-Wartezeit"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security error: Invalid assignee"
 msgstr "Sicherheitsfehler: Ungültiger Zugewiesener"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:35
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security error: Invalid parent goal"
 msgstr "Sicherheitsfehler: Ungültiges übergeordnetes Ziel"
 
@@ -4582,7 +4582,7 @@ msgstr "Automatisch"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:107
 #: lib/kanban_web/live/task_live/view_component.ex:371
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Needs review"
 msgstr "Prüfung erforderlich"
 
@@ -4593,13 +4593,13 @@ msgid "Required"
 msgstr "Erforderlich"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:117
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Started"
-msgstr "Gestartet:"
+msgstr "Gestartet"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:50
 #: lib/kanban_web/live/task_live/view_component.ex:119
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "Akzeptanzkriterien"
 
@@ -4831,7 +4831,7 @@ msgid "Contributors"
 msgstr "Mitwirkende"
 
 #: lib/kanban_web/live/task_live/view_component.ex:159
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Database changes"
 msgstr "Datenbankänderungen"
 
@@ -4846,7 +4846,7 @@ msgid "Done / total"
 msgstr "Erledigt / gesamt"
 
 #: lib/kanban_web/live/task_live/view_component.ex:249
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Error handling"
 msgstr "Fehlerbehandlung"
 
@@ -4856,7 +4856,7 @@ msgid "In flight"
 msgstr "In Bearbeitung"
 
 #: lib/kanban_web/live/task_live/view_component.ex:129
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Key files"
 msgstr "Wichtige Dateien"
 
@@ -4866,22 +4866,22 @@ msgid "Last activity"
 msgstr "Letzte Aktivität"
 
 #: lib/kanban_web/live/task_live/view_component.ex:242
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Logging"
-msgstr "Anmelden"
+msgstr "Logging"
 
 #: lib/kanban_web/live/task_live/view_component.ex:255
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "On failure"
 msgstr "Bei Fehler"
 
 #: lib/kanban_web/live/task_live/view_component.ex:202
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Out of scope"
 msgstr "Außerhalb des Umfangs"
 
 #: lib/kanban_web/live/task_live/view_component.ex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Patterns to follow"
 msgstr "Zu befolgende Muster"
 
@@ -4891,17 +4891,17 @@ msgid "Progress"
 msgstr "In Bearbeitung"
 
 #: lib/kanban_web/live/task_live/view_component.ex:286
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review report"
-msgstr "Überprüfung"
+msgstr "Review-Bericht"
 
 #: lib/kanban_web/live/task_live/view_component.ex:209
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "Sicherheitsüberlegungen"
 
 #: lib/kanban_web/live/task_live/view_component.ex:216
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Technology requirements"
 msgstr "Technologieanforderungen"
 
@@ -4926,12 +4926,12 @@ msgid "Time spent"
 msgstr "Aufgewendete Zeit"
 
 #: lib/kanban_web/live/task_live/view_component.ex:166
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Validation rules"
 msgstr "Validierungsregeln"
 
 #: lib/kanban_web/live/task_live/view_component.ex:173
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Verification steps"
 msgstr "Verifizierungsschritte"
 
@@ -4946,7 +4946,7 @@ msgid "7d"
 msgstr "7 Tg."
 
 #: lib/kanban_web/live/task_live/view_component.ex:276
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Actual vs estimated"
 msgstr "Tatsächlich vs. geschätzt"
 
@@ -4961,9 +4961,9 @@ msgid "Children"
 msgstr "Unterelemente"
 
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Claimed"
-msgstr "Übernommen:"
+msgstr "Übernommen"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:272
 #: lib/kanban_web/components/agent_roster_card.ex:156
@@ -4972,12 +4972,12 @@ msgid "Claims"
 msgstr "Übernommen:"
 
 #: lib/kanban_web/live/task_live/view_component.ex:401
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Estimated files"
 msgstr "Geschätzte Dateien"
 
 #: lib/kanban_web/live/task_live/view_component.ex:397
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Human task"
 msgstr "Menschliche Aufgabe"
 
@@ -4987,12 +4987,12 @@ msgid "Idle"
 msgstr "Untätig"
 
 #: lib/kanban_web/live/task_live/view_component.ex:271
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Integration points"
 msgstr "Integrationspunkte"
 
 #: lib/kanban_web/live/task_live/view_component.ex:281
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review status"
 msgstr "Prüfungsstatus"
 
@@ -5002,7 +5002,7 @@ msgid "Success"
 msgstr "Erfolg"
 
 #: lib/kanban_web/live/task_live/view_component.ex:266
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "Teststrategie"
 
@@ -5017,7 +5017,7 @@ msgid "Where"
 msgstr "Wo"
 
 #: lib/kanban_web/live/task_live/view_component.ex:291
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workflow steps"
 msgstr "Workflow-Schritte"
 
