@@ -212,7 +212,7 @@
               data-handle=".drag-handle"
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
-              data-server-sorted={if column.name == "Done", do: "true"}
+              data-server-sorted={if goal_hierarchy_column?(column), do: "true"}
             >
               <div
                 id={"empty-state-#{column.id}"}

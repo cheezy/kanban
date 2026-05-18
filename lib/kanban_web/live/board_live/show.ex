@@ -843,6 +843,16 @@ defmodule KanbanWeb.BoardLive.Show do
 
   defp sort_column_tasks(tasks, _column), do: tasks
 
+  @doc """
+  Returns true when the column is rendered using the goal-hierarchy sort
+  (`sort_by_goal_hierarchy/1`), which groups each goal with its children and
+  cannot be reproduced by ordering DOM elements by raw `data-position`. The
+  client-side Sortable hook needs this signal so it skips its position-based
+  resort and leaves the server-rendered order intact.
+  """
+  def goal_hierarchy_column?(%{name: name}) when name in @goal_hierarchy_columns, do: true
+  def goal_hierarchy_column?(_), do: false
+
   # Build the list of active goals shaped for KanbanWeb.GoalsStrip.
   # Each entry has :identifier, :name, :color, :ink, :promoted plus a
   # :flow map of segmented child-task counts per status. The list is
