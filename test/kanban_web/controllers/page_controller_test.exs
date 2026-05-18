@@ -56,9 +56,15 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "Five-column flow"
     assert body =~ "Structured schema"
     assert body =~ "Plan at the level you think at"
-    # Image placeholders are present so screenshots can be dropped in
-    assert body =~ "image-placeholder"
-    assert body =~ "[ image placeholder ]"
+    # All six section screenshots have been wired in (no placeholders remain).
+    assert body =~ "/images/boards.png"
+    assert body =~ "/images/kanban_board.png"
+    assert body =~ "/images/task_detail.png"
+    assert body =~ "/images/goal_view.png"
+    assert body =~ "/images/review_queue.png"
+    assert body =~ "/images/agent_activity.png"
+    assert body =~ "/images/workspace_metrics.png"
+    refute body =~ "image-placeholder"
   end
 
   test "GET /workflows", %{conn: conn} do

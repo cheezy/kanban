@@ -21,19 +21,43 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Uses the canonical Stride logo SVG (shared with the app nav)
       assert html =~ "/images/logos/abstract-s-motion.svg"
 
-      # The public marketing nav links (Pricing is admin-only and verified separately)
+      # The public marketing nav links (Workflows + Pricing are admin-only
+      # in the desktop nav and verified separately).
       assert html =~ "Product"
-      assert html =~ "Workflows"
       assert html =~ "Resources"
       assert html =~ "About"
 
-      # Product and Workflows point at their dedicated pages (not in-page anchors)
+      # Product points at its dedicated page (not an in-page anchor)
       assert html =~ ~s|href="/product"|
-      assert html =~ ~s|href="/workflows"|
 
-      # Pricing is hidden from unauthenticated visitors
+      # Workflows and Pricing are admin-only — they appear in neither the
+      # desktop nav nor the mobile menu for unauthenticated visitors.
+      assert href_count(html, "/workflows") == 0
       refute html =~ "Pricing"
       refute html =~ ~s|href="/pricing"|
+    end
+
+    test "Workflows link is hidden from both desktop and mobile nav for non-admin users" do
+      assigns = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      assert href_count(html, "/workflows") == 0
+    end
+
+    test "Workflows link is visible in both desktop nav and mobile menu for admin users" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      # Desktop nav + mobile menu = 2 occurrences for admins.
+      assert href_count(html, "/workflows") == 2
     end
 
     test "Pricing link is hidden for non-admin users" do
@@ -654,5 +678,14 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ ~s|>\nStatus\n<|
       refute html =~ ~s|> Status <|
     end
+  end
+
+  # Count the occurrences of `href="<path>"` in the rendered HTML. Useful for
+  # checks like "the desktop nav has Workflows but the mobile menu does too"
+  # — by comparing counts, the desktop-only gating can be asserted without a
+  # brittle CSS-class scrape.
+  defp href_count(html, path) do
+    needle = ~s|href="#{path}"|
+    html |> String.split(needle) |> length() |> Kernel.-(1)
   end
 end

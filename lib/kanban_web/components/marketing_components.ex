@@ -66,7 +66,11 @@ defmodule KanbanWeb.MarketingComponents do
         <.link href={~p"/product"} class="hover:opacity-70 transition-opacity">
           {gettext("Product")}
         </.link>
-        <.link href={~p"/workflows"} class="hover:opacity-70 transition-opacity">
+        <.link
+          :if={@current_scope && @current_scope.user.type == :admin}
+          href={~p"/workflows"}
+          class="hover:opacity-70 transition-opacity"
+        >
           {gettext("Workflows")}
         </.link>
         <.link
@@ -243,6 +247,7 @@ defmodule KanbanWeb.MarketingComponents do
       {gettext("Product")}
     </.link>
     <.link
+      :if={@current_scope && @current_scope.user.type == :admin}
       href={~p"/workflows"}
       class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
     >
