@@ -363,6 +363,74 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert Keyword.has_key?(cs.errors, :workflow_steps)
     end
 
+    test "rejects workflow_steps list entries where name is not a binary",
+         %{claimed: claimed, user: user} do
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{"name" => 42, "dispatched" => false, "reason" => "wrong type"}
+        ])
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :workflow_steps)
+    end
+
+    test "rejects workflow_steps list entries that are not maps",
+         %{claimed: claimed, user: user} do
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{
+            "name" => "explorer",
+            "dispatched" => true,
+            "duration_ms" => 100
+          },
+          "string-not-a-map"
+        ])
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      assert Keyword.has_key?(cs.errors, :workflow_steps)
+    end
+
+    test "accepts atom-keyed workflow_steps via the fetch_step_field fallback",
+         %{claimed: claimed, user: user} do
+      # Real-world callers post string keys, but the schema accepts atom-keyed
+      # maps too. fetch_step_field/2 tries the string key first, then falls
+      # back to the existing-atom — exercise that fallback explicitly.
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{name: "explorer", dispatched: true, duration_ms: 500}
+        ])
+
+      assert {:ok, _task, _hooks} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+    end
+
+    test "accepts workflow_steps that mix exotic keys without crashing the safe-atom rescue",
+         %{claimed: claimed, user: user} do
+      # safe_existing_atom/1 rescues ArgumentError when the key is not an
+      # existing atom. Bury a key that almost certainly does not exist as an
+      # atom anywhere in the running VM into a step that is otherwise
+      # well-formed via its string keys — the rescue path must not crash the
+      # validator.
+      bogus_key = "z_" <> Integer.to_string(System.unique_integer([:positive])) <> "_xyz"
+
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{
+            "name" => "explorer",
+            "dispatched" => true,
+            "duration_ms" => 100,
+            bogus_key => "ignored"
+          }
+        ])
+
+      assert {:ok, _task, _hooks} =
+               AgentWorkflow.complete_task(claimed, user, params, "Claude")
+    end
+
     test "accepts well-formed workflow_steps + explorer/reviewer payloads",
          %{claimed: claimed, user: user} do
       summary = String.duplicate("a", 40)

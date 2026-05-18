@@ -408,5 +408,109 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       assert html =~ done.identifier
       assert html =~ other.identifier
     end
+
+    test "renders a Doing section for children with :in_progress status",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [doing | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Doing-status Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Doing Child", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^doing.id)
+      |> Kanban.Repo.update_all(set: [status: :in_progress])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ ~r/>\s*Doing\s*</
+    end
+  end
+
+  describe "contributors band — agents" do
+    setup [:register_and_log_in_user]
+
+    test "renders agent avatars when children carry created_by_agent / completed_by_agent",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [creator, finisher | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Agent-touched Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Started By Agent", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "Finished By Agent", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^creator.id)
+      |> Kanban.Repo.update_all(set: [created_by_agent: "Claude"])
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^finisher.id)
+      |> Kanban.Repo.update_all(set: [completed_by_agent: "Cursor"])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # The contributors band picks up both created_by_agent and
+      # completed_by_agent values via agent_to_avatar/1.
+      assert html =~ "data-goal-show"
+      assert html =~ "Claude"
+      assert html =~ "Cursor"
+    end
+  end
+
+  describe "velocity sparkline — daily bucketing for older goals" do
+    setup [:register_and_log_in_user]
+
+    test "switches to the day bucket label when the goal's earliest signal is older than 24h",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [done | _]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Old Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "Finished Long Ago", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      # Push the goal's inserted_at and the child's completed_at back 5 days
+      # so bucket_unit/2 returns :day and bucket_label/2 + format_short_date/1
+      # exercise the daily-cadence formatting branch.
+      five_days_ago_naive =
+        DateTime.utc_now()
+        |> DateTime.add(-5 * 86_400, :second)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      five_days_ago_dt =
+        DateTime.utc_now() |> DateTime.add(-5 * 86_400, :second) |> DateTime.truncate(:second)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^goal.id)
+      |> Kanban.Repo.update_all(
+        set: [
+          inserted_at: five_days_ago_naive,
+          claimed_at: five_days_ago_dt
+        ]
+      )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^done.id)
+      |> Kanban.Repo.update_all(set: [status: :completed, completed_at: five_days_ago_dt])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # The day-cadence label is "Mon DD — Mon DD" via Calendar.strftime("%b %d").
+      # Assert the dash-separator format characteristic of the daily branch.
+      assert html =~ ~r/[A-Z][a-z]{2} \d{1,2} — [A-Z][a-z]{2} \d{1,2}/
+    end
   end
 end
