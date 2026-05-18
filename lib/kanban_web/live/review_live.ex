@@ -85,14 +85,6 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   @impl true
-  def handle_event("view_diff", _params, socket) do
-    # Real diff viewing is deferred (no diff data exists on Task) — see
-    # the W569 out_of_scope list. Acknowledge the click with no state
-    # change so the button is wired for future expansion.
-    {:noreply, socket}
-  end
-
-  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} active={:review}>
@@ -206,38 +198,16 @@ defmodule KanbanWeb.ReviewLive do
                 task={@selected}
                 on_approve="approve"
                 on_request_changes="request_changes"
-                on_view_diff="view_diff"
               />
-
-              <div
-                data-review-detail-summary
-                style={[
-                  "padding: 14px 16px;",
-                  "font-size: 13px; line-height: 1.55; color: var(--ink);"
-                ]}
-              >
-                {summary_text(@selected)}
-              </div>
-
-              <ReviewStatsStrip.review_stats_strip
-                acceptance={acceptance_value(@selected)}
-                diff={diff_value(@selected)}
-              />
-
-              <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
-
-              <div style="padding: 12px 16px;">
-                <AcceptanceChecklist.acceptance_checklist acceptance_criteria={
-                  @selected.acceptance_criteria
-                } />
-              </div>
 
               <form
                 :if={@request_changes_open?}
+                id="review-request-changes-form"
                 data-review-request-changes-form
                 phx-submit="submit_request_changes"
+                phx-mounted={Phoenix.LiveView.JS.focus(to: "#review-notes")}
                 style={[
-                  "padding: 14px 16px; border-top: 1px solid var(--line);",
+                  "padding: 14px 16px; border-bottom: 1px solid var(--line);",
                   "display: flex; flex-direction: column; gap: 10px;",
                   "background: var(--surface-sunken);"
                 ]}
@@ -269,6 +239,74 @@ defmodule KanbanWeb.ReviewLive do
                   </.button>
                 </div>
               </form>
+
+              <div
+                data-review-detail-summary
+                style={[
+                  "padding: 14px 16px;",
+                  "font-size: 13px; line-height: 1.55; color: var(--ink);"
+                ]}
+              >
+                {summary_text(@selected)}
+              </div>
+
+              <ReviewStatsStrip.review_stats_strip
+                acceptance={acceptance_value(@selected)}
+                acceptance_passed={acceptance_passed(@selected)}
+                tests={testing_strategy_value(@selected)}
+                tests_passed={testing_strategy_passed(@selected)}
+                diff={patterns_value(@selected)}
+                diff_passed={patterns_passed(@selected)}
+                hooks={pitfalls_value(@selected)}
+                hooks_passed={pitfalls_passed(@selected)}
+              />
+
+              <section
+                :if={present_text?(@selected.completion_summary)}
+                data-review-completion-summary
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 6px;"
+                ]}
+              >
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Completion summary")}
+                </span>
+                <p style="margin: 0; white-space: pre-wrap;">
+                  {@selected.completion_summary}
+                </p>
+              </section>
+
+              <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
+
+              <section
+                :if={review_report_html(@selected)}
+                data-review-report
+                class="stride-review-report"
+                style={[
+                  "margin: 12px 16px 0; padding: 12px 14px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface-sunken);",
+                  "border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.55;"
+                ]}
+              >
+                {Phoenix.HTML.raw(review_report_html(@selected))}
+              </section>
+
+              <div style="padding: 12px 16px;">
+                <AcceptanceChecklist.acceptance_checklist
+                  acceptance_criteria={@selected.acceptance_criteria}
+                  checked={acceptance_checked(@selected)}
+                  failed={acceptance_failed(@selected)}
+                />
+              </div>
             </div>
           </section>
         </div>
@@ -389,21 +427,319 @@ defmodule KanbanWeb.ReviewLive do
   defp summary_text(_), do: ""
 
   defp acceptance_value(task) do
-    # Checked-state for acceptance criteria is not yet persisted on Task,
-    # so reporting "N/N" would falsely imply every line is verified.
-    # Surface the line count alone until real progress is tracked.
-    case parse_lines(task.acceptance_criteria) do
-      [] -> nil
-      lines -> lines |> length() |> Integer.to_string()
+    total = task.acceptance_criteria |> parse_lines() |> length()
+    format_acceptance_value(task, total)
+  end
+
+  defp format_acceptance_value(_task, 0), do: nil
+
+  defp format_acceptance_value(task, total) do
+    if reviewer_dispatched?(task) do
+      reviewer_acceptance_value(task, total)
+    else
+      Integer.to_string(total)
     end
   end
 
-  defp diff_value(task) do
-    case parse_files(task.actual_files_changed) do
-      [] -> nil
-      files -> ngettext("%{count} file", "%{count} files", length(files), count: length(files))
+  # Reviewer ran — pick between the clean-pass and issues-found rendering.
+  defp reviewer_acceptance_value(task, total) do
+    checked = checked_count(task, total)
+    n_issues = issues_found(task) || 0
+
+    if n_issues > 0 do
+      ngettext(
+        "%{checked}/%{total} · %{n} issue",
+        "%{checked}/%{total} · %{n} issues",
+        n_issues,
+        checked: checked,
+        total: total,
+        n: n_issues
+      )
+    else
+      "#{checked}/#{total}"
     end
   end
+
+  # Tone for the Acceptance cell. `true` → green, `false` → red, `nil` →
+  # neutral. Derived strictly from the reviewer subagent's `issues_found`
+  # count so that skipped or pre-subagent tasks render neutrally rather
+  # than falsely-passing.
+  defp acceptance_passed(task) do
+    case {reviewer_dispatched?(task), issues_found(task)} do
+      {true, 0} -> true
+      {true, n} when is_integer(n) and n > 0 -> false
+      _ -> nil
+    end
+  end
+
+  # Mark each criterion row :met / :not_met / :unchecked. When the
+  # `review_report` contains an "Acceptance criteria status" section, parse
+  # it to derive per-row state. Falls back to "all rows checked" when the
+  # reviewer ran and the bulk count matches `total` — i.e. the reviewer
+  # covered everything but didn't itemise.
+  defp acceptance_checked(task) do
+    statuses = acceptance_status_map(task)
+
+    if map_size(statuses) > 0 do
+      statuses_to_bool_map(statuses, :met)
+    else
+      fallback_acceptance_checked(task)
+    end
+  end
+
+  defp fallback_acceptance_checked(task) do
+    total = task.acceptance_criteria |> parse_lines() |> length()
+
+    if total > 0 and reviewer_dispatched?(task) and checked_count(task, total) == total do
+      Map.new(0..(total - 1), &{&1, true})
+    else
+      %{}
+    end
+  end
+
+  defp statuses_to_bool_map(statuses, target_status) do
+    for {idx, status} <- statuses, status == target_status, into: %{}, do: {idx, true}
+  end
+
+  defp acceptance_failed(task) do
+    task
+    |> acceptance_status_map()
+    |> statuses_to_bool_map(:not_met)
+  end
+
+  # Regexes used by the `acceptance_status_map/1` parser below. Defined
+  # ABOVE the functions that reference them — module attributes are
+  # evaluated at the point of definition during compilation, so a
+  # forward-reference would expand to `nil` and blow up at runtime.
+  @status_heading_regex ~r/acceptance\s+criteria\s+status/i
+  @status_line_regex ~r/^(\d+)\.\s*(.+?)\s*[—–-]+\s*(Not\s+Met|Met)\.?\s*$/i
+
+  # Parses the "Acceptance criteria status" section of `review_report` into
+  # `%{index => :met | :not_met}`. Looks for the heading line and then for
+  # subsequent numbered lines of the form `N. <text> — Met` (or "Not Met").
+  # Returns `%{}` when the section is absent or the report is empty.
+  defp acceptance_status_map(%{review_report: report}) when is_binary(report) and report != "" do
+    report
+    |> String.split(~r/\r?\n/)
+    |> Enum.drop_while(fn line -> not Regex.match?(@status_heading_regex, line) end)
+    |> tl_or_empty()
+    |> Enum.reduce(%{}, &parse_status_line/2)
+  end
+
+  defp acceptance_status_map(_), do: %{}
+
+  defp tl_or_empty([_ | rest]), do: rest
+  defp tl_or_empty([]), do: []
+
+  defp parse_status_line(line, acc) do
+    trimmed = String.trim(line)
+
+    cond do
+      String.starts_with?(trimmed, "#") -> acc
+      match = Regex.run(@status_line_regex, trimmed) -> insert_status(acc, match)
+      true -> acc
+    end
+  end
+
+  defp insert_status(acc, [_, num, _text, status]) do
+    idx = String.to_integer(num) - 1
+    status_atom = if String.match?(status, ~r/not/i), do: :not_met, else: :met
+    Map.put(acc, idx, status_atom)
+  end
+
+  # Renders the structured `review_report` as styled HTML via Earmark. Falls
+  # back to the reviewer subagent's prose `summary` when there is no
+  # report. Returns `nil` when neither is present, so the panel hides.
+  defp review_report_html(%{review_report: report}) when is_binary(report) and report != "" do
+    render_markdown(report)
+  end
+
+  defp review_report_html(%{reviewer_result: %{"dispatched" => true, "summary" => s}})
+       when is_binary(s) and s != "" do
+    # No structured report — render the prose summary as a single paragraph.
+    render_markdown("### " <> gettext("Reviewer notes") <> "\n\n" <> s)
+  end
+
+  defp review_report_html(_), do: nil
+
+  defp render_markdown(text) do
+    case Earmark.as_html(text, smartypants: false) do
+      {:ok, html, _warnings} -> html
+      {:error, html, _warnings} -> html
+    end
+  end
+
+  # --- Testing strategy + Patterns & Pitfalls strip helpers ----------------
+  #
+  # These four helpers parse the report's "Required test cases", "Patterns
+  # followed", and "Pitfalls" sections to populate the two corresponding
+  # cells in the stats strip. Tone is green when the reviewer signed off,
+  # red when violations are called out, and neutral when the section is
+  # missing — the cell goes back to its em-dash default.
+
+  defp testing_strategy_value(task) do
+    case report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) do
+      nil ->
+        nil
+
+      body ->
+        n = count_list_items(body)
+
+        cond do
+          # Heading text often includes "(all present)" — surface that
+          # phrase as the cell value so it matches the report's wording.
+          all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) ->
+            ngettext(
+              "%{n} case · all present",
+              "%{n} cases · all present",
+              n,
+              n: n
+            )
+
+          n > 0 ->
+            ngettext("%{n} case", "%{n} cases", n, n: n)
+
+          true ->
+            gettext("reviewed")
+        end
+    end
+  end
+
+  defp testing_strategy_passed(task) do
+    cond do
+      all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
+      report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
+      true -> nil
+    end
+  end
+
+  defp patterns_value(task) do
+    case report_section(task, ~r/patterns\s+followed/i) do
+      nil -> nil
+      _body -> gettext("followed")
+    end
+  end
+
+  defp patterns_passed(task) do
+    if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
+  end
+
+  defp pitfalls_value(task) do
+    case report_section(task, ~r/pitfalls/i) do
+      nil ->
+        nil
+
+      body ->
+        if pitfalls_violated?(body) do
+          gettext("violated")
+        else
+          gettext("none violated")
+        end
+    end
+  end
+
+  defp pitfalls_passed(task) do
+    case report_section(task, ~r/pitfalls/i) do
+      nil -> nil
+      body -> not pitfalls_violated?(body)
+    end
+  end
+
+  # Extracts the body of a markdown heading matching the given regex —
+  # everything between the matched `###`/`##` line and the next heading.
+  # Returns `nil` when the report is missing or the section is absent.
+  defp report_section(%{review_report: report}, heading_regex)
+       when is_binary(report) and report != "" do
+    report
+    |> String.split(~r/\r?\n/)
+    |> Enum.split_while(fn line -> not heading_match?(line, heading_regex) end)
+    |> extract_section_body()
+  end
+
+  defp report_section(_, _), do: nil
+
+  defp extract_section_body({_, []}), do: nil
+
+  defp extract_section_body({_, [_heading | rest]}) do
+    rest
+    |> Enum.take_while(fn line -> not heading_line?(line) end)
+    |> Enum.join("\n")
+    |> String.trim()
+    |> nil_if_empty()
+  end
+
+  defp nil_if_empty(""), do: nil
+  defp nil_if_empty(text), do: text
+
+  defp heading_match?(line, regex) do
+    trimmed = String.trim(line)
+    String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed)
+  end
+
+  defp heading_line?(line), do: line |> String.trim() |> String.starts_with?("#")
+
+  # True when the section's heading text contains an "all present" /
+  # "all covered" affordance — reviewers use this to signal full coverage
+  # without having to spell out per-case verdicts.
+  defp all_present_heading?(%{review_report: report}, regex)
+       when is_binary(report) and report != "" do
+    report
+    |> String.split(~r/\r?\n/)
+    |> Enum.any?(fn line ->
+      trimmed = String.trim(line)
+
+      String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed) and
+        Regex.match?(~r/all\s+(present|covered|met)/i, trimmed)
+    end)
+  end
+
+  defp all_present_heading?(_, _), do: false
+
+  # Counts markdown list items (`- `, `* `, or `N. `) in a body string.
+  defp count_list_items(body) when is_binary(body) do
+    body
+    |> String.split(~r/\r?\n/)
+    |> Enum.count(fn line ->
+      trimmed = String.trim_leading(line)
+
+      String.starts_with?(trimmed, "- ") or String.starts_with?(trimmed, "* ") or
+        Regex.match?(~r/^\d+\.\s+/, trimmed)
+    end)
+  end
+
+  defp count_list_items(_), do: 0
+
+  defp pitfalls_violated?(body) when is_binary(body) do
+    cond do
+      # Explicit "none violated" / "no violations" / "all honored" wins.
+      Regex.match?(~r/(none\s+violated|no\s+violations|all\s+(honored|honoured))/i, body) ->
+        false
+
+      # Otherwise look for explicit violation language.
+      Regex.match?(~r/(violated|violations?)/i, body) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp pitfalls_violated?(_), do: false
+
+  defp present_text?(s) when is_binary(s), do: String.trim(s) != ""
+  defp present_text?(_), do: false
+
+  defp reviewer_dispatched?(%{reviewer_result: %{"dispatched" => true}}), do: true
+  defp reviewer_dispatched?(_), do: false
+
+  defp issues_found(%{reviewer_result: %{"issues_found" => n}}) when is_integer(n), do: n
+  defp issues_found(_), do: nil
+
+  defp checked_count(%{reviewer_result: %{"acceptance_criteria_checked" => n}}, _total)
+       when is_integer(n),
+       do: n
+
+  defp checked_count(_task, total), do: total
 
   defp parse_lines(nil), do: []
 

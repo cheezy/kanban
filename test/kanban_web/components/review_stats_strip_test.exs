@@ -42,9 +42,9 @@ defmodule KanbanWeb.ReviewStatsStripTest do
     test "renders all four labels via gettext" do
       html = render_with([])
       assert html =~ "Acceptance"
-      assert html =~ "Tests"
-      assert html =~ "Diff"
-      assert html =~ "Hooks"
+      assert html =~ "Testing strategy"
+      assert html =~ "Patterns"
+      assert html =~ "Pitfalls"
     end
   end
 

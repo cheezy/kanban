@@ -54,7 +54,7 @@ defmodule Kanban.Reviews do
     |> pending_review_query()
     |> apply_scope(Keyword.get(opts, :scope))
     |> order_by([t], asc: t.completed_at)
-    |> preload([t], column: :board)
+    |> preload([t], [:completed_by, column: :board])
     |> Repo.all()
   end
 
@@ -73,7 +73,7 @@ defmodule Kanban.Reviews do
     |> pending_review_query()
     |> where([t], t.id == ^id)
     |> apply_scope(scope)
-    |> preload([t], column: :board)
+    |> preload([t], [:completed_by, column: :board])
     |> Repo.one()
     |> case do
       nil -> {:error, :not_found}

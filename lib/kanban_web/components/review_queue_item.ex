@@ -49,6 +49,7 @@ defmodule KanbanWeb.ReviewQueueItem do
       |> assign(:flag?, flag_set?(task))
       |> assign(:agent_name, agent_name_for(task))
       |> assign(:files_count, files_count_for(task))
+      |> assign(:completed_by_user, completed_by_user_for(task))
 
     ~H"""
     <button
@@ -161,6 +162,26 @@ defmodule KanbanWeb.ReviewQueueItem do
         <span :if={@files_count} style="color: var(--ink-2);">
           {ngettext("%{count} file", "%{count} files", @files_count, count: @files_count)}
         </span>
+
+        <span style="flex: 1;" />
+
+        <span
+          :if={@completed_by_user}
+          data-review-queue-item-completed-by
+          title={
+            gettext("Completed by %{name}",
+              name: completed_by_display_name(@completed_by_user)
+            )
+          }
+          style="display: inline-flex; align-items: center;"
+        >
+          <Avatar.avatar
+            kind={:human}
+            name={completed_by_display_name(@completed_by_user)}
+            palette={AvatarPalette.for_human(@completed_by_user.id)}
+            size={18}
+          />
+        </span>
       </div>
     </button>
     """
@@ -216,6 +237,13 @@ defmodule KanbanWeb.ReviewQueueItem do
   end
 
   defp files_count_for(_), do: nil
+
+  defp completed_by_user_for(%{completed_by: %{} = user}) when not is_nil(user), do: user
+  defp completed_by_user_for(_), do: nil
+
+  defp completed_by_display_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp completed_by_display_name(%{email: email}) when is_binary(email), do: email
+  defp completed_by_display_name(_), do: ""
 
   defp format_age(%DateTime{} = dt) do
     DateTime.utc_now()

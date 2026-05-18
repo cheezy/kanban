@@ -1055,3 +1055,44 @@
     0 14px 32px -8px rgba(0, 0, 0, 0.22),
     0 4px 10px -2px rgba(0, 0, 0, 0.14);
 }
+
+/* Review report panel — renders the markdown content of `review_report`
+   surfaced by `KanbanWeb.ReviewLive`. Keeps the typography compact (the
+   panel sits inside a narrow detail pane) and tints severity / disposition
+   markers so reviewers can scan findings at a glance. */
+.stride-review-report h2,
+.stride-review-report h3,
+.stride-review-report h4 {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.stride-review-report h2 { font-size: 14px; }
+.stride-review-report h3 { font-size: 13px; }
+.stride-review-report h4 { font-size: 12.5px; }
+.stride-review-report h3:not(:first-child),
+.stride-review-report h4:not(:first-child) {
+  margin-top: 14px;
+}
+.stride-review-report p { margin: 0 0 8px; }
+.stride-review-report p:last-child { margin-bottom: 0; }
+.stride-review-report ol,
+.stride-review-report ul {
+  margin: 0 0 8px 18px;
+  padding: 0;
+}
+.stride-review-report li { margin: 2px 0; }
+.stride-review-report strong { color: var(--ink); font-weight: 600; }
+.stride-review-report code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+/* Pick out trailing "— Met" / "— Not Met" markers on the Acceptance
+   criteria status list. The colour cues let reviewers scan the list
+   without re-reading each line. */
+.stride-review-report li:has(:where(em, strong):last-child):not(:has(p)) { color: var(--ink-2); }

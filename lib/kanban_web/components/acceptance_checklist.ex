@@ -26,6 +26,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
   """
   attr :acceptance_criteria, :string, default: nil
   attr :checked, :map, default: %{}
+  attr :failed, :map, default: %{}
 
   def acceptance_checklist(assigns) do
     items = parse_items(assigns.acceptance_criteria)
@@ -81,7 +82,10 @@ defmodule KanbanWeb.AcceptanceChecklist do
             "font-size: 12px; color: var(--ink);"
           ]}
         >
-          <.check_box checked?={item_checked?(@checked, idx, line)} />
+          <.check_box
+            checked?={item_checked?(@checked, idx, line)}
+            failed?={item_failed?(@failed, idx, line)}
+          />
           <span style="flex: 1; min-width: 0; text-wrap: pretty;">{line}</span>
         </li>
       </ol>
@@ -90,6 +94,25 @@ defmodule KanbanWeb.AcceptanceChecklist do
   end
 
   attr :checked?, :boolean, required: true
+  attr :failed?, :boolean, default: false
+
+  defp check_box(%{failed?: true} = assigns) do
+    ~H"""
+    <span
+      aria-label={gettext("Not met")}
+      style={[
+        "display: inline-flex; align-items: center; justify-content: center;",
+        "width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;",
+        "margin-top: 2px;",
+        "border: 1.5px solid var(--st-blocked, oklch(60% 0.18 25));",
+        "background: var(--st-blocked, oklch(60% 0.18 25));",
+        "color: white;"
+      ]}
+    >
+      <.icon name="hero-x-mark" class="w-2.5 h-2.5" />
+    </span>
+    """
+  end
 
   defp check_box(%{checked?: true} = assigns) do
     ~H"""
@@ -144,5 +167,9 @@ defmodule KanbanWeb.AcceptanceChecklist do
 
   defp item_checked?(checked, idx, line) do
     Map.get(checked, idx) == true or Map.get(checked, line) == true
+  end
+
+  defp item_failed?(failed, idx, line) do
+    Map.get(failed, idx) == true or Map.get(failed, line) == true
   end
 end

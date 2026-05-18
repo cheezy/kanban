@@ -260,22 +260,18 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
-  describe "view_diff and other no-op events" do
+  describe "View diff button removal" do
     setup [:register_and_log_in_user]
 
-    test "view_diff is a no-op that leaves the queue intact", %{conn: conn, user: user} do
+    test "the View diff button is no longer rendered in the detail header",
+         %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-      task = pending_task!(column, %{identifier: "W401"})
+      _task = pending_task!(column, %{identifier: "W401"})
 
-      {:ok, view, _html} = live(conn, ~p"/review")
+      {:ok, _view, html} = live(conn, ~p"/review")
 
-      html =
-        view
-        |> element("[data-review-detail-header-view-diff]")
-        |> render_click()
-
-      assert html =~ "data-review-queue-item-id=\"#{task.id}\""
-      assert html =~ "data-review-detail-header"
+      refute html =~ "data-review-detail-header-view-diff"
+      refute html =~ "View diff"
     end
   end
 

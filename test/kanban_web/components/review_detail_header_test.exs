@@ -23,8 +23,7 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
     assigns = %{
       task: task(overrides),
       on_approve: Keyword.get(opts, :on_approve, "approve_review"),
-      on_request_changes: Keyword.get(opts, :on_request_changes, "request_changes"),
-      on_view_diff: Keyword.get(opts, :on_view_diff, "view_diff")
+      on_request_changes: Keyword.get(opts, :on_request_changes, "request_changes")
     }
 
     rendered_to_string(~H"""
@@ -32,7 +31,6 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
       task={@task}
       on_approve={@on_approve}
       on_request_changes={@on_request_changes}
-      on_view_diff={@on_view_diff}
     />
     """)
   end
@@ -68,16 +66,14 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
   end
 
   describe "review_detail_header/1 — action buttons" do
-    test "renders three buttons: View diff, Request changes, Approve" do
+    test "renders two buttons: Request changes, Approve" do
       html = render_header()
-      assert html =~ "View diff"
       assert html =~ "Request changes"
       assert html =~ "Approve"
-    end
-
-    test "View diff button has phx-click matching :on_view_diff attr" do
-      html = render_header(%{}, on_view_diff: "view_diff_click")
-      assert button_with_marker_has_phx_click?(html, "view-diff", "view_diff_click")
+      # The View diff button was removed — no real diff data exists on Task
+      # today, so the action would have been a no-op.
+      refute html =~ "View diff"
+      refute html =~ "data-review-detail-header-view-diff"
     end
 
     test "Request changes button has phx-click matching :on_request_changes attr" do
@@ -92,7 +88,9 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
 
     test "uses the <.button> core component (btn class) for all actions" do
       html = render_header()
-      assert length(Regex.scan(~r/class="btn[^"]*"/, html)) >= 3
+      # Two action buttons remain (Request changes + Approve) since View diff
+      # was removed.
+      assert length(Regex.scan(~r/class="btn[^"]*"/, html)) >= 2
     end
 
     test "Approve button uses btn-primary (no btn-soft) for dark-mode contrast" do

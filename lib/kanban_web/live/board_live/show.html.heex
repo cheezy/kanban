@@ -270,7 +270,7 @@
                   phx-value-id={task.id}
                   class={[
                     "cursor-pointer",
-                    @can_modify and task.type != :goal && "cursor-grab active:cursor-grabbing"
+                    (@can_modify and task.type != :goal) && "cursor-grab active:cursor-grabbing"
                   ]}
                 >
                   <TaskCard.task_card

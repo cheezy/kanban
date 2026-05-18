@@ -34,6 +34,7 @@ defmodule KanbanWeb.ReviewStatsStrip do
   attr :tests, :string, default: nil
   attr :tests_passed, :any, default: nil
   attr :diff, :string, default: nil
+  attr :diff_passed, :any, default: nil
   attr :hooks, :string, default: nil
   attr :hooks_passed, :any, default: nil
 
@@ -58,21 +59,21 @@ defmodule KanbanWeb.ReviewStatsStrip do
       />
       <.cell
         marker="tests"
-        label={gettext("Tests")}
+        label={gettext("Testing strategy")}
         value={@tests}
         tone={tone_for(@tests_passed)}
         border_right={true}
       />
       <.cell
         marker="diff"
-        label={gettext("Diff")}
+        label={gettext("Patterns")}
         value={@diff}
-        tone="var(--ink)"
+        tone={tone_for(@diff_passed)}
         border_right={true}
       />
       <.cell
         marker="hooks"
-        label={gettext("Hooks")}
+        label={gettext("Pitfalls")}
         value={@hooks}
         tone={tone_for(@hooks_passed)}
         border_right={false}
