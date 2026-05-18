@@ -5,6 +5,8 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.TaskTokens
+
   attr :steps, :list, required: true
 
   def workflow_steps_section(assigns) do
@@ -17,7 +19,8 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
         <%= for step <- @steps do %>
           <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span class="font-semibold break-words">
-              {step["name"] || gettext("(unnamed step)")}
+              {(step["name"] && TaskTokens.hook_stage_label(step["name"])) ||
+                gettext("(unnamed step)")}
             </span>
             <span class="text-xs">
               {workflow_step_status_label(step)}

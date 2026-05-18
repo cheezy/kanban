@@ -140,4 +140,28 @@ defmodule KanbanWeb.TaskTokens do
   def kind_label(:create), do: gettext("created")
   def kind_label(:unclaim), do: gettext("unclaimed")
   def kind_label(_), do: ""
+
+  # --- Task type ---------------------------------------------------------
+
+  @doc "Gettext word for a task type atom (returns empty string for unknowns)."
+  def type_label(:work), do: gettext("Work")
+  def type_label(:defect), do: gettext("Defect")
+  def type_label(:goal), do: gettext("Goal")
+  def type_label(_), do: ""
+
+  # --- Hook stage labels -------------------------------------------------
+
+  @doc """
+  User-visible label for a workflow hook stage name string.
+
+  Stage NAMES like `"before_doing"` are also API config keys. This helper
+  returns the user-facing label form; raw config-key strings should not
+  pass through this helper when emitted in API responses.
+  """
+  def hook_stage_label("before_doing"), do: gettext("Before Doing")
+  def hook_stage_label("after_doing"), do: gettext("After Doing")
+  def hook_stage_label("before_review"), do: gettext("Before Review")
+  def hook_stage_label("after_review"), do: gettext("After Review")
+  def hook_stage_label(other) when is_binary(other), do: other
+  def hook_stage_label(_), do: ""
 end

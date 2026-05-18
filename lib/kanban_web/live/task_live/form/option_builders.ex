@@ -61,15 +61,17 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
       if can_add || column.id == task.column_id do
         column.name
       else
-        "#{column.name} (WIP limit reached)"
+        "#{column.name} (#{wip_limit_suffix()})"
       end
 
     {label, column.id}
   end
 
   defp reject_full_column?({label, id}, task) do
-    String.contains?(label, "WIP limit reached") && id != task.column_id
+    String.contains?(label, wip_limit_suffix()) && id != task.column_id
   end
+
+  defp wip_limit_suffix, do: gettext("WIP limit reached")
 
   @doc """
   Build the `{display_name, id}` list for the assignee dropdown, prefixed

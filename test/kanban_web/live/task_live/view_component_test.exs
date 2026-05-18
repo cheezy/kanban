@@ -1194,8 +1194,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Workflow Steps"
       assert result =~ "bg-indigo-50"
-      assert result =~ "before_doing"
-      assert result =~ "after_doing"
+      assert result =~ "Before Doing"
+      assert result =~ "After Doing"
       assert result =~ "120 ms"
       assert result =~ "5400 ms"
     end
@@ -1232,7 +1232,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "before_review"
+      assert result =~ "Before Review"
       assert result =~ "Skipped"
       assert result =~ "Reason"
       assert result =~ "needs_review is false"
@@ -1270,7 +1270,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ "after_review"
+      assert result =~ "After Review"
       assert result =~ "Not dispatched"
     end
 

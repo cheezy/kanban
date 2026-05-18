@@ -3,6 +3,7 @@ defmodule KanbanWeb.MetricsLive.Compliance do
 
   alias Kanban.Boards
   alias Kanban.Tasks.Compliance
+  alias KanbanWeb.TaskTokens
 
   @impl true
   def mount(_params, _session, socket), do: {:ok, socket}

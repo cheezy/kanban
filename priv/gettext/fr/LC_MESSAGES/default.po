@@ -391,6 +391,7 @@ msgstr "Critique"
 #: lib/kanban_web/live/issue_live/form_component.ex:370
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
+#: lib/kanban_web/task_tokens.ex:148
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr "Défaut"
@@ -464,6 +465,7 @@ msgstr "Limite WIP dépassée"
 
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:70
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
+#: lib/kanban_web/task_tokens.ex:147
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr "Travail"
@@ -634,7 +636,7 @@ msgstr "Rechercher"
 msgid "Select a user"
 msgstr "Sélectionner un utilisateur"
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:86
+#: lib/kanban_web/live/task_live/form/option_builders.ex:88
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "Non assigné"
@@ -1762,6 +1764,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/live/task_live/view_component.ex:333
+#: lib/kanban_web/task_tokens.ex:149
 #, elixir-autogen, elixir-format
 msgid "Goal"
 msgstr ""
@@ -1777,7 +1780,7 @@ msgstr "Flux de Travail de Révision Humaine"
 msgid "ID"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:109
+#: lib/kanban_web/live/task_live/form/option_builders.ex:111
 #, elixir-autogen, elixir-format
 msgid "No parent goal"
 msgstr ""
@@ -2557,7 +2560,7 @@ msgstr "tâches terminées"
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/base.ex:81
-#: lib/kanban_web/live/metrics_live/compliance.ex:25
+#: lib/kanban_web/live/metrics_live/compliance.ex:26
 #, elixir-autogen, elixir-format
 msgid "Board not found"
 msgstr ""
@@ -2588,44 +2591,44 @@ msgstr ""
 msgid "Only goals can be promoted"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:27
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:20
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:23
 #, elixir-autogen, elixir-format
 msgid "(unnamed step)"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:65
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:68
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:54
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:57
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr ""
 
 #: lib/kanban_web/live/archive_live/index.html.heex:80
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:32
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:51
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:54
 #, elixir-autogen, elixir-format
 msgid "Skipped"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:14
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:16
 #, elixir-autogen, elixir-format
 msgid "Workflow Steps"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:62
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:65
 #, elixir-autogen, elixir-format
 msgid "exit %{code}"
 msgstr ""
@@ -2640,7 +2643,7 @@ msgstr ""
 msgid "Avg Steps / Task"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:48
+#: lib/kanban_web/live/metrics_live/compliance.ex:49
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
@@ -2696,7 +2699,7 @@ msgstr ""
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:33
+#: lib/kanban_web/live/metrics_live/compliance.ex:34
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to view compliance metrics for this board."
 msgstr ""
@@ -6345,4 +6348,29 @@ msgstr ""
 #: lib/kanban_web/controllers/error_html/404.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "Sorry, we couldn't find the page you're looking for. The resource might have been moved, deleted, or you may not have permission to access it."
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:162
+#, elixir-autogen, elixir-format
+msgid "After Doing"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:164
+#, elixir-autogen, elixir-format
+msgid "After Review"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:161
+#, elixir-autogen, elixir-format
+msgid "Before Doing"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:163
+#, elixir-autogen, elixir-format
+msgid "Before Review"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/form/option_builders.ex:74
+#, elixir-autogen, elixir-format
+msgid "WIP limit reached"
 msgstr ""

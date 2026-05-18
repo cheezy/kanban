@@ -341,7 +341,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             </MetaItem.meta_item>
 
             <MetaItem.meta_item label={gettext("Type")}>
-              <span style="text-transform: capitalize;">{@task.type}</span>
+              <span>{TaskTokens.type_label(@task.type)}</span>
             </MetaItem.meta_item>
 
             <MetaItem.meta_item :if={@task.priority} label={gettext("Priority")}>
