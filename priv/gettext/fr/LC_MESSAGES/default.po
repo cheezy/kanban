@@ -2650,7 +2650,7 @@ msgid "Compliance Metrics"
 msgstr "Mesures de conformité"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:165
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance by Agent"
 msgstr "Conformité par agent"
 
@@ -2670,7 +2670,7 @@ msgid "No workflow step data yet"
 msgstr "Pas encore de données d'étapes de workflow"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:125
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Skip Reasons"
 msgstr "Raisons d'omission"
 
@@ -2690,12 +2690,12 @@ msgid "Workflow step dispatch, skip reasons, and per-agent compliance"
 msgstr "Déclenchement des étapes de workflow, raisons d'omission et conformité par agent"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:252
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance"
 msgstr "Conformité"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:256
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr "Taux de déclenchement des étapes et conformité des agents"
 
@@ -2705,7 +2705,7 @@ msgid "You don't have permission to view compliance metrics for this board."
 msgstr "Vous n'avez pas l'autorisation de consulter les mesures de conformité de ce tableau."
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:59
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Dispatch Rate"
 msgstr "Taux de déclenchement"
 
@@ -2715,9 +2715,9 @@ msgid "Step"
 msgstr "Étape"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Total"
-msgstr "Total des tâches"
+msgstr "Total"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:24
 #, elixir-autogen, elixir-format
@@ -2945,9 +2945,9 @@ msgid "Assignee does not have access to this board"
 msgstr "L'attributaire n'a pas accès à ce tableau"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
-msgstr "Temps d'attente de l'arriéré"
+msgstr "Tâches en attente dans Backlog"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
@@ -2985,14 +2985,14 @@ msgid "Please wait a moment before submitting another issue."
 msgstr "Veuillez patienter un instant avant d'envoyer un autre signalement."
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
-msgstr "Temps d'attente en file"
+msgstr "Tâches en attente dans la file"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
-msgstr "Temps d'attente de révision"
+msgstr "Tâches en attente dans Review"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
 #, elixir-autogen, elixir-format, fuzzy
@@ -5537,7 +5537,7 @@ msgid "All boards"
 msgstr "Tous les tableaux"
 
 #: lib/kanban_web/live/metrics_live/workspace.ex:78
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter"
 msgstr "Filtres"
 

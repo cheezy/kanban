@@ -2715,9 +2715,9 @@ msgid "Step"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Total"
-msgstr ""
+msgstr "Total"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:24
 #, elixir-autogen, elixir-format
@@ -2945,9 +2945,9 @@ msgid "Assignee does not have access to this board"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
-msgstr ""
+msgstr "Backlog Wait Tasks"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
@@ -2985,14 +2985,14 @@ msgid "Please wait a moment before submitting another issue."
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
-msgstr ""
+msgstr "Queue Wait Tasks"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
-msgstr ""
+msgstr "Review Wait Tasks"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
 #, elixir-autogen, elixir-format, fuzzy

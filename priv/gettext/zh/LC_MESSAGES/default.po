@@ -2648,7 +2648,7 @@ msgid "Compliance Metrics"
 msgstr "合规指标"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:165
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance by Agent"
 msgstr "按代理统计的合规情况"
 
@@ -2668,7 +2668,7 @@ msgid "No workflow step data yet"
 msgstr "暂无工作流步骤数据"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:125
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Skip Reasons"
 msgstr "跳过原因"
 
@@ -2688,12 +2688,12 @@ msgid "Workflow step dispatch, skip reasons, and per-agent compliance"
 msgstr "工作流步骤派发、跳过原因以及各代理合规情况"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:252
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance"
 msgstr "合规"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:256
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr "工作流步骤派发率和代理合规情况"
 
@@ -2703,7 +2703,7 @@ msgid "You don't have permission to view compliance metrics for this board."
 msgstr "您没有权限查看此看板的合规指标。"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:59
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Dispatch Rate"
 msgstr "派发率"
 
@@ -2713,9 +2713,9 @@ msgid "Step"
 msgstr "步骤"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Total"
-msgstr "任务总数"
+msgstr "合计"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:24
 #, elixir-autogen, elixir-format
@@ -2942,9 +2942,9 @@ msgid "Assignee does not have access to this board"
 msgstr "被指派人无法访问此看板"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
-msgstr "待办等待时间"
+msgstr "Backlog 中等待的任务"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
@@ -2982,14 +2982,14 @@ msgid "Please wait a moment before submitting another issue."
 msgstr "请稍候再提交另一个问题。"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
-msgstr "队列等待时间"
+msgstr "队列中等待的任务"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
-msgstr "审查等待时间"
+msgstr "Review 中等待的任务"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
 #, elixir-autogen, elixir-format, fuzzy
@@ -5525,7 +5525,7 @@ msgid "All boards"
 msgstr "所有看板"
 
 #: lib/kanban_web/live/metrics_live/workspace.ex:78
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter"
 msgstr "筛选"
 

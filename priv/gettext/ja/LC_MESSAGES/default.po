@@ -2648,7 +2648,7 @@ msgid "Compliance Metrics"
 msgstr "コンプライアンスメトリクス"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:165
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance by Agent"
 msgstr "エージェント別コンプライアンス"
 
@@ -2668,7 +2668,7 @@ msgid "No workflow step data yet"
 msgstr "まだワークフロー手順のデータがありません"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:125
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Skip Reasons"
 msgstr "スキップ理由"
 
@@ -2688,12 +2688,12 @@ msgid "Workflow step dispatch, skip reasons, and per-agent compliance"
 msgstr "ワークフロー手順のディスパッチ、スキップ理由、エージェント別コンプライアンス"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:252
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Compliance"
 msgstr "コンプライアンス"
 
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:256
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr "ワークフロー手順のディスパッチ率とエージェントコンプライアンス"
 
@@ -2703,7 +2703,7 @@ msgid "You don't have permission to view compliance metrics for this board."
 msgstr "このボードのコンプライアンスメトリクスを閲覧する権限がありません。"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:59
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Dispatch Rate"
 msgstr "ディスパッチ率"
 
@@ -2713,9 +2713,9 @@ msgid "Step"
 msgstr "手順"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Total"
-msgstr "タスク合計"
+msgstr "合計"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:24
 #, elixir-autogen, elixir-format
@@ -2942,9 +2942,9 @@ msgid "Assignee does not have access to this board"
 msgstr "担当者はこのボードへのアクセス権がありません"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
-msgstr "バックログ待ち時間"
+msgstr "Backlog で待機中のタスク"
 
 #: lib/kanban_web/live/board_live/show.ex:695
 #: lib/kanban_web/live/board_live/show.ex:733
@@ -2982,14 +2982,14 @@ msgid "Please wait a moment before submitting another issue."
 msgstr "別の問題を送信する前に少しお待ちください。"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
-msgstr "キュー待ち時間"
+msgstr "キューで待機中のタスク"
 
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
-msgstr "レビュー待ち時間"
+msgstr "Review で待機中のタスク"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:36
 #, elixir-autogen, elixir-format, fuzzy
@@ -5525,7 +5525,7 @@ msgid "All boards"
 msgstr "すべてのボード"
 
 #: lib/kanban_web/live/metrics_live/workspace.ex:78
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter"
 msgstr "フィルター"
 
