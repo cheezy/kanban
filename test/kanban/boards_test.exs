@@ -9,6 +9,31 @@ defmodule Kanban.BoardsTest do
   alias Kanban.Boards.Board
   alias Kanban.Tasks
 
+  describe "user_has_boards?/1" do
+    test "returns false for a user with no board memberships" do
+      user = user_fixture()
+      refute Boards.user_has_boards?(user)
+    end
+
+    test "returns true when the user owns at least one board" do
+      user = user_fixture()
+      _ = board_fixture(user, %{name: "Owned board"})
+      assert Boards.user_has_boards?(user)
+    end
+
+    test "is scoped to the given user — another user's boards do not leak in" do
+      owner = user_fixture()
+      other = user_fixture()
+      _ = board_fixture(owner, %{name: "Owner's board"})
+      refute Boards.user_has_boards?(other)
+    end
+
+    test "returns false for any non-user argument" do
+      refute Boards.user_has_boards?(nil)
+      refute Boards.user_has_boards?(%{})
+    end
+  end
+
   describe "list_boards/1" do
     test "returns all boards for a specific user" do
       user1 = user_fixture()

@@ -1,10 +1,10 @@
 defmodule KanbanWeb.MarketingClosing do
   @moduledoc """
-  Bottom-of-page marketing components for the landing page: the numbers band,
-  the lower CTA, and the footer. Lives in its own module so the parent
+  Bottom-of-page marketing components for the landing page: the lower CTA
+  and the footer. Lives in its own module so the parent
   `KanbanWeb.MarketingComponents` stays under the 500-line guideline.
 
-  Mirrors lines ~327-391 of
+  Mirrors lines ~347-391 of
   `design_handoff_stride/design_source/screens/landing.jsx`.
 
   Render inside the `.stride-marketing` CSS scope so the design tokens
@@ -14,52 +14,9 @@ defmodule KanbanWeb.MarketingClosing do
   use KanbanWeb, :html
 
   @doc """
-  Renders the 4-column numbers band. Tabular numerals so the values line up.
-
-  Mirrors lines ~327-344 of `landing.jsx`.
-
-  ## Examples
-
-      <.marketing_numbers_band />
-  """
-  def marketing_numbers_band(assigns) do
-    assigns = assign(assigns, :metrics, numbers_band_metrics())
-
-    ~H"""
-    <section
-      class="px-5 py-10 md:px-16 md:py-14"
-      style="border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface);"
-    >
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-9">
-        <div :for={metric <- @metrics} class="flex flex-col gap-1">
-          <span
-            class="font-semibold"
-            style={"font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.035em; font-feature-settings: \"tnum\";"}
-          >
-            {metric.value}
-          </span>
-          <span style="font-size: 12.5px; color: var(--ink-3); text-wrap: pretty;">
-            {metric.label}
-          </span>
-        </div>
-      </div>
-    </section>
-    """
-  end
-
-  defp numbers_band_metrics do
-    [
-      %{value: "0.4s", label: gettext("Agent-to-task latency · p95")},
-      %{value: "94.6%", label: gettext("Test coverage in core")},
-      %{value: "17m", label: gettext("Median time to human review")},
-      %{value: "23.6 / day", label: gettext("Tasks shipped per active board")}
-    ]
-  end
-
-  @doc """
   Renders the lower CTA section: large two-line headline with orange emphasis on
-  "approving them.", sub-copy, and two centered buttons (dark "Start free" and
-  bordered "Talk to a human").
+  "approving them.", sub-copy, and a single centered dark "Start free" CTA
+  (swaps to "Go to my boards" when the user is signed in).
 
   Mirrors lines ~347-371 of `landing.jsx`.
 
@@ -87,7 +44,7 @@ defmodule KanbanWeb.MarketingClosing do
       </h2>
       <p style="margin: 14px auto 0; font-size: 15px; color: var(--ink-2); max-width: 540px;">
         {gettext(
-          "Free for solo developers and small teams. Self-host the whole thing. Bring any agent — Claude, Cursor, Aider, Codex, your own."
+          "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
         )}
       </p>
       <div class="flex flex-col md:flex-row md:justify-center gap-3 mt-5 md:mt-[22px]">
@@ -110,13 +67,6 @@ defmodule KanbanWeb.MarketingClosing do
             <.icon name="hero-arrow-right" class="w-3 h-3" />
           </.link>
         <% end %>
-        <.link
-          href={~p"/about"}
-          class="inline-flex items-center justify-center font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          style="padding: 12px 22px; border-radius: 7px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); font-size: 14px;"
-        >
-          {gettext("Talk to a human")}
-        </.link>
       </div>
     </section>
     """

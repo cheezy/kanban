@@ -44,6 +44,20 @@ defmodule Kanban.Boards do
     |> Enum.sort_by(&board_sort_key/1, &board_sort_compare/2)
   end
 
+  @doc """
+  Returns `true` when the user has access to at least one board.
+
+  Cheaper than `list_boards/1` when only existence matters (e.g. landing-page
+  CTAs that branch on "has any boards yet?").
+  """
+  def user_has_boards?(%User{id: user_id}) do
+    BoardUser
+    |> where(user_id: ^user_id)
+    |> Repo.exists?()
+  end
+
+  def user_has_boards?(_), do: false
+
   defp board_sort_key(board) do
     access_priority =
       case board.user_access do

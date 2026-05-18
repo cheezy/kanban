@@ -95,19 +95,19 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
             "When creating a board, select:\n\n- **AI Optimized Board** if you'll be working with AI agents or want a standardized agent-friendly workflow\n- **Empty Board** if you need custom columns tailored to your team's specific process\n\nNote: You cannot convert between board types after creation, so choose carefully based on your workflow needs."
         },
         %{
-          title: "Column Settings & WIP Limits",
+          title: "WIP Limits (Custom Boards Only)",
           content:
-            "Both board types support **WIP (Work In Progress) limits** for each column. WIP limits prevent bottlenecks by restricting how many tasks can be in a column at once, keeping work flowing smoothly through your workflow.",
+            "Only **Custom Boards** support **WIP (Work In Progress) limits** on each column. WIP limits prevent bottlenecks by restricting how many tasks can be in a column at once, keeping work flowing smoothly through your workflow.\n\nAI-Optimized Boards do not support WIP limits — their five-column structure is fixed by design so AI agents can rely on a consistent workflow.",
           images: [
             %{
               url: "/images/resources/guides/understanding-columns-step-5-1.png",
-              alt: "AI-Optimized Board column settings with WIP limit",
+              alt: "AI-Optimized Board column settings (no WIP limit field)",
               width: 602,
               height: 340
             },
             %{
               url: "/images/resources/guides/understanding-columns-step-5-2.png",
-              alt: "Custom Board column settings with WIP limit",
+              alt: "Custom Board column settings with the WIP limit field",
               width: 234,
               height: 77
             }

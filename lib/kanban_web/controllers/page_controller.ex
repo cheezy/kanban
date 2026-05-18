@@ -23,7 +23,13 @@ defmodule KanbanWeb.PageController do
        when action in [:about, :tango, :changelog]
 
   def home(conn, _params) do
-    render(conn, :home)
+    has_boards =
+      case conn.assigns[:current_scope] do
+        %{user: user} when not is_nil(user) -> Kanban.Boards.user_has_boards?(user)
+        _ -> false
+      end
+
+    render(conn, :home, has_boards: has_boards)
   end
 
   def about(conn, _params) do

@@ -125,9 +125,7 @@
                   {gettext("The stride-security-review plugin")}
                 </a>
               </strong>
-              {gettext(
-                " runs for every release detecting any security vulnerabilities."
-              )}
+              {gettext(" runs for every release detecting any security vulnerabilities.")}
             </li>
           </ul>
         </section>
@@ -142,7 +140,8 @@
             )}
           </p>
           <p class="text-base-content opacity-70 leading-relaxed">
-            {gettext("Inside your hooks you are responsible for what runs — review your own")} <em>.stride.md</em> {gettext("before pointing an agent at it.")}
+            {gettext("Inside your hooks you are responsible for what runs — review your own")}
+            <em>.stride.md</em> {gettext("before pointing an agent at it.")}
           </p>
         </section>
 
@@ -151,7 +150,12 @@
             {gettext("Dependency hygiene")}
           </h2>
           <p class="text-base-content opacity-70 leading-relaxed">
-            {gettext("Dependencies are audited with")} <strong>mix deps.audit</strong> {gettext("and")} <strong>mix hex.audit</strong> {gettext("on every completed task. Outdated dependencies are surfaced with")} <strong>mix hex.outdated</strong> {gettext(
+            {gettext("Dependencies are audited with")}
+            <strong>mix deps.audit</strong> {gettext("and")}
+            <strong>mix hex.audit</strong> {gettext(
+              "on every completed task. Outdated dependencies are surfaced with"
+            )}
+            <strong>mix hex.outdated</strong> {gettext(
               "and updated on a regular cadence. The full dependency tree is published in the project's mix.exs file and is reviewable in the open-source repository."
             )}
           </p>

@@ -231,10 +231,10 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "color: var(--ink-4)"
 
       # Sub-copy
-      assert html =~ "Stride is an AI-native kanban"
+      assert html =~ "Stride is an AI-native work management system"
 
       # Microcopy trust signal
-      assert html =~ "Free for solo · self-host on day one"
+      assert html =~ "Free for you and your teams · self-hosting options available"
     end
 
     test "unauthenticated CTA is Start free and links to /users/register" do
@@ -263,19 +263,31 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ "Start free"
     end
 
-    test "secondary CTA is Read the agent API and links to the GitHub README" do
-      assigns = %{current_scope: nil}
+    test "secondary CTA points at the create-a-board guide when the user has no boards" do
+      assigns = %{current_scope: nil, has_boards: false}
 
       html =
         rendered_to_string(~H"""
-        <MarketingComponents.marketing_hero current_scope={@current_scope} />
+        <MarketingComponents.marketing_hero current_scope={@current_scope} has_boards={@has_boards} />
         """)
 
-      assert html =~ "Read the agent API"
-      # External link to the agent API README on GitHub
-      assert html =~ ~s|href="https://github.com/cheezy/kanban/blob/main/docs/api/README.md"|
-      assert html =~ ~s|target="_blank"|
-      assert html =~ ~s|rel="noopener noreferrer"|
+      assert html =~ "Learn about creating a board"
+      assert html =~ ~s|href="/resources/creating-your-first-board"|
+      # No longer points at the external agent-API README
+      refute html =~ "Read the agent API"
+    end
+
+    test "secondary CTA points at the inviting-team-members guide when the user has boards" do
+      assigns = %{current_scope: %{user: %{}}, has_boards: true}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_hero current_scope={@current_scope} has_boards={@has_boards} />
+        """)
+
+      assert html =~ "Learn about adding team members"
+      assert html =~ ~s|href="/resources/inviting-team-members"|
+      refute html =~ "Learn about creating a board"
     end
 
     test "hero embeds the mini-board" do
@@ -439,7 +451,11 @@ defmodule KanbanWeb.MarketingComponentsTest do
         """)
 
       assert html =~ "How it works"
-      assert html =~ "One loop. Two roles."
+      # Two-tone headline split across two gettext strings + a span for the
+      # orange-emphasised second clause.
+      assert html =~ "One loop."
+      assert html =~ "Two roles."
+      assert html =~ "color: var(--stride-orange);"
     end
 
     test "renders all four step cells with mono step numbers, titles, and body copy" do
@@ -456,7 +472,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       end
 
       # Step titles
-      assert html =~ "You write the task"
+      assert html =~ "You write or review the task"
       assert html =~ "An agent claims it"
       assert html =~ "Hooks run on their machine"
       assert html =~ "You approve or send back"
@@ -464,8 +480,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Body excerpts
       assert html =~ "The schema is the conversation."
       assert html =~ "Atomic. SKIP LOCKED."
-      assert html =~ "mix test, gh pr create"
-      assert html =~ "approves and runs after_review"
+      assert html =~ "running tests, creating PRs"
+      assert html =~ "Diff, tests, acceptance"
     end
 
     test "renders the responsive grid with separator borders across breakpoints" do
@@ -565,37 +581,6 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
   end
 
-  describe "marketing_numbers_band/1" do
-    test "renders 4 tabular-numeral metrics with labels" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <KanbanWeb.MarketingClosing.marketing_numbers_band />
-        """)
-
-      # Values
-      assert html =~ "0.4s"
-      assert html =~ "94.6%"
-      assert html =~ "17m"
-      assert html =~ "23.6 / day"
-
-      # Labels
-      assert html =~ "Agent-to-task latency · p95"
-      assert html =~ "Test coverage in core"
-      assert html =~ "Median time to human review"
-      assert html =~ "Tasks shipped per active board"
-
-      # Tabular-numerals feature for line-up — quotes are HTML-escaped in
-      # the rendered output (`&quot;tnum&quot;`), so check for the
-      # `font-feature-settings: ` prefix with the escaped `tnum` token.
-      assert html =~ "font-feature-settings: &quot;tnum&quot;"
-      # Responsive: 2 cols on mobile, 4 cols on md+
-      assert html =~ "grid-cols-2"
-      assert html =~ "md:grid-cols-4"
-    end
-  end
-
   describe "marketing_cta_section/1" do
     test "renders headline with orange emphasis on 'approving them.'" do
       assigns = %{current_scope: nil}
@@ -611,7 +596,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "color: var(--stride-orange);"
 
       # Sub-copy
-      assert html =~ "Free for solo developers and small teams"
+      assert html =~ "Free for you and your teams"
+      assert html =~ "Bring any agent"
     end
 
     test "unauthenticated state shows Start free linking to /users/register" do
@@ -624,7 +610,6 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "Start free"
       assert html =~ ~s|href="/users/register"|
-      assert html =~ "Talk to a human"
     end
 
     test "authenticated state swaps CTA to Go to my boards linking to /boards" do

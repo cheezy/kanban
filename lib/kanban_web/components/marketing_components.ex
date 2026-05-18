@@ -324,6 +324,12 @@ defmodule KanbanWeb.MarketingComponents do
     default: nil,
     doc: "The `@current_scope` assign — `nil` when no user is signed in."
 
+  attr :has_boards, :boolean,
+    default: false,
+    doc:
+      "True when the signed-in user has at least one board. Controls the secondary CTA: " <>
+        "`false` → \"Learn about creating a board\"; `true` → \"Learn about adding team members\"."
+
   def marketing_hero(assigns) do
     ~H"""
     <section
@@ -336,22 +342,26 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
           <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          {gettext("v1.29.0 · Goal-driven assignment workflow")}
+          {gettext("v2.0.0 · Updated UI and workspace enhancements")}
         </span>
-        <span class="text-xs" style="color: var(--ink-3);">
+        <.link
+          navigate={~p"/changelog"}
+          class="text-xs hover:underline"
+          style="color: var(--ink-3);"
+        >
           {gettext("Now in release →")}
-        </span>
+        </.link>
       </div>
 
       <h1
         class="m-0 font-semibold"
         style="font-size: clamp(36px, 6vw, 72px); letter-spacing: -0.04em; line-height: 0.98; max-width: 1100px; color: var(--ink); text-wrap: pretty;"
       >
-        {gettext("Tasks are conversations.")}
-        <br />
         <span style="color: var(--ink-4);">
-          {gettext("Stride can speak both ways.")}
+          {gettext("Tasks are conversations.")}
         </span>
+        <br />
+        {gettext("Stride can speak both ways.")}
       </h1>
 
       <p
@@ -359,7 +369,7 @@ defmodule KanbanWeb.MarketingComponents do
         style="max-width: 620px; font-size: 17.5px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty;"
       >
         {gettext(
-          "Stride is an AI-native kanban. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
+          "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
         )}
       </p>
 
@@ -384,23 +394,32 @@ defmodule KanbanWeb.MarketingComponents do
           </.link>
         <% end %>
 
-        <.link
-          href="https://github.com/cheezy/kanban/blob/main/docs/api/README.md"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-          style="background: transparent; color: var(--ink); border: 1px solid var(--line-strong);"
-        >
-          <.icon name="hero-cpu-chip" class="w-3 h-3" />
-          {gettext("Read the agent API")}
-        </.link>
+        <%= if @has_boards do %>
+          <.link
+            navigate={~p"/resources/inviting-team-members"}
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+            style="background: transparent; color: var(--ink); border: 1px solid var(--line-strong);"
+          >
+            <.icon name="hero-user-plus" class="w-3 h-3" />
+            {gettext("Learn about adding team members")}
+          </.link>
+        <% else %>
+          <.link
+            navigate={~p"/resources/creating-your-first-board"}
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+            style="background: transparent; color: var(--ink); border: 1px solid var(--line-strong);"
+          >
+            <.icon name="hero-rectangle-stack" class="w-3 h-3" />
+            {gettext("Learn about creating a board")}
+          </.link>
+        <% end %>
 
         <span
           class="inline-flex items-center gap-1.5 md:ml-1.5 text-xs"
           style="color: var(--ink-3);"
         >
           <.icon name="hero-check" class="w-2.5 h-2.5" />
-          {gettext("Free for solo · self-host on day one")}
+          {gettext("Free for you and your teams · self-hosting options available")}
         </span>
       </div>
 
@@ -457,7 +476,7 @@ defmodule KanbanWeb.MarketingComponents do
           </p>
           <p style="margin: 0;">
             {gettext(
-              "Humans get a fast, calm board to plan and review. Agents get an API rich enough to ship without asking. The same board feels native to both."
+              "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
             )}
           </p>
         </div>
@@ -481,12 +500,21 @@ defmodule KanbanWeb.MarketingComponents do
     assigns = assign(assigns, :steps, how_it_works_steps())
 
     ~H"""
-    <section class="px-5 pt-10 pb-6 md:px-16 md:pt-16 md:pb-8">
-      <div class="flex flex-wrap items-baseline gap-3.5 mb-7 md:mb-9">
+    <section
+      class="px-5 pt-10 pb-6 md:px-16 md:pt-16 md:pb-8"
+      style="border-bottom: 1px solid var(--line);"
+    >
+      <div class="flex flex-col gap-3 mb-7 md:mb-9">
         <span class="ucase">{gettext("How it works")}</span>
-        <span class="text-[13px]" style="color: var(--ink-3);">
-          {gettext("One loop. Two roles.")}
-        </span>
+        <h2
+          class="font-semibold"
+          style="margin: 0; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; text-wrap: pretty;"
+        >
+          {gettext("One loop.")}
+          <span style="color: var(--stride-orange);">
+            {gettext("Two roles.")}
+          </span>
+        </h2>
       </div>
 
       <div
@@ -540,6 +568,7 @@ defmodule KanbanWeb.MarketingComponents do
 
     ~H"""
     <section class="px-5 pt-6 pb-10 md:px-16 md:pt-8 md:pb-16">
+      <span class="ucase block mb-7 md:mb-9">{gettext("A few features")}</span>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         <div
           :for={feature <- @features}
@@ -612,7 +641,7 @@ defmodule KanbanWeb.MarketingComponents do
         title: gettext("Goals → tasks → outcomes"),
         body:
           gettext(
-            "Plan at the level you think at. Stride decomposes into the work agents can actually claim."
+            "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
           )
       },
       %{
@@ -636,10 +665,10 @@ defmodule KanbanWeb.MarketingComponents do
     [
       %{
         number: "01",
-        title: gettext("You write the task"),
+        title: gettext("You write or review the task"),
         body:
           gettext(
-            "Why, what, where, acceptance criteria, key files, hooks. The schema is the conversation."
+            "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
           ),
         icon: "hero-sparkles",
         color: "var(--ink)"
@@ -659,7 +688,7 @@ defmodule KanbanWeb.MarketingComponents do
         title: gettext("Hooks run on their machine"),
         body:
           gettext(
-            "mix test, gh pr create, whatever you put in .stride.md. You hold the keys; agents hold the loop."
+            "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
           ),
         icon: "hero-bolt",
         color: "var(--stride-orange)"
@@ -669,7 +698,7 @@ defmodule KanbanWeb.MarketingComponents do
         title: gettext("You approve or send back"),
         body:
           gettext(
-            "Diff, tests, acceptance — all in one pane. ⌘A approves and runs after_review. Done."
+            "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
           ),
         icon: "hero-check",
         color: "var(--st-done)"

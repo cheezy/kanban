@@ -35,7 +35,7 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "Authentication and access"
     assert body =~ "Transport and storage"
     assert body =~ "Vulnerability disclosure"
-    assert body =~ "security@stridelikeaboss.com"
+    assert body =~ "security@letstango.ca"
   end
 
   test "GET /pricing", %{conn: conn} do
