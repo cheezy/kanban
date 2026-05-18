@@ -764,14 +764,17 @@ defmodule KanbanWeb.BoardLive.Show do
   defp handle_task_move_success(socket) do
     require Logger
     Logger.info("Task move succeeded")
-    # Send success event FIRST to clear pendingMove flag, then reload tasks
-    # Reset the stream so LiveView re-renders columns with updated task counts
+    # The column structure itself does not change on a task move — only the
+    # `@tasks_by_column` assign does. Skipping `stream(:columns, ..., reset: true)`
+    # keeps the column parent DOM stable so morphdom only diffs the moved
+    # task element inside its new column instead of tearing down and rebuilding
+    # every column, which the user sees as a brief disappear/reappear flicker
+    # right after the drop animation completes.
     columns = Columns.list_columns(socket.assigns.board)
 
     {:noreply,
      socket
      |> push_event("move_success", %{})
-     |> stream(:columns, columns, reset: true)
      |> load_tasks_for_columns(columns)
      |> refresh_board_metrics()}
   end

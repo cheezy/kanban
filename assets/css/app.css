@@ -1025,3 +1025,33 @@
     transform: rotate(360deg);
   }
 }
+
+/* SortableJS drag classes for the board's task cards and columns.
+   These rules give the drag UX visible affordances that SortableJS
+   relies on but does not style itself:
+     .sortable-ghost   — the placeholder slot the dragged item will land in
+     .sortable-chosen  — the original item the instant it is grabbed
+     .sortable-drag    — the floating clone that follows the cursor */
+.sortable-ghost {
+  opacity: 0.45;
+  background: oklch(95% 0.04 250 / 0.6) !important;
+  border: 2px dashed oklch(60% 0.12 250) !important;
+  border-radius: 8px;
+}
+
+.sortable-ghost > * {
+  visibility: hidden;
+}
+
+.sortable-chosen {
+  cursor: grabbing;
+}
+
+.sortable-drag {
+  cursor: grabbing !important;
+  opacity: 0.95;
+  transform: rotate(1.5deg);
+  box-shadow:
+    0 14px 32px -8px rgba(0, 0, 0, 0.22),
+    0 4px 10px -2px rgba(0, 0, 0, 0.14);
+}

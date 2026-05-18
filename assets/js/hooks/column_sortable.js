@@ -109,36 +109,20 @@ const ColumnSortableHook = {
       touchStartThreshold: 5,
 
       onStart: function(evt) {
-        // Mark that we're starting a drag
         hook.isDragging = true
-        console.log("Column drag started")
       },
 
       onEnd: function(evt) {
         hook.isDragging = false
 
-        console.log("Column drag ended", {
-          columnId: evt.item.dataset.columnId,
-          oldIndex: evt.oldIndex,
-          newIndex: evt.newIndex
-        })
-
-        // Get the column ID from the dragged item
         const columnId = evt.item.dataset.columnId
-
-        // Get new position (index in the list)
         const newPosition = evt.newIndex
 
-        // Only send if actually moved
         if (evt.oldIndex !== evt.newIndex) {
-          console.log("Sending move_column event to server")
-
-          // Get all column IDs in their new order
           const columnIds = Array.from(hook.el.children)
             .map(el => el.dataset.columnId)
-            .filter(id => id) // Filter out any undefined values
+            .filter(id => id)
 
-          // Send the move event to the LiveView
           hook.pushEvent("move_column", {
             column_id: columnId,
             new_position: newPosition,
