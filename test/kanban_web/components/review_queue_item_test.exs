@@ -208,4 +208,44 @@ defmodule KanbanWeb.ReviewQueueItemTest do
       assert html =~ ~r/>\s*·\s*</
     end
   end
+
+  describe "review_queue_item/1 — completed_by avatar" do
+    test "renders the human avatar with a mailto-style tooltip when completed_by is set" do
+      html =
+        render_item(%{
+          completed_by: %{id: 99, name: "Alice Tester", email: "alice@example.com"}
+        })
+
+      assert html =~ "data-review-queue-item-completed-by"
+      assert html =~ ~s|title="Completed by Alice Tester"|
+      # Avatar component renders initials inside a coloured span (AT for "Alice Tester").
+      assert html =~ ~r/>\s*AT\s*</
+    end
+
+    test "falls back to email when the user has no display name" do
+      html =
+        render_item(%{
+          completed_by: %{id: 99, name: nil, email: "bob@example.com"}
+        })
+
+      assert html =~ ~s|title="Completed by bob@example.com"|
+    end
+
+    test "omits the completed-by avatar entirely when completed_by is nil" do
+      html = render_item(%{completed_by: nil})
+      refute html =~ "data-review-queue-item-completed-by"
+    end
+  end
+
+  describe "review_queue_item/1 — changes-requested badge integration" do
+    # The visual badge for `:changes_requested` lives on the task card, not the
+    # queue row (tasks drop out of the queue after Request changes). Verify
+    # the queue row remains unchanged when review_status is set so the badge
+    # never leaks into the rail.
+    test "does not render a changes-requested badge in the queue row" do
+      html = render_item(%{review_status: :changes_requested})
+      refute html =~ "data-review-queue-item-changes-requested"
+      refute html =~ "changes requested"
+    end
+  end
 end

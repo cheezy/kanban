@@ -1427,7 +1427,8 @@ defmodule KanbanWeb.BoardLive.Show do
       criteria_checked:
         get_in_either(reviewer, [:acceptance_criteria_checked, "acceptance_criteria_checked"]),
       issues_found: get_in_either(reviewer, [:issues_found, "issues_found"]),
-      files_changed_count: count_files_changed(Map.get(task, :actual_files_changed))
+      files_changed_count: count_files_changed(Map.get(task, :actual_files_changed)),
+      review_status: Map.get(task, :review_status)
     }
   end
 

@@ -189,7 +189,7 @@ defmodule Kanban.Reviews do
   def approve_review(scope, %Task{} = task, _opts \\ []) do
     # `_opts` is accepted for arity symmetry with `request_changes_review/3`;
     # no keys are currently honored.
-    perform_review(scope, task, %{review_status: :approved})
+    perform_review(scope, task, %{review_status: :approved}, move_after_review?: true)
   end
 
   @doc """
@@ -213,10 +213,16 @@ defmodule Kanban.Reviews do
         err
 
       {:ok, notes} ->
-        perform_review(scope, task, %{
-          review_status: :changes_requested,
-          review_notes: notes
-        })
+        # Request-changes only stamps the review fields — the task stays in
+        # the Review column so the agent can pick up the notes, address
+        # them, and move the task back to Doing themselves. Approving still
+        # routes the task forward to Done via the agent workflow.
+        perform_review(
+          scope,
+          task,
+          %{review_status: :changes_requested, review_notes: notes},
+          move_after_review?: false
+        )
     end
   end
 
@@ -240,26 +246,33 @@ defmodule Kanban.Reviews do
     end
   end
 
-  defp perform_review(scope, %Task{} = task, base_attrs) do
+  defp perform_review(scope, %Task{} = task, base_attrs, opts) do
     case scope_user(scope) do
       nil -> {:error, :not_authorized}
-      user -> run_review_transaction(scope, task, user, base_attrs)
+      user -> run_review_transaction(scope, task, user, base_attrs, opts)
     end
   end
 
-  defp run_review_transaction(scope, task, user, base_attrs) do
-    Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs) end)
+  defp run_review_transaction(scope, task, user, base_attrs, opts) do
+    Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)
   end
 
-  defp commit_review!(scope, task, user, base_attrs) do
+  defp commit_review!(scope, task, user, base_attrs, opts) do
+    move? = Keyword.get(opts, :move_after_review?, true)
+
     with {:ok, _fetched} <- get_pending_review(scope, task.id),
          {:ok, prepared} <- persist_review_fields(task, user, base_attrs),
-         {:ok, final} <- normalize_workflow(AgentWorkflow.mark_reviewed(prepared, user)) do
+         {:ok, final} <- maybe_mark_reviewed(prepared, user, move?) do
       final
     else
       {:error, reason} -> Repo.rollback(reason)
     end
   end
+
+  defp maybe_mark_reviewed(task, user, true),
+    do: normalize_workflow(AgentWorkflow.mark_reviewed(task, user))
+
+  defp maybe_mark_reviewed(task, _user, false), do: {:ok, task}
 
   defp persist_review_fields(task, user, base_attrs) do
     attrs =

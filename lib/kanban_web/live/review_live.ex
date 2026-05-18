@@ -338,6 +338,10 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   defp request_changes_success(socket, task) do
+    # Request-changes leaves the task in the Review column (the agent will
+    # move it back to Doing once they address the notes), but the row
+    # drops out of the reviewer's queue — the human's job on this task is
+    # done.
     socket
     |> put_flash(:info, gettext("Requested changes on %{ident}", ident: task.identifier))
     |> remove_from_queue(task)

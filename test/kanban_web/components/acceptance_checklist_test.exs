@@ -165,6 +165,100 @@ defmodule KanbanWeb.AcceptanceChecklistTest do
     end
   end
 
+  describe "acceptance_checklist/1 — failed state" do
+    test "renders a red X mark when a row index is in the failed map" do
+      assigns = %{criteria: "First\nSecond", failed: %{1 => true}}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          failed={@failed}
+        />
+        """)
+
+      assert html =~ "hero-x-mark"
+      assert html =~ ~s(aria-label="Not met")
+    end
+
+    test "supports a line-keyed failed map as well as index-keyed" do
+      assigns = %{criteria: "Alpha\nBeta", failed: %{"Beta" => true}}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          failed={@failed}
+        />
+        """)
+
+      assert html =~ "hero-x-mark"
+    end
+
+    test "failed marker takes precedence over checked on the same row" do
+      assigns = %{
+        criteria: "Conflicting",
+        checked: %{0 => true},
+        failed: %{0 => true}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          checked={@checked}
+          failed={@failed}
+        />
+        """)
+
+      # X mark wins — green check should not appear on the same row.
+      assert html =~ "hero-x-mark"
+      refute html =~ "hero-check"
+    end
+
+    test "mixes checked + failed + unchecked rows in a single render" do
+      assigns = %{
+        criteria: "Met item\nFailed item\nUntouched item",
+        checked: %{0 => true},
+        failed: %{1 => true}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          checked={@checked}
+          failed={@failed}
+        />
+        """)
+
+      assert html =~ "hero-check"
+      assert html =~ "hero-x-mark"
+      # The unchecked row still renders its empty box (no icon, just border).
+      assert html =~ "border: 1.5px solid var(--line-strong);"
+    end
+
+    test "N/M counter only counts checked rows (failed rows do not increment)" do
+      assigns = %{
+        criteria: "One\nTwo\nThree",
+        checked: %{0 => true},
+        failed: %{1 => true, 2 => true}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          checked={@checked}
+          failed={@failed}
+        />
+        """)
+
+      # Only the one checked row counts toward the counter.
+      assert html =~ "1/3"
+    end
+  end
+
   describe "acceptance_checklist/1 — markers and scope" do
     test "outermost element carries the data-acceptance-checklist marker" do
       assigns = %{criteria: "Anything"}

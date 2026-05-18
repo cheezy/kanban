@@ -134,4 +134,46 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
       refute html =~ "nil ago"
     end
   end
+
+  describe "review_detail_header/1 — completed_by user" do
+    test "renders the human's display name and a mailto link when present" do
+      html =
+        render_header(%{
+          completed_by: %{id: 99, name: "Alice Tester", email: "alice@example.com"}
+        })
+
+      assert html =~ "data-review-detail-header-completed-by"
+      assert html =~ "data-review-detail-header-completed-by-name"
+      assert html =~ "Alice Tester"
+      assert html =~ ~s(href="mailto:alice@example.com")
+      # Tooltip drives the icon-only mailto.
+      assert html =~ ~s|title="Email Alice Tester"|
+    end
+
+    test "falls back to email when the user has no display name" do
+      html =
+        render_header(%{
+          completed_by: %{id: 99, name: nil, email: "bob@example.com"}
+        })
+
+      # The display-name span shows the email, the mailto href still works.
+      assert html =~ "bob@example.com"
+      assert html =~ ~s(href="mailto:bob@example.com")
+    end
+
+    test "omits the completed-by row entirely when completed_by is nil" do
+      html = render_header(%{completed_by: nil})
+      refute html =~ "data-review-detail-header-completed-by"
+    end
+
+    test "renders the name but no mailto link when the user has no email" do
+      html =
+        render_header(%{
+          completed_by: %{id: 99, name: "Carol Coder", email: nil}
+        })
+
+      assert html =~ "Carol Coder"
+      refute html =~ "mailto:"
+    end
+  end
 end

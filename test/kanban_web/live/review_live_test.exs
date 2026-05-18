@@ -487,4 +487,263 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Unable to request changes on task."
     end
   end
+
+  describe "stats strip — Acceptance cell value derivation" do
+    setup [:register_and_log_in_user]
+
+    test "renders bare line count when the reviewer subagent was skipped",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "Crit 1\nCrit 2\nCrit 3",
+          reviewer_result: %{"dispatched" => false, "reason" => "small_task_0_1_key_files"}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-stats-cell="acceptance")
+      # No reviewer_result → fallback to total count alone, neutral tone.
+      assert html =~ ~r/>\s*3\s*</
+      # No issue suffix or "N/M" pass marker.
+      refute html =~ "issue"
+      refute html =~ "3/3"
+    end
+
+    test "renders 'N/N' green pass when reviewer dispatched + 0 issues",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD",
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria_checked" => 4,
+            "issues_found" => 0
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~r/>\s*4\/4\s*</
+    end
+
+    test "renders 'N/N · X issues' when reviewer dispatched + issues found",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD",
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria_checked" => 4,
+            "issues_found" => 2
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "4/4 · 2 issues"
+    end
+
+    test "renders em-dash when no acceptance criteria are recorded",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{acceptance_criteria: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # Cell renders the em-dash default when value is nil.
+      assert html =~ "—"
+    end
+  end
+
+  describe "stats strip — Testing strategy + Patterns + Pitfalls cells" do
+    setup [:register_and_log_in_user]
+
+    test "Testing strategy reads 'N cases · all present' from the all-present heading",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      report = """
+      ## Review Summary
+
+      Approved.
+
+      ### Required test cases (all present)
+
+      - Case one
+      - Case two
+      - Case three
+      """
+
+      _task = pending_task!(column, %{review_report: report})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "3 cases · all present"
+    end
+
+    test "Patterns cell reads 'followed' when the Patterns followed section is present",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          review_report: "### Patterns followed\n\nUsed the documented pattern."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-stats-cell="diff")
+      assert html =~ "followed"
+    end
+
+    test "Pitfalls cell renders 'none violated' when the section says so",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          review_report: "### Pitfalls\n\nNone violated. All checks honoured."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-stats-cell="hooks")
+      assert html =~ "none violated"
+    end
+
+    test "Pitfalls cell renders 'violated' when violations are called out",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          review_report: "### Pitfalls\n\nTwo pitfalls violated — see findings."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "violated"
+      refute html =~ "none violated"
+    end
+  end
+
+  describe "review report panel" do
+    setup [:register_and_log_in_user]
+
+    test "renders the report markdown as styled HTML when present",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          review_report: "## Review Summary\n\nApproved with 0 findings."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-report"
+      assert html =~ "Review Summary"
+      assert html =~ "Approved with 0 findings."
+    end
+
+    test "falls back to reviewer_result.summary when there is no review_report",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          review_report: nil,
+          reviewer_result: %{
+            "dispatched" => true,
+            "summary" => "Reviewer prose summary when no structured report exists.",
+            "acceptance_criteria_checked" => 0,
+            "issues_found" => 0
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "Reviewer notes"
+      assert html =~ "Reviewer prose summary when no structured report exists."
+    end
+
+    test "renders no review report panel when neither report nor summary exists",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{review_report: nil, reviewer_result: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-report"
+    end
+  end
+
+  describe "completion summary panel" do
+    setup [:register_and_log_in_user]
+
+    test "renders the completion_summary section when present",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task =
+        pending_task!(column, %{
+          completion_summary: "Implemented the change end to end and ran the test suite locally."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-completion-summary"
+      assert html =~ "Completion summary"
+      assert html =~ "Implemented the change end to end"
+    end
+
+    test "omits the completion summary panel when nil or blank",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{completion_summary: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-completion-summary"
+    end
+  end
+
+  describe "Acceptance criteria status — per-row Met / Not Met parsing" do
+    setup [:register_and_log_in_user]
+
+    test "parsed 'Met' rows render with checked styling in the checklist",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      report = """
+      ### Acceptance criteria status
+
+      1. First criterion — Met.
+      2. Second criterion — Met.
+      """
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "First criterion\nSecond criterion",
+          review_report: report
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # Scope to the acceptance checklist — `hero-x-mark` may appear elsewhere
+      # in the page chrome (mobile close icons, etc.); we care that NO rows
+      # inside the checklist render the failed-state X mark.
+      checklist =
+        Regex.run(~r/<section[^>]*data-acceptance-checklist[^>]*>.*?<\/section>/s, html)
+        |> List.first()
+
+      assert checklist
+      assert length(Regex.scan(~r/hero-check/, checklist)) >= 2
+      refute checklist =~ "hero-x-mark"
+    end
+
+    test "parsed 'Not Met' rows render with the red X mark",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      report = """
+      ### Acceptance criteria status
+
+      1. Passing item — Met.
+      2. Failing item — Not Met.
+      """
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "Passing item\nFailing item",
+          review_report: report
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "hero-x-mark"
+    end
+  end
 end

@@ -303,7 +303,7 @@ defmodule Kanban.ReviewsTest do
       assert reloaded.review_status == :changes_requested
       assert reloaded.review_notes == "Please add more tests"
       assert reloaded.reviewed_by_id == user.id
-      assert reloaded.column.name == "Doing"
+      assert reloaded.column.name == "Review"
     end
 
     test "returns {:error, :review_notes_required} when review_notes is missing",

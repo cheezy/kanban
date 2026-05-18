@@ -222,6 +222,7 @@ defmodule KanbanWeb.TaskCard do
 
   defp review_footer(assigns) do
     skipped? = Map.get(assigns.task, :reviewer_skipped?, false)
+    changes_requested? = Map.get(assigns.task, :review_status) == :changes_requested
 
     assigns =
       assigns
@@ -230,15 +231,33 @@ defmodule KanbanWeb.TaskCard do
       |> assign(:criteria, Map.get(assigns.task, :criteria_checked))
       |> assign(:issues, Map.get(assigns.task, :issues_found))
       |> assign(:files, Map.get(assigns.task, :files_changed_count))
+      |> assign(:changes_requested?, changes_requested?)
 
     ~H"""
     <div
-      :if={(@skipped? or @criteria) || @issues || @files}
+      :if={
+        @changes_requested? or (@skipped? or @criteria) || @issues || @files
+      }
       style={[
         "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
         "font-size: 10.5px; color: var(--ink-3);"
       ]}
     >
+      <span
+        :if={@changes_requested?}
+        class="tooltip"
+        style={[
+          "display: inline-flex; align-items: center; gap: 3px;",
+          "padding: 1px 6px; border-radius: 999px;",
+          "background: var(--st-blocked-soft, oklch(96% 0.04 25));",
+          "color: var(--st-blocked, oklch(50% 0.18 25));",
+          "font-weight: 600;"
+        ]}
+        data-tip={gettext("Reviewer requested changes — awaiting agent")}
+      >
+        <.icon name="hero-arrow-uturn-left" class="w-2.5 h-2.5" />
+        {gettext("changes requested")}
+      </span>
       <span
         :if={@skipped?}
         class="tooltip"
