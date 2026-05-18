@@ -1952,7 +1952,7 @@ msgstr "トークンの削除に失敗しました"
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
-msgstr[0] ""
+msgstr[0] "読了%{count}分"
 
 #: lib/kanban_web/live/resources_live/index.html.heex:57
 #, elixir-autogen, elixir-format
@@ -2067,7 +2067,7 @@ msgstr "ヘルプを検索..."
 #, elixir-autogen, elixir-format
 msgid "Showing %{count} guide"
 msgid_plural "Showing %{count} guides"
-msgstr[0] ""
+msgstr[0] "%{count}件のガイドを表示"
 
 #: lib/kanban_web/live/resources_live/index.html.heex:36
 #, elixir-autogen, elixir-format
@@ -4467,7 +4467,7 @@ msgstr "スループット"
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
-msgstr[0] ""
+msgstr[0] "%{count}件アクティブ"
 
 #: lib/kanban_web/components/layouts.ex:253
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4705,7 +4705,7 @@ msgstr "未整理のアイデアはここに集まります。なぜと受け入
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
-msgstr[0] ""
+msgstr[0] "%{count}件の基準"
 
 #: lib/kanban_web/components/review_queue_item.ex:162
 #: lib/kanban_web/components/task_card.ex:282
@@ -4714,13 +4714,13 @@ msgstr[0] ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
-msgstr[0] ""
+msgstr[0] "%{count}件のファイル"
 
 #: lib/kanban_web/components/task_card.ex:272
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
-msgstr[0] ""
+msgstr[0] "%{count}件の問題"
 
 #: lib/kanban_web/components/task_card.ex:256
 #, elixir-autogen, elixir-format
@@ -4919,7 +4919,7 @@ msgstr "ゴールが見つかりません"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} child"
 msgid_plural "%{count} children"
-msgstr[0] ""
+msgstr[0] "%{count}件の子要素"
 
 #: lib/kanban_web/live/goal_live/show.ex:124
 #, elixir-autogen, elixir-format
@@ -5376,13 +5376,13 @@ msgstr "サイクルタイム"
 #, elixir-autogen, elixir-format
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
-msgstr[0] ""
+msgstr[0] "過去24時間 · %{count}件のイベント"
 
 #: lib/kanban_web/live/agents_live.ex:179
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
-msgstr[0] ""
+msgstr[0] "%{count}件接続中"
 
 #: lib/kanban_web/live/agents_live.ex:134
 #, elixir-autogen, elixir-format
@@ -5468,7 +5468,7 @@ msgstr "対応が必要"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
-msgstr[0] ""
+msgstr[0] "%{count}件のテストが失敗"
 
 #: lib/kanban_web/components/review_diff_panel.ex:52
 #, elixir-autogen, elixir-format
@@ -5484,7 +5484,7 @@ msgstr "変更されたファイルはありません。"
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
-msgstr[0] ""
+msgstr[0] "%{agents}人のエージェントからの%{count}件のタスクがあなた待ちです"
 
 #: lib/kanban_web/live/review_live.ex:359
 #, elixir-autogen, elixir-format

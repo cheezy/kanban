@@ -1952,7 +1952,7 @@ msgstr "删除令牌失败"
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
-msgstr[0] ""
+msgstr[0] "阅读 %{count} 分钟"
 
 #: lib/kanban_web/live/resources_live/index.html.heex:57
 #, elixir-autogen, elixir-format
@@ -2067,7 +2067,7 @@ msgstr "搜索帮助..."
 #, elixir-autogen, elixir-format
 msgid "Showing %{count} guide"
 msgid_plural "Showing %{count} guides"
-msgstr[0] ""
+msgstr[0] "显示 %{count} 个指南"
 
 #: lib/kanban_web/live/resources_live/index.html.heex:36
 #, elixir-autogen, elixir-format
@@ -4467,7 +4467,7 @@ msgstr "吞吐量"
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
-msgstr[0] ""
+msgstr[0] "%{count} 个活跃"
 
 #: lib/kanban_web/components/layouts.ex:253
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4705,7 +4705,7 @@ msgstr "未细化的想法落在这里。当它们具备「为什么」和验收
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
-msgstr[0] ""
+msgstr[0] "%{count} 项标准"
 
 #: lib/kanban_web/components/review_queue_item.ex:162
 #: lib/kanban_web/components/task_card.ex:282
@@ -4714,13 +4714,13 @@ msgstr[0] ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
-msgstr[0] ""
+msgstr[0] "%{count} 个文件"
 
 #: lib/kanban_web/components/task_card.ex:272
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
-msgstr[0] ""
+msgstr[0] "%{count} 个问题"
 
 #: lib/kanban_web/components/task_card.ex:256
 #, elixir-autogen, elixir-format
@@ -4919,7 +4919,7 @@ msgstr "未找到目标"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} child"
 msgid_plural "%{count} children"
-msgstr[0] ""
+msgstr[0] "%{count} 个子项"
 
 #: lib/kanban_web/live/goal_live/show.ex:124
 #, elixir-autogen, elixir-format
@@ -5376,13 +5376,13 @@ msgstr "周期时间"
 #, elixir-autogen, elixir-format
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
-msgstr[0] ""
+msgstr[0] "最近 24 小时 · %{count} 个事件"
 
 #: lib/kanban_web/live/agents_live.ex:179
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
-msgstr[0] ""
+msgstr[0] "%{count} 个已连接"
 
 #: lib/kanban_web/live/agents_live.ex:134
 #, elixir-autogen, elixir-format
@@ -5468,7 +5468,7 @@ msgstr "需要关注"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
-msgstr[0] ""
+msgstr[0] "%{count} 个失败的测试"
 
 #: lib/kanban_web/components/review_diff_panel.ex:52
 #, elixir-autogen, elixir-format
@@ -5484,7 +5484,7 @@ msgstr "未更改任何文件。"
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
-msgstr[0] ""
+msgstr[0] "来自 %{agents} 个代理的 %{count} 个任务正在等待您"
 
 #: lib/kanban_web/live/review_live.ex:359
 #, elixir-autogen, elixir-format
