@@ -415,7 +415,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       # atom anywhere in the running VM into a step that is otherwise
       # well-formed via its string keys — the rescue path must not crash the
       # validator.
-      bogus_key = "z_" <> Integer.to_string(System.unique_integer([:positive])) <> "_xyz"
+      bogus_key = "z_" <> (System.unique_integer([:positive]) |> Integer.to_string()) <> "_xyz"
 
       params =
         Map.put(valid_complete_params(), "workflow_steps", [
