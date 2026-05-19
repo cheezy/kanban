@@ -177,7 +177,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
           "border-radius: 999px;",
           if(tag in @selected,
             do:
-              "background: var(--stride-orange); color: white; border: 1px solid var(--stride-orange);",
+              "background: var(--stride-orange); color: var(--color-primary-content); border: 1px solid var(--stride-orange);",
             else: "background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);"
           )
         ]}
@@ -214,7 +214,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
               style={[
                 "flex-shrink: 0; width: 36px; height: 36px;",
                 "display: flex; align-items: center; justify-content: center;",
-                "background: var(--stride-orange); color: white;",
+                "background: var(--stride-orange); color: var(--color-primary-content);",
                 "font-weight: 600; font-size: 14px; font-family: var(--font-mono);"
               ]}
             >
@@ -423,7 +423,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
         class="px-3.5 py-1.5 text-[12px] font-medium cursor-pointer"
         style={[
           "background: var(--stride-orange);",
-          "color: white;",
+          "color: var(--color-primary-content);",
           "border: 1px solid var(--stride-orange);",
           "border-radius: var(--r-md);"
         ]}

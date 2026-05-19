@@ -117,7 +117,7 @@ defmodule KanbanWeb.BoardHeader do
         "width: #{@size}px; height: #{@size}px; border-radius: 6px;",
         "background: #{@accent_css};",
         "display: inline-flex; align-items: center; justify-content: center;",
-        "color: white; font-size: #{badge_font_size(@size)}px; font-weight: 700;",
+        "color: var(--color-primary-content); font-size: #{badge_font_size(@size)}px; font-weight: 700;",
         "font-family: var(--font-mono); letter-spacing: -0.02em; flex-shrink: 0;"
       ]}
     >

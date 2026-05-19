@@ -79,7 +79,7 @@ defmodule KanbanWeb.BoardPulseCard do
           "width: 26px; height: 26px; border-radius: 6px;",
           "background: #{@accent_css};",
           "display: inline-flex; align-items: center; justify-content: center;",
-          "color: white; font-size: 10px; font-weight: 700;",
+          "color: var(--color-primary-content); font-size: 10px; font-weight: 700;",
           "font-family: var(--font-mono); letter-spacing: -0.02em; flex-shrink: 0;"
         ]}
       >

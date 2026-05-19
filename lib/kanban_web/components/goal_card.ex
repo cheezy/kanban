@@ -88,7 +88,7 @@ defmodule KanbanWeb.GoalCard do
         title={gettext("Move goal and tasks to Ready")}
         style={[
           "margin-top: 2px; padding: 4px 8px; border-radius: 4px;",
-          "background: #{@color}; color: white; border: none;",
+          "background: #{@color}; color: var(--color-primary-content); border: none;",
           "font-size: 11px; font-weight: 500; cursor: pointer;",
           "display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;"
         ]}
@@ -133,7 +133,7 @@ defmodule KanbanWeb.GoalCard do
         aria-hidden="true"
         style={[
           "width: 16px; height: 16px; border-radius: 4px;",
-          "background: #{@color}; color: white;",
+          "background: #{@color}; color: var(--color-primary-content);",
           "display: inline-flex; align-items: center; justify-content: center;"
         ]}
       >
@@ -144,7 +144,7 @@ defmodule KanbanWeb.GoalCard do
       </span>
       <span style={[
         "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
-        "background: #{@color}; color: white;",
+        "background: #{@color}; color: var(--color-primary-content);",
         "font-family: var(--font-mono); letter-spacing: 0.02em; font-weight: 600;"
       ]}>
         {gettext("GOAL")}
@@ -195,7 +195,7 @@ defmodule KanbanWeb.GoalCard do
       </div>
       <div style={[
         "height: 4px; border-radius: 2px;",
-        "background: rgba(255, 255, 255, 0.6); overflow: hidden;",
+        "background: rgba(0, 0, 0, 0.2); overflow: hidden;",
         "display: flex;"
       ]}>
         <span

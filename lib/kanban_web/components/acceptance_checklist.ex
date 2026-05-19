@@ -106,7 +106,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
         "margin-top: 2px;",
         "border: 1.5px solid var(--st-blocked, oklch(60% 0.18 25));",
         "background: var(--st-blocked, oklch(60% 0.18 25));",
-        "color: white;"
+        "color: var(--color-primary-content);"
       ]}
     >
       <.icon name="hero-x-mark" class="w-2.5 h-2.5" />
@@ -123,7 +123,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
         "width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;",
         "margin-top: 2px;",
         "border: 1.5px solid var(--st-done); background: var(--st-done);",
-        "color: white;"
+        "color: var(--color-primary-content);"
       ]}
     >
       <.icon name="hero-check" class="w-2.5 h-2.5" />

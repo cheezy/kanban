@@ -144,9 +144,9 @@ defmodule KanbanWeb.BoardLive.Index do
           class="inline-flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style={[
             "padding: 6px 10px; border-radius: 5px;",
-            "background: var(--ink); color: white; border: none;",
+            "background: var(--ink); color: var(--color-primary-content); border: none;",
             "font-size: 12px; font-weight: 500;",
-            "box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+            "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
           ]}
         >
           <.icon name="hero-sparkles" class="h-3.5 w-3.5" />
