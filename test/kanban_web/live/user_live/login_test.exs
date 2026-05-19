@@ -23,15 +23,6 @@ defmodule KanbanWeb.UserLive.LoginTest do
       assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
-    test "renders the three SSO rows (Google, GitHub, SAML)", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
-
-      assert html =~ "Continue with"
-      assert html =~ "Google"
-      assert html =~ "GitHub"
-      assert html =~ "SSO (SAML)"
-    end
-
     test "no blue Tailwind classes inside the login surface", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 

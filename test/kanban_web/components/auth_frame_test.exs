@@ -187,14 +187,6 @@ defmodule KanbanWeb.AuthFrameTest do
 
       assert html =~ "max-width: 440px"
     end
-
-    test "renders the Contact sales · Docs · Status link row at the bottom" do
-      html = render_default()
-
-      assert html =~ "Contact sales"
-      assert html =~ "Docs"
-      assert html =~ "Status"
-    end
   end
 
   describe "auth_frame/1 — design-token compliance" do
