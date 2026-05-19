@@ -111,8 +111,8 @@
 
 /* Navigation Styles */
 .app-nav {
-  background-color: white;
-  border-bottom: 1px solid rgb(229, 231, 235);
+  background-color: var(--color-base-100);
+  border-bottom: 1px solid var(--color-base-300);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
@@ -175,7 +175,7 @@
 .nav-logo-text {
   font-size: 1.25rem;
   font-weight: 700;
-  color: rgb(17, 24, 39);
+  color: var(--color-base-content);
   display: none;
 }
 
@@ -195,9 +195,9 @@
   display: none;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgb(55, 65, 81);
+  color: var(--color-base-content);
   padding: 0.5rem 0.75rem;
-  background-color: rgb(243, 244, 246);
+  background-color: var(--color-base-200);
   border-radius: 0.5rem;
 }
 
@@ -210,7 +210,7 @@
 .nav-link {
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgb(55, 65, 81);
+  color: var(--color-base-content);
   padding: 0.5rem 0.75rem;
   border-radius: 0.5rem;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
@@ -258,7 +258,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border-left: 1px solid rgb(209, 213, 219);
+  border-left: 1px solid var(--color-base-300);
   padding-left: 1rem;
 }
 
@@ -268,7 +268,8 @@
   gap: 0.25rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgb(75, 85, 99);
+  color: var(--color-base-content);
+  opacity: 0.7;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   transition: color 0.15s ease-in-out;
@@ -339,7 +340,7 @@
 .hero-title {
   font-size: 2.25rem;
   font-weight: 700;
-  color: rgb(17, 24, 39);
+  color: var(--color-base-content);
   line-height: 1.25;
 }
 
@@ -365,7 +366,8 @@
 
 .hero-description {
   font-size: 1.125rem;
-  color: rgb(75, 85, 99);
+  color: var(--color-base-content);
+  opacity: 0.7;
   line-height: 1.75;
 }
 
@@ -420,16 +422,16 @@
   padding: 1rem 2rem;
   font-size: 1rem;
   font-weight: 600;
-  color: rgb(55, 65, 81);
-  background-color: white;
-  border: 2px solid rgb(209, 213, 219);
+  color: var(--color-base-content);
+  background-color: var(--color-base-100);
+  border: 2px solid var(--color-base-300);
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.15s ease-in-out;
 }
 
 .btn-outline:hover {
-  background-color: rgb(249, 250, 251);
+  background-color: var(--color-base-200);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -479,7 +481,7 @@
 /* Mock Board Styles */
 .mock-board {
   position: relative;
-  background-color: white;
+  background-color: var(--color-base-100);
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   padding: 1.5rem;
@@ -498,7 +500,7 @@
 .mock-board-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: rgb(17, 24, 39);
+  color: var(--color-base-content);
 }
 
 .mock-board-dots {
@@ -540,7 +542,7 @@
 }
 
 .mock-column {
-  background-color: rgb(249, 250, 251);
+  background-color: var(--color-base-200);
   border-radius: 0.5rem;
   padding: 0.75rem;
   display: flex;
@@ -558,7 +560,7 @@
 }
 
 .mock-column-done {
-  background-color: rgb(240, 253, 244);
+  background-color: color-mix(in oklch, var(--color-success) 10%, var(--color-base-200));
   border-radius: 0.5rem;
   padding: 0.75rem;
   display: flex;
@@ -569,7 +571,8 @@
 .mock-column-header {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(75, 85, 99);
+  color: var(--color-base-content);
+  opacity: 0.7;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -585,32 +588,32 @@
 .mock-column-header-done {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgb(22, 163, 74);
+  color: var(--color-success);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .mock-card {
-  background-color: white;
+  background-color: var(--color-base-100);
   padding: 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid rgb(229, 231, 235);
+  border: 1px solid var(--color-base-300);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .mock-card-progress {
-  background-color: white;
+  background-color: var(--color-base-100);
   padding: 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid rgb(191, 219, 254);
+  border: 1px solid color-mix(in oklch, var(--color-info) 40%, var(--color-base-300));
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .mock-card-done {
-  background-color: white;
+  background-color: var(--color-base-100);
   padding: 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid rgb(187, 247, 208);
+  border: 1px solid color-mix(in oklch, var(--color-success) 40%, var(--color-base-300));
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   opacity: 0.75;
 }
@@ -630,29 +633,29 @@
 
 .mock-card-bar-orange {
   height: 0.5rem;
-  background-color: rgb(249, 115, 22);
+  background-color: var(--stride-orange);
   border-radius: 0.25rem;
   margin-bottom: 0.5rem;
 }
 
 .mock-card-bar-green {
   height: 0.5rem;
-  background-color: rgb(34, 197, 94);
+  background-color: var(--color-success);
   border-radius: 0.25rem;
   margin-bottom: 0.5rem;
 }
 
 .mock-card-bar-gray {
   height: 0.5rem;
-  background-color: rgb(229, 231, 235);
+  background-color: var(--color-base-300);
   border-radius: 0.25rem;
 }
 
 /* Features Section Styles */
 .features-section {
-  background-color: white;
+  background-color: var(--color-base-100);
   padding: 4rem 0;
-  border-top: 1px solid rgb(229, 231, 235);
+  border-top: 1px solid var(--color-base-300);
 }
 
 @media (min-width: 640px) {
@@ -691,7 +694,7 @@
 .features-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: rgb(17, 24, 39);
+  color: var(--color-base-content);
   margin-bottom: 1rem;
 }
 
@@ -703,7 +706,8 @@
 
 .features-subtitle {
   font-size: 1.125rem;
-  color: rgb(75, 85, 99);
+  color: var(--color-base-content);
+  opacity: 0.7;
   max-width: 42rem;
   margin-left: auto;
   margin-right: auto;
@@ -740,7 +744,7 @@
 }
 
 .feature-card-orange:hover {
-  background-color: rgb(255, 247, 237);
+  background-color: var(--stride-orange-soft);
 }
 
 .feature-icon {
@@ -785,12 +789,13 @@
 .feature-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: rgb(17, 24, 39);
+  color: var(--color-base-content);
   margin-bottom: 0.5rem;
 }
 
 .feature-description {
-  color: rgb(75, 85, 99);
+  color: var(--color-base-content);
+  opacity: 0.7;
 }
 
 /* ============================================================
