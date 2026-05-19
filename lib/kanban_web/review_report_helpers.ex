@@ -15,10 +15,18 @@ defmodule KanbanWeb.ReviewReportHelpers do
   @doc """
   Human-readable value for the testing-strategy verdict cell.
 
-  Returns a localized string like "5 cases · all present", "3 cases",
-  "reviewed", or `nil` when no testing section is present in the report.
+  Prefers the structured `reviewer_result["testing_strategy"]["status"]`
+  when present; falls back to regex extraction from `review_report`.
+  Returns a localized string or `nil` when no source has a value.
   """
   def testing_strategy_value(task) do
+    case structured_section_status(task, "testing_strategy") do
+      nil -> testing_strategy_value_from_report(task)
+      status -> structured_status_label(status)
+    end
+  end
+
+  defp testing_strategy_value_from_report(task) do
     case report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) do
       nil ->
         nil
@@ -45,10 +53,18 @@ defmodule KanbanWeb.ReviewReportHelpers do
   end
 
   @doc """
-  Tone toggle for the testing-strategy verdict cell. Returns `true` when
-  the report acknowledges testing, `nil` otherwise.
+  Tone toggle for the testing-strategy verdict cell. Prefers structured
+  `reviewer_result["testing_strategy"]["status"]` when present; falls back
+  to the regex path. Returns `true`/`false`/`nil`.
   """
   def testing_strategy_passed(task) do
+    case structured_section_status(task, "testing_strategy") do
+      nil -> testing_strategy_passed_from_report(task)
+      status -> structured_status_passed(status)
+    end
+  end
+
+  defp testing_strategy_passed_from_report(task) do
     cond do
       all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
       report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
@@ -57,52 +73,106 @@ defmodule KanbanWeb.ReviewReportHelpers do
   end
 
   @doc """
-  Human-readable value for the patterns verdict cell. Returns the
-  localized "followed" string when a patterns section exists, `nil` otherwise.
+  Human-readable value for the patterns verdict cell. Prefers structured
+  `reviewer_result["patterns"]["status"]` when present; falls back to the
+  regex `Patterns followed` section in `review_report`.
   """
   def patterns_value(task) do
-    case report_section(task, ~r/patterns\s+followed/i) do
-      nil -> nil
-      _body -> gettext("followed")
+    case structured_section_status(task, "patterns") do
+      nil ->
+        case report_section(task, ~r/patterns\s+followed/i) do
+          nil -> nil
+          _body -> gettext("followed")
+        end
+
+      status ->
+        structured_status_label(status)
     end
   end
 
   @doc """
-  Tone toggle for the patterns verdict cell. Returns `true` when the
-  report acknowledges followed patterns, `nil` otherwise.
+  Tone toggle for the patterns verdict cell. Prefers structured field;
+  falls back to regex.
   """
   def patterns_passed(task) do
-    if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
+    case structured_section_status(task, "patterns") do
+      nil ->
+        if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
+
+      status ->
+        structured_status_passed(status)
+    end
   end
 
   @doc """
-  Human-readable value for the pitfalls verdict cell. Returns
-  "violated", "none violated", or `nil` when no pitfalls section exists.
+  Human-readable value for the pitfalls verdict cell. Prefers structured
+  `reviewer_result["pitfalls"]["status"]` when present; falls back to the
+  regex `Pitfalls` section in `review_report`.
   """
   def pitfalls_value(task) do
-    case report_section(task, ~r/pitfalls/i) do
+    case structured_section_status(task, "pitfalls") do
       nil ->
-        nil
+        case report_section(task, ~r/pitfalls/i) do
+          nil ->
+            nil
 
-      body ->
-        if pitfalls_violated?(body) do
-          gettext("violated")
-        else
-          gettext("none violated")
+          body ->
+            if pitfalls_violated?(body) do
+              gettext("violated")
+            else
+              gettext("none violated")
+            end
         end
+
+      status ->
+        structured_status_label(status)
     end
   end
 
   @doc """
-  Tone toggle for the pitfalls verdict cell. Returns `false` on violation,
-  `true` when explicitly clean, `nil` when no pitfalls section is present.
+  Tone toggle for the pitfalls verdict cell. Prefers structured field;
+  falls back to regex.
   """
   def pitfalls_passed(task) do
-    case report_section(task, ~r/pitfalls/i) do
-      nil -> nil
-      body -> not pitfalls_violated?(body)
+    case structured_section_status(task, "pitfalls") do
+      nil ->
+        case report_section(task, ~r/pitfalls/i) do
+          nil -> nil
+          body -> not pitfalls_violated?(body)
+        end
+
+      status ->
+        structured_status_passed(status)
     end
   end
+
+  # --- Structured-field lookup --------------------------------------------
+
+  defp structured_section_status(task, key) do
+    case reviewer_result(task) do
+      %{} = result ->
+        case Map.get(result, key) do
+          %{"status" => status} when is_binary(status) -> status
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp reviewer_result(%{reviewer_result: %{} = result}), do: result
+  defp reviewer_result(%{"reviewer_result" => %{} = result}), do: result
+  defp reviewer_result(_), do: nil
+
+  defp structured_status_label("passed"), do: gettext("passed")
+  defp structured_status_label("failed"), do: gettext("failed")
+  defp structured_status_label("not_assessed"), do: gettext("not assessed")
+  defp structured_status_label(_), do: nil
+
+  defp structured_status_passed("passed"), do: true
+  defp structured_status_passed("failed"), do: false
+  defp structured_status_passed(_), do: nil
 
   @doc """
   Extracts the body of a markdown heading matching the given regex —
