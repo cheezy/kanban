@@ -1076,6 +1076,8 @@ msgid "Approved"
 msgstr "承認済み"
 
 #: lib/kanban_web/components/goal_sidebar.ex:67
+#: lib/kanban_web/components/task_card.ex:115
+#: lib/kanban_web/components/task_card.ex:116
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
 #: lib/kanban_web/task_tokens.ex:24
@@ -4360,12 +4362,12 @@ msgstr "ワークスペース"
 msgid "children complete"
 msgstr "子要素が完了"
 
-#: lib/kanban_web/components/task_card.ex:333
+#: lib/kanban_web/components/task_card.ex:342
 #, elixir-autogen, elixir-format
 msgid "cycle %{time}"
 msgstr "サイクル %{time}"
 
-#: lib/kanban_web/components/task_card.ex:416
+#: lib/kanban_web/components/task_card.ex:425
 #, elixir-autogen, elixir-format
 msgid "review"
 msgstr "レビュー"
@@ -4433,109 +4435,109 @@ msgstr "APIトークン"
 msgid "Unrefined ideas land here. Triage to Ready when they have a why and acceptance criteria."
 msgstr "未整理のアイデアはここに集まります。なぜと受け入れ基準が揃ったら「Ready」に振り分けます。"
 
-#: lib/kanban_web/components/task_card.ex:276
+#: lib/kanban_web/components/task_card.ex:285
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count}件の基準"
 
 #: lib/kanban_web/components/review_queue_item.ex:163
-#: lib/kanban_web/components/task_card.ex:299
-#: lib/kanban_web/components/task_card.ex:343
+#: lib/kanban_web/components/task_card.ex:308
+#: lib/kanban_web/components/task_card.ex:352
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
 msgstr[0] "%{count}件のファイル"
 
-#: lib/kanban_web/components/task_card.ex:289
+#: lib/kanban_web/components/task_card.ex:298
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
 msgstr[0] "%{count}件の問題"
 
-#: lib/kanban_web/components/task_card.ex:273
+#: lib/kanban_web/components/task_card.ex:282
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria checked by the reviewer"
 msgstr "レビュアーが確認した受け入れ基準"
 
-#: lib/kanban_web/components/task_card.ex:402
+#: lib/kanban_web/components/task_card.ex:411
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria defined for this task"
 msgstr "このタスクに定義された受け入れ基準"
 
-#: lib/kanban_web/components/task_card.ex:350
+#: lib/kanban_web/components/task_card.ex:359
 #, elixir-autogen, elixir-format
 msgid "Actual complexity recorded after completion"
 msgstr "完了後に記録された実際の複雑さ"
 
-#: lib/kanban_web/components/task_card.ex:330
+#: lib/kanban_web/components/task_card.ex:339
 #, elixir-autogen, elixir-format
 msgid "Cycle time — elapsed from claim to completion"
 msgstr "サイクルタイム — クレームから完了までの経過時間"
 
-#: lib/kanban_web/components/task_card.ex:296
-#: lib/kanban_web/components/task_card.ex:340
+#: lib/kanban_web/components/task_card.ex:305
+#: lib/kanban_web/components/task_card.ex:349
 #, elixir-autogen, elixir-format
 msgid "Files changed"
 msgstr "変更されたファイル"
 
-#: lib/kanban_web/components/task_card.ex:286
+#: lib/kanban_web/components/task_card.ex:295
 #, elixir-autogen, elixir-format
 msgid "Issues found by the reviewer"
 msgstr "レビュアーが見つけた問題"
 
-#: lib/kanban_web/components/task_card.ex:386
+#: lib/kanban_web/components/task_card.ex:395
 #, elixir-autogen, elixir-format
 msgid "Key files this task will modify"
 msgstr "このタスクが変更する主要ファイル"
 
-#: lib/kanban_web/components/task_card.ex:394
+#: lib/kanban_web/components/task_card.ex:403
 #, elixir-autogen, elixir-format
 msgid "Open dependencies blocking this task"
 msgstr "このタスクをブロックしている未解決の依存関係"
 
-#: lib/kanban_web/components/task_card.ex:414
+#: lib/kanban_web/components/task_card.ex:423
 #, elixir-autogen, elixir-format
 msgid "Requires a human review before moving to Done"
 msgstr "「Done」に移す前に人間のレビューが必要"
 
-#: lib/kanban_web/components/task_card.ex:263
+#: lib/kanban_web/components/task_card.ex:272
 #, elixir-autogen, elixir-format
 msgid "Reviewer was skipped — self-reviewed by the author"
 msgstr "レビュアーをスキップ — 作者自身がセルフレビュー"
 
-#: lib/kanban_web/components/task_card.ex:352
+#: lib/kanban_web/components/task_card.ex:361
 #, elixir-autogen, elixir-format
 msgid "actual: %{size}"
 msgstr "実際: %{size}"
 
-#: lib/kanban_web/components/task_card.ex:456
+#: lib/kanban_web/components/task_card.ex:465
 #, elixir-autogen, elixir-format
 msgid "decision matrix"
 msgstr "決定マトリクス"
 
-#: lib/kanban_web/components/task_card.ex:461
+#: lib/kanban_web/components/task_card.ex:470
 #, elixir-autogen, elixir-format
 msgid "no subagent"
 msgstr "サブエージェントなし"
 
-#: lib/kanban_web/components/task_card.ex:459
+#: lib/kanban_web/components/task_card.ex:468
 #, elixir-autogen, elixir-format
 msgid "self-explored"
 msgstr "セルフ探索"
 
-#: lib/kanban_web/components/task_card.ex:266
-#: lib/kanban_web/components/task_card.ex:460
+#: lib/kanban_web/components/task_card.ex:275
+#: lib/kanban_web/components/task_card.ex:469
 #, elixir-autogen, elixir-format
 msgid "self-reviewed"
 msgstr "セルフレビュー"
 
-#: lib/kanban_web/components/task_card.ex:457
+#: lib/kanban_web/components/task_card.ex:466
 #, elixir-autogen, elixir-format
 msgid "small task"
 msgstr "小さなタスク"
 
-#: lib/kanban_web/components/task_card.ex:458
+#: lib/kanban_web/components/task_card.ex:467
 #, elixir-autogen, elixir-format
 msgid "trivial change"
 msgstr "些細な変更"
@@ -6373,12 +6375,12 @@ msgstr "パターン"
 msgid "followed"
 msgstr "準拠"
 
-#: lib/kanban_web/components/task_card.ex:254
+#: lib/kanban_web/components/task_card.ex:263
 #, elixir-autogen, elixir-format
 msgid "Reviewer requested changes — awaiting agent"
 msgstr "レビュアーが変更を要求 — エージェントの対応待ち"
 
-#: lib/kanban_web/components/task_card.ex:257
+#: lib/kanban_web/components/task_card.ex:266
 #, elixir-autogen, elixir-format
 msgid "changes requested"
 msgstr "変更要求あり"

@@ -5,6 +5,14 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-05-19
+
+### Added
+
+#### Blocked indicator on task cards
+
+Task cards in any column now show a small red 🚫 icon next to the priority dot in the top row when `Task.status` is `:blocked`. Renders only when the field is set to `:blocked` (the other `Task.status` values — `:open`, `:in_progress`, `:completed` — render nothing). The icon uses the existing `--st-blocked` accent token so it shares the visual language of WIP-limit-exceeded and changes-requested cues, sized to 10×10px so the top row stays compact. A `"Blocked"` tooltip and matching `aria-label` provide hover and screen-reader context. No new fields or context calls — `:status` already rides on the card via `Map.from_struct(task)` in `task_card_data/4`. Three new tests in `task_card_test.exs` cover the rendering (positive case, `:in_progress` negative, status-absent negative).
+
 ## [2.0.1] - 2026-05-19
 
 ### Fixed

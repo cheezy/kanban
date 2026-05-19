@@ -3,6 +3,45 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.0.2] - 2026-05-19
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Blocked indicator on task cards
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Task cards in any column now show a small red 🚫 icon next to the priority dot in the top row when
+              <code>Task.status</code> is <code>:blocked</code>. The other <code>Task.status</code>
+              values (<code>:open</code>, <code>:in_progress</code>, <code>:completed</code>) render nothing.
+              The icon uses the existing <code>--st-blocked</code> accent token so it shares the visual language of WIP-limit-exceeded and changes-requested cues, sized to 10×10px so the top row stays compact. A "Blocked" tooltip and matching
+              <code>aria-label</code> provide hover and screen-reader context.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              No new fields or context calls — <code>:status</code>
+              already rides on the card via <code>Map.from_struct(task)</code> in
+              <code>task_card_data/4</code>. Three new tests cover the rendering (positive case,
+              <code>:in_progress</code> negative, status-absent negative).
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.0.1] - 2026-05-19
         </h2>
 

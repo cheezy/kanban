@@ -108,6 +108,15 @@ defmodule KanbanWeb.TaskCard do
       <.type_icon type={@task.type} />
       <span class="ident" style="font-size: 10.5px;">{@task.identifier}</span>
       <.priority_dot level={@task.priority} />
+      <span
+        :if={Map.get(@task, :status) == :blocked}
+        class="tooltip"
+        style="display: inline-flex; align-items: center; color: var(--st-blocked);"
+        data-tip={gettext("Blocked")}
+        aria-label={gettext("Blocked")}
+      >
+        <.icon name="hero-no-symbol" class="w-2.5 h-2.5" />
+      </span>
     </div>
     """
   end

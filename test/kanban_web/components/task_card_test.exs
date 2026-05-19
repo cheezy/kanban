@@ -61,6 +61,45 @@ defmodule KanbanWeb.TaskCardTest do
     end
   end
 
+  describe "task_card/1 — blocked indicator" do
+    test "renders the no-symbol icon + Blocked tooltip when status is :blocked" do
+      assigns = %{task: task(%{status: :blocked})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      assert html =~ "hero-no-symbol"
+      assert html =~ ~s(data-tip="Blocked")
+      assert html =~ ~s(aria-label="Blocked")
+      assert html =~ "color: var(--st-blocked);"
+    end
+
+    test "does NOT render the blocked indicator when status is :in_progress" do
+      assigns = %{task: task(%{status: :in_progress})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      refute html =~ ~s(aria-label="Blocked")
+    end
+
+    test "does NOT render the blocked indicator when status is absent" do
+      # Defaults — no :status key at all
+      assigns = %{task: task()}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      refute html =~ ~s(aria-label="Blocked")
+    end
+  end
+
   describe "task_card/1 — priority dot" do
     for {level, css_var} <- [
           {:critical, "var(--pri-critical)"},
