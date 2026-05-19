@@ -98,13 +98,23 @@ defmodule KanbanWeb.GoalLive.Show do
         </span>
       </:breadcrumbs>
 
-      <:actions>
-        <.link navigate={~p"/boards/#{@board}"} class="btn btn-xs btn-ghost">
-          {gettext("Back to board")}
-        </.link>
-      </:actions>
-
       <div data-goal-show class="stride-screen">
+        <header style={[
+          "padding: 18px 28px 4px;",
+          "display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;"
+        ]}>
+          <span style="flex: 1;" />
+          <.link
+            navigate={~p"/boards/#{@board}"}
+            style={[
+              "display: inline-flex; align-items: center; gap: 4px;",
+              "font-size: 12px; color: var(--ink-2); text-decoration: none;"
+            ]}
+          >
+            <.icon name="hero-arrow-left" class="w-3 h-3" /> {gettext("Back to Board")}
+          </.link>
+        </header>
+
         <GoalProgressHeader.goal_progress_header
           goal={@goal}
           flow={@flow}

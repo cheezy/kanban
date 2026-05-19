@@ -51,7 +51,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
-#: lib/kanban_web/live/goal_live/show.ex:261
+#: lib/kanban_web/live/goal_live/show.ex:267
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
 msgid "Done"
@@ -290,7 +290,7 @@ msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "在制品限制。设置为0表示无限制。"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:144
-#: lib/kanban_web/live/board_live/show.html.heex:260
+#: lib/kanban_web/live/board_live/show.html.heex:265
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
 msgstr "您确定要删除此任务吗？"
@@ -697,7 +697,6 @@ msgid "Only the board owner can reorder columns"
 msgstr "只有看板所有者可以重新排序列"
 
 #: lib/kanban_web/live/board_live/form.html.heex:10
-#: lib/kanban_web/live/goal_live/show.ex:103
 #, elixir-autogen, elixir-format
 msgid "Back to board"
 msgstr "返回看板"
@@ -954,7 +953,7 @@ msgstr "验收标准"
 msgid "Delete column"
 msgstr "删除列"
 
-#: lib/kanban_web/live/board_live/show.html.heex:261
+#: lib/kanban_web/live/board_live/show.html.heex:266
 #, elixir-autogen, elixir-format
 msgid "Delete task"
 msgstr "删除任务"
@@ -1314,7 +1313,7 @@ msgstr "失败时(将发生什么)"
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
 
-#: lib/kanban_web/live/goal_live/show.ex:262
+#: lib/kanban_web/live/goal_live/show.ex:268
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
 #: lib/kanban_web/task_tokens.ex:25
@@ -1564,18 +1563,18 @@ msgstr "添加遥测事件"
 msgid "Add Unit Test"
 msgstr "添加单元测试"
 
-#: lib/kanban_web/live/board_live/show.html.heex:684
+#: lib/kanban_web/live/board_live/show.html.heex:689
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr "确定要撤销此 token 吗?"
 
-#: lib/kanban_web/live/board_live/show.html.heex:457
-#: lib/kanban_web/live/board_live/show.html.heex:487
+#: lib/kanban_web/live/board_live/show.html.heex:462
+#: lib/kanban_web/live/board_live/show.html.heex:492
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
 
-#: lib/kanban_web/live/board_live/show.html.heex:590
+#: lib/kanban_web/live/board_live/show.html.heex:595
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "创建中..."
@@ -1621,12 +1620,12 @@ msgstr "手动测试"
 msgid "Manual test description"
 msgstr "手动测试说明"
 
-#: lib/kanban_web/live/board_live/show.html.heex:529
+#: lib/kanban_web/live/board_live/show.html.heex:534
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "我的AI代理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:615
+#: lib/kanban_web/live/board_live/show.html.heex:620
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "还没有API令牌。请在上方生成一个以开始。"
@@ -1643,7 +1642,7 @@ msgstr "Phoenix 通道"
 msgid "PubSub Broadcasts"
 msgstr "PubSub 广播"
 
-#: lib/kanban_web/live/board_live/show.html.heex:692
+#: lib/kanban_web/live/board_live/show.html.heex:697
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "撤销"
@@ -1712,12 +1711,12 @@ msgstr "channel:event"
 msgid "topic:event"
 msgstr "topic:event"
 
-#: lib/kanban_web/live/board_live/show.html.heex:494
+#: lib/kanban_web/live/board_live/show.html.heex:499
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "关闭"
 
-#: lib/kanban_web/live/board_live/show.html.heex:458
+#: lib/kanban_web/live/board_live/show.html.heex:463
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -1760,7 +1759,7 @@ msgstr "完整的 API 文档"
 #: lib/kanban_web/components/archive_filter_chips.ex:87
 #: lib/kanban_web/components/goal_progress_header.ex:67
 #: lib/kanban_web/components/task_metadata_grid.ex:84
-#: lib/kanban_web/live/goal_live/show.ex:227
+#: lib/kanban_web/live/goal_live/show.ex:233
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/live/task_live/view_component.ex:333
@@ -1826,12 +1825,12 @@ msgstr "关于此文件的备注"
 msgid "Please fix the errors below"
 msgstr "请修复下面的错误"
 
-#: lib/kanban_web/live/board_live/show.html.heex:562
+#: lib/kanban_web/live/board_live/show.html.heex:567
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "任务自动化"
 
-#: lib/kanban_web/live/board_live/show.html.heex:549
+#: lib/kanban_web/live/board_live/show.html.heex:554
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr "claude-4.5-opus"
@@ -1851,7 +1850,7 @@ msgstr "lib/kanban/tasks.ex"
 msgid "mix test"
 msgstr "mix test"
 
-#: lib/kanban_web/live/board_live/show.html.heex:459
+#: lib/kanban_web/live/board_live/show.html.heex:464
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr "复制失败"
@@ -1861,12 +1860,13 @@ msgstr "复制失败"
 msgid "Agent Tracking"
 msgstr "代理跟踪"
 
-#: lib/kanban_web/live/board_live/show.html.heex:248
+#: lib/kanban_web/live/board_live/show.html.heex:249
 #, elixir-autogen, elixir-format
 msgid "Archive task"
 msgstr "归档任务"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:23
+#: lib/kanban_web/live/goal_live/show.ex:109
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
@@ -1884,7 +1884,7 @@ msgid "Board:"
 msgstr "看板:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/board_live/show.html.heex:707
+#: lib/kanban_web/live/board_live/show.html.heex:712
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "删除"
@@ -1928,7 +1928,7 @@ msgstr "安全错误:无效的列"
 msgid "Select capability to add..."
 msgstr "选择要添加的能力..."
 
-#: lib/kanban_web/live/board_live/show.html.heex:576
+#: lib/kanban_web/live/board_live/show.html.heex:581
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -1938,7 +1938,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "API令牌删除成功"
 
-#: lib/kanban_web/live/board_live/show.html.heex:699
+#: lib/kanban_web/live/board_live/show.html.heex:704
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "您确定要删除此令牌吗？"
@@ -2185,7 +2185,7 @@ msgstr "返回仪表盘"
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
-#: lib/kanban_web/live/goal_live/show.ex:257
+#: lib/kanban_web/live/goal_live/show.ex:263
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -2415,7 +2415,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
-#: lib/kanban_web/live/goal_live/show.ex:260
+#: lib/kanban_web/live/goal_live/show.ex:266
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
@@ -3088,7 +3088,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
-#: lib/kanban_web/live/goal_live/show.ex:259
+#: lib/kanban_web/live/goal_live/show.ex:265
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
 msgid "Doing"
@@ -3178,7 +3178,7 @@ msgstr "产品"
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
-#: lib/kanban_web/live/goal_live/show.ex:258
+#: lib/kanban_web/live/goal_live/show.ex:264
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
 msgid "Ready"
@@ -3483,7 +3483,7 @@ msgstr "通过代理 API 泄露 API 令牌或越权访问。"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:414
+#: lib/kanban_web/live/board_live/show.html.heex:419
 #, elixir-autogen, elixir-format
 msgid "API tokens"
 msgstr "API令牌"
@@ -4640,18 +4640,18 @@ msgstr "未分配"
 msgid "Goal not found"
 msgstr "未找到目标"
 
-#: lib/kanban_web/live/goal_live/show.ex:127
+#: lib/kanban_web/live/goal_live/show.ex:133
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} child"
 msgid_plural "%{count} children"
 msgstr[0] "%{count} 个子项"
 
-#: lib/kanban_web/live/goal_live/show.ex:124
+#: lib/kanban_web/live/goal_live/show.ex:130
 #, elixir-autogen, elixir-format
 msgid "Hierarchy"
 msgstr "层级"
 
-#: lib/kanban_web/live/goal_live/show.ex:141
+#: lib/kanban_web/live/goal_live/show.ex:147
 #, elixir-autogen, elixir-format
 msgid "This goal has no children yet."
 msgstr "此目标暂无子项。"
@@ -4671,7 +4671,7 @@ msgstr "关闭"
 msgid "Save"
 msgstr "保存"
 
-#: lib/kanban_web/live/board_live/show.html.heex:347
+#: lib/kanban_web/live/board_live/show.html.heex:352
 #, elixir-autogen, elixir-format
 msgid "Update board details and choose which task fields appear on cards."
 msgstr "更新看板详情并选择卡片上显示哪些任务字段。"
@@ -4681,7 +4681,7 @@ msgstr "更新看板详情并选择卡片上显示哪些任务字段。"
 msgid "Add user by email"
 msgstr "通过电子邮件添加用户"
 
-#: lib/kanban_web/live/board_live/show.html.heex:344
+#: lib/kanban_web/live/board_live/show.html.heex:349
 #, elixir-autogen, elixir-format
 msgid "Board settings"
 msgstr "看板设置"
@@ -4701,7 +4701,7 @@ msgstr "当前用户"
 msgid "Field visibility"
 msgstr "字段可见性"
 
-#: lib/kanban_web/live/board_live/show.html.heex:370
+#: lib/kanban_web/live/board_live/show.html.heex:375
 #, elixir-autogen, elixir-format
 msgid "Invite registered users and control their access to this board."
 msgstr "邀请已注册的用户,并控制其对此看板的访问权限。"
@@ -4716,72 +4716,72 @@ msgstr "用户必须已在系统中注册才能添加到看板"
 msgid "name@example.com"
 msgstr "name@example.com"
 
-#: lib/kanban_web/live/board_live/show.html.heex:367
+#: lib/kanban_web/live/board_live/show.html.heex:372
 #, elixir-autogen, elixir-format
 msgid "Manage members"
 msgstr "管理成员"
 
-#: lib/kanban_web/live/board_live/show.html.heex:606
+#: lib/kanban_web/live/board_live/show.html.heex:611
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr "活动令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:570
+#: lib/kanban_web/live/board_live/show.html.heex:575
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr "代理能力"
 
-#: lib/kanban_web/live/board_live/show.html.heex:543
+#: lib/kanban_web/live/board_live/show.html.heex:548
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr "代理模型（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:417
+#: lib/kanban_web/live/board_live/show.html.heex:422
 #, elixir-autogen, elixir-format
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr "用于在 %{board_name} 上认证代理的 Bearer 令牌。轮换令牌不会释放进行中的认领 — 旧令牌在 60 秒的宽限期内仍然有效。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:581
+#: lib/kanban_web/live/board_live/show.html.heex:586
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "以逗号分隔。有效值:api_design、code_generation、code_review、database_design、debugging、devops、documentation、file_operations、git、performance_optimization、refactoring、security_analysis、testing、ui_design、ui_implementation、web_browsing。留空表示允许所有任务。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:440
+#: lib/kanban_web/live/board_live/show.html.heex:445
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "请立即复制 — 您将无法再次查看。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:510
+#: lib/kanban_web/live/board_live/show.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Create new token"
 msgstr "创建新令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:598
+#: lib/kanban_web/live/board_live/show.html.heex:603
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr "生成令牌"
 
-#: lib/kanban_web/live/board_live/show.html.heex:675
+#: lib/kanban_web/live/board_live/show.html.heex:680
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr "从未使用"
 
-#: lib/kanban_web/live/board_live/show.html.heex:556
+#: lib/kanban_web/live/board_live/show.html.heex:561
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr "用途（可选）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:437
+#: lib/kanban_web/live/board_live/show.html.heex:442
 #, elixir-autogen, elixir-format
 msgid "Token created"
 msgstr "已创建 token"
 
-#: lib/kanban_web/live/board_live/show.html.heex:521
+#: lib/kanban_web/live/board_live/show.html.heex:526
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "令牌名称"
 
-#: lib/kanban_web/live/board_live/show.html.heex:661
+#: lib/kanban_web/live/board_live/show.html.heex:666
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr "已撤销"
