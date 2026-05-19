@@ -23,6 +23,7 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
   alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.ReviewStatsStrip
 
   @impl true
@@ -286,20 +287,9 @@ defmodule KanbanWeb.ReviewLive do
 
               <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
 
-              <section
-                :if={review_report_html(@selected)}
-                data-review-report
-                class="stride-review-report"
-                style={[
-                  "margin: 12px 16px 0; padding: 12px 14px;",
-                  "border-radius: 6px;",
-                  "background: var(--surface-sunken);",
-                  "border: 1px solid var(--line);",
-                  "color: var(--ink); font-size: 12.5px; line-height: 1.55;"
-                ]}
-              >
-                {Phoenix.HTML.raw(review_report_html(@selected))}
-              </section>
+              <div data-review-report-host style="margin: 12px 16px 0;">
+                <ReviewReportPanel.review_report_panel task={@selected} />
+              </div>
 
               <div style="padding: 12px 16px;">
                 <AcceptanceChecklist.acceptance_checklist
@@ -550,28 +540,6 @@ defmodule KanbanWeb.ReviewLive do
     idx = String.to_integer(num) - 1
     status_atom = if String.match?(status, ~r/not/i), do: :not_met, else: :met
     Map.put(acc, idx, status_atom)
-  end
-
-  # Renders the structured `review_report` as styled HTML via Earmark. Falls
-  # back to the reviewer subagent's prose `summary` when there is no
-  # report. Returns `nil` when neither is present, so the panel hides.
-  defp review_report_html(%{review_report: report}) when is_binary(report) and report != "" do
-    render_markdown(report)
-  end
-
-  defp review_report_html(%{reviewer_result: %{"dispatched" => true, "summary" => s}})
-       when is_binary(s) and s != "" do
-    # No structured report — render the prose summary as a single paragraph.
-    render_markdown("### " <> gettext("Reviewer notes") <> "\n\n" <> s)
-  end
-
-  defp review_report_html(_), do: nil
-
-  defp render_markdown(text) do
-    case Earmark.as_html(text, smartypants: false) do
-      {:ok, html, _warnings} -> html
-      {:error, html, _warnings} -> html
-    end
   end
 
   defp present_text?(s) when is_binary(s), do: String.trim(s) != ""

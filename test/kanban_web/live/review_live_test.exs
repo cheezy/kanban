@@ -643,7 +643,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Approved with 0 findings."
     end
 
-    test "falls back to reviewer_result.summary when there is no review_report",
+    test "renders reviewer_result.summary in the panel header when there is no review_report",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -659,17 +659,17 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ "Reviewer notes"
+      assert html =~ ~s(data-review-report-panel="structured")
       assert html =~ "Reviewer prose summary when no structured report exists."
     end
 
-    test "renders no review report panel when neither report nor summary exists",
+    test "renders no review report panel when neither report nor reviewer_result exists",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
       _task = pending_task!(column, %{review_report: nil, reviewer_result: nil})
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      refute html =~ "data-review-report"
+      refute html =~ "data-review-report-panel"
     end
   end
 
