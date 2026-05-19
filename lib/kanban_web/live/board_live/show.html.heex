@@ -49,21 +49,49 @@
         :for={{dom_id, message} <- @streams.undismissed_messages}
         id={dom_id}
         role="alert"
-        class="alert alert-info shadow-sm"
+        class="flex items-start gap-4 p-5 rounded-xl relative overflow-hidden"
+        style={[
+          "background: linear-gradient(135deg, oklch(97% 0.05 60 / 0.85) 0%, oklch(96% 0.06 30 / 0.55) 60%, oklch(96% 0.04 290 / 0.4) 100%);",
+          "border: 1px solid oklch(85% 0.12 50 / 0.55);",
+          "border-left: 4px solid var(--stride-orange);",
+          "box-shadow: 0 10px 30px -12px oklch(50% 0.18 47 / 0.25), 0 2px 6px -1px oklch(50% 0.1 47 / 0.08);"
+        ]}
       >
-        <.icon name="hero-megaphone" class="h-6 w-6 shrink-0" />
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold">{message.title}</h3>
-          <p class="text-sm whitespace-pre-wrap">{message.body}</p>
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center w-11 h-11 rounded-xl shrink-0 text-white"
+          style={[
+            "background: linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%);",
+            "box-shadow: 0 4px 12px -2px oklch(50% 0.18 47 / 0.35);"
+          ]}
+        >
+          <.icon name="hero-megaphone" class="h-5 w-5" />
+        </span>
+
+        <div class="flex-1 min-w-0 pt-0.5">
+          <h3
+            class="m-0 font-semibold text-[15px]"
+            style="color: var(--ink); letter-spacing: -0.01em;"
+          >
+            {message.title}
+          </h3>
+          <p
+            class="mt-1.5 mb-0 text-[13.5px] whitespace-pre-wrap leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            {message.body}
+          </p>
         </div>
+
         <button
           type="button"
           phx-click="dismiss_message"
           phx-value-id={message.id}
           aria-label={gettext("Dismiss message")}
-          class="btn btn-sm btn-ghost"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style="color: var(--ink-2); background: oklch(100% 0 0 / 0.5); backdrop-filter: blur(4px);"
         >
-          <.icon name="hero-x-mark" class="h-5 w-5" />
+          <.icon name="hero-x-mark" class="h-4 w-4" />
         </button>
       </div>
     </div>

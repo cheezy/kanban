@@ -862,7 +862,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
     goals_by_id
     |> Enum.map(&build_active_goal(&1, tasks_by_column, status_by_column_id, backlog_promotable))
-    |> Enum.sort_by(& &1.identifier)
+    |> Enum.sort_by(& &1.inserted_at, NaiveDateTime)
   end
 
   defp build_active_goal({goal_id, info}, tasks_by_column, status_by_column_id, promotable) do
@@ -907,7 +907,8 @@ defmodule KanbanWeb.BoardLive.Show do
          identifier: goal.identifier,
          short: goal.title,
          color: goal_accent_color(goal.id),
-         ink: goal_accent_ink(goal.id)
+         ink: goal_accent_ink(goal.id),
+         inserted_at: goal.inserted_at
        }}
     end)
   end
