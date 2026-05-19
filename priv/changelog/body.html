@@ -35,6 +35,43 @@
             </p>
           </div>
         </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Changed
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Goal show page groups children by column instead of status
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The per-section grouping on <code>/boards/:id/goals/:goal_id</code>
+              now buckets each child by the workflow column it currently lives in
+              (<code>Backlog / Ready / Doing / Review / Done</code>) rather than by <code>Task.status</code>.
+              The dedicated "Blocked" section introduced in 2.0.1 is gone — blocked children now appear inside whichever column section they sit in (Backlog, Doing, etc.) with the new per-card "Blocked" pill flagging their state. This collapses two related but separate axes (workflow stage vs. blocked-ness) into the single visual layout the rest of the app already uses.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Implementation: <code>Tasks.Queries.list_children_for_goal/2</code>
+              now preloads <code>:column</code> alongside <code>:assigned_to</code> and <code>:parent</code>.
+              <code>KanbanWeb.GoalLive.Show</code>
+              replaced <code>group_by_status/1</code>'s <code>Task.status</code>
+              reducer with a new <code>bucket_for/1</code>
+              helper that maps <code>task.column.name</code>
+              to the section atom. The <code>:blocked</code>
+              plumbing added to <code>@status_order</code>, <code>status_label/1</code>,
+              <code>status_dot/1</code>, and <code>flow_key/1</code>
+              in 2.0.1 has been reverted since blocked tasks no longer need a separate bucket.
+              <code>build_flow/1</code> simplified back to <code>Map.new/2</code>
+              (the multi-status-to-one-key collision the 2.0.1 reduce guarded against can't happen with the column-keyed groups).
+            </p>
+          </div>
+        </div>
       </section>
 
       <section class="mb-10">

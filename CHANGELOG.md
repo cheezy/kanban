@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Task cards in any column now show a small red 🚫 icon next to the priority dot in the top row when `Task.status` is `:blocked`. Renders only when the field is set to `:blocked` (the other `Task.status` values — `:open`, `:in_progress`, `:completed` — render nothing). The icon uses the existing `--st-blocked` accent token so it shares the visual language of WIP-limit-exceeded and changes-requested cues, sized to 10×10px so the top row stays compact. A `"Blocked"` tooltip and matching `aria-label` provide hover and screen-reader context. No new fields or context calls — `:status` already rides on the card via `Map.from_struct(task)` in `task_card_data/4`. Three new tests in `task_card_test.exs` cover the rendering (positive case, `:in_progress` negative, status-absent negative).
 
+### Changed
+
+#### Goal show page groups children by column instead of status
+
+The per-section grouping on `/boards/:id/goals/:goal_id` now buckets each child by the workflow column it currently lives in (`Backlog / Ready / Doing / Review / Done`) rather than by `Task.status`. The dedicated "Blocked" section introduced in 2.0.1 is gone — blocked children now appear inside whichever column section they sit in (Backlog, Doing, etc.) with the new per-card "Blocked" pill flagging their state. This collapses two related but separate axes (workflow stage vs. blocked-ness) into the single visual layout the rest of the app already uses.
+
+Implementation: `Tasks.Queries.list_children_for_goal/2` now preloads `:column` alongside `:assigned_to` and `:parent`. `KanbanWeb.GoalLive.Show` replaced `group_by_status/1`'s `Task.status` reducer with a new `bucket_for/1` helper that maps `task.column.name` to the section atom. The `:blocked` plumbing added to `@status_order`, `status_label/1`, `status_dot/1`, and `flow_key/1` in 2.0.1 has been reverted since blocked tasks no longer need a separate bucket. `build_flow/1` simplified back to `Map.new/2` (the multi-status-to-one-key collision the 2.0.1 reduce guarded against can't happen with the column-keyed groups).
+
 ## [2.0.1] - 2026-05-19
 
 ### Fixed
