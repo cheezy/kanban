@@ -972,6 +972,18 @@
     </div>
   </.form>
 
+  <%= if @action == :edit_task && review_panel_visible?(@task) do %>
+    <div
+      data-task-form-review-report
+      style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line);"
+    >
+      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        {gettext("Review report")}
+      </h3>
+      <ReviewReportPanel.review_report_panel task={@task} />
+    </div>
+  <% end %>
+
   <%= if @action == :edit_task && @task.id && length(@task.task_histories || []) > 0 do %>
     <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line);">
       <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
