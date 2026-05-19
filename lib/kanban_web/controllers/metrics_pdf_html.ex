@@ -1,4 +1,31 @@
 defmodule KanbanWeb.MetricsPdfHTML do
+  @moduledoc """
+  PDF metrics export — renders the cycle-time / lead-time / throughput /
+  wait-time reports as printable HTML for the headless renderer.
+
+  ## Theming policy: fixed palette, theme-independent.
+
+  PDFs are meant to be printed, archived, and shared outside the app.
+  A teammate opening a generated PDF should see the same visual result
+  regardless of their browser theme, their OS appearance, or whoever
+  rendered the PDF originally. To enforce that:
+
+    * All colors in `shared_pdf_css/0` and in the four templates under
+      `metrics_pdf_html/` are inline hex codes (e.g. `#1f2937`, `#3b82f6`)
+      — **never** a `var(--…)` reference to a daisyUI or Stride design
+      token. The theme tokens flip with `[data-theme]`, which would
+      make PDF output non-deterministic.
+    * SVG chart fills, strokes, and gridlines also use hex codes for the
+      same reason.
+    * The policy is guarded by a test:
+      `KanbanWeb.MetricsPdfHTMLPolicyTest` greps the module source and the
+      four `.heex` templates for any `var(--…)` reference and fails the
+      build if one appears.
+
+  If the PDF aesthetic ever needs to evolve, change the hex codes here
+  and in the templates — do not migrate the PDF onto theme tokens.
+  """
+
   use KanbanWeb, :html
 
   embed_templates "metrics_pdf_html/*"
