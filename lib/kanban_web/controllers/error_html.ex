@@ -39,7 +39,7 @@ defmodule KanbanWeb.ErrorHTML do
             <a
               href="/"
               class="stride-screen"
-              style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: var(--color-primary-content); font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-decoration: none; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
+              style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: var(--color-base-100); font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-decoration: none; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
             >
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path

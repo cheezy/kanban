@@ -82,7 +82,7 @@ defmodule KanbanWeb.UserLive.Settings do
                   <button
                     type="submit"
                     phx-disable-with={gettext("Saving...")}
-                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-primary-content); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
                   >
                     {gettext("Update profile")}
                   </button>
@@ -144,7 +144,7 @@ defmodule KanbanWeb.UserLive.Settings do
                   <button
                     type="submit"
                     phx-disable-with={gettext("Saving...")}
-                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-primary-content); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
                   >
                     {gettext("Save password")}
                   </button>

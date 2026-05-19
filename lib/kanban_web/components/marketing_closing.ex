@@ -51,7 +51,7 @@ defmodule KanbanWeb.MarketingClosing do
         <%= if @current_scope do %>
           <.link
             href={~p"/boards"}
-            class="inline-flex items-center justify-center gap-1.5 text-primary-content font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            class="inline-flex items-center justify-center gap-1.5 text-base-100 font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Go to my boards")}
@@ -60,7 +60,7 @@ defmodule KanbanWeb.MarketingClosing do
         <% else %>
           <.link
             href={~p"/users/register"}
-            class="inline-flex items-center justify-center gap-1.5 text-primary-content font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            class="inline-flex items-center justify-center gap-1.5 text-base-100 font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); font-size: 14px;"
           >
             {gettext("Start free")}

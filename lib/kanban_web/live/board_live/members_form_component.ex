@@ -174,7 +174,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             type="submit"
             style={[
               "height: 32px; padding: 0 12px; border-radius: 5px; border: none;",
-              "background: var(--ink); color: var(--color-primary-content);",
+              "background: var(--ink); color: var(--color-base-100);",
               "font-size: 12px; font-weight: 500; cursor: pointer;",
               "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
             ]}
@@ -222,7 +222,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             phx-target={@myself}
             style={[
               "padding: 6px 10px; border-radius: 5px;",
-              "background: var(--ink); color: var(--color-primary-content); border: none;",
+              "background: var(--ink); color: var(--color-base-100); border: none;",
               "font-size: 12px; font-weight: 500; cursor: pointer;",
               "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
             ]}
