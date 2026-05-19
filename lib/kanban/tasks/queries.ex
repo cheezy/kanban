@@ -301,7 +301,7 @@ defmodule Kanban.Tasks.Queries do
       where: t.parent_id == ^goal_id,
       where: is_nil(t.archived_at),
       order_by: [asc: t.position],
-      preload: [:assigned_to, :parent]
+      preload: [:assigned_to, :parent, :column]
   end
 
   defp user_has_access?(nil, _board_id), do: false
