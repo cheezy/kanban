@@ -1,0 +1,1115 @@
+{
+  "source_spec": "docs/ideation/2026-05-19T150732-task-reviewer-review-data-structure-improvements-requirements.md",
+  "source_spec_sha256": "cad13ce0c62d1fc18912b8fa1e383b91966afcdfcf3a9f81286bee87da73c95b",
+  "decomposition_notes": "Split along the three orthogonal seams the requirements doc explicitly calls out: (G1) server-side contract changes, (G2) the five remaining plugin-variant producer changes (G142/W684-W687 already cover the `stride` variant \u2014 NOT duplicated here), (G3) consumer-side Kanban UI changes that build on G1's validator. CLAIM ORDER: G1 (contract) MUST land in main first because both G2 (producer payloads need the validator to accept them) and G3 (UI reads structured fields the validator gates) depend on it. G2 and G3 can proceed in parallel after G1. G2's first task (locking the canonical schema in the `stride` repo docs) depends on G142's W684 having defined the base schema \u2014 express that as an identifier dependency [\"W684\"] on the schema-doc task. G3's panel-component task is independent of G2 because the validator (G1) is the only true blocker for the consumer surface. Schema location decision (open question in the doc): canonical schema lives in the `stride` repo (since G142 already placed it in stride/agents/task-reviewer.md), referenced by the other five variants \u2014 encoded into G2's first task. Acceptance-grid enum decision (open question): use `met` / `not_met` (underscore form) to match G142's parent schema and avoid spaces in JSON enum values \u2014 encoded into G1's validator task. The reviewer flagged this scope as potentially too large for one goal; three sibling goals at 6\u20138 tasks each fits the ~10-task soft cap cleanly and matches the producer/contract/consumer feature areas.",
+  "goals": [
+    {
+      "title": "Extend Kanban server-side contract for structured reviewer_result payloads",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Today's CompletionValidation accepts only summary + integer counts in reviewer_result. To unlock structured emission from the six plugin variants and structured rendering in the UI, the server must accept and persist the richer payload (issues[], acceptance_criteria[], testing_strategy, patterns, pitfalls, schema_version) while remaining backwards compatible with the legacy shape.",
+      "what": "Extend Kanban.Tasks.CompletionValidation to validate the new optional structured fields, ensure Task serialization passes them through verbatim, update agent_json.ex reviewer_result_format documentation, and document the canonical schema reference. No DB migration needed (reviewer_result is already :jsonb).",
+      "where_context": "lib/kanban/tasks/completion_validation.ex, lib/kanban/tasks/task.ex, lib/kanban_web/controllers/api/task_json.ex, lib/kanban_web/controllers/api/agent_json.ex, lib/kanban_web/controllers/api/completion_result_gate.ex",
+      "description": "Server-side contract layer of the end-to-end structured review-report rollout. Must land before plugin producers (G2) and Kanban consumers (G3) can rely on the new shape. Backwards compatibility is non-negotiable: the legacy summary-only payload must continue to validate.",
+      "acceptance_criteria": "validate_reviewer_result/1 accepts the new optional fields (issues, acceptance_criteria, testing_strategy, patterns, pitfalls, schema_version) and validates shape + enum values\nLegacy summary-only payloads continue to validate without changes\nUnknown forward-compatible fields are tolerated (not rejected)\nTask serialization passes new fields through verbatim to API consumers\nagent_json.ex reviewer_result_format description documents the new schema\nUnit tests cover happy path, legacy compatibility path, and rejection of malformed shapes",
+      "pitfalls": [
+        "Do not reject payloads that omit new fields \u2014 legacy clients must keep working",
+        "Do not reject payloads containing unknown fields \u2014 forward compatibility is a stated success metric",
+        "Do not change the existing review_report markdown emission path; that's a parallel field"
+      ],
+      "tasks": [
+        {
+          "title": "Extend CompletionValidation to accept structured issues[] and acceptance_criteria[] arrays",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add validation clauses in Kanban.Tasks.CompletionValidation for the new optional `issues` and `acceptance_criteria` array fields on reviewer_result. Each issue must validate severity (critical/high/medium/low), category (string), and optional file/line/description/suggested_fix fields. Each acceptance_criterion must validate id, status (met/not_met enum), and optional notes.",
+          "why": "Without server-side acceptance of these arrays, plugin producers cannot PATCH the richer payload and the UI has nothing structured to render.",
+          "what": "Add private validation helpers for issues array (with severity + category enums) and acceptance_criteria array (with met/not_met status enum). Compose them into validate_reviewer_result/1 as optional fields. Reject malformed entries with descriptive errors; tolerate omission entirely.",
+          "where_context": "lib/kanban/tasks/completion_validation.ex",
+          "acceptance_criteria": "validate_reviewer_result/1 accepts payloads containing well-formed issues[] and acceptance_criteria[] arrays\nReturns {:error, descriptive_message} for malformed issue entries (wrong severity enum, missing required fields)\nReturns {:error, descriptive_message} for malformed acceptance_criterion entries (status not in met/not_met)\nLegacy payloads (no issues, no acceptance_criteria) continue to validate successfully\nAcceptance criterion status uses underscore form `not_met` (matches G142 parent schema, avoids spaces in JSON enums)\nUnit tests cover: well-formed structured payload, malformed severity, malformed status, legacy summary-only payload, missing arrays entirely",
+          "patterns_to_follow": "Mirror existing validation helper structure in completion_validation.ex\nUse {:ok, payload} | {:error, message} return shape consistent with the existing module\nUse pattern matching in function heads for enum validation rather than nested case statements",
+          "pitfalls": [
+            "Do not require either array \u2014 both are optional",
+            "Do not use `not met` with a space; use `not_met` to match the canonical schema",
+            "Do not raise \u2014 return {:error, _} tuples"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/completion_validation.ex",
+              "note": "Add validators for issues[] and acceptance_criteria[]",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/tasks/completion_validation_test.exs",
+              "note": "Unit tests for new validators and legacy compatibility",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/completion_validation_test.exs",
+              "expected_result": "All tests pass including legacy-shape compatibility tests",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/tasks/completion_validation.ex",
+              "expected_result": "No warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Well-formed structured payload accepted",
+              "Malformed severity enum rejected with descriptive error",
+              "Malformed acceptance-criterion status rejected",
+              "Legacy summary-only payload still validates",
+              "Empty/missing arrays tolerated"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "Issues array present but empty",
+              "Mixed legacy + structured fields in same payload",
+              "Nested unknown fields inside an issue entry"
+            ],
+            "coverage_target": "100% of new validation branches"
+          }
+        },
+        {
+          "title": "Extend CompletionValidation to accept testing_strategy, patterns, pitfalls, schema_version fields",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add validation for the three section-verdict fields (testing_strategy, patterns, pitfalls) and the schema_version semver string. Each section verdict is an object with a status field and optional notes; schema_version is a string the validator accepts when present but does not require.",
+          "why": "These fields are first-class in the new schema and replace what the kanban app currently regex-extracts from the markdown report.",
+          "what": "Add private helpers validating each section verdict's shape (status enum + optional notes) and a semver-shaped schema_version string. Wire into validate_reviewer_result/1 as optional fields, tolerating absence entirely.",
+          "where_context": "lib/kanban/tasks/completion_validation.ex",
+          "acceptance_criteria": "validate_reviewer_result/1 accepts payloads containing well-formed testing_strategy, patterns, pitfalls section-verdict objects\nschema_version is accepted when present (semver-shaped string) and tolerated when absent\nMalformed section-verdict status returns {:error, descriptive_message}\nLegacy payloads (no section verdicts, no schema_version) continue to validate\nUnit tests cover each new field's happy + error paths and legacy omission",
+          "patterns_to_follow": "Reuse the section-verdict shape across all three fields (testing_strategy, patterns, pitfalls) via a shared helper\nKeep schema_version validation permissive \u2014 accept any semver-shaped string; do not gate on specific version values",
+          "pitfalls": [
+            "Do not require schema_version even though the doc says emitters should write \"1.0\" \u2014 the contract is backwards compatible",
+            "Do not couple this task's validators to a specific schema version number"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/completion_validation.ex",
+              "note": "Add validators for section verdicts and schema_version",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/tasks/completion_validation_test.exs",
+              "note": "Extend tests for new fields",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/completion_validation_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/tasks/completion_validation.ex",
+              "expected_result": "No warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Well-formed section verdicts accepted",
+              "Malformed status in any section verdict rejected",
+              "schema_version present and well-formed accepted",
+              "schema_version absent accepted (backwards compat)",
+              "All new fields absent (legacy payload) accepted"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "schema_version present but malformed (non-semver string)",
+              "section verdict with empty notes string",
+              "All structured fields together in one payload"
+            ],
+            "coverage_target": "100% of new validation branches"
+          }
+        },
+        {
+          "title": "Ensure Task and API JSON serialization pass structured reviewer_result through verbatim",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Confirm Kanban.Tasks.Task's reviewer_result jsonb field round-trips arbitrary nested structures without loss, and that lib/kanban_web/controllers/api/task_json.ex serializes reviewer_result verbatim in API responses. Add explicit tests asserting structured payloads survive insert \u2192 reload \u2192 render.",
+          "why": "The success metric requires that future schema additions persist with no Kanban deploy. That only holds if persistence and serialization are truly verbatim.",
+          "what": "Audit the Task schema's reviewer_result field declaration (already :map per requirements doc) and the task_json.ex render functions to confirm no field filtering occurs. Add tests asserting a payload with all new structured fields persists and serializes unchanged. Update completion_result_gate.ex if it currently strips unknown fields.",
+          "where_context": "lib/kanban/tasks/task.ex, lib/kanban_web/controllers/api/task_json.ex, lib/kanban_web/controllers/api/completion_result_gate.ex",
+          "acceptance_criteria": "A reviewer_result payload containing all new structured fields persists to the database and reloads identically\nAPI JSON output for a task with structured reviewer_result includes all fields verbatim\ncompletion_result_gate.ex does not strip unknown fields (or is updated to stop doing so)\nUnknown forward-compatible fields survive the round trip\nTests assert byte-equivalent round trip for a representative payload",
+          "patterns_to_follow": "If Task uses :map for reviewer_result, no schema change is needed \u2014 only tests\nIf task_json.ex currently filters fields, replace the filter with a pass-through Map.get(task, :reviewer_result)",
+          "pitfalls": [
+            "Do not introduce a new Ecto type for reviewer_result \u2014 :map jsonb is the documented shape",
+            "Do not add field allowlisting in task_json.ex \u2014 that would defeat forward compatibility"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/task.ex",
+              "note": "Confirm reviewer_result is :map and not narrowed",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_json.ex",
+              "note": "Confirm verbatim pass-through of reviewer_result",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban_web/controllers/api/completion_result_gate.ex",
+              "note": "Audit for field stripping; update if needed",
+              "position": 2
+            },
+            {
+              "file_path": "test/kanban_web/controllers/api/task_json_test.exs",
+              "note": "Round-trip tests for structured reviewer_result",
+              "position": 3
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/",
+              "expected_result": "All API serialization tests pass including new round-trip assertions",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/task_test.exs",
+              "expected_result": "All Task schema tests pass",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Task changeset accepts and persists structured reviewer_result",
+              "task_json render includes all reviewer_result fields",
+              "Unknown nested fields survive round trip"
+            ],
+            "integration_tests": [
+              "Full POST /api/tasks/:id/complete with structured reviewer_result, then GET /api/tasks/:id, asserts payload unchanged"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Deeply nested unknown fields",
+              "Empty arrays in structured fields",
+              "Mixed legacy + structured fields"
+            ],
+            "coverage_target": "Round-trip assertion covers all new fields"
+          }
+        },
+        {
+          "title": "Document the canonical reviewer_result schema in agent_json reviewer_result_format",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Update the reviewer_result_format documentation in lib/kanban_web/controllers/api/agent_json.ex to describe the full structured schema (schema_version, summary, status, issue_counts, issues[], acceptance_criteria[], testing_strategy, patterns, pitfalls) with field types, enum values, and the optional/required distinction. Note backwards compatibility: legacy summary-only payloads remain valid.",
+          "why": "Plugin variant authors (G2) need a single canonical reference for the payload contract. agent_json's reviewer_result_format is the existing documentation surface.",
+          "what": "Expand the reviewer_result_format string/doc in agent_json.ex to include each new field's name, type, allowed enum values, and an example payload. Cross-reference the canonical schema location (stride repo per the schema-of-record decision).",
+          "where_context": "lib/kanban_web/controllers/api/agent_json.ex",
+          "acceptance_criteria": "reviewer_result_format documents all new structured fields with types and enums\nDocumentation explicitly notes legacy summary-only payloads remain valid\nA complete example structured payload appears in the documentation\nAcceptance-criterion status enum documented as `met` / `not_met` (underscore form)\nNo behavior change \u2014 documentation only",
+          "patterns_to_follow": "Match the existing documentation style in agent_json.ex\nKeep the example payload realistic \u2014 use the same field names and shapes the validator (tasks 0 and 1) actually accepts",
+          "pitfalls": [
+            "Do not invent field names not in the validator \u2014 keep docs and validator in lockstep",
+            "Do not document `not met` with a space \u2014 use the underscore enum value"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/agent_json.ex",
+              "note": "Update reviewer_result_format documentation",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Read the updated reviewer_result_format text and verify every documented field matches the validators added in tasks 0 and 1",
+              "expected_result": "Docs and validator are in lockstep \u2014 no field documented that isn't validated and vice versa",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/agent_json_test.exs",
+              "expected_result": "All existing agent_json tests pass",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Existing agent_json tests continue to pass"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Visual review of reviewer_result_format documentation for completeness"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Run full Kanban precommit suite after contract changes",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Run mix precommit to confirm the contract changes pass the full test suite, credo strict, formatting, and any other gates the project enforces. Address any regressions before G1 can be considered done.",
+          "why": "G2 and G3 depend on G1 landing cleanly in main. A precommit failure on G1 blocks both downstream goals.",
+          "what": "Run mix precommit, then mix test --cover, then mix credo --strict. Fix any failures introduced by tasks 0-3 of this goal.",
+          "where_context": "Repository root",
+          "acceptance_criteria": "mix precommit passes\nmix test --cover passes and coverage stays at or above the existing threshold\nmix credo --strict passes with no new warnings\nNo formatting drift",
+          "patterns_to_follow": "Use the project's documented precommit alias\nDo not skip credo or coverage gates",
+          "pitfalls": [
+            "Do not reduce coverage thresholds to make tests pass \u2014 fix the missing coverage instead"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix precommit",
+              "expected_result": "Precommit suite passes",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix test --cover",
+              "expected_result": "All tests pass; coverage at or above threshold",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict",
+              "expected_result": "No warnings",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [],
+            "coverage_target": "At or above existing repository threshold"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Roll out structured reviewer payload to five remaining plugin variants",
+      "type": "goal",
+      "complexity": "large",
+      "priority": "high",
+      "needs_review": false,
+      "why": "G142 (W684\u2013W687) covers the structured-emission contract for the `stride` plugin only. The other five variants (stride-copilot, stride-codex, stride-gemini, stride-opencode, stride-pi) emit the same review payload and must be updated in lockstep \u2014 otherwise the fleet stays permanently fragmented and the 14-day all-variants leading indicator fails.",
+      "what": "For each of the five remaining plugin variants: update task-reviewer prompt to emit the expanded schema, update workflow/completing-tasks skill to extract the new fields into the PATCH payload, bump CHANGELOG, tag, push, bump marketplace entry, push marketplace tag. The canonical schema lives in the `stride` repo (per G142's W684) and is referenced from each variant.",
+      "where_context": "Five external git repos: stride-copilot, stride-codex, stride-gemini, stride-opencode, stride-pi (each with their own task-reviewer agent prompt + workflow skill + CHANGELOG + marketplace entry)",
+      "description": "Producer-side rollout for the five non-`stride` plugin variants. Depends on G1 (the Kanban contract must accept the new payloads before producers emit them) and on G142's W684 (the canonical schema document must exist in the stride repo to reference). Release order is documented per-task: stride-copilot first (highest-traffic), then stride-codex, stride-gemini, stride-opencode, stride-pi alphabetically.",
+      "acceptance_criteria": "All five non-stride plugin variants emit the structured reviewer payload matching the canonical schema\nAll five variants' workflow/completing-tasks skill extracts the new fields into the PATCH payload\nAll five variants' CHANGELOG, plugin tag, marketplace entry, and marketplace tag are bumped\nLeading indicator achievable: all six plugin variants reflect the new contract in marketplace JSON within 14 days",
+      "pitfalls": [
+        "Do not redefine the schema per-variant \u2014 reference the canonical schema in the stride repo",
+        "Do not split the release across variants on different days if avoidable \u2014 fragmentation is the failure mode",
+        "Do not skip the marketplace bump \u2014 without it, users running plugin install pick up the old version"
+      ],
+      "tasks": [
+        {
+          "title": "Lock canonical reviewer_result schema document in stride repo for cross-variant reference",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Finalize the canonical JSON schema document in the stride repo (location established by G142's W684) so the five remaining variant prompts can reference it by URL/path. Confirm the document includes schema_version, all section verdicts, and the met/not_met enum form. Add a short README note in the stride repo declaring this file the schema of record.",
+          "why": "Open question in the requirements doc: schema location of record. Decision: stride repo, since G142 already places the schema there. This task makes that decision authoritative before the five variant updates begin.",
+          "what": "Audit the schema document W684 produced in stride/agents/task-reviewer.md (or wherever W684 placed it) for completeness against the contract validated in G1. Add a top-of-file comment naming this the canonical schema. Reference path/URL ready to be cited from the other five variants.",
+          "where_context": "External stride repo (separate from the kanban codebase): typically stride/agents/task-reviewer.md and stride/README.md",
+          "acceptance_criteria": "Schema document in stride repo names itself as canonical (top-of-file comment or README note)\nSchema covers schema_version, summary, status, issue_counts, issues[], acceptance_criteria[] (with met/not_met enum), testing_strategy, patterns, pitfalls\nReference path is documented somewhere the variant prompts can cite\nNo functional code change to the stride repo beyond documentation",
+          "patterns_to_follow": "Mirror the documentation tone of G142's W684 output\nUse the same met/not_met enum form as the Kanban validator (G1 task 0)",
+          "pitfalls": [
+            "Do not duplicate the schema in a third location \u2014 single source of truth",
+            "Do not change the schema shape G142 already shipped \u2014 only annotate canonicality"
+          ],
+          "dependencies": [
+            "W684"
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Open the stride repo schema file and confirm canonical-source declaration is present",
+              "expected_result": "Top-of-file comment or README block names this the canonical schema for all six variants",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Cross-check schema fields against the Kanban validator from G1 task 1",
+              "expected_result": "Every field the validator accepts is documented in the schema, and enum values match exactly",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Visual schema/validator consistency check"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update stride-copilot task-reviewer prompt and workflow skill to emit structured payload",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the stride-copilot repo, update the task-reviewer agent prompt to emit a fenced JSON block matching the canonical schema, and update the workflow/completing-tasks skill to extract the structured payload into the PATCH /api/tasks/:id/complete reviewer_result field. Mirror the changes G142's W685/W686 made in the stride repo.",
+          "why": "stride-copilot is the highest-traffic non-stride variant. Updating it first reduces fleet fragmentation fastest.",
+          "what": "Two file edits in the stride-copilot repo: (1) task-reviewer prompt emits structured JSON block referencing the canonical schema; (2) workflow skill extracts the JSON block and includes it in the reviewer_result PATCH payload. Preserve the existing markdown prose emission (legacy fallback).",
+          "where_context": "External stride-copilot repo: agents/task-reviewer.md (or equivalent path) and skills/stride-workflow or skills/completing-tasks",
+          "acceptance_criteria": "stride-copilot task-reviewer prompt emits structured JSON block matching canonical schema\nWorkflow/completing-tasks skill extracts JSON and includes it in reviewer_result PATCH payload\nMarkdown prose emission preserved (legacy fallback)\nChanges mirror G142's W685/W686 approach for the stride variant",
+          "patterns_to_follow": "Mirror exactly what G142's W685 and W686 did in the stride repo \u2014 same prompt structure, same extraction logic, same canonical-schema reference",
+          "pitfalls": [
+            "Do not remove the markdown prose emission \u2014 it is the documented legacy fallback",
+            "Do not invent a stride-copilot-specific schema variant"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Diff the stride-copilot task-reviewer prompt against G142's stride-repo equivalent",
+              "expected_result": "Structural parity \u2014 same JSON block instruction, same field list, same enum values",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Run a stride-copilot review end-to-end in a sandbox task and inspect the PATCH payload",
+              "expected_result": "reviewer_result includes the structured fields and is accepted by the Kanban API",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "End-to-end review dispatch on a sandbox task with the updated plugin"
+            ],
+            "manual_tests": [
+              "Inspect PATCH payload byte-for-byte for structured fields"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Release stride-copilot plugin and marketplace bump",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Bump CHANGELOG.md in stride-copilot repo for the structured-emission release, tag, push to origin, then bump the stride-copilot entry in stride-marketplace, tag, and push.",
+          "why": "Until the marketplace entry bumps and the plugin tag exists on origin, users cannot pick up the new version. Both bumps are required to satisfy the 14-day leading indicator.",
+          "what": "Follow the documented release procedure mirroring G142's W687 (stride/CHANGELOG bump + tag + marketplace bump): edit CHANGELOG.md in stride-copilot, commit, tag, push origin + tags; then edit stride-marketplace plugin entry, commit, tag, push origin + tags.",
+          "where_context": "External stride-copilot repo + stride-marketplace repo",
+          "acceptance_criteria": "stride-copilot CHANGELOG.md has a new release entry describing the structured-emission change\nstride-copilot git tag created and pushed to origin\nstride-marketplace plugin entry version bumped\nstride-marketplace git tag created and pushed to origin\nBoth repo bumps are visible on origin",
+          "patterns_to_follow": "Mirror the release procedure G142's W687 used for the stride variant\nKeep the CHANGELOG entry consistent in wording with W687's entry",
+          "pitfalls": [
+            "Do not bump the plugin tag without bumping the marketplace entry \u2014 releases require both",
+            "Do not skip pushing tags to origin"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Confirm stride-copilot tag visible on origin",
+              "expected_result": "git ls-remote on stride-copilot shows the new tag",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Confirm stride-marketplace tag visible on origin and plugin entry version bumped",
+              "expected_result": "Marketplace entry shows the new version",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Tag verification on origin",
+              "Plugin install end-to-end pulls the new version"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update stride-codex task-reviewer prompt, workflow skill, and release",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the stride-codex repo: update task-reviewer prompt to emit structured payload, update workflow/completing-tasks skill to extract it, bump CHANGELOG, tag, push, bump marketplace entry, push marketplace tag. Mirrors tasks 1 and 2 of this goal for the next variant.",
+          "why": "stride-codex is the next variant alphabetically and uses the same Claude model family as stride, lowering the structured-output divergence risk flagged as assumption (R).",
+          "what": "Same two-file edit pattern as the stride-copilot task, followed by the same release procedure (CHANGELOG + tag + marketplace bump).",
+          "where_context": "External stride-codex repo + stride-marketplace repo",
+          "acceptance_criteria": "stride-codex task-reviewer prompt emits structured JSON block matching canonical schema\nWorkflow skill extracts structured payload into PATCH\nCHANGELOG bumped, plugin tag pushed, marketplace entry bumped, marketplace tag pushed",
+          "patterns_to_follow": "Mirror the stride-copilot task exactly \u2014 same prompt structure, same skill extraction, same release procedure",
+          "pitfalls": [
+            "Do not skip the marketplace bump",
+            "Do not let stride-codex's schema drift from the canonical document"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "End-to-end review dispatch on a sandbox task with the updated plugin; inspect PATCH payload",
+              "expected_result": "reviewer_result includes structured fields and is accepted by Kanban API",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Confirm plugin tag and marketplace tag on origin",
+              "expected_result": "Both tags present",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "End-to-end review dispatch"
+            ],
+            "manual_tests": [
+              "PATCH payload inspection",
+              "Tag verification"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update stride-gemini task-reviewer prompt, workflow skill, and release",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the stride-gemini repo: same two-file edit (prompt + workflow skill) and same release procedure (CHANGELOG + tag + marketplace bump) as the prior two variants. Gemini's structured-output behavior differs most from Claude's; pay extra attention to the JSON block well-formedness in sandbox testing.",
+          "why": "stride-gemini uses a different model family and is the highest-risk variant for assumption (R) \u2014 divergent structured-output behavior across providers.",
+          "what": "Two-file edit + release procedure, with an extra sandbox-test sweep covering: a review with zero issues, a review with multiple severities, and a review of a task with no acceptance criteria. All three must produce well-formed JSON blocks.",
+          "where_context": "External stride-gemini repo + stride-marketplace repo",
+          "acceptance_criteria": "stride-gemini prompt and skill updated\nThree sandbox scenarios (zero issues, multiple severities, no acceptance criteria) all produce well-formed JSON blocks\nCHANGELOG bumped, plugin tag pushed, marketplace entry bumped, marketplace tag pushed",
+          "patterns_to_follow": "Mirror the prior variant tasks for structure\nFor sandbox testing, mirror the test scenarios documented in G142's verification approach for the stride variant",
+          "pitfalls": [
+            "Do not assume Gemini will emit identical formatting to Claude \u2014 verify each scenario individually",
+            "If Gemini fails any sandbox scenario, escalate as a contract risk rather than shipping a fragile variant"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Run three sandbox review scenarios (zero issues / multiple severities / no acceptance criteria) and inspect each PATCH payload",
+              "expected_result": "All three produce well-formed JSON blocks the Kanban validator accepts",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Confirm plugin tag and marketplace tag on origin",
+              "expected_result": "Both tags present",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Three sandbox review scenarios"
+            ],
+            "manual_tests": [
+              "PATCH payload inspection per scenario",
+              "Tag verification"
+            ],
+            "edge_cases": [
+              "Zero-issue review",
+              "Multi-severity review",
+              "Task with no acceptance criteria"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update stride-opencode task-reviewer prompt, workflow skill, and release",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the stride-opencode repo: same two-file edit and same release procedure as the prior variants.",
+          "why": "stride-opencode is the next variant alphabetically; lockstep release with the other five is required to keep the fleet from fragmenting.",
+          "what": "Two-file edit (prompt + workflow skill) plus release procedure (CHANGELOG + tag + marketplace bump).",
+          "where_context": "External stride-opencode repo + stride-marketplace repo",
+          "acceptance_criteria": "stride-opencode prompt and skill updated\nSandbox review dispatch produces a well-formed JSON block accepted by the Kanban validator\nCHANGELOG bumped, plugin tag pushed, marketplace entry bumped, marketplace tag pushed",
+          "patterns_to_follow": "Mirror the prior variant tasks for structure",
+          "pitfalls": [
+            "Do not skip the marketplace bump"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "End-to-end sandbox review dispatch; inspect PATCH payload",
+              "expected_result": "reviewer_result includes structured fields and is accepted by Kanban API",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Confirm plugin tag and marketplace tag on origin",
+              "expected_result": "Both tags present",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Sandbox review dispatch"
+            ],
+            "manual_tests": [
+              "PATCH payload inspection",
+              "Tag verification"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update stride-pi task-reviewer prompt, workflow skill, and release",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the stride-pi repo: same two-file edit and same release procedure as the prior variants. Pi uses Kimi K2; like Gemini, verify multiple sandbox scenarios because structured-output behavior may differ from Claude.",
+          "why": "stride-pi closes out the six-variant lockstep release. Until this lands, the leading indicator (all six variants reflect the new contract in marketplace JSON within 14 days) fails.",
+          "what": "Two-file edit (prompt + workflow skill) plus release procedure (CHANGELOG + tag + marketplace bump), with a multi-scenario sandbox sweep mirroring stride-gemini's verification.",
+          "where_context": "External stride-pi repo + stride-marketplace repo",
+          "acceptance_criteria": "stride-pi prompt and skill updated\nThree sandbox scenarios (zero issues, multiple severities, no acceptance criteria) all produce well-formed JSON blocks\nCHANGELOG bumped, plugin tag pushed, marketplace entry bumped, marketplace tag pushed\nAll six plugin variants now reflect the new contract on origin and in marketplace JSON",
+          "patterns_to_follow": "Mirror the stride-gemini task for sandbox testing rigor (multiple scenarios)\nMirror the other variant tasks for release procedure",
+          "pitfalls": [
+            "Do not assume Kimi K2 emits identical formatting to Claude \u2014 verify each scenario",
+            "Do not declare the goal complete until all six variants are visible on origin and marketplace"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Run three sandbox review scenarios on stride-pi and inspect each PATCH payload",
+              "expected_result": "All three produce well-formed JSON blocks accepted by Kanban validator",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Confirm plugin tag and marketplace tag on origin",
+              "expected_result": "Both tags present",
+              "position": 1
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Audit marketplace.json to confirm all six variants (stride + the five updated here) reflect the new contract version",
+              "expected_result": "All six entries show the bumped version",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Three sandbox review scenarios"
+            ],
+            "manual_tests": [
+              "PATCH payload inspection per scenario",
+              "Tag verification",
+              "Fleet-wide marketplace audit"
+            ],
+            "edge_cases": [
+              "Zero-issue review",
+              "Multi-severity review",
+              "Task with no acceptance criteria"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Build shared ReviewReportPanel and wire into review, show, and edit surfaces",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Today's /review screen extracts review data by regex-parsing the markdown review_report field; Task Show and Task Edit surface even less. To meet the Outcome (structured rendering across all three surfaces, regex parsing demoted to legacy fallback) the consumer side needs a single reused panel component that detects-and-degrades and a telemetry counter so the leading indicator (`review.fallback_used` stays at 0 for new tasks) is observable.",
+      "what": "Build KanbanWeb.ReviewReportPanel as a reusable LiveComponent that renders structured payloads when reviewer_result.issues is present and falls through to the existing markdown regex path otherwise. Wire it into ReviewLive, Task Show, and Task Edit. Add review.fallback_used and review.structured_used telemetry counters. Update ReviewStatsStrip to source cells from structured fields when available. Retain legacy regex helpers as the fallback path.",
+      "where_context": "lib/kanban_web/components/ (new ReviewReportPanel), lib/kanban_web/live/review_live.ex (replace ad-hoc rendering, retain helpers as fallback), Task Show and Task Edit LiveViews, lib/kanban_web/components/review_*.ex (existing review components for reference)",
+      "description": "Consumer-side rollout. Depends on G1 (the validator must accept structured payloads before the UI can rely on them). Does NOT depend on G2 because the panel's detect-and-degrade behavior means it works whether or not producers are emitting structured data yet \u2014 structured rendering activates per-task as G2's plugin releases land. The legacy regex path remains permanent for pre-rollout tasks.",
+      "acceptance_criteria": "KanbanWeb.ReviewReportPanel LiveComponent renders structured payload when reviewer_result.issues is a list\nPanel falls through to existing markdown regex path when reviewer_result.issues is absent and review_report is present\nPanel renders nothing when both are absent\nPanel is wired into /review queue, Task Show, and Task Edit\nReviewStatsStrip sources cells from structured fields when available\nreview.fallback_used and review.structured_used telemetry counters fire once per render\nLegacy regex helpers in review_live.ex retained as fallback code path\nSkip_form tasks continue to render via existing summary-and-skip-reason layout (no structured grid, no issue list)\nDark mode verified on the new panel per CLAUDE.md guidelines",
+      "pitfalls": [
+        "Do not delete the legacy regex helpers \u2014 they are the permanent fallback for pre-rollout tasks",
+        "Do not call Ecto.Repo from the panel component \u2014 go through the appropriate context module",
+        "Do not skip dark-mode verification on the new panel per repository CLAUDE.md mandate",
+        "Do not change the skip_form rendering path \u2014 it is explicitly out of scope per the requirements doc Non-goals"
+      ],
+      "tasks": [
+        {
+          "title": "Add review.fallback_used and review.structured_used telemetry counter events",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Define two telemetry events the panel will emit per render: [:kanban, :review, :fallback_used] and [:kanban, :review, :structured_used]. Wire a handler that increments counters so the leading indicator (fallback_used stays at 0 for new tasks) is observable.",
+          "why": "Success metric explicitly cites `review.fallback_used` and `review.structured_used` counters as the leading-indicator measurement mechanism. Without them, the leading indicator is unmeasurable.",
+          "what": "Define the two telemetry event names in a central telemetry module, wire counter handlers in Kanban.Telemetry (or wherever existing telemetry events live), and document the metric names so the panel can emit them in later tasks.",
+          "where_context": "lib/kanban/telemetry.ex (or equivalent existing telemetry module)",
+          "acceptance_criteria": "Two telemetry events [:kanban, :review, :fallback_used] and [:kanban, :review, :structured_used] are defined and documented\nCounter handlers are wired and observable via the existing telemetry surface\nUnit test verifies the events fire when invoked",
+          "patterns_to_follow": "Follow the existing telemetry event registration pattern in the kanban app\nUse atom-list event names consistent with other [:kanban, ...] events",
+          "pitfalls": [
+            "Do not emit the events yet from the panel \u2014 that happens in the panel-build task",
+            "Do not introduce a new telemetry library \u2014 reuse what's already wired"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/telemetry.ex",
+              "note": "Register new telemetry events and handlers",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/telemetry_test.exs",
+              "expected_result": "Telemetry tests pass including new event registration",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Telemetry events fire when invoked",
+              "Counter handlers increment correctly"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Build KanbanWeb.ReviewReportPanel LiveComponent with detect-and-degrade rendering",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create a new LiveComponent at lib/kanban_web/components/review_report_panel.ex that takes a task and renders: (a) structured view when reviewer_result['issues'] is a list \u2014 showing status, summary, severity-grouped issue list, acceptance grid, and three section verdicts; (b) markdown-fallback view by delegating to the existing review_live.ex regex helpers when issues is absent and review_report is present; (c) nothing when both are absent. Emit the appropriate telemetry counter on each render.",
+          "why": "Single reused panel across three surfaces is the Outcome's core consumer change. Detect-and-degrade keeps pre-rollout tasks rendering via the legacy path forever.",
+          "what": "New LiveComponent with three render branches gated on reviewer_result shape. Structured branch builds a severity-grouped issue list, an acceptance grid with met/not_met badges, and three section-verdict tiles. Fallback branch calls into existing review_live.ex helpers (testing_strategy_value, patterns_value, pitfalls_value, report_section). Emit telemetry on each render path.",
+          "where_context": "lib/kanban_web/components/review_report_panel.ex (new), lib/kanban_web/live/review_live.ex (reference existing helpers for fallback delegation)",
+          "acceptance_criteria": "ReviewReportPanel LiveComponent exists at lib/kanban_web/components/review_report_panel.ex\nStructured branch renders when reviewer_result['issues'] is a list\nFallback branch renders when issues absent and review_report present, delegating to existing regex helpers\nEmpty branch renders nothing when both absent\nreview.structured_used telemetry fires on structured render\nreview.fallback_used telemetry fires on fallback render\nDark mode verified per CLAUDE.md guidelines (text-base-content, bg-base-100, border-base-300)\nComponent uses core_components.ex primitives where applicable\nUnit tests cover all three render branches",
+          "patterns_to_follow": "Use existing core_components.ex primitives (<.icon>, <.button>, etc.) instead of inventing custom styles\nUse daisyUI semantic tokens (bg-base-100, text-base-content, border-base-300) per CLAUDE.md dark-mode guidelines\nDelegate fallback rendering to existing review_live.ex helpers \u2014 do NOT duplicate the regex logic\nMet/not_met enum values rendered with consistent badge styling",
+          "pitfalls": [
+            "Do not call Kanban.Repo from the component \u2014 accept the task as an assign",
+            "Do not duplicate the regex helpers \u2014 delegate to review_live.ex",
+            "Do not hardcode colors like text-gray-900 or bg-white \u2014 use daisyUI tokens per CLAUDE.md",
+            "Do not skip the empty branch \u2014 both fields can legitimately be absent"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/review_report_panel.ex",
+              "note": "New shared LiveComponent",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/review_live.ex",
+              "note": "Reference existing regex helpers for fallback delegation",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/components/review_report_panel_test.exs",
+              "note": "Render-branch unit tests",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/review_report_panel_test.exs",
+              "expected_result": "All render-branch tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Render a structured-payload task in both light and dark mode per CLAUDE.md verification process",
+              "expected_result": "Component renders correctly in both modes with proper contrast",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Structured branch renders with all sections",
+              "Fallback branch delegates to legacy helpers",
+              "Empty branch renders nothing",
+              "Telemetry events fire on appropriate paths"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Dark mode verification per CLAUDE.md",
+              "Light mode verification per CLAUDE.md"
+            ],
+            "edge_cases": [
+              "Issues array present but empty",
+              "Acceptance criteria array present but empty",
+              "Mixed legacy + structured fields"
+            ],
+            "coverage_target": "100% of render branches"
+          }
+        },
+        {
+          "title": "Wire ReviewReportPanel into ReviewLive replacing ad-hoc rendering",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Replace the current ad-hoc review-data rendering in lib/kanban_web/live/review_live.ex (which directly invokes the regex helpers in the template) with a single call to the new ReviewReportPanel LiveComponent. Retain the helper functions themselves \u2014 they are now the fallback path the panel delegates to.",
+          "why": "/review queue is the highest-traffic consumer of review data. Wiring it through the panel is what flips the production code path from regex-extraction to structured rendering for new tasks.",
+          "what": "Edit the ReviewLive template to replace ad-hoc rendering calls with <.live_component module={ReviewReportPanel} task={@task} id={...} />. Leave the helper module functions in place \u2014 they are called by the panel's fallback branch.",
+          "where_context": "lib/kanban_web/live/review_live.ex and its HEEx template (if separated)",
+          "acceptance_criteria": "ReviewLive template invokes ReviewReportPanel instead of ad-hoc rendering\nLegacy regex helpers (testing_strategy_value, patterns_value, pitfalls_value, report_section) remain in review_live.ex for the panel's fallback branch to call\nFor a task with structured reviewer_result, /review renders the structured view\nFor a task with only markdown review_report, /review renders the fallback view\nExisting ReviewLive tests pass (updated where the panel now owns rendering)\nDark mode verified on /review per CLAUDE.md guidelines",
+          "patterns_to_follow": "Follow the existing live_component invocation pattern used elsewhere in the kanban app\nKeep ReviewLive's mount/handle_event logic intact \u2014 only rendering changes",
+          "pitfalls": [
+            "Do not delete the regex helpers \u2014 they are now the fallback path",
+            "Do not change ReviewLive's data-loading logic \u2014 only the template",
+            "Do not break skip_form rendering \u2014 verify a skip_form task still renders correctly"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/review_live.ex",
+              "note": "Replace ad-hoc rendering with panel invocation; retain helpers",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban_web/live/review_live_test.exs",
+              "note": "Update tests to reflect panel-driven rendering",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/review_live_test.exs",
+              "expected_result": "All ReviewLive tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Visit /review with a structured-payload task in both light and dark mode",
+              "expected_result": "Structured view renders correctly in both modes",
+              "position": 1
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Visit /review with a legacy markdown-only task",
+              "expected_result": "Fallback view renders correctly",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "ReviewLive renders panel for structured task",
+              "ReviewLive renders panel for legacy markdown task",
+              "ReviewLive renders nothing in panel when both fields absent"
+            ],
+            "integration_tests": [
+              "End-to-end /review queue navigation"
+            ],
+            "manual_tests": [
+              "Dark mode verification",
+              "skip_form task still renders correctly"
+            ],
+            "edge_cases": [
+              "skip_form task (no structured rendering expected)"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Wire ReviewReportPanel into Task Show LiveView",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a ReviewReportPanel section to the Task Show LiveView so that opening any task with review data displays the same panel users see in /review. The panel's detect-and-degrade behavior handles all three states (structured / fallback / empty).",
+          "why": "Outcome explicitly names Task Show as one of three surfaces that must render the structured payload. Today Task Show surfaces less than /review does.",
+          "what": "Edit the Task Show LiveView template to include <.live_component module={ReviewReportPanel} task={@task} id={...} /> in an appropriate section (typically below task metadata, above comments).",
+          "where_context": "Task Show LiveView under lib/kanban_web/live/ (exact filename varies \u2014 locate the show view for tasks)",
+          "acceptance_criteria": "Task Show template invokes ReviewReportPanel\nFor a task with structured reviewer_result, Task Show renders the structured view\nFor a task with only markdown review_report, Task Show renders the fallback view\nFor a task with no review data, the panel section is absent or empty\nExisting Task Show tests pass\nDark mode verified per CLAUDE.md guidelines",
+          "patterns_to_follow": "Match the placement and styling pattern used by ReviewLive's panel invocation\nKeep Task Show's existing mount/handle_event logic intact",
+          "pitfalls": [
+            "Do not load review data separately \u2014 the task assign already carries reviewer_result and review_report",
+            "Do not skip dark-mode verification"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/task_live/show.ex",
+              "note": "Add panel invocation in template (path may differ)",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/task_live/",
+              "expected_result": "All Task LiveView tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Visit Task Show for a task with structured reviewer_result in both light and dark mode",
+              "expected_result": "Panel renders correctly in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Task Show renders panel for tasks with review data",
+              "Task Show omits panel section for tasks with no review data"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Dark mode verification"
+            ],
+            "edge_cases": [
+              "Task with no review data at all"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Wire ReviewReportPanel into Task Edit LiveView",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a ReviewReportPanel section to the Task Edit LiveView mirroring the Task Show wiring. The panel is read-only in this iteration (editing reviewer_result is out of scope).",
+          "why": "Outcome explicitly names Task Edit as the third surface that must render the structured payload.",
+          "what": "Edit the Task Edit LiveView template to include <.live_component module={ReviewReportPanel} task={@task} id={...} /> in an appropriate section. Confirm no edit affordances are introduced on the panel \u2014 it is read-only.",
+          "where_context": "Task Edit LiveView under lib/kanban_web/live/ (exact filename varies \u2014 locate the edit view for tasks)",
+          "acceptance_criteria": "Task Edit template invokes ReviewReportPanel\nPanel renders read-only (no edit affordances on review data)\nExisting Task Edit tests pass\nDark mode verified per CLAUDE.md guidelines",
+          "patterns_to_follow": "Mirror the Task Show wiring exactly\nKeep Task Edit's form-handling logic untouched",
+          "pitfalls": [
+            "Do not add edit affordances on the panel \u2014 editing reviewer_result is out of scope",
+            "Do not skip dark-mode verification"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/task_live/form_component.html.heex",
+              "note": "Add panel invocation in template (path may differ)",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/task_live/",
+              "expected_result": "All Task LiveView tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Visit Task Edit for a task with structured reviewer_result in both light and dark mode",
+              "expected_result": "Panel renders read-only in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Task Edit renders panel read-only"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Dark mode verification",
+              "Confirm no edit affordances on review data"
+            ],
+            "edge_cases": [],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Update ReviewStatsStrip to source cells from structured fields when available",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Update KanbanWeb.ReviewStatsStrip (or equivalent existing review-stats component) so that when reviewer_result carries structured fields, the stats cells pull from those fields (e.g., issue counts by severity from the issues array) rather than from regex extraction. Fall back to existing behavior when structured fields are absent.",
+          "why": "Today the stats strip pulls from the markdown report via regex. Once producers emit structured data, the stats strip should use the higher-fidelity source.",
+          "what": "Edit the existing review-stats component to check for reviewer_result['issues'] (and other structured fields) first; if present, compute cells from the structured source; otherwise call existing computation. Add a test exercising both paths.",
+          "where_context": "lib/kanban_web/components/review_*.ex (locate the existing ReviewStatsStrip component)",
+          "acceptance_criteria": "ReviewStatsStrip prefers structured fields when reviewer_result carries them\nFalls back to existing regex-based computation when structured fields absent\nExisting stats-strip tests pass; new tests cover both source paths\nDark mode verified per CLAUDE.md guidelines",
+          "patterns_to_follow": "Encapsulate the source-selection logic in a single helper so the component template stays simple\nDo not duplicate the regex helpers \u2014 reuse review_live.ex helpers for the fallback path",
+          "pitfalls": [
+            "Do not change the cells the stats strip displays \u2014 only the data source",
+            "Do not break the fallback path for legacy tasks"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/review_stats_strip.ex",
+              "note": "Update data sourcing to prefer structured fields (filename may differ slightly)",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/",
+              "expected_result": "All component tests pass including ReviewStatsStrip",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Compare stats-strip output for a structured-payload task vs a legacy markdown task in both light and dark mode",
+              "expected_result": "Both render correct counts; structured path matches structured data, fallback path matches regex extraction",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Structured path computes cells from issues array",
+              "Fallback path computes cells from regex extraction",
+              "Cell display unchanged across both paths"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Dark mode verification",
+              "Side-by-side structured vs legacy comparison"
+            ],
+            "edge_cases": [
+              "Mixed legacy + structured payload",
+              "Empty issues array"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Run full Kanban precommit suite after consumer changes",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Run mix precommit, mix test --cover, and mix credo --strict to confirm the consumer-side changes pass all repository quality gates. Address any regressions before G3 ships.",
+          "why": "Per repository CLAUDE.md quality guidelines, every completed task must pass precommit, coverage, and credo. Without this gate the goal cannot be considered done.",
+          "what": "Run mix precommit, mix test --cover, mix credo --strict in sequence. Fix any failures introduced by tasks 0-5 of this goal.",
+          "where_context": "Repository root",
+          "acceptance_criteria": "mix precommit passes\nmix test --cover passes and coverage stays at or above the existing threshold\nmix credo --strict passes with no new warnings\nDark mode verified end-to-end on all three surfaces (/review, Task Show, Task Edit) per CLAUDE.md\nGettext translations extracted and merged for any new UI text per repository convention",
+          "patterns_to_follow": "Use the project's documented precommit alias\nRun mix gettext.extract --merge if any new UI text was added in tasks 1-5\nDo not skip credo or coverage gates",
+          "pitfalls": [
+            "Do not reduce coverage thresholds to make tests pass",
+            "Do not skip gettext extract/merge \u2014 repository convention is to translate all visible UI text"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "key_files": [],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix precommit",
+              "expected_result": "Precommit suite passes",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix test --cover",
+              "expected_result": "All tests pass; coverage at or above threshold",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict",
+              "expected_result": "No warnings",
+              "position": 2
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix gettext.extract --merge",
+              "expected_result": "Translations extracted and merged for any new UI text across all locales",
+              "position": 3
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "End-to-end dark mode verification on all three surfaces"
+            ],
+            "edge_cases": [],
+            "coverage_target": "At or above existing repository threshold"
+          }
+        }
+      ]
+    }
+  ]
+}
