@@ -55,14 +55,17 @@ defmodule KanbanWeb.AuthFrame do
       class="stride-screen"
       style="display: flex; min-height: 100vh; background: var(--bg);"
     >
-      <aside style={[
-        "width: 40%; min-width: 360px;",
-        "background: linear-gradient(155deg, oklch(96% 0.025 60) 0%, oklch(94% 0.035 280) 100%);",
-        "border-right: 1px solid var(--line);",
-        "padding: 40px 40px 32px;",
-        "display: flex; flex-direction: column; position: relative;",
-        "overflow: hidden;"
-      ]}>
+      <aside
+        class="hidden md:flex"
+        style={[
+          "width: 40%; min-width: 360px;",
+          "background: linear-gradient(155deg, oklch(96% 0.025 60) 0%, oklch(94% 0.035 280) 100%);",
+          "border-right: 1px solid var(--line);",
+          "padding: 40px 40px 32px;",
+          "flex-direction: column; position: relative;",
+          "overflow: hidden;"
+        ]}
+      >
         <div style={[
           "position: absolute; right: -120px; top: 60px; width: 360px; height: 360px;",
           "border-radius: 50%; filter: blur(80px); opacity: 0.4;",
@@ -155,10 +158,13 @@ defmodule KanbanWeb.AuthFrame do
         </div>
       </aside>
 
-      <main style={[
-        "flex: 1; display: flex; flex-direction: column;",
-        "padding: 40px 40px 24px;"
-      ]}>
+      <main
+        class="px-5 md:px-10"
+        style={[
+          "flex: 1; display: flex; flex-direction: column;",
+          "padding-top: 24px; padding-bottom: 24px;"
+        ]}
+      >
         <div style={[
           "display: flex; align-items: center; gap: 8px;",
           "font-size: 12px; color: var(--ink-3);"
@@ -178,31 +184,6 @@ defmodule KanbanWeb.AuthFrame do
           </div>
         </div>
 
-        <div style={[
-          "display: flex; align-items: center; gap: 14px;",
-          "font-size: 11.5px; color: var(--ink-3); justify-content: center;"
-        ]}>
-          <.link
-            navigate={~p"/issue"}
-            style="color: var(--ink-3); text-decoration: none;"
-          >
-            {gettext("Contact sales")}
-          </.link>
-          <span>&middot;</span>
-          <.link
-            navigate={~p"/resources"}
-            style="color: var(--ink-3); text-decoration: none;"
-          >
-            {gettext("Docs")}
-          </.link>
-          <span>&middot;</span>
-          <.link
-            href="#"
-            style="color: var(--ink-3); text-decoration: none;"
-          >
-            {gettext("Status")}
-          </.link>
-        </div>
       </main>
     </div>
     """

@@ -28,18 +28,6 @@ defmodule KanbanWeb.UserLive.Login do
         </p>
       </div>
 
-      <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 8px;">
-        <.sso_row provider={:google} />
-        <.sso_row provider={:github} />
-        <.sso_row provider={:saml} />
-      </div>
-
-      <div style="margin-top: 18px; display: flex; align-items: center; gap: 10px; color: var(--ink-4); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
-        <span style="flex: 1; height: 1px; background: var(--line);"></span>
-        {gettext("or with email")}
-        <span style="flex: 1; height: 1px; background: var(--line);"></span>
-      </div>
-
       <.form
         :let={f}
         for={@form}
@@ -47,7 +35,7 @@ defmodule KanbanWeb.UserLive.Login do
         action={~p"/users/log-in"}
         phx-submit="submit_password"
         phx-trigger-action={@trigger_submit}
-        style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;"
+        style="margin-top: 28px; display: flex; flex-direction: column; gap: 12px;"
       >
         <label style="display: flex; flex-direction: column; gap: 5px;">
           <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
@@ -103,10 +91,6 @@ defmodule KanbanWeb.UserLive.Login do
           <.primary_full_button kbd="↵" type="submit">{gettext("Sign in")}</.primary_full_button>
         </div>
       </.form>
-
-      <div style="margin-top: 18px; font-size: 11.5px; color: var(--ink-3); text-align: center;">
-        {gettext("Protected by SSO + 2FA. Sessions expire after 30 days of inactivity.")}
-      </div>
     </.auth_frame>
     """
   end

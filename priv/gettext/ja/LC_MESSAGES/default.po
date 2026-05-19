@@ -130,7 +130,7 @@ msgstr "メールが正常に変更されました。"
 msgid "New password"
 msgstr "新しいパスワード"
 
-#: lib/kanban_web/live/user_live/login.ex:71
+#: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:86
 #: lib/kanban_web/live/user_live/settings.ex:34
 #: lib/kanban_web/live/user_live/settings.ex:95
@@ -720,7 +720,6 @@ msgstr "まだコメントがありません"
 msgid "No history available"
 msgstr "利用可能な履歴がありません"
 
-#: lib/kanban_web/components/auth_frame.ex:203
 #: lib/kanban_web/components/task_metadata_grid.ex:60
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/form_component.html.heex:130
@@ -3161,7 +3160,7 @@ msgstr "ボード編集時に field_visibility を永続化"
 msgid "Pricing"
 msgstr "料金"
 
-#: lib/kanban_web/components/auth_frame.ex:132
+#: lib/kanban_web/components/auth_frame.ex:135
 #: lib/kanban_web/components/marketing_closing.ex:107
 #, elixir-autogen, elixir-format
 msgid "Privacy"
@@ -3195,7 +3194,7 @@ msgstr "AIを含めた本物のメトリクス"
 msgid "Review at the speed of approval"
 msgstr "承認するスピードでレビュー"
 
-#: lib/kanban_web/components/auth_frame.ex:144
+#: lib/kanban_web/components/auth_frame.ex:147
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
@@ -3207,7 +3206,7 @@ msgstr "セキュリティ"
 #: lib/kanban_web/components/marketing_components.ex:305
 #: lib/kanban_web/live/user_live/confirmation.ex:55
 #: lib/kanban_web/live/user_live/login.ex:22
-#: lib/kanban_web/live/user_live/login.ex:103
+#: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:19
 #, elixir-autogen, elixir-format
 msgid "Sign in"
@@ -5576,7 +5575,7 @@ msgstr "Strideがどのように作られたか、誰のためのものか、ど
 msgid "Key collaboration features"
 msgstr "主な協働機能"
 
-#: lib/kanban_web/components/auth_frame.ex:331
+#: lib/kanban_web/components/auth_frame.ex:312
 #, elixir-autogen, elixir-format
 msgid "A task structure that AI agents can actually pull from."
 msgstr "AIエージェントが実際にプルできるタスク構造。"
@@ -5591,12 +5590,12 @@ msgstr "利用規約"
 msgid "Account confirmed"
 msgstr "アカウントが確認されました！"
 
-#: lib/kanban_web/components/auth_frame.ex:317
+#: lib/kanban_web/components/auth_frame.ex:298
 #, elixir-autogen, elixir-format
 msgid "Agents finally have somewhere good to work."
 msgstr "エージェントがついに快適に働ける場所を得ました。"
 
-#: lib/kanban_web/components/auth_frame.ex:153
+#: lib/kanban_web/components/auth_frame.ex:156
 #, elixir-autogen, elixir-format
 msgid "All systems normal"
 msgstr "すべてのシステムが正常"
@@ -5651,14 +5650,9 @@ msgstr "強力なパスワードを選んで確認してください。変更が
 msgid "Confirming your account…"
 msgstr "アカウントを確認中..."
 
-#: lib/kanban_web/components/auth_frame.ex:189
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Contact sales"
-msgstr "営業に問い合わせる"
-
-#: lib/kanban_web/components/auth_frame.ex:354
-#: lib/kanban_web/components/auth_frame.ex:355
-#: lib/kanban_web/components/auth_frame.ex:356
+#: lib/kanban_web/components/auth_frame.ex:335
+#: lib/kanban_web/components/auth_frame.ex:336
+#: lib/kanban_web/components/auth_frame.ex:337
 #, elixir-autogen, elixir-format
 msgid "Continue with %{provider}"
 msgstr "%{provider} で続行"
@@ -5673,15 +5667,10 @@ msgstr "アカウントを作成"
 msgid "Create your account"
 msgstr "アカウントを作成"
 
-#: lib/kanban_web/components/auth_frame.ex:339
+#: lib/kanban_web/components/auth_frame.ex:320
 #, elixir-autogen, elixir-format
 msgid "Dani O · Platform, Stride"
 msgstr "Dani O · プラットフォーム, Stride"
-
-#: lib/kanban_web/components/auth_frame.ex:196
-#, elixir-autogen, elixir-format
-msgid "Docs"
-msgstr "ドキュメント"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:164
 #, elixir-autogen, elixir-format, fuzzy
@@ -5693,7 +5682,7 @@ msgstr "開発手法を近代化する確立された企業。"
 msgid "For agents:"
 msgstr "エージェント向け"
 
-#: lib/kanban_web/live/user_live/login.ex:77
+#: lib/kanban_web/live/user_live/login.ex:65
 #, elixir-autogen, elixir-format
 msgid "Forgot?"
 msgstr "お忘れですか?"
@@ -5713,12 +5702,12 @@ msgstr "少々お待ちください — すぐに完了します。"
 msgid "I agree to the"
 msgstr "次に同意します:"
 
-#: lib/kanban_web/components/auth_frame.ex:318
+#: lib/kanban_web/components/auth_frame.ex:299
 #, elixir-autogen, elixir-format
 msgid "Jamie K · Engineering Lead, letstango.ca"
 msgstr "Jamie K · エンジニアリングリード, letstango.ca"
 
-#: lib/kanban_web/live/user_live/login.ex:99
+#: lib/kanban_web/live/user_live/login.ex:87
 #, elixir-autogen, elixir-format
 msgid "Keep me signed in on this device"
 msgstr "このデバイスでサインインを維持"
@@ -5728,8 +5717,8 @@ msgstr "このデバイスでサインインを維持"
 msgid "Manage your account profile and password. Changes apply to your account immediately."
 msgstr "アカウントのプロフィールとパスワードを管理します。変更はすぐにアカウントに反映されます。"
 
-#: lib/kanban_web/components/auth_frame.ex:325
-#: lib/kanban_web/components/auth_frame.ex:346
+#: lib/kanban_web/components/auth_frame.ex:306
+#: lib/kanban_web/components/auth_frame.ex:327
 #, elixir-autogen, elixir-format
 msgid "Mei L · CTO, Carafe"
 msgstr "Mei L · CTO, Carafe"
@@ -5750,11 +5739,6 @@ msgstr "見つかりません"
 msgid "Profile"
 msgstr "プロフィール"
 
-#: lib/kanban_web/live/user_live/login.ex:108
-#, elixir-autogen, elixir-format
-msgid "Protected by SSO + 2FA. Sessions expire after 30 days of inactivity."
-msgstr "SSO + 2FAで保護。セッションは30日間の非活動で失効します。"
-
 #: lib/kanban_web/controllers/page_html/tango.html.heex:167
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Public and private sector teams tackling complex technical challenges."
@@ -5770,7 +5754,7 @@ msgstr "Strideアプリケーションのリリースノート。"
 msgid "Reset your password"
 msgstr "パスワードをリセット"
 
-#: lib/kanban_web/components/auth_frame.ex:332
+#: lib/kanban_web/components/auth_frame.ex:313
 #, elixir-autogen, elixir-format
 msgid "Rohan S · Infra, Stride"
 msgstr "Rohan S · インフラ, Stride"
@@ -5780,7 +5764,7 @@ msgstr "Rohan S · インフラ, Stride"
 msgid "Save password"
 msgstr "パスワードを保存"
 
-#: lib/kanban_web/components/auth_frame.ex:345
+#: lib/kanban_web/components/auth_frame.ex:326
 #, elixir-autogen, elixir-format
 msgid "Security model is built for agents, not retrofitted for them."
 msgstr "セキュリティモデルはエージェント向けに最初から作られており、後付けではありません。"
@@ -5800,7 +5784,7 @@ msgstr "品質を犠牲にせず素早く動きたいスタートアップ。"
 msgid "Tango"
 msgstr "Tango"
 
-#: lib/kanban_web/components/auth_frame.ex:138
+#: lib/kanban_web/components/auth_frame.ex:141
 #, elixir-autogen, elixir-format
 msgid "Terms"
 msgstr "利用規約"
@@ -5815,7 +5799,7 @@ msgstr "利用規約"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Strideを支える人々とAIコラボレーター。"
 
-#: lib/kanban_web/components/auth_frame.ex:338
+#: lib/kanban_web/components/auth_frame.ex:319
 #, elixir-autogen, elixir-format
 msgid "Tokens rotate, claims survive. That alone was worth the switch."
 msgstr "トークンはローテーションし、クレームは生き残る。それだけでも切り替える価値がありました。"
@@ -5830,7 +5814,7 @@ msgstr "プロフィールを更新"
 msgid "Verifying your confirmation link…"
 msgstr "確認リンクを検証中…"
 
-#: lib/kanban_web/components/auth_frame.ex:324
+#: lib/kanban_web/components/auth_frame.ex:305
 #, elixir-autogen, elixir-format
 msgid "We replaced our backlog with Stride and shipped 38%% more in Q2."
 msgstr "バックログをStrideに置き換えた結果、Q2には38%%多く出荷しました。"
@@ -5851,7 +5835,7 @@ msgid "Welcome back. Use the same method you used last time."
 msgstr "お帰りなさい。前回と同じ方法をご利用ください。"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:39
-#: lib/kanban_web/live/user_live/login.ex:54
+#: lib/kanban_web/live/user_live/login.ex:42
 #: lib/kanban_web/live/user_live/registration.ex:70
 #, elixir-autogen, elixir-format
 msgid "Work email"
@@ -5892,7 +5876,6 @@ msgstr "名前 · メール"
 msgid "not"
 msgstr "ではなく"
 
-#: lib/kanban_web/live/user_live/login.ex:39
 #: lib/kanban_web/live/user_live/registration.ex:39
 #, elixir-autogen, elixir-format
 msgid "or with email"

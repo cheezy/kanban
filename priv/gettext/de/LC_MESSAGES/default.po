@@ -130,7 +130,7 @@ msgstr "E-Mail erfolgreich geändert."
 msgid "New password"
 msgstr "Neues Passwort"
 
-#: lib/kanban_web/live/user_live/login.ex:71
+#: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:86
 #: lib/kanban_web/live/user_live/settings.ex:34
 #: lib/kanban_web/live/user_live/settings.ex:95
@@ -720,7 +720,6 @@ msgstr "Noch keine Kommentare"
 msgid "No history available"
 msgstr "Kein Verlauf verfügbar"
 
-#: lib/kanban_web/components/auth_frame.ex:203
 #: lib/kanban_web/components/task_metadata_grid.ex:60
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/form_component.html.heex:130
@@ -3164,7 +3163,7 @@ msgstr "field_visibility beim Bearbeiten des Boards persistieren"
 msgid "Pricing"
 msgstr "Preise"
 
-#: lib/kanban_web/components/auth_frame.ex:132
+#: lib/kanban_web/components/auth_frame.ex:135
 #: lib/kanban_web/components/marketing_closing.ex:107
 #, elixir-autogen, elixir-format
 msgid "Privacy"
@@ -3198,7 +3197,7 @@ msgstr "Echte Metriken, die KI einbeziehen"
 msgid "Review at the speed of approval"
 msgstr "Überprüfung im Tempo der Genehmigung"
 
-#: lib/kanban_web/components/auth_frame.ex:144
+#: lib/kanban_web/components/auth_frame.ex:147
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
@@ -3210,7 +3209,7 @@ msgstr "Sicherheit"
 #: lib/kanban_web/components/marketing_components.ex:305
 #: lib/kanban_web/live/user_live/confirmation.ex:55
 #: lib/kanban_web/live/user_live/login.ex:22
-#: lib/kanban_web/live/user_live/login.ex:103
+#: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:19
 #, elixir-autogen, elixir-format
 msgid "Sign in"
@@ -5588,7 +5587,7 @@ msgstr "Wie Stride entstand, für wen es ist und wie man sich beteiligt."
 msgid "Key collaboration features"
 msgstr "Wichtige Kollaborationsfunktionen"
 
-#: lib/kanban_web/components/auth_frame.ex:331
+#: lib/kanban_web/components/auth_frame.ex:312
 #, elixir-autogen, elixir-format
 msgid "A task structure that AI agents can actually pull from."
 msgstr "Eine Aufgabenstruktur, aus der KI-Agenten tatsächlich ziehen können."
@@ -5603,12 +5602,12 @@ msgstr "Richtlinie zur akzeptablen Nutzung"
 msgid "Account confirmed"
 msgstr "Konto bestätigt!"
 
-#: lib/kanban_web/components/auth_frame.ex:317
+#: lib/kanban_web/components/auth_frame.ex:298
 #, elixir-autogen, elixir-format
 msgid "Agents finally have somewhere good to work."
 msgstr "Agenten haben endlich einen guten Ort zum Arbeiten."
 
-#: lib/kanban_web/components/auth_frame.ex:153
+#: lib/kanban_web/components/auth_frame.ex:156
 #, elixir-autogen, elixir-format
 msgid "All systems normal"
 msgstr "Alle Systeme normal"
@@ -5663,14 +5662,9 @@ msgstr "Wählen Sie ein starkes Passwort und bestätigen Sie es. Sie bleiben nac
 msgid "Confirming your account…"
 msgstr "Ihr Konto wird bestätigt..."
 
-#: lib/kanban_web/components/auth_frame.ex:189
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Contact sales"
-msgstr "Vertrieb kontaktieren"
-
-#: lib/kanban_web/components/auth_frame.ex:354
-#: lib/kanban_web/components/auth_frame.ex:355
-#: lib/kanban_web/components/auth_frame.ex:356
+#: lib/kanban_web/components/auth_frame.ex:335
+#: lib/kanban_web/components/auth_frame.ex:336
+#: lib/kanban_web/components/auth_frame.ex:337
 #, elixir-autogen, elixir-format
 msgid "Continue with %{provider}"
 msgstr "Mit %{provider} fortfahren"
@@ -5685,15 +5679,10 @@ msgstr "Konto erstellen"
 msgid "Create your account"
 msgstr "Erstellen Sie Ihr Konto"
 
-#: lib/kanban_web/components/auth_frame.ex:339
+#: lib/kanban_web/components/auth_frame.ex:320
 #, elixir-autogen, elixir-format
 msgid "Dani O · Platform, Stride"
 msgstr "Dani O · Plattform, Stride"
-
-#: lib/kanban_web/components/auth_frame.ex:196
-#, elixir-autogen, elixir-format
-msgid "Docs"
-msgstr "Dokumentation"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:164
 #, elixir-autogen, elixir-format, fuzzy
@@ -5705,7 +5694,7 @@ msgstr "Etablierte Unternehmen, die ihre Entwicklungspraktiken modernisieren."
 msgid "For agents:"
 msgstr "Für Agenten"
 
-#: lib/kanban_web/live/user_live/login.ex:77
+#: lib/kanban_web/live/user_live/login.ex:65
 #, elixir-autogen, elixir-format
 msgid "Forgot?"
 msgstr "Vergessen?"
@@ -5725,12 +5714,12 @@ msgstr "Bitte warten — das dauert nur einen Moment."
 msgid "I agree to the"
 msgstr "Ich akzeptiere die"
 
-#: lib/kanban_web/components/auth_frame.ex:318
+#: lib/kanban_web/components/auth_frame.ex:299
 #, elixir-autogen, elixir-format
 msgid "Jamie K · Engineering Lead, letstango.ca"
 msgstr "Jamie K · Engineering Lead, letstango.ca"
 
-#: lib/kanban_web/live/user_live/login.ex:99
+#: lib/kanban_web/live/user_live/login.ex:87
 #, elixir-autogen, elixir-format
 msgid "Keep me signed in on this device"
 msgstr "Auf diesem Gerät angemeldet bleiben"
@@ -5740,8 +5729,8 @@ msgstr "Auf diesem Gerät angemeldet bleiben"
 msgid "Manage your account profile and password. Changes apply to your account immediately."
 msgstr "Verwalten Sie Ihr Kontoprofil und Passwort. Änderungen werden sofort auf Ihr Konto angewendet."
 
-#: lib/kanban_web/components/auth_frame.ex:325
-#: lib/kanban_web/components/auth_frame.ex:346
+#: lib/kanban_web/components/auth_frame.ex:306
+#: lib/kanban_web/components/auth_frame.ex:327
 #, elixir-autogen, elixir-format
 msgid "Mei L · CTO, Carafe"
 msgstr "Mei L · CTO, Carafe"
@@ -5762,11 +5751,6 @@ msgstr "Nicht gefunden"
 msgid "Profile"
 msgstr "Profil aktualisiert."
 
-#: lib/kanban_web/live/user_live/login.ex:108
-#, elixir-autogen, elixir-format
-msgid "Protected by SSO + 2FA. Sessions expire after 30 days of inactivity."
-msgstr "Geschützt durch SSO + 2FA. Sitzungen laufen nach 30 Tagen Inaktivität ab."
-
 #: lib/kanban_web/controllers/page_html/tango.html.heex:167
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Public and private sector teams tackling complex technical challenges."
@@ -5782,7 +5766,7 @@ msgstr "Release Notes für die Stride-Anwendung."
 msgid "Reset your password"
 msgstr "Setzen Sie Ihr Passwort zurück"
 
-#: lib/kanban_web/components/auth_frame.ex:332
+#: lib/kanban_web/components/auth_frame.ex:313
 #, elixir-autogen, elixir-format
 msgid "Rohan S · Infra, Stride"
 msgstr "Rohan S · Infrastruktur, Stride"
@@ -5792,7 +5776,7 @@ msgstr "Rohan S · Infrastruktur, Stride"
 msgid "Save password"
 msgstr "Passwort speichern"
 
-#: lib/kanban_web/components/auth_frame.ex:345
+#: lib/kanban_web/components/auth_frame.ex:326
 #, elixir-autogen, elixir-format
 msgid "Security model is built for agents, not retrofitted for them."
 msgstr "Das Sicherheitsmodell wurde für Agenten gebaut, nicht nachträglich angepasst."
@@ -5812,7 +5796,7 @@ msgstr "Start-ups, die schnell vorankommen wollen, ohne Qualität zu opfern."
 msgid "Tango"
 msgstr "Tango"
 
-#: lib/kanban_web/components/auth_frame.ex:138
+#: lib/kanban_web/components/auth_frame.ex:141
 #, elixir-autogen, elixir-format
 msgid "Terms"
 msgstr "Bedingungen"
@@ -5827,7 +5811,7 @@ msgstr "Nutzungsbedingungen"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Die Menschen und der KI-Mitarbeiter hinter Stride."
 
-#: lib/kanban_web/components/auth_frame.ex:338
+#: lib/kanban_web/components/auth_frame.ex:319
 #, elixir-autogen, elixir-format
 msgid "Tokens rotate, claims survive. That alone was worth the switch."
 msgstr "Tokens rotieren, Claims überleben. Allein das war den Wechsel wert."
@@ -5842,7 +5826,7 @@ msgstr "Profil aktualisieren"
 msgid "Verifying your confirmation link…"
 msgstr "Ihr Bestätigungslink wird überprüft…"
 
-#: lib/kanban_web/components/auth_frame.ex:324
+#: lib/kanban_web/components/auth_frame.ex:305
 #, elixir-autogen, elixir-format
 msgid "We replaced our backlog with Stride and shipped 38%% more in Q2."
 msgstr "Wir haben unser Backlog durch Stride ersetzt und im 2. Quartal 38 %% mehr ausgeliefert."
@@ -5863,7 +5847,7 @@ msgid "Welcome back. Use the same method you used last time."
 msgstr "Willkommen zurück. Verwenden Sie dieselbe Methode wie beim letzten Mal."
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:39
-#: lib/kanban_web/live/user_live/login.ex:54
+#: lib/kanban_web/live/user_live/login.ex:42
 #: lib/kanban_web/live/user_live/registration.ex:70
 #, elixir-autogen, elixir-format
 msgid "Work email"
@@ -5904,7 +5888,6 @@ msgstr "Name · E-Mail"
 msgid "not"
 msgstr "nicht"
 
-#: lib/kanban_web/live/user_live/login.ex:39
 #: lib/kanban_web/live/user_live/registration.ex:39
 #, elixir-autogen, elixir-format
 msgid "or with email"
