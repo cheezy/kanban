@@ -494,6 +494,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "renders bare line count when the reviewer subagent was skipped",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           acceptance_criteria: "Crit 1\nCrit 2\nCrit 3",
@@ -512,6 +513,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "renders 'N/N' green pass when reviewer dispatched + 0 issues",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           acceptance_criteria: "A\nB\nC\nD",
@@ -529,6 +531,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "renders 'N/N · X issues' when reviewer dispatched + issues found",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           acceptance_criteria: "A\nB\nC\nD",
@@ -582,6 +585,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "Patterns cell reads 'followed' when the Patterns followed section is present",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           review_report: "### Patterns followed\n\nUsed the documented pattern."
@@ -595,6 +599,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "Pitfalls cell renders 'none violated' when the section says so",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           review_report: "### Pitfalls\n\nNone violated. All checks honoured."
@@ -608,6 +613,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "Pitfalls cell renders 'violated' when violations are called out",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           review_report: "### Pitfalls\n\nTwo pitfalls violated — see findings."
@@ -625,6 +631,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "renders the report markdown as styled HTML when present",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           review_report: "## Review Summary\n\nApproved with 0 findings."
@@ -639,6 +646,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "falls back to reviewer_result.summary when there is no review_report",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           review_report: nil,
@@ -671,6 +679,7 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "renders the completion_summary section when present",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
+
       _task =
         pending_task!(column, %{
           completion_summary: "Implemented the change end to end and ran the test suite locally."

@@ -235,9 +235,7 @@ defmodule KanbanWeb.TaskCard do
 
     ~H"""
     <div
-      :if={
-        @changes_requested? or (@skipped? or @criteria) || @issues || @files
-      }
+      :if={(@changes_requested? or (@skipped? or @criteria)) || @issues || @files}
       style={[
         "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
         "font-size: 10.5px; color: var(--ink-3);"

@@ -183,7 +183,6 @@ defmodule KanbanWeb.AuthFrame do
             {render_slot(@inner_block)}
           </div>
         </div>
-
       </main>
     </div>
     """

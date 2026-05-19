@@ -231,7 +231,163 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_reviewer_result/1 — structured issues and acceptance_criteria" do
+    test "accepts well-formed structured payload" do
+      payload = %{
+        "dispatched" => true,
+        "summary" => @valid_summary,
+        "duration_ms" => 8_000,
+        "acceptance_criteria_checked" => 2,
+        "issues_found" => 2,
+        "issues" => [
+          %{
+            "severity" => "critical",
+            "category" => "pitfall",
+            "description" => "Bypassed CSRF check"
+          },
+          %{"severity" => "minor", "category" => "code_quality"}
+        ],
+        "acceptance_criteria" => [
+          %{"criterion" => "Validator accepts arrays", "status" => "met"},
+          %{"criterion" => "Status enum enforced", "status" => "not_met"}
+        ]
+      }
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts severity and category as atoms" do
+      payload =
+        base_reviewer_payload()
+        |> Map.put("issues", [%{"severity" => :important, "category" => :testing}])
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts empty issues array" do
+      payload = Map.put(base_reviewer_payload(), "issues", [])
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts empty acceptance_criteria array" do
+      payload = Map.put(base_reviewer_payload(), "acceptance_criteria", [])
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "tolerates unknown fields inside an issue entry" do
+      payload =
+        Map.put(base_reviewer_payload(), "issues", [
+          %{
+            "severity" => "minor",
+            "category" => "pattern",
+            "file" => "lib/foo.ex",
+            "line" => 42,
+            "future_field" => %{"nested" => true}
+          }
+        ])
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects malformed severity enum" do
+      payload =
+        Map.put(base_reviewer_payload(), "issues", [
+          %{"severity" => "blocker", "category" => "pitfall"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :issue_severity)
+      assert msg =~ "issues[0]"
+      assert msg =~ "critical, important, minor"
+    end
+
+    test "rejects malformed category enum" do
+      payload =
+        Map.put(base_reviewer_payload(), "issues", [
+          %{"severity" => "minor", "category" => "performance"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :issue_category)
+      assert msg =~ "issues[0]"
+    end
+
+    test "rejects issue entry missing severity" do
+      payload = Map.put(base_reviewer_payload(), "issues", [%{"category" => "pitfall"}])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :issue_severity)
+      assert msg =~ "missing severity"
+    end
+
+    test "rejects non-map issue entry" do
+      payload = Map.put(base_reviewer_payload(), "issues", ["not a map"])
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :issue_entry)
+      assert msg =~ "issues[0]"
+    end
+
+    test "rejects non-list issues field" do
+      payload = Map.put(base_reviewer_payload(), "issues", "not a list")
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :issues)
+    end
+
+    test "rejects malformed acceptance_criterion status with space form" do
+      payload =
+        Map.put(base_reviewer_payload(), "acceptance_criteria", [
+          %{"criterion" => "Status enum", "status" => "not met"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :criterion_status)
+      assert msg =~ "acceptance_criteria[0]"
+      assert msg =~ "met, not_met"
+    end
+
+    test "rejects acceptance_criterion missing status" do
+      payload =
+        Map.put(base_reviewer_payload(), "acceptance_criteria", [
+          %{"criterion" => "Status enum"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :criterion_status)
+      assert msg =~ "missing status"
+    end
+
+    test "rejects non-list acceptance_criteria field" do
+      payload = Map.put(base_reviewer_payload(), "acceptance_criteria", %{"oops" => true})
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :acceptance_criteria)
+    end
+
+    test "collects errors from second entry when first is well-formed" do
+      payload =
+        Map.put(base_reviewer_payload(), "issues", [
+          %{"severity" => "critical", "category" => "pitfall"},
+          %{"severity" => "wrong", "category" => "pattern"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      severity_errors = Enum.filter(errors, fn {f, _} -> f == :issue_severity end)
+      assert length(severity_errors) == 1
+      assert {_field, msg} = hd(severity_errors)
+      assert msg =~ "issues[1]"
+    end
+  end
+
   defp error_for(errors, field) do
     Enum.find(errors, fn {f, _msg} -> f == field end)
+  end
+
+  defp base_reviewer_payload do
+    %{
+      "dispatched" => true,
+      "summary" => @valid_summary,
+      "duration_ms" => 8_000,
+      "acceptance_criteria_checked" => 0,
+      "issues_found" => 0
+    }
   end
 end

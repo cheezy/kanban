@@ -25,6 +25,10 @@ defmodule Kanban.Tasks.CompletionValidation do
     :self_reported_review
   ]
 
+  @severity_enum [:critical, :important, :minor]
+  @category_enum [:acceptance_criteria, :pitfall, :pattern, :testing, :code_quality]
+  @status_enum [:met, :not_met]
+
   @min_summary_length 40
 
   @doc """
@@ -95,6 +99,8 @@ defmodule Kanban.Tasks.CompletionValidation do
     |> check_duration_ms(result)
     |> check_nn_int(result, "acceptance_criteria_checked", :acceptance_criteria_checked)
     |> check_nn_int(result, "issues_found", :issues_found)
+    |> check_issues(result)
+    |> check_acceptance_criteria(result)
   end
 
   defp check_by_dispatched(errors, %{"dispatched" => true} = result, :explorer) do
@@ -161,4 +167,87 @@ defmodule Kanban.Tasks.CompletionValidation do
   rescue
     ArgumentError -> :error
   end
+
+  # Optional structured `issues` array — when present, each entry must be a
+  # map with a recognized `severity` and `category`. Absent or empty list is
+  # accepted; a non-list value at the key is rejected. Entry-level errors
+  # use static atom keys (`:issue_entry`, `:issue_severity`, `:issue_category`)
+  # with the array position embedded in the message — this avoids creating
+  # runtime atoms per index.
+  defp check_issues(errors, %{"issues" => issues}) when is_list(issues) do
+    issues
+    |> Enum.with_index()
+    |> Enum.reduce(errors, fn {entry, idx}, acc -> check_issue_entry(acc, entry, idx) end)
+  end
+
+  defp check_issues(errors, %{"issues" => _}),
+    do: [{:issues, "must be a list"} | errors]
+
+  defp check_issues(errors, _), do: errors
+
+  defp check_issue_entry(errors, entry, idx) when is_map(entry) do
+    errors
+    |> check_enum(entry, "severity", @severity_enum, :issue_severity, "issues[#{idx}]")
+    |> check_enum(entry, "category", @category_enum, :issue_category, "issues[#{idx}]")
+  end
+
+  defp check_issue_entry(errors, _entry, idx),
+    do: [{:issue_entry, "issues[#{idx}] must be a map"} | errors]
+
+  # Optional structured `acceptance_criteria` array — when present, each
+  # entry must be a map with a recognized `status` (met / not_met).
+  defp check_acceptance_criteria(errors, %{"acceptance_criteria" => criteria})
+       when is_list(criteria) do
+    criteria
+    |> Enum.with_index()
+    |> Enum.reduce(errors, fn {entry, idx}, acc -> check_criterion_entry(acc, entry, idx) end)
+  end
+
+  defp check_acceptance_criteria(errors, %{"acceptance_criteria" => _}),
+    do: [{:acceptance_criteria, "must be a list"} | errors]
+
+  defp check_acceptance_criteria(errors, _), do: errors
+
+  defp check_criterion_entry(errors, entry, idx) when is_map(entry) do
+    check_enum(
+      errors,
+      entry,
+      "status",
+      @status_enum,
+      :criterion_status,
+      "acceptance_criteria[#{idx}]"
+    )
+  end
+
+  defp check_criterion_entry(errors, _entry, idx),
+    do: [{:criterion_entry, "acceptance_criteria[#{idx}] must be a map"} | errors]
+
+  # Validates that `map[key]` is present and decodes to a member of `allowed`.
+  # Mirrors the binary-or-atom acceptance pattern used by `check_reason/2`.
+  # `prefix` is the entry locator (e.g., `"issues[0]"`) used in messages.
+  defp check_enum(errors, map, key, allowed, field, prefix) do
+    case decode_enum_field(Map.get(map, key), allowed) do
+      :ok -> errors
+      :missing -> [{field, "#{prefix} is missing #{key}"} | errors]
+      :invalid -> [{field, "#{prefix} #{key} #{enum_message(allowed)}"} | errors]
+    end
+  end
+
+  defp decode_enum_field(nil, _allowed), do: :missing
+
+  defp decode_enum_field(value, allowed) when is_binary(value) do
+    atom = String.to_existing_atom(value)
+    if atom in allowed, do: :ok, else: :invalid
+  rescue
+    ArgumentError -> :invalid
+  end
+
+  defp decode_enum_field(value, allowed) when is_atom(value) do
+    if value in allowed, do: :ok, else: :invalid
+  end
+
+  defp decode_enum_field(_value, _allowed), do: :invalid
+
+  defp enum_message(allowed),
+    do: "must be one of: " <> Enum.map_join(allowed, ", ", &Atom.to_string/1)
 end
