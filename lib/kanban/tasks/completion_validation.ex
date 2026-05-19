@@ -28,6 +28,11 @@ defmodule Kanban.Tasks.CompletionValidation do
   @severity_enum [:critical, :important, :minor]
   @category_enum [:acceptance_criteria, :pitfall, :pattern, :testing, :code_quality]
   @status_enum [:met, :not_met]
+  @section_status_enum [:passed, :failed, :not_assessed]
+
+  # Permissive semver: MAJOR.MINOR with optional .PATCH, pre-release, and
+  # build metadata. Accepts "1.0", "1.2.3", "2.0.0-beta.1", "1.0+build.7".
+  @semver_regex ~r/^\d+\.\d+(\.\d+)?(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/
 
   @min_summary_length 40
 
@@ -101,6 +106,15 @@ defmodule Kanban.Tasks.CompletionValidation do
     |> check_nn_int(result, "issues_found", :issues_found)
     |> check_issues(result)
     |> check_acceptance_criteria(result)
+    |> check_section_verdict(
+      result,
+      "testing_strategy",
+      :testing_strategy_status,
+      :testing_strategy_entry
+    )
+    |> check_section_verdict(result, "patterns", :patterns_status, :patterns_entry)
+    |> check_section_verdict(result, "pitfalls", :pitfalls_status, :pitfalls_entry)
+    |> check_schema_version(result)
   end
 
   defp check_by_dispatched(errors, %{"dispatched" => true} = result, :explorer) do
@@ -221,6 +235,47 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   defp check_criterion_entry(errors, _entry, idx),
     do: [{:criterion_entry, "acceptance_criteria[#{idx}] must be a map"} | errors]
+
+  # Optional section verdict (testing_strategy / patterns / pitfalls). When
+  # present, must be a map with a recognized `status` and an optional
+  # `notes` string. Absence is accepted; non-map values are rejected.
+  defp check_section_verdict(errors, result, key, status_field, entry_field) do
+    case Map.get(result, key) do
+      nil ->
+        errors
+
+      verdict when is_map(verdict) ->
+        errors
+        |> check_enum(verdict, "status", @section_status_enum, status_field, key)
+        |> check_section_notes(verdict, key)
+
+      _ ->
+        [{entry_field, "#{key} must be a map"} | errors]
+    end
+  end
+
+  defp check_section_notes(errors, verdict, key) do
+    case Map.get(verdict, "notes") do
+      nil -> errors
+      notes when is_binary(notes) -> errors
+      _ -> [{:notes, "#{key}.notes must be a string"} | errors]
+    end
+  end
+
+  # Optional `schema_version` — permissive semver shape, gates nothing on
+  # specific version values. Tolerates absence entirely.
+  defp check_schema_version(errors, %{"schema_version" => v}) when is_binary(v) do
+    if Regex.match?(@semver_regex, v) do
+      errors
+    else
+      [{:schema_version, "must be a semver-shaped string (e.g., \"1.0\", \"1.2.3\")"} | errors]
+    end
+  end
+
+  defp check_schema_version(errors, %{"schema_version" => _}),
+    do: [{:schema_version, "must be a semver-shaped string"} | errors]
+
+  defp check_schema_version(errors, _), do: errors
 
   # Validates that `map[key]` is present and decodes to a member of `allowed`.
   # Mirrors the binary-or-atom acceptance pattern used by `check_reason/2`.

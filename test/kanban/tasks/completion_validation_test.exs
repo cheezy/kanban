@@ -377,6 +377,134 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_reviewer_result/1 — section verdicts and schema_version" do
+    test "accepts well-formed testing_strategy verdict with notes" do
+      payload =
+        Map.put(base_reviewer_payload(), "testing_strategy", %{
+          "status" => "passed",
+          "notes" => "All five required test cases present."
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts patterns and pitfalls verdicts together" do
+      payload =
+        base_reviewer_payload()
+        |> Map.put("patterns", %{"status" => "passed"})
+        |> Map.put("pitfalls", %{"status" => "failed", "notes" => "Two pitfalls violated"})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts not_assessed status" do
+      payload =
+        Map.put(base_reviewer_payload(), "patterns", %{"status" => "not_assessed"})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts empty notes string" do
+      payload =
+        Map.put(base_reviewer_payload(), "testing_strategy", %{
+          "status" => "passed",
+          "notes" => ""
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects malformed status in testing_strategy" do
+      payload =
+        Map.put(base_reviewer_payload(), "testing_strategy", %{"status" => "ok"})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :testing_strategy_status)
+      assert msg =~ "testing_strategy"
+      assert msg =~ "passed, failed, not_assessed"
+    end
+
+    test "rejects malformed status in patterns" do
+      payload = Map.put(base_reviewer_payload(), "patterns", %{"status" => "great"})
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :patterns_status)
+    end
+
+    test "rejects malformed status in pitfalls" do
+      payload = Map.put(base_reviewer_payload(), "pitfalls", %{"status" => "broken"})
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :pitfalls_status)
+    end
+
+    test "rejects section verdict that is not a map" do
+      payload = Map.put(base_reviewer_payload(), "testing_strategy", "all good")
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :testing_strategy_entry)
+      assert msg =~ "must be a map"
+    end
+
+    test "rejects section verdict missing status" do
+      payload = Map.put(base_reviewer_payload(), "patterns", %{"notes" => "ok"})
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :patterns_status)
+      assert msg =~ "missing status"
+    end
+
+    test "rejects non-string notes" do
+      payload =
+        Map.put(base_reviewer_payload(), "pitfalls", %{"status" => "passed", "notes" => 42})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :notes)
+      assert msg =~ "pitfalls.notes"
+    end
+
+    test "accepts schema_version as MAJOR.MINOR" do
+      payload = Map.put(base_reviewer_payload(), "schema_version", "1.0")
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts schema_version as MAJOR.MINOR.PATCH" do
+      payload = Map.put(base_reviewer_payload(), "schema_version", "2.3.4")
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts schema_version with pre-release suffix" do
+      payload = Map.put(base_reviewer_payload(), "schema_version", "1.0.0-beta.1")
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects malformed schema_version" do
+      payload = Map.put(base_reviewer_payload(), "schema_version", "v1")
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :schema_version)
+      assert msg =~ "semver"
+    end
+
+    test "rejects non-string schema_version" do
+      payload = Map.put(base_reviewer_payload(), "schema_version", 1)
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :schema_version)
+    end
+
+    test "accepts payload with all new fields together" do
+      payload =
+        base_reviewer_payload()
+        |> Map.put("schema_version", "1.0")
+        |> Map.put("testing_strategy", %{"status" => "passed", "notes" => "5 cases"})
+        |> Map.put("patterns", %{"status" => "passed"})
+        |> Map.put("pitfalls", %{"status" => "passed", "notes" => "none violated"})
+        |> Map.put("issues", [%{"severity" => "minor", "category" => "code_quality"}])
+        |> Map.put("acceptance_criteria", [%{"criterion" => "X", "status" => "met"}])
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "legacy payload (no section verdicts, no schema_version) still validates" do
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(base_reviewer_payload())
+    end
+  end
+
   defp error_for(errors, field) do
     Enum.find(errors, fn {f, _msg} -> f == field end)
   end
