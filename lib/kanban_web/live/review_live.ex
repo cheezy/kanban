@@ -22,6 +22,7 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewDetailHeader
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
+  alias KanbanWeb.ReviewReportHelpers
   alias KanbanWeb.ReviewStatsStrip
 
   @impl true
@@ -253,12 +254,12 @@ defmodule KanbanWeb.ReviewLive do
               <ReviewStatsStrip.review_stats_strip
                 acceptance={acceptance_value(@selected)}
                 acceptance_passed={acceptance_passed(@selected)}
-                tests={testing_strategy_value(@selected)}
-                tests_passed={testing_strategy_passed(@selected)}
-                diff={patterns_value(@selected)}
-                diff_passed={patterns_passed(@selected)}
-                hooks={pitfalls_value(@selected)}
-                hooks_passed={pitfalls_passed(@selected)}
+                tests={ReviewReportHelpers.testing_strategy_value(@selected)}
+                tests_passed={ReviewReportHelpers.testing_strategy_passed(@selected)}
+                diff={ReviewReportHelpers.patterns_value(@selected)}
+                diff_passed={ReviewReportHelpers.patterns_passed(@selected)}
+                hooks={ReviewReportHelpers.pitfalls_value(@selected)}
+                hooks_passed={ReviewReportHelpers.pitfalls_passed(@selected)}
               />
 
               <section
@@ -572,163 +573,6 @@ defmodule KanbanWeb.ReviewLive do
       {:error, html, _warnings} -> html
     end
   end
-
-  # --- Testing strategy + Patterns & Pitfalls strip helpers ----------------
-  #
-  # These four helpers parse the report's "Required test cases", "Patterns
-  # followed", and "Pitfalls" sections to populate the two corresponding
-  # cells in the stats strip. Tone is green when the reviewer signed off,
-  # red when violations are called out, and neutral when the section is
-  # missing — the cell goes back to its em-dash default.
-
-  defp testing_strategy_value(task) do
-    case report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) do
-      nil ->
-        nil
-
-      body ->
-        n = count_list_items(body)
-
-        cond do
-          # Heading text often includes "(all present)" — surface that
-          # phrase as the cell value so it matches the report's wording.
-          all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) ->
-            ngettext(
-              "%{n} case · all present",
-              "%{n} cases · all present",
-              n,
-              n: n
-            )
-
-          n > 0 ->
-            ngettext("%{n} case", "%{n} cases", n, n: n)
-
-          true ->
-            gettext("reviewed")
-        end
-    end
-  end
-
-  defp testing_strategy_passed(task) do
-    cond do
-      all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
-      report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
-      true -> nil
-    end
-  end
-
-  defp patterns_value(task) do
-    case report_section(task, ~r/patterns\s+followed/i) do
-      nil -> nil
-      _body -> gettext("followed")
-    end
-  end
-
-  defp patterns_passed(task) do
-    if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
-  end
-
-  defp pitfalls_value(task) do
-    case report_section(task, ~r/pitfalls/i) do
-      nil ->
-        nil
-
-      body ->
-        if pitfalls_violated?(body) do
-          gettext("violated")
-        else
-          gettext("none violated")
-        end
-    end
-  end
-
-  defp pitfalls_passed(task) do
-    case report_section(task, ~r/pitfalls/i) do
-      nil -> nil
-      body -> not pitfalls_violated?(body)
-    end
-  end
-
-  # Extracts the body of a markdown heading matching the given regex —
-  # everything between the matched `###`/`##` line and the next heading.
-  # Returns `nil` when the report is missing or the section is absent.
-  defp report_section(%{review_report: report}, heading_regex)
-       when is_binary(report) and report != "" do
-    report
-    |> String.split(~r/\r?\n/)
-    |> Enum.split_while(fn line -> not heading_match?(line, heading_regex) end)
-    |> extract_section_body()
-  end
-
-  defp report_section(_, _), do: nil
-
-  defp extract_section_body({_, []}), do: nil
-
-  defp extract_section_body({_, [_heading | rest]}) do
-    rest
-    |> Enum.take_while(fn line -> not heading_line?(line) end)
-    |> Enum.join("\n")
-    |> String.trim()
-    |> nil_if_empty()
-  end
-
-  defp nil_if_empty(""), do: nil
-  defp nil_if_empty(text), do: text
-
-  defp heading_match?(line, regex) do
-    trimmed = String.trim(line)
-    String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed)
-  end
-
-  defp heading_line?(line), do: line |> String.trim() |> String.starts_with?("#")
-
-  # True when the section's heading text contains an "all present" /
-  # "all covered" affordance — reviewers use this to signal full coverage
-  # without having to spell out per-case verdicts.
-  defp all_present_heading?(%{review_report: report}, regex)
-       when is_binary(report) and report != "" do
-    report
-    |> String.split(~r/\r?\n/)
-    |> Enum.any?(fn line ->
-      trimmed = String.trim(line)
-
-      String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed) and
-        Regex.match?(~r/all\s+(present|covered|met)/i, trimmed)
-    end)
-  end
-
-  defp all_present_heading?(_, _), do: false
-
-  # Counts markdown list items (`- `, `* `, or `N. `) in a body string.
-  defp count_list_items(body) when is_binary(body) do
-    body
-    |> String.split(~r/\r?\n/)
-    |> Enum.count(fn line ->
-      trimmed = String.trim_leading(line)
-
-      String.starts_with?(trimmed, "- ") or String.starts_with?(trimmed, "* ") or
-        Regex.match?(~r/^\d+\.\s+/, trimmed)
-    end)
-  end
-
-  defp count_list_items(_), do: 0
-
-  defp pitfalls_violated?(body) when is_binary(body) do
-    cond do
-      # Explicit "none violated" / "no violations" / "all honored" wins.
-      Regex.match?(~r/(none\s+violated|no\s+violations|all\s+(honored|honoured))/i, body) ->
-        false
-
-      # Otherwise look for explicit violation language.
-      Regex.match?(~r/(violated|violations?)/i, body) ->
-        true
-
-      true ->
-        false
-    end
-  end
-
-  defp pitfalls_violated?(_), do: false
 
   defp present_text?(s) when is_binary(s), do: String.trim(s) != ""
   defp present_text?(_), do: false
