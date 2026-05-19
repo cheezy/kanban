@@ -16,6 +16,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.MetaItem
+  alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
   alias KanbanWeb.TaskTokens
@@ -282,9 +283,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               <.review_status_section task={@task} />
             <% end %>
 
-            <%= if @task.review_report && @task.review_report != "" do %>
+            <%= if review_panel_visible?(@task) do %>
               <SectionHead.section_head title={gettext("Review report")} />
-              <pre style="margin: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); white-space: pre-wrap; max-height: 384px; overflow-y: auto;"><%= @task.review_report %></pre>
+              <ReviewReportPanel.review_report_panel task={@task} />
             <% end %>
 
             <%= if @task.workflow_steps && @task.workflow_steps != [] do %>
@@ -600,6 +601,18 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp parent_goal_loaded?(%{parent: nil}), do: false
   defp parent_goal_loaded?(%{parent: _}), do: true
   defp parent_goal_loaded?(_), do: false
+
+  defp review_panel_visible?(task) do
+    has_reviewer_result?(task) or has_review_report?(task)
+  end
+
+  defp has_reviewer_result?(%{reviewer_result: %{} = result}), do: map_size(result) > 0
+  defp has_reviewer_result?(_), do: false
+
+  defp has_review_report?(%{review_report: report}) when is_binary(report) and report != "",
+    do: true
+
+  defp has_review_report?(_), do: false
 
   defp needs_review_pill_style do
     [

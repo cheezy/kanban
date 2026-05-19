@@ -1126,7 +1126,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Implemented OAuth with Google and GitHub providers"
     end
 
-    test "displays review_report section when review_report is present", %{board: board} do
+    test "displays review_report section via ReviewReportPanel when review_report is present",
+         %{board: board} do
       column = column_fixture(board)
 
       task =
@@ -1142,10 +1143,34 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Review report"
-      # SectionCard mono renders the body in the monospace stack.
-      assert result =~ "font-family: var(--font-mono)"
+      assert result =~ ~s(data-review-report-panel="fallback")
       assert result =~ "All acceptance criteria met."
       assert result =~ "No issues found."
+    end
+
+    test "displays review_report section via ReviewReportPanel when reviewer_result is present",
+         %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "summary" => "Reviewed all acceptance criteria; approved.",
+            "issues" => []
+          }
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Review report"
+      assert result =~ ~s(data-review-report-panel="structured")
+      assert result =~ "Reviewed all acceptance criteria; approved."
     end
 
     test "does not display review_report section when review_report is nil", %{task: task} do
