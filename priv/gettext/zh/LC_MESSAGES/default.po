@@ -51,7 +51,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
-#: lib/kanban_web/live/goal_live/show.ex:267
+#: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
 msgid "Done"
@@ -1076,6 +1076,7 @@ msgid "Approved"
 msgstr "已批准"
 
 #: lib/kanban_web/components/goal_sidebar.ex:67
+#: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
 #: lib/kanban_web/task_tokens.ex:24
 #, elixir-autogen, elixir-format
@@ -1313,7 +1314,7 @@ msgstr "失败时(将发生什么)"
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
 
-#: lib/kanban_web/live/goal_live/show.ex:268
+#: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
 #: lib/kanban_web/task_tokens.ex:25
@@ -1759,7 +1760,7 @@ msgstr "完整的 API 文档"
 #: lib/kanban_web/components/archive_filter_chips.ex:87
 #: lib/kanban_web/components/goal_progress_header.ex:67
 #: lib/kanban_web/components/task_metadata_grid.ex:84
-#: lib/kanban_web/live/goal_live/show.ex:233
+#: lib/kanban_web/live/goal_live/show.ex:244
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/live/task_live/view_component.ex:333
@@ -1866,7 +1867,7 @@ msgid "Archive task"
 msgstr "归档任务"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:23
-#: lib/kanban_web/live/goal_live/show.ex:109
+#: lib/kanban_web/live/goal_live/show.ex:121
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
@@ -2185,7 +2186,7 @@ msgstr "返回仪表盘"
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
-#: lib/kanban_web/live/goal_live/show.ex:263
+#: lib/kanban_web/live/goal_live/show.ex:286
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -2415,7 +2416,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
-#: lib/kanban_web/live/goal_live/show.ex:266
+#: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
@@ -3088,7 +3089,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
-#: lib/kanban_web/live/goal_live/show.ex:265
+#: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
 msgid "Doing"
@@ -3178,7 +3179,7 @@ msgstr "产品"
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
-#: lib/kanban_web/live/goal_live/show.ex:264
+#: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
 msgid "Ready"
@@ -4204,7 +4205,7 @@ msgstr[0] "%{count} 个活跃"
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
-#: lib/kanban_web/live/goal_live/show.ex:86
+#: lib/kanban_web/live/goal_live/show.ex:93
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "看板"
@@ -4347,7 +4348,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/agents_live.ex:80
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
-#: lib/kanban_web/live/goal_live/show.ex:82
+#: lib/kanban_web/live/goal_live/show.ex:89
 #: lib/kanban_web/live/metrics_live/workspace.ex:50
 #: lib/kanban_web/live/review_live.ex:92
 #, elixir-autogen, elixir-format
@@ -4359,12 +4360,12 @@ msgstr "工作区"
 msgid "children complete"
 msgstr "子项完成"
 
-#: lib/kanban_web/components/task_card.ex:335
+#: lib/kanban_web/components/task_card.ex:333
 #, elixir-autogen, elixir-format
 msgid "cycle %{time}"
 msgstr "周期 %{time}"
 
-#: lib/kanban_web/components/task_card.ex:418
+#: lib/kanban_web/components/task_card.ex:416
 #, elixir-autogen, elixir-format
 msgid "review"
 msgstr "评审"
@@ -4432,109 +4433,109 @@ msgstr "API令牌"
 msgid "Unrefined ideas land here. Triage to Ready when they have a why and acceptance criteria."
 msgstr "未细化的想法落在这里。当它们具备「为什么」和验收标准时,再分诊到「就绪」。"
 
-#: lib/kanban_web/components/task_card.ex:278
+#: lib/kanban_web/components/task_card.ex:276
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count} 项标准"
 
 #: lib/kanban_web/components/review_queue_item.ex:163
-#: lib/kanban_web/components/task_card.ex:301
-#: lib/kanban_web/components/task_card.ex:345
+#: lib/kanban_web/components/task_card.ex:299
+#: lib/kanban_web/components/task_card.ex:343
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
 msgstr[0] "%{count} 个文件"
 
-#: lib/kanban_web/components/task_card.ex:291
+#: lib/kanban_web/components/task_card.ex:289
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
 msgstr[0] "%{count} 个问题"
 
-#: lib/kanban_web/components/task_card.ex:275
+#: lib/kanban_web/components/task_card.ex:273
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria checked by the reviewer"
 msgstr "审核者核对过的验收标准"
 
-#: lib/kanban_web/components/task_card.ex:404
+#: lib/kanban_web/components/task_card.ex:402
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria defined for this task"
 msgstr "为此任务定义的验收标准"
 
-#: lib/kanban_web/components/task_card.ex:352
+#: lib/kanban_web/components/task_card.ex:350
 #, elixir-autogen, elixir-format
 msgid "Actual complexity recorded after completion"
 msgstr "完成后记录的实际复杂度"
 
-#: lib/kanban_web/components/task_card.ex:332
+#: lib/kanban_web/components/task_card.ex:330
 #, elixir-autogen, elixir-format
 msgid "Cycle time — elapsed from claim to completion"
 msgstr "周期时间 — 从认领到完成的间隔"
 
-#: lib/kanban_web/components/task_card.ex:298
-#: lib/kanban_web/components/task_card.ex:342
+#: lib/kanban_web/components/task_card.ex:296
+#: lib/kanban_web/components/task_card.ex:340
 #, elixir-autogen, elixir-format
 msgid "Files changed"
 msgstr "已更改的文件"
 
-#: lib/kanban_web/components/task_card.ex:288
+#: lib/kanban_web/components/task_card.ex:286
 #, elixir-autogen, elixir-format
 msgid "Issues found by the reviewer"
 msgstr "审核者发现的问题"
 
-#: lib/kanban_web/components/task_card.ex:388
+#: lib/kanban_web/components/task_card.ex:386
 #, elixir-autogen, elixir-format
 msgid "Key files this task will modify"
 msgstr "此任务将修改的关键文件"
 
-#: lib/kanban_web/components/task_card.ex:396
+#: lib/kanban_web/components/task_card.ex:394
 #, elixir-autogen, elixir-format
 msgid "Open dependencies blocking this task"
 msgstr "阻塞此任务的未解决依赖"
 
-#: lib/kanban_web/components/task_card.ex:416
+#: lib/kanban_web/components/task_card.ex:414
 #, elixir-autogen, elixir-format
 msgid "Requires a human review before moving to Done"
 msgstr "在移到「完成」之前需要人工审核"
 
-#: lib/kanban_web/components/task_card.ex:265
+#: lib/kanban_web/components/task_card.ex:263
 #, elixir-autogen, elixir-format
 msgid "Reviewer was skipped — self-reviewed by the author"
 msgstr "已跳过审核者 — 由作者自行审核"
 
-#: lib/kanban_web/components/task_card.ex:354
+#: lib/kanban_web/components/task_card.ex:352
 #, elixir-autogen, elixir-format
 msgid "actual: %{size}"
 msgstr "实际:%{size}"
 
-#: lib/kanban_web/components/task_card.ex:458
+#: lib/kanban_web/components/task_card.ex:456
 #, elixir-autogen, elixir-format
 msgid "decision matrix"
 msgstr "决策矩阵"
 
-#: lib/kanban_web/components/task_card.ex:463
+#: lib/kanban_web/components/task_card.ex:461
 #, elixir-autogen, elixir-format
 msgid "no subagent"
 msgstr "无子代理"
 
-#: lib/kanban_web/components/task_card.ex:461
+#: lib/kanban_web/components/task_card.ex:459
 #, elixir-autogen, elixir-format
 msgid "self-explored"
 msgstr "自行探索"
 
-#: lib/kanban_web/components/task_card.ex:268
-#: lib/kanban_web/components/task_card.ex:462
+#: lib/kanban_web/components/task_card.ex:266
+#: lib/kanban_web/components/task_card.ex:460
 #, elixir-autogen, elixir-format
 msgid "self-reviewed"
 msgstr "自行审核"
 
-#: lib/kanban_web/components/task_card.ex:459
+#: lib/kanban_web/components/task_card.ex:457
 #, elixir-autogen, elixir-format
 msgid "small task"
 msgstr "小任务"
 
-#: lib/kanban_web/components/task_card.ex:460
+#: lib/kanban_web/components/task_card.ex:458
 #, elixir-autogen, elixir-format
 msgid "trivial change"
 msgstr "琐碎更改"
@@ -4635,23 +4636,23 @@ msgstr "优先级"
 msgid "unassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/goal_live/show.ex:72
+#: lib/kanban_web/live/goal_live/show.ex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goal not found"
 msgstr "未找到目标"
 
-#: lib/kanban_web/live/goal_live/show.ex:133
+#: lib/kanban_web/live/goal_live/show.ex:144
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} child"
 msgid_plural "%{count} children"
 msgstr[0] "%{count} 个子项"
 
-#: lib/kanban_web/live/goal_live/show.ex:130
+#: lib/kanban_web/live/goal_live/show.ex:141
 #, elixir-autogen, elixir-format
 msgid "Hierarchy"
 msgstr "层级"
 
-#: lib/kanban_web/live/goal_live/show.ex:147
+#: lib/kanban_web/live/goal_live/show.ex:158
 #, elixir-autogen, elixir-format
 msgid "This goal has no children yet."
 msgstr "此目标暂无子项。"
@@ -5575,7 +5576,7 @@ msgstr "Stride 的构建方式、目标用户以及如何参与。"
 msgid "Key collaboration features"
 msgstr "关键协作功能"
 
-#: lib/kanban_web/components/auth_frame.ex:312
+#: lib/kanban_web/components/auth_frame.ex:311
 #, elixir-autogen, elixir-format
 msgid "A task structure that AI agents can actually pull from."
 msgstr "一种 AI 代理真正能够拉取的任务结构。"
@@ -5590,7 +5591,7 @@ msgstr "可接受使用政策"
 msgid "Account confirmed"
 msgstr "账户已确认！"
 
-#: lib/kanban_web/components/auth_frame.ex:298
+#: lib/kanban_web/components/auth_frame.ex:297
 #, elixir-autogen, elixir-format
 msgid "Agents finally have somewhere good to work."
 msgstr "代理终于有了一个适合工作的地方。"
@@ -5650,9 +5651,9 @@ msgstr "请选择一个强密码并确认。成功更改后,您仍将在此设�
 msgid "Confirming your account…"
 msgstr "正在确认您的账户..."
 
+#: lib/kanban_web/components/auth_frame.ex:334
 #: lib/kanban_web/components/auth_frame.ex:335
 #: lib/kanban_web/components/auth_frame.ex:336
-#: lib/kanban_web/components/auth_frame.ex:337
 #, elixir-autogen, elixir-format
 msgid "Continue with %{provider}"
 msgstr "使用 %{provider} 继续"
@@ -5667,7 +5668,7 @@ msgstr "创建账户"
 msgid "Create your account"
 msgstr "创建您的账户"
 
-#: lib/kanban_web/components/auth_frame.ex:320
+#: lib/kanban_web/components/auth_frame.ex:319
 #, elixir-autogen, elixir-format
 msgid "Dani O · Platform, Stride"
 msgstr "Dani O · 平台, Stride"
@@ -5702,7 +5703,7 @@ msgstr "请稍候 — 这只需一会儿。"
 msgid "I agree to the"
 msgstr "我同意"
 
-#: lib/kanban_web/components/auth_frame.ex:299
+#: lib/kanban_web/components/auth_frame.ex:298
 #, elixir-autogen, elixir-format
 msgid "Jamie K · Engineering Lead, letstango.ca"
 msgstr "Jamie K · 工程负责人, letstango.ca"
@@ -5717,8 +5718,8 @@ msgstr "在此设备上保持登录"
 msgid "Manage your account profile and password. Changes apply to your account immediately."
 msgstr "管理您的账户资料和密码。更改将立即应用到您的账户。"
 
-#: lib/kanban_web/components/auth_frame.ex:306
-#: lib/kanban_web/components/auth_frame.ex:327
+#: lib/kanban_web/components/auth_frame.ex:305
+#: lib/kanban_web/components/auth_frame.ex:326
 #, elixir-autogen, elixir-format
 msgid "Mei L · CTO, Carafe"
 msgstr "Mei L · CTO, Carafe"
@@ -5754,7 +5755,7 @@ msgstr "Stride 应用的发布说明。"
 msgid "Reset your password"
 msgstr "重置您的密码"
 
-#: lib/kanban_web/components/auth_frame.ex:313
+#: lib/kanban_web/components/auth_frame.ex:312
 #, elixir-autogen, elixir-format
 msgid "Rohan S · Infra, Stride"
 msgstr "Rohan S · 基础设施, Stride"
@@ -5764,7 +5765,7 @@ msgstr "Rohan S · 基础设施, Stride"
 msgid "Save password"
 msgstr "保存密码"
 
-#: lib/kanban_web/components/auth_frame.ex:326
+#: lib/kanban_web/components/auth_frame.ex:325
 #, elixir-autogen, elixir-format
 msgid "Security model is built for agents, not retrofitted for them."
 msgstr "安全模型是为代理而设计,而非后期适配。"
@@ -5799,7 +5800,7 @@ msgstr "服务条款"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Stride 背后的人员及 AI 协作者。"
 
-#: lib/kanban_web/components/auth_frame.ex:319
+#: lib/kanban_web/components/auth_frame.ex:318
 #, elixir-autogen, elixir-format
 msgid "Tokens rotate, claims survive. That alone was worth the switch."
 msgstr "令牌轮换,认领依旧。这一点本身就值得切换。"
@@ -5814,7 +5815,7 @@ msgstr "更新个人资料"
 msgid "Verifying your confirmation link…"
 msgstr "正在验证您的确认链接…"
 
-#: lib/kanban_web/components/auth_frame.ex:305
+#: lib/kanban_web/components/auth_frame.ex:304
 #, elixir-autogen, elixir-format
 msgid "We replaced our backlog with Stride and shipped 38%% more in Q2."
 msgstr "我们用 Stride 替换了原本的待办列表,第二季度交付量提升了 38%%。"
@@ -6372,12 +6373,12 @@ msgstr "模式"
 msgid "followed"
 msgstr "已遵循"
 
-#: lib/kanban_web/components/task_card.ex:256
+#: lib/kanban_web/components/task_card.ex:254
 #, elixir-autogen, elixir-format
 msgid "Reviewer requested changes — awaiting agent"
 msgstr "评审已请求修改 — 等待代理处理"
 
-#: lib/kanban_web/components/task_card.ex:259
+#: lib/kanban_web/components/task_card.ex:257
 #, elixir-autogen, elixir-format
 msgid "changes requested"
 msgstr "已请求修改"

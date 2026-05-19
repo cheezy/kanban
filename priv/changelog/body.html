@@ -3,6 +3,62 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.0.1] - 2026-05-19
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Goal show page hid blocked child tasks
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Children of a goal whose <code>Task.status</code> was <code>:blocked</code>
+              never rendered on <code>/boards/:id/goals/:goal_id</code>. The page's
+              <code>@status_order</code>
+              enumeration in <code>KanbanWeb.GoalLive.Show</code>
+              included <code>[:backlog, :ready, :in_progress, :review, :completed]</code>
+              but omitted <code>:blocked</code> — <code>status_sections/1</code>
+              only emits a section for statuses in the order list, so any blocked child fell off the page silently even though the underlying
+              <code>Tasks.list_children_for_goal/2</code>
+              query returned it correctly.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>:blocked</code>
+              is now in <code>@status_order</code>
+              and renders as its own "Blocked" section using the existing
+              <code>--st-blocked</code> accent token. <code>flow_key(:blocked)</code>
+              rolls blocked work into the <code>:backlog</code>
+              segment of the progress bar so the existing
+              <code>GoalProgressHeader</code>
+              flow-key contract (<code>backlog / ready / doing / review / done</code>) is preserved.
+              <code>build_flow/1</code> was rewritten with <code>Enum.reduce</code> + <code>Map.update</code>
+              so multiple statuses mapping to the same flow key now sum their counts instead of clobbering each other — without this, routing
+              <code>:blocked</code>
+              to <code>:backlog</code>
+              would have silently overwritten the real backlog count.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              No data, API, or storage changes — the database always had blocked children, the goal page just wasn't rendering them.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.0.0] - 2026-05-19
         </h2>
 

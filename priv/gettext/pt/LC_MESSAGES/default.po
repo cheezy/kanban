@@ -51,7 +51,7 @@ msgstr " · Gerenciamento de Tarefas"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:61
-#: lib/kanban_web/live/goal_live/show.ex:267
+#: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
 msgid "Done"
@@ -1076,6 +1076,7 @@ msgid "Approved"
 msgstr "Aprovado"
 
 #: lib/kanban_web/components/goal_sidebar.ex:67
+#: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
 #: lib/kanban_web/task_tokens.ex:24
 #, elixir-autogen, elixir-format
@@ -1313,7 +1314,7 @@ msgstr "Em caso de falha (o que acontece)"
 msgid "Only board owners can change field visibility"
 msgstr "Apenas os donos do quadro podem alterar a visibilidade dos campos"
 
-#: lib/kanban_web/live/goal_live/show.ex:268
+#: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
 #: lib/kanban_web/task_tokens.ex:25
@@ -1759,7 +1760,7 @@ msgstr "Documentação abrangente da API"
 #: lib/kanban_web/components/archive_filter_chips.ex:87
 #: lib/kanban_web/components/goal_progress_header.ex:67
 #: lib/kanban_web/components/task_metadata_grid.ex:84
-#: lib/kanban_web/live/goal_live/show.ex:233
+#: lib/kanban_web/live/goal_live/show.ex:244
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/live/task_live/view_component.ex:333
@@ -1866,7 +1867,7 @@ msgid "Archive task"
 msgstr "Arquivar tarefa"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:23
-#: lib/kanban_web/live/goal_live/show.ex:109
+#: lib/kanban_web/live/goal_live/show.ex:121
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
@@ -2187,7 +2188,7 @@ msgstr "Voltar ao painel"
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:25
-#: lib/kanban_web/live/goal_live/show.ex:263
+#: lib/kanban_web/live/goal_live/show.ex:286
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -2417,7 +2418,7 @@ msgstr "Análise de fila e tempo de espera"
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:52
-#: lib/kanban_web/live/goal_live/show.ex:266
+#: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
@@ -3091,7 +3092,7 @@ msgstr "Diff, testes, aceitação, telemetria dos hooks — num só painel. Apro
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:43
-#: lib/kanban_web/live/goal_live/show.ex:265
+#: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
 msgid "Doing"
@@ -3181,7 +3182,7 @@ msgstr "Produto"
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:34
-#: lib/kanban_web/live/goal_live/show.ex:264
+#: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
 msgid "Ready"
@@ -4208,7 +4209,7 @@ msgstr[1] "%{count} ativas"
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:60
 #: lib/kanban_web/live/board_live/show.html.heex:8
-#: lib/kanban_web/live/goal_live/show.ex:86
+#: lib/kanban_web/live/goal_live/show.ex:93
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "Quadros"
@@ -4351,7 +4352,7 @@ msgstr "Início do Stride"
 #: lib/kanban_web/live/agents_live.ex:80
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
-#: lib/kanban_web/live/goal_live/show.ex:82
+#: lib/kanban_web/live/goal_live/show.ex:89
 #: lib/kanban_web/live/metrics_live/workspace.ex:50
 #: lib/kanban_web/live/review_live.ex:92
 #, elixir-autogen, elixir-format
@@ -4363,12 +4364,12 @@ msgstr "Espaço de trabalho"
 msgid "children complete"
 msgstr "filhos concluídos"
 
-#: lib/kanban_web/components/task_card.ex:335
+#: lib/kanban_web/components/task_card.ex:333
 #, elixir-autogen, elixir-format
 msgid "cycle %{time}"
 msgstr "ciclo %{time}"
 
-#: lib/kanban_web/components/task_card.ex:418
+#: lib/kanban_web/components/task_card.ex:416
 #, elixir-autogen, elixir-format
 msgid "review"
 msgstr "revisão"
@@ -4436,7 +4437,7 @@ msgstr "Tokens de API"
 msgid "Unrefined ideas land here. Triage to Ready when they have a why and acceptance criteria."
 msgstr "Ideias não refinadas aterrissam aqui. Mande para Pronto quando tiverem um porquê e critérios de aceitação."
 
-#: lib/kanban_web/components/task_card.ex:278
+#: lib/kanban_web/components/task_card.ex:276
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
@@ -4444,104 +4445,104 @@ msgstr[0] "%{count} critério"
 msgstr[1] "%{count} critérios"
 
 #: lib/kanban_web/components/review_queue_item.ex:163
-#: lib/kanban_web/components/task_card.ex:301
-#: lib/kanban_web/components/task_card.ex:345
+#: lib/kanban_web/components/task_card.ex:299
+#: lib/kanban_web/components/task_card.ex:343
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} file"
 msgid_plural "%{count} files"
 msgstr[0] "%{count} arquivo"
 msgstr[1] "%{count} arquivos"
 
-#: lib/kanban_web/components/task_card.ex:291
+#: lib/kanban_web/components/task_card.ex:289
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
 msgstr[0] "%{count} problema"
 msgstr[1] "%{count} problemas"
 
-#: lib/kanban_web/components/task_card.ex:275
+#: lib/kanban_web/components/task_card.ex:273
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria checked by the reviewer"
 msgstr "Critérios de aceitação verificados pelo revisor"
 
-#: lib/kanban_web/components/task_card.ex:404
+#: lib/kanban_web/components/task_card.ex:402
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria defined for this task"
 msgstr "Critérios de aceitação definidos para esta tarefa"
 
-#: lib/kanban_web/components/task_card.ex:352
+#: lib/kanban_web/components/task_card.ex:350
 #, elixir-autogen, elixir-format
 msgid "Actual complexity recorded after completion"
 msgstr "Complexidade real registrada após a conclusão"
 
-#: lib/kanban_web/components/task_card.ex:332
+#: lib/kanban_web/components/task_card.ex:330
 #, elixir-autogen, elixir-format
 msgid "Cycle time — elapsed from claim to completion"
 msgstr "Tempo de ciclo — decorrido da reserva à conclusão"
 
-#: lib/kanban_web/components/task_card.ex:298
-#: lib/kanban_web/components/task_card.ex:342
+#: lib/kanban_web/components/task_card.ex:296
+#: lib/kanban_web/components/task_card.ex:340
 #, elixir-autogen, elixir-format
 msgid "Files changed"
 msgstr "Arquivos alterados"
 
-#: lib/kanban_web/components/task_card.ex:288
+#: lib/kanban_web/components/task_card.ex:286
 #, elixir-autogen, elixir-format
 msgid "Issues found by the reviewer"
 msgstr "Problemas encontrados pelo revisor"
 
-#: lib/kanban_web/components/task_card.ex:388
+#: lib/kanban_web/components/task_card.ex:386
 #, elixir-autogen, elixir-format
 msgid "Key files this task will modify"
 msgstr "Arquivos principais que esta tarefa vai modificar"
 
-#: lib/kanban_web/components/task_card.ex:396
+#: lib/kanban_web/components/task_card.ex:394
 #, elixir-autogen, elixir-format
 msgid "Open dependencies blocking this task"
 msgstr "Dependências abertas bloqueando esta tarefa"
 
-#: lib/kanban_web/components/task_card.ex:416
+#: lib/kanban_web/components/task_card.ex:414
 #, elixir-autogen, elixir-format
 msgid "Requires a human review before moving to Done"
 msgstr "Requer revisão humana antes de mover para Concluído"
 
-#: lib/kanban_web/components/task_card.ex:265
+#: lib/kanban_web/components/task_card.ex:263
 #, elixir-autogen, elixir-format
 msgid "Reviewer was skipped — self-reviewed by the author"
 msgstr "Revisor pulado — auto-revisado pelo autor"
 
-#: lib/kanban_web/components/task_card.ex:354
+#: lib/kanban_web/components/task_card.ex:352
 #, elixir-autogen, elixir-format
 msgid "actual: %{size}"
 msgstr "real: %{size}"
 
-#: lib/kanban_web/components/task_card.ex:458
+#: lib/kanban_web/components/task_card.ex:456
 #, elixir-autogen, elixir-format
 msgid "decision matrix"
 msgstr "matriz de decisão"
 
-#: lib/kanban_web/components/task_card.ex:463
+#: lib/kanban_web/components/task_card.ex:461
 #, elixir-autogen, elixir-format
 msgid "no subagent"
 msgstr "sem subagente"
 
-#: lib/kanban_web/components/task_card.ex:461
+#: lib/kanban_web/components/task_card.ex:459
 #, elixir-autogen, elixir-format
 msgid "self-explored"
 msgstr "auto-explorada"
 
-#: lib/kanban_web/components/task_card.ex:268
-#: lib/kanban_web/components/task_card.ex:462
+#: lib/kanban_web/components/task_card.ex:266
+#: lib/kanban_web/components/task_card.ex:460
 #, elixir-autogen, elixir-format
 msgid "self-reviewed"
 msgstr "auto-revisada"
 
-#: lib/kanban_web/components/task_card.ex:459
+#: lib/kanban_web/components/task_card.ex:457
 #, elixir-autogen, elixir-format
 msgid "small task"
 msgstr "tarefa pequena"
 
-#: lib/kanban_web/components/task_card.ex:460
+#: lib/kanban_web/components/task_card.ex:458
 #, elixir-autogen, elixir-format
 msgid "trivial change"
 msgstr "mudança trivial"
@@ -4642,24 +4643,24 @@ msgstr "Prioridade"
 msgid "unassigned"
 msgstr "Não atribuído"
 
-#: lib/kanban_web/live/goal_live/show.ex:72
+#: lib/kanban_web/live/goal_live/show.ex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goal not found"
 msgstr "Meta não encontrada"
 
-#: lib/kanban_web/live/goal_live/show.ex:133
+#: lib/kanban_web/live/goal_live/show.ex:144
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} child"
 msgid_plural "%{count} children"
 msgstr[0] "%{count} filho"
 msgstr[1] "%{count} filhos"
 
-#: lib/kanban_web/live/goal_live/show.ex:130
+#: lib/kanban_web/live/goal_live/show.ex:141
 #, elixir-autogen, elixir-format
 msgid "Hierarchy"
 msgstr "Hierarquia"
 
-#: lib/kanban_web/live/goal_live/show.ex:147
+#: lib/kanban_web/live/goal_live/show.ex:158
 #, elixir-autogen, elixir-format
 msgid "This goal has no children yet."
 msgstr "Esta meta ainda não tem filhos."
@@ -5587,7 +5588,7 @@ msgstr "Como o Stride foi construído, para quem é e como participar."
 msgid "Key collaboration features"
 msgstr "Principais recursos de colaboração"
 
-#: lib/kanban_web/components/auth_frame.ex:312
+#: lib/kanban_web/components/auth_frame.ex:311
 #, elixir-autogen, elixir-format
 msgid "A task structure that AI agents can actually pull from."
 msgstr "Uma estrutura de tarefas da qual agentes de IA realmente conseguem puxar."
@@ -5602,7 +5603,7 @@ msgstr "Política de Uso Aceitável"
 msgid "Account confirmed"
 msgstr "Conta Confirmada!"
 
-#: lib/kanban_web/components/auth_frame.ex:298
+#: lib/kanban_web/components/auth_frame.ex:297
 #, elixir-autogen, elixir-format
 msgid "Agents finally have somewhere good to work."
 msgstr "Os agentes finalmente têm um lugar bom para trabalhar."
@@ -5662,9 +5663,9 @@ msgstr "Escolha uma senha forte e confirme. Você continuará logado neste dispo
 msgid "Confirming your account…"
 msgstr "Confirmando sua conta..."
 
+#: lib/kanban_web/components/auth_frame.ex:334
 #: lib/kanban_web/components/auth_frame.ex:335
 #: lib/kanban_web/components/auth_frame.ex:336
-#: lib/kanban_web/components/auth_frame.ex:337
 #, elixir-autogen, elixir-format
 msgid "Continue with %{provider}"
 msgstr "Continuar com %{provider}"
@@ -5679,7 +5680,7 @@ msgstr "Criar uma conta"
 msgid "Create your account"
 msgstr "Crie Sua Conta"
 
-#: lib/kanban_web/components/auth_frame.ex:320
+#: lib/kanban_web/components/auth_frame.ex:319
 #, elixir-autogen, elixir-format
 msgid "Dani O · Platform, Stride"
 msgstr "Dani O · Plataforma, Stride"
@@ -5714,7 +5715,7 @@ msgstr "Aguente firme — vai durar só um instante."
 msgid "I agree to the"
 msgstr "Concordo com os"
 
-#: lib/kanban_web/components/auth_frame.ex:299
+#: lib/kanban_web/components/auth_frame.ex:298
 #, elixir-autogen, elixir-format
 msgid "Jamie K · Engineering Lead, letstango.ca"
 msgstr "Jamie K · Líder de Engenharia, letstango.ca"
@@ -5729,8 +5730,8 @@ msgstr "Manter-me logado neste dispositivo"
 msgid "Manage your account profile and password. Changes apply to your account immediately."
 msgstr "Gerencie o perfil e a senha da sua conta. As mudanças se aplicam à conta imediatamente."
 
-#: lib/kanban_web/components/auth_frame.ex:306
-#: lib/kanban_web/components/auth_frame.ex:327
+#: lib/kanban_web/components/auth_frame.ex:305
+#: lib/kanban_web/components/auth_frame.ex:326
 #, elixir-autogen, elixir-format
 msgid "Mei L · CTO, Carafe"
 msgstr "Mei L · CTO, Carafe"
@@ -5766,7 +5767,7 @@ msgstr "Notas de versão da aplicação Stride."
 msgid "Reset your password"
 msgstr "Redefina sua senha"
 
-#: lib/kanban_web/components/auth_frame.ex:313
+#: lib/kanban_web/components/auth_frame.ex:312
 #, elixir-autogen, elixir-format
 msgid "Rohan S · Infra, Stride"
 msgstr "Rohan S · Infra, Stride"
@@ -5776,7 +5777,7 @@ msgstr "Rohan S · Infra, Stride"
 msgid "Save password"
 msgstr "Salvar Senha"
 
-#: lib/kanban_web/components/auth_frame.ex:326
+#: lib/kanban_web/components/auth_frame.ex:325
 #, elixir-autogen, elixir-format
 msgid "Security model is built for agents, not retrofitted for them."
 msgstr "O modelo de segurança foi construído para os agentes, não adaptado depois."
@@ -5811,7 +5812,7 @@ msgstr "Termos de Serviço"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "As pessoas e o colaborador de IA por trás do Stride."
 
-#: lib/kanban_web/components/auth_frame.ex:319
+#: lib/kanban_web/components/auth_frame.ex:318
 #, elixir-autogen, elixir-format
 msgid "Tokens rotate, claims survive. That alone was worth the switch."
 msgstr "Os tokens rotacionam, as reservas sobrevivem. Só isso já valeu a troca."
@@ -5826,7 +5827,7 @@ msgstr "Atualizar Perfil"
 msgid "Verifying your confirmation link…"
 msgstr "Verificando seu link de confirmação…"
 
-#: lib/kanban_web/components/auth_frame.ex:305
+#: lib/kanban_web/components/auth_frame.ex:304
 #, elixir-autogen, elixir-format
 msgid "We replaced our backlog with Stride and shipped 38%% more in Q2."
 msgstr "Trocamos nosso backlog pelo Stride e entregamos 38%% a mais no T2."
@@ -6387,12 +6388,12 @@ msgstr "Padrões"
 msgid "followed"
 msgstr "seguidos"
 
-#: lib/kanban_web/components/task_card.ex:256
+#: lib/kanban_web/components/task_card.ex:254
 #, elixir-autogen, elixir-format
 msgid "Reviewer requested changes — awaiting agent"
 msgstr "O revisor solicitou alterações — aguardando o agente"
 
-#: lib/kanban_web/components/task_card.ex:259
+#: lib/kanban_web/components/task_card.ex:257
 #, elixir-autogen, elixir-format
 msgid "changes requested"
 msgstr "alterações solicitadas"

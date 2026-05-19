@@ -22,7 +22,14 @@ defmodule KanbanWeb.GoalLive.Show do
   alias KanbanWeb.GoalSidebar
   alias KanbanWeb.TaskActivityLog
 
-  @status_order [:backlog, :ready, :in_progress, :review, :completed]
+  # `:backlog` and `:in_progress` / `:completed` come straight from
+  # `Task.status` (with `:open` normalised to `:backlog`). `:blocked` is
+  # also a valid `Task.status` value — without it, blocked children would
+  # be silently dropped from the per-status sections list. `:ready` and
+  # `:review` are kept for forward compatibility with column-derived
+  # status mapping; they are no-ops today since `Task.status` never holds
+  # those values.
+  @status_order [:backlog, :ready, :in_progress, :review, :completed, :blocked]
 
   @impl true
   def mount(%{"id" => board_id, "goal_id" => goal_id}, _session, socket) do
@@ -256,12 +263,24 @@ defmodule KanbanWeb.GoalLive.Show do
   end
 
   defp build_flow(by_status) do
-    counts = Map.new(@status_order, fn s -> {flow_key(s), length(Map.get(by_status, s, []))} end)
+    # Aggregate by `flow_key/1` so multiple `Task.status` values that map
+    # to the same flow segment (e.g. `:blocked` rolling into `:backlog`)
+    # sum their counts rather than clobbering each other.
+    counts =
+      Enum.reduce(@status_order, %{}, fn status, acc ->
+        key = flow_key(status)
+        n = length(Map.get(by_status, status, []))
+        Map.update(acc, key, n, &(&1 + n))
+      end)
+
     Map.put(counts, :total, Enum.sum(Map.values(counts)))
   end
 
   defp flow_key(:in_progress), do: :doing
   defp flow_key(:completed), do: :done
+  # Blocked work is unfinished and waiting on something; surface it under
+  # the backlog segment of the progress bar.
+  defp flow_key(:blocked), do: :backlog
   defp flow_key(other), do: other
 
   defp status_label(:backlog), do: gettext("Backlog")
@@ -269,6 +288,7 @@ defmodule KanbanWeb.GoalLive.Show do
   defp status_label(:in_progress), do: gettext("Doing")
   defp status_label(:review), do: gettext("Review")
   defp status_label(:completed), do: gettext("Done")
+  defp status_label(:blocked), do: gettext("Blocked")
   defp status_label(_), do: gettext("Open")
 
   defp status_dot(:backlog), do: "var(--st-backlog)"
@@ -276,6 +296,7 @@ defmodule KanbanWeb.GoalLive.Show do
   defp status_dot(:in_progress), do: "var(--st-doing)"
   defp status_dot(:review), do: "var(--st-review)"
   defp status_dot(:completed), do: "var(--st-done)"
+  defp status_dot(:blocked), do: "var(--st-blocked)"
   defp status_dot(_), do: "var(--ink-4)"
 
   # Distinct list of humans + agents who touched the goal or any of its

@@ -5,6 +5,18 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-05-19
+
+### Fixed
+
+#### Goal show page hid blocked child tasks
+
+Children of a goal whose `Task.status` was `:blocked` never rendered on `/boards/:id/goals/:goal_id`. The page's `@status_order` enumeration in `KanbanWeb.GoalLive.Show` included `[:backlog, :ready, :in_progress, :review, :completed]` but omitted `:blocked` — `status_sections/1` only emits a section for statuses in the order list, so any blocked child fell off the page silently even though the underlying `Tasks.list_children_for_goal/2` query returned it correctly.
+
+`:blocked` is now in `@status_order` and renders as its own "Blocked" section using the existing `--st-blocked` accent token. `flow_key(:blocked)` rolls blocked work into the `:backlog` segment of the progress bar so the existing `GoalProgressHeader` flow-key contract (`backlog / ready / doing / review / done`) is preserved. `build_flow/1` was rewritten with `Enum.reduce` + `Map.update` so multiple statuses mapping to the same flow key now sum their counts instead of clobbering each other — without this, routing `:blocked` to `:backlog` would have silently overwritten the real backlog count.
+
+No data, API, or storage changes — the database always had blocked children, the goal page just wasn't rendering them.
+
 ## [2.0.0] - 2026-05-19
 
 The 2.0.0 release is a UI-tier overhaul. Two new workspace-level pages — `/agents` and `/review` — surface dimensions of the kanban data that previously required a board-by-board hunt, and the marketing and auth surfaces have been rebuilt against a shared design system with full theme-token and dark-mode support across all seven locales. The data, API, and workflow contracts are unchanged; clients that hit the JSON API see no behavior difference. The version bump reflects the surface-area shift, not a breaking API.
