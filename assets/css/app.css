@@ -917,6 +917,29 @@
   --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px rgba(0, 0, 0, 0.6);
 }
 
+/* Auth frame is intentionally theme-neutral — the warm editorial gradient
+   is Stride's brand entry surface and does not flip with the user's theme.
+   Lock the neutral palette to light-mode values so the dark-mode overrides
+   above don't apply inside the auth frame; the hardcoded white text on the
+   S-logo brand gradient and on the .primary_full_button (which sits over
+   --ink, now locked dark) is intentional under this contract. Specificity
+   (0,1,1 — class + attribute) outranks the :where-wrapped dark override. */
+.stride-screen[data-stride-auth-frame] {
+  --bg: oklch(98.8% 0.003 80);
+  --surface: #ffffff;
+  --surface-2: oklch(98% 0.003 80);
+  --surface-sunken: oklch(97% 0.003 80);
+  --ink: oklch(18% 0.005 270);
+  --ink-2: oklch(35% 0.005 270);
+  --ink-3: oklch(52% 0.005 270);
+  --ink-4: oklch(68% 0.005 270);
+  --line: oklch(93% 0.003 270);
+  --line-2: oklch(95% 0.005 270);
+  --line-strong: oklch(82% 0.005 270);
+  --stride-orange-soft: oklch(96% 0.04 60);
+  --stride-violet-soft: oklch(96% 0.04 280);
+}
+
 .stride-marketing *,
 .stride-marketing *::before,
 .stride-marketing *::after,

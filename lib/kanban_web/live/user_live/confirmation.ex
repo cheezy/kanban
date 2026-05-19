@@ -51,6 +51,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
         <%= if @confirmed do %>
           <div style="margin-top: 28px; width: 100%;">
             <.primary_full_button>
+              <%!-- color: white is intentional: this link sits inside the auth-frame's
+                    primary_full_button, which is theme-neutral (see KanbanWeb.AuthFrame
+                    moduledoc — `data-stride-auth-frame` locks the surface to dark-ink). --%>
               <.link navigate={~p"/users/log-in"} style="color: white; text-decoration: none;">
                 {gettext("Sign in")} <span aria-hidden="true">→</span>
               </.link>

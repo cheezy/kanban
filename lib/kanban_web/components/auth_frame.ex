@@ -19,6 +19,15 @@ defmodule KanbanWeb.AuthFrame do
   `assets/css/app.css`. Do NOT substitute daisyUI base-* classes inside
   this component; the design's token vocabulary is canonical here.
 
+  **Theme intent: theme-neutral.** The auth frame is intentionally rendered
+  with the same warm editorial palette in both light and dark mode — the
+  gradient is the brand entry point and does not flip. The root element
+  carries `data-stride-auth-frame`, which a rule in `assets/css/app.css`
+  uses to lock the neutral tokens (`--ink`, `--surface`, `--line`, etc.)
+  to their light-mode values regardless of the active theme. Hardcoded
+  white text on the S-logo brand gradient (`primary_full_button` and the
+  S badge) is intentional under that contract.
+
   Also exposes `primary_full_button/1` (the ink primary button shape used
   by every auth CTA, mirroring `auth.jsx` PrimaryFullButton at lines
   190-209) and `sso_row/1` (Google/GitHub/SAML continue-with buttons,
@@ -53,6 +62,7 @@ defmodule KanbanWeb.AuthFrame do
     ~H"""
     <div
       class="stride-screen"
+      data-stride-auth-frame
       style="display: flex; min-height: 100vh; background: var(--bg);"
     >
       <aside
