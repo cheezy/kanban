@@ -169,7 +169,7 @@ Starting with G65 (April 2026), the `/complete` endpoint validates three additio
 | Field | Required | Shape |
 |---|---|---|
 | `explorer_result` | Yes (grace-warned, strict-rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
-| `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found` |
+| `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`) |
 | `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review` |
 
 **Rollout modes** (controlled by the `:strict_completion_validation` application flag):

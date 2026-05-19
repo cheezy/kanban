@@ -101,14 +101,21 @@ defmodule KanbanWeb.API.ErrorDocs do
     %{
       documentation: "#{@docs_base_url}/AI-WORKFLOW.md#completing-tasks",
       related_docs: [
-        "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md"
+        "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md",
+        "#{@docs_base_url}/api/patch_tasks_id_complete.md#completion-validation-format-g65"
       ],
       common_causes: [
         "explorer_result or reviewer_result missing from request body",
         "summary shorter than 40 non-whitespace characters",
         "skip reason not one of the allowed enum values",
         "dispatched=true without duration_ms (or reviewer counts)",
-        "dispatched=false without a reason"
+        "dispatched=false without a reason",
+        "reviewer_result.issues entry missing severity or category " <>
+          "(severity: critical|important|minor; category: acceptance_criteria|pitfall|pattern|testing|code_quality)",
+        "reviewer_result.acceptance_criteria entry status uses space form 'not met' instead of underscore 'not_met'",
+        "reviewer_result.testing_strategy / patterns / pitfalls section-verdict status not in passed|failed|not_assessed",
+        "reviewer_result.schema_version present but not a semver-shaped string (e.g. '1.0' or '1.2.3')",
+        "reviewer_result.issues or acceptance_criteria field is not a list, or an entry is not a map"
       ]
     }
   end

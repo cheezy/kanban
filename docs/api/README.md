@@ -189,6 +189,8 @@ Each accepts one of two shapes:
 
 `reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers.
 
+`reviewer_result` (dispatched=true) **additionally accepts** a structured schema — all fields optional, all backwards-compatible: `schema_version` (semver), `status`, `issue_counts`, `issues[]` (with `severity` ∈ `critical|important|minor` and `category` ∈ `acceptance_criteria|pitfall|pattern|testing|code_quality`), `acceptance_criteria[]` (with `status` ∈ `met|not_met`), and the three section verdicts `testing_strategy` / `patterns` / `pitfalls` (each `{status, notes?}` with `status` ∈ `passed|failed|not_assessed`). Unknown fields per entry are tolerated. See [patch_tasks_id_complete.md](patch_tasks_id_complete.md#completion-validation-format-g65) for the field table and a complete example.
+
 **Skip form** — when exploration/review was legitimately skipped or self-reported:
 
 ```json

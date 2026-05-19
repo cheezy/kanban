@@ -29,7 +29,7 @@ Authorization: Bearer <your_api_token>
 | `after_doing_result` | object | **Yes** | Result of executing the `after_doing` hook. Must include `exit_code`, `output`, and `duration_ms`. |
 | `before_review_result` | object | **Yes** | Result of executing the `before_review` hook. Must include `exit_code`, `output`, and `duration_ms`. |
 | `explorer_result` | object | **Yes** (grace-warned, strict-rejected) | Exploration outcome — dispatched-subagent shape or self-reported skip-form. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
-| `reviewer_result` | object | **Yes** (grace-warned, strict-rejected) | Review outcome — same two shapes as `explorer_result`. Dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
+| `reviewer_result` | object | **Yes** (grace-warned, strict-rejected) | Review outcome — same two shapes as `explorer_result`. Dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`). See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `workflow_steps` | array | Recommended (telemetry) | Six-entry telemetry array, one object per workflow phase. Cast onto the task struct for aggregation. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `agent_name` | string | No | Name of the agent completing the task (e.g., "Claude Sonnet 4.5"). Defaults to "Unknown". |
 | `time_spent_minutes` | integer | No | Time spent on the task in minutes |
@@ -80,6 +80,62 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
 ```
 
 `reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers. `explorer_result` does not.
+
+**Structured fields (additive, optional, backwards compatible)** — `reviewer_result` (dispatched=true) additionally accepts the structured schema described below. All structured fields are optional; legacy summary-only payloads continue to validate unchanged. The server shape-validates whatever is present and tolerates unknown forward-compatible fields. Use these when your task-reviewer subagent emits a structured JSON report (see the `stride-workflow` plugin's `task-reviewer` agent prompt for the canonical schema).
+
+| Field | Type | Notes |
+|---|---|---|
+| `schema_version` | string | Permissive semver — `MAJOR.MINOR` (e.g. `"1.0"`), `MAJOR.MINOR.PATCH`, optional pre-release (`-beta.1`) and build (`+build.7`) suffixes. The validator checks shape only; it does not gate on specific values. |
+| `status` | string | Top-level outcome flag (typically `"approved"` or `"changes_requested"`). Not enum-validated server-side — the agent prompt is the source of truth. |
+| `issue_counts` | object | Per-severity count — keys mirror the severity enum: `critical`, `important`, `minor`. Missing keys are tolerated. |
+| `issues[]` | array of objects | Per-finding detail. Each entry must be a map with valid `severity` and `category`. Both enums are required when an entry is present; unknown fields per entry are tolerated. |
+| `acceptance_criteria[]` | array of objects | Per-criterion verdict. Each entry must be a map with a valid `status`. The status enum uses underscore form: **`met` / `not_met`** (a space form `"not met"` is rejected). |
+| `testing_strategy` | object | Section verdict — `{status, notes?}`. Status enum: `passed` / `failed` / `not_assessed`. Notes is an optional string (empty string allowed). |
+| `patterns` | object | Same section-verdict shape as `testing_strategy`. |
+| `pitfalls` | object | Same section-verdict shape as `testing_strategy`. |
+
+Per-entry enums:
+
+| Entry field | Enum values |
+|---|---|
+| `issues[].severity` | `critical`, `important`, `minor` |
+| `issues[].category` | `acceptance_criteria`, `pitfall`, `pattern`, `testing`, `code_quality` |
+| `acceptance_criteria[].status` | `met`, `not_met` |
+| `testing_strategy.status`, `patterns.status`, `pitfalls.status` | `passed`, `failed`, `not_assessed` |
+
+Optional per-issue fields (all forward-compatible — not server-validated, passed through verbatim): `file`, `line`, `description`, `suggested_fix`. Optional per-criterion fields: `criterion`, `evidence`. Anything not listed above is also persisted as `:jsonb` and survives a round trip through GET — see `task_json.ex` for the verbatim pass-through contract.
+
+Structured `reviewer_result` example:
+
+```json
+"reviewer_result": {
+  "dispatched": true,
+  "summary": "Reviewed against 4 acceptance criteria and 5 pitfalls; one important pattern deviation surfaced.",
+  "duration_ms": 8000,
+  "acceptance_criteria_checked": 4,
+  "issues_found": 1,
+  "schema_version": "1.0",
+  "status": "changes_requested",
+  "issue_counts": {"critical": 0, "important": 1, "minor": 0},
+  "issues": [
+    {
+      "severity": "important",
+      "category": "pattern",
+      "file": "lib/kanban/tasks/agent_workflow.ex",
+      "line": 528,
+      "description": "Cast list omits the new field — payload would be silently dropped.",
+      "suggested_fix": "Add the field to the cast/2 list and the changeset validation."
+    }
+  ],
+  "acceptance_criteria": [
+    {"criterion": "Validator accepts arrays", "status": "met"},
+    {"criterion": "Status enum enforced", "status": "not_met", "evidence": "Spec case missing"}
+  ],
+  "testing_strategy": {"status": "passed", "notes": "All 5 required test cases present."},
+  "patterns": {"status": "passed"},
+  "pitfalls": {"status": "passed", "notes": "None violated."}
+}
+```
 
 **Skip form** — use when exploration/review was skipped or produced inline (for platforms without subagent dispatch, or when the task's decision matrix skipped the step):
 
