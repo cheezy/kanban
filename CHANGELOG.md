@@ -5,6 +5,46 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-19
+
+The 2.0.0 release is a UI-tier overhaul. Two new workspace-level pages — `/agents` and `/review` — surface dimensions of the kanban data that previously required a board-by-board hunt, and the marketing and auth surfaces have been rebuilt against a shared design system with full theme-token and dark-mode support across all seven locales. The data, API, and workflow contracts are unchanged; clients that hit the JSON API see no behavior difference. The version bump reflects the surface-area shift, not a breaking API.
+
+### Added
+
+#### New Agents view at `/agents`
+
+Workspace-level page that surfaces every AI agent active across the user's workspace in one place. Composes three new presentational components — `KanbanWeb.AgentsHeader`, `KanbanWeb.AgentRosterCard`, and `KanbanWeb.AgentActivityFeed` — into a two-column layout: the agent roster on the left (status, current task, recent throughput, capabilities) and a chronological activity feed on the right (claims, completions, hook results) windowed to the last 24 hours.
+
+`KanbanWeb.AgentsLive` is a thin LiveView binding the `Kanban.Agents` context output to the components — no Ecto queries in the LiveView module per the project's separation rule. Real-time updates flow over the `"agents"` PubSub topic; a debounced refresh (`@refresh_debounce_ms` = 250ms) coalesces bursts of `{:agent_event, _}` broadcasts so a flurry of completions does not redrive the agent queries on every message. `KanbanWeb.AgentsPresence` powers a "live · N connected" indicator showing how many agent sessions are currently online.
+
+The page supports filter tabs (`:all`, `:online`, plus per-capability filters) routed through `handle_event/3` and persisted in the URL via `push_patch`. Auth lives in the `:require_authenticated_user` live_session — workspace data is never served to anonymous visitors.
+
+#### New Review queue at `/review`
+
+Workspace-level review queue replacing the per-board "tasks in Review" scrolling list. A two-pane layout: the queue list on the left (one `KanbanWeb.ReviewQueueItem` per pending task with a stats strip showing acceptance-criteria coverage, issue count, and reviewer dispatch state), the selected task's full detail on the right (`KanbanWeb.ReviewDetailHeader`, `KanbanWeb.ReviewStatsStrip`, `KanbanWeb.ReviewDiffPanel`, the existing `KanbanWeb.AcceptanceChecklist`).
+
+`KanbanWeb.ReviewLive` is a thin binding layer — all reads route through `Kanban.Reviews.list_pending_reviews/1` and `Kanban.Reviews.queue_stats/1`; approve and request-changes mutations route through `Kanban.Reviews.approve_review/3` and `Kanban.Reviews.request_changes_review/3`. No Ecto queries live in the LiveView module.
+
+The Review page renders structured `reviewer_result` payloads (see the [1.30.0 — wait, see the structured review-report contract below]) when present, falling back to the legacy markdown `review_report` regex extraction for tasks completed before the rollout. Tasks completed via the no-subagent skip-form render via the existing summary-and-skip-reason layout. The render branch is detected via `if reviewer_result["issues"] is a list → structured; elsif review_report is non-empty → markdown fallback; else → empty` so old archived tasks keep displaying acceptably indefinitely.
+
+Approve and request-changes are both single-click; request-changes opens an inline form (no modal navigation) that posts back into the same LiveView.
+
+#### Marketing and auth surface refresh
+
+Six marketing-site pages — landing, about, resources index, resources show, product, workflows, security, privacy — rebuilt against a shared editorial design language. New `KanbanWeb.AuthFrame` component standardizes the four auth surfaces (sign in, sign up, forgot password, reset password) on the same card-based layout. `KanbanWeb.UserLive.Settings` redesigned to use the same auth-card pattern. Every screen now passes dark-mode contrast verification: light text (oklch ~0.97) on dark backgrounds (oklch ~0.30) in dark mode, dark text (oklch ~0.21) on light backgrounds (oklch ~0.98) in light mode. The dark-mode color map (theme-aware daisyUI tokens — `text-base-content`, `bg-base-100`, `border-base-300`) replaces hard-coded greys across every converted template.
+
+The login screen is now fully responsive (mobile-first layout, breakpoint-aware spacing). Avatars across the board view display the owner's name on hover. Drag-and-drop on the board has been substantially improved — fewer jitter cases on column boundary crossing, smoother re-flow of remaining cards.
+
+#### Structured review-report contract (G143 server-side)
+
+`Kanban.Tasks.CompletionValidation` now optionally accepts a structured `reviewer_result` payload alongside the legacy `summary` + integer-counts shape. New fields: `schema_version` (semver string), `status`, `issue_counts`, `issues[]` (with `severity` ∈ `critical|important|minor` and `category` ∈ `acceptance_criteria|pitfall|pattern|testing|code_quality`), `acceptance_criteria[]` (with `status` ∈ `met|not_met` — underscore form), and three section verdicts `testing_strategy` / `patterns` / `pitfalls` (each `{status, notes?}` with `status` ∈ `passed|failed|not_assessed`). All fields are optional — legacy payloads continue to validate unchanged. Unknown fields per entry are tolerated for forward compatibility. The `reviewer_result` jsonb column persists the full payload verbatim; `KanbanWeb.API.TaskJSON` round-trips it without filtering or allowlisting.
+
+Full schema documented in [`docs/api/patch_tasks_id_complete.md`](docs/api/patch_tasks_id_complete.md#completion-validation-format-g65) and via `GET /api/agent/onboarding` → `api_schema.reviewer_result_format`. Plugin variants are tracked under G144 — the server accepts payloads from any client emitting the new shape, and the UI degrades to the markdown fallback for tasks completed by older clients.
+
+### Compatibility
+
+No breaking API or schema changes. All JSON contracts, all column transitions, all hook timings, and all plugin-side payloads remain byte-for-byte compatible with 1.29.x clients. The 2.0.0 bump reflects the UI surface-area shift (two new workspace-level pages, a marketing-site rebuild, an auth-card overhaul, a theme-token migration) rather than any backwards-incompatible change at the API layer. Clients on older plugin versions continue to work unchanged; the `/review` page renders their markdown `review_report` via the legacy regex fallback.
+
 ## [1.29.0] - 2026-05-08
 
 ### Added

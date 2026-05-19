@@ -3,6 +3,158 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.0.0] - 2026-05-19
+        </h2>
+
+        <p class="m-0 mt-3 mb-3 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          The 2.0.0 release is a UI-tier overhaul. Two new workspace-level pages —
+          <code>/agents</code> and <code>/review</code>
+          — surface dimensions of the kanban data that previously required a board-by-board hunt, and the marketing and auth surfaces have been rebuilt against a shared design system with full theme-token and dark-mode support across all seven locales. The data, API, and workflow contracts are unchanged; clients that hit the JSON API see no behavior difference. The version bump reflects the surface-area shift, not a breaking API.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              New Agents view at <code>/agents</code>
+            </h4>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Workspace-level page that surfaces every AI agent active across the user's workspace in one place. Composes three new presentational components —
+              <code>KanbanWeb.AgentsHeader</code>, <code>KanbanWeb.AgentRosterCard</code>, and
+              <code>KanbanWeb.AgentActivityFeed</code>
+              — into a two-column layout: the agent roster on the left (status, current task, recent throughput, capabilities) and a chronological activity feed on the right (claims, completions, hook results) windowed to the last 24 hours.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>KanbanWeb.AgentsLive</code> is a thin LiveView binding the <code>Kanban.Agents</code>
+              context output to the components — no Ecto queries in the LiveView module per the project's separation rule. Real-time updates flow over the
+              <code>"agents"</code>
+              PubSub topic; a debounced refresh (<code>@refresh_debounce_ms</code>
+              = 250ms) coalesces bursts of <code>{:agent_event, _}</code>
+              broadcasts so a flurry of completions does not redrive the agent queries on every message.
+              <code>KanbanWeb.AgentsPresence</code>
+              powers a "live · N connected" indicator showing how many agent sessions are currently online.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The page supports filter tabs (<code>:all</code>, <code>:online</code>, plus per-capability filters) routed through
+              <code>handle_event/3</code> and persisted in the URL via <code>push_patch</code>. Auth lives in the
+              <code>:require_authenticated_user</code>
+              live_session — workspace data is never served to anonymous visitors.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              New Review queue at <code>/review</code>
+            </h4>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Workspace-level review queue replacing the per-board "tasks in Review" scrolling list. A two-pane layout: the queue list on the left (one
+              <code>KanbanWeb.ReviewQueueItem</code>
+              per pending task with a stats strip showing acceptance-criteria coverage, issue count, and reviewer dispatch state), the selected task's full detail on the right (<code>KanbanWeb.ReviewDetailHeader</code>,
+              <code>KanbanWeb.ReviewStatsStrip</code>, <code>KanbanWeb.ReviewDiffPanel</code>, the existing
+              <code>KanbanWeb.AcceptanceChecklist</code>).
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>KanbanWeb.ReviewLive</code>
+              is a thin binding layer — all reads route through
+              <code>Kanban.Reviews.list_pending_reviews/1</code> and <code>Kanban.Reviews.queue_stats/1</code>; approve and request-changes mutations route through
+              <code>Kanban.Reviews.approve_review/3</code> and <code>Kanban.Reviews.request_changes_review/3</code>. No Ecto queries live in the LiveView module.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The Review page renders structured
+              <code>reviewer_result</code>
+              payloads (see the structured review-report contract below) when present, falling back to the legacy markdown
+              <code>review_report</code>
+              regex extraction for tasks completed before the rollout. Tasks completed via the no-subagent skip-form render via the existing summary-and-skip-reason layout. The render branch is detected via
+              <code>if reviewer_result["issues"] is a list → structured; elsif review_report is non-empty → markdown fallback; else → empty</code>
+              so old archived tasks keep displaying acceptably indefinitely.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Approve and request-changes are both single-click; request-changes opens an inline form (no modal navigation) that posts back into the same LiveView.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Marketing and auth surface refresh
+            </h4>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Six marketing-site pages — landing, about, resources index, resources show, product, workflows, security, privacy — rebuilt against a shared editorial design language. New
+              <code>KanbanWeb.AuthFrame</code>
+              component standardizes the four auth surfaces (sign in, sign up, forgot password, reset password) on the same card-based layout.
+              <code>KanbanWeb.UserLive.Settings</code>
+              redesigned to use the same auth-card pattern. Every screen now passes dark-mode contrast verification: light text (oklch ~0.97) on dark backgrounds (oklch ~0.30) in dark mode, dark text (oklch ~0.21) on light backgrounds (oklch ~0.98) in light mode. The dark-mode color map (theme-aware daisyUI tokens —
+              <code>text-base-content</code>, <code>bg-base-100</code>, <code>border-base-300</code>) replaces hard-coded greys across every converted template.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The login screen is now fully responsive (mobile-first layout, breakpoint-aware spacing). Avatars across the board view display the owner's name on hover. Drag-and-drop on the board has been substantially improved — fewer jitter cases on column boundary crossing, smoother re-flow of remaining cards.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Structured review-report contract (G143 server-side)
+            </h4>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>Kanban.Tasks.CompletionValidation</code> now optionally accepts a structured
+              <code>reviewer_result</code> payload alongside the legacy <code>summary</code>
+              + integer-counts shape. New fields: <code>schema_version</code>
+              (semver string), <code>status</code>, <code>issue_counts</code>, <code>issues[]</code> (with
+              <code>severity</code> ∈ <code>critical|important|minor</code> and <code>category</code> ∈
+              <code>acceptance_criteria|pitfall|pattern|testing|code_quality</code>),
+              <code>acceptance_criteria[]</code> (with <code>status</code> ∈ <code>met|not_met</code>
+              — underscore form), and three section verdicts
+              <code>testing_strategy</code> / <code>patterns</code> / <code>pitfalls</code>
+              (each <code>{status, notes?}</code> with <code>status</code> ∈
+              <code>passed|failed|not_assessed</code>). All fields are optional — legacy payloads continue to validate unchanged. Unknown fields per entry are tolerated for forward compatibility. The
+              <code>reviewer_result</code> jsonb column persists the full payload verbatim;
+              <code>KanbanWeb.API.TaskJSON</code> round-trips it without filtering or allowlisting.
+            </p>
+
+            <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Full schema documented in
+              <code>docs/api/patch_tasks_id_complete.md</code> and via <code>GET /api/agent/onboarding</code> →
+              <code>api_schema.reviewer_result_format</code>. Plugin variants are tracked under G144 — the server accepts payloads from any client emitting the new shape, and the UI degrades to the markdown fallback for tasks completed by older clients.
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Compatibility
+          </h3>
+
+          <p class="m-0 mb-3 ml-4 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            No breaking API or schema changes. All JSON contracts, all column transitions, all hook timings, and all plugin-side payloads remain byte-for-byte compatible with 1.29.x clients. The 2.0.0 bump reflects the UI surface-area shift (two new workspace-level pages, a marketing-site rebuild, an auth-card overhaul, a theme-token migration) rather than any backwards-incompatible change at the API layer. Clients on older plugin versions continue to work unchanged; the
+            <code>/review</code> page renders their markdown <code>review_report</code>
+            via the legacy regex fallback.
+          </p>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [1.29.0] - 2026-05-08
         </h2>
 
