@@ -50,7 +50,7 @@ defmodule KanbanWeb.MarketingMiniBoard do
           style="color: var(--ink-2);"
         >
           <span
-            class="inline-flex items-center justify-center mr-1.5 text-white font-bold"
+            class="inline-flex items-center justify-center mr-1.5 text-primary-content font-bold"
             style="width: 12px; height: 12px; border-radius: 3px; background: var(--stride-orange); font-size: 7.5px; font-family: var(--font-mono); letter-spacing: -0.02em;"
           >
             STR

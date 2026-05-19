@@ -902,8 +902,9 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Assigned Task"
       # New TaskCard renders a 16px circular Avatar instead of the
       # legacy hero-user-solid icon. The Avatar component uses
-      # text-white font-semibold on a colored circle.
-      assert html =~ "text-white font-semibold"
+      # text-primary-content font-semibold on a colored circle so
+      # the initials adapt to the active theme.
+      assert html =~ "text-primary-content font-semibold"
       assert html =~ "width: 16px; height: 16px"
     end
 
