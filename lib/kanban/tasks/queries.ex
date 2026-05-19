@@ -331,13 +331,13 @@ defmodule Kanban.Tasks.Queries do
   defp collect_sorted_goals(tasks) do
     tasks
     |> Enum.filter(&(&1.type == :goal))
-    |> Enum.sort_by(& &1.identifier)
+    |> Enum.sort_by(&sort_key/1, NaiveDateTime)
   end
 
   defp collect_standalone(tasks, goal_ids) do
     tasks
     |> Enum.filter(&standalone?(&1, goal_ids))
-    |> Enum.sort_by(& &1.identifier)
+    |> Enum.sort_by(&sort_key/1, NaiveDateTime)
   end
 
   defp standalone?(%{type: :goal}, _goal_ids), do: false
@@ -345,9 +345,20 @@ defmodule Kanban.Tasks.Queries do
   defp standalone?(%{parent_id: parent_id}, goal_ids), do: not MapSet.member?(goal_ids, parent_id)
 
   defp goal_with_children(goal, by_parent) do
-    children = by_parent |> Map.get(goal.id, []) |> Enum.sort_by(& &1.identifier)
+    children =
+      by_parent
+      |> Map.get(goal.id, [])
+      |> Enum.sort_by(&sort_key/1, NaiveDateTime)
+
     [goal | children]
   end
+
+  # Tasks within the goal-hierarchy columns sort by creation time (oldest
+  # first). Using `inserted_at` rather than parsing the identifier sidesteps
+  # the natural-vs-lexicographic-sort headache and stays stable when an
+  # identifier is renumbered or backfilled.
+  defp sort_key(%{inserted_at: %NaiveDateTime{} = ts}), do: ts
+  defp sort_key(_), do: ~N[1970-01-01 00:00:00]
 
   defp maybe_filter_archived(query, false) do
     where(query, [t], is_nil(t.archived_at))
