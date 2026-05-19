@@ -245,12 +245,17 @@
                     type="button"
                     phx-click="archive_task"
                     phx-value-id={task.id}
+                    phx-disable-with=""
                     aria-label={gettext("Archive task")}
-                    class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 p-1 rounded hover:bg-base-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 p-1 rounded hover:bg-base-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 phx-click-loading:opacity-50 phx-click-loading:cursor-wait phx-click-loading:pointer-events-none disabled:opacity-50 disabled:cursor-wait disabled:pointer-events-none"
                   >
                     <.icon
                       name="hero-archive-box"
-                      class="h-3.5 w-3.5 text-base-content opacity-60"
+                      class="h-3.5 w-3.5 text-base-content opacity-60 phx-click-loading:hidden"
+                    />
+                    <.icon
+                      name="hero-arrow-path"
+                      class="h-3.5 w-3.5 text-base-content opacity-80 hidden phx-click-loading:inline-block animate-spin"
                     />
                   </button>
                   <button
