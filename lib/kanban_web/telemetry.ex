@@ -61,7 +61,7 @@ defmodule KanbanWeb.Telemetry do
   end
 
   defp application_metrics do
-    user_metrics() ++ board_metrics() ++ task_metrics() ++ api_metrics()
+    user_metrics() ++ board_metrics() ++ task_metrics() ++ api_metrics() ++ review_metrics()
   end
 
   defp user_metrics do
@@ -119,6 +119,22 @@ defmodule KanbanWeb.Telemetry do
       counter("kanban.api.error.count",
         tags: [:endpoint, :status],
         description: "API errors by endpoint and status code"
+      )
+    ]
+  end
+
+  # Review-report rendering counters. The structured-JSON review panel emits one
+  # of these per render so we can track the leading indicator that
+  # `:fallback_used` stays at zero for newly-completed tasks. Emitted from the
+  # ReviewReportPanel — do not emit elsewhere.
+  defp review_metrics do
+    [
+      counter("kanban.review.fallback_used.count",
+        description:
+          "Total renders of the review panel that fell back to the legacy summary parser"
+      ),
+      counter("kanban.review.structured_used.count",
+        description: "Total renders of the review panel using the structured JSON block"
       )
     ]
   end
