@@ -29,8 +29,6 @@ defmodule KanbanWeb.ReviewReportPanel do
   """
   use KanbanWeb, :html
 
-  alias KanbanWeb.ReviewReportHelpers
-
   @doc """
   Renders the review-report panel for a task.
 
@@ -73,38 +71,10 @@ defmodule KanbanWeb.ReviewReportPanel do
   attr :reviewer_result, :map, required: true
 
   defp structured_view(assigns) do
-    assigns =
-      assigns
-      |> assign(:status, Map.get(assigns.reviewer_result, "status"))
-      |> assign(:summary, Map.get(assigns.reviewer_result, "summary"))
-      |> assign(:issues, Map.get(assigns.reviewer_result, "issues", []))
-      |> assign(:acceptance, Map.get(assigns.reviewer_result, "acceptance_criteria", []))
-      |> assign(:testing_strategy, Map.get(assigns.reviewer_result, "testing_strategy"))
-      |> assign(:patterns, Map.get(assigns.reviewer_result, "patterns"))
-      |> assign(:pitfalls, Map.get(assigns.reviewer_result, "pitfalls"))
+    assigns = assign(assigns, :issues, Map.get(assigns.reviewer_result, "issues", []))
 
     ~H"""
-    <header :if={@status || @summary} data-review-report-header class="mb-4">
-      <div
-        :if={@status}
-        data-review-report-status
-        class={[
-          "inline-block px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide mb-2",
-          status_badge_class(@status)
-        ]}
-      >
-        {status_label(@status)}
-      </div>
-      <p :if={@summary} class="text-sm text-base-content opacity-80">{@summary}</p>
-    </header>
-
     <.issue_list issues={@issues} />
-    <.acceptance_grid acceptance={@acceptance} />
-    <.section_verdicts
-      testing_strategy={@testing_strategy}
-      patterns={@patterns}
-      pitfalls={@pitfalls}
-    />
     """
   end
 
@@ -115,7 +85,7 @@ defmodule KanbanWeb.ReviewReportPanel do
     assigns = assign(assigns, :grouped, grouped)
 
     ~H"""
-    <div :if={@issues != []} data-review-report-issues class="mb-4 space-y-3">
+    <div :if={@issues != []} data-review-report-issues class="space-y-3">
       <.issue_group
         :for={severity <- [:critical, :important, :minor]}
         severity={severity}
@@ -153,154 +123,20 @@ defmodule KanbanWeb.ReviewReportPanel do
     """
   end
 
-  attr :acceptance, :list, required: true
-
-  defp acceptance_grid(assigns) do
-    ~H"""
-    <div :if={@acceptance != []} data-review-report-acceptance class="mb-4">
-      <h3 class="text-xs font-semibold uppercase tracking-wide text-base-content opacity-70 mb-2">
-        {gettext("Acceptance criteria")}
-      </h3>
-      <ul class="space-y-1">
-        <li
-          :for={criterion <- @acceptance}
-          data-review-report-acceptance-row
-          class="flex items-start gap-2 text-sm"
-        >
-          <span
-            data-review-report-acceptance-status={Map.get(criterion, "status")}
-            class={[
-              "shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold",
-              acceptance_badge_class(Map.get(criterion, "status"))
-            ]}
-          >
-            {acceptance_status_label(Map.get(criterion, "status"))}
-          </span>
-          <span>{Map.get(criterion, "criterion")}</span>
-        </li>
-      </ul>
-    </div>
-    """
-  end
-
-  attr :testing_strategy, :any, required: true
-  attr :patterns, :any, required: true
-  attr :pitfalls, :any, required: true
-
-  defp section_verdicts(assigns) do
-    ~H"""
-    <div
-      :if={@testing_strategy || @patterns || @pitfalls}
-      data-review-report-verdicts
-      class="grid grid-cols-1 sm:grid-cols-3 gap-3"
-    >
-      <.verdict_tile marker="testing_strategy" label={gettext("Testing")} verdict={@testing_strategy} />
-      <.verdict_tile marker="patterns" label={gettext("Patterns")} verdict={@patterns} />
-      <.verdict_tile marker="pitfalls" label={gettext("Pitfalls")} verdict={@pitfalls} />
-    </div>
-    """
-  end
-
-  attr :marker, :string, required: true
-  attr :label, :string, required: true
-  attr :verdict, :any, required: true
-
-  defp verdict_tile(assigns) do
-    {status, notes} =
-      case assigns.verdict do
-        %{} = v -> {Map.get(v, "status"), Map.get(v, "notes")}
-        _ -> {nil, nil}
-      end
-
-    assigns = assigns |> assign(:status, status) |> assign(:notes, notes)
-
-    ~H"""
-    <div
-      data-review-report-verdict={@marker}
-      class="bg-base-200 border border-base-300 rounded-md p-2"
-    >
-      <div class="text-xs font-semibold uppercase tracking-wide text-base-content opacity-70">
-        {@label}
-      </div>
-      <div
-        data-review-report-verdict-status={@status}
-        class={["text-sm font-semibold mt-0.5", verdict_text_class(@status)]}
-      >
-        {verdict_status_label(@status)}
-      </div>
-      <div :if={@notes} class="text-xs text-base-content opacity-80 mt-1">{@notes}</div>
-    </div>
-    """
-  end
-
   # --- Fallback branch -----------------------------------------------------
 
   attr :task, :map, required: true
   attr :review_report, :string, required: true
 
   defp fallback_view(assigns) do
-    assigns =
-      assigns
-      |> assign(:testing, ReviewReportHelpers.testing_strategy_value(assigns.task))
-      |> assign(:testing_passed, ReviewReportHelpers.testing_strategy_passed(assigns.task))
-      |> assign(:patterns, ReviewReportHelpers.patterns_value(assigns.task))
-      |> assign(:patterns_passed, ReviewReportHelpers.patterns_passed(assigns.task))
-      |> assign(:pitfalls, ReviewReportHelpers.pitfalls_value(assigns.task))
-      |> assign(:pitfalls_passed, ReviewReportHelpers.pitfalls_passed(assigns.task))
-      |> assign(:report_html, render_markdown(assigns.review_report))
+    assigns = assign(assigns, :report_html, render_markdown(assigns.review_report))
 
     ~H"""
-    <div
-      :if={@testing || @patterns || @pitfalls}
-      data-review-report-fallback-verdicts
-      class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4"
-    >
-      <.fallback_tile
-        marker="testing_strategy"
-        label={gettext("Testing")}
-        value={@testing}
-        passed={@testing_passed}
-      />
-      <.fallback_tile
-        marker="patterns"
-        label={gettext("Patterns")}
-        value={@patterns}
-        passed={@patterns_passed}
-      />
-      <.fallback_tile
-        marker="pitfalls"
-        label={gettext("Pitfalls")}
-        value={@pitfalls}
-        passed={@pitfalls_passed}
-      />
-    </div>
-
     <div
       data-review-report-fallback-body
       class="prose prose-sm max-w-none text-base-content"
     >
       {Phoenix.HTML.raw(@report_html)}
-    </div>
-    """
-  end
-
-  attr :marker, :string, required: true
-  attr :label, :string, required: true
-  attr :value, :any, required: true
-  attr :passed, :any, required: true
-
-  defp fallback_tile(assigns) do
-    ~H"""
-    <div
-      data-review-report-verdict={@marker}
-      class="bg-base-200 border border-base-300 rounded-md p-2"
-    >
-      <div class="text-xs font-semibold uppercase tracking-wide text-base-content opacity-70">
-        {@label}
-      </div>
-      <div class={["text-sm font-semibold mt-0.5", fallback_text_class(@passed)]}>
-        {@value || gettext("—")}
-      </div>
     </div>
     """
   end
@@ -401,17 +237,6 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp severity_text_class(:important), do: "text-warning"
   defp severity_text_class(_), do: "text-base-content opacity-70"
 
-  defp status_label("approved"), do: gettext("Approved")
-  defp status_label("changes_requested"), do: gettext("Changes requested")
-  defp status_label("rejected"), do: gettext("Rejected")
-  defp status_label(other) when is_binary(other), do: other
-  defp status_label(_), do: ""
-
-  defp status_badge_class("approved"), do: "bg-success text-success-content"
-  defp status_badge_class("changes_requested"), do: "bg-warning text-warning-content"
-  defp status_badge_class("rejected"), do: "bg-error text-error-content"
-  defp status_badge_class(_), do: "bg-base-200 text-base-content"
-
   defp category_label("acceptance_criteria"), do: gettext("Acceptance")
   defp category_label("pitfall"), do: gettext("Pitfalls")
   defp category_label("pattern"), do: gettext("Patterns")
@@ -420,24 +245,4 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp category_label(other) when is_binary(other), do: other
   defp category_label(_), do: ""
 
-  defp acceptance_status_label("met"), do: gettext("Met")
-  defp acceptance_status_label("not_met"), do: gettext("Not met")
-  defp acceptance_status_label(_), do: gettext("—")
-
-  defp acceptance_badge_class("met"), do: "bg-success text-success-content"
-  defp acceptance_badge_class("not_met"), do: "bg-error text-error-content"
-  defp acceptance_badge_class(_), do: "bg-base-200 text-base-content"
-
-  defp verdict_status_label("passed"), do: gettext("Passed")
-  defp verdict_status_label("failed"), do: gettext("Failed")
-  defp verdict_status_label("not_assessed"), do: gettext("Not assessed")
-  defp verdict_status_label(_), do: gettext("—")
-
-  defp verdict_text_class("passed"), do: "text-success"
-  defp verdict_text_class("failed"), do: "text-error"
-  defp verdict_text_class(_), do: "text-base-content opacity-70"
-
-  defp fallback_text_class(true), do: "text-success"
-  defp fallback_text_class(false), do: "text-error"
-  defp fallback_text_class(_), do: "text-base-content opacity-70"
 end

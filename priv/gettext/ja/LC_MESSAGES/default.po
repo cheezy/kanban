@@ -382,7 +382,7 @@ msgstr "タスクを移動できません：列がWIP制限に達しています
 msgid "Created"
 msgstr "作成日"
 
-#: lib/kanban_web/components/review_report_panel.ex:396
+#: lib/kanban_web/components/review_report_panel.ex:232
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -728,7 +728,7 @@ msgstr "利用可能な履歴がありません"
 msgid "Status"
 msgstr "ステータス"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:102
+#: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "確認リンクが無効または期限切れです。"
@@ -740,7 +740,7 @@ msgstr "確認リンクが無効または期限切れです。"
 msgid "Dashboard"
 msgstr "ダッシュボード"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:96
+#: lib/kanban_web/live/user_live/confirmation.ex:99
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "このアカウントは既に確認されています。ログインできます。"
@@ -1070,7 +1070,7 @@ msgstr "検証手順を追加"
 msgid "Agent"
 msgstr "エージェント"
 
-#: lib/kanban_web/components/review_report_panel.ex:404
+#: lib/kanban_web/live/review_live.ex:492
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:74
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -1348,9 +1348,8 @@ msgstr "従うべきパターン"
 msgid "Pending"
 msgstr "保留中"
 
-#: lib/kanban_web/components/review_report_panel.ex:199
-#: lib/kanban_web/components/review_report_panel.ex:272
-#: lib/kanban_web/components/review_report_panel.ex:416
+#: lib/kanban_web/components/review_queue_item.ex:264
+#: lib/kanban_web/components/review_report_panel.ex:241
 #: lib/kanban_web/components/review_stats_strip.ex:76
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
@@ -1359,7 +1358,6 @@ msgstr "保留中"
 msgid "Pitfalls"
 msgstr "落とし穴"
 
-#: lib/kanban_web/components/review_report_panel.ex:406
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:962
 #, elixir-autogen, elixir-format
@@ -3168,7 +3166,7 @@ msgstr "ボード編集時に field_visibility を永続化"
 msgid "Pricing"
 msgstr "料金"
 
-#: lib/kanban_web/components/auth_frame.ex:135
+#: lib/kanban_web/components/auth_frame.ex:145
 #: lib/kanban_web/components/marketing_closing.ex:107
 #, elixir-autogen, elixir-format
 msgid "Privacy"
@@ -3202,7 +3200,7 @@ msgstr "AIを含めた本物のメトリクス"
 msgid "Review at the speed of approval"
 msgstr "承認するスピードでレビュー"
 
-#: lib/kanban_web/components/auth_frame.ex:147
+#: lib/kanban_web/components/auth_frame.ex:157
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
@@ -3212,7 +3210,7 @@ msgstr "セキュリティ"
 
 #: lib/kanban_web/components/marketing_components.ex:137
 #: lib/kanban_web/components/marketing_components.ex:305
-#: lib/kanban_web/live/user_live/confirmation.ex:55
+#: lib/kanban_web/live/user_live/confirmation.ex:58
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:19
@@ -4185,8 +4183,8 @@ msgstr "ブロッキング · 60秒"
 #: lib/kanban_web/components/board_pulse_card.ex:247
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:180
-#: lib/kanban_web/components/review_queue_item.ex:254
-#: lib/kanban_web/live/review_live.ex:412
+#: lib/kanban_web/components/review_queue_item.ex:375
+#: lib/kanban_web/live/review_live.ex:468
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "たった今"
@@ -4446,7 +4444,8 @@ msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count}件の基準"
 
-#: lib/kanban_web/components/review_queue_item.ex:163
+#: lib/kanban_web/components/review_diff_panel.ex:52
+#: lib/kanban_web/components/review_queue_item.ex:174
 #: lib/kanban_web/components/task_card.ex:308
 #: lib/kanban_web/components/task_card.ex:352
 #, elixir-autogen, elixir-format, fuzzy
@@ -4592,24 +4591,25 @@ msgstr "必須"
 msgid "Started"
 msgstr "開始済み"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:51
-#: lib/kanban_web/components/review_report_panel.ex:162
+#: lib/kanban_web/components/acceptance_checklist.ex:71
+#: lib/kanban_web/components/acceptance_checklist.ex:138
+#: lib/kanban_web/components/review_queue_item.ex:246
 #: lib/kanban_web/live/task_live/view_component.ex:120
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "受け入れ基準"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:120
+#: lib/kanban_web/components/acceptance_checklist.ex:247
 #, elixir-autogen, elixir-format
 msgid "Checked"
 msgstr "確認済み"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:66
+#: lib/kanban_web/components/acceptance_checklist.ex:86
 #, elixir-autogen, elixir-format
 msgid "No acceptance criteria recorded."
 msgstr "受け入れ基準が記録されていません。"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:137
+#: lib/kanban_web/components/acceptance_checklist.ex:264
 #, elixir-autogen, elixir-format
 msgid "Unchecked"
 msgstr "未確認"
@@ -4997,6 +4997,7 @@ msgstr "レビュー状態"
 msgid "Success"
 msgstr "成功"
 
+#: lib/kanban_web/components/review_queue_item.ex:252
 #: lib/kanban_web/components/review_stats_strip.ex:62
 #: lib/kanban_web/live/task_live/view_component.ex:267
 #, elixir-autogen, elixir-format
@@ -5132,35 +5133,35 @@ msgstr "ライブ"
 
 #: lib/kanban_web/components/archive_row.ex:372
 #: lib/kanban_web/components/review_detail_header.ex:187
-#: lib/kanban_web/components/review_queue_item.ex:261
-#: lib/kanban_web/live/review_live.ex:418
+#: lib/kanban_web/components/review_queue_item.ex:382
+#: lib/kanban_web/live/review_live.ex:474
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d}日前"
 
 #: lib/kanban_web/components/archive_row.ex:370
 #: lib/kanban_web/components/review_detail_header.ex:185
-#: lib/kanban_web/components/review_queue_item.ex:259
-#: lib/kanban_web/live/review_live.ex:416
+#: lib/kanban_web/components/review_queue_item.ex:380
+#: lib/kanban_web/live/review_live.ex:472
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h}時間前"
 
 #: lib/kanban_web/components/archive_row.ex:367
 #: lib/kanban_web/components/review_detail_header.ex:182
-#: lib/kanban_web/components/review_queue_item.ex:256
-#: lib/kanban_web/live/review_live.ex:413
+#: lib/kanban_web/components/review_queue_item.ex:377
+#: lib/kanban_web/live/review_live.ex:469
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m}分前"
 
 #: lib/kanban_web/components/review_detail_header.ex:181
-#: lib/kanban_web/components/review_queue_item.ex:255
+#: lib/kanban_web/components/review_queue_item.ex:376
 #, elixir-autogen, elixir-format
 msgid "%{s}s ago"
 msgstr "%{s}秒前"
 
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:240
 #: lib/kanban_web/components/review_stats_strip.ex:55
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -5181,7 +5182,7 @@ msgstr "変更を依頼"
 msgid "Unknown agent"
 msgstr "不明なエージェント"
 
-#: lib/kanban_web/components/review_queue_item.ex:117
+#: lib/kanban_web/components/review_queue_item.ex:120
 #, elixir-autogen, elixir-format
 msgid "needs attention"
 msgstr "対応が必要"
@@ -5192,23 +5193,18 @@ msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count}件のテストが失敗"
 
-#: lib/kanban_web/components/review_diff_panel.ex:52
-#, elixir-autogen, elixir-format
-msgid "Changed files (%{count})"
-msgstr "変更されたファイル (%{count})"
-
 #: lib/kanban_web/components/review_diff_panel.ex:83
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "変更されたファイルはありません。"
 
-#: lib/kanban_web/live/review_live.ex:397
+#: lib/kanban_web/live/review_live.ex:453
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{agents}人のエージェントからの%{count}件のタスクがあなた待ちです"
 
-#: lib/kanban_web/live/review_live.ex:392
+#: lib/kanban_web/live/review_live.ex:448
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "あなた待ちのタスクは0件です。"
@@ -5228,7 +5224,7 @@ msgstr "平均レビュー時間 · 17分"
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "受信箱ゼロ — レビュー待ちはありません。"
 
-#: lib/kanban_web/live/review_live.ex:342
+#: lib/kanban_web/live/review_live.ex:398
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "変更を依頼する際はメモが必須です。"
@@ -5238,7 +5234,7 @@ msgstr "変更を依頼する際はメモが必須です。"
 msgid "Notes for the agent"
 msgstr "エージェントへのメモ"
 
-#: lib/kanban_web/live/review_live.ex:337
+#: lib/kanban_web/live/review_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "%{ident} に変更を依頼しました"
@@ -5258,12 +5254,12 @@ msgstr "依頼を送信"
 msgid "Unable to approve task."
 msgstr "タスクを承認できませんでした。"
 
-#: lib/kanban_web/live/review_live.ex:346
+#: lib/kanban_web/live/review_live.ex:402
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "タスクに変更を依頼できませんでした。"
 
-#: lib/kanban_web/live/review_live.ex:407
+#: lib/kanban_web/live/review_live.ex:463
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "最古 %{age}"
@@ -5586,7 +5582,7 @@ msgstr "Strideがどのように作られたか、誰のためのものか、ど
 msgid "Key collaboration features"
 msgstr "主な協働機能"
 
-#: lib/kanban_web/components/auth_frame.ex:311
+#: lib/kanban_web/components/auth_frame.ex:321
 #, elixir-autogen, elixir-format
 msgid "A task structure that AI agents can actually pull from."
 msgstr "AIエージェントが実際にプルできるタスク構造。"
@@ -5601,12 +5597,12 @@ msgstr "利用規約"
 msgid "Account confirmed"
 msgstr "アカウントが確認されました！"
 
-#: lib/kanban_web/components/auth_frame.ex:297
+#: lib/kanban_web/components/auth_frame.ex:307
 #, elixir-autogen, elixir-format
 msgid "Agents finally have somewhere good to work."
 msgstr "エージェントがついに快適に働ける場所を得ました。"
 
-#: lib/kanban_web/components/auth_frame.ex:156
+#: lib/kanban_web/components/auth_frame.ex:166
 #, elixir-autogen, elixir-format
 msgid "All systems normal"
 msgstr "すべてのシステムが正常"
@@ -5661,9 +5657,9 @@ msgstr "強力なパスワードを選んで確認してください。変更が
 msgid "Confirming your account…"
 msgstr "アカウントを確認中..."
 
-#: lib/kanban_web/components/auth_frame.ex:334
-#: lib/kanban_web/components/auth_frame.ex:335
-#: lib/kanban_web/components/auth_frame.ex:336
+#: lib/kanban_web/components/auth_frame.ex:344
+#: lib/kanban_web/components/auth_frame.ex:345
+#: lib/kanban_web/components/auth_frame.ex:346
 #, elixir-autogen, elixir-format
 msgid "Continue with %{provider}"
 msgstr "%{provider} で続行"
@@ -5678,7 +5674,7 @@ msgstr "アカウントを作成"
 msgid "Create your account"
 msgstr "アカウントを作成"
 
-#: lib/kanban_web/components/auth_frame.ex:319
+#: lib/kanban_web/components/auth_frame.ex:329
 #, elixir-autogen, elixir-format
 msgid "Dani O · Platform, Stride"
 msgstr "Dani O · プラットフォーム, Stride"
@@ -5713,7 +5709,7 @@ msgstr "少々お待ちください — すぐに完了します。"
 msgid "I agree to the"
 msgstr "次に同意します:"
 
-#: lib/kanban_web/components/auth_frame.ex:298
+#: lib/kanban_web/components/auth_frame.ex:308
 #, elixir-autogen, elixir-format
 msgid "Jamie K · Engineering Lead, letstango.ca"
 msgstr "Jamie K · エンジニアリングリード, letstango.ca"
@@ -5728,8 +5724,8 @@ msgstr "このデバイスでサインインを維持"
 msgid "Manage your account profile and password. Changes apply to your account immediately."
 msgstr "アカウントのプロフィールとパスワードを管理します。変更はすぐにアカウントに反映されます。"
 
-#: lib/kanban_web/components/auth_frame.ex:305
-#: lib/kanban_web/components/auth_frame.ex:326
+#: lib/kanban_web/components/auth_frame.ex:315
+#: lib/kanban_web/components/auth_frame.ex:336
 #, elixir-autogen, elixir-format
 msgid "Mei L · CTO, Carafe"
 msgstr "Mei L · CTO, Carafe"
@@ -5765,7 +5761,7 @@ msgstr "Strideアプリケーションのリリースノート。"
 msgid "Reset your password"
 msgstr "パスワードをリセット"
 
-#: lib/kanban_web/components/auth_frame.ex:312
+#: lib/kanban_web/components/auth_frame.ex:322
 #, elixir-autogen, elixir-format
 msgid "Rohan S · Infra, Stride"
 msgstr "Rohan S · インフラ, Stride"
@@ -5775,7 +5771,7 @@ msgstr "Rohan S · インフラ, Stride"
 msgid "Save password"
 msgstr "パスワードを保存"
 
-#: lib/kanban_web/components/auth_frame.ex:325
+#: lib/kanban_web/components/auth_frame.ex:335
 #, elixir-autogen, elixir-format
 msgid "Security model is built for agents, not retrofitted for them."
 msgstr "セキュリティモデルはエージェント向けに最初から作られており、後付けではありません。"
@@ -5795,7 +5791,7 @@ msgstr "品質を犠牲にせず素早く動きたいスタートアップ。"
 msgid "Tango"
 msgstr "Tango"
 
-#: lib/kanban_web/components/auth_frame.ex:141
+#: lib/kanban_web/components/auth_frame.ex:151
 #, elixir-autogen, elixir-format
 msgid "Terms"
 msgstr "利用規約"
@@ -5810,7 +5806,7 @@ msgstr "利用規約"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Strideを支える人々とAIコラボレーター。"
 
-#: lib/kanban_web/components/auth_frame.ex:318
+#: lib/kanban_web/components/auth_frame.ex:328
 #, elixir-autogen, elixir-format
 msgid "Tokens rotate, claims survive. That alone was worth the switch."
 msgstr "トークンはローテーションし、クレームは生き残る。それだけでも切り替える価値がありました。"
@@ -5820,12 +5816,12 @@ msgstr "トークンはローテーションし、クレームは生き残る。
 msgid "Update profile"
 msgstr "プロフィールを更新"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:65
+#: lib/kanban_web/live/user_live/confirmation.ex:68
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "確認リンクを検証中…"
 
-#: lib/kanban_web/components/auth_frame.ex:304
+#: lib/kanban_web/components/auth_frame.ex:314
 #, elixir-autogen, elixir-format
 msgid "We replaced our backlog with Stride and shipped 38%% more in Q2."
 msgstr "バックログをStrideに置き換えた結果、Q2には38%%多く出荷しました。"
@@ -5902,7 +5898,7 @@ msgstr "オペレータパスワードのリセットはそうしますが"
 msgid "rotate API tokens. Rotate from"
 msgstr "APIトークンをローテーションします。次からローテーション:"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:68
+#: lib/kanban_web/live/user_live/confirmation.ex:71
 #, elixir-autogen, elixir-format
 msgid "this tab will sign you in automatically"
 msgstr "このタブが自動的にサインインします"
@@ -6320,14 +6316,13 @@ msgstr "サイクルタイム、すべての階層でエージェント対人間
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "各タスクは、なぜ、何を、受け入れ条件、テスト戦略、セキュリティ上の懸念、避けるべき落とし穴、可観測性を含みます。エージェントは往復なしで実行できる十分なコンテキストでクレームし、人間は自分で書いた基準に基づいてレビューします — 直感ではなく。"
 
-#: lib/kanban_web/live/review_live.ex:445
+#: lib/kanban_web/live/review_live.ex:559
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
 msgstr[0] "%{checked}/%{total} · %{n} 件の問題"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:102
-#: lib/kanban_web/components/review_report_panel.ex:424
+#: lib/kanban_web/components/acceptance_checklist.ex:229
 #, elixir-autogen, elixir-format
 msgid "Not met"
 msgstr "未達成"
@@ -6354,7 +6349,7 @@ msgstr "違反なし"
 msgid "violated"
 msgstr "違反"
 
-#: lib/kanban_web/live/review_live.ex:281
+#: lib/kanban_web/live/review_live.ex:297
 #, elixir-autogen, elixir-format
 msgid "Completion summary"
 msgstr "完了サマリー"
@@ -6364,14 +6359,12 @@ msgstr "完了サマリー"
 msgid "Email %{name}"
 msgstr "%{name} にメール"
 
-#: lib/kanban_web/components/review_queue_item.ex:172
+#: lib/kanban_web/components/review_queue_item.ex:183
 #, elixir-autogen, elixir-format
 msgid "Completed by %{name}"
 msgstr "完了者: %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:198
-#: lib/kanban_web/components/review_report_panel.ex:266
-#: lib/kanban_web/components/review_report_panel.ex:417
+#: lib/kanban_web/components/review_report_panel.ex:242
 #: lib/kanban_web/components/review_stats_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "Patterns"
@@ -6392,64 +6385,35 @@ msgstr "レビュアーが変更を要求 — エージェントの対応待ち"
 msgid "changes requested"
 msgstr "変更要求あり"
 
-#: lib/kanban_web/components/review_report_panel.ex:149
+#: lib/kanban_web/components/review_report_panel.ex:119
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr "（説明なし）"
 
-#: lib/kanban_web/components/review_report_panel.ex:405
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/review_live.ex:502
+#, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "変更要求あり"
 
-#: lib/kanban_web/components/review_report_panel.ex:419
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/components/review_report_panel.ex:244
+#, elixir-autogen, elixir-format
 msgid "Code quality"
-msgstr "品質"
+msgstr "コード品質"
 
-#: lib/kanban_web/components/review_report_panel.ex:432
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Failed"
-msgstr "コピーに失敗しました"
-
-#: lib/kanban_web/components/review_report_panel.ex:397
+#: lib/kanban_web/components/review_report_panel.ex:233
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "重要"
 
-#: lib/kanban_web/components/review_report_panel.ex:423
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Met"
-msgstr "メトリクス"
-
-#: lib/kanban_web/components/review_report_panel.ex:398
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/components/review_report_panel.ex:234
+#, elixir-autogen, elixir-format
 msgid "Minor"
-msgstr "最小"
+msgstr "軽微"
 
-#: lib/kanban_web/components/review_report_panel.ex:433
+#: lib/kanban_web/components/review_report_panel.ex:243
 #, elixir-autogen, elixir-format
-msgid "Not assessed"
-msgstr "未評価"
-
-#: lib/kanban_web/components/review_report_panel.ex:431
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Passed"
-msgstr "パスワード"
-
-#: lib/kanban_web/components/review_report_panel.ex:197
-#: lib/kanban_web/components/review_report_panel.ex:260
-#: lib/kanban_web/components/review_report_panel.ex:418
-#, elixir-autogen, elixir-format, fuzzy
 msgid "Testing"
-msgstr "テスト戦略"
-
-#: lib/kanban_web/components/review_report_panel.ex:302
-#: lib/kanban_web/components/review_report_panel.ex:425
-#: lib/kanban_web/components/review_report_panel.ex:434
-#, elixir-autogen, elixir-format
-msgid "—"
-msgstr "—"
+msgstr "テスト"
 
 #: lib/kanban_web/review_report_helpers.ex:169
 #, elixir-autogen, elixir-format, fuzzy
@@ -6465,3 +6429,38 @@ msgstr "未評価"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "passed"
 msgstr "パスワード"
+
+#: lib/kanban_web/components/review_queue_item.ex:244
+#, elixir-autogen, elixir-format
+msgid "ACC"
+msgstr "ACC"
+
+#: lib/kanban_web/components/review_queue_item.ex:256
+#, elixir-autogen, elixir-format
+msgid "PAT"
+msgstr "PAT"
+
+#: lib/kanban_web/components/review_queue_item.ex:262
+#, elixir-autogen, elixir-format
+msgid "PIT"
+msgstr "PIT"
+
+#: lib/kanban_web/components/review_queue_item.ex:258
+#, elixir-autogen, elixir-format
+msgid "Patterns followed"
+msgstr "準拠したパターン"
+
+#: lib/kanban_web/components/review_queue_item.ex:250
+#, elixir-autogen, elixir-format
+msgid "TST"
+msgstr "TST"
+
+#: lib/kanban_web/live/review_live.ex:337
+#, elixir-autogen, elixir-format
+msgid "Changed files"
+msgstr "変更されたファイル"
+
+#: lib/kanban_web/live/review_live.ex:318
+#, elixir-autogen, elixir-format
+msgid "Issues"
+msgstr "問題"

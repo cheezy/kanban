@@ -63,11 +63,14 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ ~s(data-review-report-panel="structured")
     end
 
-    test "renders the status banner and summary", %{task: task} do
+    test "no longer renders the status banner or reviewer summary — those are owned by the parent LiveView",
+         %{task: task} do
+      # The status pill lives next to `summary_text` in `ReviewLive` and
+      # the reviewer summary is not needed once the panel is dedicated to
+      # the Issues section.
       html = render_with(task)
-      assert html =~ "data-review-report-status"
-      assert html =~ "Approved"
-      assert html =~ "Reviewed all the things"
+      refute html =~ "data-review-report-status"
+      refute html =~ "Reviewed all the things"
     end
 
     test "renders severity-grouped issue list with critical first", %{task: task} do
@@ -83,25 +86,22 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert crit_idx < minor_idx
     end
 
-    test "renders the acceptance grid with met / not_met statuses", %{task: task} do
+    test "does not render an internal acceptance grid — that data is the AcceptanceChecklist's job",
+         %{task: task} do
+      # The panel used to render its own acceptance criteria grid, but it
+      # duplicated the `AcceptanceChecklist` rendered separately by the
+      # parent LiveView. The grid was removed to avoid the repetition.
       html = render_with(task)
-      assert html =~ "data-review-report-acceptance"
-      assert html =~ ~s(data-review-report-acceptance-status="met")
-      assert html =~ ~s(data-review-report-acceptance-status="not_met")
-      assert html =~ "Feature works"
-      assert html =~ "Edge case handled"
+      refute html =~ "data-review-report-acceptance"
+      refute html =~ "data-review-report-acceptance-status"
+      refute html =~ "data-review-report-acceptance-row"
     end
 
-    test "renders the three section verdict tiles", %{task: task} do
+    test "no longer renders the section verdict tiles — the parent strip surfaces those",
+         %{task: task} do
       html = render_with(task)
-      assert html =~ ~s(data-review-report-verdict="testing_strategy")
-      assert html =~ ~s(data-review-report-verdict="patterns")
-      assert html =~ ~s(data-review-report-verdict="pitfalls")
-      assert html =~ ~s(data-review-report-verdict-status="passed")
-      assert html =~ ~s(data-review-report-verdict-status="failed")
-      assert html =~ ~s(data-review-report-verdict-status="not_assessed")
-      assert html =~ "All cases covered"
-      assert html =~ "Inconsistent naming"
+      refute html =~ "data-review-report-verdict"
+      refute html =~ "data-review-report-verdicts"
     end
 
     test "uses daisyUI theme tokens (no hardcoded gray/white)", %{task: task} do
@@ -168,12 +168,10 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ ~s(data-review-report-panel="fallback")
     end
 
-    test "delegates to ReviewReportHelpers for verdict tile values", %{task: task} do
+    test "no longer renders fallback verdict tiles — those moved to the parent strip",
+         %{task: task} do
       html = render_with(task)
-      assert html =~ "data-review-report-fallback-verdicts"
-      assert html =~ "cases · all present"
-      assert html =~ "followed"
-      assert html =~ "none violated"
+      refute html =~ "data-review-report-fallback-verdicts"
     end
 
     test "renders the markdown body via Earmark", %{task: task, report: report} do
@@ -265,14 +263,13 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
 
+      # The panel now only renders an issue list — a skip-form sparse
+      # reviewer_result produces a structured-branch shell with no issues.
       assert html =~ ~s(data-review-report-panel="structured")
-      assert html =~ "Self-reviewed the diff against acceptance criteria"
       refute html =~ "data-review-report-issues"
-      refute html =~ "data-review-report-acceptance"
-      refute html =~ "data-review-report-verdicts"
     end
 
-    test "renders a dispatched-true reviewer_result with only a summary" do
+    test "renders the structured shell even when reviewer_result has only a summary" do
       task = %{
         id: 6,
         identifier: "W6",
@@ -286,7 +283,8 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       html = render_with(task)
 
       assert html =~ ~s(data-review-report-panel="structured")
-      assert html =~ "Reviewer notes go here."
+      # Summary text is no longer rendered inside the panel.
+      refute html =~ "Reviewer notes go here."
     end
   end
 
@@ -312,6 +310,148 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ ~s(data-review-report-panel="structured")
       refute html =~ ~s(data-review-report-panel="fallback")
       assert_receive {:telemetry_event, ^event, _, _}
+    end
+  end
+
+  describe "string-keyed task" do
+    test "structured branch reads reviewer_result through string keys" do
+      task = %{
+        "id" => 11,
+        "identifier" => "W11",
+        "reviewer_result" => %{
+          "status" => "approved",
+          "summary" => "String-keyed task"
+        }
+      }
+
+      html = render_with(task)
+      assert html =~ ~s(data-review-report-panel="structured")
+      # String-keyed reviewer summaries are no longer rendered in the panel.
+      refute html =~ "String-keyed task"
+    end
+
+    test "fallback branch reads review_report through string keys" do
+      task = %{
+        "id" => 12,
+        "identifier" => "W12",
+        "reviewer_result" => nil,
+        "review_report" => "### Patterns followed\n\nUsed standard."
+      }
+
+      html = render_with(task)
+      assert html =~ ~s(data-review-report-panel="fallback")
+      # The fallback now renders the markdown body via Earmark; the
+      # "Patterns followed" heading is preserved in the rendered HTML.
+      assert html =~ "Patterns followed"
+    end
+  end
+
+  describe "structured branch — exhaustive label / class coverage" do
+    test "renders the 'important' severity group, label, and tone" do
+      task = %{
+        id: 20,
+        identifier: "W20",
+        reviewer_result: %{
+          "status" => "changes_requested",
+          "summary" => "Has important issues",
+          "issues" => [
+            %{
+              "severity" => "important",
+              "category" => "acceptance_criteria",
+              "description" => "Missing edge case"
+            },
+            %{
+              "severity" => "wat?",
+              "category" => "pattern",
+              "description" => "Unknown severity buckets to minor"
+            }
+          ],
+          "acceptance_criteria" => [
+            %{"criterion" => "Strange item", "status" => "unknown"}
+          ],
+          "testing_strategy" => "not a map",
+          "patterns" => %{"status" => "ambiguous", "notes" => "n/a"},
+          "pitfalls" => %{"status" => "rejected"}
+        }
+      }
+
+      html = render_with(task)
+
+      assert html =~ ~s(data-review-report-issue-group="important")
+      assert html =~ ~s(data-review-report-issue-group="minor")
+      assert html =~ ~r/important/i
+      assert html =~ "text-warning"
+
+      # Category labels still render inside the per-issue line.
+      assert html =~ "Acceptance:"
+      assert html =~ "Patterns:"
+
+      # The internal acceptance grid, status banner, and section verdict
+      # tiles were all moved out of the panel.
+      refute html =~ ~s(data-review-report-acceptance-status)
+      refute html =~ ~s(data-review-report-acceptance-row)
+      refute html =~ "data-review-report-status"
+      refute html =~ "data-review-report-verdicts"
+      refute html =~ ~s(data-review-report-verdict="testing_strategy")
+    end
+
+    test "renders 'rejected' status and the 'testing' / 'code_quality' category labels" do
+      task = %{
+        id: 21,
+        identifier: "W21",
+        reviewer_result: %{
+          "status" => "rejected",
+          "summary" => "Blocked",
+          "issues" => [
+            %{
+              "severity" => "minor",
+              "category" => "testing",
+              "description" => "Missing unit test"
+            },
+            %{
+              "severity" => "minor",
+              "category" => "code_quality",
+              "description" => "Long function"
+            },
+            %{
+              "severity" => "minor",
+              "category" => "something_else",
+              "description" => "Falls back to literal binary"
+            },
+            %{
+              "severity" => "minor",
+              "description" => "No category at all"
+            }
+          ]
+        }
+      }
+
+      html = render_with(task)
+
+      # The status pill (and its `bg-error` / "rejected" label) was moved
+      # out of the panel — only the issue list remains.
+      assert html =~ ~r/testing:/i
+      assert html =~ ~r/code quality:/i
+      assert html =~ "something_else:"
+      assert html =~ "No category at all"
+    end
+
+    test "arbitrary binary statuses no longer surface inside the panel" do
+      # The panel used to render the verbatim status string; with the
+      # status pill moved up to the LiveView, an arbitrary "in_review"
+      # value should NOT leak into the panel HTML at all.
+      task = %{
+        id: 22,
+        identifier: "W22",
+        reviewer_result: %{
+          "status" => "in_review",
+          "summary" => "Custom status"
+        }
+      }
+
+      html = render_with(task)
+      refute html =~ "in_review"
+      refute html =~ "Custom status"
     end
   end
 end

@@ -15,6 +15,7 @@ defmodule KanbanWeb.ReviewQueueItem do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.ReviewReportHelpers
   alias KanbanWeb.TaskTokens
 
   @accents ~w(stride-orange st-ready st-doing stride-violet st-backlog st-blocked)
@@ -62,12 +63,14 @@ defmodule KanbanWeb.ReviewQueueItem do
       style={[
         "display: flex; flex-direction: column; gap: 6px;",
         "width: 100%; text-align: left;",
-        "padding: 12px 16px;",
-        "border: 0; border-left: 2px solid #{if @selected, do: "var(--stride-orange)", else: "transparent"};",
+        "padding: 12px 16px 12px #{if @selected, do: "12px", else: "16px"};",
+        "border: 0; border-left: #{if @selected, do: "4px", else: "0px"} solid #{if @selected, do: "var(--stride-orange)", else: "transparent"};",
         "border-bottom: 1px solid var(--line);",
-        "background: #{if @selected, do: "var(--surface-sunken)", else: "transparent"};",
+        "background: #{if @selected, do: "var(--surface)", else: "transparent"};",
+        "box-shadow: #{if @selected, do: "inset 0 0 0 1px var(--stride-orange-soft, oklch(96% 0.05 47))", else: "none"};",
         "cursor: pointer;",
-        "font: inherit; color: var(--ink);"
+        "font: inherit; color: var(--ink);",
+        "transition: background-color 120ms ease, border-color 120ms ease;"
       ]}
     >
       <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -135,11 +138,19 @@ defmodule KanbanWeb.ReviewQueueItem do
       <div
         data-review-queue-item-title
         style={[
-          "font-size: 12.5px; font-weight: 500;",
+          "display: flex; align-items: flex-start; gap: 6px;",
+          "font-size: 12.5px; font-weight: #{if @selected, do: "600", else: "500"};",
           "line-height: 1.35; color: var(--ink);"
         ]}
       >
-        {@item.title}
+        <span style="flex: 1; min-width: 0;">{@item.title}</span>
+        <span
+          :if={@selected}
+          data-review-queue-item-selected-indicator
+          style="color: var(--stride-orange); flex-shrink: 0; display: inline-flex;"
+        >
+          <.icon name="hero-chevron-right" class="w-4 h-4" />
+        </span>
       </div>
 
       <div
@@ -183,9 +194,119 @@ defmodule KanbanWeb.ReviewQueueItem do
           />
         </span>
       </div>
+
+      <.summary_pills item={@item} />
     </button>
     """
   end
+
+  attr :item, :map, required: true
+
+  defp summary_pills(assigns) do
+    assigns = assign(assigns, :pills, summary_pill_data(assigns.item))
+
+    ~H"""
+    <div
+      data-review-queue-item-summary
+      style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;"
+    >
+      <span
+        :for={pill <- @pills}
+        data-review-queue-item-summary-pill={pill.marker}
+        data-review-queue-item-summary-pill-state={pill.state}
+        title={pill.tip}
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "padding: 1px 6px; border-radius: 999px;",
+          "font-size: 10px; font-weight: 600;",
+          "letter-spacing: 0.04em; text-transform: uppercase;",
+          "font-family: var(--font-mono);",
+          pill_style(pill.state)
+        ]}
+      >
+        <span
+          aria-hidden="true"
+          style={[
+            "width: 6px; height: 6px; border-radius: 50%;",
+            "background: #{pill_dot_color(pill.state)};"
+          ]}
+        />
+        {pill.label}
+      </span>
+    </div>
+    """
+  end
+
+  defp summary_pill_data(item) do
+    [
+      %{
+        marker: "acceptance",
+        label: gettext("ACC"),
+        state: pill_state(acceptance_passed?(item)),
+        tip: gettext("Acceptance criteria")
+      },
+      %{
+        marker: "testing",
+        label: gettext("TST"),
+        state: pill_state(ReviewReportHelpers.testing_strategy_passed(item)),
+        tip: gettext("Testing strategy")
+      },
+      %{
+        marker: "patterns",
+        label: gettext("PAT"),
+        state: pill_state(ReviewReportHelpers.patterns_passed(item)),
+        tip: gettext("Patterns followed")
+      },
+      %{
+        marker: "pitfalls",
+        label: gettext("PIT"),
+        state: pill_state(ReviewReportHelpers.pitfalls_passed(item)),
+        tip: gettext("Pitfalls")
+      }
+    ]
+  end
+
+  defp acceptance_passed?(%{reviewer_result: %{} = result}) do
+    cond do
+      any_not_met?(Map.get(result, "acceptance_criteria")) -> false
+      is_integer(result["issues_found"]) and result["issues_found"] > 0 -> false
+      result["dispatched"] == true -> true
+      true -> nil
+    end
+  end
+
+  defp acceptance_passed?(_), do: nil
+
+  defp any_not_met?(criteria) when is_list(criteria) do
+    Enum.any?(criteria, fn
+      %{"status" => "not_met"} -> true
+      _ -> false
+    end)
+  end
+
+  defp any_not_met?(_), do: false
+
+  defp pill_state(true), do: :passed
+  defp pill_state(false), do: :failed
+  defp pill_state(_), do: :neutral
+
+  defp pill_style(:passed) do
+    "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
+      "color: var(--st-done, oklch(50% 0.14 155));"
+  end
+
+  defp pill_style(:failed) do
+    "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
+      "color: var(--st-blocked, oklch(50% 0.18 25));"
+  end
+
+  defp pill_style(:neutral) do
+    "background: var(--surface-2); color: var(--ink-3);"
+  end
+
+  defp pill_dot_color(:passed), do: "var(--st-done, oklch(60% 0.14 155))"
+  defp pill_dot_color(:failed), do: "var(--st-blocked, oklch(60% 0.18 25))"
+  defp pill_dot_color(:neutral), do: "var(--ink-3)"
 
   defp board_for(%{column: %{board: %{} = board}}), do: board
   defp board_for(_), do: nil

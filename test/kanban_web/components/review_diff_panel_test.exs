@@ -31,7 +31,7 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
     test "renders the header with the file count" do
       html = render_panel(["lib/a.ex", "lib/b.ex", "test/a_test.exs"])
       assert html =~ "data-review-diff-panel-title"
-      assert html =~ "Changed files (3)"
+      assert html =~ "3 files"
     end
 
     test "renders each file path from the :files list" do
@@ -91,7 +91,7 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
     end
 
     test "renders the header with count 0 when :files is []" do
-      assert render_panel([]) =~ "Changed files (0)"
+      assert render_panel([]) =~ "0 files"
     end
 
     test "renders a long file path without breaking layout (wrap class set)" do

@@ -103,17 +103,23 @@ defmodule KanbanWeb.ReviewQueueItemTest do
   end
 
   describe "review_queue_item/1 — selected styling" do
-    test "applies stride-orange left border when selected: true" do
+    test "applies the stride-orange left border, surface bg, and selected indicator when selected: true" do
       html = render_item(%{}, selected: true)
-      assert html =~ "border-left: 2px solid var(--stride-orange)"
-      assert html =~ "background: var(--surface-sunken)"
+      # Thicker (4px) stride-orange left rail makes the row visibly anchored
+      # to the detail pane.
+      assert html =~ "border-left: 4px solid var(--stride-orange)"
+      assert html =~ "background: var(--surface)"
       assert html =~ ~s(aria-pressed="true")
+      # Chevron indicator points the eye at the right-hand detail pane.
+      assert html =~ "data-review-queue-item-selected-indicator"
+      assert html =~ "hero-chevron-right"
     end
 
-    test "applies transparent left border when selected: false" do
+    test "renders no left rail, no chevron, and aria-pressed=false when selected: false" do
       html = render_item(%{}, selected: false)
-      assert html =~ "border-left: 2px solid transparent"
+      assert html =~ "border-left: 0px solid transparent"
       assert html =~ ~s(aria-pressed="false")
+      refute html =~ "data-review-queue-item-selected-indicator"
     end
   end
 

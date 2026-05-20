@@ -259,6 +259,117 @@ defmodule KanbanWeb.AcceptanceChecklistTest do
     end
   end
 
+  describe "acceptance_checklist/1 — structured (reviewer_result.acceptance_criteria)" do
+    test "non-empty `structured` list switches to the structured renderer" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "Met one", "status" => "met", "evidence" => "lib/a.ex:10"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ ~s(data-acceptance-checklist-mode="structured")
+      assert html =~ "data-acceptance-checklist-row"
+      assert html =~ ~s(data-acceptance-checklist-status="met")
+      assert html =~ "Met one"
+    end
+
+    test "renders the red X + evidence under a not_met row" do
+      assigns = %{
+        structured: [
+          %{
+            "criterion" => "PubSub broadcast emitted exactly once per move",
+            "status" => "not_met",
+            "evidence" => "lib/kanban/tasks.ex:172 broadcasts twice — see the critical issue."
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ ~s(data-acceptance-checklist-status="not_met")
+      assert html =~ "hero-x-mark"
+      assert html =~ "data-acceptance-checklist-evidence"
+      assert html =~ "broadcasts twice"
+      # Evidence on not_met rows uses the blocked/red ink.
+      assert html =~ "var(--st-blocked"
+    end
+
+    test "renders evidence in muted style for met rows" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "Works", "status" => "met", "evidence" => "lib/a.ex:10-20"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "lib/a.ex:10-20"
+      # Met rows render evidence in --ink-3 (muted), not the blocked red.
+      assert html =~ "color: var(--ink-3)"
+    end
+
+    test "header counter reflects met/total for structured rows" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "A", "status" => "met", "evidence" => "x"},
+          %{"criterion" => "B", "status" => "met", "evidence" => "y"},
+          %{"criterion" => "C", "status" => "not_met", "evidence" => "z"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "2/3"
+    end
+
+    test "empty `structured` list falls back to the legacy unstructured renderer" do
+      assigns = %{criteria: "Alpha\nBeta"}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist
+          acceptance_criteria={@criteria}
+          structured={[]}
+        />
+        """)
+
+      assert html =~ "Alpha"
+      assert html =~ "Beta"
+      refute html =~ "data-acceptance-checklist-mode"
+      refute html =~ "data-acceptance-checklist-row"
+    end
+
+    test "omits the evidence paragraph when not_met has no evidence text" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "No evidence", "status" => "not_met", "evidence" => nil}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ ~s(data-acceptance-checklist-status="not_met")
+      refute html =~ "data-acceptance-checklist-evidence"
+    end
+  end
+
   describe "acceptance_checklist/1 — markers and scope" do
     test "outermost element carries the data-acceptance-checklist marker" do
       assigns = %{criteria: "Anything"}

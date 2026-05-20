@@ -246,10 +246,26 @@ defmodule KanbanWeb.ReviewLive do
                 data-review-detail-summary
                 style={[
                   "padding: 14px 16px;",
-                  "font-size: 13px; line-height: 1.55; color: var(--ink);"
+                  "font-size: 13px; line-height: 1.55; color: var(--ink);",
+                  "display: flex; align-items: flex-start; gap: 10px;"
                 ]}
               >
-                {summary_text(@selected)}
+                <span
+                  :if={review_status_pill(@selected)}
+                  data-review-detail-summary-status={review_status_pill(@selected).status}
+                  style={[
+                    "flex-shrink: 0;",
+                    "display: inline-flex; align-items: center; gap: 6px;",
+                    "padding: 4px 12px; border-radius: 999px;",
+                    "font-size: 13px; font-weight: 600;",
+                    "letter-spacing: 0.02em;",
+                    review_status_pill(@selected).style
+                  ]}
+                >
+                  <.icon name={review_status_pill(@selected).icon} class="w-4 h-4" />
+                  {review_status_pill(@selected).label}
+                </span>
+                <span style="flex: 1; min-width: 0;">{summary_text(@selected)}</span>
               </div>
 
               <ReviewStatsStrip.review_stats_strip
@@ -285,19 +301,59 @@ defmodule KanbanWeb.ReviewLive do
                 </p>
               </section>
 
-              <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
-
-              <div data-review-report-host style="margin: 12px 16px 0;">
+              <section
+                data-review-issues
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 6px;"
+                ]}
+              >
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Issues")}
+                </span>
                 <ReviewReportPanel.review_report_panel task={@selected} />
-              </div>
+              </section>
 
-              <div style="padding: 12px 16px;">
+              <section
+                data-review-changed-files
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 6px;"
+                ]}
+              >
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Changed files")}
+                </span>
+                <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
+              </section>
+
+              <section
+                data-review-acceptance
+                style={[
+                  "margin: 12px 16px 16px; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);"
+                ]}
+              >
                 <AcceptanceChecklist.acceptance_checklist
                   acceptance_criteria={@selected.acceptance_criteria}
                   checked={acceptance_checked(@selected)}
                   failed={acceptance_failed(@selected)}
+                  structured={structured_acceptance(@selected)}
                 />
-              </div>
+              </section>
             </div>
           </section>
         </div>
@@ -421,6 +477,64 @@ defmodule KanbanWeb.ReviewLive do
   defp summary_text(%{description: desc}) when is_binary(desc) and desc != "", do: desc
   defp summary_text(_), do: ""
 
+  # Pill rendered next to the summary blurb. Reads the schema 1.0
+  # `reviewer_result.status` directly when present; otherwise derives the
+  # verdict from whatever signals the reviewer did emit (any
+  # `acceptance_criteria` item with `status: "not_met"` or a positive
+  # legacy `issues_found` count → "changes_requested"; a dispatched
+  # reviewer with no issues → "approved"). Returns `nil` only when the
+  # reviewer was skipped or never ran, so the pill hides on those tasks.
+  defp review_status_pill(task) do
+    case derive_review_status(task) do
+      "approved" ->
+        %{
+          status: "approved",
+          label: gettext("Approved"),
+          icon: "hero-check-circle",
+          style:
+            "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
+              "color: var(--st-done, oklch(50% 0.14 155));"
+        }
+
+      "changes_requested" ->
+        %{
+          status: "changes_requested",
+          label: gettext("Changes requested"),
+          icon: "hero-arrow-uturn-left",
+          style:
+            "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
+              "color: var(--st-blocked, oklch(50% 0.18 25));"
+        }
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_review_status(%{reviewer_result: %{"status" => status}})
+       when status in ["approved", "changes_requested"],
+       do: status
+
+  defp derive_review_status(%{reviewer_result: %{} = result}) do
+    cond do
+      any_not_met?(Map.get(result, "acceptance_criteria", [])) -> "changes_requested"
+      is_integer(result["issues_found"]) and result["issues_found"] > 0 -> "changes_requested"
+      result["dispatched"] == true -> "approved"
+      true -> nil
+    end
+  end
+
+  defp derive_review_status(_), do: nil
+
+  defp any_not_met?(criteria) when is_list(criteria) do
+    Enum.any?(criteria, fn
+      %{"status" => "not_met"} -> true
+      _ -> false
+    end)
+  end
+
+  defp any_not_met?(_), do: false
+
   defp acceptance_value(task) do
     total = task.acceptance_criteria |> parse_lines() |> length()
     format_acceptance_value(task, total)
@@ -495,6 +609,16 @@ defmodule KanbanWeb.ReviewLive do
   defp statuses_to_bool_map(statuses, target_status) do
     for {idx, status} <- statuses, status == target_status, into: %{}, do: {idx, true}
   end
+
+  # Returns the structured `reviewer_result.acceptance_criteria` list when
+  # the reviewer subagent supplied one. The checklist consumes this list
+  # directly to render per-criterion verdict + evidence, bypassing the
+  # raw-string parsing path.
+  defp structured_acceptance(%{reviewer_result: %{"acceptance_criteria" => list}})
+       when is_list(list),
+       do: list
+
+  defp structured_acceptance(_), do: []
 
   defp acceptance_failed(task) do
     task

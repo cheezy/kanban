@@ -47,9 +47,9 @@ defmodule KanbanWeb.ReviewDiffPanel do
       >
         <span
           data-review-diff-panel-title
-          style="font-size: 12.5px; font-weight: 600; color: var(--ink);"
+          style="font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono);"
         >
-          {gettext("Changed files (%{count})", count: @file_count)}
+          {ngettext("%{count} file", "%{count} files", @file_count, count: @file_count)}
         </span>
 
         <span style="flex: 1;" />

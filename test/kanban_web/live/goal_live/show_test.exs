@@ -466,6 +466,81 @@ defmodule KanbanWeb.GoalLive.ShowTest do
     end
   end
 
+  describe "status grouping — column-name buckets" do
+    setup [:register_and_log_in_user]
+
+    test "places children in :ready, :in_progress, :review, :completed sections by column name",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      ready_col = column_fixture(board, %{name: "Ready"})
+      doing_col = column_fixture(board, %{name: "Doing"})
+      review_col = column_fixture(board, %{name: "Review"})
+      done_col = column_fixture(board, %{name: "Done"})
+      other_col = column_fixture(board, %{name: "Triage"})
+
+      {:ok, %{goal: goal, child_tasks: [ready_child, doing_child, review_child, done_child, other_child]}} =
+        Tasks.create_goal_with_tasks(
+          ready_col,
+          %{"title" => "Multi-column Goal", "created_by_id" => user.id},
+          [
+            %{"title" => "In Ready", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "In Doing", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "In Review", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "In Done", "type" => "work", "created_by_id" => user.id},
+            %{"title" => "In Triage", "type" => "work", "created_by_id" => user.id}
+          ]
+        )
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^doing_child.id)
+      |> Kanban.Repo.update_all(set: [column_id: doing_col.id])
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^review_child.id)
+      |> Kanban.Repo.update_all(set: [column_id: review_col.id])
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^done_child.id)
+      |> Kanban.Repo.update_all(set: [column_id: done_col.id])
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^other_child.id)
+      |> Kanban.Repo.update_all(set: [column_id: other_col.id])
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # All five children render somewhere
+      assert html =~ ready_child.identifier
+      assert html =~ doing_child.identifier
+      assert html =~ review_child.identifier
+      assert html =~ done_child.identifier
+      assert html =~ other_child.identifier
+
+      # status_dot/status_label emit the matching CSS variable per status
+      assert html =~ "var(--st-ready)"
+      assert html =~ "var(--st-doing)"
+      assert html =~ "var(--st-review)"
+      assert html =~ "var(--st-done)"
+      # The "Triage" column falls through bucket_for's underscore clause to
+      # :backlog, so the backlog dot variable is also present.
+      assert html =~ "var(--st-backlog)"
+    end
+
+    test "places a child in :backlog when its column name is literally 'Backlog'",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      backlog_col = column_fixture(board, %{name: "Backlog"})
+
+      {:ok, %{goal: goal, child_tasks: [child | _]}} =
+        Tasks.create_goal_with_tasks(
+          backlog_col,
+          %{"title" => "Backlog-named Goal", "created_by_id" => user.id},
+          [%{"title" => "In Backlog", "type" => "work", "created_by_id" => user.id}]
+        )
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ child.identifier
+      assert html =~ "var(--st-backlog)"
+    end
+  end
+
   describe "velocity sparkline — daily bucketing for older goals" do
     setup [:register_and_log_in_user]
 

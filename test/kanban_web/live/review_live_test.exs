@@ -505,8 +505,9 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ ~s(data-review-stats-cell="acceptance")
       # No reviewer_result → fallback to total count alone, neutral tone.
       assert html =~ ~r/>\s*3\s*</
-      # No issue suffix or "N/M" pass marker.
-      refute html =~ "issue"
+      # No "N · X issues" suffix in the Acceptance cell.
+      refute html =~ "1 issue"
+      refute html =~ "2 issues"
       refute html =~ "3/3"
     end
 
@@ -643,7 +644,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Approved with 0 findings."
     end
 
-    test "renders reviewer_result.summary in the panel header when there is no review_report",
+    test "renders the structured-branch panel shell when reviewer_result has a summary",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -660,7 +661,9 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~s(data-review-report-panel="structured")
-      assert html =~ "Reviewer prose summary when no structured report exists."
+      # The panel no longer renders the reviewer summary — it lives in the
+      # detail summary div above the strip instead.
+      refute html =~ "Reviewer prose summary when no structured report exists."
     end
 
     test "renders no review report panel when neither report nor reviewer_result exists",
