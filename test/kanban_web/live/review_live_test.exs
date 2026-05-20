@@ -114,6 +114,205 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "review diff panel — end-to-end click → render → close flow" do
+    setup [:register_and_log_in_user]
+
+    setup do
+      ref = make_ref()
+      test_pid = self()
+
+      :telemetry.attach_many(
+        "diff-panel-e2e-#{inspect(ref)}",
+        [
+          [:kanban, :review_diff_panel, :opened],
+          [:kanban, :review_diff_panel, :closed]
+        ],
+        fn name, measurements, metadata, _ ->
+          send(test_pid, {:telemetry, ref, name, measurements, metadata})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach("diff-panel-e2e-#{inspect(ref)}") end)
+      %{ref: ref}
+    end
+
+    test "full flow: text diff renders, binary placeholder renders, telemetry fires open + close",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+
+      changed_files = [
+        %{
+          "path" => "lib/foo.ex",
+          "diff" => "--- a/lib/foo.ex\n+++ b/lib/foo.ex\n@@ -1,1 +1,1 @@\n-old\n+new\n"
+        },
+        %{
+          "path" => "assets/logo.png",
+          "diff" => "[binary file — no diff captured]"
+        }
+      ]
+
+      task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/foo.ex, assets/logo.png",
+          changed_files: changed_files
+        })
+
+      task_id = task.id
+
+      # Dark-mode coverage: every assertion in this block targets data-*
+      # markers, not coloring. The +/-, hunk, binary-placeholder, and
+      # truncation-notice styles in assets/css/app.css use theme-bound
+      # CSS variables (--st-ok-soft, --st-blocked-soft, --ink-*, --line,
+      # --stride-orange) — no hardcoded hex/named colors. Switching the
+      # data-theme attribute therefore re-themes the panel automatically;
+      # the same data-* assertions hold under both themes. Component-level
+      # tests in test/kanban_web/components/review_diff_panel_test.exs:53
+      # already pin "no hardcoded grey" for the file-row chrome.
+      {:ok, view, html} = live(conn, ~p"/review")
+
+      # On mount, no file is selected → no diff content section is rendered.
+      refute html =~ "data-review-diff-panel-diff"
+
+      # Click the text-diff file: panel renders in :patch mode with +/- classes.
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/foo.ex"] button))
+        |> render_click()
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="full")
+      assert html =~ ~s(data-diff-line="add")
+      assert html =~ ~s(data-diff-line="del")
+
+      # Dark-mode safety: the rendered diff content references only
+      # theme tokens, never hardcoded greys or whites that would fail
+      # under data-theme="dark".
+      refute html =~ "bg-gray-"
+      refute html =~ "text-gray-"
+      refute html =~ "bg-white"
+
+      # Telemetry fired :opened.
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _,
+                       %{task_id: ^task_id}}
+
+      # Click the binary file: panel renders the binary placeholder, NOT the
+      # patch render. No second :opened fires for the same task.
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="assets/logo.png"] button))
+        |> render_click()
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="binary")
+      assert html =~ "Binary file changed"
+      refute html =~ ~s(data-diff-line="add")
+
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+
+      # Navigate away (deselect): :closed fires for the task.
+      render_click(view, "deselect_item", %{})
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :closed], _,
+                       %{task_id: ^task_id}}
+    end
+
+    test "legacy payload (no changed_files): click still selects, panel shows 'no diff available', page does not crash",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      # Legacy: older plugin emitted no `changed_files`. The DB default is
+      # [] so the field is empty, not nil.
+      _task = pending_task!(column, %{actual_files_changed: "lib/legacy.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/legacy.ex"] button))
+        |> render_click()
+
+      # Selection succeeded — row marked active.
+      assert html =~
+               ~s(data-review-diff-panel-file-path="lib/legacy.ex" data-review-diff-panel-file-active="true")
+
+      # Panel renders in :empty mode with the "no diff available" copy.
+      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
+      assert html =~ "No diff available for this file."
+
+      # Page did not crash — header still present.
+      assert html =~ "data-review-detail-header"
+    end
+
+    test "mixed-payload edge case: task with diff data for some files, missing for others",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      changed_files = [
+        %{"path" => "lib/has_diff.ex", "diff" => "+ added\n- removed\n"}
+        # Note: lib/no_diff.ex is in actual_files_changed but absent from
+        # changed_files. The LiveView falls back to a path-only payload.
+      ]
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/has_diff.ex, lib/no_diff.ex",
+          changed_files: changed_files
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # File with diff data renders the patch.
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/has_diff.ex"] button))
+        |> render_click()
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="full")
+      assert html =~ ~s(data-diff-line="add")
+
+      # File without diff data falls through to :empty mode.
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/no_diff.ex"] button))
+        |> render_click()
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
+      assert html =~ "No diff available for this file."
+    end
+
+    test "truncated diff with diff_url renders the 'view full diff in repo' link",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      # Pull the truncation marker from the component itself rather than
+      # duplicating the literal — both sides share `docs/diff-contract.md`
+      # as the source of truth.
+      changed_files = [
+        %{
+          "path" => "lib/big.ex",
+          "diff" => "+ a\n+ b\n#{KanbanWeb.ReviewDiffPanel.truncation_marker()}",
+          "diff_url" => "https://github.com/example/repo/pull/1/files#diff-abc"
+        }
+      ]
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/big.ex",
+          changed_files: changed_files
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/big.ex"] button))
+        |> render_click()
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="truncated")
+      assert html =~ "data-review-diff-panel-diff-link"
+      assert html =~ "https://github.com/example/repo/pull/1/files#diff-abc"
+    end
+  end
+
   describe "review_diff_panel telemetry" do
     setup [:register_and_log_in_user]
 

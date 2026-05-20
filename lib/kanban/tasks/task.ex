@@ -366,6 +366,12 @@ defmodule Kanban.Tasks.Task do
     # Workflow step records from agent hooks (before_doing, after_doing, before_review, after_review)
     field :workflow_steps, {:array, :map}, default: []
 
+    # Per-file diff entries submitted by the agent at completion time.
+    # Shape per `docs/diff-contract.md`: `[%{"path" => string, "diff" => string | nil, "diff_url" => string | nil}]`.
+    # Pre-validated by `Kanban.Tasks.CompletionValidation.validate_changed_files/1`. Optional; legacy
+    # completion payloads without this field continue to validate and persist as `[]`.
+    field :changed_files, {:array, :map}, default: []
+
     # Explorer subagent result submitted at task completion (pre-validated by Kanban.Tasks.CompletionValidation)
     field :explorer_result, :map
 
@@ -481,6 +487,7 @@ defmodule Kanban.Tasks.Task do
       :workflow_steps,
       :explorer_result,
       :reviewer_result,
+      :changed_files,
       :reviewed_by_id,
       :reviewed_at,
       # Archive tracking

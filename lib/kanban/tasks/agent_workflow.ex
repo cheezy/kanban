@@ -525,7 +525,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
           :review_report,
           :workflow_steps,
           :explorer_result,
-          :reviewer_result
+          :reviewer_result,
+          :changed_files
         ])
         |> Ecto.Changeset.put_change(:column_id, review_column.id)
         |> Ecto.Changeset.put_change(:position, next_position)

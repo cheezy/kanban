@@ -368,7 +368,7 @@ defmodule KanbanWeb.ReviewLive do
                 </span>
                 <ReviewDiffPanel.review_diff_panel
                   files={parse_files(@selected.actual_files_changed)}
-                  selected_file={selected_file_payload(@selected_changed_file)}
+                  selected_file={selected_file_payload(@selected, @selected_changed_file)}
                   on_file_click="select_changed_file"
                 />
               </section>
@@ -793,12 +793,24 @@ defmodule KanbanWeb.ReviewLive do
 
   defp parse_lines(_), do: []
 
-  # Builds the per-file payload passed to the diff panel. The diff
-  # value is `nil` today — per-file diffs are not yet persisted (see
-  # docs/diff-contract.md). When persistence lands, this is the seam
-  # to read it from the task record.
-  defp selected_file_payload(nil), do: nil
-  defp selected_file_payload(path) when is_binary(path), do: %{"path" => path, "diff" => nil}
+  # Builds the per-file payload passed to the diff panel. Looks up the
+  # selected path in the task's persisted `changed_files` jsonb (see
+  # `docs/diff-contract.md` for the shape). Falls back to a path-only
+  # entry with `diff: nil` for legacy completion payloads that did not
+  # carry per-file diff data — the panel renders "no diff available" in
+  # that case.
+  defp selected_file_payload(_task, nil), do: nil
+
+  defp selected_file_payload(task, path) when is_binary(path) do
+    entry = lookup_changed_file(task, path) || %{}
+    Map.merge(%{"path" => path, "diff" => nil}, entry)
+  end
+
+  defp lookup_changed_file(%{changed_files: list}, path) when is_list(list) do
+    Enum.find(list, fn entry -> is_map(entry) and entry["path"] == path end)
+  end
+
+  defp lookup_changed_file(_task, _path), do: nil
 
   defp parse_files(nil), do: []
   defp parse_files(""), do: []

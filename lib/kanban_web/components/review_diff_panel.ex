@@ -55,6 +55,22 @@ defmodule KanbanWeb.ReviewDiffPanel do
   @binary_placeholder "[binary file — no diff captured]"
 
   @doc """
+  The exact truncation marker line plugins append to a diff when they
+  capped it at 500 lines. Exposed so tests and other callers can build
+  fixtures without duplicating the literal string (see
+  `docs/diff-contract.md` for the source of truth).
+  """
+  def truncation_marker, do: @truncation_marker
+
+  @doc """
+  The exact placeholder string a plugin emits for binary-file entries
+  instead of unified-patch text. Source of truth lives in
+  `docs/diff-contract.md`; this accessor exists so other callers can
+  reference the literal without duplicating it.
+  """
+  def binary_placeholder, do: @binary_placeholder
+
+  @doc """
   Renders the changed-files panel.
 
   ## Attrs
