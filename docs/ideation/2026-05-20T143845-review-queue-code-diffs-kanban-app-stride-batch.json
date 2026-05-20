@@ -1,0 +1,431 @@
+{
+  "source_spec": "docs/ideation/2026-05-20T143845-review-queue-code-diffs-requirements.md",
+  "source_spec_sha256": "aae53aa1223101787e861e8f6aa0a518a5c8da76c986ba51a74386324f4955f9",
+  "decomposition_notes": "Goal 1 of 7 from the review-queue-code-diffs requirements doc. This is the Kanban app surface — it owns the per-file diff JSON contract (defined in a reference doc inside this goal) plus the persistence and UI rendering of that diff. The other six goals (stride, stride-copilot, stride-gemini, stride-codex, stride-opencode, stride-pi) consume the contract published here and will be created in separate /stridify invocations. CLAIM ORDER: this goal MUST land (or at minimum publish the JSON contract reference doc) before any plugin goal closes — plugin goals verify their capture end-to-end against the contract. INTERNAL ORDER: task 0 (contract reference doc) is the only blocker for plugin work; it is intentionally the first task so plugin goals can start in parallel as soon as it merges. Tasks 1–5 within this goal can then proceed against the contract. Risk anchor (R): reviewers may need search/nav/blame/history; we don't ship those in v1. Task 3 (panel render) carries the bulk of that risk and intentionally keeps the panel minimal — expansion is left to a future iteration if leading metrics indicate the gap.",
+  "goals": [
+    {
+      "title": "Render unified per-file diffs in the review queue",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Reviewers either context-switch to git/GitHub (slow, breaks flow) or review blind from the agent's prose report (risk of missing regressions). The changed-files list is already on the review queue page, but clicking a file does nothing. This goal makes the review self-contained for the common case so reviewers can approve or reject without leaving Stride.",
+      "what": "Extend the agent's structured completion payload schema with an optional per-file `diff` field (unified-patch text, capped at 500 lines per file with a truncation marker). Persist the field transparently through the existing task storage and serialization paths (no migration required if it lives in the existing jsonb column). Publish a short reference doc that names the field, encoding, and truncation convention so plugin maintainers in the six sibling goals write against a single contract. In the review queue UI, make each changed-files entry clickable; render the selected file's unified diff in the existing review_diff_panel component with theme-aware additions/removals styling, a truncation notice when applicable, and a binary-file placeholder. Add telemetry events on panel open and close scoped to tasks where needs_review=true, feeding the open-rate and time-spent leading metrics.",
+      "where_context": "lib/kanban_web/components/review_diff_panel.ex (currently a placeholder — needs real diff rendering), lib/kanban_web/components/review_queue_item.ex, lib/kanban_web/components/review_report_panel.ex, lib/kanban_web/live/review_live.ex, lib/kanban/tasks/completion_validation.ex (validation entry point for completion payloads), docs/ for the new per-file diff JSON contract reference",
+      "description": "Server-side and UI surface of the review-queue-code-diffs initiative. Defines the per-file diff JSON contract that all six plugin goals consume. Backward-compatible: tasks completed by an older plugin that did not send diff data continue to render exactly as today (no diff panel, but no crash or empty state that blocks the reviewer).",
+      "acceptance_criteria": "A per-file diff JSON contract reference doc exists in docs/ naming the field, encoding, truncation marker convention, and the 500-line per-file cap\nThe agent completion payload schema accepts (but does not require) the new per-file `diff` field; legacy payloads continue to validate\nClicking a file in the changed-files list opens the diff panel populated with that file's unified diff content\nThe diff panel renders +/- lines with theme-aware coloring; visible and legible in both light and dark mode\nFiles whose diff exceeded the 500-line cap show a truncation notice plus a link to view the full diff in the repo\nBinary files render a 'binary file changed' placeholder; no preview is attempted\nTelemetry events fire on panel open and close for needs_review=true tasks; open-rate and time-spent-in-panel are derivable from these events\nReview queue page works unchanged for tasks whose completion payload contains no diff data — changed-files list shows but the panel says 'no diff available'\nNo new heavy diff-viewer dependency added — styling uses existing CSS / a small library if any",
+      "pitfalls": [
+        "Do not break the existing review queue flow — reviewers who never click into the diff panel must see zero regression",
+        "Do not require the diff field on completion payloads — older plugin versions must keep validating",
+        "Do not hardcode light-mode colors for +/- lines — verify both modes per repo CLAUDE.md",
+        "Do not attempt to render binary file diffs — placeholder only",
+        "Do not ship search / blame / cross-file navigation in v1 — explicit non-goals",
+        "Do not put Ecto queries directly in the LiveView — route through the appropriate context module per repo AGENTS.md"
+      ],
+      "tasks": [
+        {
+          "title": "Publish per-file diff JSON contract reference doc",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create a short markdown reference doc that names the per-file `diff` field on the agent completion payload, documents the encoding (unified-patch text), the truncation convention (500 lines per file, truncation marker, encoding rules), and what plugin maintainers MUST emit vs MAY emit. This doc is the contract that the six plugin goals consume; it lands first so plugin work can proceed in parallel against a stable target.",
+          "why": "Six other repos need a single source of truth for the diff field shape. Without the contract published, each plugin maintainer guesses, and the kanban-app validator becomes a moving target.",
+          "what": "Add docs/diff-contract.md (or similar location — confirm during implementation by checking docs/ structure). Sections: field name + location in payload; encoding (unified patch); truncation rule (500 lines per file, with marker); binary-file convention (placeholder, no patch); backward compatibility note. Cross-link from the review_diff_panel module doc.",
+          "where_context": "docs/ (new file), lib/kanban_web/components/review_diff_panel.ex (cross-link in module doc)",
+          "acceptance_criteria": "A reference doc exists at a stable path under docs/ describing the per-file diff field contract\nThe doc specifies: field name, encoding, 500-line truncation rule + marker, binary-file convention, backward-compatibility note\nThe doc is linked from the review_diff_panel module @moduledoc\nA plugin maintainer reading the doc has enough to implement capture without reading kanban app source",
+          "patterns_to_follow": "Match the structure of any existing contract / schema docs under docs/\nKeep the doc concise (target one screen) — it is a contract not a tutorial",
+          "pitfalls": [
+            "Do not over-specify implementation — only specify what the plugin emits and what the server accepts",
+            "Do not lock the truncation marker to a specific string without checking what the existing review_diff_panel placeholder already expects (or set it now as the source of truth)"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "docs/diff-contract.md",
+              "note": "New contract reference doc",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/components/review_diff_panel.ex",
+              "note": "Cross-link from module doc",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "test -f docs/diff-contract.md && grep -qi 'truncat' docs/diff-contract.md && grep -qi 'binary' docs/diff-contract.md",
+              "expected_result": "File exists and mentions both truncation and binary-file conventions",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Read docs/diff-contract.md as if you were a plugin maintainer in another repo. Confirm you have enough to implement capture.",
+              "expected_result": "Doc is self-contained; no need to read kanban app source to implement capture",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Read the doc end-to-end and confirm it answers: where does the field live, what shape is the value, what does truncation look like, what about binaries"
+            ],
+            "edge_cases": [],
+            "coverage_target": "n/a (docs-only task)"
+          }
+        },
+        {
+          "title": "Extend completion-payload validation to accept optional per-file `diff` field",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In Kanban.Tasks.CompletionValidation (or the equivalent module that validates the agent completion payload's changed-files structure), accept an optional `diff` string field on each per-file entry. Reject malformed shapes (non-string, oversized in a single payload — set a sane payload-wide cap) but tolerate omission entirely. Legacy payloads with no diff field must continue to validate.",
+          "why": "Without server-side acceptance, plugin producers cannot PATCH the diff data and the UI has nothing to render.",
+          "what": "Add a private validator helper for the optional per-file diff field. Wire into the existing per-file entry validation. Enforce the 500-line per-file cap server-side as a defensive check (the plugin should have already truncated; this is a backstop, not the primary enforcement point). Add unit tests covering happy path, legacy omission, malformed type, and oversized payload.",
+          "where_context": "lib/kanban/tasks/completion_validation.ex (the existing module that validates the structured completion payload), test/kanban/tasks/completion_validation_test.exs",
+          "acceptance_criteria": "validate accepts per-file entries containing a well-formed `diff` string\nLegacy entries without a `diff` field continue to validate\nMalformed diff values (non-string, structurally invalid) are rejected with descriptive errors\nA defensive per-file size cap rejects diffs exceeding 500 lines (plugins are expected to truncate; this is a backstop)\nUnit tests cover: well-formed diff, missing diff (legacy), wrong type, oversized payload",
+          "patterns_to_follow": "Mirror the validator style already in completion_validation.ex — return {:ok, _} | {:error, message} tuples\nUse pattern matching in function heads where it improves clarity",
+          "pitfalls": [
+            "Do not require the field — omission is the legacy path and must keep working",
+            "Do not bake a strict marker string into validation — reference the contract doc rather than duplicating the convention",
+            "Do not raise — return {:error, _} tuples"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/completion_validation.ex",
+              "note": "Add per-file diff validator",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/tasks/completion_validation_test.exs",
+              "note": "Unit tests for new validator and legacy compatibility",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/completion_validation_test.exs",
+              "expected_result": "All tests pass including legacy-shape compatibility tests",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/tasks/completion_validation.ex",
+              "expected_result": "No warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Well-formed per-file diff string accepted",
+              "Missing diff field still validates (legacy)",
+              "Non-string diff value rejected with descriptive error",
+              "Oversized diff (>500 lines) rejected as defensive backstop"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "Empty-string diff value",
+              "Diff field present but file entry otherwise malformed",
+              "Mixed legacy + new entries in the same payload"
+            ],
+            "coverage_target": "100% of new validation branches"
+          }
+        },
+        {
+          "title": "Make changed-files list entries clickable; track selected file in review LiveView",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In the review queue UI (review_queue_item / review_report_panel components and review_live LiveView), make each changed-files entry clickable. Clicking pushes a phx-event that sets a `selected_changed_file` assign on the LiveView, which then drives which file's diff content is fed to the review_diff_panel.",
+          "why": "Without a click handler and selection state, the diff panel has no input — it cannot know which file's diff to render.",
+          "what": "Add phx-click to changed-files list entries with a payload identifying the file. Handle the event in review_live to set selected_changed_file. Pass the selected file's per-file payload (including the optional diff string) to review_diff_panel. Style the selected entry visibly (active state) in both light and dark mode.",
+          "where_context": "lib/kanban_web/components/review_queue_item.ex, lib/kanban_web/components/review_report_panel.ex, lib/kanban_web/live/review_live.ex",
+          "acceptance_criteria": "Clicking a file in the changed-files list updates a selected_changed_file assign on the LiveView\nThe selected entry has a visible active state in both light and dark mode\nClicking a different file updates the selection without a full page reload\nThe selected file's per-file payload (with optional diff string) is passed as an assign to review_diff_panel\nNo Ecto queries are added to the LiveView — selection state is derived from data already loaded",
+          "patterns_to_follow": "Match the LiveView event-handling style elsewhere in review_live.ex\nUse phx-value-* for the payload key\nUse daisyUI theme tokens (text-base-content, bg-base-100, border-base-300) for active-state styling — not hardcoded gray colors",
+          "pitfalls": [
+            "Do not put Ecto queries in the LiveView — selection works against already-loaded changed-files data",
+            "Do not break keyboard accessibility — the list entries should remain navigable",
+            "Do not use hardcoded text-gray-*/bg-white classes — use theme tokens for dark mode support per repo CLAUDE.md"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/review_queue_item.ex",
+              "note": "Add clickable affordance to changed-files entries",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/components/review_report_panel.ex",
+              "note": "Wire selection state through to the diff panel",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban_web/live/review_live.ex",
+              "note": "Handle phx-click, manage selected_changed_file assign",
+              "position": 2
+            },
+            {
+              "file_path": "test/kanban_web/live/review_live_test.exs",
+              "note": "LiveView test for the click → select interaction",
+              "position": 3
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/review_live_test.exs",
+              "expected_result": "All tests pass including a new test for click → select interaction",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Run the app, open a task in the review queue with a multi-file changed-files list, click each file in turn. Verify the active state moves and the diff panel updates.",
+              "expected_result": "Selection visibly tracks clicks in both light and dark mode",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "LiveView test: render review queue, click a file in the changed-files list, assert selected_changed_file matches",
+              "LiveView test: click a different file, assert selection updates and prior entry loses active state"
+            ],
+            "manual_tests": [
+              "Light mode: click each file in a multi-file list and verify active state visibility",
+              "Dark mode: same as above"
+            ],
+            "edge_cases": [
+              "Changed-files list is empty — no clickable entries, no panel input",
+              "Single-file changed list — selection lands on the only entry",
+              "Task whose completion payload has no diff data — click still selects, panel shows 'no diff available'"
+            ],
+            "coverage_target": "Cover both event handlers and the rendered active-state branches"
+          }
+        },
+        {
+          "title": "Render unified diff content in review_diff_panel with theme-aware +/- styling and truncation notice",
+          "type": "work",
+          "complexity": "medium",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Replace the placeholder content in review_diff_panel.ex with real unified-diff rendering. Parse the per-file `diff` string into lines, classify each as addition (+), removal (-), context, or hunk header (@@), and render with theme-aware coloring. Show a truncation notice + link to the full diff in the repo when the diff was capped. Show a 'binary file changed' placeholder when the per-file entry is binary.",
+          "why": "Without real diff rendering, the panel is empty and the feature does nothing for reviewers. This is the central UI deliverable of the goal.",
+          "what": "Parse the unified-patch string (line-based; no need for a full diff-AST library). Render each line with a class derived from its leading character (`+`, `-`, ` `, `@@`). Style with daisyUI theme tokens or scoped CSS variables so additions/removals are visible in both light and dark mode. Show a truncation notice (with a 'view full diff in repo' link if a URL is available in the task data) when the diff is at the 500-line cap. Show a binary-file placeholder when applicable. Prefer roll-our-own minimal CSS over a heavy library (the requirements doc's open question on diff2html should be resolved during this task; record the decision in the module doc).",
+          "where_context": "lib/kanban_web/components/review_diff_panel.ex (currently a placeholder — this task is where real content lands), assets/css/app.css (scoped diff classes)",
+          "acceptance_criteria": "review_diff_panel renders unified diff lines with +/- coloring sourced from theme tokens or CSS variables\nVerified visually legible in BOTH light and dark mode (per repo CLAUDE.md dark-mode verification process)\nA truncated diff shows a notice + (when present) a link to the full diff in the repo\nA binary-file entry shows a 'binary file changed' placeholder; no patch parsing attempted\nWhen the per-file entry has no diff data, the panel shows 'no diff available' rather than crashing\nNo heavy diff-viewer dependency added (decision recorded in the module doc)\nThe rendering does not block on long diffs — line iteration is straightforward, no quadratic behavior",
+          "patterns_to_follow": "Daisy UI theme tokens (bg-base-100, text-base-content) for the panel chrome\nScoped CSS variables for +/- line backgrounds so dark mode reads correctly\nPattern-match the leading character in a small helper rather than nested case statements",
+          "pitfalls": [
+            "Do not introduce diff2html or a similar heavy dependency without recording the decision in the module doc and confirming dark-mode support",
+            "Do not hardcode light-mode colors (e.g., bg-green-100/bg-red-100) — use theme-aware tokens",
+            "Do not attempt to render binary files — placeholder only",
+            "Do not implement search, blame, cross-file nav, or split view — explicit non-goals"
+          ],
+          "dependencies": [
+            2
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/review_diff_panel.ex",
+              "note": "Replace placeholder with real unified-diff rendering",
+              "position": 0
+            },
+            {
+              "file_path": "assets/css/app.css",
+              "note": "Theme-aware classes for diff +/- lines",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/components/review_diff_panel_test.exs",
+              "note": "Tests for parsing + rendering branches",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/review_diff_panel_test.exs",
+              "expected_result": "All tests pass including new branches for truncation, binary, and empty cases",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "In the running app, open a task with a multi-file diff and click each file. Verify +/- styling is legible in both light and dark mode. Trigger a truncated case and verify the notice + link appear. Trigger a binary case and verify the placeholder.",
+              "expected_result": "All three rendering modes legible in both themes; no console errors",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban_web/components/review_diff_panel.ex",
+              "expected_result": "No warnings",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Diff with additions, removals, and context renders correct classes per line",
+              "Truncated diff shows notice + link when URL available",
+              "Truncated diff shows notice without link when URL absent",
+              "Binary file entry shows placeholder",
+              "Missing diff field shows 'no diff available'",
+              "Hunk header (@@) renders distinctly"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Light mode legibility for additions and removals",
+              "Dark mode legibility for additions and removals",
+              "Truncated case in both modes",
+              "Binary case in both modes"
+            ],
+            "edge_cases": [
+              "Empty diff string",
+              "Diff with only context lines (no +/-)",
+              "Diff with a single very long line",
+              "Diff string with embedded null bytes (defensive)"
+            ],
+            "coverage_target": "100% of rendering branches"
+          }
+        },
+        {
+          "title": "Emit telemetry for review_diff_panel open / close events scoped to needs_review tasks",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Wire telemetry events for when the diff panel opens (a file is selected for the first time on a review session) and when it closes (selection cleared, page navigation away, or LiveView teardown). Scope strictly to tasks where needs_review=true — events outside that scope should not fire. These events feed the open-rate and time-spent-in-panel leading metrics.",
+          "why": "Without instrumentation, the leading metrics from the requirements doc (open-rate AND time-spent for needs_review=true tasks) cannot be computed; we have no early-warning signal for the lagging self-report metric.",
+          "what": "Emit :telemetry events at two points: panel-opened (first file selection for a given task review) and panel-closed (selection cleared or LiveView teardown). Include task_id, needs_review flag (always true for emitted events), and a session-scoped timestamp so time-spent can be derived downstream. Add a small subscriber or LiveDashboard surface (or just document the events for downstream consumption — decide during implementation based on existing telemetry conventions).",
+          "where_context": "lib/kanban_web/live/review_live.ex (event emission points), lib/kanban_web/telemetry.ex if it exists (subscriber / metrics registration)",
+          "acceptance_criteria": "A panel-opened telemetry event fires the first time the diff panel renders content for a given task review on needs_review=true tasks\nA panel-closed event fires on selection-cleared, navigation-away, or LiveView teardown\nNo events fire for tasks where needs_review=false\nEvents carry enough context (task_id, timestamps) to compute open-rate and time-spent downstream\nUnit / integration tests assert the events fire (and don't fire) under the expected conditions",
+          "patterns_to_follow": "Match the existing :telemetry conventions in this repo — follow lib/kanban_web/telemetry.ex if present\nUse :telemetry.execute/3 with a stable event name like [:kanban, :review_diff_panel, :opened]",
+          "pitfalls": [
+            "Do not emit events for needs_review=false tasks — the metric is scoped to review-gated work",
+            "Do not double-emit on re-selection of the same file in a single review session",
+            "Do not block rendering on telemetry execution — emit synchronously but expect handlers to be fast",
+            "Do not include sensitive payload data in events — IDs and timestamps only"
+          ],
+          "dependencies": [
+            3
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/review_live.ex",
+              "note": "Emit events on selection change and teardown",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/telemetry.ex",
+              "note": "Register event names if applicable to existing telemetry conventions",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/review_live_test.exs",
+              "note": "Assert telemetry events fire (and don't fire) under expected conditions",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/review_live_test.exs",
+              "expected_result": "All tests pass including new telemetry assertions",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban_web/live/review_live.ex",
+              "expected_result": "No warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "needs_review=true task: opening diff panel emits panel-opened",
+              "needs_review=true task: closing / teardown emits panel-closed",
+              "needs_review=true task: re-selecting same file does not double-emit",
+              "needs_review=false task: no events fire"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Task completed without any diff data: opening 'no diff available' panel — decide whether this counts as panel-opened and document",
+              "LiveView crash mid-review: panel-closed semantics on abrupt teardown"
+            ],
+            "coverage_target": "Both event sites covered; needs_review scope guard covered"
+          }
+        },
+        {
+          "title": "Add end-to-end LiveView test for the click → diff → close flow",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add an integration test in test/kanban_web/live/review_live_test.exs that exercises the full review-with-diffs flow: open a review task whose completion payload contains per-file diff data, click each file, assert the diff content renders, click to close / navigate away, assert telemetry fires correctly. Also include a parallel test for a legacy-payload task (no diff data) confirming the page works unchanged.",
+          "why": "The smaller-grained tests in tasks 1–4 cover each surface in isolation. The end-to-end test is the only thing that catches integration regressions — e.g., a payload shape change between validation and rendering, a missed assign threading.",
+          "what": "Build a fixture with a completion payload containing two changed files (one with diff, one binary). Drive the LiveView through: render → click file 1 → assert diff renders → click file 2 → assert binary placeholder → navigate away → assert telemetry fired open + close. Separate test: legacy payload with no diff field — click still selects but panel shows 'no diff available' and telemetry behavior matches the documented edge case.",
+          "where_context": "test/kanban_web/live/review_live_test.exs, test/support/fixtures (if needed for review-payload helpers)",
+          "acceptance_criteria": "An integration test exercises the full click → render → close flow on a task with diff data\nA parallel test confirms the legacy (no diff) path renders without crashing\nTelemetry assertions match the documented behavior from task 4\nAll new tests pass with `mix test`",
+          "patterns_to_follow": "Mirror the structure of existing LiveView tests under test/kanban_web/live/\nUse Phoenix.LiveViewTest helpers (render_click, render, has_element?)\nUse :telemetry test helpers for event assertions",
+          "pitfalls": [
+            "Do not assert on coloring CSS classes by exact value — they may change; assert on data attributes or semantic markers instead",
+            "Do not couple the test to a specific truncation-marker string — reference the contract doc",
+            "Do not skip the dark-mode case — if a CSS-snapshot tool exists, use it; otherwise document the manual check"
+          ],
+          "dependencies": [
+            4
+          ],
+          "key_files": [
+            {
+              "file_path": "test/kanban_web/live/review_live_test.exs",
+              "note": "Add end-to-end click-to-diff-to-close integration tests",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/review_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix test --cover",
+              "expected_result": "Coverage stays above repo threshold",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix precommit",
+              "expected_result": "All precommit checks pass",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Full flow: click file with diff → panel renders → click binary file → placeholder → close → telemetry fires",
+              "Legacy payload (no diff field): click still selects, panel shows 'no diff available', page does not crash"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Multi-file task where some entries have diff and others are binary",
+              "Task whose payload was emitted by an older plugin version (no diff field anywhere)"
+            ],
+            "coverage_target": "Integration coverage of the click → select → render → close path"
+          }
+        }
+      ]
+    }
+  ]
+}
