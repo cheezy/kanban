@@ -890,6 +890,10 @@
   --stride-orange-soft: oklch(28% 0.06 60);
   --stride-violet-soft: oklch(28% 0.06 280);
 
+  /* Brand inks — light, saturated text that reads on the dark softs above */
+  --stride-orange-ink: oklch(85% 0.14 60);
+  --stride-violet-ink: oklch(85% 0.10 280);
+
   /* Neutrals — inverted lightness ladder */
   --bg: oklch(15% 0.005 270);          /* canvas */
   --surface: oklch(20% 0.005 270);     /* cards, panels */
