@@ -9,8 +9,15 @@ defmodule KanbanWeb.ReviewDiffPanel do
   `actual_files_changed` string. The parent LiveView is responsible for
   splitting that string into the `:files` list this component consumes.
 
-  Purely presentational. No expand/collapse, no click handlers, no diff
-  syntax highlighting.
+  When given `on_file_click`, each file row becomes a button that emits
+  the named phx-click event with a `path` value; the parent LiveView
+  manages `selected_changed_file` selection state. Without
+  `on_file_click`, rows render as plain `<li>` (legacy display).
+
+  The `selected_file` attr accepts a per-file payload map (see
+  `docs/diff-contract.md`). Inline diff rendering is staged for a
+  follow-up task — until then the panel only highlights the active row
+  and the `diff` field of the payload is unused.
 
   ## Per-file diff contract
 
@@ -31,15 +38,28 @@ defmodule KanbanWeb.ReviewDiffPanel do
       the empty state.
     * `failing_tests_count` — optional. Integer count of failing tests.
       When `nil` or `0`, the failing-tests pill is omitted.
+    * `selected_file` — optional per-file payload (the shape defined in
+      `docs/diff-contract.md`: `%{"path" => string, "diff" => string | nil}`).
+      When `path` matches an entry in `files`, that row renders with the
+      active state; the optional `diff` field is reserved for the inline
+      diff render that follows in a later task. Until then, callers may
+      pass `%{"path" => path, "diff" => nil}` — the panel still
+      highlights correctly.
+    * `on_file_click` — optional `phx-click` event name. When set, each
+      row becomes a button that pushes `{event, %{"path" => path}}`. When
+      `nil`, rows render as plain `<span>` (legacy display behavior).
   """
   attr :files, :list, required: true
   attr :failing_tests_count, :integer, default: nil
+  attr :selected_file, :map, default: nil
+  attr :on_file_click, :string, default: nil
 
   def review_diff_panel(assigns) do
     assigns =
       assigns
       |> assign(:file_count, length(assigns.files))
       |> assign(:show_failing_pill?, show_failing_pill?(assigns.failing_tests_count))
+      |> assign(:selected_file_path, selected_file_path(assigns.selected_file))
 
     ~H"""
     <section
@@ -103,13 +123,42 @@ defmodule KanbanWeb.ReviewDiffPanel do
         <li
           :for={file <- @files}
           data-review-diff-panel-file
+          data-review-diff-panel-file-path={file}
+          data-review-diff-panel-file-active={
+            if file == @selected_file_path, do: "true", else: "false"
+          }
           style={[
             "font-family: var(--font-mono); font-size: 11.5px;",
-            "color: var(--ink); line-height: 1.6;",
-            "overflow-wrap: anywhere; word-break: break-all;"
+            "line-height: 1.6;",
+            "overflow-wrap: anywhere; word-break: break-all;",
+            "border-radius: 4px;"
           ]}
         >
-          {file}
+          <button
+            :if={@on_file_click}
+            type="button"
+            phx-click={@on_file_click}
+            phx-value-path={file}
+            aria-pressed={if file == @selected_file_path, do: "true", else: "false"}
+            data-review-diff-panel-file-button
+            style={[
+              "all: unset; display: block; width: 100%;",
+              "padding: 2px 8px; border-radius: 4px; cursor: pointer;",
+              "font: inherit;",
+              "color: var(--ink);",
+              "background: #{if file == @selected_file_path, do: "var(--surface)", else: "transparent"};",
+              "border-left: 2px solid #{if file == @selected_file_path, do: "var(--stride-orange)", else: "transparent"};",
+              "font-weight: #{if file == @selected_file_path, do: "600", else: "500"};"
+            ]}
+          >
+            {file}
+          </button>
+          <span
+            :if={!@on_file_click}
+            style="display: block; padding: 2px 8px; color: var(--ink);"
+          >
+            {file}
+          </span>
         </li>
       </ul>
     </section>
@@ -120,4 +169,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
   defp show_failing_pill?(0), do: false
   defp show_failing_pill?(n) when is_integer(n) and n > 0, do: true
   defp show_failing_pill?(_), do: false
+
+  defp selected_file_path(%{"path" => path}) when is_binary(path), do: path
+  defp selected_file_path(_), do: nil
 end

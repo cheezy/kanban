@@ -42,7 +42,10 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
         assert html =~ file
       end
 
-      assert length(Regex.scan(~r/data-review-diff-panel-file/, html)) == 3
+      # Count <li> rows by the bare `data-review-diff-panel-file`
+      # attribute. Use a word boundary so the regex does not also match
+      # the new `-file-path` and `-file-active` attributes.
+      assert length(Regex.scan(~r/data-review-diff-panel-file\b(?!-)/, html)) == 3
     end
 
     test "uses monospace styling on file rows" do

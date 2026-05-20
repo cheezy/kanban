@@ -38,7 +38,8 @@ defmodule KanbanWeb.ReviewLive do
     {:noreply,
      socket
      |> assign(:selected, task)
-     |> assign(:request_changes_open?, false)}
+     |> assign(:request_changes_open?, false)
+     |> assign(:selected_changed_file, nil)}
   end
 
   @impl true
@@ -46,7 +47,13 @@ defmodule KanbanWeb.ReviewLive do
     {:noreply,
      socket
      |> assign(:selected, nil)
-     |> assign(:request_changes_open?, false)}
+     |> assign(:request_changes_open?, false)
+     |> assign(:selected_changed_file, nil)}
+  end
+
+  @impl true
+  def handle_event("select_changed_file", %{"path" => path}, socket) when is_binary(path) do
+    {:noreply, assign(socket, :selected_changed_file, path)}
   end
 
   @impl true
@@ -354,7 +361,11 @@ defmodule KanbanWeb.ReviewLive do
                 ]}>
                   {gettext("Changed files")}
                 </span>
-                <ReviewDiffPanel.review_diff_panel files={parse_files(@selected.actual_files_changed)} />
+                <ReviewDiffPanel.review_diff_panel
+                  files={parse_files(@selected.actual_files_changed)}
+                  selected_file={selected_file_payload(@selected_changed_file)}
+                  on_file_click="select_changed_file"
+                />
               </section>
 
               <section
@@ -432,6 +443,7 @@ defmodule KanbanWeb.ReviewLive do
     |> assign(:stats, stats)
     |> assign(:selected, List.first(pending))
     |> assign(:request_changes_open?, false)
+    |> assign(:selected_changed_file, nil)
   end
 
   defp remove_from_queue(socket, %{id: id}) do
@@ -709,6 +721,13 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   defp parse_lines(_), do: []
+
+  # Builds the per-file payload passed to the diff panel. The diff
+  # value is `nil` today — per-file diffs are not yet persisted (see
+  # docs/diff-contract.md). When persistence lands, this is the seam
+  # to read it from the task record.
+  defp selected_file_payload(nil), do: nil
+  defp selected_file_payload(path) when is_binary(path), do: %{"path" => path, "diff" => nil}
 
   defp parse_files(nil), do: []
   defp parse_files(""), do: []

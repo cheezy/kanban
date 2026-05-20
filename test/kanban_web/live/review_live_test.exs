@@ -114,6 +114,75 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "select_changed_file event" do
+    setup [:register_and_log_in_user]
+
+    test "clicking a file row sets selected_changed_file and marks that row active",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+
+      # No file is selected on mount.
+      refute html =~ ~s(data-review-diff-panel-file-active="true")
+
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+        |> render_click()
+
+      assert html =~
+               ~s(data-review-diff-panel-file-path="lib/a.ex" data-review-diff-panel-file-active="true")
+
+      refute html =~
+               ~s(data-review-diff-panel-file-path="lib/b.ex" data-review-diff-panel-file-active="true")
+    end
+
+    test "clicking a different file moves the active state",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      html =
+        view
+        |> element(~s([data-review-diff-panel-file-path="lib/b.ex"] button))
+        |> render_click()
+
+      assert html =~
+               ~s(data-review-diff-panel-file-path="lib/b.ex" data-review-diff-panel-file-active="true")
+
+      refute html =~
+               ~s(data-review-diff-panel-file-path="lib/a.ex" data-review-diff-panel-file-active="true")
+    end
+
+    test "selecting a different task clears the changed-file selection",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _first = pending_task!(column, %{identifier: "WX1", actual_files_changed: "lib/a.ex"})
+      second = pending_task!(column, %{identifier: "WX2", actual_files_changed: "lib/c.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      html =
+        view
+        |> element("[data-review-queue-item-id=\"#{second.id}\"]")
+        |> render_click()
+
+      refute html =~ ~s(data-review-diff-panel-file-active="true")
+    end
+  end
+
   describe "deselect_item event" do
     setup [:register_and_log_in_user]
 

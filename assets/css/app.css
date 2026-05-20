@@ -1128,3 +1128,13 @@
    criteria status list. The colour cues let reviewers scan the list
    without re-reading each line. */
 .stride-review-report li:has(:where(em, strong):last-child):not(:has(p)) { color: var(--ink-2); }
+
+/* Keyboard focus indicator for clickable file rows in the review
+   queue diff panel. The `all: unset` declaration on the button
+   strips the default focus ring, so we restore a high-contrast
+   theme-aware outline here. */
+[data-review-diff-panel-file-button]:focus-visible {
+  outline: 2px solid var(--stride-orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
