@@ -1,0 +1,338 @@
+{
+  "decomposition_notes": "Hand-authored (no source requirements doc) in response to a live incident: during a /stridify run on a 7-surface requirements doc, the decomposer subagent hit API Error 529 Overloaded on FOUR consecutive Agent dispatches, with no retry logic in the command body. The user had to abandon the structured flow and hand-author batch JSON. This goal hardens /stride-ideation:stridify against transient subagent dispatch failures and adds a per-goal decomposition mode so users can naturally recover from partial failures without re-running successful goals. The work lives in the stride-ideation plugin repo (github.com/cheezy/stride-ideation); paths in key_files are relative to the plugin repo root, not this Kanban repo. Tasks 0 and 1 are independent and should land first (retry + per-goal flag); task 2 (fallback to disk) depends on task 0's retry exhaustion path; task 3 (preflight warning) depends on task 1's --goal flag existing; task 4 (docs) depends on all four.",
+  "goals": [
+    {
+      "title": "Make /stride-ideation:stridify resilient to transient subagent dispatch failures",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "The /stridify command's Step 7 dispatches the requirements-decomposer subagent via the Agent tool with no retry, no backoff, and no fallback. When the Anthropic API returns 529 Overloaded (or any other transient failure) on the subagent path, /stridify fails completely and forces the user to re-invoke the whole command from scratch — re-running auth preflight, section validation, and path resolution. During a live session this happened 4 times in a row on a 7-surface requirements doc, eventually requiring the user to hand-author batch JSON to make progress. The current 'no retries' policy in the skill body is scoped to the Stride API POST (where retries risk double-creation), NOT to subagent dispatch (where retries are safe — the subagent has no side effects). This gap is the root cause.",
+      "what": "Add bounded exponential-backoff retry to the decomposer subagent dispatch in commands/stridify.md. Introduce a `--goal <name|index>` flag so users can decompose ONE goal at a time when the requirements doc has a 'Decomposition seams' section — turning a workaround into a first-class mode. Add a fallback that saves the assembled decomposer prompt and context to disk when retries are exhausted, with clear instructions for the user to drive the decomposition manually later. Add a preflight warning when a requirements doc enumerates many surfaces in 'Decomposition seams' suggesting --goal partitioning up front. Update SKILL.md and commands/stridify.md docs to describe the new resilience model and flags.",
+      "where_context": "stride-ideation plugin repo (github.com/cheezy/stride-ideation) — primarily commands/stridify.md (the command body), skills/stride-ideation/SKILL.md (skill docs), and agents/requirements-decomposer.md (only if its contract needs updating for per-goal mode). No changes to the Stride API POST path — that retry-policy remains unchanged.",
+      "description": "Resilience hardening of the /stridify command, motivated by a live 529 Overloaded incident on 2026-05-20. The fix targets the subagent dispatch path (Step 7), which is safe to retry because subagents have no externally-visible side effects. The Stride API POST path (Step 9) retains its existing 'no retries' policy because partial-batch idempotency is not guaranteed Stride-side.",
+      "acceptance_criteria": "/stridify Step 7 retries the decomposer subagent on 529 Overloaded and other transient errors with bounded exponential backoff (default: 3 attempts, ~30s/90s/300s)\nWhen retries are exhausted, the assembled decomposer prompt is saved to disk alongside the requirements doc with a recovery README explaining how to hand-drive the decomposition\nA --goal <name|index> flag lets users decompose ONE goal at a time when the requirements doc has a 'Decomposition seams' section\nA preflight warning fires when a requirements doc enumerates >3 surfaces under 'Decomposition seams' suggesting --goal partitioning\nSKILL.md and commands/stridify.md document the retry policy, fallback, and per-goal mode\nThe existing Stride API POST 'no retries' policy is preserved unchanged\nA dry-run / mock subagent test validates the retry → fallback path without burning real Anthropic API calls",
+      "pitfalls": [
+        "Do not extend retry to the Stride API POST (Step 9) — partial-batch idempotency is not guaranteed; the existing policy is correct",
+        "Do not add retry to the requirements-reviewer pass in /ideate — that's a separate command with a different failure profile (skill says 'at most one refinement round')",
+        "Do not silently swallow non-transient errors as transient — only 529, connection errors, and explicit 'overloaded' classes should trigger retry. 4xx from the subagent path (bad subagent name, etc.) must fail fast",
+        "Do not make the retry loop unbounded — cap at 3 attempts and ~7 minutes total; longer is better handled by the fallback-to-disk path",
+        "Do not couple --goal flag parsing to a specific Decomposition seams syntax that the requirements-reviewer doesn't enforce; tolerate missing seams section by falling back to 'all goals' mode",
+        "Do not change the decomposer's output contract (single fenced ```json with root key 'goals') — per-goal mode still produces a goals array, just with one entry"
+      ],
+      "tasks": [
+        {
+          "title": "Add bounded exponential-backoff retry to /stridify Step 7 decomposer dispatch",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In commands/stridify.md Step 7, wrap the Agent dispatch in a retry loop. On transient failure (HTTP 529 Overloaded, transient network error, explicit 'overloaded' classification from the Agent tool), wait and retry. Cap at 3 attempts with exponential backoff (~30s, ~90s, ~300s). On non-transient failure (bad subagent name, contract violation, hard 4xx), fail fast — these are not load-related.",
+          "why": "The Agent tool's subagent dispatch can return 529 Overloaded during Anthropic API capacity spikes. Subagents have no side effects, so retrying is safe. Without retry, a one-minute capacity spike kills a 10+-minute /stridify run.",
+          "what": "Document the retry loop in commands/stridify.md Step 7 with explicit pseudo-code for the retry classification and backoff schedule. Update the 'What this command does NOT do' section to clarify that retries DO happen on subagent dispatch (and explain why — subagent dispatch is safe to retry; Stride API POST is not).",
+          "where_context": "commands/stridify.md (Step 7 — the Agent dispatch block, currently lines ~118-140)",
+          "acceptance_criteria": "Step 7 documents a retry loop with explicit transient-error classification (529, network, 'overloaded')\nBackoff schedule documented as ~30s / ~90s / ~300s (or similar bounded exponential)\nCap of 3 attempts is explicit and stated\nNon-transient errors (bad subagent, contract violation) fail fast with no retry\n'What this command does NOT do' section distinguishes Stride-POST retry (still NO) from subagent-dispatch retry (now YES)\nA shell-script or markdown test under lib/ exercises the retry logic against a mock subagent that fails N times then succeeds",
+          "patterns_to_follow": "Mirror the structure of Step 9 (HTTP branching) for clarity — explicit classification table, explicit code-flow example\nUse the same 'verbatim error surface' principle on terminal failure — surface the LAST subagent error verbatim so the user sees the actual cause",
+          "pitfalls": [
+            "Do not retry on a contract violation (subagent returned non-JSON) — that's a regression in the agent, not load",
+            "Do not log the full prompt on each retry — it's large and clutters output. Log a one-line attempt-N header instead",
+            "Do not retry indefinitely — cap at 3 attempts and let the fallback (task 2) handle the rest"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "commands/stridify.md",
+              "note": "Add retry loop documentation around the Step 7 Agent dispatch",
+              "position": 0
+            },
+            {
+              "file_path": "lib/test-stridify-retry.sh",
+              "note": "New test exercising retry classification (mock subagent fails N times then succeeds)",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "bash lib/test-stridify-retry.sh",
+              "expected_result": "Mock-subagent retry test passes; transient errors trigger retry, non-transient fail fast",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Read the updated Step 7 in commands/stridify.md and confirm the retry classification table is unambiguous.",
+              "expected_result": "Documentation is concrete enough to implement without inference",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Mock subagent fails 2× with 529 then succeeds — /stridify completes on the 3rd attempt",
+              "Mock subagent fails 3× with 529 — /stridify exits non-zero and surfaces the last error verbatim",
+              "Mock subagent returns contract violation (non-JSON) — /stridify fails fast with no retry"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "First attempt succeeds (no retry path exercised)",
+              "Transient error class not exactly 529 (e.g., 'overloaded' string in message body)",
+              "User-interrupt between retries"
+            ],
+            "coverage_target": "All three retry classification branches"
+          }
+        },
+        {
+          "title": "Add --goal <name|index> flag to /stridify for per-seam decomposition",
+          "type": "work",
+          "complexity": "medium",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Extend /stridify argument parsing to accept an optional --goal <value> flag where <value> is either an integer index (1-based, matching the order in the requirements doc's 'Decomposition seams' section) or a slug-matching string. When set, /stridify dispatches the decomposer with a prompt scoped to ONE goal: only the requested surface from the seams section, plus the shared sections (Goal, Problem, Outcome, etc.). The on-disk batch JSON is named with the goal slug appended for distinguishability.",
+          "why": "Big requirements docs with many surfaces produce huge decomposer prompts (and big subagent prompts correlate with both higher 529 risk and longer roundtrips). They also amplify the cost of any single failure — losing a 7-surface run loses everything. Per-goal mode reduces both the per-call prompt size and the blast radius of any single failure.",
+          "what": "Parse --goal in Step 1 before the topic-remainder logic. Resolve the value against the requirements doc's 'Decomposition seams' section: integer = 1-based index into the surface list; string = slug-matching against the surface names. If the doc lacks a seams section OR the value doesn't match, error with a clear message naming the actual seams that ARE present. The decomposer prompt in Step 7 includes ONLY the requested surface plus the shared sections; the contract still emits a single-goal batch JSON. The TARGET_PATH suffix gains the goal slug (e.g., '...-review-queue-code-diffs-kanban-app-stride-batch.json') so multiple per-goal invocations on the same source doc produce distinct sibling files. Commit message gains the goal slug too.",
+          "where_context": "commands/stridify.md Step 1 (argument parsing), Step 4 (path computation), Step 7 (decomposer prompt assembly), Step 8d (commit message)",
+          "acceptance_criteria": "/stridify accepts --goal <name|index> as an optional flag with the same parsing rules as --continue / --profile in /ideate\nResolution against 'Decomposition seams' section supports both integer index (1-based) and slug-matching string\nIf --goal is set but the requirements doc has no 'Decomposition seams' section, /stridify errors with: 'no Decomposition seams section in <path> — cannot scope to single goal'\nIf --goal value doesn't resolve, /stridify errors and names the available seams\nWhen --goal is set, the decomposer prompt is scoped to that surface plus the shared sections; the output is still a single-goal batch JSON\nThe TARGET_PATH suffix and commit message include the goal slug\nMultiple per-goal invocations on the same source doc produce distinct sibling files (no collisions, no overwrites)\nWhen --goal is absent, behavior is unchanged from current",
+          "patterns_to_follow": "Argument-parsing style matches the existing --continue / --profile handling in /ideate (fixed parse order, accept both --goal value and --goal=value)\nError message format matches existing 'stride-ideation: ...' style\nFilename construction reuses sti_unique_path with a derived slug",
+          "pitfalls": [
+            "Do not require a 'Decomposition seams' section in all docs — most docs won't have one; absence is the default",
+            "Do not couple to a specific markdown shape for seams beyond a level-2 heading match — the section is freeform",
+            "Do not silently fall back to 'all goals' on unresolved --goal — that hides user error",
+            "Do not change the API contract — the on-disk JSON is still root-key='goals' with one entry"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "commands/stridify.md",
+              "note": "Argument parsing in Step 1; prompt scoping in Step 7; path naming in Step 4; commit message in Step 8d",
+              "position": 0
+            },
+            {
+              "file_path": "lib/filename.sh",
+              "note": "Possibly add a helper to compose <slug>-<goal-slug> if it doesn't already",
+              "position": 1
+            },
+            {
+              "file_path": "lib/test-stridify-per-goal.sh",
+              "note": "New test exercising --goal flag resolution and prompt scoping",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "bash lib/test-stridify-per-goal.sh",
+              "expected_result": "Per-goal flag resolution test passes for index, slug, missing-section, and absent-flag cases",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Read Step 1 and Step 7 in the updated commands/stridify.md and verify the seams-resolution behavior is unambiguous.",
+              "expected_result": "Both resolution forms (integer + slug) are explicit; error paths are explicit",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "--goal 1 on a 7-surface doc dispatches a prompt containing only surface 1",
+              "--goal kanban-app on the same doc dispatches the same prompt as --goal 1 (slug-matching)",
+              "--goal 99 errors and names available seams",
+              "--goal on a doc without 'Decomposition seams' errors clearly",
+              "Absent --goal preserves current 'all goals' behavior"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Seams section present but empty (no surface entries)",
+              "Surface slug contains hyphens that conflict with the integer-vs-slug heuristic",
+              "Same goal slug invoked twice — second run produces a -2 suffix per sti_unique_path"
+            ],
+            "coverage_target": "All --goal resolution branches and the absent-flag default"
+          }
+        },
+        {
+          "title": "Add fallback: save decomposer prompt to disk when retries are exhausted",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "When the retry loop from task 0 exhausts its 3 attempts, /stridify writes the fully-assembled decomposer prompt (including the requirements doc text and any --goal scoping) to disk as a sibling file next to the requirements doc. Print a short recovery README explaining how to hand-drive the decomposition (paste into a fresh session, use a different model, etc.) and where the prompt was saved.",
+          "why": "Even with retry, a sustained Anthropic outage will eventually exhaust the retry budget. Without a fallback, the user loses all the assembly work (auth preflight, section validation, path resolution, prompt construction). A saved prompt lets them recover hours or days later without re-invoking /stridify from scratch.",
+          "what": "Add a new Step 7.5 to commands/stridify.md: on retry exhaustion, write '<source-stem>-decomposer-prompt-N.md' (where N is collision-discriminated) next to the requirements doc. The file contains: (a) timestamp, (b) source requirements doc path + sha256, (c) the literal subagent prompt that was about to be dispatched, (d) the last error verbatim, (e) one paragraph of recovery instructions (paste into a fresh Claude session, save the result as <target-path>, then run the existing batch-validation + POST steps manually). Exit non-zero. The Stride API POST is NOT attempted in this branch.",
+          "where_context": "commands/stridify.md (new Step 7.5 between current Step 7 retry-exhaustion and the existing Step 8 happy path)",
+          "acceptance_criteria": "On retry exhaustion, /stridify writes a decomposer-prompt sibling file next to the requirements doc\nThe file contains: timestamp, source path + sha256, the literal subagent prompt, the last error verbatim, recovery instructions\nThe filename uses sti_unique_path with artifact name 'decomposer-prompt' so reruns don't overwrite\nThe Stride API POST is NOT attempted in this branch — exit non-zero before Step 9\nThe printed terminal output names the saved-prompt path and gives a one-paragraph recovery summary\nA test exercises the fallback path with a mock subagent that always fails",
+          "patterns_to_follow": "Reuse sti_unique_path for the saved-prompt filename so the collision-discriminator logic is consistent\nMatch the 'recovery README' style of existing error messages — concise, one paragraph, names the next concrete action",
+          "pitfalls": [
+            "Do not include the Stride API token in the saved prompt or the recovery README — the prompt has no auth context anyway, but be explicit in the doc",
+            "Do not save partial batch JSON to disk in this branch — only the prompt. Partial / corrupt JSON saved as if it were a real artifact is worse than no file",
+            "Do not silently overwrite an existing decomposer-prompt sibling file — sti_unique_path handles collision",
+            "Do not attempt the POST after fallback — exit non-zero before Step 9"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "commands/stridify.md",
+              "note": "Add Step 7.5 (retry-exhaustion fallback)",
+              "position": 0
+            },
+            {
+              "file_path": "lib/test-stridify-fallback.sh",
+              "note": "New test for the fallback path (mock subagent always fails)",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "bash lib/test-stridify-fallback.sh",
+              "expected_result": "Fallback test passes — file is written with all required sections; POST is not attempted",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Read the recovery instructions in a saved fallback file and confirm a user could complete the decomposition manually with just that file plus the requirements doc.",
+              "expected_result": "Self-contained recovery — no need to consult source",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "Mock subagent always fails — fallback file is written; POST not attempted; exit non-zero",
+              "Saved file contains timestamp, source sha256, literal prompt, last error, recovery instructions",
+              "Repeat invocation produces a -2 suffix via sti_unique_path (no overwrite)"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "User invokes --goal with retries-exhausted — saved prompt reflects the scoped prompt, not the full doc",
+              "Disk full / write fails — error surfaces clearly (do not lose the in-memory prompt to a swallowed Write error)"
+            ],
+            "coverage_target": "Fallback branch + filename collision discriminator"
+          }
+        },
+        {
+          "title": "Add preflight warning when Decomposition seams enumerates more than 3 surfaces",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "In Step 2 of /stridify (validation), add an advisory check: if the requirements doc contains a 'Decomposition seams' section enumerating more than 3 surfaces AND --goal is not set, print a one-line advisory suggesting --goal partitioning. The check is advisory — /stridify continues with the all-goals path so behavior is unchanged when the user ignores it.",
+          "why": "Big multi-surface decompositions are exactly the cases where 529 risk is highest (large prompt, long roundtrip) and the cost of failure is greatest (losing all surfaces, not just one). A nudge toward --goal up front lets users avoid the failure mode rather than recover from it.",
+          "what": "Add a check in Step 2 after the section-presence validation. Count level-3 or numbered-list items under a '## Decomposition seams' heading. If >3 AND --goal is not set, print: 'stride-ideation: requirements doc enumerates N surfaces under Decomposition seams. Consider running /stridify --goal <name|index> N times to reduce subagent-dispatch failure risk on large decompositions. Continuing with all-goals mode.' Continue execution.",
+          "where_context": "commands/stridify.md Step 2 (validation)",
+          "acceptance_criteria": "When the doc has >3 surfaces under Decomposition seams AND --goal is not set, an advisory line is printed before Step 7\nWhen --goal IS set, no advisory is printed (the user has already partitioned)\nWhen the doc has ≤3 surfaces (or no seams section), no advisory is printed\nThe advisory does NOT block execution — /stridify continues normally\nThe count heuristic is documented (level-3 headings or numbered-list items under the seams section)",
+          "patterns_to_follow": "Match the 'stride-ideation: ...' message style used by other warnings\nKeep the advisory to one line — verbose preflight noise dilutes the signal",
+          "pitfalls": [
+            "Do not make the advisory blocking — that breaks backwards compatibility for users who genuinely want all-goals mode",
+            "Do not couple the surface-count to a strict markdown shape — tolerate level-3 headings, numbered list items, or bulleted items under the seams heading",
+            "Do not double-print when --goal IS set (the user already addressed it)"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "commands/stridify.md",
+              "note": "Step 2: add advisory surface-count check",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "grep -nE 'Consider running.*--goal' commands/stridify.md",
+              "expected_result": "Advisory message text appears in Step 2",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Run /stridify on the review-queue-code-diffs requirements doc (7 surfaces) without --goal; verify the advisory prints.",
+              "expected_result": "Advisory prints once, before Step 7; execution continues",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [
+              "7-surface doc without --goal — advisory prints; execution continues",
+              "7-surface doc WITH --goal — advisory does not print",
+              "2-surface doc without --goal — advisory does not print"
+            ],
+            "manual_tests": [],
+            "edge_cases": [
+              "Seams section uses bulleted list instead of numbered list",
+              "Seams section uses level-3 headings instead of list items",
+              "Doc has a seams section but it's empty"
+            ],
+            "coverage_target": "All three surface-count thresholds (none / ≤3 / >3) and the --goal-present branch"
+          }
+        },
+        {
+          "title": "Document the resilience model and new flags in SKILL.md and stridify.md",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Update the user-facing docs to explain: (a) /stridify retries subagent dispatch with bounded backoff but NOT the Stride API POST; (b) the --goal flag and when to use it; (c) the preflight advisory for many-surface docs; (d) the fallback-to-disk recovery path. The docs already have a clear 'What this command does NOT do' section in stridify.md — extend it to distinguish subagent-dispatch retry (NEW: yes, bounded) from Stride API POST retry (unchanged: no).",
+          "why": "Without docs, the resilience improvements are invisible. Users who don't read the diff will assume the old 'no retries anywhere' policy still holds and abandon /stridify on the first transient failure rather than waiting for the retry loop to complete.",
+          "what": "Edit skills/stride-ideation/SKILL.md (Terminal state / What this skill does NOT cover sections) to mention the retry + fallback. Edit commands/stridify.md ('What this command does NOT do' section and the new Step 7 / 7.5 / Step 2 advisory) to be explicit. Add a brief 'Resilience model' subsection summarizing the policy in one place. Cross-link from /ideate's docs so users learn about --goal naturally when writing requirements with Decomposition seams.",
+          "where_context": "skills/stride-ideation/SKILL.md, commands/stridify.md, commands/ideate.md (cross-link only)",
+          "acceptance_criteria": "skills/stride-ideation/SKILL.md mentions the retry + fallback + --goal in the appropriate sections\ncommands/stridify.md's 'What this command does NOT do' section explicitly distinguishes subagent-dispatch retry (yes, bounded) from Stride API POST retry (no, unchanged)\nA 'Resilience model' subsection summarizes the policy in one place (one paragraph max)\ncommands/ideate.md briefly mentions Decomposition seams + --goal partitioning so users discover it when authoring requirements\nNo behavior changes from this task — docs only",
+          "patterns_to_follow": "Match the existing voice — direct, no marketing language, name the actual mechanism\nKeep the resilience model summary brief — one paragraph; details belong in Step 7 / 7.5",
+          "pitfalls": [
+            "Do not overstate the retry — it's 3 attempts, ~7 min total, not 'automatic recovery from any outage'",
+            "Do not introduce new terminology — use the same words (retry, backoff, fallback, decomposition seams) consistently across docs",
+            "Do not orphan the docs — every new flag and behavior gets mentioned in at least the relevant command/skill body"
+          ],
+          "dependencies": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "key_files": [
+            {
+              "file_path": "skills/stride-ideation/SKILL.md",
+              "note": "Mention retry + fallback + --goal",
+              "position": 0
+            },
+            {
+              "file_path": "commands/stridify.md",
+              "note": "'What this command does NOT do' section + resilience-model summary",
+              "position": 1
+            },
+            {
+              "file_path": "commands/ideate.md",
+              "note": "Cross-link to --goal partitioning for many-surface requirements",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "grep -nE '(retry|backoff|fallback|--goal|Decomposition seams)' skills/stride-ideation/SKILL.md commands/stridify.md commands/ideate.md",
+              "expected_result": "All new terms appear in at least the appropriate file",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Read the three files top-to-bottom as if seeing them for the first time. Confirm the resilience story is coherent and the user can find --goal without already knowing about it.",
+              "expected_result": "Coherent, no orphan references, no over-claiming",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": [],
+            "manual_tests": [
+              "Read SKILL.md + stridify.md + ideate.md end-to-end and confirm the resilience model is discoverable"
+            ],
+            "edge_cases": [],
+            "coverage_target": "n/a (docs-only)"
+          }
+        }
+      ]
+    }
+  ]
+}
