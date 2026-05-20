@@ -30,18 +30,25 @@ Example completion payload fragment:
 
 ## Encoding
 
-`diff` is **unified-patch text** — the same format produced by `git diff` with no special flags. Plugins SHOULD generate it with:
+`diff` is **unified-patch text** — the same format produced by `git diff` with no special flags. The `diff` value represents whatever change exists between `<base>` and the agent's working tree at completion time, regardless of commit state — committed-since-base, staged-but-uncommitted, and modified-but-unstaged changes all surface in the same patch.
+
+Plugins SHOULD generate the per-file diff for tracked changes with the working-tree-relative form:
 
 ```bash
-git diff <base>..HEAD -- <path>
+git diff <base> -- <path>
 ```
+
+For untracked new files that the agent created but never committed, plugins SHOULD enumerate them with `git ls-files --others --exclude-standard` and synthesize a unified-patch entry per file. The standard idiom is `git diff --no-index --no-color /dev/null <path>`, which emits a normal new-file unified patch (with `--- /dev/null` / `+++ b/<path>` headers) for text files and the `Binary files /dev/null and b/<path> differ` sentinel for binary files (use the binary placeholder string for the latter — see the **Binary files** section below).
+
+> **Why the working-tree form, not `<base>..HEAD`?** The earlier contract specified `git diff <base>..HEAD -- <path>`, which captures committed history only. Agents that complete a task without committing first (a common Claude Code pattern when work fits in a single conversation) produced empty snapshots under that form. The working-tree-relative form captures the agent's full working state at completion time and matches what the reviewer would see if they `git diff`'d the agent's branch locally.
 
 Rules:
 
 - UTF-8 encoded.
-- Includes the standard `--- a/<path>` / `+++ b/<path>` headers and one or more `@@ ... @@` hunks.
+- Includes the standard `--- a/<path>` (or `--- /dev/null` for new files) / `+++ b/<path>` headers and one or more `@@ ... @@` hunks.
 - Line endings are preserved as the plugin captured them; the server does not normalize.
 - No syntax highlighting, no HTML, no ANSI color codes — plain text only.
+- A single path that's both committed-since-base AND further modified in the working tree appears exactly once in the snapshot, with a diff that reflects the final working-tree state.
 
 ## Truncation
 
@@ -73,7 +80,9 @@ Plugins MUST NOT attempt to produce a unified-patch diff for binary files (image
 [binary file — no diff captured]
 ```
 
-The UI renders this placeholder as a "binary file changed" notice with no preview. Detection of "binary" is the plugin's responsibility — `git diff --numstat` reports binary files with `-\t-` as the line counts, and `file --mime-encoding` can disambiguate edge cases.
+The UI renders this placeholder as a "binary file changed" notice with no preview. Detection of "binary" is the plugin's responsibility — `git diff --numstat` reports tracked binary files with `-\t-` as the line counts. For untracked new files, plugins can detect binary content by sniffing the `Binary files ... differ` line that `git diff --no-index --no-color /dev/null <path>` emits in place of a unified patch. `file --mime-encoding` can disambiguate edge cases.
+
+Untracked new files that the plugin captures via the synthesized new-file patch (see the **Encoding** section above) appear in the snapshot with a `--- /dev/null` / `+++ b/<path>` header; untracked binaries use the placeholder string above just like tracked binaries.
 
 ## Backward compatibility
 
