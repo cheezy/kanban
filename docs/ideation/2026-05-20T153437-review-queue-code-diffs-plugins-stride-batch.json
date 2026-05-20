@@ -1,0 +1,501 @@
+{
+  "source_spec": "docs/ideation/2026-05-20T143845-review-queue-code-diffs-requirements.md",
+  "source_spec_sha256": "aae53aa1223101787e861e8f6aa0a518a5c8da76c986ba51a74386324f4955f9",
+  "decomposition_notes": "Goals 2-7 of the review-queue-code-diffs initiative: per-plugin diff-capture work. Each plugin lives in its own repo (except `stride` which is in this kanban repo at stride/) and ships independently. ALL six plugin goals depend on the contract published in G148/W719 (the per-file diff JSON contract reference doc). Each goal's first implementation task uses an identifier-dependency on W719; subsequent in-goal tasks depend on indices. The six plugin goals are INDEPENDENT of each other — backward compatibility means older plugin versions that haven't shipped capture continue to produce working reviews (no diff panel for those tasks). NO coordinated cutover is required. Release model follows the kanban-marketplace convention: bump plugin repo + bump stride-marketplace pin in the same release cycle (per memory: feedback_stride_marketplace_release.md). The `stride` plugin goal has an extra task (W*-skill-docs) because the canonical completion-payload skill body lives there and must document the new diff field for downstream agent operators.",
+  "goals": [
+    {
+      "title": "Capture per-file diffs in stride plugin (reference implementation)",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "high",
+      "needs_review": false,
+      "why": "The `stride` plugin is the reference workflow plugin distributed via stride-marketplace and used by Claude Code agents. Without diff capture wired into its completion-payload assembly, the kanban-app review queue panel (G148) has nothing to render for tasks completed by stride-plugin agents — which is the majority of traffic. As the reference plugin, this work also serves as the implementation template the other five variants follow.",
+      "what": "Add a step (during after_doing hook execution or during completion-payload assembly — confirm during implementation by reading the existing stride-completing-tasks skill body) that runs `git diff` per changed file relative to the task base, truncates to 500 lines with the marker from the G148/W719 contract, and writes the unified-patch text into the per-file `diff` field of the completion payload. Update the stride-completing-tasks skill body to document the new field so downstream agent operators know about it. Add tests covering: (a) capture happy path, (b) 500-line truncation marker, (c) backward compatibility — legacy completion payload without diff field still validates server-side.",
+      "where_context": "stride/hooks/ (if capture happens at hook time), stride/skills/stride-completing-tasks/ (the API contract skill that documents the completion payload shape), and possibly stride/agents/task-reviewer.md (if review-time emission is the chosen capture point)",
+      "description": "Reference implementation of per-file diff capture. The other five plugin variants (stride-copilot, stride-gemini, stride-codex, stride-opencode, stride-pi) follow this implementation as a template. Backward compatibility is non-negotiable: tasks completed without diff data must continue to validate on the kanban-app side (per G148/W720).",
+      "acceptance_criteria": "stride plugin captures per-file diffs during completion-payload assembly\nDiffs are truncated to 500 lines per file with the marker from the G148/W719 contract\nThe stride-completing-tasks skill body documents the new diff field\nTasks completed without diff capture (e.g., older plugin versions in mixed environments) still validate server-side\nNew minor version released; stride-marketplace pin updated\nNo regressions in existing stride-plugin smoke tests",
+      "pitfalls": [
+        "Do not implement capture before G148/W719 publishes the contract — the truncation marker and field name come from there",
+        "Do not skip the skill-body docs update — downstream agent operators consuming the stride plugin need to know about the new field",
+        "Do not bump the plugin without also bumping stride-marketplace pin in the same release cycle (per memory)",
+        "Do not break backward compatibility — older agents must keep producing valid completions"
+      ],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride plugin per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a capture step during the stride plugin's completion-payload assembly (or after_doing hook) that runs `git diff <base>..HEAD` per changed file, truncates to 500 lines per file with the marker from the G148/W719 contract, and writes the unified-patch text into the per-file `diff` field of the completion payload.",
+          "why": "Without this, the kanban-app review-queue diff panel (G148) has no data to render for tasks completed by the stride plugin.",
+          "what": "Choose capture point (during after_doing vs. during completion-payload assembly — read stride-completing-tasks/SKILL.md to pick the location). Run `git diff` per file in the changed-files list. Apply 500-line truncation with the contract's marker convention. Encode as a string and attach to each per-file entry. Handle binary files by emitting the contract's binary placeholder rather than attempting to patch them.",
+          "where_context": "stride/hooks/stride-hook.sh (if hook-time capture), stride/skills/stride-completing-tasks/ (if skill-driven assembly)",
+          "acceptance_criteria": "On task completion, the stride plugin captures `git diff` per changed file relative to the task base\nDiffs over 500 lines are truncated with the marker from G148/W719\nBinary files emit the contract's binary placeholder, not a patch attempt\nThe captured payload is attached to the per-file entry as a `diff` string field\nLegacy code path that doesn't run capture (e.g., when contract field is absent in skill version) still works",
+          "patterns_to_follow": "Read G148/W719's published contract doc as the single source of truth for field name, truncation marker, binary convention",
+          "pitfalls": [
+            "Do not start before W719 lands — the contract doc is the source of truth for marker / field-name conventions",
+            "Do not capture untracked or excluded files — `git diff` against the task base is the authoritative file set",
+            "Do not blow up on a repo with no `<base>` ref — fall back to capturing against HEAD~1 or document the limitation"
+          ],
+          "dependencies": ["W719"],
+          "key_files": [
+            {"file_path": "stride/hooks/stride-hook.sh", "note": "Possible capture point", "position": 0},
+            {"file_path": "stride/skills/stride-completing-tasks/SKILL.md", "note": "Skill body governing completion-payload shape", "position": 1}
+          ],
+          "verification_steps": [
+            {"step_type": "command", "step_text": "bash stride/hooks/test-stride-hook.sh", "expected_result": "Hook tests pass including any new diff-capture cases", "position": 0},
+            {"step_type": "manual", "step_text": "Run a small task through the stride plugin and inspect the POST /complete payload — confirm the per-file entries carry a `diff` string for non-binary files", "expected_result": "diff field present and well-formed for text files; binary placeholder for binary files", "position": 1}
+          ],
+          "testing_strategy": {
+            "unit_tests": ["Truncation: diff over 500 lines is truncated with marker", "Truncation: diff at exactly 500 lines is not truncated", "Binary file: placeholder is emitted, no patch attempt"],
+            "integration_tests": ["End-to-end completion of a small task produces a payload with diff data"],
+            "manual_tests": ["Run against a real task in this repo and inspect the payload"],
+            "edge_cases": ["Empty changed-files list", "File with very long single line", "Repo without `<base>` ref configured"],
+            "coverage_target": "All capture and truncation branches"
+          }
+        },
+        {
+          "title": "Document the per-file diff field in stride-completing-tasks skill body",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Update the stride-completing-tasks skill body to document the new optional per-file `diff` field on the completion payload. Cross-link to the G148/W719 contract reference doc. The skill is the canonical reference for downstream agent operators implementing custom completion flows.",
+          "why": "Agent operators reading the stride-completing-tasks skill expect a complete picture of the completion-payload shape. Without this update, the diff field is invisible to anyone writing a custom plugin against the stride API.",
+          "what": "Add a section (or extend the existing payload-shape section) in stride-completing-tasks/SKILL.md describing the per-file `diff` field — encoding, truncation, binary convention. Cross-link to the contract reference doc in the kanban repo. Note that the field is optional and backward compatibility is guaranteed.",
+          "where_context": "stride/skills/stride-completing-tasks/SKILL.md",
+          "acceptance_criteria": "Skill body documents the per-file diff field with the encoding, truncation, and binary conventions\nCross-link to G148/W719's contract reference doc is present\nBackward-compatibility note is explicit (legacy completions without diff are still valid)",
+          "patterns_to_follow": "Match existing skill-body voice — direct, names the actual mechanism, no marketing\nKeep the addition minimal — the contract doc is the source of truth; the skill summarizes and links",
+          "pitfalls": [
+            "Do not duplicate the contract doc — link to it; keep the skill body concise",
+            "Do not document fields that aren't actually emitted by the stride plugin yet — wait for task 0 to land first"
+          ],
+          "dependencies": [0],
+          "key_files": [
+            {"file_path": "stride/skills/stride-completing-tasks/SKILL.md", "note": "Document the diff field", "position": 0}
+          ],
+          "verification_steps": [
+            {"step_type": "command", "step_text": "grep -nE 'diff|truncat|binary' stride/skills/stride-completing-tasks/SKILL.md", "expected_result": "References to diff field, truncation, and binary convention appear", "position": 0}
+          ],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Read updated skill body end-to-end and confirm a new agent operator could implement capture from the skill alone"], "edge_cases": [], "coverage_target": "n/a (docs-only)"}
+        },
+        {
+          "title": "Add tests for stride-plugin diff capture: happy path, truncation, backward compatibility",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add tests exercising the new capture path: a normal completion produces diff data; a >500-line diff is truncated with the marker; a binary file gets the placeholder; a legacy completion without diff capture still produces a valid payload. Use the existing test harness in stride/hooks/test-*.sh as the pattern.",
+          "why": "Without explicit tests, the capture step is a silent failure surface — `git diff` errors or path-resolution bugs would only surface when reviewers complain about missing diffs.",
+          "what": "Extend stride/hooks/test-stride-hook.sh (or add a sibling test file) with cases for capture-happy, truncation-applied, binary-placeholder, and legacy-no-capture. Use small fixture diffs to keep test runtime short.",
+          "where_context": "stride/hooks/test-stride-hook.sh, stride/hooks/test-stride-skill-gate.sh",
+          "acceptance_criteria": "Tests cover capture happy path, truncation marker, binary placeholder, and legacy-no-capture\nAll new tests pass\nNo regression in existing hook tests",
+          "patterns_to_follow": "Mirror the existing test-stride-hook.sh structure",
+          "pitfalls": [
+            "Do not write tests that depend on a specific git history — use fixtures or temp repos",
+            "Do not skip the legacy-no-capture case — it's the backward-compatibility guarantee"
+          ],
+          "dependencies": [0, 1],
+          "key_files": [
+            {"file_path": "stride/hooks/test-stride-hook.sh", "note": "Extend with diff-capture cases", "position": 0}
+          ],
+          "verification_steps": [
+            {"step_type": "command", "step_text": "bash stride/hooks/test-stride-hook.sh", "expected_result": "All tests pass", "position": 0}
+          ],
+          "testing_strategy": {
+            "unit_tests": [],
+            "integration_tests": ["Capture happy path", "Truncation marker", "Binary placeholder", "Legacy no-capture path"],
+            "manual_tests": [],
+            "edge_cases": ["Empty changed-files list", "File with embedded null bytes"],
+            "coverage_target": "All capture branches plus the legacy bypass"
+          }
+        },
+        {
+          "title": "Release stride plugin and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Cut a versioned release of the stride plugin containing the diff-capture changes. Bump version (semver minor — adds new optional field to completion payload). Update CHANGELOG. Bump stride-marketplace pin in the same release cycle.",
+          "why": "Per memory (feedback_stride_marketplace_release.md), Stride plugin releases require bumping BOTH the plugin repo AND stride-marketplace. Without the marketplace bump, installs continue to pull the old version.",
+          "what": "Bump stride/.claude-plugin/plugin.json version. Add CHANGELOG entry. Tag the release. Bump stride-marketplace pin and commit + push. Verify install picks up the new version.",
+          "where_context": "stride/.claude-plugin/plugin.json, stride/CHANGELOG.md, stride-marketplace/",
+          "acceptance_criteria": "stride plugin version bumped (semver minor)\nCHANGELOG entry describes the diff-capture release\nstride-marketplace pin updated and pushed\nFresh install picks up the new version",
+          "patterns_to_follow": "Same release model as the G147/W718 stride-ideation release task — bump both repos in the same cycle",
+          "pitfalls": [
+            "Do not bump only the plugin repo — marketplace pin must be updated in the same release cycle",
+            "Do not use `gh release create` from Claude — classifier-gated; surface the command for the user to run interactively",
+            "Do not skip the CHANGELOG entry"
+          ],
+          "dependencies": [2],
+          "key_files": [
+            {"file_path": "stride/.claude-plugin/plugin.json", "note": "Bump version", "position": 0},
+            {"file_path": "stride/CHANGELOG.md", "note": "Add release entry", "position": 1}
+          ],
+          "verification_steps": [
+            {"step_type": "command", "step_text": "grep -E '\"version\":' stride/.claude-plugin/plugin.json", "expected_result": "Bumped version", "position": 0}
+          ],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Fresh install and exercise a small task end-to-end with diff capture"], "edge_cases": [], "coverage_target": "n/a (release)"}
+        }
+      ]
+    },
+    {
+      "title": "Capture per-file diffs in stride-copilot plugin",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "stride-copilot agents complete tasks via Copilot CLI's tool surface and currently emit completion payloads without per-file diff data. Without parity with the stride reference plugin, Copilot-completed tasks render an empty diff panel in the kanban-app review queue.",
+      "what": "Implement per-file diff capture in the stride-copilot plugin conforming to the G148/W719 contract — capture, 500-line truncation with marker, binary placeholder. Add tests. Release with marketplace pin bump.",
+      "where_context": "stride-copilot plugin repo (separate from this kanban repo)",
+      "description": "Variant implementation following the stride-plugin reference (G149 / W725-W728). Independent of the other plugin variants — can ship in any order after G148/W719 contract is published.",
+      "acceptance_criteria": "stride-copilot captures per-file diffs per the G148/W719 contract\nTruncation marker and binary placeholder match the contract\nBackward compatibility preserved\nNew minor release with marketplace pin updated",
+      "pitfalls": [
+        "Do not start before W719 lands",
+        "Do not bump the plugin without bumping the marketplace pin"
+      ],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride-copilot per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add per-file diff capture adapted to Copilot CLI's tool surface. Capture `git diff` per changed file, truncate to 500 lines with the marker, emit binary placeholder for binary files, attach to per-file entry of the completion payload.",
+          "why": "Without this, stride-copilot-completed tasks have no diff data in the kanban-app review queue.",
+          "what": "Locate the Copilot-CLI equivalent of stride's after_doing hook / completion-assembly step. Run `git diff` per file, apply truncation + marker, attach as `diff` field. Match the field name, marker, and binary convention from G148/W719.",
+          "where_context": "stride-copilot plugin source (separate repo)",
+          "acceptance_criteria": "Capture step runs during completion-payload assembly in stride-copilot\nField name, truncation marker, and binary convention match G148/W719\nBackward-compatible — older agents still produce valid completions",
+          "patterns_to_follow": "Mirror the stride-plugin reference implementation (G149 task 0) — same field name and conventions, adapted to Copilot's tool surface",
+          "pitfalls": [
+            "Do not diverge from the contract — field name and marker must match across variants for kanban-app parsing"
+          ],
+          "dependencies": ["W719"],
+          "key_files": [],
+          "verification_steps": [
+            {"step_type": "manual", "step_text": "Run a task through stride-copilot and inspect the POST /complete payload", "expected_result": "diff field present per the contract", "position": 0}
+          ],
+          "testing_strategy": {"unit_tests": ["Truncation marker", "Binary placeholder"], "integration_tests": ["End-to-end task with diff capture"], "manual_tests": [], "edge_cases": ["Empty changed-files list"], "coverage_target": "Capture + truncation branches"}
+        },
+        {
+          "title": "Tests for stride-copilot diff capture (happy path, truncation, backward compat)",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "Add tests for the new capture step in stride-copilot: capture-happy, truncation-applied, binary-placeholder, legacy-no-capture.",
+          "why": "Tests prevent silent regressions in the capture step.",
+          "what": "Add tests following stride-copilot's existing test harness pattern. Cover the four cases above using fixture diffs.",
+          "where_context": "stride-copilot plugin source (test directory)",
+          "acceptance_criteria": "Tests cover capture, truncation, binary placeholder, and legacy no-capture\nAll tests pass",
+          "patterns_to_follow": "Mirror existing stride-copilot test harness",
+          "pitfalls": [
+            "Do not skip the backward-compat case"
+          ],
+          "dependencies": [0],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run the plugin's test suite", "expected_result": "All tests pass", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": ["Capture happy path", "Truncation", "Binary placeholder", "Legacy no-capture"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture branches"}
+        },
+        {
+          "title": "Release stride-copilot and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Cut a versioned release of stride-copilot. Bump plugin version + CHANGELOG + tag. Bump stride-marketplace pin in the same release cycle.",
+          "why": "Marketplace bump is required for installs to pick up the new version.",
+          "what": "Bump plugin.json version, add CHANGELOG entry, tag the release, bump stride-marketplace pin, push both repos.",
+          "where_context": "stride-copilot repo + stride-marketplace repo",
+          "acceptance_criteria": "Plugin version bumped (semver minor)\nMarketplace pin updated and pushed\nFresh install picks up the new version",
+          "patterns_to_follow": "Same release model as G147/W718",
+          "pitfalls": [
+            "Do not skip the marketplace bump",
+            "Do not run `gh release create` from Claude — classifier-gated"
+          ],
+          "dependencies": [1],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Fresh install via marketplace", "expected_result": "New version installs", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["End-to-end install"], "edge_cases": [], "coverage_target": "n/a"}
+        }
+      ]
+    },
+    {
+      "title": "Capture per-file diffs in stride-gemini plugin",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "stride-gemini agents complete tasks via Gemini CLI's tool surface and need parity with the stride reference plugin for diff capture, otherwise Gemini-completed tasks render an empty diff panel in the kanban-app review queue.",
+      "what": "Implement per-file diff capture conforming to G148/W719 contract — capture, 500-line truncation, binary placeholder. Add tests. Release with marketplace pin bump.",
+      "where_context": "stride-gemini plugin repo (separate from this kanban repo)",
+      "description": "Variant implementation following the stride-plugin reference. Independent of other plugin variants; can ship in any order after G148/W719 lands.",
+      "acceptance_criteria": "stride-gemini captures per-file diffs per the contract\nBackward compatibility preserved\nNew minor release with marketplace pin updated",
+      "pitfalls": ["Do not start before W719 lands", "Do not skip the marketplace bump"],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride-gemini per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Per-file diff capture adapted to Gemini CLI's tool surface. Capture, truncate, emit binary placeholder, attach to completion payload's per-file entries.",
+          "why": "Without this, stride-gemini-completed tasks have no diff data in the kanban review queue.",
+          "what": "Same shape as stride-plugin reference; adapt to Gemini CLI tool surface and skill activation model.",
+          "where_context": "stride-gemini plugin source",
+          "acceptance_criteria": "Capture step matches G148/W719 contract\nBackward compatibility preserved",
+          "patterns_to_follow": "Mirror stride-plugin reference (G149)",
+          "pitfalls": ["Do not diverge from the contract"],
+          "dependencies": ["W719"],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run a task through stride-gemini and inspect the payload", "expected_result": "diff field present per the contract", "position": 0}],
+          "testing_strategy": {"unit_tests": ["Truncation", "Binary"], "integration_tests": ["End-to-end task"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture branches"}
+        },
+        {
+          "title": "Tests for stride-gemini diff capture",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "Capture-happy, truncation, binary, legacy-no-capture tests.",
+          "why": "Prevent silent regressions.",
+          "what": "Mirror the test pattern from stride-plugin reference; adapt to Gemini's test harness.",
+          "where_context": "stride-gemini plugin source",
+          "acceptance_criteria": "All four cases covered\nAll tests pass",
+          "patterns_to_follow": "Existing Gemini-plugin test harness",
+          "pitfalls": ["Do not skip backward-compat case"],
+          "dependencies": [0],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run plugin tests", "expected_result": "All pass", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": ["Capture", "Truncation", "Binary", "Legacy"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture branches"}
+        },
+        {
+          "title": "Release stride-gemini and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump plugin version + CHANGELOG + tag. Update stride-marketplace pin.",
+          "why": "Marketplace bump required for installs.",
+          "what": "Standard release model; bump both repos in the same cycle.",
+          "where_context": "stride-gemini repo + stride-marketplace",
+          "acceptance_criteria": "Plugin + marketplace bumped together; install verified",
+          "patterns_to_follow": "Same as G147/W718",
+          "pitfalls": ["Skip marketplace bump; gh release from Claude"],
+          "dependencies": [1],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Fresh install", "expected_result": "New version installs", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Install"], "edge_cases": [], "coverage_target": "n/a"}
+        }
+      ]
+    },
+    {
+      "title": "Capture per-file diffs in stride-codex plugin",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "stride-codex agents complete tasks via Codex's tool surface; without diff capture, Codex-completed tasks have no diff data in the kanban-app review queue.",
+      "what": "Implement per-file diff capture conforming to G148/W719 — capture, truncation, binary placeholder. Add tests. Release with marketplace bump.",
+      "where_context": "stride-codex plugin repo (separate)",
+      "description": "Variant implementation following the stride-plugin reference. Independent of other plugin variants.",
+      "acceptance_criteria": "stride-codex captures per-file diffs per the contract\nBackward compatibility preserved\nNew minor release with marketplace pin updated",
+      "pitfalls": ["Do not start before W719", "Do not skip marketplace bump"],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride-codex per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Per-file diff capture adapted to Codex's tool surface.",
+          "why": "Required for Codex-completed tasks to show diff data in kanban review queue.",
+          "what": "Same shape as stride-plugin reference; adapt to Codex's completion model.",
+          "where_context": "stride-codex plugin source",
+          "acceptance_criteria": "Capture step matches contract\nBackward compatibility preserved",
+          "patterns_to_follow": "Mirror stride-plugin reference",
+          "pitfalls": ["Do not diverge from contract"],
+          "dependencies": ["W719"],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run Codex task and inspect payload", "expected_result": "diff present per contract", "position": 0}],
+          "testing_strategy": {"unit_tests": ["Truncation", "Binary"], "integration_tests": ["End-to-end"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture"}
+        },
+        {
+          "title": "Tests for stride-codex diff capture",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "Capture, truncation, binary, legacy tests.",
+          "why": "Prevent regressions.",
+          "what": "Adapt test pattern to Codex's harness.",
+          "where_context": "stride-codex plugin source",
+          "acceptance_criteria": "All cases covered; tests pass",
+          "patterns_to_follow": "Existing Codex test harness",
+          "pitfalls": ["Don't skip backward-compat"],
+          "dependencies": [0],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run tests", "expected_result": "All pass", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": ["Capture", "Truncation", "Binary", "Legacy"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture"}
+        },
+        {
+          "title": "Release stride-codex and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump plugin + CHANGELOG + tag. Update marketplace pin.",
+          "why": "Marketplace bump required for installs.",
+          "what": "Standard release; both repos in same cycle.",
+          "where_context": "stride-codex repo + stride-marketplace",
+          "acceptance_criteria": "Both repos bumped; install verified",
+          "patterns_to_follow": "G147/W718",
+          "pitfalls": ["Skip marketplace; gh release from Claude"],
+          "dependencies": [1],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Fresh install", "expected_result": "Installs", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Install"], "edge_cases": [], "coverage_target": "n/a"}
+        }
+      ]
+    },
+    {
+      "title": "Capture per-file diffs in stride-opencode plugin",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "stride-opencode agents complete tasks via OpenCode's tool surface; without diff capture, OpenCode-completed tasks have no diff data in the kanban review queue.",
+      "what": "Implement per-file diff capture conforming to G148/W719. Add tests. Release with marketplace bump.",
+      "where_context": "stride-opencode plugin repo (separate)",
+      "description": "Variant implementation following the stride-plugin reference. Independent of other plugin variants.",
+      "acceptance_criteria": "stride-opencode captures per-file diffs per the contract\nBackward compatibility preserved\nNew minor release with marketplace pin updated",
+      "pitfalls": ["Do not start before W719", "Do not skip marketplace bump"],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride-opencode per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Per-file diff capture adapted to OpenCode's tool surface.",
+          "why": "Required for OpenCode-completed tasks to show diff data.",
+          "what": "Same shape as reference; adapt to OpenCode completion model.",
+          "where_context": "stride-opencode plugin source",
+          "acceptance_criteria": "Capture step matches contract; backward-compat preserved",
+          "patterns_to_follow": "Mirror stride-plugin reference",
+          "pitfalls": ["Do not diverge from contract"],
+          "dependencies": ["W719"],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run OpenCode task and inspect payload", "expected_result": "diff present", "position": 0}],
+          "testing_strategy": {"unit_tests": ["Truncation", "Binary"], "integration_tests": ["End-to-end"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture"}
+        },
+        {
+          "title": "Tests for stride-opencode diff capture",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "Capture, truncation, binary, legacy tests.",
+          "why": "Prevent regressions.",
+          "what": "Adapt to OpenCode test harness.",
+          "where_context": "stride-opencode plugin source",
+          "acceptance_criteria": "All cases covered; tests pass",
+          "patterns_to_follow": "Existing OpenCode test harness",
+          "pitfalls": ["Don't skip backward-compat"],
+          "dependencies": [0],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run tests", "expected_result": "All pass", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": ["Capture", "Truncation", "Binary", "Legacy"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture"}
+        },
+        {
+          "title": "Release stride-opencode and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump plugin + CHANGELOG + tag. Update marketplace pin.",
+          "why": "Marketplace bump required.",
+          "what": "Both repos in same cycle.",
+          "where_context": "stride-opencode + stride-marketplace",
+          "acceptance_criteria": "Both repos bumped; install verified",
+          "patterns_to_follow": "G147/W718",
+          "pitfalls": ["Skip marketplace; gh release"],
+          "dependencies": [1],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Fresh install", "expected_result": "Installs", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Install"], "edge_cases": [], "coverage_target": "n/a"}
+        }
+      ]
+    },
+    {
+      "title": "Capture per-file diffs in stride-pi plugin",
+      "type": "goal",
+      "complexity": "small",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "stride-pi agents complete tasks via Pi Coding Agent's tool surface; without diff capture, Pi-completed tasks have no diff data in the kanban review queue. Note: per memory, Pi supports both auto-activation and explicit /skill:name invocation.",
+      "what": "Implement per-file diff capture conforming to G148/W719. Add tests. Release with marketplace bump.",
+      "where_context": "stride-pi plugin repo (separate)",
+      "description": "Variant implementation following the stride-plugin reference. Independent of other plugin variants.",
+      "acceptance_criteria": "stride-pi captures per-file diffs per the contract\nBackward compatibility preserved\nNew minor release with marketplace pin updated",
+      "pitfalls": ["Do not start before W719", "Do not skip marketplace bump"],
+      "tasks": [
+        {
+          "title": "Implement per-file diff capture in stride-pi per G148/W719 contract",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Per-file diff capture adapted to Pi Coding Agent. Pi lists installed skills at startup and supports auto-activation as well as /skill:name invocation — choose the activation point that fits Pi's completion model.",
+          "why": "Required for Pi-completed tasks to show diff data.",
+          "what": "Same shape as reference; adapt to Pi's skill activation and completion flow.",
+          "where_context": "stride-pi plugin source",
+          "acceptance_criteria": "Capture step matches contract; backward-compat preserved",
+          "patterns_to_follow": "Mirror stride-plugin reference; consult Pi's skill-activation model",
+          "pitfalls": ["Do not diverge from contract"],
+          "dependencies": ["W719"],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run Pi task and inspect payload", "expected_result": "diff present", "position": 0}],
+          "testing_strategy": {"unit_tests": ["Truncation", "Binary"], "integration_tests": ["End-to-end"], "manual_tests": [], "edge_cases": ["Auto-activated skill path vs explicit /skill:name"], "coverage_target": "Capture branches"}
+        },
+        {
+          "title": "Tests for stride-pi diff capture",
+          "type": "work",
+          "complexity": "small",
+          "priority": "low",
+          "needs_review": false,
+          "description": "Capture, truncation, binary, legacy tests.",
+          "why": "Prevent regressions.",
+          "what": "Adapt to Pi test harness.",
+          "where_context": "stride-pi plugin source",
+          "acceptance_criteria": "All cases covered; tests pass",
+          "patterns_to_follow": "Existing Pi test harness",
+          "pitfalls": ["Don't skip backward-compat"],
+          "dependencies": [0],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Run tests", "expected_result": "All pass", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": ["Capture", "Truncation", "Binary", "Legacy"], "manual_tests": [], "edge_cases": [], "coverage_target": "Capture"}
+        },
+        {
+          "title": "Release stride-pi and update stride-marketplace pin",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Bump plugin + CHANGELOG + tag. Update marketplace pin.",
+          "why": "Marketplace bump required.",
+          "what": "Both repos in same cycle.",
+          "where_context": "stride-pi + stride-marketplace",
+          "acceptance_criteria": "Both repos bumped; install verified",
+          "patterns_to_follow": "G147/W718",
+          "pitfalls": ["Skip marketplace; gh release"],
+          "dependencies": [1],
+          "key_files": [],
+          "verification_steps": [{"step_type": "manual", "step_text": "Fresh install", "expected_result": "Installs", "position": 0}],
+          "testing_strategy": {"unit_tests": [], "integration_tests": [], "manual_tests": ["Install"], "edge_cases": [], "coverage_target": "n/a"}
+        }
+      ]
+    }
+  ]
+}
