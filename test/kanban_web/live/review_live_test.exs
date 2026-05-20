@@ -114,6 +114,172 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "review_diff_panel telemetry" do
+    setup [:register_and_log_in_user]
+
+    setup do
+      ref = make_ref()
+      test_pid = self()
+
+      handler = fn name, measurements, metadata, _ ->
+        send(test_pid, {:telemetry, ref, name, measurements, metadata})
+      end
+
+      events = [
+        [:kanban, :review_diff_panel, :opened],
+        [:kanban, :review_diff_panel, :closed]
+      ]
+
+      :telemetry.attach_many("diff-panel-#{inspect(ref)}", events, handler, nil)
+      on_exit(fn -> :telemetry.detach("diff-panel-#{inspect(ref)}") end)
+
+      %{ref: ref}
+    end
+
+    test "emits :opened the first time a file is selected on a needs_review task",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+      task_id = task.id
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened],
+                       %{count: 1, system_time: _}, %{task_id: ^task_id}}
+    end
+
+    test "does not re-emit :opened when the same file is clicked twice",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+    end
+
+    test "does not re-emit :opened when a different file is clicked on the same task",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/b.ex"] button))
+      |> render_click()
+
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+    end
+
+    test "emits :closed when the user deselects the task",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+      task_id = task.id
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      render_click(view, "deselect_item", %{})
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :closed], _,
+                       %{task_id: ^task_id}}
+    end
+
+    test "emits :closed for the previous task and :opened for the new one when switching tasks",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      first = pending_task!(column, %{identifier: "WT1", actual_files_changed: "lib/a.ex"})
+      second = pending_task!(column, %{identifier: "WT2", actual_files_changed: "lib/c.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # First task is auto-selected on mount (first in queue). Click a file.
+      first_path =
+        if List.first([first, second]).id == first.id, do: "lib/a.ex", else: "lib/c.ex"
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="#{first_path}"] button))
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _,
+                       %{task_id: id}}
+
+      old_task_id = id
+
+      other = if old_task_id == first.id, do: second, else: first
+
+      view
+      |> element("[data-review-queue-item-id=\"#{other.id}\"]")
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :closed], _,
+                       %{task_id: ^old_task_id}}
+
+      # No :opened yet — opening fires on file click, not task switch
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+    end
+
+    test "emits :closed on LiveView teardown when the panel was open",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+      task_id = task.id
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
+      |> render_click()
+
+      assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+
+      Process.flag(:trap_exit, true)
+      GenServer.stop(view.pid)
+
+      assert_receive {:telemetry, ^ref, [:kanban, :review_diff_panel, :closed], _,
+                      %{task_id: ^task_id}},
+                     500
+    end
+
+    test "emits no events when the user never opens the diff panel",
+         %{conn: conn, user: user, ref: ref} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      render_click(view, "deselect_item", %{})
+
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _, _}
+      refute_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :closed], _, _}
+    end
+  end
+
   describe "select_changed_file event" do
     setup [:register_and_log_in_user]
 

@@ -127,6 +127,13 @@ defmodule KanbanWeb.Telemetry do
   # of these per render so we can track the leading indicator that
   # `:fallback_used` stays at zero for newly-completed tasks. Emitted from the
   # ReviewReportPanel — do not emit elsewhere.
+  #
+  # Review diff panel telemetry feeds the open-rate and time-spent-in-panel
+  # leading metrics from the review-queue-code-diffs requirements doc. The
+  # `:opened` event fires the first time a reviewer selects a file in the
+  # diff panel for a needs_review=true task; `:closed` fires when the
+  # selection clears (task switch, task deselect, or LiveView teardown).
+  # Emitted from `KanbanWeb.ReviewLive` — do not emit elsewhere.
   defp review_metrics do
     [
       counter("kanban.review.fallback_used.count",
@@ -135,6 +142,13 @@ defmodule KanbanWeb.Telemetry do
       ),
       counter("kanban.review.structured_used.count",
         description: "Total renders of the review panel using the structured JSON block"
+      ),
+      counter("kanban.review_diff_panel.opened.count",
+        description:
+          "Total review-queue sessions that opened the diff panel for at least one file"
+      ),
+      counter("kanban.review_diff_panel.closed.count",
+        description: "Total review-queue sessions that closed the diff panel"
       )
     ]
   end

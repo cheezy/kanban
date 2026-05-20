@@ -37,6 +37,7 @@ defmodule KanbanWeb.ReviewLive do
 
     {:noreply,
      socket
+     |> emit_panel_closed_if_open()
      |> assign(:selected, task)
      |> assign(:request_changes_open?, false)
      |> assign(:selected_changed_file, nil)}
@@ -46,6 +47,7 @@ defmodule KanbanWeb.ReviewLive do
   def handle_event("deselect_item", _params, socket) do
     {:noreply,
      socket
+     |> emit_panel_closed_if_open()
      |> assign(:selected, nil)
      |> assign(:request_changes_open?, false)
      |> assign(:selected_changed_file, nil)}
@@ -53,7 +55,10 @@ defmodule KanbanWeb.ReviewLive do
 
   @impl true
   def handle_event("select_changed_file", %{"path" => path}, socket) when is_binary(path) do
-    {:noreply, assign(socket, :selected_changed_file, path)}
+    {:noreply,
+     socket
+     |> emit_panel_opened_if_first(path)
+     |> assign(:selected_changed_file, path)}
   end
 
   @impl true
@@ -431,6 +436,69 @@ defmodule KanbanWeb.ReviewLive do
     put_flash(socket, :error, gettext("Unable to request changes on task."))
   end
 
+  # --- Diff panel telemetry -------------------------------------------------
+  #
+  # Two events, scoped to needs_review=true tasks only:
+  #
+  #   * `[:kanban, :review_diff_panel, :opened]` — fires once per task review
+  #     session, the first time a reviewer selects a file in the diff panel.
+  #     Re-selecting the same file or selecting a different file within the
+  #     same task does not re-emit (the open/close pair is the session-level
+  #     signal, not the per-file click).
+  #   * `[:kanban, :review_diff_panel, :closed]` — fires when the open session
+  #     ends: task switch, task deselect, or LiveView teardown (`terminate/2`).
+  #
+  # Measurements: `system_time` (monotonic-friendly System.system_time/0).
+  # Metadata: `task_id`. Downstream subscribers compute open-rate (count of
+  # :opened) and time-spent (matched :closed timestamp minus :opened).
+  #
+  # `diff_panel_opened_for_task_id` on the socket assigns is the open-session
+  # marker — set to the task id when :opened fires, cleared when :closed
+  # fires. A panel-opened for a task whose `needs_review` is false is never
+  # emitted (the requirements metric is scoped to review-gated work).
+
+  @impl true
+  def terminate(_reason, socket) do
+    emit_panel_closed_if_open(socket)
+    :ok
+  end
+
+  defp emit_panel_opened_if_first(socket, _path) do
+    case socket.assigns.selected do
+      %{id: task_id, needs_review: true} ->
+        if socket.assigns.diff_panel_opened_for_task_id == task_id do
+          socket
+        else
+          :telemetry.execute(
+            [:kanban, :review_diff_panel, :opened],
+            %{system_time: System.system_time(), count: 1},
+            %{task_id: task_id}
+          )
+
+          assign(socket, :diff_panel_opened_for_task_id, task_id)
+        end
+
+      _ ->
+        socket
+    end
+  end
+
+  defp emit_panel_closed_if_open(socket) do
+    case socket.assigns[:diff_panel_opened_for_task_id] do
+      nil ->
+        socket
+
+      task_id ->
+        :telemetry.execute(
+          [:kanban, :review_diff_panel, :closed],
+          %{system_time: System.system_time(), count: 1},
+          %{task_id: task_id}
+        )
+
+        assign(socket, :diff_panel_opened_for_task_id, nil)
+    end
+  end
+
   # --- Data loading ---------------------------------------------------------
 
   defp load_queue(socket) do
@@ -444,6 +512,7 @@ defmodule KanbanWeb.ReviewLive do
     |> assign(:selected, List.first(pending))
     |> assign(:request_changes_open?, false)
     |> assign(:selected_changed_file, nil)
+    |> assign(:diff_panel_opened_for_task_id, nil)
   end
 
   defp remove_from_queue(socket, %{id: id}) do
@@ -453,10 +522,12 @@ defmodule KanbanWeb.ReviewLive do
     new_selected = next_selection(socket.assigns.selected, new_pending, id)
 
     socket
+    |> emit_panel_closed_if_open()
     |> assign(:pending, new_pending)
     |> assign(:stats, new_stats)
     |> assign(:selected, new_selected)
     |> assign(:request_changes_open?, false)
+    |> assign(:selected_changed_file, nil)
   end
 
   defp next_selection(%{id: selected_id}, new_pending, removed_id)
