@@ -70,3 +70,7 @@ security-review/
 # leaked credentials in other Phoenix projects' commit histories.
 *.backup
 *.bak
+
+docs/blog/
+.stride/
+design_handoff_stride/
