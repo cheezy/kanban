@@ -5,6 +5,7 @@ defmodule Kanban.ReviewsTest do
   """
   use Kanban.DataCase
 
+  import Ecto.Query
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
@@ -41,9 +42,19 @@ defmodule Kanban.ReviewsTest do
       assert Reviews.list_pending_reviews() == []
     end
 
-    test "returns pending tasks (review_status nil, completed_at set, needs_review true, in Review column)",
+    test "returns pending tasks (review_status nil, needs_review true, in Review column)",
          %{column: column} do
       task = pending_task!(column)
+
+      [result] = Reviews.list_pending_reviews()
+      assert result.id == task.id
+    end
+
+    test "includes tasks with completed_at = nil — a Review-column task is not yet Done",
+         %{column: column} do
+      task = pending_task!(column, %{completed_at: nil})
+
+      assert task.completed_at == nil
 
       [result] = Reviews.list_pending_reviews()
       assert result.id == task.id
@@ -109,10 +120,18 @@ defmodule Kanban.ReviewsTest do
       assert Reviews.list_pending_reviews(scope: scope) == []
     end
 
-    test "orders results by completed_at ascending (oldest first)", %{column: column} do
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      older = pending_task!(column, %{completed_at: DateTime.add(now, -3600, :second)})
-      newer = pending_task!(column, %{completed_at: now})
+    test "orders results by updated_at ascending (oldest first)", %{column: column} do
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      older = pending_task!(column)
+      newer = pending_task!(column)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^older.id)
+      # Override updated_at directly so the test is robust to sub-second
+      # precision in the timestamps.
+      |> Kanban.Repo.update_all(set: [updated_at: NaiveDateTime.add(now, -3600, :second)])
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^newer.id)
+      |> Kanban.Repo.update_all(set: [updated_at: now])
 
       ids = Reviews.list_pending_reviews() |> Enum.map(& &1.id)
       assert ids == [older.id, newer.id]
@@ -208,11 +227,14 @@ defmodule Kanban.ReviewsTest do
       assert Reviews.queue_stats().distinct_agents == 2
     end
 
-    test "returns oldest_age_minutes derived from the oldest completed_at",
+    test "returns oldest_age_minutes derived from the oldest updated_at",
          %{column: column} do
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      pending_task!(column, %{completed_at: now})
-      pending_task!(column, %{completed_at: DateTime.add(now, -7200, :second)})
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      pending_task!(column)
+      older = pending_task!(column)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^older.id)
+      |> Kanban.Repo.update_all(set: [updated_at: NaiveDateTime.add(now, -7200, :second)])
 
       stats = Reviews.queue_stats()
       assert stats.oldest_age_minutes >= 119

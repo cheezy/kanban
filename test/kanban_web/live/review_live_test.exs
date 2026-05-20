@@ -12,6 +12,24 @@ defmodule KanbanWeb.ReviewLiveTest do
 
   alias Kanban.Tasks
 
+  # Sets the task's `updated_at` to `seconds_ago` in the past. Used by the
+  # subtitle-age tests — `updated_at` is the field `Reviews.queue_stats/1`
+  # consults for `oldest_age_minutes`.
+  defp backdate_updated_at!(task, seconds_ago) do
+    import Ecto.Query
+
+    backdated =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(seconds_ago, :second)
+      |> NaiveDateTime.truncate(:second)
+
+    {1, _} =
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: [updated_at: backdated])
+
+    %{task | updated_at: backdated}
+  end
+
   defp pending_task!(column, attrs) do
     base = %{
       needs_review: true,
@@ -730,9 +748,8 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "appends 'oldest Nm ago' when the oldest task is under an hour old",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      pending_task!(column, %{completed_at: DateTime.add(now, -30 * 60, :second)})
+      task = pending_task!(column, %{})
+      backdate_updated_at!(task, -30 * 60)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+\d+m ago/
@@ -741,9 +758,8 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "appends 'oldest Nh ago' when the oldest task is hours old",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      pending_task!(column, %{completed_at: DateTime.add(now, -3 * 3600, :second)})
+      task = pending_task!(column, %{})
+      backdate_updated_at!(task, -3 * 3600)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+3h ago/
@@ -752,9 +768,8 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "appends 'oldest Nd ago' when the oldest task is days old",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      pending_task!(column, %{completed_at: DateTime.add(now, -2 * 86_400, :second)})
+      task = pending_task!(column, %{})
+      backdate_updated_at!(task, -2 * 86_400)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+2d ago/

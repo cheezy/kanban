@@ -5,10 +5,13 @@ defmodule Kanban.Reviews do
   A task is "pending review" when:
 
     * `needs_review` is `true`
-    * `completed_at` is set
     * `review_status` is `nil` or `:pending` (both are treated as "no
       decision yet" by the Task schema)
     * its `Column` is named `"Review"`
+
+  `completed_at` is intentionally **not** part of this filter — a task in
+  the Review column is not yet completed; `completed_at` only gets stamped
+  when the reviewer approves and the task transitions to Done.
 
   All public functions are scope-aware: when a `Kanban.Accounts.Scope` is
   passed, results are filtered to tasks on boards the scoped user can
@@ -37,8 +40,11 @@ defmodule Kanban.Reviews do
   @doc """
   Returns the list of tasks currently pending review.
 
-  Tasks are ordered by `completed_at` ascending (oldest first) so the
-  reviewer surfaces the most stale work at the top of the queue. `:column`
+  Tasks are ordered by `updated_at` ascending (oldest first) so the
+  reviewer surfaces the most stale work at the top of the queue.
+  `updated_at` reflects the most recent transition into the Review column
+  (either the original agent completion, or an agent re-completion after
+  a "request changes" round-trip). `:column`
   and the column's `:board` are preloaded so the queue UI can render the
   board chip without N+1 lookups.
 
@@ -53,7 +59,7 @@ defmodule Kanban.Reviews do
     Task
     |> pending_review_query()
     |> apply_scope(Keyword.get(opts, :scope))
-    |> order_by([t], asc: t.completed_at)
+    |> order_by([t], asc: t.updated_at)
     |> preload([t], [:completed_by, column: :board])
     |> Repo.all()
   end
@@ -89,7 +95,8 @@ defmodule Kanban.Reviews do
     * `:count` — total number of pending-review tasks
     * `:distinct_agents` — distinct non-nil `completed_by_agent` values
     * `:oldest_age_minutes` — minutes since the oldest pending task's
-      `completed_at`, clamped to 0; `nil` when the queue is empty
+      `updated_at` (which the agent workflow stamps when moving the task
+      into Review), clamped to 0; `nil` when the queue is empty
   """
   @spec queue_stats(keyword()) :: %{
           count: non_neg_integer(),
@@ -101,7 +108,7 @@ defmodule Kanban.Reviews do
       Task
       |> pending_review_query()
       |> apply_scope(Keyword.get(opts, :scope))
-      |> select([t], %{completed_at: t.completed_at, agent: t.completed_by_agent})
+      |> select([t], %{updated_at: t.updated_at, agent: t.completed_by_agent})
       |> Repo.all()
 
     %{
@@ -118,7 +125,7 @@ defmodule Kanban.Reviews do
       join: c in assoc(t, :column),
       as: :column,
       where:
-        t.needs_review == true and not is_nil(t.completed_at) and
+        t.needs_review == true and
           (is_nil(t.review_status) or t.review_status == :pending) and
           c.name == ^@review_column_name
     )
@@ -148,17 +155,17 @@ defmodule Kanban.Reviews do
   defp oldest_age_minutes(tasks) do
     oldest =
       tasks
-      |> Enum.map(& &1.completed_at)
+      |> Enum.map(& &1.updated_at)
       |> Enum.reject(&is_nil/1)
-      |> Enum.min(DateTime, fn -> nil end)
+      |> Enum.min(NaiveDateTime, fn -> nil end)
 
     case oldest do
       nil ->
         nil
 
-      %DateTime{} = dt ->
-        DateTime.utc_now()
-        |> DateTime.diff(dt, :second)
+      %NaiveDateTime{} = ndt ->
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.diff(ndt, :second)
         |> max(0)
         |> div(60)
     end

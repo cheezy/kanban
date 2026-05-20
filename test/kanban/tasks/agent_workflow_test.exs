@@ -226,6 +226,17 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert Enum.map(hooks, & &1.name) == ["after_doing", "before_review"]
     end
 
+    test "leaves completed_at nil — the task is not Done until the reviewer approves",
+         ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.completed_at == nil
+    end
+
     test "broadcasts task_moved_to_review", ctx do
       task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
       claimed = claim_for(task, ctx.user, ctx.board)
