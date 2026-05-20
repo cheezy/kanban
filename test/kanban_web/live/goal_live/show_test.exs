@@ -478,7 +478,11 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       done_col = column_fixture(board, %{name: "Done"})
       other_col = column_fixture(board, %{name: "Triage"})
 
-      {:ok, %{goal: goal, child_tasks: [ready_child, doing_child, review_child, done_child, other_child]}} =
+      {:ok,
+       %{
+         goal: goal,
+         child_tasks: [ready_child, doing_child, review_child, done_child, other_child]
+       }} =
         Tasks.create_goal_with_tasks(
           ready_col,
           %{"title" => "Multi-column Goal", "created_by_id" => user.id},

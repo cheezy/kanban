@@ -244,5 +244,4 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp category_label("code_quality"), do: gettext("Code quality")
   defp category_label(other) when is_binary(other), do: other
   defp category_label(_), do: ""
-
 end

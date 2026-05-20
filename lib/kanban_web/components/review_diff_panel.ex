@@ -11,6 +11,14 @@ defmodule KanbanWeb.ReviewDiffPanel do
 
   Purely presentational. No expand/collapse, no click handlers, no diff
   syntax highlighting.
+
+  ## Per-file diff contract
+
+  The structured per-file diff field this component will consume once
+  inline diff rendering lands is defined in `docs/diff-contract.md`.
+  That doc is the single source of truth for the field name, encoding,
+  500-line truncation marker, and binary-file placeholder used across
+  the six Stride plugin repos.
   """
   use KanbanWeb, :html
 
