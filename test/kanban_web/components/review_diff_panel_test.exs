@@ -12,13 +12,15 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
   defp render_panel(files, opts \\ []) do
     assigns = %{
       files: files,
-      failing_tests_count: Keyword.get(opts, :failing_tests_count)
+      failing_tests_count: Keyword.get(opts, :failing_tests_count),
+      selected_file: Keyword.get(opts, :selected_file)
     }
 
     rendered_to_string(~H"""
     <ReviewDiffPanel.review_diff_panel
       files={@files}
       failing_tests_count={@failing_tests_count}
+      selected_file={@selected_file}
     />
     """)
   end
@@ -82,6 +84,179 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
     test "hides the failing tests pill when :failing_tests_count is nil" do
       html = render_panel(["lib/a.ex"])
       refute html =~ "data-review-diff-panel-failing-tests"
+    end
+  end
+
+  describe "review_diff_panel/1 — diff rendering" do
+    test "no diff section is rendered when no file is selected" do
+      html = render_panel(["lib/a.ex"])
+      refute html =~ "data-review-diff-panel-diff"
+    end
+
+    test "renders 'no diff available' when the selected file has no diff field" do
+      html =
+        render_panel(["lib/a.ex"], selected_file: %{"path" => "lib/a.ex"})
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
+      assert html =~ "No diff available for this file."
+    end
+
+    test "renders 'no diff available' for nil diff" do
+      html =
+        render_panel(["lib/a.ex"],
+          selected_file: %{"path" => "lib/a.ex", "diff" => nil}
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
+    end
+
+    test "renders 'no diff available' for an empty-string diff" do
+      html =
+        render_panel(["lib/a.ex"],
+          selected_file: %{"path" => "lib/a.ex", "diff" => ""}
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
+    end
+
+    test "renders binary placeholder for the binary marker" do
+      html =
+        render_panel(["assets/logo.png"],
+          selected_file: %{
+            "path" => "assets/logo.png",
+            "diff" => "[binary file — no diff captured]"
+          }
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="binary")
+      assert html =~ "Binary file changed"
+    end
+
+    test "renders +/- and context lines with distinct classes" do
+      diff = """
+      --- a/lib/foo.ex
+      +++ b/lib/foo.ex
+      @@ -1,3 +1,4 @@
+       defmodule Foo do
+      +  @moduledoc "Foo"
+      -  def old(x), do: x
+         def call(x), do: x
+       end
+      """
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="full")
+      assert html =~ ~s(data-diff-line="add")
+      assert html =~ ~s(data-diff-line="del")
+      assert html =~ ~s(data-diff-line="hunk")
+      assert html =~ ~s(data-diff-line="file")
+      assert html =~ ~s(data-diff-line="context")
+      # +/- prefixes are preserved inside the rendered line text.
+      assert html =~ "+  @moduledoc"
+      assert html =~ "-  def old(x), do: x"
+    end
+
+    test "renders a diff with only context lines (no +/-)" do
+      diff = """
+      @@ -1,2 +1,2 @@
+       defmodule Foo do
+       end
+      """
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="full")
+      assert html =~ ~s(data-diff-line="context")
+      refute html =~ ~s(data-diff-line="add")
+      refute html =~ ~s(data-diff-line="del")
+    end
+
+    test "renders a truncation notice when the marker is present" do
+      diff = "+ a\n+ b\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      assert html =~ ~s(data-review-diff-panel-diff-mode="truncated")
+      assert html =~ "data-review-diff-panel-diff-truncated"
+      assert html =~ "Diff truncated at 500 lines."
+      # marker itself is not in the rendered line list.
+      refute html =~ ~s(data-diff-line="context">[diff truncated)
+    end
+
+    test "shows 'view full diff in repo' link when diff_url is present" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{
+            "path" => "lib/foo.ex",
+            "diff" => diff,
+            "diff_url" => "https://github.com/x/y/pull/1/files#diff-abc"
+          }
+        )
+
+      assert html =~ "data-review-diff-panel-diff-link"
+      assert html =~ "View full diff in repo"
+      assert html =~ "https://github.com/x/y/pull/1/files#diff-abc"
+    end
+
+    test "omits the link when diff_url is absent" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      assert html =~ "data-review-diff-panel-diff-truncated"
+      refute html =~ "data-review-diff-panel-diff-link"
+      refute html =~ "View full diff in repo"
+    end
+
+    test "renders a single very long line without crashing" do
+      long_line = "+" <> String.duplicate("x", 5_000)
+
+      html =
+        render_panel(["lib/big.ex"],
+          selected_file: %{"path" => "lib/big.ex", "diff" => long_line}
+        )
+
+      assert html =~ ~s(data-diff-line="add")
+      assert html =~ String.duplicate("x", 100)
+    end
+
+    test "strips embedded NUL bytes defensively" do
+      diff = "+ ok\0value"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      assert html =~ "+ okvalue"
+      refute html =~ "\0"
+    end
+
+    test "html-escapes diff content (no raw HTML injection)" do
+      diff = "+ <script>alert(1)</script>"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{"path" => "lib/foo.ex", "diff" => diff}
+        )
+
+      refute html =~ "<script>alert(1)</script>"
+      assert html =~ "&lt;script&gt;alert(1)&lt;/script&gt;"
     end
   end
 

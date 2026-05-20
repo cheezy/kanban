@@ -1138,3 +1138,32 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Unified-diff line classes used by KanbanWeb.ReviewDiffPanel. Backgrounds
+   are tinted from the same theme tokens used elsewhere so the colors
+   shift correctly between light and dark mode. Foreground tokens stay
+   on var(--ink) so the text contrast meets the same target the rest of
+   the panel uses. */
+.stride-diff-line {
+  display: block;
+  padding: 0 4px;
+  border-left: 2px solid transparent;
+}
+.stride-diff-line-add {
+  background: color-mix(in oklch, var(--st-ok-soft, var(--surface)) 70%, transparent);
+  border-left-color: var(--st-ok, var(--stride-orange));
+}
+.stride-diff-line-del {
+  background: color-mix(in oklch, var(--st-blocked-soft, var(--surface)) 70%, transparent);
+  border-left-color: var(--st-blocked, var(--stride-orange));
+}
+.stride-diff-line-hunk {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.stride-diff-line-file {
+  color: var(--ink-3);
+}
+.stride-diff-line-context {
+  color: var(--ink-2);
+}

@@ -2,32 +2,57 @@ defmodule KanbanWeb.ReviewDiffPanel do
   @moduledoc """
   "Changed files" panel for the Review detail view at `/review`.
 
-  Surfaces the list of file paths the agent touched, with a header
-  showing the file count and an optional "N failing tests" pill on the
-  right. Real unified-diff content is intentionally out of scope —
-  `Kanban.Tasks.Task` does not persist diffs, only the comma-separated
-  `actual_files_changed` string. The parent LiveView is responsible for
-  splitting that string into the `:files` list this component consumes.
+  Surfaces the list of file paths the agent touched and the unified
+  diff for the currently selected file. The file list shows a header
+  with the file count and an optional "N failing tests" pill. The
+  parent LiveView is responsible for splitting `actual_files_changed`
+  into the `:files` list this component consumes (via `parse_files/1`
+  in `KanbanWeb.ReviewLive`).
 
   When given `on_file_click`, each file row becomes a button that emits
   the named phx-click event with a `path` value; the parent LiveView
-  manages `selected_changed_file` selection state. Without
-  `on_file_click`, rows render as plain `<li>` (legacy display).
-
-  The `selected_file` attr accepts a per-file payload map (see
-  `docs/diff-contract.md`). Inline diff rendering is staged for a
-  follow-up task — until then the panel only highlights the active row
-  and the `diff` field of the payload is unused.
+  manages `selected_changed_file` selection state. When the LiveView
+  passes a per-file payload via `selected_file`, that file's unified
+  diff is rendered below the list.
 
   ## Per-file diff contract
 
-  The structured per-file diff field this component will consume once
-  inline diff rendering lands is defined in `docs/diff-contract.md`.
-  That doc is the single source of truth for the field name, encoding,
-  500-line truncation marker, and binary-file placeholder used across
-  the six Stride plugin repos.
+  The per-file `diff` field shape is defined in `docs/diff-contract.md`
+  — single source of truth for field name, encoding, the 500-line
+  truncation marker, and the binary-file placeholder used across the
+  six Stride plugin repos.
+
+  ## Diff rendering
+
+  The diff is parsed line-by-line by classifying the leading character:
+
+    * `+` — addition (rendered with the addition color)
+    * `-` — removal (rendered with the removal color)
+    * `@@` — hunk header (rendered with the hunk-header color)
+    * `---` / `+++` — patch headers (rendered with the hunk-header color)
+    * anything else, including a leading space or empty line — context
+
+  Truncation is signaled by the exact marker line
+  `[diff truncated at 500 lines]` from the contract doc. When present,
+  the panel shows a notice and a "view full diff in repo" link if the
+  per-file payload carries a `"diff_url"` string. Binary files are
+  signaled by the exact placeholder `[binary file — no diff captured]`
+  and render with no patch parsing.
+
+  ## Dependency decision
+
+  We render diffs with a small in-module parser plus scoped CSS in
+  `assets/css/app.css`. We considered `diff2html` (raised as an open
+  question in the requirements doc) and chose to roll our own because
+  (a) per-file diffs are capped at 500 lines, (b) diff2html ships
+  styling we cannot easily theme through CSS custom properties,
+  (c) the unified-patch line classification reduces to a 4-way pattern
+  match. No new dependency is added.
   """
   use KanbanWeb, :html
+
+  @truncation_marker "[diff truncated at 500 lines]"
+  @binary_placeholder "[binary file — no diff captured]"
 
   @doc """
   Renders the changed-files panel.
@@ -39,12 +64,10 @@ defmodule KanbanWeb.ReviewDiffPanel do
     * `failing_tests_count` — optional. Integer count of failing tests.
       When `nil` or `0`, the failing-tests pill is omitted.
     * `selected_file` — optional per-file payload (the shape defined in
-      `docs/diff-contract.md`: `%{"path" => string, "diff" => string | nil}`).
+      `docs/diff-contract.md`):
+      `%{"path" => string, "diff" => string | nil, "diff_url" => string | nil}`.
       When `path` matches an entry in `files`, that row renders with the
-      active state; the optional `diff` field is reserved for the inline
-      diff render that follows in a later task. Until then, callers may
-      pass `%{"path" => path, "diff" => nil}` — the panel still
-      highlights correctly.
+      active state and the diff content area renders the file's diff.
     * `on_file_click` — optional `phx-click` event name. When set, each
       row becomes a button that pushes `{event, %{"path" => path}}`. When
       `nil`, rows render as plain `<span>` (legacy display behavior).
@@ -60,6 +83,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
       |> assign(:file_count, length(assigns.files))
       |> assign(:show_failing_pill?, show_failing_pill?(assigns.failing_tests_count))
       |> assign(:selected_file_path, selected_file_path(assigns.selected_file))
+      |> assign(:diff_view, diff_view(assigns.selected_file))
 
     ~H"""
     <section
@@ -161,8 +185,106 @@ defmodule KanbanWeb.ReviewDiffPanel do
           </span>
         </li>
       </ul>
+
+      <.diff_content :if={@selected_file_path} view={@diff_view} />
     </section>
     """
+  end
+
+  attr :view, :map, required: true
+
+  defp diff_content(%{view: %{mode: :binary}} = assigns) do
+    ~H"""
+    <p
+      data-review-diff-panel-diff
+      data-review-diff-panel-diff-mode="binary"
+      style={[
+        "margin: 0; padding: 12px;",
+        "background: var(--surface-sunken); border-radius: 6px;",
+        "font-size: 12px; color: var(--ink-2); font-style: italic;"
+      ]}
+    >
+      {gettext("Binary file changed — no diff preview.")}
+    </p>
+    """
+  end
+
+  defp diff_content(%{view: %{mode: :empty}} = assigns) do
+    ~H"""
+    <p
+      data-review-diff-panel-diff
+      data-review-diff-panel-diff-mode="empty"
+      style={[
+        "margin: 0; padding: 12px;",
+        "background: var(--surface-sunken); border-radius: 6px;",
+        "font-size: 12px; color: var(--ink-3); font-style: italic;"
+      ]}
+    >
+      {gettext("No diff available for this file.")}
+    </p>
+    """
+  end
+
+  defp diff_content(%{view: %{mode: :patch}} = assigns) do
+    ~H"""
+    <div
+      data-review-diff-panel-diff
+      data-review-diff-panel-diff-mode={if @view.truncated?, do: "truncated", else: "full"}
+      style={[
+        "margin: 0; padding: 0;",
+        "background: var(--surface-sunken); border-radius: 6px;",
+        "overflow: hidden;"
+      ]}
+    >
+      <pre
+        data-review-diff-panel-diff-body
+        style={[
+          "margin: 0; padding: 8px 12px;",
+          "font-family: var(--font-mono); font-size: 11.5px;",
+          "line-height: 1.55; color: var(--ink);",
+          "white-space: pre-wrap; word-break: break-all;",
+          "overflow-x: auto;"
+        ]}
+      >{render_diff_lines(@view.lines)}</pre>
+      <div
+        :if={@view.truncated?}
+        data-review-diff-panel-diff-truncated
+        style={[
+          "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
+          "padding: 6px 12px; border-top: 1px solid var(--line);",
+          "background: var(--surface-2);",
+          "font-size: 11.5px; color: var(--ink-2);"
+        ]}
+      >
+        <span>
+          {gettext("Diff truncated at 500 lines.")}
+        </span>
+        <a
+          :if={@view.diff_url}
+          data-review-diff-panel-diff-link
+          href={@view.diff_url}
+          target="_blank"
+          rel="noopener"
+          style="color: var(--stride-orange); text-decoration: underline;"
+        >
+          {gettext("View full diff in repo")}
+        </a>
+      </div>
+    </div>
+    """
+  end
+
+  defp render_diff_lines(lines) do
+    lines
+    |> Enum.map_join("\n", &render_diff_line/1)
+    |> Phoenix.HTML.raw()
+  end
+
+  defp render_diff_line({class, text}) do
+    escaped = text |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+
+    ~s(<span data-diff-line="#{class}" class="stride-diff-line stride-diff-line-#{class}">) <>
+      escaped <> "</span>"
   end
 
   defp show_failing_pill?(nil), do: false
@@ -172,4 +294,63 @@ defmodule KanbanWeb.ReviewDiffPanel do
 
   defp selected_file_path(%{"path" => path}) when is_binary(path), do: path
   defp selected_file_path(_), do: nil
+
+  # Builds the rendering state for the selected file. Three modes:
+  #
+  #   * `:empty` — no diff field on the payload, or empty/whitespace string
+  #   * `:binary` — the diff value is exactly the binary placeholder
+  #   * `:patch` — the diff is unified-patch text; further marked truncated
+  #     when it contains the truncation marker
+  #
+  # The `lines` list is a list of `{class, text}` tuples where `class` is
+  # one of `"add"`, `"del"`, `"hunk"`, `"file"`, `"context"`, or
+  # `"truncation"`. The truncation marker line is filtered out of `lines`
+  # and surfaced via `truncated?` so the UI can render its own notice.
+  defp diff_view(nil), do: %{mode: :empty}
+
+  defp diff_view(%{"diff" => diff} = payload) when is_binary(diff) do
+    cond do
+      String.trim(diff) == "" ->
+        %{mode: :empty}
+
+      diff == @binary_placeholder ->
+        %{mode: :binary}
+
+      true ->
+        truncated? = String.contains?(diff, @truncation_marker)
+
+        %{
+          mode: :patch,
+          truncated?: truncated?,
+          diff_url: diff_url(payload),
+          lines: parse_diff_lines(diff)
+        }
+    end
+  end
+
+  defp diff_view(_), do: %{mode: :empty}
+
+  defp diff_url(%{"diff_url" => url}) when is_binary(url) and url != "", do: url
+  defp diff_url(_), do: nil
+
+  defp parse_diff_lines(diff) do
+    diff
+    |> sanitize()
+    |> String.trim_trailing("\n")
+    |> String.split("\n", trim: false)
+    |> Enum.reject(&(&1 == @truncation_marker))
+    |> Enum.map(&classify_line/1)
+  end
+
+  # Drop NUL bytes defensively — the contract doc requires UTF-8 unified
+  # patch text, but if a malformed plugin sends embedded \0 we strip
+  # rather than crash the pre tag.
+  defp sanitize(diff), do: String.replace(diff, "\0", "")
+
+  defp classify_line("+++ " <> _ = line), do: {"file", line}
+  defp classify_line("--- " <> _ = line), do: {"file", line}
+  defp classify_line("@@" <> _ = line), do: {"hunk", line}
+  defp classify_line("+" <> _ = line), do: {"add", line}
+  defp classify_line("-" <> _ = line), do: {"del", line}
+  defp classify_line(line), do: {"context", line}
 end
