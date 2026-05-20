@@ -55,10 +55,18 @@ defmodule KanbanWeb.ReviewLive do
 
   @impl true
   def handle_event("select_changed_file", %{"path" => path}, socket) when is_binary(path) do
-    {:noreply,
-     socket
-     |> emit_panel_opened_if_first(path)
-     |> assign(:selected_changed_file, path)}
+    if socket.assigns[:selected_changed_file] == path do
+      # Toggle off — clicking the already-open file collapses the diff view.
+      {:noreply,
+       socket
+       |> emit_panel_closed_if_open()
+       |> assign(:selected_changed_file, nil)}
+    else
+      {:noreply,
+       socket
+       |> emit_panel_opened_if_first(path)
+       |> assign(:selected_changed_file, path)}
+    end
   end
 
   @impl true

@@ -92,6 +92,13 @@ defmodule KanbanWeb.ReviewReportPanel do
         issues={Map.get(@grouped, severity, [])}
       />
     </div>
+    <p
+      :if={@issues == []}
+      data-review-report-issues-empty
+      class="text-sm text-base-content opacity-60"
+    >
+      {gettext("No issues")}
+    </p>
     """
   end
 

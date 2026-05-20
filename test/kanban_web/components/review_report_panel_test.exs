@@ -123,11 +123,13 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert_receive {:telemetry_event, ^event, %{count: 1}, %{task_id: 1, identifier: "W42"}}
     end
 
-    test "renders even when issues list is empty", %{task: task} do
+    test "renders 'No issues' placeholder when issues list is empty", %{task: task} do
       task = put_in(task.reviewer_result["issues"], [])
       html = render_with(task)
       assert html =~ ~s(data-review-report-panel="structured")
-      refute html =~ "data-review-report-issues"
+      assert html =~ "data-review-report-issues-empty"
+      assert html =~ "No issues"
+      refute html =~ ~s(data-review-report-issues=")
     end
   end
 
@@ -264,9 +266,11 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       html = render_with(task)
 
       # The panel now only renders an issue list — a skip-form sparse
-      # reviewer_result produces a structured-branch shell with no issues.
+      # reviewer_result produces a structured-branch shell with the
+      # "No issues" placeholder.
       assert html =~ ~s(data-review-report-panel="structured")
-      refute html =~ "data-review-report-issues"
+      assert html =~ "data-review-report-issues-empty"
+      assert html =~ "No issues"
     end
 
     test "renders the structured shell even when reviewer_result has only a summary" do

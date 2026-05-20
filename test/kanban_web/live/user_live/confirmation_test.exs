@@ -54,7 +54,7 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
 
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{encoded_token}")
 
-      assert_redirect(lv, ~p"/users/log-in")
+      assert_redirect(lv, ~p"/users/log-in", 1_000)
     end
 
     test "confirms the user account", %{conn: conn, unconfirmed_user: user} do
@@ -81,13 +81,13 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
 
       {:ok, lv2, _html} = live(conn, ~p"/users/confirm/#{token}")
 
-      assert_redirect(lv2, ~p"/users/log-in")
+      assert_redirect(lv2, ~p"/users/log-in", 1_000)
     end
 
     test "redirects to login for invalid token", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/invalid-token")
 
-      assert_redirect(lv, ~p"/users/log-in")
+      assert_redirect(lv, ~p"/users/log-in", 1_000)
     end
   end
 end

@@ -178,7 +178,7 @@ msgstr "Tablero actualizado exitosamente"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:164
-#: lib/kanban_web/live/review_live.ex:237
+#: lib/kanban_web/live/review_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Cancelar"
@@ -382,7 +382,7 @@ msgstr "No se puede mover tarea: la columna ha alcanzado su límite WIP"
 msgid "Created"
 msgstr "Creado"
 
-#: lib/kanban_web/components/review_report_panel.ex:232
+#: lib/kanban_web/components/review_report_panel.ex:239
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1070,7 +1070,7 @@ msgstr "Agregar paso de verificación"
 msgid "Agent"
 msgstr "Agente"
 
-#: lib/kanban_web/live/review_live.ex:492
+#: lib/kanban_web/live/review_live.ex:601
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:74
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -1349,7 +1349,7 @@ msgid "Pending"
 msgstr "Pendiente"
 
 #: lib/kanban_web/components/review_queue_item.ex:264
-#: lib/kanban_web/components/review_report_panel.ex:241
+#: lib/kanban_web/components/review_report_panel.ex:248
 #: lib/kanban_web/components/review_stats_strip.ex:76
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
@@ -4187,7 +4187,7 @@ msgstr "bloqueante · 60s"
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:180
 #: lib/kanban_web/components/review_queue_item.ex:375
-#: lib/kanban_web/live/review_live.ex:468
+#: lib/kanban_web/live/review_live.ex:577
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "justo ahora"
@@ -4338,8 +4338,8 @@ msgid "Promote children to Ready"
 msgstr "Promover hijos a Listo"
 
 #: lib/kanban_web/components/layouts.ex:267
-#: lib/kanban_web/live/review_live.ex:96
-#: lib/kanban_web/live/review_live.ex:117
+#: lib/kanban_web/live/review_live.ex:116
+#: lib/kanban_web/live/review_live.ex:137
 #, elixir-autogen, elixir-format
 msgid "Review queue"
 msgstr "Cola de revisión"
@@ -4359,7 +4359,7 @@ msgstr "Inicio de Stride"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:50
-#: lib/kanban_web/live/review_live.ex:94
+#: lib/kanban_web/live/review_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr "Espacio de trabajo"
@@ -4449,7 +4449,7 @@ msgid_plural "%{count} criteria"
 msgstr[0] "%{count} criterio"
 msgstr[1] "%{count} criterios"
 
-#: lib/kanban_web/components/review_diff_panel.ex:52
+#: lib/kanban_web/components/review_diff_panel.ex:120
 #: lib/kanban_web/components/review_queue_item.ex:174
 #: lib/kanban_web/components/task_card.ex:308
 #: lib/kanban_web/components/task_card.ex:352
@@ -5144,7 +5144,7 @@ msgstr "en vivo"
 #: lib/kanban_web/components/archive_row.ex:372
 #: lib/kanban_web/components/review_detail_header.ex:187
 #: lib/kanban_web/components/review_queue_item.ex:382
-#: lib/kanban_web/live/review_live.ex:474
+#: lib/kanban_web/live/review_live.ex:583
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "hace %{d}d"
@@ -5152,7 +5152,7 @@ msgstr "hace %{d}d"
 #: lib/kanban_web/components/archive_row.ex:370
 #: lib/kanban_web/components/review_detail_header.ex:185
 #: lib/kanban_web/components/review_queue_item.ex:380
-#: lib/kanban_web/live/review_live.ex:472
+#: lib/kanban_web/live/review_live.ex:581
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "hace %{h}h"
@@ -5160,7 +5160,7 @@ msgstr "hace %{h}h"
 #: lib/kanban_web/components/archive_row.ex:367
 #: lib/kanban_web/components/review_detail_header.ex:182
 #: lib/kanban_web/components/review_queue_item.ex:377
-#: lib/kanban_web/live/review_live.ex:469
+#: lib/kanban_web/live/review_live.ex:578
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "hace %{m}m"
@@ -5171,7 +5171,7 @@ msgstr "hace %{m}m"
 msgid "%{s}s ago"
 msgstr "hace %{s}s"
 
-#: lib/kanban_web/components/review_report_panel.ex:240
+#: lib/kanban_web/components/review_report_panel.ex:247
 #: lib/kanban_web/components/review_stats_strip.ex:55
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -5197,81 +5197,81 @@ msgstr "Agente desconocido"
 msgid "needs attention"
 msgstr "requiere atención"
 
-#: lib/kanban_web/components/review_diff_panel.ex:66
+#: lib/kanban_web/components/review_diff_panel.ex:134
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count} prueba fallando"
 msgstr[1] "%{count} pruebas fallando"
 
-#: lib/kanban_web/components/review_diff_panel.ex:83
+#: lib/kanban_web/components/review_diff_panel.ex:151
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "No hay archivos modificados."
 
-#: lib/kanban_web/live/review_live.ex:453
+#: lib/kanban_web/live/review_live.ex:562
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} tarea de %{agents} agente esperando por ti"
 msgstr[1] "%{count} tareas de %{agents} agentes esperando por ti"
 
-#: lib/kanban_web/live/review_live.ex:448
+#: lib/kanban_web/live/review_live.ex:557
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 tareas esperándote."
 
-#: lib/kanban_web/live/review_live.ex:65
+#: lib/kanban_web/live/review_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "Aprobada %{ident}"
 
-#: lib/kanban_web/live/review_live.ex:134
+#: lib/kanban_web/live/review_live.ex:154
 #, elixir-autogen, elixir-format
 msgid "Avg time to review · 17m"
 msgstr "Tiempo prom. de revisión · 17m"
 
-#: lib/kanban_web/live/review_live.ex:159
+#: lib/kanban_web/live/review_live.ex:179
 #, elixir-autogen, elixir-format
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "Bandeja en cero — nada está esperando revisión."
 
-#: lib/kanban_web/live/review_live.ex:398
+#: lib/kanban_web/live/review_live.ex:440
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "Se requieren notas al solicitar cambios."
 
-#: lib/kanban_web/live/review_live.ex:221
+#: lib/kanban_web/live/review_live.ex:241
 #, elixir-autogen, elixir-format
 msgid "Notes for the agent"
 msgstr "Notas para el agente"
 
-#: lib/kanban_web/live/review_live.ex:393
+#: lib/kanban_web/live/review_live.ex:435
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "Cambios solicitados en %{ident}"
 
-#: lib/kanban_web/live/review_live.ex:185
+#: lib/kanban_web/live/review_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "Select a task from the queue to start a review."
 msgstr "Selecciona una tarea de la cola para iniciar una revisión."
 
-#: lib/kanban_web/live/review_live.ex:240
+#: lib/kanban_web/live/review_live.ex:260
 #, elixir-autogen, elixir-format
 msgid "Send request"
 msgstr "Enviar solicitud"
 
-#: lib/kanban_web/live/review_live.ex:69
+#: lib/kanban_web/live/review_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "No se pudo aprobar la tarea."
 
-#: lib/kanban_web/live/review_live.ex:402
+#: lib/kanban_web/live/review_live.ex:444
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "No se pudieron solicitar cambios en la tarea."
 
-#: lib/kanban_web/live/review_live.ex:463
+#: lib/kanban_web/live/review_live.ex:572
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "más antigua %{age}"
@@ -5544,12 +5544,12 @@ msgstr "Alternar menú"
 msgid "Toggle sidebar"
 msgstr "Alternar barra lateral"
 
-#: lib/kanban_web/live/review_live.ex:197
+#: lib/kanban_web/live/review_live.ex:217
 #, elixir-autogen, elixir-format
 msgid "Back to queue"
 msgstr "Volver a la cola"
 
-#: lib/kanban_web/live/review_live.ex:194
+#: lib/kanban_web/live/review_live.ex:214
 #, elixir-autogen, elixir-format
 msgid "Back to review queue"
 msgstr "Volver a la cola de revisión"
@@ -6128,11 +6128,6 @@ msgstr "y se actualizan a un ritmo regular. El árbol de dependencias completo s
 msgid "on every completed task. Outdated dependencies are surfaced with"
 msgstr "en cada tarea completada. Las dependencias desactualizadas se detectan con"
 
-#: lib/kanban_web/components/marketing_components.ex:350
-#, elixir-autogen, elixir-format
-msgid "v2.0.0 · Updated UI and workspace enhancements"
-msgstr "v2.0.0 · Interfaz actualizada y mejoras en el espacio de trabajo"
-
 #: lib/kanban_web/components/marketing_components.ex:409
 #, elixir-autogen, elixir-format
 msgid "Learn about adding team members"
@@ -6328,7 +6323,7 @@ msgstr "Tiempo de ciclo, dividido entre agente y humano en todos los niveles"
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "Cada tarea lleva por qué, qué, criterios de aceptación, estrategia de pruebas, consideraciones de seguridad, errores a evitar y observabilidad. Los agentes la reclaman con suficiente contexto para ejecutar sin idas y vueltas; los humanos revisan contra los criterios que ellos mismos escribieron, no por intuición."
 
-#: lib/kanban_web/live/review_live.ex:559
+#: lib/kanban_web/live/review_live.ex:668
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
@@ -6364,7 +6359,7 @@ msgstr "ninguno violado"
 msgid "violated"
 msgstr "violado"
 
-#: lib/kanban_web/live/review_live.ex:297
+#: lib/kanban_web/live/review_live.ex:335
 #, elixir-autogen, elixir-format
 msgid "Completion summary"
 msgstr "Resumen de la finalización"
@@ -6379,7 +6374,7 @@ msgstr "Enviar correo a %{name}"
 msgid "Completed by %{name}"
 msgstr "Completada por %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:242
+#: lib/kanban_web/components/review_report_panel.ex:249
 #: lib/kanban_web/components/review_stats_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "Patterns"
@@ -6400,32 +6395,32 @@ msgstr "El revisor solicitó cambios — esperando al agente"
 msgid "changes requested"
 msgstr "cambios solicitados"
 
-#: lib/kanban_web/components/review_report_panel.ex:119
+#: lib/kanban_web/components/review_report_panel.ex:126
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr "(sin descripción)"
 
-#: lib/kanban_web/live/review_live.ex:502
+#: lib/kanban_web/live/review_live.ex:611
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "cambios solicitados"
 
-#: lib/kanban_web/components/review_report_panel.ex:244
+#: lib/kanban_web/components/review_report_panel.ex:251
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "Calidad de código"
 
-#: lib/kanban_web/components/review_report_panel.ex:233
+#: lib/kanban_web/components/review_report_panel.ex:240
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "Importante"
 
-#: lib/kanban_web/components/review_report_panel.ex:234
+#: lib/kanban_web/components/review_report_panel.ex:241
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "Menor"
 
-#: lib/kanban_web/components/review_report_panel.ex:243
+#: lib/kanban_web/components/review_report_panel.ex:250
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "Pruebas"
@@ -6470,12 +6465,37 @@ msgstr "Patrones seguidos"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.ex:337
+#: lib/kanban_web/live/review_live.ex:375
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Archivos modificados"
 
-#: lib/kanban_web/live/review_live.ex:318
+#: lib/kanban_web/live/review_live.ex:356
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr "Problemas"
+
+#: lib/kanban_web/components/review_diff_panel.ex:223
+#, elixir-autogen, elixir-format
+msgid "Binary file changed — no diff preview."
+msgstr "Archivo binario modificado: sin vista previa del diff."
+
+#: lib/kanban_web/components/review_diff_panel.ex:276
+#, elixir-autogen, elixir-format
+msgid "Diff truncated at 500 lines."
+msgstr "Diff truncado a 500 líneas."
+
+#: lib/kanban_web/components/review_diff_panel.ex:239
+#, elixir-autogen, elixir-format
+msgid "No diff available for this file."
+msgstr "No hay diff disponible para este archivo."
+
+#: lib/kanban_web/components/review_report_panel.ex:100
+#, elixir-autogen, elixir-format
+msgid "No issues"
+msgstr "Sin problemas"
+
+#: lib/kanban_web/components/review_diff_panel.ex:286
+#, elixir-autogen, elixir-format
+msgid "View full diff in repo"
+msgstr "Ver diff completo en el repo"

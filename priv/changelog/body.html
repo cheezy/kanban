@@ -3,6 +3,54 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.0.3] - 2026-05-20
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Changed
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Review queue diff panel now renders patch content
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The per-file diff area on <code>/review</code>
+              (<code>KanbanWeb.ReviewDiffPanel.diff_content</code>)
+              now renders unified-patch text with terminal-style row spacing
+              (<code>line-height: 1.1</code>) and theme-aware add/del highlighting.
+              Added rows render against the existing green <code>--st-done-soft</code>
+              token; deleted rows continue to use <code>--st-blocked-soft</code>.
+              Both classes consume CSS custom properties
+              (<code>--stride-diff-add-bg</code>, <code>--stride-diff-del-bg</code>)
+              so the highlight reads strongly in light mode and switches to a
+              higher-chroma overlay (<code>oklch(30% 0.09 155 / 0.55)</code> /
+              <code>oklch(32% 0.10 25 / 0.55)</code>) under
+              <code>[data-theme="dark"]</code> where the previous soft tokens were too
+              desaturated to read against the dark sunken surface.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Diff-header lines (<code>---</code>, <code>+++</code>) now classify as
+              <code>del</code> and <code>add</code> instead of a separate
+              <code>file</code> class, so the file-pair header band itself shows the
+              same red/green tinting as its hunk body — the eye picks up which side
+              of the diff each line belongs to at a glance.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.0.2] - 2026-05-19
         </h2>
 

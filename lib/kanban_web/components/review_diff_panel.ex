@@ -257,7 +257,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
         style={[
           "margin: 0; padding: 8px 12px;",
           "font-family: var(--font-mono); font-size: 11.5px;",
-          "line-height: 1.55; color: var(--ink);",
+          "line-height: 1.1; color: var(--ink);",
           "white-space: pre-wrap; word-break: break-all;",
           "overflow-x: auto;"
         ]}
@@ -292,15 +292,23 @@ defmodule KanbanWeb.ReviewDiffPanel do
 
   defp render_diff_lines(lines) do
     lines
-    |> Enum.map_join("\n", &render_diff_line/1)
-    |> Phoenix.HTML.raw()
+    |> Enum.map(&render_diff_line/1)
+    |> Enum.intersperse("\n")
   end
 
   defp render_diff_line({class, text}) do
-    escaped = text |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+    {:safe, escaped} = Phoenix.HTML.html_escape(text)
 
-    ~s(<span data-diff-line="#{class}" class="stride-diff-line stride-diff-line-#{class}">) <>
-      escaped <> "</span>"
+    {:safe,
+     [
+       ~s(<span data-diff-line="),
+       class,
+       ~s(" class="stride-diff-line stride-diff-line-),
+       class,
+       ~s(">),
+       escaped,
+       "</span>"
+     ]}
   end
 
   defp show_failing_pill?(nil), do: false
@@ -363,8 +371,6 @@ defmodule KanbanWeb.ReviewDiffPanel do
   # rather than crash the pre tag.
   defp sanitize(diff), do: String.replace(diff, "\0", "")
 
-  defp classify_line("+++ " <> _ = line), do: {"file", line}
-  defp classify_line("--- " <> _ = line), do: {"file", line}
   defp classify_line("@@" <> _ = line), do: {"hunk", line}
   defp classify_line("+" <> _ = line), do: {"add", line}
   defp classify_line("-" <> _ = line), do: {"del", line}

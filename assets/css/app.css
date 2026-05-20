@@ -1150,12 +1150,17 @@
   border-left: 2px solid transparent;
 }
 .stride-diff-line-add {
-  background: color-mix(in oklch, var(--st-ok-soft, var(--surface)) 70%, transparent);
-  border-left-color: var(--st-ok, var(--stride-orange));
+  background: var(--stride-diff-add-bg, color-mix(in oklch, var(--st-done-soft) 70%, transparent));
+  border-left-color: var(--st-done);
 }
 .stride-diff-line-del {
-  background: color-mix(in oklch, var(--st-blocked-soft, var(--surface)) 70%, transparent);
-  border-left-color: var(--st-blocked, var(--stride-orange));
+  background: var(--stride-diff-del-bg, color-mix(in oklch, var(--st-blocked-soft) 70%, transparent));
+  border-left-color: var(--st-blocked);
+}
+:where([data-theme="dark"]) .stride-screen,
+:where([data-theme="dark"]) .stride-marketing {
+  --stride-diff-add-bg: oklch(30% 0.09 155 / 0.55);
+  --stride-diff-del-bg: oklch(32% 0.10 25 / 0.55);
 }
 .stride-diff-line-hunk {
   color: var(--ink-3);

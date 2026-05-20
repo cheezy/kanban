@@ -347,7 +347,7 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
           <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          {gettext("v2.0.0 · Updated UI and workspace enhancements")}
+          v2.0.3 · Review queue diff panel
         </span>
         <.link
           navigate={~p"/changelog"}

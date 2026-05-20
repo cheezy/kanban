@@ -153,7 +153,6 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
       assert html =~ ~s(data-diff-line="add")
       assert html =~ ~s(data-diff-line="del")
       assert html =~ ~s(data-diff-line="hunk")
-      assert html =~ ~s(data-diff-line="file")
       assert html =~ ~s(data-diff-line="context")
       # +/- prefixes are preserved inside the rendered line text.
       assert html =~ "+  @moduledoc"

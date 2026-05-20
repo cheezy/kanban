@@ -5,6 +5,16 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-05-20
+
+### Changed
+
+#### Review queue diff panel now renders patch content
+
+The per-file diff area on `/review` (`KanbanWeb.ReviewDiffPanel.diff_content`) now renders unified-patch text with terminal-style row spacing (`line-height: 1.1`) and theme-aware add/del highlighting. Added rows render against the existing green `--st-done-soft` token; deleted rows continue to use `--st-blocked-soft`. Both classes consume CSS custom properties (`--stride-diff-add-bg`, `--stride-diff-del-bg`) so the highlight reads strongly in light mode and switches to a higher-chroma overlay (`oklch(30% 0.09 155 / 0.55)` / `oklch(32% 0.10 25 / 0.55)`) under `[data-theme="dark"]` where the previous soft tokens were too desaturated to read against the dark sunken surface.
+
+Diff-header lines (`---`, `+++`) now classify as `del` and `add` instead of a separate `file` class, so the file-pair header band itself shows the same red/green tinting as its hunk body — the eye picks up which side of the diff each line belongs to at a glance.
+
 ## [2.0.2] - 2026-05-19
 
 ### Added
