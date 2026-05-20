@@ -505,6 +505,138 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_changed_files/1" do
+    test "accepts nil (legacy payload omits the field entirely)" do
+      assert {:ok, nil} = CompletionValidation.validate_changed_files(nil)
+    end
+
+    test "accepts an empty list" do
+      assert {:ok, []} = CompletionValidation.validate_changed_files([])
+    end
+
+    test "accepts a well-formed entry with diff" do
+      entry = %{"path" => "lib/foo.ex", "diff" => sample_diff(3)}
+      assert {:ok, [^entry]} = CompletionValidation.validate_changed_files([entry])
+    end
+
+    test "accepts an entry without a diff field (legacy per-file entry)" do
+      entry = %{"path" => "lib/foo.ex"}
+      assert {:ok, [^entry]} = CompletionValidation.validate_changed_files([entry])
+    end
+
+    test "accepts the binary-file placeholder string verbatim" do
+      entry = %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
+      assert {:ok, _} = CompletionValidation.validate_changed_files([entry])
+    end
+
+    test "accepts an empty-string diff value (edge case — no content captured)" do
+      entry = %{"path" => "lib/foo.ex", "diff" => ""}
+      assert {:ok, _} = CompletionValidation.validate_changed_files([entry])
+    end
+
+    test "accepts a diff at exactly 500 lines (boundary: maximum)" do
+      entry = %{"path" => "lib/big.ex", "diff" => sample_diff(500)}
+      assert {:ok, _} = CompletionValidation.validate_changed_files([entry])
+    end
+
+    test "accepts mixed entries — one with diff, one without" do
+      entries = [
+        %{"path" => "lib/foo.ex", "diff" => sample_diff(3)},
+        %{"path" => "lib/bar.ex"}
+      ]
+
+      assert {:ok, ^entries} = CompletionValidation.validate_changed_files(entries)
+    end
+
+    test "rejects a non-list value" do
+      assert {:error, errors} = CompletionValidation.validate_changed_files(%{"not" => "a list"})
+      assert error_for(errors, :changed_files)
+    end
+
+    test "rejects a string value" do
+      assert {:error, errors} = CompletionValidation.validate_changed_files("lib/foo.ex")
+      assert error_for(errors, :changed_files)
+    end
+
+    test "rejects an entry that is not a map" do
+      assert {:error, errors} = CompletionValidation.validate_changed_files(["lib/foo.ex"])
+      assert {_, msg} = error_for(errors, :changed_file_entry)
+      assert msg =~ "changed_files[0]"
+      assert msg =~ "must be a map"
+    end
+
+    test "rejects an entry missing the path field" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([%{"diff" => sample_diff(2)}])
+
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "changed_files[0]"
+      assert msg =~ "path"
+    end
+
+    test "rejects an entry with a non-string path" do
+      assert {:error, errors} = CompletionValidation.validate_changed_files([%{"path" => 42}])
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "changed_files[0]"
+    end
+
+    test "rejects an entry with an empty-string path" do
+      assert {:error, errors} = CompletionValidation.validate_changed_files([%{"path" => ""}])
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "changed_files[0]"
+    end
+
+    test "rejects a non-string diff value" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([
+                 %{"path" => "lib/foo.ex", "diff" => 1}
+               ])
+
+      assert {_, msg} = error_for(errors, :changed_file_diff)
+      assert msg =~ "changed_files[0]"
+      assert msg =~ "must be a string"
+    end
+
+    test "rejects a diff exceeding 500 lines (defensive backstop)" do
+      entry = %{"path" => "lib/huge.ex", "diff" => sample_diff(501)}
+      assert {:error, errors} = CompletionValidation.validate_changed_files([entry])
+      assert {_, msg} = error_for(errors, :changed_file_diff)
+      assert msg =~ "changed_files[0]"
+      assert msg =~ "500"
+    end
+
+    test "reports errors from multiple malformed entries (no short-circuit)" do
+      entries = [
+        %{"path" => "lib/ok.ex", "diff" => sample_diff(2)},
+        %{"path" => 42},
+        "not a map",
+        %{"path" => "lib/huge.ex", "diff" => sample_diff(501)}
+      ]
+
+      assert {:error, errors} = CompletionValidation.validate_changed_files(entries)
+      assert error_for(errors, :changed_file_path)
+      assert error_for(errors, :changed_file_entry)
+      assert error_for(errors, :changed_file_diff)
+    end
+
+    test "error messages embed the entry index, not a runtime atom" do
+      entries = [
+        %{"path" => "lib/ok.ex"},
+        %{"path" => 42},
+        %{"path" => 99}
+      ]
+
+      assert {:error, errors} = CompletionValidation.validate_changed_files(entries)
+      messages = Enum.map(errors, fn {_field, msg} -> msg end)
+      assert Enum.any?(messages, &(&1 =~ "changed_files[1]"))
+      assert Enum.any?(messages, &(&1 =~ "changed_files[2]"))
+    end
+  end
+
+  defp sample_diff(lines) when lines >= 1 do
+    Enum.map_join(1..lines, "\n", fn idx -> "+ line #{idx}" end)
+  end
+
   defp error_for(errors, field) do
     Enum.find(errors, fn {f, _msg} -> f == field end)
   end

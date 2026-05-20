@@ -36,6 +36,8 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   @min_summary_length 40
 
+  @max_diff_lines 500
+
   @doc """
   The exhaustive list of allowed skip-reason atoms.
 
@@ -67,6 +69,34 @@ defmodule Kanban.Tasks.CompletionValidation do
   as non-negative integers.
   """
   def validate_reviewer_result(result), do: validate(result, :reviewer)
+
+  @doc """
+  Validates the optional `changed_files` array on the completion payload.
+
+  Returns `{:ok, value}` when valid (including `nil` for legacy payloads
+  that omit the field entirely and `[]` for empty arrays), or
+  `{:error, [{field, message}, ...]}` listing every failing entry.
+
+  Each entry must be a map with a non-empty string `"path"`. The `"diff"`
+  field is optional; when present it must be a string of at most
+  #{@max_diff_lines} lines. The line cap is a defensive backstop — plugins
+  are expected to truncate before sending, per `docs/diff-contract.md`.
+  """
+  def validate_changed_files(nil), do: {:ok, nil}
+
+  def validate_changed_files(value) when is_list(value) do
+    errors =
+      value
+      |> Enum.with_index()
+      |> Enum.reduce([], fn {entry, idx}, acc -> check_changed_file_entry(acc, entry, idx) end)
+
+    case errors do
+      [] -> {:ok, value}
+      _ -> {:error, Enum.reverse(errors)}
+    end
+  end
+
+  def validate_changed_files(_value), do: {:error, [{:changed_files, "must be a list"}]}
 
   defp validate(nil, _role), do: {:error, [{:result, "can't be blank"}]}
 
@@ -305,4 +335,60 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   defp enum_message(allowed),
     do: "must be one of: " <> Enum.map_join(allowed, ", ", &Atom.to_string/1)
+
+  # Per-entry validator for `changed_files`. Uses the same static-atom +
+  # index-in-message pattern as `check_issue_entry/3` so we do not create
+  # runtime atoms per array index.
+  defp check_changed_file_entry(errors, entry, idx) when is_map(entry) do
+    errors
+    |> check_changed_file_path(entry, idx)
+    |> check_changed_file_diff(entry, idx)
+  end
+
+  defp check_changed_file_entry(errors, _entry, idx),
+    do: [{:changed_file_entry, "changed_files[#{idx}] must be a map"} | errors]
+
+  defp check_changed_file_path(errors, entry, idx) do
+    case Map.get(entry, "path") do
+      path when is_binary(path) and byte_size(path) > 0 ->
+        errors
+
+      _ ->
+        [
+          {:changed_file_path, "changed_files[#{idx}] must have a non-empty string \"path\""}
+          | errors
+        ]
+    end
+  end
+
+  defp check_changed_file_diff(errors, entry, idx) do
+    case Map.get(entry, "diff") do
+      nil ->
+        errors
+
+      diff when is_binary(diff) ->
+        if diff_line_count(diff) > @max_diff_lines do
+          [
+            {:changed_file_diff,
+             "changed_files[#{idx}].diff exceeds the #{@max_diff_lines}-line cap"}
+            | errors
+          ]
+        else
+          errors
+        end
+
+      _ ->
+        [{:changed_file_diff, "changed_files[#{idx}].diff must be a string"} | errors]
+    end
+  end
+
+  # Counts logical lines in a diff. A trailing newline is treated as a
+  # line terminator, not a separator — so a 500-line patch with or
+  # without a trailing newline reports 500 lines.
+  defp diff_line_count(diff) do
+    diff
+    |> String.trim_trailing("\n")
+    |> String.split("\n")
+    |> length()
+  end
 end

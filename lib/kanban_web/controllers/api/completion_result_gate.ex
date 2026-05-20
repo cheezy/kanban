@@ -58,6 +58,11 @@ defmodule KanbanWeb.API.CompletionResultGate do
         "reviewer_result",
         params["reviewer_result"],
         &CompletionValidation.validate_reviewer_result/1
+      ),
+      evaluate(
+        "changed_files",
+        params["changed_files"],
+        &CompletionValidation.validate_changed_files/1
       )
     ]
     |> Enum.reject(&is_nil/1)
@@ -135,7 +140,14 @@ defmodule KanbanWeb.API.CompletionResultGate do
             "one of: #{Enum.map_join(CompletionValidation.skip_reasons(), ", ", &Atom.to_string/1)}",
           "summary" =>
             "A substantive summary of what was self-reported (40+ non-whitespace chars)"
-        }
+        },
+        "changed_files" => [
+          %{
+            "path" => "lib/foo.ex",
+            "diff" => "Unified-patch text — see docs/diff-contract.md (≤ 500 lines per file)"
+          },
+          %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
+        ]
       }
     }
   end
