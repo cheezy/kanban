@@ -53,6 +53,28 @@ A reviewer opens a task in the review queue, reads the agent's report, and sees 
 - **UI**: review queue page (`lib/kanban_web/live/review_live.ex` and the changed-files component) gains a clickable affordance on each file in the existing list. Clicking opens an inline panel rendering the unified diff with syntax-aware coloring (additions / removals) and a truncation notice when applicable.
 - **Instrumentation**: telemetry events when the diff panel opens and when it closes, scoped to `needs_review = true` tasks. Both events used to compute open-rate and time-spent leading metrics.
 
+## Decomposition seams
+
+**This document MUST be decomposed into seven independent goals — one per surface.** The decomposer should NOT collapse the plugin work into a single goal; each plugin lives in its own repo, ships on its own cadence, and has its own maintainer surface.
+
+The seven surfaces:
+
+1. **Kanban app** (this repo: `lib/kanban_web/...`, `lib/kanban/...`, `priv/repo/migrations/...`) — defines the per-file `diff` field in the structured review JSON schema, persists it, and renders the inline diff panel in the review queue page. Also owns the open-rate and time-spent telemetry. **This goal MUST land (or at minimum publish a committable spec for) the JSON contract before any plugin goal can verify its capture end-to-end.**
+2. **stride plugin** (this repo: `stride/`) — reference workflow plugin. Adds per-file `git diff` capture during the completion / review-submission step, applies the 500-line per-file truncation with a notice marker, writes the unified patch into the existing per-file entry in the structured review JSON.
+3. **stride-copilot** (separate repo) — same diff-capture contract, adapted to Copilot CLI's tool surface.
+4. **stride-gemini** (separate repo) — same contract, adapted to Gemini CLI.
+5. **stride-codex** (separate repo) — same contract, adapted to Codex.
+6. **stride-opencode** (separate repo) — same contract, adapted to OpenCode.
+7. **stride-pi** (separate repo) — same contract, adapted to Pi Coding Agent.
+
+**Shared contract.** All six plugins write against a single per-file diff JSON shape (field name, truncation marker convention, encoding rules). The kanban-app goal owns the contract definition; the six plugin goals each *consume* it. The contract belongs in a single short reference doc (or a section of the kanban-app goal) so a change to it is visible to every plugin maintainer.
+
+**Sequencing & dependencies.**
+
+- The kanban-app goal goes first (or at minimum publishes the JSON contract before any plugin goal closes).
+- The six plugin goals can ship in any order and in parallel — they have no cross-dependencies on each other.
+- Backward compatibility (constraint above) means an older plugin that hasn't shipped diff capture yet still produces a working review; the diff panel simply renders empty / unavailable for those tasks. No coordinated cutover is required.
+
 ## Open questions
 
 - Diff styling library: roll-our-own minimal CSS for `+` / `-` lines vs. a small library like `diff2html`. Decide during implementation based on dependency cost and dark-mode support.
