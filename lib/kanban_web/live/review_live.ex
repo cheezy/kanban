@@ -246,7 +246,7 @@ defmodule KanbanWeb.ReviewLive do
                 data-review-detail-summary
                 style={[
                   "padding: 14px 16px;",
-                  "font-size: 13px; line-height: 1.55; color: var(--ink);",
+                  "color: var(--ink);",
                   "display: flex; align-items: flex-start; gap: 10px;"
                 ]}
               >
@@ -259,13 +259,31 @@ defmodule KanbanWeb.ReviewLive do
                     "padding: 4px 12px; border-radius: 999px;",
                     "font-size: 13px; font-weight: 600;",
                     "letter-spacing: 0.02em;",
+                    "margin-top: 6px;",
                     review_status_pill(@selected).style
                   ]}
                 >
                   <.icon name={review_status_pill(@selected).icon} class="w-4 h-4" />
                   {review_status_pill(@selected).label}
                 </span>
-                <span style="flex: 1; min-width: 0;">{summary_text(@selected)}</span>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                  <h2
+                    data-review-detail-summary-title
+                    style={[
+                      "margin: 0; font-size: 20px; font-weight: 600;",
+                      "letter-spacing: -0.01em; line-height: 1.2; color: var(--ink);"
+                    ]}
+                  >
+                    {@selected.title}
+                  </h2>
+                  <p
+                    :if={present_text?(summary_text(@selected))}
+                    data-review-detail-summary-description
+                    style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-2);"
+                  >
+                    {summary_text(@selected)}
+                  </p>
+                </div>
               </div>
 
               <ReviewStatsStrip.review_stats_strip
