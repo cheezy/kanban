@@ -73,9 +73,24 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 ### AI Workflow Integration
 
+**Supported AI Coding Agents**
+
+Stride ships a per-agent plugin for each supported AI coding agent. Each plugin packages the same Stride lifecycle skills (claim → explore → implement → review → complete) adapted to the host agent's skill-loading and hook-interception model.
+
+| Agent | Plugin | Install |
+|---|---|---|
+| Claude Code | [`stride`](https://github.com/cheezy/stride) | `/plugin marketplace add cheezy/stride-marketplace` then `/plugin install stride@stride-marketplace` |
+| Gemini CLI | [`stride-gemini`](https://github.com/cheezy/stride-gemini) | `gemini extensions install https://github.com/cheezy/stride-gemini` |
+| Copilot CLI | [`stride-copilot`](https://github.com/cheezy/stride-copilot) | `copilot plugin install https://github.com/cheezy/stride-copilot` |
+| Codex CLI | [`stride-codex`](https://github.com/cheezy/stride-codex) | `curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh \| bash` |
+| OpenCode | [`stride-opencode`](https://github.com/cheezy/stride-opencode) | See plugin README |
+| Pi Coding Agent | [`stride-pi`](https://github.com/cheezy/stride-pi) | `curl -fsSL https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh \| bash` |
+
+The Pi edition ships the same 11 lifecycle skills as the other plugins plus two Pi-specific TypeScript extensions: `hook-bridge` (automatic `.stride.md` hook execution intercepting Pi's `tool_call` events) and `subagent-dispatch` (inline sub-agent skill dispatch). See the [stride-pi v1.0.0 release notes](https://github.com/cheezy/stride-pi/releases/tag/v1.0.0) for the feature matrix.
+
 **Recommended: Use the Workflow Orchestrator**
 
-For agents using Stride plugins (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode), the `stride-workflow` skill is the recommended entry point. It walks through the complete lifecycle — claiming, codebase exploration, implementation, code review, hooks, and completion — in a single skill. The orchestrator ensures no mandatory steps are skipped.
+For agents using Stride plugins (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode, Pi Coding Agent), the `stride-workflow` skill is the recommended entry point. It walks through the complete lifecycle — claiming, codebase exploration, implementation, code review, hooks, and completion — in a single skill. The orchestrator ensures no mandatory steps are skipped.
 
 **The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
 
@@ -326,7 +341,7 @@ See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 - Use `stride-creating-tasks` for individual tasks and defects
 - Use `stride-creating-goals` for goals with nested tasks or batch creation
 
-These skills are available via the Stride plugin for Claude Code, Gemini CLI, Copilot CLI, Codex CLI, and OpenCode.
+These skills are available via the Stride plugin for Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode, and Pi Coding Agent.
 
 ### Task Completion
 
@@ -495,7 +510,7 @@ This creates a **Kanban board optimized for AI agents** - structured workflow wi
 
 ### Getting Started
 
-1. **Install the Stride plugin** for your AI agent platform (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, or OpenCode)
+1. **Install the Stride plugin** for your AI agent platform (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode, or Pi Coding Agent)
 2. **Set up authentication** - Create `.stride_auth.md` with your API token
 3. **Configure hooks** - Create `.stride.md` with your workflow hooks
 4. **Activate `stride-workflow`** - The orchestrator walks through claim → explore → implement → review → complete
