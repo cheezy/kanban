@@ -2380,6 +2380,40 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       goal2_option = Enum.find(goal_options, fn {_label, id} -> id == goal2.id end)
       assert goal2_option
     end
+
+    test "excludes archived goals from goal options" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, active_goal} =
+        Tasks.create_task(column, %{"title" => "Active Goal", "type" => "goal"})
+
+      {:ok, archived_goal} =
+        Tasks.create_task(column, %{"title" => "Archived Goal", "type" => "goal"})
+
+      archived_goal
+      |> Ecto.Changeset.change(archived_at: DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Kanban.Repo.update!()
+
+      task = %Tasks.Task{column_id: column.id}
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :new_task,
+            column_id: column.id
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      goal_options = socket.assigns.goal_options
+
+      refute Enum.find(goal_options, fn {_label, id} -> id == archived_goal.id end)
+      assert Enum.find(goal_options, fn {_label, id} -> id == active_goal.id end)
+    end
   end
 
   describe "field visibility" do

@@ -100,6 +100,7 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
         where: c.board_id == ^board.id,
         where: t.type == :goal,
         where: t.id != ^(task.id || 0),
+        where: is_nil(t.archived_at),
         order_by: [asc: t.identifier],
         select: {t.identifier, t.title, t.id}
       )
