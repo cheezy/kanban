@@ -58,6 +58,8 @@ stride-marketplace/
 stride-opencode/
 stride-codex/
 stride-pi/
+stride-security-review/
+stride-security-review-copilot/
 security-review/
 
 # Per-developer Claude Code permission allow-list. Untracked so each
