@@ -2163,6 +2163,59 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] =~ "must be in progress or blocked"
     end
 
+    test "completion request with changed_files in body does not overwrite a prior PUT upload",
+         %{conn: conn, task: task} do
+      seeded = [
+        %{"path" => "lib/seeded.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}
+      ]
+
+      {:ok, _} = Tasks.update_changed_files(task, seeded)
+      assert [%{"path" => "lib/seeded.ex"}] = Tasks.get_task!(task.id).changed_files
+
+      completion_params = %{
+        "completion_summary" => "done",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "lib/seeded.ex",
+        "time_spent_minutes" => 5,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result(),
+        "changed_files" => [
+          %{"path" => "lib/should_be_ignored.ex", "diff" => "diff body"}
+        ]
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      assert json_response(conn, 200)
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [entry] = reloaded.changed_files
+      assert entry["path"] == "lib/seeded.ex"
+    end
+
+    test "completion request with empty changed_files in body does not clear a prior PUT upload",
+         %{conn: conn, task: task} do
+      {:ok, _} =
+        Tasks.update_changed_files(task, [
+          %{"path" => "lib/sticky.ex", "diff" => "@@ -1 +1 @@\n-x\n+y"}
+        ])
+
+      completion_params = %{
+        "completion_summary" => "done",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "lib/sticky.ex",
+        "time_spent_minutes" => 5,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result(),
+        "changed_files" => []
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      assert json_response(conn, 200)
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [%{"path" => "lib/sticky.ex"}] = reloaded.changed_files
+    end
+
     test "tracks AI agent when completing task with agent_model", %{
       task: task,
       user: user,

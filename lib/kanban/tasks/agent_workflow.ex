@@ -514,6 +514,9 @@ defmodule Kanban.Tasks.AgentWorkflow do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(review_column)
 
+      # `:changed_files` is owned by `PUT /api/tasks/:id/changed_files`
+      # (hook-uploaded); do not cast here, even if the legacy completion body
+      # includes it. The PUT endpoint is the only writer.
       changeset =
         task
         |> Ecto.Changeset.cast(params, [
@@ -525,8 +528,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
           :review_report,
           :workflow_steps,
           :explorer_result,
-          :reviewer_result,
-          :changed_files
+          :reviewer_result
         ])
         |> Ecto.Changeset.put_change(:column_id, review_column.id)
         |> Ecto.Changeset.put_change(:position, next_position)
