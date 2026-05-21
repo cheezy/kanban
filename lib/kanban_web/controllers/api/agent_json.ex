@@ -273,12 +273,23 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "complete_task",
           endpoint: "PATCH #{base_url}/api/tasks/:id/complete",
           description:
-            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution.",
+            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution. Note: changed_files included in this body is silently ignored — upload via PUT /api/tasks/:id/changed_files instead.",
           required_parameters: ["after_doing_result", "before_review_result"],
           hook_validation:
             "MANDATORY - Must execute BOTH after_doing AND before_review hooks BEFORE calling this endpoint and include both results",
           returns: "Task data + array of hook metadata (after_review if needs_review=false)",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
+        },
+        %{
+          name: "upload_changed_files",
+          endpoint: "PUT #{base_url}/api/tasks/:id/changed_files",
+          description:
+            "Upload the per-file diff snapshot for a claimed-or-in-review task. Sole writer for tasks.changed_files — the completion endpoint silently ignores any changed_files in its body. Encoding (truncation marker, binary placeholder, 500-line cap) is defined in docs/diff-contract.md.",
+          required_parameters: ["changed_files"],
+          hook_validation:
+            "Not a hook endpoint. Authz: caller must be the task assignee OR the task must be in the Review column.",
+          returns: "Task data with the persisted changed_files in the response body",
+          documentation_url: "#{@docs_base_url}/docs/api/put_tasks_id_changed_files.md"
         },
         %{
           name: "mark_reviewed",
@@ -392,12 +403,24 @@ defmodule KanbanWeb.API.AgentJSON do
             %{
               method: "PATCH",
               path: "/api/tasks/:id/complete",
-              description: "Complete a task - REQUIRES after_doing_result parameter",
+              description:
+                "Complete a task - REQUIRES after_doing_result parameter. changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
               required_parameters: ["after_doing_result"],
               hook_validation_required: true,
               returns_hooks: ["after_doing", "before_review", "after_review (conditional)"],
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
+            },
+            %{
+              method: "PUT",
+              path: "/api/tasks/:id/changed_files",
+              description:
+                "Upload the per-file diff snapshot — sole writer for tasks.changed_files. Encoding defined in docs/diff-contract.md.",
+              required_parameters: ["changed_files"],
+              hook_validation_required: false,
+              returns_hooks: [],
+              auth_required: true,
+              documentation_url: "#{@docs_base_url}/docs/api/put_tasks_id_changed_files.md"
             },
             %{
               method: "PATCH",

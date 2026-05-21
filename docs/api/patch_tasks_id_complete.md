@@ -2,6 +2,8 @@
 
 Mark a task as complete. This moves the task to the Review column (or directly to Done if `needs_review=false`).
 
+> **Note on `changed_files`.** The per-file diff snapshot is no longer written by this endpoint. As of W778, `changed_files` is owned exclusively by [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md) — the hook uploads it before this completion request fires. If you send `changed_files` in the completion body it is **silently ignored** at the schema cast layer (the request still 422s if the shape is malformed, via `CompletionResultGate`, but the field is dropped). New plugins should upload via the PUT endpoint and omit `changed_files` from the completion body. See the [Diff Contract](../diff-contract.md) for encoding rules.
+
 ## Authentication
 
 Requires a valid API token in the Authorization header:
@@ -527,5 +529,7 @@ fi
 ## See Also
 
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task to start working
+- [PUT /api/tasks/:id/changed_files](put_tasks_id_changed_files.md) - Upload the per-file diff snapshot (sole writer for `changed_files`)
 - [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md) - Mark task as reviewed after completion
 - [POST /api/tasks/:id/unclaim](post_tasks_id_unclaim.md) - Unclaim if you can't complete
+- [Diff Contract](../diff-contract.md) - Encoding rules (truncation marker, binary placeholder, 500-line cap)

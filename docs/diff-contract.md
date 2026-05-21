@@ -107,6 +107,7 @@ Untracked new files that the plugin captures via the synthesized new-file patch 
 
 ## See also
 
-- [`PATCH /api/tasks/:id/complete`](api/patch_tasks_id_complete.md) — the completion endpoint that carries this field.
+- [`PUT /api/tasks/:id/changed_files`](api/put_tasks_id_changed_files.md) — the dedicated upload endpoint and **sole writer** for this field (as of W777/W778).
+- [`PATCH /api/tasks/:id/complete`](api/patch_tasks_id_complete.md) — the completion endpoint; **no longer writes `changed_files`** — any value in the completion body is silently ignored. Sending it for backwards compatibility is tolerated.
 - `lib/kanban_web/components/review_diff_panel.ex` — the review queue component that consumes this field.
 - `lib/kanban/tasks/completion_validation.ex` — server-side validator (`changed_files` validation added in W720).

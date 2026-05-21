@@ -175,6 +175,24 @@ defmodule KanbanWeb.API.AgentControllerTest do
       management = endpoints["management"]
       assert Enum.any?(management, fn ep -> ep["path"] == "/api/tasks/claim" end)
       assert Enum.any?(management, fn ep -> ep["path"] == "/api/tasks/:id/complete" end)
+
+      assert Enum.any?(management, fn ep ->
+               ep["method"] == "PUT" and ep["path"] == "/api/tasks/:id/changed_files"
+             end)
+    end
+
+    test "advertises PUT /api/tasks/:id/changed_files in the workflow array", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      response = json_response(conn, 200)
+
+      workflow = response["workflow"]
+      assert is_list(workflow)
+
+      upload = Enum.find(workflow, &(&1["name"] == "upload_changed_files"))
+      assert upload != nil
+      assert upload["endpoint"] =~ "PUT"
+      assert upload["endpoint"] =~ "/api/tasks/:id/changed_files"
+      assert upload["documentation_url"] =~ "put_tasks_id_changed_files.md"
     end
 
     test "includes resource links to documentation", %{conn: conn} do
@@ -228,13 +246,14 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       workflow = response["workflow"]
       assert is_list(workflow)
-      assert length(workflow) == 4
+      assert length(workflow) == 5
 
       # Verify workflow is in correct order
       assert Enum.at(workflow, 0)["name"] == "claim_task"
       assert Enum.at(workflow, 1)["name"] == "complete_task"
-      assert Enum.at(workflow, 2)["name"] == "mark_reviewed"
-      assert Enum.at(workflow, 3)["name"] == "unclaim_task"
+      assert Enum.at(workflow, 2)["name"] == "upload_changed_files"
+      assert Enum.at(workflow, 3)["name"] == "mark_reviewed"
+      assert Enum.at(workflow, 4)["name"] == "unclaim_task"
 
       # Verify each workflow step has proper structure
       claim_task = Enum.at(workflow, 0)

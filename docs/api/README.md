@@ -251,6 +251,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 - [POST /api/tasks/:id/unclaim](post_tasks_id_unclaim.md) — Unclaim a task you can't complete
 - [PATCH /api/tasks/:id](patch_tasks_id.md) — Update task fields (title, description, etc.)
 - [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) — Complete a task and receive hooks
+- [PUT /api/tasks/:id/changed_files](put_tasks_id_changed_files.md) — Upload the per-file diff snapshot (sole writer for `tasks.changed_files`)
 - [PATCH /api/tasks/:id/mark_done](patch_tasks_id_mark_done.md) — Bypass review and mark task as done
 - [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md) — Finalize review and receive `after_review` hook
 
@@ -276,6 +277,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | POST | `/api/tasks/:id/unclaim` | Unclaim a task | No |
 | PATCH | `/api/tasks/:id` | Update task fields | No |
 | PATCH | `/api/tasks/:id/complete` | Complete a task | `after_doing`, `before_review`, `after_review`* |
+| PUT | `/api/tasks/:id/changed_files` | Upload per-file diff snapshot (sole writer) | No |
 | PATCH | `/api/tasks/:id/mark_done` | Bypass review, mark done | No |
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
 
