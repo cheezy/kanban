@@ -1207,4 +1207,252 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "hero-x-mark"
     end
   end
+
+  describe "review_status_pill — direct from reviewer_result.status" do
+    setup [:register_and_log_in_user]
+
+    test "schema-1.0 status='approved' renders the green Approved pill",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{reviewer_result: %{"status" => "approved"}})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="approved")
+      assert html =~ "Approved"
+      assert html =~ "hero-check-circle"
+    end
+
+    test "schema-1.0 status='changes_requested' renders the red pill",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{reviewer_result: %{"status" => "changes_requested"}})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+      assert html =~ "Changes requested"
+      assert html =~ "hero-arrow-uturn-left"
+    end
+
+    test "unknown status string renders no pill at all",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{reviewer_result: %{"status" => "in_review"}})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-detail-summary-status"
+    end
+  end
+
+  describe "review_status_pill — derived from legacy reviewer_result fields" do
+    setup [:register_and_log_in_user]
+
+    test "any structured acceptance_criteria with 'not_met' derives changes_requested",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "issues_found" => 0,
+            "acceptance_criteria" => [
+              %{"criterion" => "A", "status" => "met"},
+              %{"criterion" => "B", "status" => "not_met"}
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+    end
+
+    test "legacy issues_found > 0 derives changes_requested",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "issues_found" => 2}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+    end
+
+    test "dispatched=true with no issues derives approved",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "issues_found" => 0}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="approved")
+    end
+
+    test "skipped reviewer (dispatched=false) renders no pill",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => false, "reason" => "small_task_0_1_key_files"}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-detail-summary-status"
+    end
+
+    test "no reviewer_result at all renders no pill",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{reviewer_result: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-detail-summary-status"
+    end
+  end
+
+  describe "task_files — diff-panel file list sourcing" do
+    setup [:register_and_log_in_user]
+
+    test "lists paths from changed_files when actual_files_changed is empty",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "",
+          changed_files: [
+            %{"path" => "lib/new_only.ex", "diff" => "+ added"},
+            %{"path" => "lib/another.ex", "diff" => nil}
+          ]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/new_only.ex")
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/another.ex")
+    end
+
+    test "lists paths from actual_files_changed when changed_files is empty (legacy)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/legacy_one.ex, lib/legacy_two.ex",
+          changed_files: []
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/legacy_one.ex")
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/legacy_two.ex")
+    end
+
+    test "deduplicates paths that appear in both fields",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/shared.ex, lib/legacy_only.ex",
+          changed_files: [%{"path" => "lib/shared.ex", "diff" => "+ x"}]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # Each path should appear in the panel exactly once.
+      shared_occurrences =
+        html
+        |> String.split(~s(data-review-diff-panel-file-path="lib/shared.ex"))
+        |> length()
+        |> Kernel.-(1)
+
+      assert shared_occurrences == 1
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/legacy_only.ex")
+    end
+
+    test "silently skips changed_files entries that have no path",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "",
+          changed_files: [
+            %{"path" => "lib/has_path.ex"},
+            %{"diff" => "+ orphan"},
+            %{"path" => ""}
+          ]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/has_path.ex")
+      # The malformed entries don't blow up the render — only the valid one
+      # appears as a clickable file row.
+      assert html =~ "data-review-diff-panel"
+      refute html =~ ~s(data-review-diff-panel-file-path="")
+    end
+
+    test "neither field populated renders the panel's empty-state",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "", changed_files: []})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "No files changed."
+    end
+  end
+
+  describe "summary_text fallback chain" do
+    setup [:register_and_log_in_user]
+
+    test "renders task.what when present", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{what: "Specific what text", description: "ignored"})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "Specific what text"
+    end
+
+    test "falls back to task.description when :what is nil",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{what: nil, description: "Description-only text"})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "Description-only text"
+    end
+
+    test "treats empty-string :what as missing and uses description",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{what: "", description: "Fallback fires"})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "Fallback fires"
+    end
+  end
+
+  describe "queue_subtitle pluralization + age suffix" do
+    setup [:register_and_log_in_user]
+
+    test "renders 'just now' when the oldest task is < 1 minute old",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{completed_by_agent: "Claude"})
+      _ = backdate_updated_at!(task, -2)
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~r/just now/
+    end
+
+    test "no age suffix when there are no pending tasks",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "0 tasks waiting on you."
+      refute html =~ "oldest"
+    end
+  end
 end

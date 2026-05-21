@@ -375,7 +375,7 @@ defmodule KanbanWeb.ReviewLive do
                   {gettext("Changed files")}
                 </span>
                 <ReviewDiffPanel.review_diff_panel
-                  files={parse_files(@selected.actual_files_changed)}
+                  files={task_files(@selected)}
                   selected_file={selected_file_payload(@selected, @selected_changed_file)}
                   on_file_click="select_changed_file"
                 />
@@ -819,6 +819,28 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   defp lookup_changed_file(_task, _path), do: nil
+
+  # Source of truth for the diff-panel file list. Unions the schema-1.0
+  # `changed_files` jsonb array (`[%{"path", "diff", "diff_url"}]`) with
+  # the legacy comma-separated `actual_files_changed` string — paths from
+  # `changed_files` come first (they have rich diff data), legacy-only
+  # paths are appended afterwards so the panel still lists them even
+  # when the new plugin omitted them from the structured payload.
+  defp task_files(task) do
+    structured_paths = changed_file_paths(task)
+    legacy_paths = parse_files(Map.get(task, :actual_files_changed))
+
+    structured_paths ++ Enum.reject(legacy_paths, &(&1 in structured_paths))
+  end
+
+  defp changed_file_paths(%{changed_files: list}) when is_list(list),
+    do: Enum.flat_map(list, &changed_file_path/1)
+
+  defp changed_file_paths(_), do: []
+
+  defp changed_file_path(%{"path" => path}) when is_binary(path) and path != "", do: [path]
+  defp changed_file_path(%{path: path}) when is_binary(path) and path != "", do: [path]
+  defp changed_file_path(_), do: []
 
   defp parse_files(nil), do: []
   defp parse_files(""), do: []
