@@ -548,7 +548,11 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "selecting a different task clears the changed-file selection",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-      _first = pending_task!(column, %{identifier: "WX1", actual_files_changed: "lib/a.ex"})
+      first = pending_task!(column, %{identifier: "WX1", actual_files_changed: "lib/a.ex"})
+      # Backdate so `first` is reliably the oldest and gets selected on mount;
+      # otherwise both rows share the same truncated `updated_at` and the
+      # head-of-queue selection becomes non-deterministic.
+      backdate_updated_at!(first, -60)
       second = pending_task!(column, %{identifier: "WX2", actual_files_changed: "lib/c.ex"})
 
       {:ok, view, _html} = live(conn, ~p"/review")
