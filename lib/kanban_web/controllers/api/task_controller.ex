@@ -550,6 +550,75 @@ defmodule KanbanWeb.API.TaskController do
     )
   end
 
+  def put_changed_files(conn, %{"id" => id_or_identifier} = params) do
+    case persist_changed_files(conn, id_or_identifier, params["changed_files"]) do
+      {:ok, task, value} -> render_changed_files_response(conn, task, value)
+      error -> handle_task_error(conn, error)
+    end
+  end
+
+  defp persist_changed_files(conn, id_or_identifier, payload) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+
+    with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
+         :ok <- authorize_changed_files(task, user),
+         {:ok, value} <- validate_changed_files_payload(payload),
+         {:ok, updated} <- Tasks.update_changed_files(task, value) do
+      {:ok, updated, value}
+    end
+  end
+
+  defp render_changed_files_response(conn, task, value) do
+    # `task` is already preloaded (column, assigned_to, …) because
+    # `fetch_and_verify_task/2` loads via `get_task_for_view`; the no-op
+    # `Ecto.Changeset.change/2` preserves those associations. No refetch.
+    emit_telemetry(conn, :task_changed_files_persisted, %{
+      task_id: task.id,
+      file_count: length(value || [])
+    })
+
+    render(conn, :show, task: task)
+  end
+
+  defp authorize_changed_files(%{column: %{name: "Review"}}, _user), do: :ok
+  defp authorize_changed_files(%{assigned_to_id: user_id}, %{id: user_id}), do: :ok
+  defp authorize_changed_files(_task, _user), do: {:error, :not_authorized_changed_files}
+
+  defp validate_changed_files_payload(payload) do
+    case Kanban.Tasks.CompletionValidation.validate_changed_files(payload) do
+      {:ok, value} ->
+        {:ok, value}
+
+      {:error, errors} ->
+        {:error, {:completion_validation_failed, build_changed_files_failure_body(errors)}}
+    end
+  end
+
+  defp build_changed_files_failure_body(errors) do
+    %{
+      error: "completion validation failed",
+      failures: [
+        %{
+          field: "changed_files",
+          errors:
+            Enum.map(errors, fn {field, message} ->
+              %{field: to_string(field), message: message}
+            end)
+        }
+      ],
+      required_format: %{
+        "changed_files" => [
+          %{
+            "path" => "lib/foo.ex",
+            "diff" => "Unified-patch text — see docs/diff-contract.md (≤ 500 lines per file)"
+          },
+          %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
+        ]
+      }
+    }
+  end
+
   def unclaim(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
@@ -799,6 +868,15 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(ErrorDocs.add_docs_to_error(body, :completion_validation_failed))
+  end
+
+  defp handle_task_error(conn, {:error, :not_authorized_changed_files}) do
+    error_response(
+      conn,
+      :forbidden,
+      "You can only update changed_files on tasks you are assigned to or that are in Review",
+      :not_authorized_to_complete
+    )
   end
 
   defp error_response(conn, status, message, doc_key) do

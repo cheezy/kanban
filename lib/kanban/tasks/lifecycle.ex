@@ -54,6 +54,25 @@ defmodule Kanban.Tasks.Lifecycle do
     update_without_cascade(task, changeset)
   end
 
+  @doc """
+  Persists the per-file diff snapshot on a task without firing any side
+  effects (no PubSub broadcast, no history rows, no preload chain). Used by
+  `PUT /api/tasks/:id/changed_files`, where the agent uploads a diff
+  snapshot independently of the completion request.
+
+  Callers must pre-validate the list with
+  `Kanban.Tasks.CompletionValidation.validate_changed_files/1`. Accepts a
+  list or `nil`; `[]` is a legitimate explicit-clear value.
+  """
+  @spec update_changed_files(Task.t(), list() | nil) ::
+          {:ok, Task.t()} | {:error, Ecto.Changeset.t()}
+  def update_changed_files(%Task{} = task, changed_files)
+      when is_list(changed_files) or is_nil(changed_files) do
+    task
+    |> Ecto.Changeset.change(changed_files: changed_files)
+    |> Repo.update()
+  end
+
   # Existing single-task update path. Preserves the original side-effect
   # ordering (priority/assignment/dependencies/status histories, then broadcast).
   defp update_without_cascade(task, changeset) do

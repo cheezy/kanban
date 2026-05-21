@@ -2617,6 +2617,189 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "PUT /api/tasks/:id/changed_files" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Diff Snapshot Task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => true
+        })
+
+      %{task: task, doing_column: doing_column, review_column: review_column}
+    end
+
+    test "persists changed_files and returns 200 with the task body", %{conn: conn, task: task} do
+      payload = %{
+        "changed_files" => [
+          %{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"},
+          %{"path" => "test/foo_test.exs", "diff" => "@@ -1 +1 @@\n-old\n+new"}
+        ]
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert [first, second] = response["changed_files"]
+      assert first["path"] == "lib/foo.ex"
+      assert second["path"] == "test/foo_test.exs"
+
+      reloaded = Tasks.get_task!(task.id)
+      assert length(reloaded.changed_files) == 2
+      assert reloaded.status == :in_progress
+    end
+
+    test "accepts an empty list and clears the field", %{conn: conn, task: task} do
+      # First, seed a non-empty value to confirm it gets cleared.
+      {:ok, _} =
+        Tasks.update_changed_files(task, [%{"path" => "lib/seed.ex", "diff" => "diff"}])
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{"changed_files" => []})
+      response = json_response(conn, 200)["data"]
+
+      assert response["changed_files"] == []
+      assert Tasks.get_task!(task.id).changed_files == []
+    end
+
+    test "supports task identifier in the URL", %{conn: conn, task: task} do
+      conn =
+        put(conn, ~p"/api/tasks/#{task.identifier}/changed_files", %{
+          "changed_files" => [%{"path" => "lib/a.ex"}]
+        })
+
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "returns 422 on validation failure with the completion error envelope",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => [%{"path" => ""}]}
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      response = json_response(conn, 422)
+
+      assert response["error"] == "completion validation failed"
+      assert [failure] = response["failures"]
+      assert failure["field"] == "changed_files"
+      assert is_list(failure["errors"])
+      assert Enum.any?(failure["errors"], &(&1["field"] == "changed_file_path"))
+      assert is_binary(response["documentation"])
+      assert is_map(response["required_format"])
+    end
+
+    test "returns 422 when changed_files is not a list", %{conn: conn, task: task} do
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{"changed_files" => "not a list"})
+
+      response = json_response(conn, 422)
+      assert response["error"] == "completion validation failed"
+    end
+
+    test "returns 403 when caller is not the assignee and task is not in Review",
+         %{task: task, board: board} do
+      other_user = user_fixture(%{email: "diff-other@example.com"})
+
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(other_user, board, %{"name" => "Other Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{
+          "changed_files" => [%{"path" => "lib/a.ex"}]
+        })
+
+      response = json_response(conn, 403)
+      assert response["error"] =~ "tasks you are assigned to or that are in Review"
+    end
+
+    test "allows any board member to upload when the task is in the Review column",
+         %{board: board, review_column: review_column} do
+      assignee = user_fixture(%{email: "diff-assignee@example.com"})
+
+      {:ok, review_task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Review-stage task",
+          "status" => "in_progress",
+          "assigned_to_id" => assignee.id,
+          "created_by_id" => assignee.id
+        })
+
+      uploader = user_fixture(%{email: "diff-uploader@example.com"})
+
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(uploader, board, %{"name" => "Uploader Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        put(conn, ~p"/api/tasks/#{review_task.id}/changed_files", %{
+          "changed_files" => [%{"path" => "lib/r.ex"}]
+        })
+
+      response = json_response(conn, 200)["data"]
+      assert response["id"] == review_task.id
+      assert [%{"path" => "lib/r.ex"}] = response["changed_files"]
+    end
+
+    test "returns 403 when the task belongs to a different board", %{conn: conn, user: user} do
+      other_board = ai_optimized_board_fixture(user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, other_task} =
+        Tasks.create_task(other_column, %{
+          "title" => "Other Board Task",
+          "created_by_id" => user.id
+        })
+
+      conn =
+        put(conn, ~p"/api/tasks/#{other_task.id}/changed_files", %{"changed_files" => []})
+
+      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+    end
+
+    test "returns 404 for a task that does not exist", %{conn: conn} do
+      conn =
+        put(conn, ~p"/api/tasks/#{Ecto.UUID.generate()}/changed_files", %{"changed_files" => []})
+
+      assert json_response(conn, 404)
+    end
+
+    test "returns 404 for an unknown identifier (non-UUID lookup path)", %{conn: conn} do
+      conn =
+        put(conn, ~p"/api/tasks/W999999/changed_files", %{"changed_files" => []})
+
+      assert json_response(conn, 404)
+    end
+
+    test "leaves task status as :in_progress (does not require completion first)",
+         %{conn: conn, task: task} do
+      assert task.status == :in_progress
+
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{
+          "changed_files" => [%{"path" => "lib/in_progress.ex"}]
+        })
+
+      assert json_response(conn, 200)["data"]["status"] == "in_progress"
+      assert Tasks.get_task!(task.id).status == :in_progress
+    end
+  end
+
   describe "dependency filtering" do
     setup %{board: board, user: user} do
       columns = Columns.list_columns(board)
@@ -3563,6 +3746,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = put_req_header(conn, "accept", "application/json")
 
       conn = patch(conn, ~p"/api/tasks/123/complete", %{})
+      assert json_response(conn, 401)
+    end
+
+    test "PUT /api/tasks/:id/changed_files returns 401 without authentication" do
+      conn = build_conn()
+      conn = put_req_header(conn, "accept", "application/json")
+
+      conn = put(conn, ~p"/api/tasks/123/changed_files", %{"changed_files" => []})
       assert json_response(conn, 401)
     end
 

@@ -79,6 +79,7 @@ defmodule KanbanWeb.API.TaskJSON do
       required_capabilities: task.required_capabilities,
       actual_complexity: task.actual_complexity,
       actual_files_changed: task.actual_files_changed,
+      changed_files: task.changed_files,
       time_spent_minutes: task.time_spent_minutes,
       human_task: task.human_task,
       needs_review: task.needs_review,

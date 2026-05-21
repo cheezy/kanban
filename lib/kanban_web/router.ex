@@ -73,6 +73,7 @@ defmodule KanbanWeb.Router do
     post "/tasks/batch", TaskController, :batch_create
     post "/tasks/:id/unclaim", TaskController, :unclaim
     patch "/tasks/:id/complete", TaskController, :complete
+    put "/tasks/:id/changed_files", TaskController, :put_changed_files
     patch "/tasks/:id/mark_reviewed", TaskController, :mark_reviewed
     patch "/tasks/:id/mark_done", TaskController, :mark_done
     get "/tasks/:id/dependencies", TaskController, :dependencies
