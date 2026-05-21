@@ -1172,3 +1172,30 @@
 .stride-diff-line-context {
   color: var(--ink-2);
 }
+
+/* ============================================================
+   Task detail (show screen) responsive layout. The desktop
+   layout is a two-column flex row with a fixed-width 280px
+   aside on the right (see lib/kanban_web/live/task_live/
+   view_component.ex). At iPad portrait widths and below
+   (<=1023px) the inline width: 280px on the aside steals too
+   much of the viewport, so this rule wraps the row and
+   stacks the aside below the main pane. Targets max-width:
+   1023px so both iPad portrait (768px) and any narrower
+   container (split panes, embedded views) get the stacked
+   layout; iPad landscape (1024px) and above keep the side-
+   by-side desktop layout. The !important overrides are
+   required because the inline width and flex-shrink
+   declarations on the heex would otherwise win.
+   ============================================================ */
+@media (max-width: 1023px) {
+  .stride-screen .task-detail-layout {
+    flex-wrap: wrap;
+  }
+  .stride-screen .task-detail-aside {
+    width: 100% !important;
+    flex-shrink: 1 !important;
+    border-left: none !important;
+    border-top: 1px solid var(--line);
+  }
+}

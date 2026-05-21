@@ -346,8 +346,7 @@ defmodule KanbanWeb.MarketingComponents do
           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
-          <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          v2.0.3 · Review queue diff panel
+          <.icon name="hero-sparkles" class="w-2.5 h-2.5" /> v2.0.3 · Review queue diff panel
         </span>
         <.link
           navigate={~p"/changelog"}

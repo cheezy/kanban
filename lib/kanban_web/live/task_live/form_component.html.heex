@@ -161,7 +161,7 @@
         <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Complexity & Planning")}
         </h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <.input
             field={f[:complexity]}
             type="select"
@@ -266,7 +266,7 @@
           {msg}
         </.error>
         <.inputs_for :let={vs} field={f[:verification_steps]}>
-          <div class="flex gap-2 items-start mb-2">
+          <div class="flex flex-wrap gap-2 items-start mb-2">
             <div class="w-32">
               <.input
                 field={vs[:step_type]}
@@ -919,7 +919,7 @@
         <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Actual Metrics")}
         </h3>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <.input
             field={f[:actual_complexity]}
             type="select"

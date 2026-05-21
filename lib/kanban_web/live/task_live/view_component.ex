@@ -85,9 +85,10 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
       <% else %>
         <.detail_band task={@task} can_modify={@can_modify} board_id={@board_id} />
 
-        <div style="display: flex; min-height: 0;">
+        <div class="task-detail-layout" style="display: flex; min-height: 0;">
           <div
             data-task-detail-main
+            class="task-detail-main"
             style="flex: 1; min-width: 0; padding: 18px 22px; overflow: hidden;"
           >
             <h2 style="margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; color: var(--ink); text-wrap: pretty;">
@@ -315,6 +316,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
           <aside
             data-task-detail-aside
+            class="task-detail-aside"
             style={[
               "width: 280px; flex-shrink: 0;",
               "border-left: 1px solid var(--line);",
