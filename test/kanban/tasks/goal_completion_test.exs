@@ -20,6 +20,7 @@ defmodule Kanban.Tasks.GoalCompletionTest do
 
   use Kanban.DataCase
 
+  import Ecto.Query
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
@@ -108,7 +109,4 @@ defmodule Kanban.Tasks.GoalCompletionTest do
       assert reloaded_child.status == :completed
     end
   end
-
-  # Needed for the from/2 macro in the deleted-parent test.
-  import Ecto.Query
 end
