@@ -151,6 +151,24 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       reloaded_goal = Tasks.get_task!(goal.id)
       assert reloaded_goal.after_goal_result["reported_at"]
     end
+
+    test "promotion to Done broadcasts :task_moved on the board topic", ctx do
+      %{conn: conn, board: board, done_column: done_column} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      patch(conn, ~p"/api/tasks/#{goal.id}/after_goal", %{
+        "exit_code" => 0,
+        "output" => "ok",
+        "duration_ms" => 1
+      })
+
+      assert_receive {Kanban.Tasks, :task_moved, broadcasted_goal}, 500
+      assert broadcasted_goal.id == goal.id
+      assert broadcasted_goal.column_id == done_column.id
+    end
   end
 
   describe "PATCH /api/tasks/:id/after_goal — failure path" do
@@ -236,7 +254,8 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
   end
 
   describe "idempotency" do
-    test "duplicate success report after goal already :succeeded is audit-logged but no-op", ctx do
+    test "duplicate success report after goal already :succeeded is audit-logged but no-op",
+         ctx do
       %{conn: conn, done_column: done_column} = ctx
       %{goal: goal, child: child} = create_goal_with_single_child(ctx)
       patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())

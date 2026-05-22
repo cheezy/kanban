@@ -8678,9 +8678,13 @@ defmodule Kanban.TasksTest do
       goal: goal
     } do
       already_done = task_fixture(column, %{title: "a", parent_id: goal.id})
+
       {:ok, _} =
         already_done
-        |> Ecto.Changeset.change(%{status: :completed, completed_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+        |> Ecto.Changeset.change(%{
+          status: :completed,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
         |> Kanban.Repo.update()
 
       pending = task_fixture(column, %{title: "b", parent_id: goal.id})

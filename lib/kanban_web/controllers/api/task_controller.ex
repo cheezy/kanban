@@ -699,8 +699,7 @@ defmodule KanbanWeb.API.TaskController do
     do: {"Task must be in Review column to mark as reviewed", :invalid_column_for_review}
 
   defp mark_reviewed_error(:review_not_performed),
-    do:
-      {"Task must have a review status before being marked as reviewed", :review_not_performed}
+    do: {"Task must have a review status before being marked as reviewed", :review_not_performed}
 
   defp mark_reviewed_error(:invalid_review_status),
     do:

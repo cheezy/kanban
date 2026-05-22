@@ -120,18 +120,38 @@ defmodule Kanban.Tasks.Goals do
   scenarios both succeed cleanly per W493's acceptance criteria.
   """
   def mark_after_goal_succeeded_and_promote(%Task{type: :goal} = goal, attempt) do
-    Repo.transaction(fn ->
-      goal = Repo.get!(Task, goal.id)
+    result =
+      Repo.transaction(fn ->
+        goal = Repo.get!(Task, goal.id)
 
-      if goal.after_goal_status == :succeeded do
-        # Idempotent: status already succeeded. Append the attempt to
-        # the audit log but do not re-promote (the goal is already in
-        # its Done column).
-        append_after_goal_attempt(goal, attempt)
-      else
-        flip_to_succeeded_and_promote(goal, attempt)
-      end
-    end)
+        if goal.after_goal_status == :succeeded do
+          # Idempotent: status already succeeded. Append the attempt to
+          # the audit log but do not re-promote (the goal is already in
+          # its Done column).
+          {:idempotent, append_after_goal_attempt(goal, attempt)}
+        else
+          {:promoted, flip_to_succeeded_and_promote(goal, attempt)}
+        end
+      end)
+
+    case result do
+      {:ok, {:promoted, updated_goal}} ->
+        # Broadcast the column move so subscribed LiveViews (the board)
+        # animate the goal to Done without requiring a page reload.
+        # Fired post-commit so subscribers always observe the persisted
+        # state on re-query.
+        updated_goal.id
+        |> Queries.get_task!()
+        |> Broadcaster.broadcast_task_change(:task_moved)
+
+        {:ok, updated_goal}
+
+      {:ok, {:idempotent, updated_goal}} ->
+        {:ok, updated_goal}
+
+      {:error, _} = err ->
+        err
+    end
   end
 
   defp flip_to_succeeded_and_promote(goal, attempt) do
