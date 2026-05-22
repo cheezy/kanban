@@ -96,10 +96,15 @@ config :kanban, Oban,
   queues: [after_goal_grace: 5],
   plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
 
-# Configurable grace window (in seconds) between detecting the last
-# child's completion and assuming the agent will not report after_goal.
-# Default = 5 minutes. Lower for tests, higher in production if needed.
-config :kanban, :after_goal_grace_window_seconds, 300
+# Configurable grace window (in milliseconds) between detecting the
+# last child's completion and assuming the agent will not report
+# after_goal. Temporarily set to 500ms while the agent-side after_goal
+# client wiring is being built — every last-child completion currently
+# routes through the grace worker rather than an agent PATCH. Raise
+# this back toward 5 minutes (300_000) once stride-hook.sh, hook-bridge,
+# and the workflow skill all know how to call
+# `PATCH /api/tasks/:id/after_goal`. Tests override to 1ms.
+config :kanban, :after_goal_grace_window_ms, 500
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

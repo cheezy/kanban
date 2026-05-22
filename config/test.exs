@@ -57,5 +57,5 @@ config :phoenix_live_view,
 config :kanban, Oban, testing: :manual
 
 # Speed up the after_goal grace window for tests so timing assertions
-# can run synchronously.
-config :kanban, :after_goal_grace_window_seconds, 1
+# can run synchronously via Oban.drain_queue(with_scheduled: true).
+config :kanban, :after_goal_grace_window_ms, 1
