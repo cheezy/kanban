@@ -101,6 +101,10 @@ defmodule KanbanWeb.Telemetry do
       ),
       counter("kanban.api.next_task_fetched.count",
         description: "Total number of next task requests"
+      ),
+      counter("kanban.api.after_goal_delivered.count",
+        description:
+          "Total number of after_goal hook deliveries surfaced in /complete or /mark_reviewed responses"
       )
     ]
   end

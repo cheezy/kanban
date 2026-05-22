@@ -137,4 +137,78 @@ defmodule Kanban.Hooks.MetadataTest do
       assert after_goal.env["TASK_IDENTIFIER"] == child.identifier
     end
   end
+
+  describe "after_goal delivery telemetry (W498)" do
+    setup do
+      handler_id = "after-goal-delivered-#{System.unique_integer([:positive])}"
+      test_pid = self()
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :api, :after_goal_delivered],
+        fn event, measurements, metadata, _ ->
+          send(test_pid, {:telemetry_event, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      :ok
+    end
+
+    test "emits [:kanban, :api, :after_goal_delivered] once when build_completion_hooks runs with last_child?: true",
+         %{board: board, child: child, goal: goal} do
+      Metadata.build_completion_hooks(child, board, @agent_name, last_child?: true)
+
+      assert_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], %{count: 1},
+                       metadata}
+
+      assert metadata.goal_id == goal.id
+      assert metadata.board_id == board.id
+      # project_id is aliased to board.id (the codebase has no separate
+      # project schema; Board is the project-equivalent).
+      assert metadata.project_id == board.id
+
+      # Exactly once per delivery — no duplicate.
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
+    end
+
+    test "emits [:kanban, :api, :after_goal_delivered] when build_mark_reviewed_hooks runs with last_child?: true",
+         %{board: board, child: child, goal: goal} do
+      Metadata.build_mark_reviewed_hooks(child, board, @agent_name, last_child?: true)
+
+      assert_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], %{count: 1},
+                       metadata}
+
+      assert metadata.goal_id == goal.id
+      assert metadata.board_id == board.id
+      assert metadata.project_id == board.id
+    end
+
+    test "does NOT emit when build_completion_hooks runs with last_child?: false", %{
+      board: board,
+      child: child
+    } do
+      Metadata.build_completion_hooks(child, board, @agent_name, last_child?: false)
+
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
+    end
+
+    test "does NOT emit when build_completion_hooks runs with default opts (last_child? defaults to false)",
+         %{board: board, child: child} do
+      Metadata.build_completion_hooks(child, board, @agent_name)
+
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
+    end
+
+    test "does NOT emit when build_mark_reviewed_hooks runs with last_child?: false", %{
+      board: board,
+      child: child
+    } do
+      Metadata.build_mark_reviewed_hooks(child, board, @agent_name, last_child?: false)
+
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
+    end
+  end
 end
