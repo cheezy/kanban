@@ -840,6 +840,150 @@ defmodule Kanban.Metrics do
     |> Enum.map(&cfd_snapshot(tasks, &1))
   end
 
+  @after_goal_adoption_window_days 7
+  @goal_to_done_latency_window_days 14
+
+  @doc """
+  Returns p50 / p95 of the server-measured latency between the last
+  child task's `completed_at` and the parent goal's `completed_at` for
+  goals whose `after_goal_status = :succeeded`, in the trailing
+  #{@goal_to_done_latency_window_days} days.
+
+  Excludes goals promoted via the grace-worker back-compat path
+  (`after_goal_result["source"] == "after_goal_grace_worker"`) per the
+  W500 pitfall — those represent timeouts where the agent never spoke
+  the after_goal protocol, and counting them would skew p95 toward
+  near-zero values (the grace worker fires almost immediately after
+  the last child completes).
+
+  Server-side timing is used (`goal.completed_at - max(children.completed_at)`),
+  not the agent-reported `after_goal_result["duration_ms"]`, because the
+  agent's number reflects only the hook execution duration and excludes
+  scheduling / network round-trips between the last-child completion and
+  the goal's Done transition.
+
+  Returns `%{p50_seconds: 0, p95_seconds: 0, sample_size: 0}` when the
+  scope yields no boards or when no eligible goals exist in the window.
+  """
+  @spec goal_to_done_latency_percentiles(keyword()) :: %{
+          p50_seconds: non_neg_integer(),
+          p95_seconds: non_neg_integer(),
+          sample_size: non_neg_integer()
+        }
+  def goal_to_done_latency_percentiles(opts \\ []) do
+    case scoped_board_ids(opts) do
+      [] -> zero_latency_percentiles()
+      board_ids -> compute_goal_to_done_latencies(board_ids)
+    end
+  end
+
+  defp zero_latency_percentiles, do: %{p50_seconds: 0, p95_seconds: 0, sample_size: 0}
+
+  defp compute_goal_to_done_latencies(board_ids) do
+    window_start = shift_days(DateTime.utc_now(), -@goal_to_done_latency_window_days)
+
+    latencies = fetch_goal_to_done_latency_samples(board_ids, window_start)
+
+    case latencies do
+      [] ->
+        zero_latency_percentiles()
+
+      sorted ->
+        %{
+          p50_seconds: nearest_rank_percentile(sorted, 50),
+          p95_seconds: nearest_rank_percentile(sorted, 95),
+          sample_size: length(sorted)
+        }
+    end
+  end
+
+  defp fetch_goal_to_done_latency_samples(board_ids, window_start) do
+    from(g in Task,
+      join: c in assoc(g, :column),
+      inner_join: ch in Task,
+      on: ch.parent_id == g.id,
+      where: c.board_id in ^board_ids,
+      where: g.type == ^:goal,
+      where: g.after_goal_status == ^:succeeded,
+      where: not is_nil(g.completed_at),
+      where: g.completed_at >= ^window_start,
+      where:
+        fragment("? ->> 'source' IS DISTINCT FROM 'after_goal_grace_worker'", g.after_goal_result),
+      group_by: [g.id, g.completed_at],
+      having: not is_nil(max(ch.completed_at)),
+      select:
+        fragment(
+          "GREATEST(0, EXTRACT(EPOCH FROM (? - MAX(?))))::bigint",
+          g.completed_at,
+          ch.completed_at
+        )
+    )
+    |> Repo.all()
+    |> Enum.sort()
+  end
+
+  # Nearest-rank percentile on a pre-sorted ascending list (1..100).
+  # Empty list yields 0 — callers gate on sample_size before rendering.
+  defp nearest_rank_percentile([], _p), do: 0
+
+  defp nearest_rank_percentile(sorted, p) when is_list(sorted) and p > 0 and p <= 100 do
+    n = length(sorted)
+    index = max(0, ceil(p / 100 * n) - 1)
+    Enum.at(sorted, index)
+  end
+
+  @doc """
+  Returns the count of distinct boards ("projects") that have reported
+  at least one real after_goal result in the trailing 7 days.
+
+  A "real" report is one that arrived through `PATCH /api/tasks/:id/after_goal`.
+  The grace-worker back-compat synthetic attempt (identified by
+  `after_goal_result["source"] == "after_goal_grace_worker"`) is excluded
+  per the W499 pitfall — those records represent timeouts where the agent
+  never reported, not actual adoption of the feature.
+
+  The reporting timestamp comes from `after_goal_result["reported_at"]`
+  (set by the controller at report time) cast to `timestamptz`.
+
+  Returns `0` when the caller's scope yields no boards.
+  """
+  @spec after_goal_adoption_7d(keyword()) :: non_neg_integer()
+  def after_goal_adoption_7d(opts \\ []) do
+    case scoped_board_ids(opts) do
+      [] -> 0
+      board_ids -> count_after_goal_adopting_boards(board_ids)
+    end
+  end
+
+  defp count_after_goal_adopting_boards(board_ids) do
+    window_start = shift_days(DateTime.utc_now(), -@after_goal_adoption_window_days)
+
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t], t.type == ^:goal)
+    |> where([t], t.after_goal_status == ^:succeeded)
+    |> where([t], not is_nil(t.after_goal_result))
+    |> where(
+      [t],
+      fragment(
+        "? ->> 'source' IS DISTINCT FROM 'after_goal_grace_worker'",
+        t.after_goal_result
+      )
+    )
+    |> where(
+      [t],
+      fragment(
+        "(? ->> 'reported_at')::timestamptz >= ?",
+        t.after_goal_result,
+        ^window_start
+      )
+    )
+    |> select([_t, c], count(c.board_id, :distinct))
+    |> Repo.one()
+    |> Kernel.||(0)
+  end
+
   # --- Workspace helpers ----------------------------------------------------
 
   defp scoped_board_ids(opts) do
