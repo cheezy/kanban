@@ -106,12 +106,105 @@ defmodule Kanban.Tasks.Goals do
   def promote_goal_to_ready(%Task{}, _board_id), do: {:error, :not_a_goal}
 
   @doc """
+  Marks a goal's after_goal lifecycle as `:succeeded` and promotes the
+  goal to its Done column. Called by:
+
+    * `PATCH /api/tasks/:goal_id/after_goal` when the agent reports
+      `exit_code: 0`.
+    * `Kanban.AfterGoal.GraceWorker` when the configured grace window
+      expires and the agent never reported (back-compat for older
+      plugins that don't speak after_goal).
+
+  Idempotent — calling against an already-`:succeeded` goal is a no-op
+  with `{:ok, goal}` so duplicate reports and report-after-Done
+  scenarios both succeed cleanly per W493's acceptance criteria.
+  """
+  def mark_after_goal_succeeded_and_promote(%Task{type: :goal} = goal, attempt) do
+    Repo.transaction(fn ->
+      goal = Repo.get!(Task, goal.id)
+
+      if goal.after_goal_status == :succeeded do
+        # Idempotent: status already succeeded. Append the attempt to
+        # the audit log but do not re-promote (the goal is already in
+        # its Done column).
+        append_after_goal_attempt(goal, attempt)
+      else
+        flip_to_succeeded_and_promote(goal, attempt)
+      end
+    end)
+  end
+
+  defp flip_to_succeeded_and_promote(goal, attempt) do
+    attrs = %{
+      after_goal_status: :succeeded,
+      after_goal_result: attempt,
+      after_goal_attempts: (goal.after_goal_attempts || []) ++ [attempt]
+    }
+
+    {:ok, updated_goal} =
+      goal
+      |> Ecto.Changeset.change(attrs)
+      |> Repo.update()
+
+    # Promote to Done. The goal's column is computed from its
+    # children's columns; with after_goal_status now :succeeded
+    # the gate in determine_target_column allows the Done move.
+    promote_goal_to_done_column(updated_goal)
+    updated_goal
+  end
+
+  @doc """
+  Appends a non-successful after_goal report (exit_code != 0) to the
+  goal's audit log without flipping status. Goal stays In Progress and
+  the agent can retry.
+  """
+  def record_after_goal_failure(%Task{type: :goal} = goal, attempt) do
+    goal = Repo.get!(Task, goal.id)
+    {:ok, append_after_goal_attempt(goal, attempt)}
+  end
+
+  defp append_after_goal_attempt(goal, attempt) do
+    {:ok, updated} =
+      goal
+      |> Ecto.Changeset.change(%{
+        after_goal_result: attempt,
+        after_goal_attempts: (goal.after_goal_attempts || []) ++ [attempt]
+      })
+      |> Repo.update()
+
+    updated
+  end
+
+  defp promote_goal_to_done_column(goal) do
+    parent_column = Columns.get_column!(goal.column_id)
+
+    all_columns =
+      from(c in Column,
+        where: c.board_id == ^parent_column.board_id,
+        order_by: [asc: c.position]
+      )
+      |> Repo.all()
+
+    case find_done_column(all_columns) do
+      nil ->
+        :ok
+
+      done_column when done_column.id == goal.column_id ->
+        :ok
+
+      done_column ->
+        move_task_to_column(goal, done_column)
+        :ok
+    end
+  end
+
+  @doc """
   Updates the parent goal's column position based on where its children are.
   """
   def update_parent_goal_position(moving_task, _task_old_column_id, _task_new_column_id) do
     with {:ok, parent_goal} <- get_parent_goal(moving_task),
          {:ok, goal_context} <- build_goal_context(parent_goal),
-         {:ok, target_column} <- determine_target_column(goal_context),
+         {:ok, target_column} <- determine_target_column(goal_context, parent_goal),
          {:ok, _} <- move_goal_if_needed(parent_goal, target_column, goal_context, moving_task.id) do
       :ok
     else
@@ -219,17 +312,53 @@ defmodule Kanban.Tasks.Goals do
     end
   end
 
-  defp determine_target_column(goal_context) do
+  # Goal target column rules:
+  #
+  # 1. All children in Done AND the goal's after_goal hook reported
+  #    success (or no after_goal lifecycle has started for this goal) →
+  #    promote to Done.
+  # 2. All children in Done BUT after_goal_status is `:pending` —
+  #    the agent has not yet reported and the Oban grace-window worker
+  #    has not yet fired (W493). Hold the goal in its current column so
+  #    it remains visible as In Progress (using pick_leftmost_child_column
+  #    here would pick Done since that's where all the kids are).
+  # 3. Children spread across columns → pick the leftmost child column.
+  defp determine_target_column(goal_context, parent_goal) do
     done_column = find_done_column(goal_context.all_columns)
 
     target_column =
-      if all_children_in_done?(goal_context, done_column) do
-        done_column
-      else
-        pick_leftmost_child_column(goal_context)
+      cond do
+        all_children_in_done?(goal_context, done_column) and
+            after_goal_blocks_done?(parent_goal) ->
+          goal_context.column_map[parent_goal.column_id] ||
+            pick_leftmost_non_done_column(goal_context, done_column)
+
+        all_children_in_done?(goal_context, done_column) ->
+          done_column
+
+        true ->
+          pick_leftmost_child_column(goal_context)
       end
 
     {:ok, target_column}
+  end
+
+  # A `:pending` after_goal_status blocks the Done promotion;
+  # `nil` (never had an after_goal lifecycle) and `:succeeded` both
+  # allow the promotion. The Oban grace worker and the
+  # `/api/tasks/:goal_id/after_goal` endpoint are the two paths that
+  # flip `:pending` → `:succeeded`.
+  defp after_goal_blocks_done?(%Task{after_goal_status: :pending}), do: true
+  defp after_goal_blocks_done?(_), do: false
+
+  # Fallback when the parent goal's current column is no longer in the
+  # board's column set (e.g., archived). Picks the leftmost column that
+  # is not Done so the goal stays visibly In Progress while after_goal
+  # is pending.
+  defp pick_leftmost_non_done_column(goal_context, done_column) do
+    goal_context.all_columns
+    |> Enum.reject(fn col -> done_column && col.id == done_column.id end)
+    |> List.first() || List.first(goal_context.all_columns)
   end
 
   defp all_children_in_done?(_goal_context, nil), do: false

@@ -133,15 +133,16 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_list(hooks["environment_variables"])
       assert is_list(hooks["execution_flow"])
 
-      # Verify all four hooks are in available_hooks list
+      # Verify all five hooks are in available_hooks list
       available_hooks = hooks["available_hooks"]
-      assert length(available_hooks) == 4
+      assert length(available_hooks) == 5
 
       hook_names = Enum.map(available_hooks, & &1["name"])
       assert "before_doing" in hook_names
       assert "after_doing" in hook_names
       assert "before_review" in hook_names
       assert "after_review" in hook_names
+      assert "after_goal" in hook_names
 
       # Verify hook structure
       before_doing = Enum.find(available_hooks, &(&1["name"] == "before_doing"))

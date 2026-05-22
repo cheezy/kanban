@@ -51,3 +51,11 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# Use Oban's manual testing mode so jobs are inserted but not executed
+# until tests drain them explicitly via Oban.Testing helpers.
+config :kanban, Oban, testing: :manual
+
+# Speed up the after_goal grace window for tests so timing assertions
+# can run synchronously.
+config :kanban, :after_goal_grace_window_seconds, 1

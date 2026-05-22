@@ -13,6 +13,10 @@ defmodule Kanban.Application do
       {DNSCluster, query: Application.get_env(:kanban, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Kanban.PubSub},
       KanbanWeb.AgentsPresence,
+      # Oban runs the after_goal grace-window worker (W493). The queue
+      # depth is set deliberately low — these are one-shot timer jobs,
+      # one per goal completion, not a high-throughput pipeline.
+      {Oban, Application.fetch_env!(:kanban, Oban)},
       # Start a worker by calling: Kanban.Worker.start_link(arg)
       # {Kanban.Worker, arg},
       # ChromicPDF for server-side PDF generation

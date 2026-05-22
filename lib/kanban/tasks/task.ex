@@ -381,6 +381,25 @@ defmodule Kanban.Tasks.Task do
     # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
+    # After-Goal Tracking (W493 / G113)
+    # Goal-only: set on goals when their last child completes, gating the
+    # goal's transition to Done on an agent-reported `after_goal` exit
+    # code of 0 (or on the Oban grace-window fallback for plugins that
+    # predate after_goal). NULL on work/defect tasks and on goals whose
+    # final child has not yet completed.
+    field :after_goal_status, Ecto.Enum, values: [:pending, :succeeded]
+
+    # Most-recent agent report payload for after_goal. Shape:
+    # `%{"exit_code" => integer, "output" => string, "duration_ms" => integer}`.
+    # Latest report wins; full audit log lives in :after_goal_attempts.
+    field :after_goal_result, :map
+
+    # Audit log of every after_goal report received for this goal,
+    # newest-last. Pitfall: "the latest report wins but must be auditable"
+    # — every attempt is appended here even when it does not flip
+    # :after_goal_status.
+    field :after_goal_attempts, {:array, :map}, default: []
+
     # Archive Tracking
     # When archived (soft delete)
     field :archived_at, :utc_datetime

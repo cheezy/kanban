@@ -496,12 +496,14 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     test "approved review moves the task to Done with status :completed", ctx do
       task = set_review_status(ctx.in_review_task, :approved, ctx.user)
 
-      assert {:ok, done_task, hook} = AgentWorkflow.mark_reviewed(task, ctx.user)
+      assert {:ok, done_task, hooks} = AgentWorkflow.mark_reviewed(task, ctx.user)
 
       assert done_task.column_id == ctx.done.id
       assert done_task.status == :completed
       assert done_task.completed_at
-      assert hook.name == "after_review"
+      # Post-W492: hooks is a list (consistent with /complete). For an
+      # orphan task with no parent goal, the list contains after_review only.
+      assert Enum.map(hooks, & &1.name) == ["after_review"]
     end
 
     test "changes_requested moves the task back to Doing with status :in_progress", ctx do

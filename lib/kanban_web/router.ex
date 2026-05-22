@@ -76,6 +76,7 @@ defmodule KanbanWeb.Router do
     put "/tasks/:id/changed_files", TaskController, :put_changed_files
     patch "/tasks/:id/mark_reviewed", TaskController, :mark_reviewed
     patch "/tasks/:id/mark_done", TaskController, :mark_done
+    patch "/tasks/:id/after_goal", TaskController, :after_goal
     get "/tasks/:id/dependencies", TaskController, :dependencies
     get "/tasks/:id/dependents", TaskController, :dependents
     get "/tasks/:id/tree", TaskController, :tree

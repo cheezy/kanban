@@ -2383,6 +2383,111 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert response["workflow_steps"] == []
     end
+
+    test "auto-done last-child completion includes after_goal in hooks payload (W491)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      # A goal with a single open child: completing that child finishes the
+      # goal, so the response must carry after_goal alongside the existing
+      # three hooks.
+      {:ok, goal} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Goal-1",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Last child",
+          "status" => "in_progress",
+          "needs_review" => false,
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{child.id}/complete", base_completion_params())
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_doing", "before_review", "after_review", "after_goal"]
+
+      after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
+      assert after_goal["blocking"] == true
+      assert after_goal["timeout"] == 60_000
+      assert after_goal["env"]["HOOK_NAME"] == "after_goal"
+    end
+
+    test "auto-done non-last-child completion omits after_goal (W491)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      # A goal with two open children: completing one leaves the sibling
+      # still open, so the response must be byte-identical to the pre-W491
+      # three-hook shape.
+      {:ok, goal} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Goal-2",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child_a} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Child A",
+          "status" => "in_progress",
+          "needs_review" => false,
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      {:ok, _child_b_still_open} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Child B (open)",
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{child_a.id}/complete", base_completion_params())
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_doing", "before_review", "after_review"]
+      refute Enum.any?(response["hooks"], &(&1["name"] == "after_goal"))
+    end
+
+    test "auto-done orphan child (no parent) omits after_goal (W491)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, orphan} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Orphan",
+          "status" => "in_progress",
+          "needs_review" => false,
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{orphan.id}/complete", base_completion_params())
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_doing", "before_review", "after_review"]
+      refute Enum.any?(response["hooks"], &(&1["name"] == "after_goal"))
+    end
   end
 
   describe "PATCH /api/tasks/:id/complete explorer/reviewer validation gate" do
@@ -3364,6 +3469,129 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+    end
+
+    test "approved last-child review includes after_goal in hooks payload (W492)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      {:ok, goal} =
+        Tasks.create_task(review_column, %{
+          "title" => "Goal-final",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child} =
+        Tasks.create_task(review_column, %{
+          "title" => "Only child in review",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      {:ok, child} =
+        Tasks.update_task(child, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{child.id}/mark_reviewed", %{
+          "after_review_result" => valid_after_review_result()
+        })
+
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_review", "after_goal"]
+
+      after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
+      assert after_goal["blocking"] == true
+      assert after_goal["timeout"] == 60_000
+      assert after_goal["env"]["HOOK_NAME"] == "after_goal"
+    end
+
+    test "approved non-last-child review omits after_goal (W492)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+      doing_column = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, goal} =
+        Tasks.create_task(review_column, %{
+          "title" => "Goal-partial",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child_a} =
+        Tasks.create_task(review_column, %{
+          "title" => "Sibling A (in review)",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      {:ok, _child_b_still_doing} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Sibling B (still open)",
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      {:ok, child_a} =
+        Tasks.update_task(child_a, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{child_a.id}/mark_reviewed", %{
+          "after_review_result" => valid_after_review_result()
+        })
+
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_review"]
+      refute Enum.any?(response["hooks"], &(&1["name"] == "after_goal"))
+    end
+
+    test "approved orphan (no parent) review omits after_goal (W492)",
+         %{conn: conn, board: board, user: user} do
+      columns = Columns.list_columns(board)
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      {:ok, orphan} =
+        Tasks.create_task(review_column, %{
+          "title" => "Orphan in review",
+          "status" => "in_progress",
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, orphan} =
+        Tasks.update_task(orphan, %{
+          "review_status" => "approved",
+          "reviewed_by_id" => user.id,
+          "reviewed_at" => DateTime.utc_now()
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{orphan.id}/mark_reviewed", %{
+          "after_review_result" => valid_after_review_result()
+        })
+
+      response = json_response(conn, 200)
+
+      hook_names = Enum.map(response["hooks"], & &1["name"])
+      assert hook_names == ["after_review"]
     end
   end
 

@@ -81,7 +81,8 @@ defmodule Kanban.MixProject do
       {:igniter, "~> 0.6", only: [:dev]},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:tidewave, "~> 0.2", only: :dev},
-      {:error_tracker, "~> 0.7"}
+      {:error_tracker, "~> 0.7"},
+      {:oban, "~> 2.18"}
     ]
   end
 

@@ -8,13 +8,16 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.AfterGoal
   alias Kanban.Boards
   alias Kanban.Columns.Column
   alias Kanban.Hooks
+  alias Kanban.Hooks.Metadata
   alias Kanban.Repo
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.CompletionValidation
   alias Kanban.Tasks.Dependencies
+  alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
@@ -440,47 +443,29 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:task_moved_to_review, updated_task}
     )
 
-    {:ok, after_doing_hook} =
-      Hooks.get_hook_info(updated_task, board, "after_doing", agent_name)
-
-    {:ok, before_review_hook} =
-      Hooks.get_hook_info(updated_task, board, "before_review", agent_name)
-
     if updated_task.needs_review do
-      hooks = [after_doing_hook, before_review_hook]
+      hooks =
+        Metadata.build_completion_hooks(updated_task, board, agent_name, needs_review?: true)
+
       {:ok, updated_task, hooks}
     else
-      auto_move_to_done(
-        updated_task,
-        user,
-        board,
-        after_doing_hook,
-        before_review_hook,
-        agent_name
-      )
+      auto_move_to_done(updated_task, user, board, agent_name)
     end
   end
 
-  defp auto_move_to_done(
-         updated_task,
-         user,
-         board,
-         after_doing_hook,
-         before_review_hook,
-         agent_name
-       ) do
+  defp auto_move_to_done(updated_task, user, board, agent_name) do
     board_id = board.id
     done_column = get_column_by_name(board_id, "Done")
-    result = run_auto_done_transaction(updated_task, done_column)
 
-    case result do
-      {:ok, :ok} ->
+    case run_auto_done_transaction(updated_task, done_column) do
+      {:ok, last_child_tag} when last_child_tag in [:last_child, :not_last_child] ->
+        maybe_schedule_after_goal_grace(updated_task, last_child_tag)
         final_task = finalize_completion(updated_task, user, board_id, done_column)
 
-        {:ok, after_review_hook} =
-          Hooks.get_hook_info(final_task, board, "after_review", agent_name)
-
-        hooks = [after_doing_hook, before_review_hook, after_review_hook]
+        hooks =
+          Metadata.build_completion_hooks(final_task, board, agent_name,
+            last_child?: last_child_tag == :last_child
+          )
 
         {:ok, final_task, hooks}
 
@@ -489,23 +474,27 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
+  # Auto-done transaction. Uses `GoalCompletion.finalize_child_and_check_goal_complete/2`
+  # so the child Done write and the parent-goal "is-this-the-last-child"
+  # check live in one transactionally-locked unit (W490) — the controller
+  # never duplicates that check. Returns `{:ok, :last_child}` or
+  # `{:ok, :not_last_child}` so callers can decide whether to append the
+  # after_goal hook to the response payload (W491).
   defp run_auto_done_transaction(updated_task, done_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(done_column)
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      done_changeset =
-        updated_task
-        |> Ecto.Changeset.change(%{
-          status: :completed,
-          completed_at: updated_task.completed_at || now,
-          column_id: done_column.id,
-          position: next_position
-        })
+      done_attrs = %{
+        status: :completed,
+        completed_at: updated_task.completed_at || now,
+        column_id: done_column.id,
+        position: next_position
+      }
 
-      case Repo.update(done_changeset) do
-        {:ok, _final_task} -> :ok
-        {:error, changeset} -> Repo.rollback(changeset)
+      case GoalCompletion.finalize_child_and_check_goal_complete(updated_task, done_attrs) do
+        {:ok, tag} when tag in [:last_child, :not_last_child] -> tag
+        {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
       end
     end)
   end
@@ -648,40 +637,71 @@ defmodule Kanban.Tasks.AgentWorkflow do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
     done_column = get_column_by_name(board_id, "Done")
-    result = run_move_to_done_transaction(task, user, done_column)
 
-    case result do
-      {:ok, :ok} ->
+    case run_move_to_done_transaction(task, user, done_column) do
+      {:ok, last_child_tag} when last_child_tag in [:last_child, :not_last_child] ->
+        maybe_schedule_after_goal_grace(task, last_child_tag)
         updated_task = finalize_completion(task, user, board_id, done_column)
 
-        {:ok, after_review_hook} =
-          Hooks.get_hook_info(updated_task, board, "after_review", agent_name)
+        hooks =
+          Metadata.build_mark_reviewed_hooks(updated_task, board, agent_name,
+            last_child?: last_child_tag == :last_child
+          )
 
-        {:ok, updated_task, after_review_hook}
+        {:ok, updated_task, hooks}
 
       {:error, changeset} ->
         {:error, changeset}
     end
   end
 
+  # Schedules the back-compat Oban grace job whenever this completion
+  # was the final child of its parent goal. The job's role is to
+  # promote the goal to Done after a grace window if the agent never
+  # reports after_goal (e.g., older plugin versions that don't speak
+  # the protocol). A faster agent report (via PATCH
+  # /api/tasks/:goal_id/after_goal) makes the grace job a no-op.
+  defp maybe_schedule_after_goal_grace(%Task{parent_id: nil}, _tag), do: :ok
+  defp maybe_schedule_after_goal_grace(_task, :not_last_child), do: :ok
+
+  defp maybe_schedule_after_goal_grace(%Task{parent_id: parent_id}, :last_child) do
+    case Repo.get(Task, parent_id) do
+      %Task{type: :goal} = goal ->
+        # Best-effort — a scheduling failure should not break the
+        # child completion response. The error_tracker integration will
+        # surface persistent Oban failures.
+        case AfterGoal.schedule_grace_window(goal) do
+          {:ok, _job} -> :ok
+          {:error, _reason} -> :ok
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  # Approved-review transition. Uses `GoalCompletion.finalize_child_and_check_goal_complete/2`
+  # (W490) — the same context primitive the auto-done /complete path uses
+  # — so the after_goal-on-mark_reviewed wiring is not a fork (W491 pitfall
+  # repeated here: do not duplicate the after_goal logic). Returns
+  # `{:ok, :last_child}` or `{:ok, :not_last_child}` so the caller can
+  # decide whether to append after_goal to the response payload.
   defp run_move_to_done_transaction(task, user, done_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(done_column)
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      changeset =
-        task
-        |> Ecto.Changeset.change(%{
-          status: :completed,
-          completed_at: task.completed_at || now,
-          reviewed_by_id: user.id,
-          column_id: done_column.id,
-          position: next_position
-        })
+      done_attrs = %{
+        status: :completed,
+        completed_at: task.completed_at || now,
+        reviewed_by_id: user.id,
+        column_id: done_column.id,
+        position: next_position
+      }
 
-      case Repo.update(changeset) do
-        {:ok, _updated_task} -> :ok
-        {:error, changeset} -> Repo.rollback(changeset)
+      case GoalCompletion.finalize_child_and_check_goal_complete(task, done_attrs) do
+        {:ok, tag} when tag in [:last_child, :not_last_child] -> tag
+        {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
       end
     end)
   end

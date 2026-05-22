@@ -11,6 +11,7 @@ defmodule Kanban.Tasks do
   - `Tasks.Goals` - Goal hierarchy, promotion, parent tracking
   - `Tasks.AgentQueries` - Agent task discovery queries
   - `Tasks.AgentWorkflow` - Agent claim, complete, review, unclaim
+  - `Tasks.GoalCompletion` - Transactional last-child-completion detection
   - `Tasks.Broadcaster` - PubSub broadcasting
   - `Tasks.Identifiers` - Identifier generation
   - `Tasks.History` - Move/priority/assignment history
@@ -20,10 +21,12 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
+  alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Lifecycle
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
+  alias Kanban.Tasks.Task
 
   # ── Query delegations ──────────────────────────────────────────────
 
@@ -123,4 +126,23 @@ defmodule Kanban.Tasks do
 
   defdelegate mark_reviewed(task, user), to: AgentWorkflow
   defdelegate mark_done(task, user), to: AgentWorkflow
+
+  # ── Goal completion delegations ────────────────────────────────────
+
+  def finalize_child_and_check_goal_complete(task, attrs \\ %{}),
+    do: GoalCompletion.finalize_child_and_check_goal_complete(task, attrs)
+
+  @doc """
+  Reports an after_goal hook execution result against a goal (W493).
+  Successful runs (`exit_code == 0`) flip the goal's after_goal_status
+  to `:succeeded` and promote it to Done. Non-successful runs append
+  to the audit log and leave the goal in its current column for retry.
+  """
+  def report_after_goal(%Task{type: :goal} = goal, %{"exit_code" => 0} = attempt) do
+    Goals.mark_after_goal_succeeded_and_promote(goal, attempt)
+  end
+
+  def report_after_goal(%Task{type: :goal} = goal, attempt) when is_map(attempt) do
+    Goals.record_after_goal_failure(goal, attempt)
+  end
 end

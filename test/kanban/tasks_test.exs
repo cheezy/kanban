@@ -7525,9 +7525,13 @@ defmodule Kanban.TasksTest do
           "created_by_id" => user.id
         })
 
-      {:ok, _result, hook} = Tasks.mark_reviewed(task, user)
+      {:ok, _result, hooks} = Tasks.mark_reviewed(task, user)
 
-      assert hook.name == "after_review"
+      # Post-W492: mark_reviewed returns a list of hooks (consistent with
+      # /complete). For an orphan task (no parent goal) the list is
+      # `[after_review]` with no after_goal — see W492 for the conditional
+      # last-child append behavior.
+      assert Enum.map(hooks, & &1.name) == ["after_review"]
     end
 
     test "moves changes_requested task back to Doing", %{
@@ -8624,6 +8628,139 @@ defmodule Kanban.TasksTest do
         })
 
       assert Tasks.list_children_for_goal(owner, lonely.id) == []
+    end
+  end
+
+  describe "finalize_child_and_check_goal_complete/2" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "G", type: :goal})
+
+      %{user: user, board: board, column: column, goal: goal}
+    end
+
+    test "happy path: last remaining child returns :last_child", %{
+      column: column,
+      goal: goal
+    } do
+      child = task_fixture(column, %{title: "only-child", parent_id: goal.id})
+
+      assert {:ok, :last_child} = Tasks.finalize_child_and_check_goal_complete(child)
+
+      reloaded = Tasks.get_task!(child.id)
+      assert reloaded.status == :completed
+      assert reloaded.completed_at
+    end
+
+    test "sibling still open returns :not_last_child", %{column: column, goal: goal} do
+      child_a = task_fixture(column, %{title: "child-a", parent_id: goal.id})
+      _child_b = task_fixture(column, %{title: "child-b-open", parent_id: goal.id})
+
+      assert {:ok, :not_last_child} = Tasks.finalize_child_and_check_goal_complete(child_a)
+
+      reloaded_a = Tasks.get_task!(child_a.id)
+      assert reloaded_a.status == :completed
+    end
+
+    test "edge case: goal with a single child task triggers :last_child", %{
+      column: column,
+      goal: goal
+    } do
+      only = task_fixture(column, %{title: "only", parent_id: goal.id})
+
+      assert {:ok, :last_child} = Tasks.finalize_child_and_check_goal_complete(only)
+    end
+
+    test "edge case: child whose status flapped — sibling already-completed counts", %{
+      column: column,
+      goal: goal
+    } do
+      already_done = task_fixture(column, %{title: "a", parent_id: goal.id})
+      {:ok, _} =
+        already_done
+        |> Ecto.Changeset.change(%{status: :completed, completed_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+        |> Kanban.Repo.update()
+
+      pending = task_fixture(column, %{title: "b", parent_id: goal.id})
+
+      # `pending` is the last incomplete child — completing it makes it the
+      # final transition that finishes the goal.
+      assert {:ok, :last_child} = Tasks.finalize_child_and_check_goal_complete(pending)
+
+      # And the flap doesn't double-count: reload and confirm both children
+      # are :completed and the goal has zero remaining open siblings.
+      assert Tasks.get_task!(already_done.id).status == :completed
+      assert Tasks.get_task!(pending.id).status == :completed
+    end
+
+    test "orphan task (no parent_id) returns :not_last_child", %{column: column} do
+      orphan = task_fixture(column, %{title: "orphan"})
+
+      assert {:ok, :not_last_child} = Tasks.finalize_child_and_check_goal_complete(orphan)
+      assert Tasks.get_task!(orphan.id).status == :completed
+    end
+
+    test "parent is non-goal (work task with children) returns :not_last_child", %{
+      column: column
+    } do
+      parent_work = task_fixture(column, %{title: "parent-work", type: :work})
+      child = task_fixture(column, %{title: "child-of-work", parent_id: parent_work.id})
+
+      assert {:ok, :not_last_child} = Tasks.finalize_child_and_check_goal_complete(child)
+    end
+
+    test "accepts caller-provided attrs without losing defaults", %{
+      column: column,
+      goal: goal
+    } do
+      child = task_fixture(column, %{title: "with-attrs", parent_id: goal.id})
+
+      fixed_time = ~U[2026-01-01 12:00:00Z]
+
+      assert {:ok, :last_child} =
+               Tasks.finalize_child_and_check_goal_complete(child, %{completed_at: fixed_time})
+
+      reloaded = Tasks.get_task!(child.id)
+      assert reloaded.status == :completed
+      assert reloaded.completed_at == fixed_time
+    end
+
+    test "concurrent sibling completions: exactly one transaction sees :last_child", %{
+      column: column,
+      goal: goal
+    } do
+      # Two siblings under the same goal, both completing concurrently. The
+      # parent-goal row lock must serialize them so that only one sees the
+      # other as already-completed and therefore returns :last_child.
+      child_a = task_fixture(column, %{title: "race-a", parent_id: goal.id})
+      child_b = task_fixture(column, %{title: "race-b", parent_id: goal.id})
+
+      # The test module aliases `Kanban.Tasks.Task` at the top, which
+      # shadows Elixir's stdlib `Task`. Fully qualify to reach the OTP
+      # one for concurrency primitives.
+      results =
+        [child_a, child_b]
+        |> Enum.map(fn child ->
+          Elixir.Task.async(fn ->
+            Tasks.finalize_child_and_check_goal_complete(child)
+          end)
+        end)
+        |> Elixir.Task.await_many(10_000)
+
+      tags =
+        Enum.map(results, fn
+          {:ok, tag} -> tag
+        end)
+
+      # Exactly one :last_child, exactly one :not_last_child — never two of
+      # either. This is the central race-freedom guarantee.
+      assert Enum.sort(tags) == [:last_child, :not_last_child]
+
+      # Both children are persisted as :completed.
+      assert Tasks.get_task!(child_a.id).status == :completed
+      assert Tasks.get_task!(child_b.id).status == :completed
     end
   end
 end

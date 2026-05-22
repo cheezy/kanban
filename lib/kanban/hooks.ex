@@ -16,7 +16,8 @@ defmodule Kanban.Hooks do
     "before_doing" => %{blocking: true, timeout: 60_000},
     "after_doing" => %{blocking: true, timeout: 120_000},
     "before_review" => %{blocking: true, timeout: 60_000},
-    "after_review" => %{blocking: true, timeout: 60_000}
+    "after_review" => %{blocking: true, timeout: 60_000},
+    "after_goal" => %{blocking: true, timeout: 60_000}
   }
 
   @doc """
@@ -73,6 +74,10 @@ defmodule Kanban.Hooks do
   defp hook_description("after_review"),
     do: "Finalize task after approval (deploy, merge, notify stakeholders)"
 
+  defp hook_description("after_goal"),
+    do:
+      "Finalize the parent goal after its final child task completes (project-level rollups, notifications, archival)"
+
   defp execution_timing("before_doing", :before), do: "Claiming the task"
   defp execution_timing("before_doing", :after), do: "Executing the before_doing hook"
 
@@ -92,17 +97,30 @@ defmodule Kanban.Hooks do
 
   defp execution_timing("after_review", :after), do: "Task marked as done"
 
+  defp execution_timing("after_goal", :before),
+    do:
+      "Reporting after_goal exit code on the next /complete or /mark_reviewed call — only returned when this completion finished the parent goal's last open child"
+
+  defp execution_timing("after_goal", :after), do: "Parent goal marked as done"
+
   @doc """
   List all available hooks and their configurations in execution order.
   Returns a list of {name, config} tuples in the order hooks would execute.
+
+  `after_goal` is included at the end of the list — it runs only when the
+  current completion finishes the parent goal's final open child, but it
+  is part of the documented hook vocabulary regardless of whether any
+  given task triggers it.
   """
   def list_hooks do
-    # Return hooks in execution order: before_doing, after_doing, before_review, after_review
+    # Return hooks in execution order:
+    # before_doing → after_doing → before_review → after_review → after_goal
     [
       {"before_doing", @hook_config["before_doing"]},
       {"after_doing", @hook_config["after_doing"]},
       {"before_review", @hook_config["before_review"]},
-      {"after_review", @hook_config["after_review"]}
+      {"after_review", @hook_config["after_review"]},
+      {"after_goal", @hook_config["after_goal"]}
     ]
   end
 end

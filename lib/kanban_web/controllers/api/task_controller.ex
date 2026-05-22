@@ -674,43 +674,41 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp proceed_with_mark_reviewed(conn, task, user) do
-    case Tasks.mark_reviewed(task, user) do
-      {:ok, task, hook_info} ->
-        render_reviewed_task(conn, task, hook: hook_info)
-
-      {:ok, task} ->
-        render_reviewed_task(conn, task)
-
-      {:error, :invalid_column} ->
-        error_response(
-          conn,
-          :unprocessable_entity,
-          "Task must be in Review column to mark as reviewed",
-          :invalid_column_for_review
-        )
-
-      {:error, :review_not_performed} ->
-        error_response(
-          conn,
-          :unprocessable_entity,
-          "Task must have a review status before being marked as reviewed",
-          :review_not_performed
-        )
-
-      {:error, :invalid_review_status} ->
-        error_response(
-          conn,
-          :unprocessable_entity,
-          "Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'",
-          :invalid_review_status
-        )
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> render(:error, changeset: changeset)
-    end
+    task
+    |> Tasks.mark_reviewed(user)
+    |> render_mark_reviewed_result(conn)
   end
+
+  defp render_mark_reviewed_result({:ok, task, hooks}, conn) when is_list(hooks),
+    do: render_reviewed_task(conn, task, hooks: hooks)
+
+  defp render_mark_reviewed_result({:ok, task}, conn), do: render_reviewed_task(conn, task)
+
+  defp render_mark_reviewed_result({:error, %Ecto.Changeset{} = changeset}, conn) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> render(:error, changeset: changeset)
+  end
+
+  defp render_mark_reviewed_result({:error, reason}, conn) do
+    {message, code} = mark_reviewed_error(reason)
+    error_response(conn, :unprocessable_entity, message, code)
+  end
+
+  defp mark_reviewed_error(:invalid_column),
+    do: {"Task must be in Review column to mark as reviewed", :invalid_column_for_review}
+
+  defp mark_reviewed_error(:review_not_performed),
+    do:
+      {"Task must have a review status before being marked as reviewed", :review_not_performed}
+
+  defp mark_reviewed_error(:invalid_review_status),
+    do:
+      {"Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'",
+       :invalid_review_status}
+
+  defp mark_reviewed_error(_other),
+    do: {"Unexpected mark_reviewed error", :unexpected_mark_reviewed_error}
 
   defp render_reviewed_task(conn, task, opts \\ []) do
     event_name =
@@ -747,6 +745,82 @@ defmodule KanbanWeb.API.TaskController do
           "Task must be in Review column to mark as done",
           :invalid_column_for_mark_done
         )
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: changeset)
+    end
+  end
+
+  @doc """
+  Agent-result endpoint for the after_goal hook (W493 / G113).
+
+  PATCH /api/tasks/:id/after_goal accepts `{exit_code, output, duration_ms}`
+  and writes the result onto the goal:
+
+    * `exit_code == 0` → flips `after_goal_status` to `:succeeded`,
+      records the attempt, and promotes the goal to Done.
+    * `exit_code != 0` → appends to the audit log; goal stays In
+      Progress and remains re-runnable. The latest report wins for
+      `after_goal_result`; the full attempt log is preserved in
+      `after_goal_attempts`.
+
+  Idempotent — calling against a goal already in `:succeeded` records
+  the attempt (auditable) without re-promoting; calling against a goal
+  that never had an after_goal lifecycle returns 422.
+
+  Only valid on tasks of type `:goal` whose `after_goal_status` is
+  `:pending` or `:succeeded`.
+  """
+  def after_goal(conn, %{"id" => id_or_identifier} = params) do
+    board = conn.assigns.current_board
+
+    with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
+         :ok <- validate_after_goal_target(task),
+         {:ok, attempt} <- validate_after_goal_result(params) do
+      proceed_with_after_goal(conn, task, attempt)
+    else
+      error -> handle_task_error(conn, error)
+    end
+  end
+
+  defp validate_after_goal_target(%Kanban.Tasks.Task{type: :goal} = task) do
+    case task.after_goal_status do
+      status when status in [:pending, :succeeded] -> :ok
+      _ -> {:error, :after_goal_not_started}
+    end
+  end
+
+  defp validate_after_goal_target(_), do: {:error, :after_goal_not_a_goal}
+
+  defp validate_after_goal_result(%{
+         "exit_code" => exit_code,
+         "output" => output,
+         "duration_ms" => duration_ms
+       })
+       when is_integer(exit_code) and is_binary(output) and is_integer(duration_ms) and
+              duration_ms >= 0 do
+    {:ok,
+     %{
+       "exit_code" => exit_code,
+       "output" => output,
+       "duration_ms" => duration_ms,
+       "reported_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+     }}
+  end
+
+  defp validate_after_goal_result(_), do: {:error, :invalid_after_goal_result}
+
+  defp proceed_with_after_goal(conn, task, attempt) do
+    case Tasks.report_after_goal(task, attempt) do
+      {:ok, updated_goal} ->
+        emit_telemetry(conn, :after_goal_reported, %{
+          task_id: updated_goal.id,
+          exit_code: attempt["exit_code"]
+        })
+
+        render(conn, :show, task: updated_goal)
 
       {:error, changeset} ->
         conn
@@ -868,6 +942,33 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(ErrorDocs.add_docs_to_error(body, :completion_validation_failed))
+  end
+
+  defp handle_task_error(conn, {:error, :after_goal_not_a_goal}) do
+    error_response(
+      conn,
+      :unprocessable_entity,
+      "after_goal can only be reported against tasks of type goal",
+      :after_goal_not_a_goal
+    )
+  end
+
+  defp handle_task_error(conn, {:error, :after_goal_not_started}) do
+    error_response(
+      conn,
+      :unprocessable_entity,
+      "Goal has no in-flight after_goal lifecycle (after_goal_status is nil)",
+      :after_goal_not_started
+    )
+  end
+
+  defp handle_task_error(conn, {:error, :invalid_after_goal_result}) do
+    error_response(
+      conn,
+      :unprocessable_entity,
+      "after_goal payload requires {exit_code: integer, output: string, duration_ms: non-negative integer}",
+      :invalid_after_goal_result
+    )
   end
 
   defp handle_task_error(conn, {:error, :not_authorized_changed_files}) do

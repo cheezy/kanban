@@ -86,6 +86,21 @@ config :error_tracker,
   otp_app: :kanban,
   enabled: true
 
+# Oban configuration — runs the after_goal grace-window worker (W493).
+# `:after_goal_grace` queue has a depth of 5 because each job is a single
+# row update plus a status check; bursts are bounded by goal-completion
+# rate, not throughput.
+config :kanban, Oban,
+  repo: Kanban.Repo,
+  engine: Oban.Engines.Basic,
+  queues: [after_goal_grace: 5],
+  plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
+
+# Configurable grace window (in seconds) between detecting the last
+# child's completion and assuming the agent will not report after_goal.
+# Default = 5 minutes. Lower for tests, higher in production if needed.
+config :kanban, :after_goal_grace_window_seconds, 300
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
