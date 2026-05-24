@@ -5,6 +5,22 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-05-24
+
+### Added
+
+#### `after_goal` hook gates goal completion on agent confirmation
+
+Stride goals now stay out of the Done column until the agent that completed the goal's last child task reports back that its `after_goal` hook ran successfully. When a child completion (via `PATCH /api/tasks/:id/complete` or `PATCH /api/tasks/:id/mark_reviewed`) is detected as the goal's last open child, the parent goal flips into a new `:pending` after_goal state inside the same transaction as the child update — the goal is no longer auto-promoted to Done the instant its last child closes. The completion response includes an `after_goal` hook envelope so the agent knows to execute the project's `after_goal` script (e.g. release notes, deploy, post-goal cleanup) and POST the result back. A successful report (`exit_code: 0`) promotes the goal to Done and records the agent-reported result; a failure leaves the goal pending so a human can intervene.
+
+Concurrent sibling completions are serialized by a row-level lock on the parent goal in `Kanban.Tasks.GoalCompletion`, so exactly one sibling sees `:last_child` even when many close simultaneously — duplicate `after_goal` envelopes are not possible.
+
+For backwards compatibility with agent plugins that don't yet speak the `after_goal` protocol, an Oban-scheduled grace worker (`Kanban.AfterGoal.GraceWorker`, configurable via `:after_goal_grace_window_seconds`, default 5 minutes) promotes any still-pending goal to Done with a synthetic success result. This is a back-compat fallback, not the happy path — **the latest agent plugin (stride-marketplace ≥ 1.7.0) is required to participate in the hook proper and avoid the grace-window delay on goal closure.**
+
+The workspace metrics dashboard gains two tiles for tracking the rollout: `after_goal` adoption over the trailing 7 days (distinct boards with at least one non-grace-worker report) and goal-to-Done latency percentiles (p50 / p95) over 14 days. Both queries structurally exclude the grace-worker synthetic attempt so adoption isn't inflated by the fallback path. A new `[:kanban, :api, :after_goal_delivered]` telemetry event fires from the single chokepoint reached by both completion endpoints; the grace worker bypasses it.
+
+Database: new `after_goal_*` tracking columns on `tasks` (added by `20260522015833_add_after_goal_tracking_to_tasks`) and the standard Oban jobs table (`20260522015418_add_oban_jobs_table`).
+
 ## [2.0.3] - 2026-05-20
 
 ### Changed
