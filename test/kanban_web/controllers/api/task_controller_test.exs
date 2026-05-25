@@ -2816,6 +2816,24 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert reloaded.status == :in_progress
     end
 
+    test "accepts a bare top-level JSON array body (params['_json'] fallback)",
+         %{conn: conn, task: task} do
+      body = Jason.encode!([%{"path" => "lib/bare.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put(~p"/api/tasks/#{task.id}/changed_files", body)
+
+      response = json_response(conn, 200)["data"]
+      assert response["id"] == task.id
+      assert [entry] = response["changed_files"]
+      assert entry["path"] == "lib/bare.ex"
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [%{"path" => "lib/bare.ex"}] = reloaded.changed_files
+    end
+
     test "accepts an empty list and clears the field", %{conn: conn, task: task} do
       # First, seed a non-empty value to confirm it gets cleared.
       {:ok, _} =

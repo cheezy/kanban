@@ -551,7 +551,12 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   def put_changed_files(conn, %{"id" => id_or_identifier} = params) do
-    case persist_changed_files(conn, id_or_identifier, params["changed_files"]) do
+    # Accept both the wrapped {changed_files: [...]} shape (canonical) and a
+    # top-level JSON array body (which Plug.Parsers routes to _json). The
+    # latter accommodates older or misshaped plugin payloads.
+    payload = params["changed_files"] || params["_json"]
+
+    case persist_changed_files(conn, id_or_identifier, payload) do
       {:ok, task, value} -> render_changed_files_response(conn, task, value)
       error -> handle_task_error(conn, error)
     end
