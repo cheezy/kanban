@@ -14,15 +14,25 @@ defmodule KanbanWeb.ReviewReportPanelTest do
     """)
   end
 
-  defp attach_telemetry(event) do
+  # Attaches a telemetry handler that only forwards events for the given
+  # task's id. Telemetry handlers are global across the BEAM, so when this
+  # module runs with `async: true`, a plain forward-everything handler would
+  # also receive events from concurrent renders in other test modules and
+  # cause `refute_received` to flap (see the structured_used flake from a
+  # parallel ReviewLive test rendering a structured reviewer_result). The
+  # per-task filter localizes each test to its own fixture id.
+  defp attach_telemetry(event, task) do
     test_pid = self()
+    task_id = Map.get(task, :id) || Map.get(task, "id")
     handler_id = "rrp-test-#{event |> Enum.join("-")}-#{System.unique_integer([:positive])}"
 
     :telemetry.attach(
       handler_id,
       event,
       fn ^event, measurements, metadata, _config ->
-        send(test_pid, {:telemetry_event, event, measurements, metadata})
+        if metadata[:task_id] == task_id do
+          send(test_pid, {:telemetry_event, event, measurements, metadata})
+        end
       end,
       nil
     )
@@ -116,7 +126,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
     test "emits the [:kanban, :review, :structured_used] telemetry event", %{task: task} do
       event = [:kanban, :review, :structured_used]
-      attach_telemetry(event)
+      attach_telemetry(event, task)
 
       _ = render_with(task)
 
@@ -186,7 +196,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
     test "emits the [:kanban, :review, :fallback_used] telemetry event", %{task: task} do
       event = [:kanban, :review, :fallback_used]
-      attach_telemetry(event)
+      attach_telemetry(event, task)
 
       _ = render_with(task)
 
@@ -195,7 +205,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
     test "does not emit the structured_used event on the fallback branch", %{task: task} do
       event = [:kanban, :review, :structured_used]
-      attach_telemetry(event)
+      attach_telemetry(event, task)
 
       _ = render_with(task)
 
@@ -240,8 +250,8 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       task = %{id: 3, identifier: "W3", reviewer_result: nil, review_report: nil}
       fallback = [:kanban, :review, :fallback_used]
       structured = [:kanban, :review, :structured_used]
-      attach_telemetry(fallback)
-      attach_telemetry(structured)
+      attach_telemetry(fallback, task)
+      attach_telemetry(structured, task)
 
       _ = render_with(task)
 
@@ -307,7 +317,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       }
 
       event = [:kanban, :review, :structured_used]
-      attach_telemetry(event)
+      attach_telemetry(event, task)
 
       html = render_with(task)
 
