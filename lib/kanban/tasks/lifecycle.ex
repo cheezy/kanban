@@ -62,12 +62,13 @@ defmodule Kanban.Tasks.Lifecycle do
 
   Callers must pre-validate the list with
   `Kanban.Tasks.CompletionValidation.validate_changed_files/1`. Accepts a
-  list or `nil`; `[]` is a legitimate explicit-clear value.
+  list only; `[]` is a legitimate explicit-clear value. `nil` is rejected
+  at the function-clause level to prevent silent NULL writes.
   """
-  @spec update_changed_files(Task.t(), list() | nil) ::
+  @spec update_changed_files(Task.t(), list()) ::
           {:ok, Task.t()} | {:error, Ecto.Changeset.t()}
   def update_changed_files(%Task{} = task, changed_files)
-      when is_list(changed_files) or is_nil(changed_files) do
+      when is_list(changed_files) do
     task
     |> Ecto.Changeset.change(changed_files: changed_files)
     |> Repo.update()

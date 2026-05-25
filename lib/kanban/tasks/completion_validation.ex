@@ -82,7 +82,8 @@ defmodule Kanban.Tasks.CompletionValidation do
   #{@max_diff_lines} lines. The line cap is a defensive backstop — plugins
   are expected to truncate before sending, per `docs/diff-contract.md`.
   """
-  def validate_changed_files(nil), do: {:ok, nil}
+  def validate_changed_files(nil),
+    do: {:error, [{:changed_files, "must be present (send [] to clear)"}]}
 
   def validate_changed_files(value) when is_list(value) do
     errors =

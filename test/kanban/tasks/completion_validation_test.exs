@@ -506,8 +506,11 @@ defmodule Kanban.Tasks.CompletionValidationTest do
   end
 
   describe "validate_changed_files/1" do
-    test "accepts nil (legacy payload omits the field entirely)" do
-      assert {:ok, nil} = CompletionValidation.validate_changed_files(nil)
+    test "rejects nil (D36: never silently NULL the column)" do
+      assert {:error, [{:changed_files, message}]} =
+               CompletionValidation.validate_changed_files(nil)
+
+      assert message == "must be present (send [] to clear)"
     end
 
     test "accepts an empty list" do

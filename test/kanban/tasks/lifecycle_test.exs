@@ -362,4 +362,25 @@ defmodule Kanban.Tasks.LifecycleTest do
       assert_receive {Kanban.Tasks, :task_updated, %Task{id: ^child_b_id}}
     end
   end
+
+  describe "update_changed_files/2 — D36 nil rejection" do
+    test "raises FunctionClauseError when given nil", %{column: column} do
+      task = task_fixture(column)
+
+      assert_raise FunctionClauseError, fn ->
+        Lifecycle.update_changed_files(task, nil)
+      end
+    end
+
+    test "accepts an empty list (explicit clear)", %{column: column} do
+      task = task_fixture(column)
+      assert {:ok, %Task{changed_files: []}} = Lifecycle.update_changed_files(task, [])
+    end
+
+    test "accepts a populated list", %{column: column} do
+      task = task_fixture(column)
+      entry = %{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}
+      assert {:ok, %Task{changed_files: [^entry]}} = Lifecycle.update_changed_files(task, [entry])
+    end
+  end
 end

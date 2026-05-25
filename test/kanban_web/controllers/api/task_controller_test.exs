@@ -2879,6 +2879,40 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] == "completion validation failed"
     end
 
+    test "returns 422 when neither changed_files nor _json is present (D36)",
+         %{conn: conn, task: task} do
+      # Seed a non-empty value to confirm it is NOT cleared by a malformed PUT.
+      {:ok, _} =
+        Tasks.update_changed_files(task, [%{"path" => "lib/seeded.ex", "diff" => "diff"}])
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{})
+
+      response = json_response(conn, 422)
+      assert response["error"] == "completion validation failed"
+      assert [failure] = response["failures"]
+      assert failure["field"] == "changed_files"
+      assert [err] = failure["errors"]
+      assert err["message"] == "must be present (send [] to clear)"
+
+      # Persistence is unchanged — the malformed PUT did not NULL the column.
+      assert [%{"path" => "lib/seeded.ex"}] = Tasks.get_task!(task.id).changed_files
+    end
+
+    test "returns 422 when changed_files is explicitly null (D36)",
+         %{conn: conn, task: task} do
+      body = Jason.encode!(%{"changed_files" => nil})
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put(~p"/api/tasks/#{task.id}/changed_files", body)
+
+      response = json_response(conn, 422)
+      assert response["error"] == "completion validation failed"
+      assert [%{"field" => "changed_files", "errors" => [err]}] = response["failures"]
+      assert err["message"] == "must be present (send [] to clear)"
+    end
+
     test "returns 403 when caller is not the assignee and task is not in Review",
          %{task: task, board: board} do
       other_user = user_fixture(%{email: "diff-other@example.com"})

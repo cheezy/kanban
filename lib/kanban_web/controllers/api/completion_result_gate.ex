@@ -59,13 +59,24 @@ defmodule KanbanWeb.API.CompletionResultGate do
         params["reviewer_result"],
         &CompletionValidation.validate_reviewer_result/1
       ),
-      evaluate(
-        "changed_files",
-        params["changed_files"],
-        &CompletionValidation.validate_changed_files/1
-      )
+      evaluate_changed_files(params)
     ]
     |> Enum.reject(&is_nil/1)
+  end
+
+  # `changed_files` is optional on /complete (D36): the field is no longer
+  # persisted via this path, so an omitted/nil value is a no-op here. The
+  # standalone PUT /api/tasks/:id/changed_files endpoint enforces nil
+  # rejection at the controller layer.
+  defp evaluate_changed_files(%{"changed_files" => nil}), do: nil
+  defp evaluate_changed_files(params) when not is_map_key(params, "changed_files"), do: nil
+
+  defp evaluate_changed_files(params) do
+    evaluate(
+      "changed_files",
+      params["changed_files"],
+      &CompletionValidation.validate_changed_files/1
+    )
   end
 
   defp evaluate(field, payload, validator) do
