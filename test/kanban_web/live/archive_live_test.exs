@@ -1,6 +1,7 @@
 defmodule KanbanWeb.ArchiveLiveTest do
   use KanbanWeb.ConnCase
 
+  import Ecto.Query, only: [where: 3]
   import Phoenix.LiveViewTest
   import Kanban.BoardsFixtures
   import Kanban.AccountsFixtures
@@ -713,5 +714,104 @@ defmodule KanbanWeb.ArchiveLiveTest do
     board = board_fixture(user)
     column = column_fixture(board, %{name: "Test Column"})
     %{board: board, column: column}
+  end
+
+  defp complete_task!(task, completed_at) do
+    Kanban.Tasks.Task
+    |> where([t], t.id == ^task.id)
+    |> Kanban.Repo.update_all(set: [status: :completed, completed_at: completed_at])
+
+    Kanban.Tasks.get_task!(task.id)
+  end
+
+  defp days_ago(days) do
+    DateTime.utc_now()
+    |> DateTime.truncate(:second)
+    |> DateTime.add(-days * 86_400, :second)
+  end
+
+  describe "bulk archive button" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "renders the bulk archive button for owners", %{conn: conn, board: board} do
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "data-archive-bulk-old"
+      assert html =~ "Archive old"
+      assert html =~ "Archive all completed tasks older than 30 days?"
+    end
+
+    test "does not render the bulk archive button for read-only users", %{
+      conn: conn,
+      user: user
+    } do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      _column = column_fixture(board, %{name: "Test Column"})
+      Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      refute html =~ "data-archive-bulk-old"
+    end
+
+    test "bulk_archive_old archives matching tasks and refreshes the list",
+         %{conn: conn, board: board, column: column} do
+      old_task =
+        column
+        |> task_fixture(%{title: "Old Done Task"})
+        |> complete_task!(days_ago(45))
+
+      recent_task =
+        column
+        |> task_fixture(%{title: "Recent Done Task"})
+        |> complete_task!(days_ago(5))
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "bulk_archive_old")
+
+      assert html =~ "Archived 1 completed task older than 30 days."
+      assert html =~ "Old Done Task"
+
+      assert Kanban.Tasks.get_task!(old_task.id).archived_at != nil
+      assert Kanban.Tasks.get_task!(recent_task.id).archived_at == nil
+    end
+
+    test "bulk_archive_old flashes the zero-count message when no tasks match",
+         %{conn: conn, board: board, column: column} do
+      _recent =
+        column
+        |> task_fixture(%{title: "Recent Done Task"})
+        |> complete_task!(days_ago(5))
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "bulk_archive_old")
+
+      assert html =~ "No completed tasks older than 30 days were found."
+    end
+
+    test "read-only user pushing bulk_archive_old gets a permission error", %{
+      conn: conn,
+      user: user
+    } do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "Test Column"})
+      Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
+
+      old_task =
+        column
+        |> task_fixture(%{title: "Old Done Task"})
+        |> complete_task!(days_ago(45))
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "bulk_archive_old")
+
+      assert html =~ "You do not have permission to archive tasks on this board"
+      assert Kanban.Tasks.get_task!(old_task.id).archived_at == nil
+    end
   end
 end

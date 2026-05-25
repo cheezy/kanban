@@ -433,14 +433,16 @@ defmodule KanbanWeb.ReviewLiveTest do
       first = pending_task!(column, %{identifier: "WT1", actual_files_changed: "lib/a.ex"})
       second = pending_task!(column, %{identifier: "WT2", actual_files_changed: "lib/c.ex"})
 
+      # Queue is ordered by updated_at ascending; second-resolution truncation
+      # can collide between two fixtures created in the same tick, so pin the
+      # order explicitly.
+      first = backdate_updated_at!(first, -60)
+
       {:ok, view, _html} = live(conn, ~p"/review")
 
-      # First task is auto-selected on mount (first in queue). Click a file.
-      first_path =
-        if List.first([first, second]).id == first.id, do: "lib/a.ex", else: "lib/c.ex"
-
+      # First task is auto-selected on mount (oldest in queue).
       view
-      |> element(~s([data-review-diff-panel-file-path="#{first_path}"] button))
+      |> element(~s([data-review-diff-panel-file-path="lib/a.ex"] button))
       |> render_click()
 
       assert_received {:telemetry, ^ref, [:kanban, :review_diff_panel, :opened], _,

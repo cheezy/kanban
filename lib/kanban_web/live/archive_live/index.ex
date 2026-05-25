@@ -69,6 +69,20 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   @impl true
+  def handle_event("bulk_archive_old", _params, socket) do
+    if socket.assigns.can_modify do
+      perform_bulk_archive(socket)
+    else
+      {:noreply,
+       put_flash(
+         socket,
+         :error,
+         gettext("You do not have permission to archive tasks on this board")
+       )}
+    end
+  end
+
+  @impl true
   def handle_event("unarchive", %{"id" => id}, socket) do
     socket
     |> authorize_modify_for_archived(id)
@@ -211,6 +225,28 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   # --- Mutations -----------------------------------------------------------
+
+  defp perform_bulk_archive(socket) do
+    board_id = socket.assigns.board.id
+    {:ok, count} = Tasks.bulk_archive_completed_tasks_older_than(board_id)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, bulk_archive_flash(count))
+     |> reload()}
+  end
+
+  defp bulk_archive_flash(0) do
+    gettext("No completed tasks older than 30 days were found.")
+  end
+
+  defp bulk_archive_flash(1) do
+    gettext("Archived 1 completed task older than 30 days.")
+  end
+
+  defp bulk_archive_flash(count) do
+    gettext("Archived %{count} completed tasks older than 30 days.", count: count)
+  end
 
   defp perform_unarchive(socket, task) do
     case Tasks.unarchive_task(task) do

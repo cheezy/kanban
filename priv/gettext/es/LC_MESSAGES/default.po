@@ -289,7 +289,7 @@ msgstr "Límite WIP"
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "Límite de trabajo en progreso. Establece en 0 para sin límite."
 
-#: lib/kanban_web/live/archive_live/index.html.heex:144
+#: lib/kanban_web/live/archive_live/index.html.heex:161
 #: lib/kanban_web/live/board_live/show.html.heex:293
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
@@ -308,8 +308,8 @@ msgstr "Columna"
 msgid "Create a new task"
 msgstr "Crear una nueva tarea"
 
-#: lib/kanban_web/live/archive_live/index.ex:237
-#: lib/kanban_web/live/archive_live/index.ex:262
+#: lib/kanban_web/live/archive_live/index.ex:273
+#: lib/kanban_web/live/archive_live/index.ex:298
 #: lib/kanban_web/live/board_live/show.ex:170
 #: lib/kanban_web/live/board_live/show.ex:1297
 #, elixir-autogen, elixir-format
@@ -326,7 +326,7 @@ msgstr "Guardar Tarea"
 msgid "Task created successfully"
 msgstr "Tarea creada exitosamente"
 
-#: lib/kanban_web/live/archive_live/index.ex:233
+#: lib/kanban_web/live/archive_live/index.ex:269
 #: lib/kanban_web/live/board_live/show.ex:1283
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -338,7 +338,7 @@ msgid "Task updated successfully"
 msgstr "Tarea actualizada exitosamente"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:23
-#: lib/kanban_web/live/archive_live/index.html.heex:79
+#: lib/kanban_web/live/archive_live/index.html.heex:96
 #: lib/kanban_web/live/issue_live/form_component.ex:68
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:30
 #: lib/kanban_web/live/task_live/form_component.html.heex:47
@@ -1779,7 +1779,7 @@ msgstr "Objetivo"
 msgid "Human Review Workflow"
 msgstr "Flujo de Trabajo de Revisión Humana"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:78
+#: lib/kanban_web/live/archive_live/index.html.heex:95
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:24
 #, elixir-autogen, elixir-format
 msgid "ID"
@@ -1871,7 +1871,7 @@ msgstr "Seguimiento del agente"
 msgid "Archive task"
 msgstr "Archivar tarea"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:23
+#: lib/kanban_web/live/archive_live/index.html.heex:40
 #: lib/kanban_web/live/goal_live/show.ex:119
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
@@ -1901,8 +1901,8 @@ msgstr "Eliminar"
 msgid "Failed to archive task"
 msgstr "No se pudo archivar la tarea"
 
-#: lib/kanban_web/live/archive_live/index.ex:224
-#: lib/kanban_web/live/archive_live/index.ex:258
+#: lib/kanban_web/live/archive_live/index.ex:260
+#: lib/kanban_web/live/archive_live/index.ex:294
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "No se pudo desarchivar la tarea"
@@ -1912,7 +1912,7 @@ msgstr "No se pudo desarchivar la tarea"
 msgid "Task archived successfully"
 msgstr "Tarea archivada correctamente"
 
-#: lib/kanban_web/live/archive_live/index.ex:220
+#: lib/kanban_web/live/archive_live/index.ex:256
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "Tarea desarchivada correctamente"
@@ -2136,8 +2136,8 @@ msgstr "No se encontró ningún usuario con esa dirección de correo"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:274
-#: lib/kanban_web/live/metrics_live/workspace.ex:52
-#: lib/kanban_web/live/metrics_live/workspace.ex:70
+#: lib/kanban_web/live/metrics_live/workspace.ex:54
+#: lib/kanban_web/live/metrics_live/workspace.ex:72
 #: lib/kanban_web/live/task_live/view_component.ex:241
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2618,7 +2618,7 @@ msgstr "Despachado"
 msgid "Not dispatched"
 msgstr "No despachado"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:80
+#: lib/kanban_web/live/archive_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
@@ -2884,12 +2884,13 @@ msgstr "Ya sea que estés explorando el desarrollo asistido por IA, modernizando
 msgid "While many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from"
 msgstr "Si bien muchas organizaciones grandes intentan mejorar los resultados midiendo la productividad, nuestra experiencia muestra que las verdaderas ganancias vienen de"
 
+#: lib/kanban_web/live/archive_live/index.ex:80
 #: lib/kanban_web/live/board_live/show.ex:147
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "No tienes permiso para archivar tareas en este tablero"
 
-#: lib/kanban_web/live/archive_live/index.ex:253
+#: lib/kanban_web/live/archive_live/index.ex:289
 #: lib/kanban_web/live/board_live/show.ex:166
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -2912,7 +2913,7 @@ msgstr "No tienes permiso para mover tareas en este tablero"
 msgid "You do not have permission to promote goals on this board"
 msgstr "No tienes permiso para promover objetivos en este tablero"
 
-#: lib/kanban_web/live/archive_live/index.ex:245
+#: lib/kanban_web/live/archive_live/index.ex:281
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "No tienes permiso para desarchivar tareas en este tablero"
@@ -3794,7 +3795,7 @@ msgid "Issues that require physical access to a user's device or compromise of a
 msgstr "Problemas que requieren acceso físico al dispositivo del usuario o el compromiso de un servicio de terceros que no operamos."
 
 #: lib/kanban_web/components/board_pulse_card.ex:124
-#: lib/kanban_web/live/metrics_live/workspace.ex:77
+#: lib/kanban_web/live/metrics_live/workspace.ex:79
 #, elixir-autogen, elixir-format
 msgid "Last 14 days"
 msgstr "Últimos 14 días"
@@ -4358,7 +4359,7 @@ msgstr "Inicio de Stride"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:50
+#: lib/kanban_web/live/metrics_live/workspace.ex:52
 #: lib/kanban_web/live/review_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5342,7 +5343,7 @@ msgid "time spent before archive"
 msgstr "tiempo invertido antes de archivar"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:88
-#: lib/kanban_web/live/archive_live/index.html.heex:82
+#: lib/kanban_web/live/archive_live/index.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "Asignado a"
@@ -5378,22 +5379,22 @@ msgstr "objetivo:"
 msgid "unknown"
 msgstr "desconocido"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:178
+#: lib/kanban_web/live/archive_live/index.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Archive is read-only after 180 days. Older items still appear in search and audit log."
 msgstr "El archivo es de solo lectura después de 180 días. Los elementos más antiguos siguen apareciendo en la búsqueda y el registro de auditoría."
 
-#: lib/kanban_web/live/archive_live/index.html.heex:83
+#: lib/kanban_web/live/archive_live/index.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "Archivada"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:152
+#: lib/kanban_web/live/archive_live/index.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "Delete forever"
 msgstr "Eliminar para siempre"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:192
+#: lib/kanban_web/live/archive_live/index.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Export CSV"
 msgstr "Exportar CSV"
@@ -5403,27 +5404,27 @@ msgstr "Exportar CSV"
 msgid "Export CSV — coming soon."
 msgstr "Exportar CSV — próximamente."
 
-#: lib/kanban_web/live/archive_live/index.html.heex:52
+#: lib/kanban_web/live/archive_live/index.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "No archived tasks match this filter."
 msgstr "Ninguna tarea archivada coincide con este filtro."
 
-#: lib/kanban_web/live/archive_live/index.html.heex:81
+#: lib/kanban_web/live/archive_live/index.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Outcome"
 msgstr "Resultado"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:160
+#: lib/kanban_web/live/archive_live/index.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Read-only access"
 msgstr "Acceso de solo lectura"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:135
+#: lib/kanban_web/live/archive_live/index.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "Restaurar"
 
-#: lib/kanban_web/live/archive_live/index.ex:206
+#: lib/kanban_web/live/archive_live/index.ex:220
 #, elixir-autogen, elixir-format
 msgid "Undated"
 msgstr "Sin fecha"
@@ -5519,17 +5520,17 @@ msgstr "Diagrama de flujo acumulado"
 msgid "work in each column over time"
 msgstr "trabajo en cada columna a lo largo del tiempo"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:76
+#: lib/kanban_web/live/metrics_live/workspace.ex:78
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Todos los tableros"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:78
+#: lib/kanban_web/live/metrics_live/workspace.ex:80
 #, elixir-autogen, elixir-format
 msgid "Filter"
 msgstr "Filtros"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:128
+#: lib/kanban_web/live/metrics_live/workspace.ex:269
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "todos los tableros"
@@ -6499,3 +6500,53 @@ msgstr "Sin problemas"
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "Ver diff completo en el repo"
+
+#: lib/kanban_web/live/archive_live/index.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Archive all completed tasks older than 30 days?"
+msgstr "¿Archivar todas las tareas completadas hace más de 30 días?"
+
+#: lib/kanban_web/live/archive_live/index.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Archive old (30d+)"
+msgstr "Archivar antiguas (30d+)"
+
+#: lib/kanban_web/live/archive_live/index.ex:248
+#, elixir-autogen, elixir-format
+msgid "Archived %{count} completed tasks older than 30 days."
+msgstr "Se archivaron %{count} tareas completadas hace más de 30 días."
+
+#: lib/kanban_web/live/archive_live/index.ex:244
+#, elixir-autogen, elixir-format
+msgid "Archived 1 completed task older than 30 days."
+msgstr "Se archivó 1 tarea completada hace más de 30 días."
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:167
+#, elixir-autogen, elixir-format
+msgid "Goal → Done · p50"
+msgstr "Meta → Hecho · p50"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:173
+#, elixir-autogen, elixir-format
+msgid "Goal → Done · p95"
+msgstr "Meta → Hecho · p95"
+
+#: lib/kanban_web/live/archive_live/index.ex:240
+#, elixir-autogen, elixir-format
+msgid "No completed tasks older than 30 days were found."
+msgstr "No se encontraron tareas completadas hace más de 30 días."
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:124
+#, elixir-autogen, elixir-format
+msgid "after_goal adoption · 7d"
+msgstr "Adopción after_goal · 7d"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:214
+#, elixir-autogen, elixir-format
+msgid "n=%{n}"
+msgstr "n=%{n}"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:143
+#, elixir-autogen, elixir-format
+msgid "projects reporting"
+msgstr "proyectos reportando"

@@ -68,6 +68,8 @@ defmodule Kanban.Tasks do
   defdelegate delete_task(task), to: Lifecycle
   defdelegate archive_task(task), to: Lifecycle
   defdelegate archive_task(task, attrs), to: Lifecycle
+  defdelegate bulk_archive_completed_tasks_older_than(board_id), to: Lifecycle
+  defdelegate bulk_archive_completed_tasks_older_than(board_id, cutoff_days), to: Lifecycle
   defdelegate unarchive_task(task), to: Lifecycle
 
   # ── Positioning delegations ────────────────────────────────────────

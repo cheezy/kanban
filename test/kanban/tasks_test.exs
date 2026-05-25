@@ -9,6 +9,20 @@ defmodule Kanban.TasksTest do
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
+  defp set_completed!(task, completed_at) do
+    Kanban.Tasks.Task
+    |> where([t], t.id == ^task.id)
+    |> Kanban.Repo.update_all(set: [status: :completed, completed_at: completed_at])
+
+    Kanban.Tasks.get_task!(task.id)
+  end
+
+  defp days_ago(days) do
+    DateTime.utc_now()
+    |> DateTime.truncate(:second)
+    |> DateTime.add(-days * 86_400, :second)
+  end
+
   describe "list_tasks/1" do
     test "returns all tasks for a column ordered by position" do
       user = user_fixture()
@@ -6468,6 +6482,149 @@ defmodule Kanban.TasksTest do
 
       assert {:ok, archived_task} = Tasks.archive_task(task)
       assert archived_task.archived_at != nil
+    end
+  end
+
+  describe "bulk_archive_completed_tasks_older_than/2" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    test "archives completed tasks older than the cutoff and returns the count",
+         %{board: board, column: column} do
+      old1 = task_fixture(column) |> set_completed!(days_ago(45))
+      old2 = task_fixture(column) |> set_completed!(days_ago(60))
+      recent = task_fixture(column) |> set_completed!(days_ago(10))
+
+      assert {:ok, 2} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      assert Tasks.get_task!(old1.id).archived_at != nil
+      assert Tasks.get_task!(old2.id).archived_at != nil
+      assert Tasks.get_task!(recent.id).archived_at == nil
+    end
+
+    test "sets archive_reason to :completed on archived tasks",
+         %{board: board, column: column} do
+      task = task_fixture(column) |> set_completed!(days_ago(45))
+
+      assert {:ok, 1} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.archive_reason == :completed
+    end
+
+    test "does not archive tasks completed within the cutoff window",
+         %{board: board, column: column} do
+      recent = task_fixture(column) |> set_completed!(days_ago(5))
+
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+      assert Tasks.get_task!(recent.id).archived_at == nil
+    end
+
+    test "does not touch already-archived tasks",
+         %{board: board, column: column} do
+      task = task_fixture(column) |> set_completed!(days_ago(45))
+      {:ok, first_archived} = Tasks.archive_task(task)
+      original_archived_at = first_archived.archived_at
+
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      reloaded = Tasks.get_task!(task.id)
+      assert DateTime.compare(reloaded.archived_at, original_archived_at) == :eq
+    end
+
+    test "does not archive non-completed tasks regardless of timestamp",
+         %{board: board, column: column} do
+      open_task = task_fixture(column)
+
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^open_task.id)
+      |> Kanban.Repo.update_all(set: [completed_at: days_ago(90)])
+
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+      assert Tasks.get_task!(open_task.id).archived_at == nil
+    end
+
+    test "does not archive tasks where completed_at is nil even if status is :completed",
+         %{board: board, column: column} do
+      task = task_fixture(column) |> set_completed!(nil)
+
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+      assert Tasks.get_task!(task.id).archived_at == nil
+    end
+
+    test "is scoped to the supplied board and does not affect other boards",
+         %{board: board, column: column} do
+      other_user = user_fixture()
+      other_board = board_fixture(other_user)
+      other_column = column_fixture(other_board)
+
+      this_board_task = task_fixture(column) |> set_completed!(days_ago(45))
+      other_board_task = task_fixture(other_column) |> set_completed!(days_ago(45))
+
+      assert {:ok, 1} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      assert Tasks.get_task!(this_board_task.id).archived_at != nil
+      assert Tasks.get_task!(other_board_task.id).archived_at == nil
+    end
+
+    test "respects a custom cutoff_days argument",
+         %{board: board, column: column} do
+      ten_day_old = task_fixture(column) |> set_completed!(days_ago(10))
+      two_day_old = task_fixture(column) |> set_completed!(days_ago(2))
+
+      assert {:ok, 1} = Tasks.bulk_archive_completed_tasks_older_than(board.id, 7)
+
+      assert Tasks.get_task!(ten_day_old.id).archived_at != nil
+      assert Tasks.get_task!(two_day_old.id).archived_at == nil
+    end
+
+    test "returns {:ok, 0} when no tasks match", %{board: board} do
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+    end
+
+    test "emits [:kanban, :task, :bulk_archived] telemetry with count and board_id",
+         %{board: board, column: column} do
+      _t1 = task_fixture(column) |> set_completed!(days_ago(45))
+      _t2 = task_fixture(column) |> set_completed!(days_ago(60))
+
+      :telemetry.attach(
+        "test-bulk-archive-handler",
+        [:kanban, :task, :bulk_archived],
+        fn event, measurements, metadata, _config ->
+          send(self(), {:telemetry_event, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      assert {:ok, 2} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :bulk_archived], measurements, metadata}
+      assert measurements.count == 2
+      assert metadata.board_id == board.id
+
+      :telemetry.detach("test-bulk-archive-handler")
+    end
+
+    test "still emits telemetry (with count 0) when no tasks match",
+         %{board: board} do
+      :telemetry.attach(
+        "test-bulk-archive-empty-handler",
+        [:kanban, :task, :bulk_archived],
+        fn event, measurements, metadata, _config ->
+          send(self(), {:telemetry_event, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :bulk_archived], %{count: 0}, %{}}
+
+      :telemetry.detach("test-bulk-archive-empty-handler")
     end
   end
 

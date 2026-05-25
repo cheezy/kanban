@@ -452,6 +452,57 @@ defmodule Kanban.Tasks.Lifecycle do
     end
   end
 
+  @doc """
+  Archives every completed, non-archived task on the given board whose
+  `completed_at` is strictly older than the cutoff (default 30 days).
+
+  Uses a single `Repo.update_all` to avoid N+1 writes when the Done
+  column contains many tasks. Returns `{:ok, count}` where `count` is
+  the number of tasks archived.
+
+  Emits a `[:kanban, :task, :bulk_archived]` telemetry event with
+  `%{count: count}` measurements and `%{board_id: board_id}` metadata.
+
+  Scoped strictly to the supplied board — completed tasks on other
+  boards are never touched. Tasks whose `completed_at` is `nil` are
+  also skipped (their age is unknown), as are tasks already archived
+  or whose `status` is not `:completed`.
+  """
+  def bulk_archive_completed_tasks_older_than(board_id, cutoff_days \\ 30)
+      when is_integer(cutoff_days) and cutoff_days >= 0 do
+    archived_at = DateTime.utc_now() |> DateTime.truncate(:second)
+    cutoff = DateTime.add(archived_at, -cutoff_days * 86_400, :second)
+
+    {count, _} =
+      from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board_id,
+        where: t.status == :completed,
+        where: not is_nil(t.completed_at),
+        where: t.completed_at < ^cutoff,
+        where: is_nil(t.archived_at)
+      )
+      |> Repo.update_all(
+        set: [
+          archived_at: archived_at,
+          archive_reason: :completed,
+          updated_at: archived_at
+        ]
+      )
+
+    emit_bulk_archive_telemetry(count, board_id)
+
+    {:ok, count}
+  end
+
+  defp emit_bulk_archive_telemetry(count, board_id) do
+    :telemetry.execute(
+      [:kanban, :task, :bulk_archived],
+      %{count: count},
+      %{board_id: board_id}
+    )
+  end
+
   defp delete_goal_if_no_children(goal_id) do
     remaining_children_count =
       Task

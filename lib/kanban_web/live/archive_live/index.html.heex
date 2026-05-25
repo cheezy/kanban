@@ -12,6 +12,23 @@
         {gettext("Board:")} {@board.name}
       </span>
       <span style="flex: 1;" />
+      <button
+        :if={@can_modify}
+        type="button"
+        data-archive-bulk-old
+        phx-click="bulk_archive_old"
+        data-confirm={gettext("Archive all completed tasks older than 30 days?")}
+        style={[
+          "display: inline-flex; align-items: center; gap: 4px;",
+          "padding: 4px 10px; font-size: 12px;",
+          "background: transparent; border: 1px solid var(--line);",
+          "color: var(--ink-2); border-radius: 4px;",
+          "cursor: pointer; font: inherit;"
+        ]}
+      >
+        <.icon name="hero-archive-box" class="w-3 h-3" />
+        {gettext("Archive old (30d+)")}
+      </button>
       <.link
         navigate={~p"/boards/#{@board}"}
         style={[
