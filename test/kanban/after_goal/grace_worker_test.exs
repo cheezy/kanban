@@ -1,13 +1,13 @@
 defmodule Kanban.AfterGoal.GraceWorkerTest do
   @moduledoc """
-  Unit tests for `Kanban.AfterGoal.GraceWorker` branches that the
-  controller integration tests don't reach: the deleted-goal path and
-  the defensive `nil` after_goal_status path.
+  Unit tests for `Kanban.AfterGoal.GraceWorker`.
 
-  The `:succeeded` no-op and the `:pending` → promote happy path are
-  already covered end-to-end by
-  `KanbanWeb.API.AfterGoalControllerTest`'s drain-queue tests, so this
-  file focuses on the defensive seams.
+  Covers the defensive seams (deleted goal, nil after_goal_status,
+  :succeeded short-circuit) plus the `:pending` → `promote_via_grace`
+  happy path. The happy path is also covered end-to-end by
+  `KanbanWeb.API.AfterGoalControllerTest`'s drain-queue tests, but
+  exercising it here pins the synthetic-attempt contract and the
+  Logger output that the integration tests don't assert on directly.
   """
 
   use Kanban.DataCase
@@ -20,6 +20,8 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
   import ExUnit.CaptureLog
 
   alias Kanban.AfterGoal.GraceWorker
+  alias Kanban.Columns
+  alias Kanban.Tasks
 
   describe "perform/1 — deleted goal" do
     test "returns :ok when the goal_id no longer resolves (deleted between schedule and fire)" do
@@ -64,6 +66,104 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
       # Goal is untouched.
       refetched = Kanban.Repo.reload(goal)
       assert refetched.after_goal_status == nil
+    end
+  end
+
+  describe "perform/1 — :pending promotion happy path" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Columns.list_columns(board)
+      doing = Enum.find(columns, &(&1.name == "Doing"))
+      done = Enum.find(columns, &(&1.name == "Done"))
+
+      {:ok, goal} =
+        Tasks.create_task(doing, %{
+          "title" => "Goal awaiting grace expiry",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, pending_goal} =
+        goal
+        |> Ecto.Changeset.change(%{after_goal_status: :pending})
+        |> Kanban.Repo.update()
+
+      %{goal: pending_goal, done_column: done, board: board}
+    end
+
+    test "flips after_goal_status to :succeeded and returns :ok", %{goal: goal} do
+      assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      refetched = Kanban.Repo.reload(goal)
+      assert refetched.after_goal_status == :succeeded
+    end
+
+    test "appends a synthetic attempt with the worker source tag", %{goal: goal} do
+      :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      refetched = Kanban.Repo.reload(goal)
+      assert [attempt] = refetched.after_goal_attempts
+      assert attempt["source"] == "after_goal_grace_worker"
+      assert attempt["exit_code"] == 0
+      assert attempt["duration_ms"] == 0
+      assert attempt["output"] == "grace window expired (no agent report received)"
+    end
+
+    test "sets after_goal_result to the synthetic attempt", %{goal: goal} do
+      :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      refetched = Kanban.Repo.reload(goal)
+      assert refetched.after_goal_result["source"] == "after_goal_grace_worker"
+      assert refetched.after_goal_result["exit_code"] == 0
+    end
+
+    test "promotes the goal into the Done column", %{goal: goal, done_column: done} do
+      :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      refetched = Kanban.Repo.reload(goal)
+      assert refetched.column_id == done.id
+    end
+
+    test "logs an info message identifying the promoted goal", %{goal: goal} do
+      # The default test-env Logger level is :warning, so we temporarily
+      # lower it to :info just for this assertion. Other tests in this
+      # file (and elsewhere) rely on the suppression — see the comment
+      # in `perform/1 — deleted goal`.
+      previous_level = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: previous_level) end)
+
+      log =
+        capture_log(fn ->
+          assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+        end)
+
+      assert log =~ "after_goal grace window expired for goal #{goal.id}"
+      assert log =~ "promoted to Done"
+    end
+
+    test "preserves prior attempts in the audit log when appending the synthetic one",
+         %{goal: goal} do
+      # Simulate a prior failed agent report already in the audit log; the
+      # grace worker's synthetic success should append, not overwrite.
+      prior_attempt = %{
+        "exit_code" => 1,
+        "output" => "agent failed earlier",
+        "duration_ms" => 42,
+        "source" => "agent"
+      }
+
+      {:ok, goal_with_history} =
+        goal
+        |> Ecto.Changeset.change(%{after_goal_attempts: [prior_attempt]})
+        |> Kanban.Repo.update()
+
+      :ok = perform_job(GraceWorker, %{"goal_id" => goal_with_history.id})
+
+      refetched = Kanban.Repo.reload(goal_with_history)
+      assert [^prior_attempt, grace_attempt] = refetched.after_goal_attempts
+      assert grace_attempt["source"] == "after_goal_grace_worker"
     end
   end
 
