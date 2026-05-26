@@ -28,32 +28,32 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
           content:
             "After logging in, you'll automatically land on your **My Boards** dashboard. If you're navigating from elsewhere in the app, you can always return here by clicking **My Boards** in the navigation bar.",
           image: "/images/resources/guides/board-creation-step-1.png",
-          image_width: 1160,
-          image_height: 74
+          image_width: 243,
+          image_height: 43
         },
         %{
           title: "Click New Board",
           content:
             "Click the **New Board** button in the top right corner. You'll see two options: **New Empty Board** for a blank slate, or **New AI Optimized Board** which comes pre-configured with columns optimized for AI agent workflows.",
           image: "/images/resources/guides/board-creation-step-2.png",
-          image_width: 300,
-          image_height: 230
+          image_width: 204,
+          image_height: 140
         },
         %{
           title: "Enter Board Details",
           content:
             "Give your board a descriptive name and optional description. The name should reflect the project or team that will use this board.",
           image: "/images/resources/guides/board-creation-step-3.png",
-          image_width: 714,
-          image_height: 405
+          image_width: 525,
+          image_height: 305
         },
         %{
           title: "Start Using Your Board",
           content:
             "Your AI Optimized board is ready with pre-configured workflow columns (Backlog → Ready → Doing → Review → Done). To invite team members, click the **Edit Board** button and add collaborators in the board settings.",
           image: "/images/resources/guides/board-creation-step-4.png",
-          image_width: 714,
-          image_height: 317
+          image_width: 1355,
+          image_height: 325
         }
       ]
     },
