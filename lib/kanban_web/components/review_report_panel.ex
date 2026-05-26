@@ -71,10 +71,14 @@ defmodule KanbanWeb.ReviewReportPanel do
   attr :reviewer_result, :map, required: true
 
   defp structured_view(assigns) do
-    assigns = assign(assigns, :issues, Map.get(assigns.reviewer_result, "issues", []))
+    assigns =
+      assigns
+      |> assign(:issues, Map.get(assigns.reviewer_result, "issues", []))
+      |> assign(:project_checks, Map.get(assigns.reviewer_result, "project_checks", []))
 
     ~H"""
     <.issue_list issues={@issues} />
+    <.project_checks_section project_checks={@project_checks} />
     """
   end
 
@@ -127,6 +131,57 @@ defmodule KanbanWeb.ReviewReportPanel do
         </li>
       </ul>
     </section>
+    """
+  end
+
+  # --- Project checks section ---------------------------------------------
+
+  attr :project_checks, :list, required: true
+
+  defp project_checks_section(assigns) do
+    ~H"""
+    <section
+      :if={@project_checks != []}
+      data-review-report-project-checks
+      class="mt-4 space-y-2"
+    >
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-base-content opacity-70">
+        {gettext("Project checks")}
+      </h3>
+      <.project_check_row :for={check <- @project_checks} check={check} />
+    </section>
+    """
+  end
+
+  attr :check, :map, required: true
+
+  defp project_check_row(assigns) do
+    status = Map.get(assigns.check, "status")
+
+    assigns =
+      assigns
+      |> assign(:status, status)
+      |> assign(:pill_class, project_check_status_class(status))
+      |> assign(:status_label, project_check_status_label(status))
+      |> assign(:check_text, Map.get(assigns.check, "check") || gettext("(no description)"))
+      |> assign(:evidence, Map.get(assigns.check, "evidence"))
+
+    ~H"""
+    <div
+      data-review-report-project-check
+      class="flex flex-col gap-1 text-sm border-l-4 border-base-300 pl-3"
+    >
+      <div class="flex items-center gap-2">
+        <span class={["badge badge-sm", @pill_class]}>{@status_label}</span>
+        <span>{@check_text}</span>
+      </div>
+      <p
+        :if={is_binary(@evidence) and @evidence != ""}
+        class="text-xs text-base-content opacity-70"
+      >
+        {@evidence}
+      </p>
+    </div>
     """
   end
 
@@ -249,6 +304,16 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp category_label("pattern"), do: gettext("Patterns")
   defp category_label("testing"), do: gettext("Testing")
   defp category_label("code_quality"), do: gettext("Code quality")
+  defp category_label("project_check"), do: gettext("Project check")
   defp category_label(other) when is_binary(other), do: other
   defp category_label(_), do: ""
+
+  defp project_check_status_class("met"), do: "bg-success text-success-content"
+  defp project_check_status_class("not_met"), do: "bg-error text-error-content"
+  defp project_check_status_class(_), do: "bg-base-200 text-base-content"
+
+  defp project_check_status_label("met"), do: gettext("Met")
+  defp project_check_status_label("not_met"), do: gettext("Not met")
+  defp project_check_status_label(other) when is_binary(other), do: other
+  defp project_check_status_label(_), do: gettext("Unknown")
 end
