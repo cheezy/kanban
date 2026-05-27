@@ -249,10 +249,14 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~r/v\d+\.\d/,
              "expected a 'v<major>.<minor>' release version somewhere in the pill"
 
-      # Headline split across two lines (line 2 uses --ink-4)
+      # Headline split across two lines. The first line uses --ink-3 (changed
+      # from --ink-4 in W900: --ink-4 at 68% L produced 2.78:1 contrast on the
+      # near-white page, failing WCAG AA. --ink-3 reads at 4.5:1+ in both
+      # themes and preserves the de-emphasized hierarchy vs. the un-styled
+      # second line.)
       assert html =~ "Tasks are conversations."
       assert html =~ "speak both ways."
-      assert html =~ "color: var(--ink-4)"
+      assert html =~ "color: var(--ink-3)"
 
       # Sub-copy
       assert html =~ "Stride is an AI-native work management system"
@@ -443,8 +447,10 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "AI agents are first-class teammates,"
       assert html =~ "not bots you babysit."
 
-      # Orange emphasis span on the second line
-      assert html =~ "color: var(--stride-orange);"
+      # Orange emphasis span on the second line. W900 switched the foreground
+      # from --stride-orange (oklch 68% L = 2.96:1 against white, failing WCAG
+      # AA at 30pt) to --stride-orange-ink (oklch 45% L = ~6:1, passing).
+      assert html =~ "color: var(--stride-orange-ink);"
 
       # Two body paragraphs in the right column
       assert html =~ "Most tools bolt AI on as a sidebar"
@@ -476,10 +482,11 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "How it works"
       # Two-tone headline split across two gettext strings + a span for the
-      # orange-emphasised second clause.
+      # orange-emphasised second clause. Uses --stride-orange-ink so the text
+      # passes WCAG AA on the light page bg (W900).
       assert html =~ "One loop."
       assert html =~ "Two roles."
-      assert html =~ "color: var(--stride-orange);"
+      assert html =~ "color: var(--stride-orange-ink);"
     end
 
     test "renders all four step cells with mono step numbers, titles, and body copy" do
@@ -616,8 +623,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "Stop writing every line."
       assert html =~ "approving them."
-      # Orange emphasis on the second-line phrase
-      assert html =~ "color: var(--stride-orange);"
+      # Orange emphasis on the second-line phrase. W900 switched the foreground
+      # from --stride-orange to --stride-orange-ink for WCAG AA at 33pt.
+      assert html =~ "color: var(--stride-orange-ink);"
 
       # Sub-copy
       assert html =~ "Free for you and your teams"

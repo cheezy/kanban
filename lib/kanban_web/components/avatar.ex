@@ -46,10 +46,11 @@ defmodule KanbanWeb.Avatar do
   def avatar(assigns) do
     ~H"""
     <span
-      class="inline-flex items-center justify-center text-primary-content font-semibold"
+      class="inline-flex items-center justify-center font-semibold"
       style={[
         "width: #{@size}px; height: #{@size}px; font-size: #{font_size_for(@size)}px; letter-spacing: -0.02em;",
         "background: #{avatar_color(@kind, @palette)};",
+        "color: var(--ink);",
         "border-radius: #{if @kind == :agent, do: "4px", else: "50%"};",
         if(@ring, do: "box-shadow: 0 0 0 2px var(--surface);", else: "")
       ]}
@@ -103,11 +104,11 @@ defmodule KanbanWeb.Avatar do
       </span>
       <span
         :if={@overflow > 0}
-        class="inline-flex items-center justify-center font-semibold text-primary-content"
+        class="inline-flex items-center justify-center font-semibold"
         style={[
           "margin-left: -5px;",
           "width: #{@size}px; height: #{@size}px; font-size: #{font_size_for(@size)}px;",
-          "background: var(--ink-3); border-radius: 50%;",
+          "background: var(--ink-3); color: var(--surface); border-radius: 50%;",
           "box-shadow: 0 0 0 2px var(--surface);"
         ]}
         title={overflow_title(@members, @max)}

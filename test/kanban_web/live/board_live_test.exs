@@ -901,10 +901,13 @@ defmodule KanbanWeb.BoardLiveTest do
 
       assert html =~ "Assigned Task"
       # New TaskCard renders a 16px circular Avatar instead of the
-      # legacy hero-user-solid icon. The Avatar component uses
-      # text-primary-content font-semibold on a colored circle so
-      # the initials adapt to the active theme.
-      assert html =~ "text-primary-content font-semibold"
+      # legacy hero-user-solid icon. W900 switched the initials color
+      # from text-primary-content (cream — 3.23:1 on a colored circle,
+      # failing WCAG AA) to inline color: var(--ink), which gives ~5:1
+      # in both themes since var(--ink) flips to a high-contrast value
+      # against the medium-saturation avatar bg.
+      assert html =~ "justify-center font-semibold"
+      assert html =~ "color: var(--ink);"
       assert html =~ "width: 16px; height: 16px"
     end
 

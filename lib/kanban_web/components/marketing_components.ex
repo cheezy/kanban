@@ -362,7 +362,7 @@ defmodule KanbanWeb.MarketingComponents do
         class="m-0 font-semibold"
         style="font-size: clamp(36px, 6vw, 72px); letter-spacing: -0.04em; line-height: 0.98; max-width: 1100px; color: var(--ink); text-wrap: pretty;"
       >
-        <span style="color: var(--ink-4);">
+        <span style="color: var(--ink-3);">
           {gettext("Tasks are conversations.")}
         </span>
         <br />
@@ -465,7 +465,7 @@ defmodule KanbanWeb.MarketingComponents do
           >
             {gettext("AI agents are first-class teammates,")}
             <br />
-            <span style="color: var(--stride-orange);">
+            <span style="color: var(--stride-orange-ink);">
               {gettext("not bots you babysit.")}
             </span>
           </h2>
@@ -516,7 +516,7 @@ defmodule KanbanWeb.MarketingComponents do
           style="margin: 0; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; text-wrap: pretty;"
         >
           {gettext("One loop.")}
-          <span style="color: var(--stride-orange);">
+          <span style="color: var(--stride-orange-ink);">
             {gettext("Two roles.")}
           </span>
         </h2>
@@ -535,7 +535,7 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--surface); border-color: var(--line);"
         >
           <div class="flex items-center gap-2.5">
-            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); font-weight: 500;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); font-weight: 500;">
               {step.number}
             </span>
             <span class="flex-1"></span>

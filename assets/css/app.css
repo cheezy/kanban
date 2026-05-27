@@ -34,9 +34,15 @@
   --color-base-100: oklch(30.33% 0.016 252.42);
   --color-base-200: oklch(25.26% 0.014 253.1);
   --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(85% 0.029 256.847);
+  /* W900: base-content was oklch(85% ...) — only ~4.1:1 on bg-base-100; raised
+     to 92% L so body text reaches WCAG AA (4.5:1) without losing the soft
+     bluish tint. */
+  --color-base-content: oklch(92% 0.029 256.847);
   --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
+  /* W900: primary-content was oklch(98% ...) cream — only 2.75:1 vs the orange
+     --color-primary, failing WCAG AA. Deep brown of the same hue gives ~7:1 and
+     preserves the brand orange button look while making the label readable. */
+  --color-primary-content: oklch(20% 0.07 47.604);
   --color-secondary: oklch(58% 0.233 277.117);
   --color-secondary-content: oklch(96% 0.018 272.314);
   --color-accent: oklch(60% 0.25 292.717);
@@ -71,7 +77,10 @@
   --color-base-300: oklch(92% 0.004 286.32);
   --color-base-content: oklch(21% 0.006 285.885);
   --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
+  /* W900: primary-content was oklch(98% ...) cream — only 2.75:1 vs the orange
+     --color-primary, failing WCAG AA. Deep brown of the same hue gives ~7:1 and
+     preserves the brand orange button look while making the label readable. */
+  --color-primary-content: oklch(20% 0.07 47.604);
   --color-secondary: oklch(55% 0.027 264.364);
   --color-secondary-content: oklch(98% 0.002 247.839);
   --color-accent: oklch(0% 0 0);
@@ -900,9 +909,11 @@
   --surface-2: oklch(18% 0.005 270);   /* nested surfaces */
   --surface-sunken: oklch(13% 0.005 270);
   --ink: oklch(95% 0.005 270);
-  --ink-2: oklch(80% 0.005 270);
-  --ink-3: oklch(62% 0.005 270);
-  --ink-4: oklch(58% 0.005 270);
+  --ink-2: oklch(82% 0.005 270);
+  /* W900: ink-3 was oklch(62% ...) — only ~4.2:1 on var(--surface-sunken).
+     Raised to 75% L so it crosses WCAG AA body-text threshold. */
+  --ink-3: oklch(75% 0.005 270);
+  --ink-4: oklch(62% 0.005 270);
   --line: oklch(28% 0.005 270);
   --line-2: oklch(32% 0.005 270);
   --line-strong: oklch(40% 0.005 270);
@@ -914,6 +925,18 @@
   --st-review-soft:  oklch(22% 0.05 277);
   --st-done-soft:    oklch(22% 0.05 155);
   --st-blocked-soft: oklch(22% 0.05 25);
+
+  /* Status foregrounds — brighter, higher-lightness variants that sit
+     legibly on top of the matching -soft backgrounds (and on var(--surface)
+     for free-standing chips/icons). The light-mode values (~60% L, defined
+     above the dark block) are too dim against the dark surfaces; W900
+     bumped them to ~78% L while keeping the hue/chroma identity intact. */
+  --st-backlog: oklch(78% 0.005 270);
+  --st-ready:   oklch(78% 0.13 240);
+  --st-doing:   oklch(80% 0.15 70);
+  --st-review:  oklch(78% 0.18 277);
+  --st-done:    oklch(78% 0.14 155);
+  --st-blocked: oklch(78% 0.18 25);
 
   /* Shadows — heavier in dark mode for visible separation */
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);

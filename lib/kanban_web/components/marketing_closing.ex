@@ -38,7 +38,7 @@ defmodule KanbanWeb.MarketingClosing do
         {gettext("Stop writing every line.")}
         <br />
         {gettext("Start")}
-        <span style="color: var(--stride-orange);">
+        <span style="color: var(--stride-orange-ink);">
           {gettext("approving them.")}
         </span>
       </h2>

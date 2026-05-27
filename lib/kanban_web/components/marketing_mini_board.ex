@@ -33,6 +33,8 @@ defmodule KanbanWeb.MarketingMiniBoard do
     ~H"""
     <div
       class="overflow-hidden"
+      data-decorative="true"
+      aria-hidden="true"
       style="background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg);"
     >
       <div
