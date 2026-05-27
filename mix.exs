@@ -105,7 +105,13 @@ defmodule Kanban.MixProject do
         "esbuild kanban --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warning-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "dark_mode.scan",
+        "test"
+      ]
     ]
   end
 

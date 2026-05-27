@@ -39,10 +39,13 @@ defmodule KanbanWeb.MarketingMiniBoard do
         class="flex items-center gap-1.5 px-2.5"
         style="height: 32px; background: var(--surface-2); border-bottom: 1px solid var(--line);"
       >
+        <%!-- dark-mode-ignore: brand status dot (red), fixed contrast on both themes --%>
         <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(75% 0.13 25);">
         </span>
+        <%!-- dark-mode-ignore: brand status dot (yellow), fixed contrast on both themes --%>
         <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(80% 0.13 80);">
         </span>
+        <%!-- dark-mode-ignore: brand status dot (green), fixed contrast on both themes --%>
         <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(70% 0.14 145);">
         </span>
         <span

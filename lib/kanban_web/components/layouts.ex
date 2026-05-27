@@ -63,8 +63,13 @@ defmodule KanbanWeb.Layouts do
       <%= if @current_scope do %>
         <div
           data-sidebar-backdrop
-          class="hidden md:hidden fixed inset-0 bg-black/40 z-40"
           aria-hidden="true"
+          class={
+            [
+              # dark-mode-ignore: intentional darkening backdrop for the mobile drawer
+              "hidden md:hidden fixed inset-0 bg-black/40 z-40"
+            ]
+          }
         />
         <.side_nav
           current_scope={@current_scope}
@@ -347,10 +352,13 @@ defmodule KanbanWeb.Layouts do
         </button>
       <% end %>
       <div class="hidden md:flex" style="gap: 6px;" aria-hidden="true">
+        <%!-- dark-mode-ignore: brand status dot (red), fixed contrast on both themes --%>
         <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(75% 0.13 25); display: inline-block;">
         </span>
+        <%!-- dark-mode-ignore: brand status dot (yellow), fixed contrast on both themes --%>
         <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(80% 0.13 80); display: inline-block;">
         </span>
+        <%!-- dark-mode-ignore: brand status dot (green), fixed contrast on both themes --%>
         <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(70% 0.14 145); display: inline-block;">
         </span>
       </div>

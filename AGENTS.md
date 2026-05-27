@@ -43,6 +43,10 @@ This approach improves:
 
 **CRITICAL**: Always verify UI changes work in BOTH light and dark modes before considering a task complete.
 
+> **Contract:** see `docs/dark-mode-contract.md` for the canonical token table,
+> scope rules, prohibited patterns, and the `mix dark_mode.scan` allow-list
+> syntax. The scanner runs as part of `mix precommit`.
+
 #### When to Verify Dark Mode
 - After adding or modifying any UI component
 - After changing CSS styles or Tailwind classes
