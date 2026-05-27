@@ -34,7 +34,7 @@ defmodule KanbanWeb.UserLive.Registration do
         <.sso_row provider={:github} />
       </div>
 
-      <div style="margin-top: 18px; display: flex; align-items: center; gap: 10px; color: var(--ink-4); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
+      <div style="margin-top: 18px; display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
         <span style="flex: 1; height: 1px; background: var(--line);"></span>
         {gettext("or with email")}
         <span style="flex: 1; height: 1px; background: var(--line);"></span>
