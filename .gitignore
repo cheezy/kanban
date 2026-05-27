@@ -55,10 +55,12 @@ stride-copilot/
 stride-gemini/
 stride-ideation/
 stride-copilot-ideation/
+stride-codex-ideation/
 stride-marketplace/
 stride-opencode/
 stride-codex/
 stride-pi/
+stride-lite/
 stride-security-review/
 stride-security-review-copilot/
 security-review/
