@@ -128,3 +128,4 @@ browser-eval snippets.
 - `lib/kanban_web/components/layouts/marketing.html.heex` — `.stride-marketing` wrapper
 - `lib/mix/tasks/dark_mode/scan.ex` — the scanner implementation
 - `test/mix/tasks/dark_mode/scan_test.exs` — scanner unit tests
+
