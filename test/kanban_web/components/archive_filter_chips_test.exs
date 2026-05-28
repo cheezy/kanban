@@ -124,7 +124,10 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
 
       assert all_chip =~ ~s(aria-pressed="true")
       assert all_chip =~ "background: var(--ink)"
-      assert all_chip =~ "color: white"
+      # W907: fg switched from "white" to var(--surface) so the chip stays
+      # readable in dark mode (where --ink flips to near-white and white-on-
+      # near-white was invisible).
+      assert all_chip =~ "color: var(--surface)"
     end
 
     test "active=:completed inverts the Completed chip and leaves All un-pressed" do

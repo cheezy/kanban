@@ -82,7 +82,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
           <.reading_time minutes={@how_to.reading_time} />
           <span
             class="inline-flex items-center gap-1 text-[11.5px] font-medium"
-            style="color: var(--stride-orange);"
+            style="color: var(--stride-orange-ink);"
           >
             {gettext("Read more")}
             <.icon name="hero-arrow-right" class="h-3 w-3" />

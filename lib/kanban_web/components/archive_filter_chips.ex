@@ -172,9 +172,13 @@ defmodule KanbanWeb.ArchiveFilterChips do
   defp reason_label(:duplicate), do: gettext("Duplicate")
   defp reason_label(:deferred), do: gettext("Deferred")
 
-  # Returns a %{bg, fg, border} map. Active chips invert to ink-bg white-fg.
+  # Returns a %{bg, fg, border} map. Active chips invert against the page —
+  # bg uses var(--ink) and fg uses var(--surface) so both tokens flip together
+  # with the theme, keeping high contrast in both modes (W907 fixed the
+  # earlier fg="white" which was invisible in dark mode where --ink flips to
+  # near-white).
   defp chip_palette(true, _tone) do
-    %{bg: "var(--ink)", fg: "white", border: "var(--ink)"}
+    %{bg: "var(--ink)", fg: "var(--surface)", border: "var(--ink)"}
   end
 
   defp chip_palette(false, "done") do

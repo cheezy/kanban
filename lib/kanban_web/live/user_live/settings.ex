@@ -191,7 +191,7 @@ defmodule KanbanWeb.UserLive.Settings do
       </span>
       <span
         :if={@hint}
-        style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-4); letter-spacing: -0.01em;"
+        style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-3); letter-spacing: -0.01em;"
       >
         {@hint}
       </span>

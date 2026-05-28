@@ -841,14 +841,15 @@
   --line-strong: oklch(82% 0.005 270);
 
   /* Status foreground — calm. W902 darkened from ~60% L (failed WCAG AA at
-     2.74-3.69:1 on white) to ~50% L so these read as body text on var(--surface)
-     and var(--bg). Hue/chroma identity preserved. */
-  --st-backlog: oklch(50% 0.005 270);
-  --st-ready:   oklch(50% 0.13 240);
-  --st-doing:   oklch(50% 0.15 70);
-  --st-review:  oklch(50% 0.18 277);
-  --st-done:    oklch(50% 0.14 155);
-  --st-blocked: oklch(50% 0.20 25);
+     2.74-3.69:1 on white) and W907 darkened further from 50% L to 45% L so
+     pills using fg-on-soft-bg pairs (e.g. agent_roster_card "current task"
+     chip: --st-doing on --st-doing-soft) cross WCAG AA. Hue/chroma preserved. */
+  --st-backlog: oklch(45% 0.005 270);
+  --st-ready:   oklch(45% 0.13 240);
+  --st-doing:   oklch(45% 0.15 70);
+  --st-review:  oklch(45% 0.18 277);
+  --st-done:    oklch(45% 0.14 155);
+  --st-blocked: oklch(45% 0.20 25);
 
   --st-backlog-soft: oklch(96% 0.003 270);
   --st-ready-soft:   oklch(96% 0.03 240);
