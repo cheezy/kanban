@@ -45,7 +45,10 @@ defmodule Mix.Tasks.DarkMode.Scan do
       |> Enum.flat_map(&scan_file/1)
 
     if violations == [] do
-      Mix.shell().info("dark_mode.scan: clean (0 violations in #{@scan_root})")
+      # Silent on success — Unix CLI convention. Violations still print to
+      # stderr below. This keeps the scanner quiet when invoked from inside
+      # mix test (the scan_test.exs integration test calls Scan.run/1 and
+      # used to flush a clean-status line into the test progress output).
       :ok
     else
       print_violations(violations)
