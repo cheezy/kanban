@@ -84,14 +84,13 @@
           </p>
         </div>
 
-        <%!-- dark-mode-ignore: TODO W903 — 50%-alpha white frosted-glass overlay is theme-blind --%>
         <button
           type="button"
           phx-click="dismiss_message"
           phx-value-id={message.id}
           aria-label={gettext("Dismiss message")}
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          style="color: var(--ink-2); background: oklch(100% 0 0 / 0.5); backdrop-filter: blur(4px);"
+          style="color: var(--ink-2); background: var(--surface-2); backdrop-filter: blur(4px);"
         >
           <.icon name="hero-x-mark" class="h-4 w-4" />
         </button>
