@@ -47,13 +47,19 @@ defmodule KanbanWeb.Avatar do
     ~H"""
     <span
       class="inline-flex items-center justify-center font-semibold"
-      style={[
-        "width: #{@size}px; height: #{@size}px; font-size: #{font_size_for(@size)}px; letter-spacing: -0.02em;",
-        "background: #{avatar_color(@kind, @palette)};",
-        "color: var(--ink);",
-        "border-radius: #{if @kind == :agent, do: "4px", else: "50%"};",
-        if(@ring, do: "box-shadow: 0 0 0 2px var(--surface);", else: "")
-      ]}
+      style={
+        [
+          "width: #{@size}px; height: #{@size}px; font-size: #{font_size_for(@size)}px; letter-spacing: -0.02em;",
+          "background: #{avatar_color(@kind, @palette)};",
+          # dark-mode-ignore: avatar text is always near-black because the
+          # avatar background is a fixed medium-saturation color that does
+          # NOT flip with the theme — using a theme-aware ink would produce
+          # white-on-color in dark mode and fail WCAG AA on tiny initials.
+          "color: oklch(18% 0.005 270);",
+          "border-radius: #{if @kind == :agent, do: "4px", else: "50%"};",
+          if(@ring, do: "box-shadow: 0 0 0 2px var(--surface);", else: "")
+        ]
+      }
     >
       {avatar_initials(@name)}
     </span>

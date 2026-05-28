@@ -14,12 +14,17 @@
 //   node audit.mjs --json                         # machine-readable output (default: human)
 //   node audit.mjs --help
 //
-// Auth: routes that require a logged-in user accept a STRIDE_AUDIT_SESSION
-// env var (Phoenix session cookie value). Public marketing pages do not need
-// it.
+// Auth: routes that require a logged-in user are handled automatically — the
+// auditor logs in with the dedicated dark-mode-audit user (provisioned by
+// `mix dark_mode.ensure_audit_user`). No cookie wrangling needed by the
+// caller. Set STRIDE_AUDIT_EMAIL / STRIDE_AUDIT_PASSWORD to override the
+// default credentials when running against a non-default environment.
 
 import { chromium } from "playwright";
 import { AxeBuilder } from "@axe-core/playwright";
+
+const DEFAULT_AUDIT_EMAIL = "dark-mode-audit@stride.local";
+const DEFAULT_AUDIT_PASSWORD = "DarkMode!AuditUser123";
 
 // --- Route catalog ---------------------------------------------------------
 //
@@ -38,7 +43,26 @@ const MARKETING_ROUTES = [
   "/changelog",
 ];
 
-const ALL_ROUTES = MARKETING_ROUTES; // extend as later tasks need authenticated routes.
+// Routes that DO NOT require a logged-in user.
+const PUBLIC_AUTH_ROUTES = ["/users/log-in", "/users/register", "/users/forgot-password"];
+
+// Routes that require a logged-in user. The auditor logs in automatically.
+const AUTHENTICATED_ROUTES = [
+  "/boards",
+  "/boards/new",
+  "/agents",
+  "/review",
+  "/metrics",
+  "/messages",
+  "/resources",
+  "/users/settings",
+];
+
+const ALL_ROUTES = [...MARKETING_ROUTES, ...PUBLIC_AUTH_ROUTES, ...AUTHENTICATED_ROUTES];
+
+function isAuthenticated(route) {
+  return AUTHENTICATED_ROUTES.includes(route) || route.startsWith("/boards/");
+}
 
 // --- Argument parsing ------------------------------------------------------
 
@@ -85,6 +109,38 @@ Environment:
 `;
 
 // --- Audit -----------------------------------------------------------------
+
+async function login(page, baseUrl) {
+  const email = process.env.STRIDE_AUDIT_EMAIL ?? DEFAULT_AUDIT_EMAIL;
+  const password = process.env.STRIDE_AUDIT_PASSWORD ?? DEFAULT_AUDIT_PASSWORD;
+
+  await page.goto(`${baseUrl}/users/log-in`, { waitUntil: "networkidle" });
+  await page.fill('#login_form_password input[name="user[email]"]', email);
+  await page.fill('#login_form_password input[name="user[password]"]', password);
+  // The login form uses LiveView's phx-trigger-action two-step dance: the
+  // phx-submit handler sets trigger_submit=true, the next render adds the
+  // action attribute that fires the real POST. Submitting the form directly
+  // via JS bypasses the LV round-trip and goes straight to the controller.
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.endsWith("/users/log-in"), { timeout: 10_000 }),
+    page.evaluate(() => {
+      const form = document.getElementById("login_form_password");
+      if (!form) throw new Error("login_form_password not found");
+      form.action = "/users/log-in";
+      form.method = "post";
+      form.submit();
+    }),
+  ]);
+
+  // Sanity check: the redirect after login lands somewhere other than the
+  // log-in page. If we're still on /users/log-in the credentials are wrong.
+  const url = new URL(page.url());
+  if (url.pathname === "/users/log-in") {
+    throw new Error(
+      `Audit login failed for ${email}. Run 'mix dark_mode.ensure_audit_user' to provision the dev user, or set STRIDE_AUDIT_EMAIL / STRIDE_AUDIT_PASSWORD if you want to use a different account.`,
+    );
+  }
+}
 
 async function auditRoute(page, baseUrl, route, theme) {
   await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
@@ -149,25 +205,13 @@ async function main() {
   const args = parseArgs(process.argv);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
-
-  // Auth: if STRIDE_AUDIT_SESSION is present, install it as the Phoenix session
-  // cookie for the base URL's host so authenticated routes work.
-  if (process.env.STRIDE_AUDIT_SESSION) {
-    const url = new URL(args.baseUrl);
-    await context.addCookies([
-      {
-        name: "_kanban_key",
-        value: process.env.STRIDE_AUDIT_SESSION,
-        domain: url.hostname,
-        path: "/",
-        httpOnly: true,
-        secure: url.protocol === "https:",
-        sameSite: "Lax",
-      },
-    ]);
-  }
-
   const page = await context.newPage();
+
+  // Log in if any authenticated route is in scope. The context's cookie jar
+  // carries the session for every subsequent navigation.
+  if (args.routes.some(isAuthenticated)) {
+    await login(page, args.baseUrl);
+  }
   const results = [];
   for (const route of args.routes) {
     for (const theme of args.themes) {
