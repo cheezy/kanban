@@ -1,0 +1,18 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor cruft
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Local secrets
+.env
+.env.local
+*.local
+
+# Stride orchestrator marker (transient session state)
+.stride/
