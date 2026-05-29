@@ -21,23 +21,25 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Uses the canonical Stride logo SVG (shared with the app nav)
       assert html =~ "/images/logos/abstract-s-motion.svg"
 
-      # The public marketing nav links (Workflows + Pricing are admin-only
-      # in the desktop nav and verified separately).
+      # The public marketing nav links. Workflows is now visible to everyone
+      # (desktop nav + mobile menu = 2 occurrences); Pricing remains admin-
+      # gated and is verified separately.
       assert html =~ "Product"
+      assert html =~ "Workflows"
       assert html =~ "Resources"
       assert html =~ "About"
 
-      # Product points at its dedicated page (not an in-page anchor)
+      # Product and Workflows point at their dedicated pages.
       assert html =~ ~s|href="/product"|
+      assert href_count(html, "/workflows") == 2
 
-      # Workflows and Pricing are admin-only — they appear in neither the
-      # desktop nav nor the mobile menu for unauthenticated visitors.
-      assert href_count(html, "/workflows") == 0
+      # Pricing is still admin-only — hidden from unauthenticated visitors in
+      # both the desktop nav and the mobile menu.
       refute html =~ "Pricing"
       refute html =~ ~s|href="/pricing"|
     end
 
-    test "Workflows link is hidden from both desktop and mobile nav for non-admin users" do
+    test "Workflows link is visible in both desktop and mobile nav for non-admin users" do
       assigns = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
 
       html =
@@ -45,7 +47,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_nav current_scope={@current_scope} />
         """)
 
-      assert href_count(html, "/workflows") == 0
+      # Desktop nav + mobile menu = 2 occurrences regardless of admin status.
+      assert href_count(html, "/workflows") == 2
     end
 
     test "Workflows link is visible in both desktop nav and mobile menu for admin users" do
@@ -56,7 +59,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_nav current_scope={@current_scope} />
         """)
 
-      # Desktop nav + mobile menu = 2 occurrences for admins.
+      # Desktop nav + mobile menu = 2 occurrences.
       assert href_count(html, "/workflows") == 2
     end
 
