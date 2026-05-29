@@ -50,7 +50,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/goal_progress_header.ex:223
 #: lib/kanban_web/components/marketing_mini_board.ex:293
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:322
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:324
 #: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -2191,7 +2191,7 @@ msgstr "返回仪表盘"
 #: lib/kanban_web/components/goal_progress_header.ex:219
 #: lib/kanban_web/components/marketing_mini_board.ex:193
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:286
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:288
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2421,8 +2421,8 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/goal_progress_header.ex:222
 #: lib/kanban_web/components/marketing_mini_board.ex:275
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:223
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:313
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:215
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:315
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -3096,7 +3096,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/goal_progress_header.ex:221
 #: lib/kanban_web/components/marketing_mini_board.ex:247
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:304
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:306
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3186,7 +3186,7 @@ msgstr "产品"
 #: lib/kanban_web/components/goal_sidebar.ex:64
 #: lib/kanban_web/components/marketing_mini_board.ex:220
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:295
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:297
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -3230,7 +3230,7 @@ msgstr "开始"
 #: lib/kanban_web/components/marketing_components.ex:144
 #: lib/kanban_web/components/marketing_components.ex:397
 #: lib/kanban_web/controllers/page_html/product.html.heex:230
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:508
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:510
 #, elixir-autogen, elixir-format
 msgid "Start free"
 msgstr "免费开始"
@@ -3451,36 +3451,36 @@ msgstr "/ 用户 / 月"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:36
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:86
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:159
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:284
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:155
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:286
 #, elixir-autogen, elixir-format
 msgid "01"
 msgstr "01"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:47
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:97
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:176
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:293
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:174
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:295
 #, elixir-autogen, elixir-format
 msgid "02"
 msgstr "02"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:58
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:110
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:199
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:302
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:201
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:304
 #, elixir-autogen, elixir-format
 msgid "03"
 msgstr "03"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:220
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:311
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:212
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "04"
 msgstr "04"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:239
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:320
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:233
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:322
 #, elixir-autogen, elixir-format
 msgid "05"
 msgstr "05"
@@ -3524,7 +3524,7 @@ msgstr "账户信息"
 msgid "Agent activity"
 msgstr "代理活动"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:297
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Agents claim from here"
 msgstr "代理从这里认领"
@@ -3589,7 +3589,7 @@ msgstr "CSRF 保护"
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr "我以后可以在自托管和托管之间切换吗?"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:288
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:290
 #, elixir-autogen, elixir-format
 msgid "Captured, not yet ready"
 msgstr "已记录,尚未就绪"
@@ -3599,12 +3599,12 @@ msgstr "已记录,尚未就绪"
 msgid "Changes to this policy"
 msgstr "本政策的变更"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:306
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:308
 #, elixir-autogen, elixir-format
 msgid "Claimed, in flight"
 msgstr "已认领,进行中"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:457
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:459
 #, elixir-autogen, elixir-format
 msgid "Common workflow patterns"
 msgstr "常见工作流模式"
@@ -3709,7 +3709,7 @@ msgstr "邮件支持,1 个工作日内响应"
 msgid "Enterprise"
 msgstr "企业版"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:430
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:432
 #, elixir-autogen, elixir-format
 msgid "Every hook is a shell command in a single .stride.md file at the root of your repo. The agent reads its section before each transition and runs the commands locally on its own machine — never on Stride's servers."
 msgstr "每个钩子都是位于仓库根目录单一 .stride.md 文件中的 shell 命令。代理在每次过渡前读取自己的部分,并在自己的机器上本地执行命令 — 绝不会在 Stride 的服务器上运行。"
@@ -3729,7 +3729,7 @@ msgstr "Team 中的全部内容,外加:"
 msgid "Five-column flow, AI-optimized"
 msgstr "五列流程,AI 优化"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:339
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "Four hooks. Four moments."
 msgstr "四个钩子。四个时刻。"
@@ -3759,7 +3759,7 @@ msgstr "开始使用"
 msgid "Goal-driven assignment + per-user agent fleets"
 msgstr "目标驱动的分配 + 每用户的代理舰队"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:425
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:427
 #, elixir-autogen, elixir-format
 msgid "Hooks live in your repo, not ours"
 msgstr "钩子在您的仓库,不在我们的"
@@ -3779,7 +3779,7 @@ msgstr "由我们托管。适合不想维护服务器的团队。"
 msgid "How we use your information"
 msgstr "我们如何使用您的信息"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:315
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:317
 #, elixir-autogen, elixir-format
 msgid "Humans approve / send back"
 msgstr "人类批准 / 退回"
@@ -3872,7 +3872,7 @@ msgstr "限速"
 msgid "Ready to see it run?"
 msgstr "准备好看它运行了吗?"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:483
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:485
 #, elixir-autogen, elixir-format
 msgid "Regulated environment"
 msgstr "受监管的环境"
@@ -3892,22 +3892,22 @@ msgstr "请将漏洞报告至 "
 msgid "Reports generated purely from automated scanners without manual validation."
 msgstr "仅由自动化扫描器生成、未经人工验证的报告。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:410
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:412
 #, elixir-autogen, elixir-format
 msgid "Runs after a human approves the work. The deploy step: merge the PR, push to production, notify the on-call rotation, mark the changelog entry."
 msgstr "在人类批准工作后运行。部署步骤:合并 PR、推送到生产环境、通知值班轮换、标记 changelog 条目。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:351
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:353
 #, elixir-autogen, elixir-format
 msgid "Runs after an agent claims a task, before any work starts. Pull the latest code, install dependencies, run migrations, warm a cache. If it fails, the claim is aborted."
 msgstr "在代理认领任务之后、任何工作开始之前运行。拉取最新代码、安装依赖、执行迁移、预热缓存。如果失败,认领将被中止。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:371
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:373
 #, elixir-autogen, elixir-format
 msgid "Runs after the agent finishes work, before completion is registered. The quality gate: tests, linting, formatting, security scans, auto-commit. If anything fails, completion is blocked."
 msgstr "在代理完成工作之后、注册完成之前运行。质量门禁:测试、lint、格式化、安全扫描、自动提交。任何一项失败,完成将被阻塞。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:391
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:393
 #, elixir-autogen, elixir-format
 msgid "Runs when the task enters the Review column. The handoff to humans: open a pull request, generate the diff summary, post a Slack message, attach a deploy preview link."
 msgstr "当任务进入审核列时运行。向人类的交接:开启 pull request、生成差异摘要、发送 Slack 消息、附上部署预览链接。"
@@ -3967,7 +3967,7 @@ msgstr "服务提供者"
 msgid "Sessions"
 msgstr "会话"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:324
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:326
 #, elixir-autogen, elixir-format
 msgid "Shipped, archived"
 msgstr "已发布,已归档"
@@ -3987,7 +3987,7 @@ msgstr "Sobelow"
 msgid "Solo"
 msgstr "Solo"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:463
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:465
 #, elixir-autogen, elixir-format
 msgid "Solo developer"
 msgstr "个人开发者"
@@ -4037,7 +4037,7 @@ msgstr "与我们交流"
 msgid "Team"
 msgstr "团队"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:473
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:475
 #, elixir-autogen, elixir-format
 msgid "Team with CI"
 msgstr "带 CI 的团队"
@@ -4058,7 +4058,7 @@ msgstr "遥测和审计日志最多保留 90 天,之后会被聚合或删除。"
 msgid "The PostgreSQL database backing the hosted service is encrypted at rest. Backups are encrypted, retained for 30 days, and access is restricted to the Stride operations team."
 msgstr "承载托管服务的 PostgreSQL 数据库在静态时加密。备份同样加密,保留 30 天,且访问仅限于 Stride 运维团队。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:331
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:333
 #, elixir-autogen, elixir-format
 msgid "The columns are fixed. That's the contract: humans and agents both speak the same five-state vocabulary, and a hook can fire at every meaningful transition between them."
 msgstr "列是固定的。这就是约定:人类和代理都使用同一套五状态词汇,而钩子可以在它们之间每一次有意义的过渡时触发。"
@@ -4153,7 +4153,7 @@ msgstr "可以。请发送邮件至 "
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "是。整个代码库以 MIT 许可证开源。可以在您自己的机器、服务器或 Kubernetes 集群上运行。您不需要付费给我们。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:435
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:437
 #, elixir-autogen, elixir-format
 msgid "You hold the keys; agents hold the loop. The board never executes user-supplied code, so a malicious agent or a compromised hook cannot reach any other tenant. Self-hosted instances inherit this property by construction."
 msgstr "钥匙由您持有,循环由代理持有。看板从不执行用户提供的代码,因此恶意代理或被攻陷的钩子无法触及任何其他租户。自托管实例从结构上即继承此特性。"
@@ -4163,27 +4163,27 @@ msgstr "钥匙由您持有,循环由代理持有。看板从不执行用户提�
 msgid "Your rights"
 msgstr "您的权利"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:486
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:488
 #, elixir-autogen, elixir-format
 msgid "after_doing: SAST scan + license check. before_review: post to compliance Slack. after_review: log audit event before deploy."
 msgstr "after_doing:SAST 扫描 + 许可检查。before_review:发到合规 Slack。after_review:在部署前记录审计事件。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:476
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:478
 #, elixir-autogen, elixir-format
 msgid "after_doing: lightweight smoke tests. before_review: open PR (CI runs full suite). after_review: auto-merge once CI green."
 msgstr "after_doing:轻量冒烟测试。before_review:开启 PR(CI 运行完整测试套件)。after_review:CI 变绿后自动合并。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:466
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:468
 #, elixir-autogen, elixir-format
 msgid "before_doing: pull. after_doing: test + lint + auto-commit. before_review: open PR. after_review: merge + push."
 msgstr "before_doing:拉取。after_doing:测试 + lint + 自动提交。before_review:开 PR。after_review:合并 + 推送。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:367
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:369
 #, elixir-autogen, elixir-format
 msgid "blocking · 120s"
 msgstr "阻塞 · 120 秒"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:347
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:349
 #, elixir-autogen, elixir-format
 msgid "blocking · 60s"
 msgstr "阻塞 · 60 秒"
@@ -4198,8 +4198,8 @@ msgstr "阻塞 · 60 秒"
 msgid "just now"
 msgstr "刚刚"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:387
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:406
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:389
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:408
 #, elixir-autogen, elixir-format
 msgid "non-blocking · 60s"
 msgstr "非阻塞 · 60 秒"
@@ -6280,7 +6280,7 @@ msgstr "Stride 看板视图"
 msgid "At a glance, see how work is flowing through the organization with details and metrics updated in real-time."
 msgstr "一目了然地查看工作如何在组织内流动,所有细节与指标实时更新。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:499
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:501
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "在你的项目文件夹里放一个 .stride.md,为你的 agent 获取一个 API token,然后观察循环在你自己的机器上运行。"
@@ -6295,12 +6295,12 @@ msgstr "对你和你的团队免费。"
 msgid "Organization wide real-time activity"
 msgstr "覆盖整个组织的实时活动"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:514
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:516
 #, elixir-autogen, elixir-format
 msgid "Read more details"
 msgstr "阅读更多详情"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:496
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "Wire your project to Stride"
 msgstr "将你的项目接入 Stride"
@@ -6659,32 +6659,32 @@ msgstr ""
 msgid "The AI development lifecycle"
 msgstr "AI 开发生命周期"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:256
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "06"
 msgstr "06"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:225
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:217
 #, elixir-autogen, elixir-format
 msgid "A subagent checks the diff against the task's acceptance criteria and pitfalls."
 msgstr "子代理会对照任务的验收标准和注意事项检查代码变更。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:181
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "A subagent maps the key files, related tests, and existing patterns before any code is written."
 msgstr "在编写任何代码之前，子代理会梳理关键文件、相关测试和现有模式。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:162
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Claim"
 msgstr "认领"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:259
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:257
 #, elixir-autogen, elixir-format
 msgid "Complete and ship"
 msgstr "完成并交付"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:179
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Explore"
 msgstr "探索"
@@ -6694,42 +6694,32 @@ msgstr "探索"
 msgid "Hook"
 msgstr "钩子"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:202
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "Implement"
 msgstr "实现"
-
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:151
-#, elixir-autogen, elixir-format
-msgid "Skill"
-msgstr "技能"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Subagent"
 msgstr "子代理"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:244
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:238
 #, elixir-autogen, elixir-format
 msgid "Tests, formatting, linting, and security scans must pass before completion."
 msgstr "测试、格式化、代码检查和安全扫描都必须通过后才能完成。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:164
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "The agent claims a task from Ready; the card moves to Doing."
 msgstr "代理从 Ready 认领一个任务；卡片随即移动到 Doing。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:204
-#, elixir-autogen, elixir-format
-msgid "The agent writes the code, guided by the project's mandatory skills."
-msgstr "代理在项目必备技能的指导下编写代码。"
-
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:261
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:259
 #, elixir-autogen, elixir-format
 msgid "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
 msgstr "任务完成后，审查和部署钩子会准备好交接给人工处理。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:242
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:236
 #, elixir-autogen, elixir-format
 msgid "Validate"
 msgstr "验证"
@@ -6738,3 +6728,8 @@ msgstr "验证"
 #, elixir-autogen, elixir-format
 msgid "When an agent claims a task from Ready, the card moves to Doing and the agent runs the Stride workflow — a fixed loop where hooks, subagents, and skills carry the work from claim to completion."
 msgstr "当代理从 Ready 认领一个任务时，卡片会移动到 Doing，代理随即运行 Stride 工作流——这是一个固定的循环，其中钩子、子代理和技能将工作从认领推进到完成。"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:206
+#, elixir-autogen, elixir-format
+msgid "The agent writes the code to complete the task."
+msgstr "代理编写代码以完成任务。"
