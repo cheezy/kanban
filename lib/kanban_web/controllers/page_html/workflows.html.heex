@@ -334,8 +334,20 @@
                 </div>
               </summary>
               <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
-                {gettext(
-                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
+                {raw(
+                  gettext(
+                    "The task-reviewer subagent checks the finished diff against the task's own contract — its acceptance criteria, pitfalls, patterns to follow, and testing strategy — catching the task-specific problems that automated tests can't. It also enforces the project's standing rules: when a CODE-REVIEW.md file is present, each bullet in it becomes a review check — a CRITICAL: prefix raising its severity — and any unmet check is treated just like a task-specific finding. When the review comes back clean, the work moves straight on to validation. When it surfaces critical or important issues, the implementing agent fixes them and the diff is reviewed again; only once those are resolved does the task advance, while minor suggestions are noted but never block."
+                  )
+                  |> String.replace(
+                    "task-reviewer",
+                    ~s|<span class="font-mono" style="color: var(--stride-violet-ink);">task-reviewer</span>|,
+                    global: false
+                  )
+                  |> String.replace(
+                    "CODE-REVIEW.md",
+                    ~s|<span class="font-mono">CODE-REVIEW.md</span>|,
+                    global: false
+                  )
                 )}
               </div>
             </details>
@@ -359,7 +371,7 @@
                   </div>
                   <div class="text-xs text-base-content opacity-80 mt-0.5">
                     {gettext(
-                      "Tests, formatting, linting, and security scans must pass before completion."
+                      "Developer defined validations that must pass before completion."
                     )}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
@@ -428,7 +440,6 @@
           </li>
         </ol>
       </div>
-
     </section>
 
     <section class="mb-16">
