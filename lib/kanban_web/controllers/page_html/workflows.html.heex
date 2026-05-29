@@ -370,9 +370,7 @@
                     </span>
                   </div>
                   <div class="text-xs text-base-content opacity-80 mt-0.5">
-                    {gettext(
-                      "Developer defined validations that must pass before completion."
-                    )}
+                    {gettext("Developer defined validations that must pass before completion.")}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -385,61 +383,32 @@
                 </div>
               </summary>
               <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
-                {gettext(
-                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
-                )}
-              </div>
-            </details>
-          </li>
-          <li>
-            <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
-              <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
-                  {gettext("06")}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-semibold text-base-content">
-                      {gettext("Complete and ship")}
-                    </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
-                      {gettext("Details")}
-                      <.icon
-                        name="hero-chevron-down"
-                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
-                      />
-                    </span>
-                  </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
-                    {gettext(
-                      "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
-                    )}
-                  </div>
-                  <div class="flex flex-wrap gap-1.5 mt-2">
-                    <span
-                      class="px-2 py-0.5 rounded font-mono text-[11px]"
-                      style="background: var(--st-doing-soft); color: var(--st-doing);"
-                    >
-                      before_review
-                    </span>
-                    <span
-                      class="px-2 py-0.5 rounded font-mono text-[11px]"
-                      style="background: var(--st-doing-soft); color: var(--st-doing);"
-                    >
-                      after_review
-                    </span>
-                  </div>
-                </div>
-              </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
-                {gettext(
-                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
+                {raw(
+                  gettext(
+                    "Validation runs the after_doing hook — a blocking quality gate whose commands the developer defines. They typically run the full test suite, check formatting, run static code analysis, and run a security scan, and often build the project and auto-commit the change. Because the hook blocks completion, any failure stops the task cold: the agent fixes what broke and re-runs the hook until everything passes, so nothing reaches Done in a broken state."
+                  )
+                  |> String.replace(
+                    "after_doing",
+                    ~s|<span class="font-mono" style="color: var(--st-doing);">after_doing</span>|,
+                    global: false
+                  )
+                  |> String.replace(
+                    ".stride.md",
+                    ~s|<span class="font-mono">.stride.md</span>|,
+                    global: false
+                  )
                 )}
               </div>
             </details>
           </li>
         </ol>
       </div>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Human review and completion")}
+      </h2>
     </section>
 
     <section class="mb-16">
