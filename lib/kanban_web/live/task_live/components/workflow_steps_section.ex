@@ -11,11 +11,11 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
 
   def workflow_steps_section(assigns) do
     ~H"""
-    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 dark:bg-indigo-900/20 dark:border-indigo-700/50">
-      <h4 class="text-sm font-semibold text-indigo-900 dark:text-indigo-200 mb-2">
+    <div class="bg-[var(--stride-violet-soft)] border border-[var(--stride-violet)] rounded-lg p-4">
+      <h4 class="text-sm font-semibold text-[var(--stride-violet-ink)] mb-2">
         {gettext("Workflow Steps")}
       </h4>
-      <div class="text-indigo-900 dark:text-indigo-100 text-sm space-y-2 max-h-96 overflow-y-auto">
+      <div class="text-[var(--stride-violet-ink)] text-sm space-y-2 max-h-96 overflow-y-auto">
         <%= for step <- @steps do %>
           <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span class="font-semibold break-words">

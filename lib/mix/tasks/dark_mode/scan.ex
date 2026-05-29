@@ -1,16 +1,26 @@
 defmodule Mix.Tasks.DarkMode.Scan do
-  @shortdoc "Scans lib/kanban_web for hardcoded grey/white classes and inline hex/oklch literals"
+  @shortdoc "Scans lib/kanban_web for theme-blind colors (grey/white + numbered palette classes, bracket-hex, inline hex/oklch)"
 
   @moduledoc """
   Fails when `lib/kanban_web/` contains theme-blind colors:
 
     * Tailwind grey/white utility classes (`text-gray-*`, `bg-gray-*`,
       `border-gray-*`, `bg-white`, `text-white`, `text-black`, `bg-black`)
-    * Inline hex color literals in `style="..."` attributes
-    * Inline `oklch(...)` literals in `style="..."` attributes
+    * Colored Tailwind numbered-palette utilities — any of
+      `text-/bg-/border-/from-/via-/to-/ring-/fill-/stroke-/divide-/outline-`
+      paired with a numbered palette colour (`red-500`, `yellow-100`,
+      `blue-600`, `violet-300`, …). These (and gradient utilities like
+      `from-blue-500`) are theme-blind: they render the same shade in both
+      light and dark mode. Use the daisyUI semantic tokens (`bg-base-200`,
+      `text-primary`) or the Stride `--st-*` / `--stride-*` tokens instead.
+    * Arbitrary-value colour brackets — `bg-[#fff]`, `text-[#000]`,
+      `from-[#abc123]`, … (hardcoded hex smuggled past the palette check).
+    * Inline hex color literals in `style="..."` / `style={"..."}` attributes
+    * Inline `oklch(...)` literals in `style="..."` / `style={"..."}` attributes
 
-  The full contract — including the three token vocabularies, scope rules,
-  and the allow-list comment syntax — lives in `docs/dark-mode-contract.md`.
+  The full contract — including the token vocabularies, scope rules, the
+  allow-list comment syntax, and the documented detection limitations — lives
+  in `docs/dark-mode-contract.md`.
 
   ## Usage
 
@@ -21,11 +31,22 @@ defmodule Mix.Tasks.DarkMode.Scan do
   ## Allow-listing
 
   Place a `dark-mode-ignore: <reason>` marker on the violating line OR on
-  the immediately preceding line. Any of these comment shapes is accepted:
+  one of the 10 immediately preceding lines. Any of these comment shapes is
+  accepted:
 
       # dark-mode-ignore: <reason>
       <%# dark-mode-ignore: <reason> %>
       <!-- dark-mode-ignore: <reason> -->
+
+  ## Known limitations
+
+  Raw `oklch(...)` / hex literals that sit on their own line inside a
+  multi-line `style={[ ... ]}` list (rather than on the `style=` line itself)
+  are NOT flagged, and bare `oklch()` literals outside a `style=` attribute
+  are intentionally not flagged either — doing so false-positives on
+  legitimate `var(--token, oklch(...))` fallbacks and on intentional
+  fixed-palette components (avatars, the light-locked auth frame). Those
+  remain a documented follow-up; see `docs/dark-mode-contract.md`.
   """
   use Mix.Task
 
@@ -33,9 +54,22 @@ defmodule Mix.Tasks.DarkMode.Scan do
   @extensions ~w(.ex .heex .eex)
   @ignore_marker "dark-mode-ignore"
 
+  # Numbered Tailwind palette colours (the theme-blind families). daisyUI
+  # semantic names (base, primary, secondary, accent, neutral, info, success,
+  # warning, error) are deliberately absent — they ARE theme-aware.
+  @palette "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone"
+  # Utility prefixes that take a colour.
+  @prefix "text|bg|border|from|via|to|ring|fill|stroke|divide|outline"
+
   @class_violation_pattern ~r/(?<![\w-])(text-gray-\d+|bg-gray-\d+|border-gray-\d+|bg-white|text-white|text-black|bg-black)(?![\w-])/
-  @inline_oklch_pattern ~r/style="[^"]*\boklch\s*\([^"]*"/
-  @inline_hex_pattern ~r/style="[^"]*#[0-9a-fA-F]{3,8}\b[^"]*"/
+  @colored_utility_pattern Regex.compile!("(?<![\\w-])(#{@prefix})-(#{@palette})-\\d+(?![\\w-])")
+  @arbitrary_hex_pattern Regex.compile!(
+                           "(?<![\\w-])(#{@prefix})-\\[#[0-9a-fA-F]{3,8}\\](?![\\w-])"
+                         )
+  # Match oklch()/hex inside either a string-literal `style="..."` or an
+  # expression `style={"..."}` (single-line form).
+  @inline_oklch_pattern ~r/style=\{?"[^"]*\boklch\s*\([^"]*"/
+  @inline_hex_pattern ~r/style=\{?"[^"]*#[0-9a-fA-F]{3,8}\b[^"]*"/
 
   @impl Mix.Task
   def run(_args) do
@@ -108,6 +142,8 @@ defmodule Mix.Tasks.DarkMode.Scan do
   defp first_match(line) do
     cond do
       m = Regex.run(@class_violation_pattern, line, capture: :first) -> hd(m)
+      m = Regex.run(@colored_utility_pattern, line, capture: :first) -> hd(m)
+      m = Regex.run(@arbitrary_hex_pattern, line, capture: :first) -> hd(m)
       Regex.run(@inline_oklch_pattern, line) -> "inline oklch()"
       Regex.run(@inline_hex_pattern, line) -> "inline hex color"
       true -> nil

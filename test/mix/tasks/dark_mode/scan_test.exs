@@ -54,6 +54,44 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
     test "does NOT flag style attrs that only reference CSS variables" do
       refute matches_violation?(~s|style="background: var(--surface); color: var(--ink);"|)
     end
+
+    test "flags colored numbered-palette utility classes (bg/text)" do
+      assert matches_violation?(~s(class="bg-yellow-100 text-yellow-800"))
+      assert matches_violation?(~s(class="text-red-600"))
+      assert matches_violation?(~s(class="bg-green-50"))
+      assert matches_violation?(~s(class="text-indigo-900"))
+      assert matches_violation?(~s(class="ring-zinc-700/10"))
+    end
+
+    test "flags colored gradient utilities (from/via/to)" do
+      assert matches_violation?(
+               ~s(class="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500")
+             )
+    end
+
+    test "flags arbitrary-value hex brackets" do
+      assert matches_violation?(~s(class="bg-[#fff]"))
+      assert matches_violation?(~s(class="text-[#1a1a1a]"))
+      assert matches_violation?(~s(class="from-[#abc123]"))
+    end
+
+    test "flags oklch()/hex inside a style={...} expression attribute" do
+      assert matches_violation?(~s|style={"background: oklch(97% 0.05 60);"}|)
+      assert matches_violation?(~s|style={"color: #fff;"}|)
+    end
+
+    test "does NOT flag daisyUI semantic tokens or Stride var tokens" do
+      refute matches_violation?(~s(class="bg-base-100 text-base-content border-base-300"))
+      refute matches_violation?(~s(class="text-primary bg-primary-content btn-primary"))
+      refute matches_violation?(~s(class="bg-success/30 text-warning border-error"))
+      refute matches_violation?(~s|class="bg-[var(--st-blocked-soft)] text-[var(--st-blocked)]"|)
+      refute matches_violation?(~s|style="color: var(--stride-violet-ink);"|)
+    end
+
+    test "does NOT flag a colour word inside a longer identifier" do
+      refute matches_violation?(~s(class="text-titanium-white-500-ish"))
+      refute matches_violation?(~s(data-name="my-bg-red-500-thing"))
+    end
   end
 
   describe "allow-list comments" do
@@ -204,7 +242,8 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
   end
 
   defp match_any?(line) do
-    Regex.match?(class_pattern(), line) or Regex.match?(oklch_pattern(), line) or
+    Regex.match?(class_pattern(), line) or Regex.match?(colored_utility_pattern(), line) or
+      Regex.match?(arbitrary_hex_pattern(), line) or Regex.match?(oklch_pattern(), line) or
       Regex.match?(hex_pattern(), line)
   end
 
@@ -212,8 +251,17 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
     do:
       ~r/(?<![\w-])(text-gray-\d+|bg-gray-\d+|border-gray-\d+|bg-white|text-white|text-black|bg-black)(?![\w-])/
 
-  defp oklch_pattern, do: ~r/style="[^"]*\boklch\s*\([^"]*"/
-  defp hex_pattern, do: ~r/style="[^"]*#[0-9a-fA-F]{3,8}\b[^"]*"/
+  @palette "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone"
+  @prefix "text|bg|border|from|via|to|ring|fill|stroke|divide|outline"
+
+  defp colored_utility_pattern,
+    do: Regex.compile!("(?<![\\w-])(#{@prefix})-(#{@palette})-\\d+(?![\\w-])")
+
+  defp arbitrary_hex_pattern,
+    do: Regex.compile!("(?<![\\w-])(#{@prefix})-\\[#[0-9a-fA-F]{3,8}\\](?![\\w-])")
+
+  defp oklch_pattern, do: ~r/style=\{?"[^"]*\boklch\s*\([^"]*"/
+  defp hex_pattern, do: ~r/style=\{?"[^"]*#[0-9a-fA-F]{3,8}\b[^"]*"/
 
   defp ignored?(lines_map, n) do
     Enum.any?((n - 10)..n, fn m ->

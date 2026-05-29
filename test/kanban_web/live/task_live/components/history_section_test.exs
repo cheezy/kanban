@@ -35,7 +35,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
 
       assert html =~ "Created"
       assert html =~ "hero-plus-circle"
-      assert html =~ "text-green-600"
+      assert html =~ "text-[var(--st-done)]"
       assert html =~ "May 15, 2026"
     end
   end
@@ -88,7 +88,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
       assert html =~ "low"
       assert html =~ "high"
       assert html =~ "hero-exclamation-circle"
-      assert html =~ "text-orange-600"
+      assert html =~ "text-[var(--stride-orange-ink)]"
     end
   end
 

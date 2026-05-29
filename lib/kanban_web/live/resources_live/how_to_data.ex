@@ -128,7 +128,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
         %{
           title: "Open the Task Form",
           content:
-            "Click the <span class=\"hero-plus-circle-solid h-5 w-5 text-green-600 inline-block\"></span> button at the bottom of any column, or use the keyboard shortcut **N** when focused on a column.",
+            "Click the <span class=\"hero-plus-circle-solid h-5 w-5 text-[var(--st-done)] inline-block\"></span> button at the bottom of any column, or use the keyboard shortcut **N** when focused on a column.",
           image: "/images/resources/guides/adding-task-step-1.png",
           image_width: 517,
           image_height: 263

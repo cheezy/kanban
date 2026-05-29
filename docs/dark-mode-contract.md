@@ -85,11 +85,28 @@ single `var()` reference flips with the theme.
 1. **Hardcoded Tailwind grey/white classes** — `text-gray-*`, `bg-gray-*`,
    `border-gray-*`, `bg-white`, `text-white`, `text-black`, `bg-black`. These
    resolve to fixed RGB values that do not flip with `data-theme`.
-2. **Inline hex color literals** in `style` attributes — `style="color: #fff"`,
-   `style="background: #1a1a1a"`. Hex values are theme-blind.
-3. **Inline `oklch()` literals** in `style` attributes — `style="background:
-   oklch(98% 0 0)"`. These are theme-blind unless wrapped in a
-   variable that switches.
+2. **Colored Tailwind numbered-palette utilities** — any of
+   `text-/bg-/border-/from-/via-/to-/ring-/fill-/stroke-/divide-/outline-`
+   paired with a numbered palette colour: `bg-yellow-100`, `text-red-600`,
+   `border-indigo-200`, `ring-zinc-700`, and gradient utilities like
+   `from-blue-500 via-purple-500 to-pink-500`. The palette families are
+   `red orange amber yellow lime green emerald teal cyan sky blue indigo
+   violet purple fuchsia pink rose slate gray zinc neutral stone`. All are
+   theme-blind. Replace with daisyUI semantic tokens (`bg-base-200`,
+   `text-primary`, `bg-success/30`) or the Stride `--st-*` / `--stride-*`
+   tokens via arbitrary-value classes (`bg-[var(--st-done-soft)]`,
+   `text-[var(--st-blocked)]`). daisyUI semantic names (`base`, `primary`,
+   `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`)
+   are NOT flagged — they are theme-aware.
+3. **Arbitrary-value colour brackets** — `bg-[#fff]`, `text-[#000]`,
+   `from-[#abc123]`. Hardcoded hex smuggled through Tailwind's arbitrary-value
+   syntax. (Token references like `bg-[var(--st-done-soft)]` are fine.)
+4. **Inline hex color literals** in `style` attributes — `style="color: #fff"`,
+   `style={"background: #1a1a1a"}` (both the `style="..."` string-literal and
+   the single-line `style={"..."}` expression form). Hex values are theme-blind.
+5. **Inline `oklch()` literals** in `style` attributes — `style="background:
+   oklch(98% 0 0)"`, `style={"background: oklch(97% 0.05 60)"}`. These are
+   theme-blind unless wrapped in a variable that switches.
 
 The scanner intentionally **does not** scan:
 
@@ -97,6 +114,22 @@ The scanner intentionally **does not** scan:
   tokens.
 - `docs/*` — docs reference forbidden patterns as examples.
 - Test files (`*_test.exs`, files under `test/`).
+
+### Known scanner limitations (documented follow-up)
+
+The scanner is line-based, so it does **not** catch every theme-blind colour:
+
+- Raw `oklch()` / hex literals that sit on their **own line inside a
+  multi-line `style={[ ... ]}` list** (rather than on the `style=` line) are
+  not flagged. The `style="..."` and single-line `style={"..."}` forms are.
+- Bare `oklch()` literals **outside** a `style=` attribute are not flagged.
+  Flagging them broadly would false-positive on legitimate
+  `var(--token, oklch(...))` fallbacks and on intentional fixed-palette
+  components (e.g. generated avatar palettes, the light-locked auth frame).
+
+These remain a tracked follow-up rather than an enforced rule. When adding a
+multi-line inline gradient, prefer a composite gradient token (see the
+**Composite gradient tokens** table) so the scanner gap never matters.
 
 ## Allow-listing
 

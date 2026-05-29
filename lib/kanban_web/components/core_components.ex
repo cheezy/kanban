@@ -601,7 +601,7 @@ defmodule KanbanWeb.CoreComponents do
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
               class={[
-                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                "shadow-base-300/20 ring-base-300/40 relative hidden bg-base-100 shadow-lg ring-1 transition",
                 if(@mobile_fullscreen,
                   do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0 p-4 md:p-10 lg:p-14",
                   else: "rounded-2xl p-14"

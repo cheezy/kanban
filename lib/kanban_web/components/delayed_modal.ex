@@ -60,7 +60,7 @@ defmodule KanbanWeb.DelayedModal do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               class={[
-                "shadow-zinc-700/10 ring-zinc-700/10 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                "shadow-base-300/20 ring-base-300/40 relative hidden bg-base-100 shadow-lg ring-1 transition",
                 if(@mobile_fullscreen,
                   do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0",
                   else: "rounded-2xl"

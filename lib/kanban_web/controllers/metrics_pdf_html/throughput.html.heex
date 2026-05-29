@@ -231,6 +231,7 @@
           <div class="chart-bar">
             <div class="chart-date">{format_date(day.date)}</div>
             <div class="chart-bar-container">
+              <%!-- dark-mode-ignore: PDF output is intentionally theme-fixed (printed/archived, never themed) — guarded by KanbanWeb.MetricsPdfHTMLPolicyTest --%>
               <div
                 class="chart-bar-fill"
                 style={"width: #{calculate_bar_width(day.count, @data.summary_stats.peak_count)}%; min-width: 8px; background-color: #2563eb; height: 32px; display: block;"}

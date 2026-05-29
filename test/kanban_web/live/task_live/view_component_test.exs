@@ -1116,7 +1116,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Completion"
-      assert result =~ "bg-green-50"
+      assert result =~ "bg-[var(--st-done-soft)]"
       assert result =~ "Completed at"
       assert result =~ "Completed by"
       assert result =~ "Dave Completer"
@@ -1221,7 +1221,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Workflow Steps"
-      assert result =~ "bg-indigo-50"
+      assert result =~ "bg-[var(--stride-violet-soft)]"
       assert result =~ "Before Doing"
       assert result =~ "After Doing"
       assert result =~ "120 ms"
@@ -1573,7 +1573,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Testing Strategy"
-      assert result =~ "bg-cyan-50"
+      assert result =~ "bg-[var(--st-ready-soft)]"
       assert result =~ "Unit Tests"
       assert result =~ "Test authentication module"
       assert result =~ "Test validation functions"
@@ -1664,7 +1664,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Integration Points"
-      assert result =~ "bg-indigo-50"
+      assert result =~ "bg-[var(--stride-violet-soft)]"
       assert result =~ "Telemetry Events"
       assert result =~ "[:kanban, :task, :created]"
       assert result =~ "[:kanban, :task, :updated]"

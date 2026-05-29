@@ -22,13 +22,16 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
               <div class="mt-0.5">
                 <%= case history.type do %>
                   <% :creation -> %>
-                    <.icon name="hero-plus-circle" class="w-4 h-4 text-green-600" />
+                    <.icon name="hero-plus-circle" class="w-4 h-4 text-[var(--st-done)]" />
                   <% :move -> %>
                     <.icon name="hero-arrow-right-circle" class="w-4 h-4 text-[var(--st-ready)]" />
                   <% :priority_change -> %>
-                    <.icon name="hero-exclamation-circle" class="w-4 h-4 text-orange-600" />
+                    <.icon
+                      name="hero-exclamation-circle"
+                      class="w-4 h-4 text-[var(--stride-orange-ink)]"
+                    />
                   <% :assignment -> %>
-                    <.icon name="hero-user-circle" class="w-4 h-4 text-purple-600" />
+                    <.icon name="hero-user-circle" class="w-4 h-4 text-[var(--stride-violet)]" />
                 <% end %>
               </div>
               <div class="flex-1">
@@ -50,22 +53,22 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
                       <%= cond do %>
                         <% history.from_user_id == nil && history.to_user_id != nil -> %>
                           <span class="font-semibold">{gettext("Assigned to")}</span>
-                          <span class="font-semibold text-purple-600">
+                          <span class="font-semibold text-[var(--stride-violet)]">
                             {history.to_user.name}
                           </span>
                         <% history.from_user_id != nil && history.to_user_id == nil -> %>
                           <span class="font-semibold">{gettext("Unassigned from")}</span>
-                          <span class="font-semibold text-purple-600">
+                          <span class="font-semibold text-[var(--stride-violet)]">
                             {history.from_user.name}
                           </span>
                         <% true -> %>
                           <span class="font-semibold">{gettext("Reassigned")}</span>
                           {gettext("from")}
-                          <span class="font-semibold text-purple-600">
+                          <span class="font-semibold text-[var(--stride-violet)]">
                             {history.from_user.name}
                           </span>
                           {gettext("to")}
-                          <span class="font-semibold text-purple-600">
+                          <span class="font-semibold text-[var(--stride-violet)]">
                             {history.to_user.name}
                           </span>
                       <% end %>
