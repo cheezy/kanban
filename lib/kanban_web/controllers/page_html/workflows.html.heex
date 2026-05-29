@@ -99,6 +99,64 @@
 
     <section class="mb-16">
       <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Getting ready for development")}
+      </h2>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+        {gettext(
+          "Ideation fills the Backlog, but agents never touch it directly. A human curates first: review what was captured, decide which tasks need a human sign-off, and promote the ready work into the Ready column."
+        )}
+      </p>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("01")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Review the Backlog")}</div>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "Humans read through the captured tasks, sharpen scope, and confirm each one has a clear reason and acceptance criteria before any agent sees it."
+              )}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("02")}
+            </div>
+            <div class="font-semibold text-base-content">
+              {gettext("Decide what needs review")}
+            </div>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "Flag the tasks whose finished work should pause for human approval. Those stop in Review when complete; the rest advance straight to Done."
+              )}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("03")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("Move to Ready")}</div>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "Drag the prepared tasks into Ready. That move is the go signal — agents claim only from Ready, so nothing starts until a human says so."
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+        {gettext(
+          "Backlog is the human staging area; Ready is the contract. Curating the board up front is what lets agents run autonomously once the lifecycle below kicks in."
+        )}
+      </p>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
         {gettext("The lifecycle")}
       </h2>
 
