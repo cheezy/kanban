@@ -48,6 +48,19 @@ greys, whites, hex literals, or `oklch()` literals inline.
 | `border-gray-200` | `border-base-300` or `var(--line)` |
 | `border-gray-300` | `var(--line-strong)` |
 
+### Composite gradient tokens
+
+For the two surfaces that previously hardcoded a multi-stop gradient inline
+(theme-blind), use these paired tokens instead. Each is defined in both the
+light scope block and the `:where([data-theme="dark"])` override block, so a
+single `var()` reference flips with the theme.
+
+| Token | Used by | Notes |
+|---|---|---|
+| `var(--banner-gradient)` | Board announcement / "Important Message" banner background | Warm beige/cream sweep in light; low-lightness (~24-26% L) orange/amber/violet sweep in dark |
+| `var(--banner-border)` | Same banner's outer border | `oklch(85% …)` light, `oklch(40% …)` dark — keep the orange left-accent (`var(--stride-orange)`) separate |
+| `var(--loading-bar-gradient)` | Top page-loading progress bar | Brand orange→violet→orange; brand accents are identical across themes |
+
 ## Scope rules
 
 - **`.stride-screen`** wraps every authenticated LiveView via

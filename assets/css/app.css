@@ -858,6 +858,16 @@
   --st-done-soft:    oklch(96% 0.03 155);
   --st-blocked-soft: oklch(96% 0.03 25);
 
+  /* Composite gradients — announcement banner + top loading bar. Defined as
+     paired light/dark tokens (the dark variants live in the dark override
+     block) so theme-blind inline gradients can be replaced with a single
+     token reference. --banner-gradient mirrors the warm beige/cream sweep
+     the banner used to hardcode inline; --loading-bar-gradient uses the
+     brand accents (unchanged across themes). Consumed by D37 + W934. */
+  --banner-gradient: linear-gradient(135deg, oklch(97% 0.05 60 / 0.85) 0%, oklch(96% 0.06 30 / 0.55) 60%, oklch(96% 0.04 290 / 0.4) 100%);
+  --banner-border: oklch(85% 0.12 50 / 0.55);
+  --loading-bar-gradient: linear-gradient(to right, var(--stride-orange) 0%, var(--stride-violet) 50%, var(--stride-orange) 100%);
+
   /* Priority dots */
   --pri-critical: oklch(58% 0.22 25);
   --pri-high:    oklch(68% 0.18 50);
@@ -940,6 +950,16 @@
   --st-review:  oklch(78% 0.18 277);
   --st-done:    oklch(78% 0.14 155);
   --st-blocked: oklch(78% 0.18 25);
+
+  /* Composite gradients — dark variants. The banner drops to low lightness
+     (~24-26% L) while preserving the orange/amber/violet hue family, so the
+     announcement reads as a dark tinted panel instead of the light cream box
+     it became before this token existed; the border lifts to 40% L for a
+     visible edge on dark canvas. The loading bar reuses the brand accents,
+     which keep their identity in both themes. */
+  --banner-gradient: linear-gradient(135deg, oklch(26% 0.06 60 / 0.9) 0%, oklch(24% 0.06 30 / 0.7) 60%, oklch(24% 0.05 290 / 0.55) 100%);
+  --banner-border: oklch(40% 0.12 50 / 0.55);
+  --loading-bar-gradient: linear-gradient(to right, var(--stride-orange) 0%, var(--stride-violet) 50%, var(--stride-orange) 100%);
 
   /* Shadows — heavier in dark mode for visible separation */
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
