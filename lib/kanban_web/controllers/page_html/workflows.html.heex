@@ -17,8 +17,15 @@
       </h2>
 
       <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
-        {gettext(
-          "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
+        {raw(
+          String.replace(
+            gettext(
+              "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
+            ),
+            "stride-ideation",
+            ~s(<a href="https://github.com/cheezy/stride-ideation" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">stride-ideation</a>),
+            global: false
+          )
         )}
       </p>
 
