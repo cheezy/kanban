@@ -184,7 +184,7 @@
                 {raw(
                   String.replace(
                     gettext(
-                      "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the task moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even runs the tests — so the agent starts from a known state."
+                      "When the agent claims the task, the developer-defined before_doing hook runs on the developer's workstation prior to the task moving to the Doing column. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
                     ),
                     "before_doing",
                     ~s|<span class="font-mono" style="color: var(--st-doing);">before_doing</span>|,

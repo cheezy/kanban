@@ -179,6 +179,43 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
     end
   end
 
+  describe "high_frequency_metric?/1" do
+    test "returns true for repo.query metrics (one per DB query)" do
+      assert MetricsStorage.__high_frequency_metric__?([:kanban, :repo, :query, :total_time]) ==
+               true
+
+      assert MetricsStorage.__high_frequency_metric__?([:kanban, :repo, :query, :queue_time]) ==
+               true
+    end
+
+    test "returns true for phoenix.endpoint and router_dispatch metrics (one per request)" do
+      assert MetricsStorage.__high_frequency_metric__?([:phoenix, :endpoint, :stop, :duration]) ==
+               true
+
+      assert MetricsStorage.__high_frequency_metric__?([
+               :phoenix,
+               :router_dispatch,
+               :stop,
+               :duration
+             ]) == true
+    end
+
+    test "returns false for business metrics that should be persisted" do
+      assert MetricsStorage.__high_frequency_metric__?([:kanban, :user, :registration, :count]) ==
+               false
+
+      assert MetricsStorage.__high_frequency_metric__?([:kanban, :api, :task_created, :count]) ==
+               false
+
+      assert MetricsStorage.__high_frequency_metric__?([:phoenix, :channel_joined, :duration]) ==
+               false
+    end
+
+    test "returns false for non-list metric names" do
+      assert MetricsStorage.__high_frequency_metric__?("kanban.repo.query") == false
+    end
+  end
+
   describe "metrics_table_query?/1" do
     test "returns true for metadata with metrics_events source" do
       metadata = %{source: "metrics_events"}

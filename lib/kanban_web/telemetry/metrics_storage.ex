@@ -90,9 +90,12 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   end
 
   def handle_event(_event_name, measurements, metadata, %{metric: metric}) do
-    # Skip database queries on metrics_events table to prevent recursive metrics collection
-    # Also skip VM metrics as they're high-frequency and low business value
-    if metrics_table_query?(metadata) or vm_metric?(metric.name) do
+    # Skip database queries on metrics_events table to prevent recursive metrics collection.
+    # Also skip VM metrics and high-frequency infrastructure timing metrics (repo.query,
+    # phoenix.endpoint, router_dispatch) — they fire on every query/request, which floods
+    # metrics_events. They stay registered for LiveDashboard; only DB persistence is skipped.
+    if metrics_table_query?(metadata) or vm_metric?(metric.name) or
+         high_frequency_metric?(metric.name) do
       :ok
     else
       measurement_value = extract_measurement(measurements, metric.measurement)
@@ -113,6 +116,18 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   end
 
   defp vm_metric?(_), do: false
+
+  # Called from handle_event/4; analyzer regex misses predicate `?` callers.
+  # High-frequency infrastructure timing metrics: repo.query fires on every DB
+  # query, phoenix.endpoint / router_dispatch on every HTTP request. Persisting
+  # each one floods metrics_events (e.g. Oban's ~1/s idle polling alone), so we
+  # skip persistence here — the metrics remain registered in KanbanWeb.Telemetry
+  # for LiveDashboard. Business metrics (kanban.user.*, kanban.api.task_*, …) are
+  # kept.
+  defp high_frequency_metric?([:kanban, :repo, :query | _]), do: true
+  defp high_frequency_metric?([:phoenix, :endpoint | _]), do: true
+  defp high_frequency_metric?([:phoenix, :router_dispatch | _]), do: true
+  defp high_frequency_metric?(_), do: false
 
   # Called from handle_event/4; analyzer regex misses predicate `?` callers.
   defp metrics_table_query?(metadata) do
@@ -194,5 +209,6 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
     def __sanitize_metadata__(metadata), do: sanitize_metadata(metadata)
     def __metrics_table_query__?(metadata), do: metrics_table_query?(metadata)
     def __vm_metric__?(metric_name), do: vm_metric?(metric_name)
+    def __high_frequency_metric__?(metric_name), do: high_frequency_metric?(metric_name)
   end
 end

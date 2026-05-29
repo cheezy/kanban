@@ -6785,12 +6785,12 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:186
 #, elixir-autogen, elixir-format
-msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the task moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even runs the tests — so the agent starts from a known state."
+msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's workstation prior to the task moving to the Doing column. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
 msgstr ""
 "Wenn der Agent die Aufgabe übernimmt, wird der vom Entwickler definierte "
-"before_doing-Hook auf der eigenen Workstation des Entwicklers ausgeführt, "
-"bevor die Aufgabe in die Spalte „Doing“ verschoben wird. Dieser Hook wird "
+"before_doing-Hook auf der Workstation des Entwicklers ausgeführt, bevor die "
+"Aufgabe in die Spalte „Doing“ verschoben wird. Dieser Entwickler-Hook wird "
 "typischerweise verwendet, um sicherzustellen, dass das lokale Checkout mit "
 "dem neuesten Code auf dem aktuellen Stand ist, die neuesten Abhängigkeiten "
-"abzurufen, alle erforderlichen Datenbankmigrationen anzuwenden und sogar die "
-"Tests auszuführen — damit der Agent von einem bekannten Zustand aus startet."
+"abzurufen, alle erforderlichen Datenbankmigrationen anzuwenden und die Tests "
+"auszuführen — damit der Agent von einem bekannten Zustand aus startet."
