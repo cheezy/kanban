@@ -128,8 +128,174 @@
 
     <section class="mb-16">
       <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
-        {gettext("The lifecycle")}
+        {gettext("The AI development lifecycle")}
       </h2>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-6">
+        {gettext(
+          "When an agent claims a task from Ready, the card moves to Doing and the agent runs the Stride workflow — a fixed loop where hooks, subagents, and skills carry the work from claim to completion."
+        )}
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-6 text-xs">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" style="background: var(--st-doing);"></span>
+          <span class="text-base-content opacity-70">{gettext("Hook")}</span>
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" style="background: var(--stride-violet);"></span>
+          <span class="text-base-content opacity-70">{gettext("Subagent")}</span>
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" style="background: var(--st-ready);"></span>
+          <span class="text-base-content opacity-70">{gettext("Skill")}</span>
+        </span>
+      </div>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
+        <ol class="space-y-5">
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("01")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Claim")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext("The agent claims a task from Ready; the card moves to Doing.")}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-doing-soft); color: var(--st-doing);"
+                >
+                  before_doing
+                </span>
+              </div>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("02")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Explore")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext(
+                  "A subagent maps the key files, related tests, and existing patterns before any code is written."
+                )}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
+                >
+                  task-explorer
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
+                >
+                  planner
+                </span>
+              </div>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("03")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Implement")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext("The agent writes the code, guided by the project's mandatory skills.")}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-ready-soft); color: var(--st-ready);"
+                >
+                  stride-development-guidelines
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-ready-soft); color: var(--st-ready);"
+                >
+                  phoenix-framework
+                </span>
+              </div>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("04")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Review")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext(
+                  "A subagent checks the diff against the task's acceptance criteria and pitfalls."
+                )}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
+                >
+                  task-reviewer
+                </span>
+              </div>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("05")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Validate")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext(
+                  "Tests, formatting, linting, and security scans must pass before completion."
+                )}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-doing-soft); color: var(--st-doing);"
+                >
+                  after_doing
+                </span>
+              </div>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+              {gettext("06")}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-base-content">{gettext("Complete and ship")}</div>
+              <div class="text-xs text-base-content opacity-80 mt-0.5">
+                {gettext(
+                  "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
+                )}
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-doing-soft); color: var(--st-doing);"
+                >
+                  before_review
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded font-mono text-[11px]"
+                  style="background: var(--st-doing-soft); color: var(--st-doing);"
+                >
+                  after_review
+                </span>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </div>
 
       <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
