@@ -122,7 +122,7 @@
 
     <div class="mt-2">
       <%= if !@has_columns do %>
-        <div class="p-12 bg-gradient-to-br from-base-100 to-base-200 rounded-xl border-2 border-dashed border-base-300 shadow-sm">
+        <div class="p-12 bg-base-100 rounded-xl border-2 border-dashed border-base-300 shadow-sm">
           <div class="text-center max-w-md mx-auto">
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--surface-sunken)] mb-6">
               <.icon name="hero-queue-list" class="h-10 w-10 text-[var(--ink-2)]" />
@@ -162,7 +162,7 @@
           <div
             :for={{id, column} <- @streams.columns}
             id={id}
-            class="snap-start shrink-0 w-[calc(100vw-2rem)] md:w-auto md:flex-1 md:min-w-[288px] md:shrink bg-gradient-to-br from-base-200 to-base-300/80 rounded-xl p-4 shadow-sm border border-base-300/50"
+            class="snap-start shrink-0 w-[calc(100vw-2rem)] md:w-auto md:flex-1 md:min-w-[288px] md:shrink bg-base-200 rounded-xl p-4 shadow-sm border border-base-300/50"
             data-column-id={column.id}
           >
             <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>

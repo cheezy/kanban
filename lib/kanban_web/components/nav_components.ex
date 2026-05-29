@@ -73,7 +73,8 @@ defmodule KanbanWeb.NavComponents do
     ~H"""
     <.link
       href={@href}
-      class="text-sm font-medium text-primary-content bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
+      class="text-sm font-medium text-primary-content hover:opacity-90 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
+      style="background: var(--stride-orange);"
     >
       {render_slot(@inner_block)}
     </.link>

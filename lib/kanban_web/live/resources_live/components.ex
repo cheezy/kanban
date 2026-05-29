@@ -641,11 +641,15 @@ defmodule KanbanWeb.ResourcesLive.Components do
     """
   end
 
-  defp category_bg_class(:getting_started), do: "from-success/20 to-info/20"
-  defp category_bg_class(:developer), do: "from-secondary/20 to-info/20"
-  defp category_bg_class(:non_developer), do: "from-warning/20 to-error/20"
-  defp category_bg_class(:best_practices), do: "from-accent/20 to-warning/20"
-  defp category_bg_class(:default), do: "from-info/20 to-secondary/20"
+  # D40: bumped from /20 to /30 so the category illustration gradients stay
+  # visible against the darker canvas in dark mode. These are daisyUI semantic
+  # color tokens (success/info/secondary/warning/error/accent), so they already
+  # flip with the theme — only the opacity needed lifting.
+  defp category_bg_class(:getting_started), do: "from-success/30 to-info/30"
+  defp category_bg_class(:developer), do: "from-secondary/30 to-info/30"
+  defp category_bg_class(:non_developer), do: "from-warning/30 to-error/30"
+  defp category_bg_class(:best_practices), do: "from-accent/30 to-warning/30"
+  defp category_bg_class(:default), do: "from-info/30 to-secondary/30"
 
   defp category_icon_class(:getting_started), do: "text-success"
   defp category_icon_class(:developer), do: "text-secondary"
