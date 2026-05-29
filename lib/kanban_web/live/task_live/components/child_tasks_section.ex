@@ -60,10 +60,10 @@ defmodule KanbanWeb.TaskLive.Components.ChildTasksSection do
                         "bg-[var(--st-ready-soft)] text-[var(--st-ready)]"
 
                       :defect ->
-                        "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
+                        "bg-[var(--st-blocked-soft)] text-[var(--st-blocked)]"
 
                       :goal ->
-                        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
+                        "bg-[var(--stride-violet-soft)] text-[var(--stride-violet-ink)]"
                     end
                   ]}>
                     {case child.type do

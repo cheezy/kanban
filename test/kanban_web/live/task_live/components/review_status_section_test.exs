@@ -23,7 +23,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
         """)
 
       assert html =~ "Pending"
-      assert html =~ "bg-yellow-100"
+      assert html =~ "var(--st-doing-soft)"
     end
 
     test "renders approved with reviewer name and timestamp" do
@@ -42,7 +42,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
         """)
 
       assert html =~ "Approved"
-      assert html =~ "bg-green-100"
+      assert html =~ "var(--st-done-soft)"
       assert html =~ "Reviewer Name"
       assert html =~ "May 15, 2026"
       assert html =~ "LGTM"
@@ -64,11 +64,11 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
         """)
 
       assert html =~ "Changes Requested"
-      assert html =~ "bg-orange-100"
+      assert html =~ "var(--stride-orange-soft)"
       assert html =~ "noname@example.com"
     end
 
-    test "renders rejected with the red badge" do
+    test "renders rejected with the blocked-token badge" do
       assigns = %{
         task: %{
           review_status: :rejected,
@@ -84,7 +84,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
         """)
 
       assert html =~ "Rejected"
-      assert html =~ "bg-red-100"
+      assert html =~ "var(--st-blocked-soft)"
     end
   end
 

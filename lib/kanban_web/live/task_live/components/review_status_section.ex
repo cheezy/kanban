@@ -44,28 +44,30 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
     """
   end
 
-  defp review_status_badge_class(:pending),
-    do:
-      "px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
-
-  defp review_status_badge_class(:approved),
-    do: "px-2 py-1 text-xs rounded bg-green-100 text-green-800"
-
-  defp review_status_badge_class(:changes_requested),
-    do: "px-2 py-1 text-xs rounded bg-orange-100 text-orange-800"
-
-  defp review_status_badge_class(:rejected),
-    do: "px-2 py-1 text-xs rounded bg-red-100 text-red-800"
-
-  # W593: replaced the daisyUI gray fallback with stride-screen tokens applied
-  # via `review_status_badge_fallback_style/1` on the element's inline `style=`
-  # attribute. The class helper now returns only structural padding/rounding.
+  # W593/D38: the class helper returns only structural padding/rounding for
+  # every status; all colors are theme-aware tokens applied through
+  # `review_status_badge_fallback_style/1` on the element's inline `style=`
+  # attribute, so light/dark are driven from one source (no hardcoded
+  # Tailwind palette classes, no `dark:` variants).
   defp review_status_badge_class(_), do: "px-2 py-1 text-xs rounded"
 
-  defp review_status_badge_fallback_style(:pending), do: nil
-  defp review_status_badge_fallback_style(:approved), do: nil
-  defp review_status_badge_fallback_style(:changes_requested), do: nil
-  defp review_status_badge_fallback_style(:rejected), do: nil
+  # D38: status colors as solid-on-soft token pairs (the soft token is the
+  # background, the matching solid/ink token is the foreground — the
+  # WCAG-AA-tuned pairing). Each status keeps a distinct hue: pending=amber
+  # (doing), changes_requested=orange (brand), approved=green (done),
+  # rejected=red (blocked). All four tokens carry dark-mode overrides in
+  # app.css, so the badge flips automatically.
+  defp review_status_badge_fallback_style(:pending),
+    do: "background: var(--st-doing-soft); color: var(--st-doing);"
+
+  defp review_status_badge_fallback_style(:approved),
+    do: "background: var(--st-done-soft); color: var(--st-done);"
+
+  defp review_status_badge_fallback_style(:changes_requested),
+    do: "background: var(--stride-orange-soft); color: var(--stride-orange-ink);"
+
+  defp review_status_badge_fallback_style(:rejected),
+    do: "background: var(--st-blocked-soft); color: var(--st-blocked);"
 
   defp review_status_badge_fallback_style(_),
     do: "background: var(--surface-sunken); color: var(--ink-3);"
@@ -77,15 +79,16 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
   defp review_status_label(_), do: gettext("Unknown")
 
   defp review_section_class(:pending),
-    do:
-      "bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-700/50"
+    do: "bg-[var(--st-doing-soft)] border border-[var(--st-doing)] rounded-lg p-4"
 
-  defp review_section_class(:approved), do: "bg-green-50 border border-green-200 rounded-lg p-4"
+  defp review_section_class(:approved),
+    do: "bg-[var(--st-done-soft)] border border-[var(--st-done)] rounded-lg p-4"
 
   defp review_section_class(:changes_requested),
-    do: "bg-orange-50 border border-orange-200 rounded-lg p-4"
+    do: "bg-[var(--stride-orange-soft)] border border-[var(--stride-orange)] rounded-lg p-4"
 
-  defp review_section_class(:rejected), do: "bg-red-50 border border-red-200 rounded-lg p-4"
+  defp review_section_class(:rejected),
+    do: "bg-[var(--st-blocked-soft)] border border-[var(--st-blocked)] rounded-lg p-4"
 
   defp review_section_class(_),
     do: "bg-[var(--surface-sunken)] border border-[var(--line)] rounded-lg p-4"

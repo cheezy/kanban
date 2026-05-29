@@ -62,16 +62,16 @@ defmodule KanbanWeb.TaskLive.Components.ChildTasksSectionTest do
       html = render_section([child(type: :defect)])
 
       assert html =~ "Defect"
-      assert html =~ "bg-red-100"
-      assert html =~ "text-red-800"
+      assert html =~ "bg-[var(--st-blocked-soft)]"
+      assert html =~ "text-[var(--st-blocked)]"
     end
 
-    test "renders goal-type badge with Goal label and yellow styling" do
+    test "renders goal-type badge with Goal label and violet token styling" do
       html = render_section([child(type: :goal)])
 
       assert html =~ "Goal"
-      assert html =~ "bg-yellow-100"
-      assert html =~ "text-yellow-800"
+      assert html =~ "bg-[var(--stride-violet-soft)]"
+      assert html =~ "text-[var(--stride-violet-ink)]"
     end
 
     test "renders one table row per child" do

@@ -1059,7 +1059,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Review Status"
-      assert result =~ "bg-green-50"
+      assert result =~ "bg-[var(--st-done-soft)]"
       assert result =~ "Approved"
       assert result =~ "Reviewed by"
       assert result =~ "Carol Reviewer"
@@ -1089,7 +1089,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Review Status"
-      assert result =~ "bg-orange-50"
+      assert result =~ "bg-[var(--stride-orange-soft)]"
       assert result =~ "Changes Requested"
       assert result =~ "Please add more tests"
     end
@@ -1829,7 +1829,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Review Status"
-      assert result =~ "bg-yellow-50"
+      assert result =~ "bg-[var(--st-doing-soft)]"
       assert result =~ "Pending"
       assert result =~ "Waiting for review"
     end
@@ -1855,7 +1855,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "Review Status"
-      assert result =~ "bg-red-50"
+      assert result =~ "bg-[var(--st-blocked-soft)]"
       assert result =~ "Rejected"
       assert result =~ "Not acceptable"
     end
