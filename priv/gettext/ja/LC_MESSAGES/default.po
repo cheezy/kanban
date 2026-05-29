@@ -6729,7 +6729,6 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 msgid "Details"
 msgstr "詳細"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:229
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:258
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:297
@@ -6741,3 +6740,14 @@ msgstr ""
 "これはこのステップの詳細な説明のプレースホルダーです。上記の要約よりも踏み込ん"
 "だ内容で — 何が実行され、なぜ実行され、ワークフローが次に進む前に何が成功しな"
 "ければならないかを説明します。最終的な文言は後で追加されます。"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the card moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even run the tests — so the agent starts from a known state."
+msgstr ""
+"エージェントがタスクをクレームすると、カードが Doing カラムに移動する前に、開発"
+"者が定義した before_doing フックが開発者自身のワークステーション上で実行されま"
+"す。このフックは通常、ローカルのチェックアウトが最新のコードに更新されているこ"
+"とを確認し、最新の依存関係を取得し、必要なデータベースマイグレーションを適用"
+"し、さらにはテストを実行するために使用されます — これにより、エージェントは既知"
+"の状態から作業を開始できます。"

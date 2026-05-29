@@ -6741,7 +6741,6 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:229
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:258
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:297
@@ -6749,4 +6748,9 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:383
 #, elixir-autogen, elixir-format
 msgid "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the card moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even run the tests — so the agent starts from a known state."
 msgstr ""

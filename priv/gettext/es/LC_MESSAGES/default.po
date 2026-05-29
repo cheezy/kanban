@@ -6770,7 +6770,6 @@ msgstr "El agente escribe el código para completar la tarea."
 msgid "Details"
 msgstr "Detalles"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:229
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:258
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:297
@@ -6783,3 +6782,15 @@ msgstr ""
 "paso. Profundiza más que el resumen anterior — abarca qué se ejecuta, por qué y "
 "qué debe superarse antes de que el flujo de trabajo avance. La redacción "
 "definitiva se añadirá más adelante."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the card moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even run the tests — so the agent starts from a known state."
+msgstr ""
+"Cuando el agente reclama la tarea, el hook before_doing definido por el "
+"desarrollador se ejecuta en la propia estación de trabajo del desarrollador "
+"antes de que la tarjeta se mueva a la columna Doing. Este hook se utiliza "
+"normalmente para asegurarse de que la copia local esté actualizada con el "
+"código más reciente, obtener las dependencias más recientes, aplicar las "
+"migraciones de base de datos necesarias e incluso ejecutar las pruebas — de "
+"modo que el agente parta de un estado conocido."

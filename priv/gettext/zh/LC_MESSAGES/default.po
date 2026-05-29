@@ -6744,7 +6744,6 @@ msgstr "代理编写代码以完成任务。"
 msgid "Details"
 msgstr "详情"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:229
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:258
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:297
@@ -6755,3 +6754,12 @@ msgid "This is a placeholder for the in-depth description of this step. It goes 
 msgstr ""
 "这是该步骤详细说明的占位文本。它比上面的摘要更加深入 —— 涵盖运行的内容、原因，"
 "以及在工作流推进之前必须通过的条件。最终的措辞将在稍后补充。"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's own workstation before the card moves to the Doing column. This hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and even run the tests — so the agent starts from a known state."
+msgstr ""
+"当代理认领任务时，开发者定义的 before_doing 钩子会在卡片移动到 Doing 列之前，"
+"在开发者自己的工作站上运行。该钩子通常用于确保本地检出已更新到最新代码、获取最"
+"新的依赖项、应用任何必要的数据库迁移，甚至运行测试 —— 这样代理就能从一个已知状"
+"态开始。"
