@@ -159,10 +159,16 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Claim")}</span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext("The agent claims a task from Ready; the card moves to Doing.")}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -174,8 +180,10 @@
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
-                {gettext("The agent claims a task from Ready; the card moves to Doing.")}
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+                {gettext(
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
+                )}
               </div>
             </details>
           </li>
@@ -188,10 +196,18 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Explore")}</span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext(
+                      "A subagent maps the key files, related tests, and existing patterns before any code is written."
+                    )}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -209,9 +225,9 @@
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
                 {gettext(
-                  "A subagent maps the key files, related tests, and existing patterns before any code is written."
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
                 )}
               </div>
             </details>
@@ -225,15 +241,23 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Implement")}</span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext("The agent writes the code to complete the task.")}
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
-                {gettext("The agent writes the code to complete the task.")}
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+                {gettext(
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
+                )}
               </div>
             </details>
           </li>
@@ -246,10 +270,18 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Review")}</span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext(
+                      "A subagent checks the diff against the task's acceptance criteria and pitfalls."
+                    )}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -261,9 +293,9 @@
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
                 {gettext(
-                  "A subagent checks the diff against the task's acceptance criteria and pitfalls."
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
                 )}
               </div>
             </details>
@@ -277,10 +309,18 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Validate")}</span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext(
+                      "Tests, formatting, linting, and security scans must pass before completion."
+                    )}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -292,9 +332,9 @@
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
                 {gettext(
-                  "Tests, formatting, linting, and security scans must pass before completion."
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
                 )}
               </div>
             </details>
@@ -310,10 +350,18 @@
                     <span class="font-semibold text-base-content">
                       {gettext("Complete and ship")}
                     </span>
-                    <.icon
-                      name="hero-chevron-down"
-                      class="h-4 w-4 shrink-0 text-base-content opacity-50 transition-transform group-open:rotate-180"
-                    />
+                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                      {gettext("Details")}
+                      <.icon
+                        name="hero-chevron-down"
+                        class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                      />
+                    </span>
+                  </div>
+                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                    {gettext(
+                      "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
+                    )}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     <span
@@ -331,9 +379,9 @@
                   </div>
                 </div>
               </summary>
-              <div class="text-xs text-base-content opacity-80 mt-2 pl-10 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
                 {gettext(
-                  "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
+                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
                 )}
               </div>
             </details>
