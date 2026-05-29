@@ -409,163 +409,73 @@
       <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
         {gettext("Human review and completion")}
       </h2>
-    </section>
 
-    <section class="mb-16">
-      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
-        {gettext("Four hooks. Four moments.")}
-      </h2>
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+        {raw(
+          gettext(
+            "When the agent marks a task complete, the before_review hook fires — the moment to open a pull request, post the diff for reviewers, or ping a channel. What happens next turns on a single flag a human set back in the Backlog: needs_review."
+          )
+          |> String.replace(
+            "before_review",
+            ~s|<span class="font-mono" style="color: var(--st-doing);">before_review</span>|,
+            global: false
+          )
+          |> String.replace(
+            "needs_review",
+            ~s|<span class="font-mono">needs_review</span>|,
+            global: false
+          )
+        )}
+      </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <div class="flex items-baseline gap-2 mb-3">
-            <code class="text-base font-mono font-semibold text-base-content">before_doing</code>
-            <span class="text-xs text-base-content opacity-80">
-              {gettext("blocking · 60s")}
-            </span>
-          </div>
-          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
-            {gettext(
-              "Runs after an agent claims a task, before any work starts. Pull the latest code, install dependencies, run migrations, warm a cache. If it fails, the claim is aborted."
-            )}
-          </p>
-          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
-            <div># before_doing</div>
-            <div>git pull origin main</div>
-            <div>mix deps.get</div>
-            <div>mix ecto.migrate</div>
-          </div>
-        </div>
-
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <div class="flex items-baseline gap-2 mb-3">
-            <code class="text-base font-mono font-semibold text-base-content">after_doing</code>
-            <span class="text-xs text-base-content opacity-80">
-              {gettext("blocking · 120s")}
-            </span>
-          </div>
-          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
-            {gettext(
-              "Runs after the agent finishes work, before completion is registered. The quality gate: tests, linting, formatting, security scans, auto-commit. If anything fails, completion is blocked."
-            )}
-          </p>
-          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
-            <div># after_doing</div>
-            <div>mix test --cover</div>
-            <div>mix credo --strict</div>
-            <div>mix sobelow --config</div>
-          </div>
-        </div>
-
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <div class="flex items-baseline gap-2 mb-3">
-            <code class="text-base font-mono font-semibold text-base-content">before_review</code>
-            <span class="text-xs text-base-content opacity-80">
-              {gettext("non-blocking · 60s")}
-            </span>
-          </div>
-          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
-            {gettext(
-              "Runs when the task enters the Review column. The handoff to humans: open a pull request, generate the diff summary, post a Slack message, attach a deploy preview link."
-            )}
-          </p>
-          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
-            <div># before_review</div>
-            <div>gh pr create --title "$TASK_TITLE" \</div>
-            <div>&nbsp;&nbsp;--body "$TASK_DESCRIPTION"</div>
-          </div>
-        </div>
-
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <div class="flex items-baseline gap-2 mb-3">
-            <code class="text-base font-mono font-semibold text-base-content">after_review</code>
-            <span class="text-xs text-base-content opacity-80">
-              {gettext("non-blocking · 60s")}
-            </span>
-          </div>
-          <p class="text-sm text-base-content opacity-70 mb-3 leading-relaxed">
-            {gettext(
-              "Runs after a human approves the work. The deploy step: merge the PR, push to production, notify the on-call rotation, mark the changelog entry."
-            )}
-          </p>
-          <div class="bg-base-200 rounded-lg p-3 font-mono text-xs text-base-content opacity-80">
-            <div># after_review</div>
-            <div>gh pr merge --squash</div>
-            <div>./scripts/deploy.sh production</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mb-16">
-      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
-        {gettext("Hooks live in your repo, not ours")}
-      </h2>
-
-      <div class="bg-base-100 rounded-2xl border border-base-300 p-8">
-        <p class="text-base-content opacity-70 leading-relaxed mb-4">
-          {gettext(
-            "Every hook is a shell command in a single .stride.md file at the root of your repo. The agent reads its section before each transition and runs the commands locally on its own machine — never on Stride's servers."
-          )}
-        </p>
-        <p class="text-base-content opacity-70 leading-relaxed mb-4">
-          {gettext(
-            "You hold the keys; agents hold the loop. The board never executes user-supplied code, so a malicious agent or a compromised hook cannot reach any other tenant. Self-hosted instances inherit this property by construction."
-          )}
-        </p>
-        <div class="bg-base-200 rounded-lg p-4 font-mono text-sm text-base-content opacity-80">
-          <div class="text-xs text-base-content opacity-80 mb-2">.stride.md</div>
-          <div>## before_doing</div>
-          <div>git pull origin main</div>
-          <div>mix deps.get</div>
-          <div class="mt-3">## after_doing</div>
-          <div>mix test --cover</div>
-          <div>mix credo --strict</div>
-          <div class="mt-3">## before_review</div>
-          <div>gh pr create --title "$TASK_TITLE"</div>
-          <div class="mt-3">## after_review</div>
-          <div>./scripts/deploy.sh</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mb-16">
-      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
-        {gettext("Common workflow patterns")}
-      </h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <h3 class="font-semibold text-base-content mb-2">
-            {gettext("Solo developer")}
-          </h3>
+          <h3 class="font-semibold text-base-content mb-2">{gettext("Flagged for review")}</h3>
           <p class="text-sm text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "before_doing: pull. after_doing: test + lint + auto-commit. before_review: open PR. after_review: merge + push."
+            {raw(
+              gettext(
+                "A task with needs_review set to true lands in the Review column and stops. It surfaces in the review queue — the shared list of finished tasks awaiting a human — which shows a full diff of every changed file alongside the task-reviewer's report. The reviewer reads through it and then approves the task, sends it back, or requests changes. On approval the after_review hook fires — merge, deploy, notify — and the task moves to Done."
+              )
+              |> String.replace(
+                "needs_review",
+                ~s|<span class="font-mono">needs_review</span>|,
+                global: false
+              )
+              |> String.replace(
+                "task-reviewer",
+                ~s|<span class="font-mono" style="color: var(--stride-violet-ink);">task-reviewer</span>|,
+                global: false
+              )
+              |> String.replace(
+                "after_review",
+                ~s|<span class="font-mono" style="color: var(--st-doing);">after_review</span>|,
+                global: false
+              )
             )}
           </p>
         </div>
         <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <h3 class="font-semibold text-base-content mb-2">
-            {gettext("Team with CI")}
-          </h3>
+          <h3 class="font-semibold text-base-content mb-2">{gettext("Cleared to ship")}</h3>
           <p class="text-sm text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "after_doing: lightweight smoke tests. before_review: open PR (CI runs full suite). after_review: auto-merge once CI green."
-            )}
-          </p>
-        </div>
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
-          <h3 class="font-semibold text-base-content mb-2">
-            {gettext("Regulated environment")}
-          </h3>
-          <p class="text-sm text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "after_doing: SAST scan + license check. before_review: post to compliance Slack. after_review: log audit event before deploy."
+            {raw(
+              gettext(
+                "A task without that flag never pauses. It moves straight to Done, the after_review hook fires immediately — the same merge-and-deploy step, with no human in the loop — and the change is shipped on the spot."
+              )
+              |> String.replace(
+                "after_review",
+                ~s|<span class="font-mono" style="color: var(--st-doing);">after_review</span>|,
+                global: false
+              )
             )}
           </p>
         </div>
       </div>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+        {gettext(
+          "And the agent doesn't wait around. As soon as an un-flagged task reaches Done, it claims the next task from the Ready column and runs the whole loop again — working straight through the board until Ready is empty. Only a task that needs human review pauses the run, holding in the Review column until someone signs off."
+        )}
+      </p>
     </section>
 
     <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
@@ -582,7 +492,7 @@
           href={~p"/users/register"}
           class="px-6 py-3 rounded-lg bg-primary text-primary-content font-semibold hover:opacity-90 transition-opacity"
         >
-          {gettext("Start free")}
+          {gettext("Start now")}
         </.link>
         <.link
           href={~p"/resources"}

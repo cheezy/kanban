@@ -81,8 +81,6 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "after_doing"
     assert body =~ "before_review"
     assert body =~ "after_review"
-    # The hooks-on-your-machine architectural callout
-    assert body =~ "Hooks live in your repo, not ours"
   end
 
   test "GET /tango", %{conn: conn} do
