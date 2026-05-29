@@ -13,6 +13,85 @@
 
     <section class="mb-16">
       <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Requirements")}
+      </h2>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+        {gettext(
+          "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
+        )}
+      </p>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("01")}
+            </div>
+            <code class="text-base font-mono font-semibold text-base-content">/ideate</code>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "An interactive Q&A turns a fuzzy idea into a committed requirements doc — Goal, Problem, Outcome, Assumptions, Constraints, Non-goals, Success Metrics."
+              )}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("02")}
+            </div>
+            <code class="text-base font-mono font-semibold text-base-content">/stridify</code>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "Decomposes that document into a goal with dependency-ordered tasks, each sized to roughly one to three hours of work."
+              )}
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+              {gettext("03")}
+            </div>
+            <div class="font-semibold text-base-content">{gettext("On the board")}</div>
+            <div class="text-xs text-base-content opacity-80 mt-1">
+              {gettext(
+                "The goal and its tasks land in Ready. Agents claim them, and the lifecycle below takes over."
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <figure class="mb-6">
+        <div
+          class="rounded-2xl border-2 border-dashed border-base-300 bg-base-200 p-12 flex flex-col items-center justify-center text-center min-h-[16rem]"
+          role="img"
+          aria-label={
+            gettext("Diagram: stride-ideation turns an idea into Stride goals and tasks")
+          }
+        >
+          <.icon name="hero-sparkles" class="h-10 w-10 text-base-content opacity-40 mb-3" />
+          <p class="text-sm font-medium text-base-content opacity-70">
+            {gettext("Illustration placeholder")}
+          </p>
+          <p class="text-xs text-base-content opacity-60 mt-1 max-w-md">
+            {gettext(
+              "Idea → /ideate → requirements doc → /stridify → a goal with ordered tasks on the board. Replace this with a screenshot of an ideation session feeding the board."
+            )}
+          </p>
+        </div>
+        <figcaption class="text-xs text-base-content opacity-60 text-center mt-2">
+          {gettext("How stride-ideation builds a set of goals and tasks inside Stride.")}
+        </figcaption>
+      </figure>
+
+      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+        {gettext(
+          "Once the goal and tasks exist, every one of them flows through the same lifecycle below — the requirements step simply makes sure the board starts full and well-specified."
+        )}
+      </p>
+    </section>
+
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-base-content mb-6 text-center">
         {gettext("The lifecycle")}
       </h2>
 
