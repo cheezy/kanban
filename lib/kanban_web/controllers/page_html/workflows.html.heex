@@ -232,10 +232,31 @@
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
-                {gettext(
-                  "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
-                )}
+              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed space-y-2">
+                <p>
+                  {raw(
+                    String.replace(
+                      gettext(
+                        "The task-explorer subagent goes first. It reads the files the task flags as relevant, finds the tests that cover them, and searches the codebase for the existing patterns and surrounding context the work should follow. It hands back a structured summary — what already exists, which conventions to mirror, and what can be reused — so the implementing agent starts with a map of the codebase rather than a blank page."
+                      ),
+                      "task-explorer",
+                      ~s|<span class="font-mono" style="color: var(--stride-violet-ink);">task-explorer</span>|,
+                      global: false
+                    )
+                  )}
+                </p>
+                <p>
+                  {raw(
+                    String.replace(
+                      gettext(
+                        "For medium and larger tasks, a planner subagent then turns that map into a plan. Using the explorer's findings alongside the task's acceptance criteria, testing strategy, and known pitfalls, it outlines the implementation step by step, calls out which files will change, and weighs any architectural trade-offs before a single line of code is written."
+                      ),
+                      "planner",
+                      ~s|<span class="font-mono" style="color: var(--stride-violet-ink);">planner</span>|,
+                      global: false
+                    )
+                  )}
+                </p>
               </div>
             </details>
           </li>

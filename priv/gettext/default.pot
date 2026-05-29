@@ -50,7 +50,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:223
 #: lib/kanban_web/components/marketing_mini_board.ex:293
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:441
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:448
 #: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -2193,7 +2193,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:219
 #: lib/kanban_web/components/marketing_mini_board.ex:193
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:70
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:405
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:412
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2423,8 +2423,8 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:222
 #: lib/kanban_web/components/marketing_mini_board.ex:275
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:73
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:279
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:432
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:286
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:439
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -3099,7 +3099,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_progress_header.ex:221
 #: lib/kanban_web/components/marketing_mini_board.ex:247
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:72
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:423
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:430
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3189,7 +3189,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_sidebar.ex:64
 #: lib/kanban_web/components/marketing_mini_board.ex:220
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:71
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:414
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:421
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -3233,7 +3233,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:144
 #: lib/kanban_web/components/marketing_components.ex:397
 #: lib/kanban_web/controllers/page_html/product.html.heex:230
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:627
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:634
 #, elixir-autogen, elixir-format
 msgid "Start free"
 msgstr ""
@@ -3455,7 +3455,7 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:36
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:86
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:157
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:403
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:410
 #, elixir-autogen, elixir-format
 msgid "01"
 msgstr ""
@@ -3463,27 +3463,27 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:47
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:97
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:201
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:412
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:419
 #, elixir-autogen, elixir-format
 msgid "02"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:58
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:110
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:246
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:421
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:253
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:428
 #, elixir-autogen, elixir-format
 msgid "03"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:275
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:430
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:282
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:437
 #, elixir-autogen, elixir-format
 msgid "04"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:314
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:439
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:321
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:446
 #, elixir-autogen, elixir-format
 msgid "05"
 msgstr ""
@@ -3527,7 +3527,7 @@ msgstr ""
 msgid "Agent activity"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:416
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:423
 #, elixir-autogen, elixir-format
 msgid "Agents claim from here"
 msgstr ""
@@ -3592,7 +3592,7 @@ msgstr ""
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:407
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:414
 #, elixir-autogen, elixir-format
 msgid "Captured, not yet ready"
 msgstr ""
@@ -3602,12 +3602,12 @@ msgstr ""
 msgid "Changes to this policy"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:425
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:432
 #, elixir-autogen, elixir-format
 msgid "Claimed, in flight"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:576
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:583
 #, elixir-autogen, elixir-format
 msgid "Common workflow patterns"
 msgstr ""
@@ -3712,7 +3712,7 @@ msgstr ""
 msgid "Enterprise"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:549
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:556
 #, elixir-autogen, elixir-format
 msgid "Every hook is a shell command in a single .stride.md file at the root of your repo. The agent reads its section before each transition and runs the commands locally on its own machine — never on Stride's servers."
 msgstr ""
@@ -3732,7 +3732,7 @@ msgstr ""
 msgid "Five-column flow, AI-optimized"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:458
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:465
 #, elixir-autogen, elixir-format
 msgid "Four hooks. Four moments."
 msgstr ""
@@ -3762,7 +3762,7 @@ msgstr ""
 msgid "Goal-driven assignment + per-user agent fleets"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:544
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:551
 #, elixir-autogen, elixir-format
 msgid "Hooks live in your repo, not ours"
 msgstr ""
@@ -3782,7 +3782,7 @@ msgstr ""
 msgid "How we use your information"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:434
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:441
 #, elixir-autogen, elixir-format
 msgid "Humans approve / send back"
 msgstr ""
@@ -3875,7 +3875,7 @@ msgstr ""
 msgid "Ready to see it run?"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:602
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:609
 #, elixir-autogen, elixir-format
 msgid "Regulated environment"
 msgstr ""
@@ -3895,22 +3895,22 @@ msgstr ""
 msgid "Reports generated purely from automated scanners without manual validation."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:529
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:536
 #, elixir-autogen, elixir-format
 msgid "Runs after a human approves the work. The deploy step: merge the PR, push to production, notify the on-call rotation, mark the changelog entry."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:470
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:477
 #, elixir-autogen, elixir-format
 msgid "Runs after an agent claims a task, before any work starts. Pull the latest code, install dependencies, run migrations, warm a cache. If it fails, the claim is aborted."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:490
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:497
 #, elixir-autogen, elixir-format
 msgid "Runs after the agent finishes work, before completion is registered. The quality gate: tests, linting, formatting, security scans, auto-commit. If anything fails, completion is blocked."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:510
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:517
 #, elixir-autogen, elixir-format
 msgid "Runs when the task enters the Review column. The handoff to humans: open a pull request, generate the diff summary, post a Slack message, attach a deploy preview link."
 msgstr ""
@@ -3970,7 +3970,7 @@ msgstr ""
 msgid "Sessions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:443
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:450
 #, elixir-autogen, elixir-format
 msgid "Shipped, archived"
 msgstr ""
@@ -3990,7 +3990,7 @@ msgstr ""
 msgid "Solo"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:582
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:589
 #, elixir-autogen, elixir-format
 msgid "Solo developer"
 msgstr ""
@@ -4040,7 +4040,7 @@ msgstr ""
 msgid "Team"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:592
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:599
 #, elixir-autogen, elixir-format
 msgid "Team with CI"
 msgstr ""
@@ -4061,7 +4061,7 @@ msgstr ""
 msgid "The PostgreSQL database backing the hosted service is encrypted at rest. Backups are encrypted, retained for 30 days, and access is restricted to the Stride operations team."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:450
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:457
 #, elixir-autogen, elixir-format
 msgid "The columns are fixed. That's the contract: humans and agents both speak the same five-state vocabulary, and a hook can fire at every meaningful transition between them."
 msgstr ""
@@ -4156,7 +4156,7 @@ msgstr ""
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:554
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:561
 #, elixir-autogen, elixir-format
 msgid "You hold the keys; agents hold the loop. The board never executes user-supplied code, so a malicious agent or a compromised hook cannot reach any other tenant. Self-hosted instances inherit this property by construction."
 msgstr ""
@@ -4166,27 +4166,27 @@ msgstr ""
 msgid "Your rights"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:605
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:612
 #, elixir-autogen, elixir-format
 msgid "after_doing: SAST scan + license check. before_review: post to compliance Slack. after_review: log audit event before deploy."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:595
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:602
 #, elixir-autogen, elixir-format
 msgid "after_doing: lightweight smoke tests. before_review: open PR (CI runs full suite). after_review: auto-merge once CI green."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:585
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:592
 #, elixir-autogen, elixir-format
 msgid "before_doing: pull. after_doing: test + lint + auto-commit. before_review: open PR. after_review: merge + push."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:486
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:493
 #, elixir-autogen, elixir-format
 msgid "blocking · 120s"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:466
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:473
 #, elixir-autogen, elixir-format
 msgid "blocking · 60s"
 msgstr ""
@@ -4201,8 +4201,8 @@ msgstr ""
 msgid "just now"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:506
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:525
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:513
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "non-blocking · 60s"
 msgstr ""
@@ -6292,7 +6292,7 @@ msgstr ""
 msgid "At a glance, see how work is flowing through the organization with details and metrics updated in real-time."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:618
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:625
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr ""
@@ -6307,12 +6307,12 @@ msgstr ""
 msgid "Organization wide real-time activity"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:633
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:640
 #, elixir-autogen, elixir-format
 msgid "Read more details"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:615
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:622
 #, elixir-autogen, elixir-format
 msgid "Wire your project to Stride"
 msgstr ""
@@ -6656,12 +6656,12 @@ msgstr ""
 msgid "The AI development lifecycle"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:353
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:360
 #, elixir-autogen, elixir-format
 msgid "06"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:289
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "A subagent checks the diff against the task's acceptance criteria and pitfalls."
 msgstr ""
@@ -6676,7 +6676,7 @@ msgstr ""
 msgid "Claim"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:358
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:365
 #, elixir-autogen, elixir-format
 msgid "Complete and ship"
 msgstr ""
@@ -6691,7 +6691,7 @@ msgstr ""
 msgid "Hook"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:250
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:257
 #, elixir-autogen, elixir-format
 msgid "Implement"
 msgstr ""
@@ -6701,7 +6701,7 @@ msgstr ""
 msgid "Subagent"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:328
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:335
 #, elixir-autogen, elixir-format
 msgid "Tests, formatting, linting, and security scans must pass before completion."
 msgstr ""
@@ -6711,12 +6711,12 @@ msgstr ""
 msgid "The agent claims a task from Ready; the card moves to Doing."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:369
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:376
 #, elixir-autogen, elixir-format
 msgid "The task is completed, then the review and deploy hooks prepare the hand-off to humans."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:318
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:325
 #, elixir-autogen, elixir-format
 msgid "Validate"
 msgstr ""
@@ -6726,26 +6726,25 @@ msgstr ""
 msgid "When an agent claims a task from Ready, the card moves to Doing and the agent runs the Stride workflow — a fixed loop where hooks, subagents, and skills carry the work from claim to completion."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:260
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:267
 #, elixir-autogen, elixir-format
 msgid "The agent writes the code to complete the task."
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:163
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:207
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:252
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:281
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:320
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:361
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:259
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:288
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:327
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:368
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:236
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:265
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:304
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:343
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:390
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:272
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:311
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:350
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:397
 #, elixir-autogen, elixir-format
 msgid "This is a placeholder for the in-depth description of this step. It goes deeper than the summary above — covering what runs, why, and what must pass before the workflow advances. The final wording will be added later."
 msgstr ""
@@ -6753,4 +6752,14 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:186
 #, elixir-autogen, elixir-format
 msgid "When the agent claims the task, the developer-defined before_doing hook runs on the developer's workstation prior to the task moving to the Doing column. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:242
+#, elixir-autogen, elixir-format
+msgid "For medium and larger tasks, a planner subagent then turns that map into a plan. Using the explorer's findings alongside the task's acceptance criteria, testing strategy, and known pitfalls, it outlines the implementation step by step, calls out which files will change, and weighs any architectural trade-offs before a single line of code is written."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:237
+#, elixir-autogen, elixir-format
+msgid "The task-explorer subagent goes first. It reads the files the task flags as relevant, finds the tests that cover them, and searches the codebase for the existing patterns and surrounding context the work should follow. It hands back a structured summary — what already exists, which conventions to mirror, and what can be reused — so the implementing agent starts with a map of the codebase rather than a blank page."
 msgstr ""
