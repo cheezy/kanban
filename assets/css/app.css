@@ -825,8 +825,9 @@
    ============================================================ */
 .stride-marketing,
 .stride-screen {
-  /* Brand */
-  --stride-orange: oklch(68% 0.17 47);
+  /* Brand. W940 nudged --stride-orange 68% -> 66% L so the orange accent clears
+     the 3:1 graphical floor on the light canvas (was 2.96:1). */
+  --stride-orange: oklch(66% 0.17 47);
   --stride-orange-soft: oklch(96% 0.04 60);
   --stride-orange-ink: oklch(45% 0.18 40);
   --stride-violet: oklch(60% 0.18 277);
@@ -841,10 +842,19 @@
   --ink: oklch(18% 0.005 270);
   --ink-2: oklch(35% 0.005 270);
   --ink-3: oklch(52% 0.005 270);
-  --ink-4: oklch(68% 0.005 270);
-  --line: oklch(93% 0.003 270);
-  --line-2: oklch(89% 0.004 270);
-  --line-strong: oklch(82% 0.005 270);
+  /* --ink-4 is the QUIET/incidental ink (separators, idle dots, inactive icons,
+     strikethrough, small metadata) — WCAG-incidental, held to the 3:1 graphical
+     floor, not AA. W940 nudged it 68% -> 64% so it clears 3:1 on every light
+     surface (incl. the recessed --surface-sunken) while staying clearly quieter
+     than --ink-3 (52%). */
+  --ink-4: oklch(64% 0.005 270);
+  /* Borders — W940 darkened --line/--line-2 from 93%/89% so light hairlines
+     clear the 1.5:1 perceptibility floor on every light surface (they were
+     1.16-1.39:1 — barely visible). Still subtle; ordered line < line-2 <
+     line-strong by visibility. */
+  --line: oklch(84% 0.004 270);
+  --line-2: oklch(82% 0.005 270);
+  --line-strong: oklch(80% 0.005 270);
 
   /* Status foreground — calm. W902 darkened from ~60% L (failed WCAG AA at
      2.74-3.69:1 on white) and W907 darkened further from 50% L to 45% L so
@@ -1006,7 +1016,11 @@
    above don't apply inside the auth frame; the hardcoded white text on the
    S-logo brand gradient and on the .primary_full_button (which sits over
    --ink, now locked dark) is intentional under this contract. Specificity
-   (0,1,1 — class + attribute) outranks the :where-wrapped dark override. */
+   (0,1,1 — class + attribute) outranks the :where-wrapped dark override.
+   NOTE: mix dark_mode.contrast only parses the main `.stride-marketing,
+   .stride-screen` block, so these auth-frame-locked values are intentionally
+   NOT gated — they deliberately retain the original light values and may differ
+   from the (W940-tuned) main-scope tokens. Don't assume the gate covers them. */
 .stride-screen[data-stride-auth-frame] {
   --bg: oklch(98.8% 0.003 80);
   --surface: #ffffff;

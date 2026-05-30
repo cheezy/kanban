@@ -110,6 +110,7 @@ defmodule Kanban.MixProject do
         "deps.unlock --unused",
         "format",
         "dark_mode.scan",
+        "dark_mode.contrast --enforce",
         "test"
       ]
     ]

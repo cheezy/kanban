@@ -56,9 +56,19 @@ raised is lightest; hue 270 / chroma 0.005 throughout):
 | Raised cards / components | `var(--surface)` | `bg-base-100` | 20% |
 | Nested / highest surface | `var(--surface-2)` | *(none)* | 24% |
 
-**Dark ink** (all clear WCAG AA on every surface above): `var(--ink)` 95% ·
-`var(--ink-2)` 82% · `var(--ink-3)` 75% · `var(--ink-4)` 66%. daisyUI
-`text-base-content` = `var(--ink)` (95%).
+**Dark ink**: `var(--ink)` 95% · `var(--ink-2)` 82% · `var(--ink-3)` 75% — these
+clear WCAG AA (4.5:1) on every surface above. `var(--ink-4)` 66% is the
+**quiet/incidental ink** (separators, idle dots, inactive icons, strikethrough,
+small metadata) — it is held to the **3:1** graphical floor, *not* AA, because
+WCAG exempts incidental text (and forcing it to 4.5:1 would collapse it onto
+`--ink-3`). daisyUI `text-base-content` = `var(--ink)` (95%).
+
+> **`--ink-4` is for incidental UI only** — separators, idle dots, inactive
+> icons, decoration, small metadata. **Never style primary body copy with it.**
+> The contrast gate validates `--ink-4` at 3:1, so using it for real body text
+> would pass an illegible value through CI. If essential text ever needs this
+> level, re-tune `--ink-4` to clear AA (4.5:1) first (and move it back to the
+> `text-on-surface` category in `dark_mode.contrast`).
 
 **Dark borders** (raised so edges are visible, subtle not harsh):
 `var(--line)` 38% · `var(--line-2)` 44% · `var(--line-strong)` 50%.
@@ -70,7 +80,10 @@ raised is lightest; hue 270 / chroma 0.005 throughout):
 **Dark priority dots** (four *distinct* lightnesses so they are differentiable
 by brightness as well as hue): critical 64% · high 72% · medium 80% · low 74%.
 
-The light palette is unchanged by this work; the dark overrides live in the
+The light palette is largely unchanged; W940 made small light tweaks so it also
+clears the contrast gate — `--line`/`--line-2` darkened so light hairlines clear
+the 1.5:1 floor, and `--ink-4` (→64%) and `--stride-orange` (→66%) nudged to
+clear the 3:1 floor. The dark overrides live in the
 `:where([data-theme="dark"]) .stride-marketing, .stride-screen` block and the
 daisyUI `@plugin "…" { name: "dark"; … }` block in `assets/css/app.css`.
 

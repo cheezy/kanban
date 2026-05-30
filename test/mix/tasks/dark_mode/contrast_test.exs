@@ -82,19 +82,39 @@ defmodule Mix.Tasks.DarkMode.ContrastTest do
       assert output =~ "pairs checked"
     end
 
-    test "enforcing mode exits non-zero because the current palette has failures" do
-      output =
-        capture_io(fn ->
-          try do
-            Contrast.run(["--enforce"])
-            send(self(), :no_exit)
-          catch
-            :exit, {:shutdown, 1} -> send(self(), :exited)
-          end
-        end)
-
+    test "enforcing mode passes (returns :ok) on the current palette — the W940 gate" do
+      # After G202 the whole palette clears its thresholds in both themes, so
+      # the precommit gate (`dark_mode.contrast --enforce`) must pass.
+      output = capture_io(fn -> assert Contrast.run(["--enforce"]) == :ok end)
       assert output =~ "WCAG contrast report"
-      assert_received :exited
+      assert output =~ "0 failing"
+    end
+
+    test "enforcing mode exits {:shutdown, 1} when a pair is below threshold" do
+      capture_io(:stderr, fn ->
+        assert catch_exit(Contrast.__finish__(true, [%{fail?: true}])) == {:shutdown, 1}
+      end)
+    end
+
+    test "report-only mode never exits even with failures present" do
+      assert Contrast.__finish__(false, [%{fail?: true}]) == :ok
+      assert Contrast.__finish__(true, []) == :ok
+    end
+
+    test "evaluate detects a sub-threshold pair as failing (end-to-end detection)" do
+      tokens = %{"--fg" => "oklch(52% 0 0)", "--bg" => "oklch(50% 0 0)"}
+      spec = %{category: "t", fg: "--fg", bg: "--bg", threshold: 4.5}
+      result = Contrast.__evaluate_pair__(spec, tokens, :light)
+      assert result.fail?
+      assert result.ratio < 4.5
+    end
+
+    test "evaluate detects an above-threshold pair as passing" do
+      tokens = %{"--fg" => "oklch(0% 0 0)", "--bg" => "oklch(100% 0 0)"}
+      spec = %{category: "t", fg: "--fg", bg: "--bg", threshold: 4.5}
+      result = Contrast.__evaluate_pair__(spec, tokens, :light)
+      refute result.fail?
+      assert result.ratio > 4.5
     end
 
     test "--theme dark restricts the report to the dark theme only" do

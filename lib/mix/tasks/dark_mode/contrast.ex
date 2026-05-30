@@ -202,13 +202,32 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   end
 
   defp pair_specs do
-    List.flatten([text_specs(), border_specs(), status_specs(), brand_specs(), daisy_specs()])
+    List.flatten([
+      text_specs(),
+      quiet_ink_specs(),
+      border_specs(),
+      status_specs(),
+      brand_specs(),
+      daisy_specs()
+    ])
   end
 
   defp text_specs do
-    for fg <- ~w(--ink --ink-2 --ink-3 --ink-4),
+    for fg <- ~w(--ink --ink-2 --ink-3),
         bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
       spec("text-on-surface", fg, bg, @aa_text)
+    end
+  end
+
+  # --ink-4 is the QUIET/incidental ink (separators, idle dots, inactive icons,
+  # strikethrough decoration, small metadata) — never primary body text. WCAG
+  # exempts incidental text from the AA body ratio and applies 3:1 to large /
+  # non-essential text, so --ink-4 is held to the @aa_graphical (3:1) floor, not
+  # 4.5. (Forcing it to 4.5 would collapse it onto --ink-3 at 52% L, destroying
+  # the quiet-ink tier.) See docs/dark-mode-contract.md.
+  defp quiet_ink_specs do
+    for bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
+      spec("quiet-ink", "--ink-4", bg, @aa_graphical)
     end
   end
 
@@ -350,5 +369,13 @@ defmodule Mix.Tasks.DarkMode.Contrast do
     shell.info("")
     shell.info(rule)
     shell.info("#{fails} failing / #{length(results)} pairs checked")
+  end
+
+  if Mix.env() == :test do
+    # Test-only seams: the enforce decision and the per-pair evaluation, so the
+    # detection + failure paths can be exercised deterministically without
+    # depending on the live token palette.
+    def __finish__(enforce?, failures), do: finish(enforce?, failures)
+    def __evaluate_pair__(spec, tokens, theme), do: evaluate_pair(spec, tokens, theme)
   end
 end
