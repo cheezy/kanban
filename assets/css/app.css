@@ -939,9 +939,14 @@
      surface (--surface-2, now 24% L) — verified by mix dark_mode.contrast. */
   --ink-3: oklch(75% 0.005 270);
   --ink-4: oklch(66% 0.005 270);
-  --line: oklch(28% 0.005 270);
-  --line-2: oklch(32% 0.005 270);
-  --line-strong: oklch(40% 0.005 270);
+  /* D43: raised the dark border lightness so edges are visible against the
+     re-tuned surfaces. The old values (28/32/40% L) sat ~1.2-2.1:1 on the dark
+     surfaces — borders effectively vanished. These clear the 1.5:1 border floor
+     on every surface up to the lightest (--surface-2, 24% L) while staying
+     subtle (~1.6-2.7:1, not harsh) — verified by mix dark_mode.contrast. */
+  --line: oklch(38% 0.005 270);
+  --line-2: oklch(44% 0.005 270);
+  --line-strong: oklch(50% 0.005 270);
 
   /* Status softs — dark-tinted backgrounds (low chroma, low lightness) */
   --st-backlog-soft: oklch(22% 0.005 270);
