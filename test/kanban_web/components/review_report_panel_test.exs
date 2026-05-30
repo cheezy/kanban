@@ -144,82 +144,14 @@ defmodule KanbanWeb.ReviewReportPanelTest do
   end
 
   describe "project_checks section" do
-    test "renders project_checks rows with met and not_met status pills" do
-      task = %{
-        id: 876_001,
-        identifier: "W876a",
-        reviewer_result: %{
-          "schema_version" => "1.1",
-          "issues" => [],
-          "project_checks" => [
-            %{
-              "check" => "All Ecto queries live in context modules",
-              "source" => "CODE-REVIEW.md",
-              "status" => "met",
-              "evidence" => "lib/kanban/tasks.ex:142"
-            },
-            %{
-              "check" => "Every public function has a @doc string",
-              "source" => "CODE-REVIEW.md",
-              "status" => "not_met",
-              "evidence" => "lib/kanban/tasks.ex:172 missing @doc"
-            }
-          ]
-        }
-      }
-
-      html = render_with(task)
-
-      assert html =~ "data-review-report-project-checks"
-      assert html =~ "Project checks"
-      assert html =~ "All Ecto queries live in context modules"
-      assert html =~ "Every public function has a @doc string"
-      assert html =~ "lib/kanban/tasks.ex:142"
-      assert html =~ "lib/kanban/tasks.ex:172 missing @doc"
-      assert html =~ "Met"
-      assert html =~ "Not met"
-      assert html =~ "bg-success"
-      assert html =~ "bg-error"
-
-      assert length(Regex.scan(~r/data-review-report-project-check[^s]/, html)) == 2
-    end
-
-    test "hides the project_checks section when the key is absent (legacy reviewer_result)" do
-      task = %{
-        id: 876_002,
-        identifier: "W876b",
-        reviewer_result: %{
-          "schema_version" => "1.0",
-          "issues" => [
-            %{"severity" => "minor", "category" => "code_quality", "description" => "Legacy"}
-          ]
-        }
-      }
-
-      html = render_with(task)
-
-      refute html =~ "data-review-report-project-checks"
-      refute html =~ "Project checks"
-      assert html =~ "data-review-report-issues"
-      assert html =~ "Legacy"
-    end
-
-    test "hides the project_checks section when the list is empty" do
-      task = %{
-        id: 876_003,
-        identifier: "W876c",
-        reviewer_result: %{
-          "schema_version" => "1.1",
-          "issues" => [],
-          "project_checks" => []
-        }
-      }
-
-      html = render_with(task)
-
-      refute html =~ "data-review-report-project-checks"
-      refute html =~ "Project checks"
-    end
+    # The project_checks rendering moved out of ReviewReportPanel into its
+    # own KanbanWeb.CodeReviewPanel component (W: code-review-panel) and the
+    # /review LiveView renders it in a separate "CODE REVIEW" section. The
+    # tests for the rendering live alongside the new component at
+    # test/kanban_web/components/code_review_panel_test.exs. The remaining
+    # check in this describe block guards the issues-list category mapping
+    # for the legacy `category: "project_check"` shape, which has nothing
+    # to do with the project_checks array itself.
 
     test "renders project_check category in the issues list with localized label" do
       task = %{

@@ -19,6 +19,7 @@ defmodule KanbanWeb.ReviewLive do
 
   alias Kanban.Reviews
   alias KanbanWeb.AcceptanceChecklist
+  alias KanbanWeb.CodeReviewPanel
   alias KanbanWeb.ReviewDetailHeader
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
@@ -359,6 +360,22 @@ defmodule KanbanWeb.ReviewLive do
               </section>
 
               <section
+                data-review-acceptance
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);"
+                ]}
+              >
+                <AcceptanceChecklist.acceptance_checklist
+                  acceptance_criteria={@selected.acceptance_criteria}
+                  checked={acceptance_checked(@selected)}
+                  failed={acceptance_failed(@selected)}
+                  structured={structured_acceptance(@selected)}
+                />
+              </section>
+
+              <section
                 data-review-changed-files
                 style={[
                   "margin: 12px 16px 0; padding: 10px 12px;",
@@ -382,19 +399,23 @@ defmodule KanbanWeb.ReviewLive do
               </section>
 
               <section
-                data-review-acceptance
+                :if={CodeReviewPanel.checks_for(@selected) != []}
+                data-review-code-review-section
                 style={[
                   "margin: 12px 16px 16px; padding: 10px 12px;",
                   "border-radius: 6px;",
-                  "background: var(--surface); border: 1px solid var(--line);"
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 8px;"
                 ]}
               >
-                <AcceptanceChecklist.acceptance_checklist
-                  acceptance_criteria={@selected.acceptance_criteria}
-                  checked={acceptance_checked(@selected)}
-                  failed={acceptance_failed(@selected)}
-                  structured={structured_acceptance(@selected)}
-                />
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Code review")}
+                </span>
+                <CodeReviewPanel.code_review_panel task={@selected} />
               </section>
             </div>
           </section>

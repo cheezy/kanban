@@ -63,19 +63,43 @@ defmodule KanbanWeb.CoreComponents do
       class="toast toast-top toast-end z-50"
       {@rest}
     >
-      <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
-      ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
-        <div>
+      <%!-- Stride-token flash card: a soft tinted surface + status-coloured
+            accent (info = --st-ready/blue, error = --st-blocked/red) + ink text,
+            so it reads as a muted, on-palette notice in BOTH themes — not
+            daisyUI's bright solid alert-info/alert-error (garish in dark). --%>
+      <div
+        class="w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap"
+        style={
+          "display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; " <>
+            "border-radius: 10px; box-shadow: var(--shadow-lg); font-size: 13.5px; " <>
+            if(@kind == :info,
+              do: "background: var(--st-ready-soft); border: 1px solid var(--st-ready);",
+              else: "background: var(--st-blocked-soft); border: 1px solid var(--st-blocked);"
+            )
+        }
+      >
+        <span
+          :if={@kind == :info}
+          style="flex-shrink: 0; line-height: 0; color: var(--st-ready);"
+        >
+          <.icon name="hero-information-circle" class="size-5" />
+        </span>
+        <span
+          :if={@kind == :error}
+          style="flex-shrink: 0; line-height: 0; color: var(--st-blocked);"
+        >
+          <.icon name="hero-exclamation-circle" class="size-5" />
+        </span>
+        <div style="min-width: 0; flex: 1; color: var(--ink);">
           <p :if={@title} class="font-semibold">{@title}</p>
           <p>{msg}</p>
         </div>
-        <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
+        <button
+          type="button"
+          class="group self-start cursor-pointer"
+          aria-label={gettext("close")}
+          style="flex-shrink: 0; color: var(--ink);"
+        >
           <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
         </button>
       </div>

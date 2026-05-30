@@ -11,7 +11,7 @@ msgstr ""
 "Language: zh\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban_web/components/core_components.ex:439
+#: lib/kanban_web/components/core_components.ex:463
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "操作"
@@ -32,8 +32,8 @@ msgstr "出错了！"
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
 
-#: lib/kanban_web/components/core_components.ex:78
-#: lib/kanban_web/components/core_components.ex:620
+#: lib/kanban_web/components/core_components.ex:100
+#: lib/kanban_web/components/core_components.ex:644
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "关闭"
@@ -86,13 +86,13 @@ msgstr "退出"
 msgid "Settings"
 msgstr "设置"
 
-#: lib/kanban_web/live/user_live/settings.ex:362
+#: lib/kanban_web/live/user_live/settings.ex:383
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "确认邮箱更改的链接已发送到新地址。"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:59
-#: lib/kanban_web/live/user_live/settings.ex:132
+#: lib/kanban_web/live/user_live/settings.ex:140
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "确认新密码"
@@ -102,37 +102,37 @@ msgstr "确认新密码"
 msgid "Create an account"
 msgstr "创建账户"
 
-#: lib/kanban_web/live/user_live/registration.ex:128
+#: lib/kanban_web/live/user_live/registration.ex:114
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr "正在创建账户..."
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:46
-#: lib/kanban_web/live/user_live/settings.ex:68
+#: lib/kanban_web/live/user_live/settings.ex:75
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "邮箱"
 
-#: lib/kanban_web/live/user_live/settings.ex:276
+#: lib/kanban_web/live/user_live/settings.ex:291
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "邮箱更改链接无效或已过期。"
 
-#: lib/kanban_web/live/user_live/settings.ex:273
+#: lib/kanban_web/live/user_live/settings.ex:288
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "邮箱更改成功。"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:40
-#: lib/kanban_web/live/user_live/settings.ex:120
+#: lib/kanban_web/live/user_live/settings.ex:128
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr "新密码"
 
 #: lib/kanban_web/live/user_live/login.ex:59
-#: lib/kanban_web/live/user_live/registration.ex:86
-#: lib/kanban_web/live/user_live/settings.ex:34
-#: lib/kanban_web/live/user_live/settings.ex:95
+#: lib/kanban_web/live/user_live/registration.ex:72
+#: lib/kanban_web/live/user_live/settings.ex:40
+#: lib/kanban_web/live/user_live/settings.ex:103
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "密码"
@@ -142,8 +142,8 @@ msgstr "密码"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:168
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/form_component.html.heex:971
-#: lib/kanban_web/live/user_live/settings.ex:84
-#: lib/kanban_web/live/user_live/settings.ex:146
+#: lib/kanban_web/live/user_live/settings.ex:91
+#: lib/kanban_web/live/user_live/settings.ex:154
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "正在保存..."
@@ -177,7 +177,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:164
-#: lib/kanban_web/live/review_live.ex:257
+#: lib/kanban_web/live/review_live.ex:258
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "取消"
@@ -208,7 +208,7 @@ msgstr "通过为看板创建列来开始。"
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:104
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/user_live/settings.ex:56
+#: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr "名称"
@@ -381,7 +381,7 @@ msgstr "无法移动任务：列已达到在制品限制"
 msgid "Created"
 msgstr "创建时间"
 
-#: lib/kanban_web/components/review_report_panel.ex:294
+#: lib/kanban_web/components/review_report_panel.ex:239
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1069,7 +1069,7 @@ msgstr "添加验证步骤"
 msgid "Agent"
 msgstr "代理"
 
-#: lib/kanban_web/live/review_live.ex:601
+#: lib/kanban_web/live/review_live.ex:622
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -1348,7 +1348,7 @@ msgid "Pending"
 msgstr "待处理"
 
 #: lib/kanban_web/components/review_queue_item.ex:264
-#: lib/kanban_web/components/review_report_panel.ex:303
+#: lib/kanban_web/components/review_report_panel.ex:248
 #: lib/kanban_web/components/review_stats_strip.ex:76
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
@@ -1464,7 +1464,7 @@ msgstr "耗时"
 msgid "Time Spent (minutes)"
 msgstr "耗时(分钟)"
 
-#: lib/kanban_web/components/review_report_panel.ex:318
+#: lib/kanban_web/components/code_review_panel.ex:139
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:285
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
@@ -2922,7 +2922,7 @@ msgstr "准确性"
 #: lib/kanban_web/controllers/page_html/security.html.heex:154
 #: lib/kanban_web/controllers/page_html/tango.html.heex:72
 #: lib/kanban_web/controllers/page_html/tango.html.heex:91
-#: lib/kanban_web/live/user_live/registration.ex:116
+#: lib/kanban_web/live/user_live/registration.ex:102
 #, elixir-autogen, elixir-format
 msgid "and"
 msgstr "和"
@@ -4052,7 +4052,7 @@ msgstr "您的权利"
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:180
 #: lib/kanban_web/components/review_queue_item.ex:375
-#: lib/kanban_web/live/review_live.ex:577
+#: lib/kanban_web/live/review_live.ex:598
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "刚刚"
@@ -4196,8 +4196,8 @@ msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/review_live.ex:116
-#: lib/kanban_web/live/review_live.ex:137
+#: lib/kanban_web/live/review_live.ex:117
+#: lib/kanban_web/live/review_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Review queue"
 msgstr "审核队列"
@@ -4217,7 +4217,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
-#: lib/kanban_web/live/review_live.ex:114
+#: lib/kanban_web/live/review_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr "工作区"
@@ -4996,7 +4996,7 @@ msgstr "实时"
 #: lib/kanban_web/components/archive_row.ex:372
 #: lib/kanban_web/components/review_detail_header.ex:187
 #: lib/kanban_web/components/review_queue_item.ex:382
-#: lib/kanban_web/live/review_live.ex:583
+#: lib/kanban_web/live/review_live.ex:604
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d} 天前"
@@ -5004,7 +5004,7 @@ msgstr "%{d} 天前"
 #: lib/kanban_web/components/archive_row.ex:370
 #: lib/kanban_web/components/review_detail_header.ex:185
 #: lib/kanban_web/components/review_queue_item.ex:380
-#: lib/kanban_web/live/review_live.ex:581
+#: lib/kanban_web/live/review_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h} 小时前"
@@ -5012,7 +5012,7 @@ msgstr "%{h} 小时前"
 #: lib/kanban_web/components/archive_row.ex:367
 #: lib/kanban_web/components/review_detail_header.ex:182
 #: lib/kanban_web/components/review_queue_item.ex:377
-#: lib/kanban_web/live/review_live.ex:578
+#: lib/kanban_web/live/review_live.ex:599
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m} 分钟前"
@@ -5023,7 +5023,7 @@ msgstr "%{m} 分钟前"
 msgid "%{s}s ago"
 msgstr "%{s} 秒前"
 
-#: lib/kanban_web/components/review_report_panel.ex:302
+#: lib/kanban_web/components/review_report_panel.ex:247
 #: lib/kanban_web/components/review_stats_strip.ex:55
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -5060,68 +5060,68 @@ msgstr[0] "%{count} 个失败的测试"
 msgid "No files changed."
 msgstr "未更改任何文件。"
 
-#: lib/kanban_web/live/review_live.ex:562
+#: lib/kanban_web/live/review_live.ex:583
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "来自 %{agents} 个代理的 %{count} 个任务正在等待您"
 
-#: lib/kanban_web/live/review_live.ex:557
+#: lib/kanban_web/live/review_live.ex:578
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "暂无任务等待您处理。"
 
-#: lib/kanban_web/live/review_live.ex:85
+#: lib/kanban_web/live/review_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "已批准 %{ident}"
 
-#: lib/kanban_web/live/review_live.ex:154
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Avg time to review · 17m"
 msgstr "平均审核时间 · 17 分钟"
 
-#: lib/kanban_web/live/review_live.ex:179
+#: lib/kanban_web/live/review_live.ex:180
 #, elixir-autogen, elixir-format
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "收件箱清空 — 没有等待审核的内容。"
 
-#: lib/kanban_web/live/review_live.ex:440
+#: lib/kanban_web/live/review_live.ex:461
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "请求更改时必须填写备注。"
 
-#: lib/kanban_web/live/review_live.ex:241
+#: lib/kanban_web/live/review_live.ex:242
 #, elixir-autogen, elixir-format
 msgid "Notes for the agent"
 msgstr "给代理的备注"
 
-#: lib/kanban_web/live/review_live.ex:435
+#: lib/kanban_web/live/review_live.ex:456
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "已对 %{ident} 请求更改"
 
-#: lib/kanban_web/live/review_live.ex:205
+#: lib/kanban_web/live/review_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "Select a task from the queue to start a review."
 msgstr "请从队列中选择一个任务开始审核。"
 
-#: lib/kanban_web/live/review_live.ex:260
+#: lib/kanban_web/live/review_live.ex:261
 #, elixir-autogen, elixir-format
 msgid "Send request"
 msgstr "发送请求"
 
-#: lib/kanban_web/live/review_live.ex:89
+#: lib/kanban_web/live/review_live.ex:90
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "无法批准任务。"
 
-#: lib/kanban_web/live/review_live.ex:444
+#: lib/kanban_web/live/review_live.ex:465
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "无法对任务请求更改。"
 
-#: lib/kanban_web/live/review_live.ex:572
+#: lib/kanban_web/live/review_live.ex:593
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "最早 %{age}"
@@ -5394,17 +5394,17 @@ msgstr "切换菜单"
 msgid "Toggle sidebar"
 msgstr "切换侧边栏"
 
-#: lib/kanban_web/live/review_live.ex:217
+#: lib/kanban_web/live/review_live.ex:218
 #, elixir-autogen, elixir-format
 msgid "Back to queue"
 msgstr "返回队列"
 
-#: lib/kanban_web/live/review_live.ex:214
+#: lib/kanban_web/live/review_live.ex:215
 #, elixir-autogen, elixir-format
 msgid "Back to review queue"
 msgstr "返回审核队列"
 
-#: lib/kanban_web/live/user_live/settings.ex:381
+#: lib/kanban_web/live/user_live/settings.ex:402
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "资料已更新。"
@@ -5444,7 +5444,7 @@ msgstr "Stride 的构建方式、目标用户以及如何参与。"
 msgid "Key collaboration features"
 msgstr "关键协作功能"
 
-#: lib/kanban_web/live/user_live/registration.ex:118
+#: lib/kanban_web/live/user_live/registration.ex:104
 #, elixir-autogen, elixir-format
 msgid "Acceptable Use Policy"
 msgstr "可接受使用政策"
@@ -5459,9 +5459,9 @@ msgstr "账户已确认！"
 msgid "Already have an account?"
 msgstr "已经有账户?"
 
-#: lib/kanban_web/live/user_live/registration.ex:97
+#: lib/kanban_web/live/user_live/registration.ex:83
 #: lib/kanban_web/live/user_live/reset_password.ex:52
-#: lib/kanban_web/live/user_live/settings.ex:120
+#: lib/kanban_web/live/user_live/settings.ex:128
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "至少 12 个字符"
@@ -5494,7 +5494,7 @@ msgstr "切换语言"
 msgid "Choose a new password for your account."
 msgstr "为您的账户选择一个新密码。"
 
-#: lib/kanban_web/live/user_live/settings.ex:97
+#: lib/kanban_web/live/user_live/settings.ex:105
 #, elixir-autogen, elixir-format
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "请选择一个强密码并确认。成功更改后,您仍将在此设备上保持登录。"
@@ -5504,14 +5504,7 @@ msgstr "请选择一个强密码并确认。成功更改后,您仍将在此设�
 msgid "Confirming your account…"
 msgstr "正在确认您的账户..."
 
-#: lib/kanban_web/components/auth_frame.ex:173
-#: lib/kanban_web/components/auth_frame.ex:174
-#: lib/kanban_web/components/auth_frame.ex:175
-#, elixir-autogen, elixir-format
-msgid "Continue with %{provider}"
-msgstr "使用 %{provider} 继续"
-
-#: lib/kanban_web/live/user_live/registration.ex:130
+#: lib/kanban_web/live/user_live/registration.ex:116
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create account"
 msgstr "创建账户"
@@ -5536,17 +5529,12 @@ msgstr "面向 agent"
 msgid "Forgot?"
 msgstr "忘记了?"
 
-#: lib/kanban_web/live/user_live/registration.ex:28
-#, elixir-autogen, elixir-format
-msgid "Free for 30 days. No credit card. Up to 5 agents on the free plan."
-msgstr "免费试用 30 天。无需信用卡。免费计划支持最多 5 个代理。"
-
 #: lib/kanban_web/live/user_live/confirmation.ex:48
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "请稍候 — 这只需一会儿。"
 
-#: lib/kanban_web/live/user_live/registration.ex:112
+#: lib/kanban_web/live/user_live/registration.ex:98
 #, elixir-autogen, elixir-format
 msgid "I agree to the"
 msgstr "我同意"
@@ -5571,8 +5559,8 @@ msgstr "初次使用 Stride?"
 msgid "Not found"
 msgstr "未找到"
 
-#: lib/kanban_web/live/user_live/settings.ex:29
-#: lib/kanban_web/live/user_live/settings.ex:42
+#: lib/kanban_web/live/user_live/settings.ex:34
+#: lib/kanban_web/live/user_live/settings.ex:49
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Profile"
 msgstr "个人资料"
@@ -5592,7 +5580,7 @@ msgstr "Stride 应用的发布说明。"
 msgid "Reset your password"
 msgstr "重置您的密码"
 
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:157
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save password"
 msgstr "保存密码"
@@ -5612,7 +5600,7 @@ msgstr "希望快速行动而不牺牲质量的初创公司。"
 msgid "Tango"
 msgstr "Tango"
 
-#: lib/kanban_web/live/user_live/registration.ex:114
+#: lib/kanban_web/live/user_live/registration.ex:100
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
 msgstr "服务条款"
@@ -5622,7 +5610,7 @@ msgstr "服务条款"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Stride 背后的人员及 AI 协作者。"
 
-#: lib/kanban_web/live/user_live/settings.ex:87
+#: lib/kanban_web/live/user_live/settings.ex:94
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Update profile"
 msgstr "更新个人资料"
@@ -5649,7 +5637,7 @@ msgstr "欢迎回来。请使用您上次使用的相同方式。"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:39
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/registration.ex:70
+#: lib/kanban_web/live/user_live/registration.ex:56
 #, elixir-autogen, elixir-format
 msgid "Work email"
 msgstr "工作邮箱"
@@ -5659,17 +5647,17 @@ msgstr "工作邮箱"
 msgid "Your account has been confirmed successfully. You can now sign in."
 msgstr "您的账户已成功确认。您现在可以登录。"
 
-#: lib/kanban_web/live/user_live/registration.ex:54
+#: lib/kanban_web/live/user_live/registration.ex:40
 #, elixir-autogen, elixir-format
 msgid "Your name"
 msgstr "您的姓名"
 
-#: lib/kanban_web/live/user_live/settings.ex:44
+#: lib/kanban_web/live/user_live/settings.ex:51
 #, elixir-autogen, elixir-format
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr "您的姓名和邮箱地址。更改邮箱需要点击发送到新地址的链接进行确认。"
 
-#: lib/kanban_web/live/user_live/settings.ex:35
+#: lib/kanban_web/live/user_live/settings.ex:41
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr "更改凭据"
@@ -5679,7 +5667,7 @@ msgstr "更改凭据"
 msgid "if you suspect a key is compromised."
 msgstr "如果您怀疑密钥已泄露。"
 
-#: lib/kanban_web/live/user_live/settings.ex:30
+#: lib/kanban_web/live/user_live/settings.ex:35
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr "姓名 · 邮箱"
@@ -5688,11 +5676,6 @@ msgstr "姓名 · 邮箱"
 #, elixir-autogen, elixir-format
 msgid "not"
 msgstr "不"
-
-#: lib/kanban_web/live/user_live/registration.ex:39
-#, elixir-autogen, elixir-format
-msgid "or with email"
-msgstr "或使用邮箱"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:65
 #, elixir-autogen, elixir-format
@@ -5709,7 +5692,7 @@ msgstr "轮换 API 令牌。请从此处轮换"
 msgid "this tab will sign you in automatically"
 msgstr "此标签页将自动为您登录"
 
-#: lib/kanban_web/live/user_live/registration.ex:120
+#: lib/kanban_web/live/user_live/registration.ex:106
 #, elixir-autogen, elixir-format
 msgid "— including the agent-action attribution clause."
 msgstr "— 包括代理行为归属条款。"
@@ -6117,14 +6100,14 @@ msgstr "周期时间,在所有层级按 agent 与人类划分"
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "每个任务都包含为什么、做什么、验收标准、测试策略、安全考虑、需要规避的陷阱以及可观测性。Agent 在认领时即拥有足够上下文,可以直接执行而无需来回沟通;人类则依据自己写下的标准而非感觉来评审。"
 
-#: lib/kanban_web/live/review_live.ex:668
+#: lib/kanban_web/live/review_live.ex:689
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
 msgstr[0] "%{checked}/%{total} · %{n} 个问题"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:229
-#: lib/kanban_web/components/review_report_panel.ex:316
+#: lib/kanban_web/components/code_review_panel.ex:137
 #, elixir-autogen, elixir-format
 msgid "Not met"
 msgstr "未达成"
@@ -6151,7 +6134,7 @@ msgstr "未违反"
 msgid "violated"
 msgstr "违反"
 
-#: lib/kanban_web/live/review_live.ex:335
+#: lib/kanban_web/live/review_live.ex:336
 #, elixir-autogen, elixir-format
 msgid "Completion summary"
 msgstr "完成摘要"
@@ -6166,7 +6149,7 @@ msgstr "给 %{name} 发邮件"
 msgid "Completed by %{name}"
 msgstr "完成人:%{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:304
+#: lib/kanban_web/components/review_report_panel.ex:249
 #: lib/kanban_web/components/review_stats_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "Patterns"
@@ -6187,33 +6170,33 @@ msgstr "评审已请求修改 — 等待代理处理"
 msgid "changes requested"
 msgstr "已请求修改"
 
-#: lib/kanban_web/components/review_report_panel.ex:130
-#: lib/kanban_web/components/review_report_panel.ex:166
+#: lib/kanban_web/components/code_review_panel.ex:84
+#: lib/kanban_web/components/review_report_panel.ex:126
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr "（无描述）"
 
-#: lib/kanban_web/live/review_live.ex:611
+#: lib/kanban_web/live/review_live.ex:632
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "已请求修改"
 
-#: lib/kanban_web/components/review_report_panel.ex:306
+#: lib/kanban_web/components/review_report_panel.ex:251
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "代码质量"
 
-#: lib/kanban_web/components/review_report_panel.ex:295
+#: lib/kanban_web/components/review_report_panel.ex:240
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "重要"
 
-#: lib/kanban_web/components/review_report_panel.ex:296
+#: lib/kanban_web/components/review_report_panel.ex:241
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "轻微"
 
-#: lib/kanban_web/components/review_report_panel.ex:305
+#: lib/kanban_web/components/review_report_panel.ex:250
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "测试"
@@ -6258,12 +6241,12 @@ msgstr "已遵循的模式"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.ex:375
+#: lib/kanban_web/live/review_live.ex:392
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "已更改的文件"
 
-#: lib/kanban_web/live/review_live.ex:356
+#: lib/kanban_web/live/review_live.ex:357
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr "问题"
@@ -6283,7 +6266,7 @@ msgstr "差异在第 500 行处截断。"
 msgid "No diff available for this file."
 msgstr "此文件无可用差异。"
 
-#: lib/kanban_web/components/review_report_panel.ex:104
+#: lib/kanban_web/components/review_report_panel.ex:100
 #, elixir-autogen, elixir-format
 msgid "No issues"
 msgstr "无问题"
@@ -6343,19 +6326,14 @@ msgstr "n=%{n}"
 msgid "projects reporting"
 msgstr "报告中的项目"
 
-#: lib/kanban_web/components/review_report_panel.ex:315
+#: lib/kanban_web/components/code_review_panel.ex:136
 #, elixir-autogen, elixir-format
 msgid "Met"
 msgstr "已达成"
 
-#: lib/kanban_web/components/review_report_panel.ex:307
+#: lib/kanban_web/components/review_report_panel.ex:252
 #, elixir-autogen, elixir-format
 msgid "Project check"
-msgstr "项目检查"
-
-#: lib/kanban_web/components/review_report_panel.ex:149
-#, elixir-autogen, elixir-format
-msgid "Project checks"
 msgstr "项目检查"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:40
@@ -6643,6 +6621,16 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
-msgstr ""
+msgstr "Stride 将每项任务包装在四阶段生命周期中。由人类选择何时参与，何时让代理独立工作。该看板驱动真实的代码库，而非感觉。"
 "Stride 将每个任务都纳入一个四阶段的生命周期。人类可以决定何时参与，以及何时"
 "让智能体独立工作。看板驱动的是真实的代码库，而不是凭感觉。"
+
+#: lib/kanban_web/live/review_live.ex:416
+#, elixir-autogen, elixir-format
+msgid "Code review"
+msgstr "代码审查"
+
+#: lib/kanban_web/live/user_live/settings.ex:28
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Settings sections"
+msgstr "设置部分"

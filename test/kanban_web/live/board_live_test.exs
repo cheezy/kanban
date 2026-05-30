@@ -509,10 +509,11 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # ColumnHeader uses --ink-3 + --surface-sunken when under WIP
-      # (no --st-blocked-soft highlight).
+      # ColumnHeader uses --ink-3 + --surface-sunken when under WIP. Refute the
+      # over-WIP badge's exact signature (text-then-bg) rather than the bare
+      # token — the error flash also uses --st-blocked-soft elsewhere on the page.
       assert html =~ "1/3"
-      refute html =~ "var(--st-blocked-soft);"
+      refute html =~ "color: var(--st-blocked);background: var(--st-blocked-soft);"
     end
 
     test "displays neutral indicator when column at WIP limit", %{conn: conn, user: user} do
@@ -523,9 +524,11 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # At-limit (count == wip) is NOT over-WIP — badge stays neutral.
+      # At-limit (count == wip) is NOT over-WIP — badge stays neutral. Refute the
+      # over-WIP badge's exact signature, not the bare token (the error flash
+      # also uses --st-blocked-soft on the page).
       assert html =~ "2/2"
-      refute html =~ "var(--st-blocked-soft);"
+      refute html =~ "color: var(--st-blocked);background: var(--st-blocked-soft);"
     end
 
     test "cannot create task when WIP limit reached", %{conn: conn, user: user} do

@@ -115,5 +115,4 @@ defmodule KanbanWeb.AuthFrame do
     </button>
     """
   end
-
 end

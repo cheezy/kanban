@@ -11,7 +11,7 @@
 msgid ""
 msgstr ""
 
-#: lib/kanban_web/components/core_components.ex:439
+#: lib/kanban_web/components/core_components.ex:463
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr ""
@@ -32,8 +32,8 @@ msgstr ""
 msgid "We can't find the internet"
 msgstr ""
 
-#: lib/kanban_web/components/core_components.ex:78
-#: lib/kanban_web/components/core_components.ex:620
+#: lib/kanban_web/components/core_components.ex:100
+#: lib/kanban_web/components/core_components.ex:644
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr ""
@@ -86,13 +86,13 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:362
+#: lib/kanban_web/live/user_live/settings.ex:383
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:59
-#: lib/kanban_web/live/user_live/settings.ex:132
+#: lib/kanban_web/live/user_live/settings.ex:140
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr ""
@@ -102,37 +102,37 @@ msgstr ""
 msgid "Create an account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:128
+#: lib/kanban_web/live/user_live/registration.ex:114
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:46
-#: lib/kanban_web/live/user_live/settings.ex:68
+#: lib/kanban_web/live/user_live/settings.ex:75
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:276
+#: lib/kanban_web/live/user_live/settings.ex:291
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:273
+#: lib/kanban_web/live/user_live/settings.ex:288
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:40
-#: lib/kanban_web/live/user_live/settings.ex:120
+#: lib/kanban_web/live/user_live/settings.ex:128
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr ""
 
 #: lib/kanban_web/live/user_live/login.ex:59
-#: lib/kanban_web/live/user_live/registration.ex:86
-#: lib/kanban_web/live/user_live/settings.ex:34
-#: lib/kanban_web/live/user_live/settings.ex:95
+#: lib/kanban_web/live/user_live/registration.ex:72
+#: lib/kanban_web/live/user_live/settings.ex:40
+#: lib/kanban_web/live/user_live/settings.ex:103
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr ""
@@ -142,8 +142,8 @@ msgstr ""
 #: lib/kanban_web/live/board_live/settings_form_component.ex:168
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/task_live/form_component.html.heex:971
-#: lib/kanban_web/live/user_live/settings.ex:84
-#: lib/kanban_web/live/user_live/settings.ex:146
+#: lib/kanban_web/live/user_live/settings.ex:91
+#: lib/kanban_web/live/user_live/settings.ex:154
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
@@ -177,7 +177,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:164
-#: lib/kanban_web/live/review_live.ex:257
+#: lib/kanban_web/live/review_live.ex:258
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
@@ -208,7 +208,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:104
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/user_live/settings.ex:56
+#: lib/kanban_web/live/user_live/settings.ex:63
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
@@ -381,7 +381,7 @@ msgstr ""
 msgid "Created"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:294
+#: lib/kanban_web/components/review_report_panel.ex:239
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1069,7 +1069,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:601
+#: lib/kanban_web/live/review_live.ex:622
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -1348,7 +1348,7 @@ msgid "Pending"
 msgstr ""
 
 #: lib/kanban_web/components/review_queue_item.ex:264
-#: lib/kanban_web/components/review_report_panel.ex:303
+#: lib/kanban_web/components/review_report_panel.ex:248
 #: lib/kanban_web/components/review_stats_strip.ex:76
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
@@ -1464,7 +1464,7 @@ msgstr ""
 msgid "Time Spent (minutes)"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:318
+#: lib/kanban_web/components/code_review_panel.ex:139
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:285
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
@@ -2925,7 +2925,7 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/security.html.heex:154
 #: lib/kanban_web/controllers/page_html/tango.html.heex:72
 #: lib/kanban_web/controllers/page_html/tango.html.heex:91
-#: lib/kanban_web/live/user_live/registration.ex:116
+#: lib/kanban_web/live/user_live/registration.ex:102
 #, elixir-autogen, elixir-format
 msgid "and"
 msgstr ""
@@ -4055,7 +4055,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_sidebar.ex:218
 #: lib/kanban_web/components/review_detail_header.ex:180
 #: lib/kanban_web/components/review_queue_item.ex:375
-#: lib/kanban_web/live/review_live.ex:577
+#: lib/kanban_web/live/review_live.ex:598
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -4200,8 +4200,8 @@ msgid "Promote children to Ready"
 msgstr ""
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/review_live.ex:116
-#: lib/kanban_web/live/review_live.ex:137
+#: lib/kanban_web/live/review_live.ex:117
+#: lib/kanban_web/live/review_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Review queue"
 msgstr ""
@@ -4221,7 +4221,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:52
-#: lib/kanban_web/live/review_live.ex:114
+#: lib/kanban_web/live/review_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr ""
@@ -5006,7 +5006,7 @@ msgstr ""
 #: lib/kanban_web/components/archive_row.ex:372
 #: lib/kanban_web/components/review_detail_header.ex:187
 #: lib/kanban_web/components/review_queue_item.ex:382
-#: lib/kanban_web/live/review_live.ex:583
+#: lib/kanban_web/live/review_live.ex:604
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr ""
@@ -5014,7 +5014,7 @@ msgstr ""
 #: lib/kanban_web/components/archive_row.ex:370
 #: lib/kanban_web/components/review_detail_header.ex:185
 #: lib/kanban_web/components/review_queue_item.ex:380
-#: lib/kanban_web/live/review_live.ex:581
+#: lib/kanban_web/live/review_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr ""
@@ -5022,7 +5022,7 @@ msgstr ""
 #: lib/kanban_web/components/archive_row.ex:367
 #: lib/kanban_web/components/review_detail_header.ex:182
 #: lib/kanban_web/components/review_queue_item.ex:377
-#: lib/kanban_web/live/review_live.ex:578
+#: lib/kanban_web/live/review_live.ex:599
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr ""
@@ -5033,7 +5033,7 @@ msgstr ""
 msgid "%{s}s ago"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:302
+#: lib/kanban_web/components/review_report_panel.ex:247
 #: lib/kanban_web/components/review_stats_strip.ex:55
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -5071,69 +5071,69 @@ msgstr[1] ""
 msgid "No files changed."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:562
+#: lib/kanban_web/live/review_live.ex:583
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/review_live.ex:557
+#: lib/kanban_web/live/review_live.ex:578
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:85
+#: lib/kanban_web/live/review_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:154
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Avg time to review · 17m"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:179
+#: lib/kanban_web/live/review_live.ex:180
 #, elixir-autogen, elixir-format
 msgid "Inbox zero — nothing is waiting for review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:440
+#: lib/kanban_web/live/review_live.ex:461
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:241
+#: lib/kanban_web/live/review_live.ex:242
 #, elixir-autogen, elixir-format
 msgid "Notes for the agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:435
+#: lib/kanban_web/live/review_live.ex:456
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:205
+#: lib/kanban_web/live/review_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "Select a task from the queue to start a review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:260
+#: lib/kanban_web/live/review_live.ex:261
 #, elixir-autogen, elixir-format
 msgid "Send request"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:89
+#: lib/kanban_web/live/review_live.ex:90
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:444
+#: lib/kanban_web/live/review_live.ex:465
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:572
+#: lib/kanban_web/live/review_live.ex:593
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr ""
@@ -5406,17 +5406,17 @@ msgstr ""
 msgid "Toggle sidebar"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:217
+#: lib/kanban_web/live/review_live.ex:218
 #, elixir-autogen, elixir-format
 msgid "Back to queue"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:214
+#: lib/kanban_web/live/review_live.ex:215
 #, elixir-autogen, elixir-format
 msgid "Back to review queue"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:381
+#: lib/kanban_web/live/user_live/settings.ex:402
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr ""
@@ -5456,7 +5456,7 @@ msgstr ""
 msgid "Key collaboration features"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:118
+#: lib/kanban_web/live/user_live/registration.ex:104
 #, elixir-autogen, elixir-format
 msgid "Acceptable Use Policy"
 msgstr ""
@@ -5471,9 +5471,9 @@ msgstr ""
 msgid "Already have an account?"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:97
+#: lib/kanban_web/live/user_live/registration.ex:83
 #: lib/kanban_web/live/user_live/reset_password.ex:52
-#: lib/kanban_web/live/user_live/settings.ex:120
+#: lib/kanban_web/live/user_live/settings.ex:128
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr ""
@@ -5506,7 +5506,7 @@ msgstr ""
 msgid "Choose a new password for your account."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:97
+#: lib/kanban_web/live/user_live/settings.ex:105
 #, elixir-autogen, elixir-format
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr ""
@@ -5516,14 +5516,7 @@ msgstr ""
 msgid "Confirming your account…"
 msgstr ""
 
-#: lib/kanban_web/components/auth_frame.ex:173
-#: lib/kanban_web/components/auth_frame.ex:174
-#: lib/kanban_web/components/auth_frame.ex:175
-#, elixir-autogen, elixir-format
-msgid "Continue with %{provider}"
-msgstr ""
-
-#: lib/kanban_web/live/user_live/registration.ex:130
+#: lib/kanban_web/live/user_live/registration.ex:116
 #, elixir-autogen, elixir-format
 msgid "Create account"
 msgstr ""
@@ -5548,17 +5541,12 @@ msgstr ""
 msgid "Forgot?"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:28
-#, elixir-autogen, elixir-format
-msgid "Free for 30 days. No credit card. Up to 5 agents on the free plan."
-msgstr ""
-
 #: lib/kanban_web/live/user_live/confirmation.ex:48
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:112
+#: lib/kanban_web/live/user_live/registration.ex:98
 #, elixir-autogen, elixir-format
 msgid "I agree to the"
 msgstr ""
@@ -5583,8 +5571,8 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:29
-#: lib/kanban_web/live/user_live/settings.ex:42
+#: lib/kanban_web/live/user_live/settings.ex:34
+#: lib/kanban_web/live/user_live/settings.ex:49
 #, elixir-autogen, elixir-format
 msgid "Profile"
 msgstr ""
@@ -5604,7 +5592,7 @@ msgstr ""
 msgid "Reset your password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:157
 #, elixir-autogen, elixir-format
 msgid "Save password"
 msgstr ""
@@ -5624,7 +5612,7 @@ msgstr ""
 msgid "Tango"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:114
+#: lib/kanban_web/live/user_live/registration.ex:100
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
 msgstr ""
@@ -5634,7 +5622,7 @@ msgstr ""
 msgid "The people and the AI collaborator behind Stride."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:87
+#: lib/kanban_web/live/user_live/settings.ex:94
 #, elixir-autogen, elixir-format
 msgid "Update profile"
 msgstr ""
@@ -5661,7 +5649,7 @@ msgstr ""
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:39
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/registration.ex:70
+#: lib/kanban_web/live/user_live/registration.ex:56
 #, elixir-autogen, elixir-format
 msgid "Work email"
 msgstr ""
@@ -5671,17 +5659,17 @@ msgstr ""
 msgid "Your account has been confirmed successfully. You can now sign in."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:54
+#: lib/kanban_web/live/user_live/registration.ex:40
 #, elixir-autogen, elixir-format
 msgid "Your name"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:44
+#: lib/kanban_web/live/user_live/settings.ex:51
 #, elixir-autogen, elixir-format
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:35
+#: lib/kanban_web/live/user_live/settings.ex:41
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr ""
@@ -5691,7 +5679,7 @@ msgstr ""
 msgid "if you suspect a key is compromised."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:30
+#: lib/kanban_web/live/user_live/settings.ex:35
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr ""
@@ -5699,11 +5687,6 @@ msgstr ""
 #: lib/kanban_web/live/user_live/forgot_password.ex:66
 #, elixir-autogen, elixir-format
 msgid "not"
-msgstr ""
-
-#: lib/kanban_web/live/user_live/registration.ex:39
-#, elixir-autogen, elixir-format
-msgid "or with email"
 msgstr ""
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:65
@@ -5721,7 +5704,7 @@ msgstr ""
 msgid "this tab will sign you in automatically"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/registration.ex:120
+#: lib/kanban_web/live/user_live/registration.ex:106
 #, elixir-autogen, elixir-format
 msgid "— including the agent-action attribution clause."
 msgstr ""
@@ -6129,7 +6112,7 @@ msgstr ""
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:668
+#: lib/kanban_web/live/review_live.ex:689
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
@@ -6137,7 +6120,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/kanban_web/components/acceptance_checklist.ex:229
-#: lib/kanban_web/components/review_report_panel.ex:316
+#: lib/kanban_web/components/code_review_panel.ex:137
 #, elixir-autogen, elixir-format
 msgid "Not met"
 msgstr ""
@@ -6166,7 +6149,7 @@ msgstr ""
 msgid "violated"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:335
+#: lib/kanban_web/live/review_live.ex:336
 #, elixir-autogen, elixir-format
 msgid "Completion summary"
 msgstr ""
@@ -6181,7 +6164,7 @@ msgstr ""
 msgid "Completed by %{name}"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:304
+#: lib/kanban_web/components/review_report_panel.ex:249
 #: lib/kanban_web/components/review_stats_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "Patterns"
@@ -6202,33 +6185,33 @@ msgstr ""
 msgid "changes requested"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:130
-#: lib/kanban_web/components/review_report_panel.ex:166
+#: lib/kanban_web/components/code_review_panel.ex:84
+#: lib/kanban_web/components/review_report_panel.ex:126
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:611
+#: lib/kanban_web/live/review_live.ex:632
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:306
+#: lib/kanban_web/components/review_report_panel.ex:251
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:295
+#: lib/kanban_web/components/review_report_panel.ex:240
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:296
+#: lib/kanban_web/components/review_report_panel.ex:241
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:305
+#: lib/kanban_web/components/review_report_panel.ex:250
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr ""
@@ -6273,12 +6256,12 @@ msgstr ""
 msgid "TST"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:375
+#: lib/kanban_web/live/review_live.ex:392
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:356
+#: lib/kanban_web/live/review_live.ex:357
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr ""
@@ -6298,7 +6281,7 @@ msgstr ""
 msgid "No diff available for this file."
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:104
+#: lib/kanban_web/components/review_report_panel.ex:100
 #, elixir-autogen, elixir-format
 msgid "No issues"
 msgstr ""
@@ -6358,19 +6341,14 @@ msgstr ""
 msgid "projects reporting"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:315
+#: lib/kanban_web/components/code_review_panel.ex:136
 #, elixir-autogen, elixir-format
 msgid "Met"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:307
+#: lib/kanban_web/components/review_report_panel.ex:252
 #, elixir-autogen, elixir-format
 msgid "Project check"
-msgstr ""
-
-#: lib/kanban_web/components/review_report_panel.ex:149
-#, elixir-autogen, elixir-format
-msgid "Project checks"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:40
@@ -6599,4 +6577,14 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
+msgstr ""
+
+#: lib/kanban_web/live/review_live.ex:416
+#, elixir-autogen, elixir-format
+msgid "Code review"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex:28
+#, elixir-autogen, elixir-format
+msgid "Settings sections"
 msgstr ""

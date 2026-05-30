@@ -1,0 +1,53 @@
+defmodule KanbanWeb.CoreComponentsTest do
+  use KanbanWeb.ConnCase, async: true
+
+  import Phoenix.Component
+  import Phoenix.LiveViewTest
+
+  alias KanbanWeb.CoreComponents
+
+  describe "flash/1" do
+    test "info flash uses the muted Stride status tokens, not the bright daisyUI alert" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:info}>Saved</CoreComponents.flash>
+        """)
+
+      assert html =~ "Saved"
+      # Soft blue surface + blue accent + ink text — flips with the theme.
+      assert html =~ "background: var(--st-ready-soft)"
+      assert html =~ "color: var(--st-ready)"
+      assert html =~ "color: var(--ink)"
+      # No bright solid daisyUI alert (the thing that looked garish in dark).
+      refute html =~ "alert-info"
+    end
+
+    test "error flash uses the muted red Stride status tokens, not the bright daisyUI alert" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:error}>Nope</CoreComponents.flash>
+        """)
+
+      assert html =~ "Nope"
+      assert html =~ "background: var(--st-blocked-soft)"
+      assert html =~ "color: var(--st-blocked)"
+      refute html =~ "alert-error"
+    end
+
+    test "renders an optional title above the message" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:error} title="Heads up">Something broke</CoreComponents.flash>
+        """)
+
+      assert html =~ "Heads up"
+      assert html =~ "Something broke"
+    end
+  end
+end
