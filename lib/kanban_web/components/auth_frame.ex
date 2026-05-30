@@ -65,6 +65,9 @@ defmodule KanbanWeb.AuthFrame do
       data-stride-auth-frame
       style="display: flex; min-height: 100vh; background: var(--bg);"
     >
+      <%!-- dark-mode-ignore: the auth frame is intentionally theme-neutral
+            (light-locked via .stride-screen[data-stride-auth-frame] in app.css);
+            the warm editorial gradient below is a fixed-palette decoration. --%>
       <aside
         class="hidden md:flex"
         style={[

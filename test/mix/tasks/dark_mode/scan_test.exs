@@ -163,6 +163,84 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
     end
   end
 
+  describe "multi-line style={[ … ]} detection" do
+    test "flags a raw oklch() on a continuation line of a multi-line style list" do
+      content = """
+      <div style={[
+        "width: 40%;",
+        "background: oklch(96% 0.025 60);",
+        "padding: 8px;"
+      ]}>
+      """
+
+      assert {:ok, [_]} = scan_string(content)
+    end
+
+    test "flags a raw hex color on a continuation line of a multi-line style list" do
+      content = """
+      <div style={[
+        "border: 1px solid #1a1a1a;"
+      ]}>
+      """
+
+      assert {:ok, [_]} = scan_string(content)
+    end
+
+    test "flags oklch in a single-line style={[ … ]} list too" do
+      assert {:ok, [_]} = scan_string(~s|<div style={["background: oklch(20% 0 0);"]}>\n|)
+    end
+
+    test "does NOT flag a var(--token, oklch(...)) fallback inside a style list" do
+      content = """
+      <div style={[
+        "color: var(--ink, oklch(18% 0.005 270));",
+        "background: var(--surface);"
+      ]}>
+      """
+
+      assert {:ok, []} = scan_string(content)
+    end
+
+    test "an allow-list marker on the element (above the style list) suppresses it" do
+      # This mirrors the real placement (see auth_frame.ex): the marker sits on
+      # the element, NOT inside the list — because a comment inside the list
+      # makes `mix format` split `style={[` onto two lines, defeating detection.
+      content = """
+      <%!-- dark-mode-ignore: fixed-palette decorative gradient --%>
+      <aside style={[
+        "background: oklch(96% 0.025 60);"
+      ]}>
+      """
+
+      assert {:ok, []} = scan_string(content)
+    end
+
+    test "an allow-list marker via the lookback window suppresses an in-list hit" do
+      # The lookback mechanic works regardless of where the marker is; this only
+      # documents that. Prefer the on-element placement above in real templates.
+      content = """
+      <div style={[
+        # dark-mode-ignore: fixed-palette decorative gradient
+        "background: oklch(96% 0.025 60);"
+      ]}>
+      """
+
+      assert {:ok, []} = scan_string(content)
+    end
+
+    test "does NOT flag a raw oklch() that sits OUTSIDE the closed style list" do
+      content = """
+      <div style={[
+        "padding: 8px;"
+      ]}>
+        <span>oklch(20% 0 0) is referenced in prose here, not in a style</span>
+      </div>
+      """
+
+      assert {:ok, []} = scan_string(content)
+    end
+  end
+
   describe "integration with the real codebase" do
     test "the Mix task runs cleanly against the current main branch" do
       # The task either exits cleanly (returns :ok) or calls exit({:shutdown, 1})
@@ -193,7 +271,7 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
   # Returns true when the line matches any of the scanner's violation patterns.
   # Mirrors the same regex set the Mix task uses; if those regexes change in
   # scan.ex, update them here too.
-  defp matches_violation?(line), do: match_any?(line)
+  defp matches_violation?(line), do: match_any?(line, false)
 
   # Writes the content to a temp .heex file under a temp lib/kanban_web/ root
   # so the scanner's source-file enumerator finds it, then drives the scanner
@@ -234,17 +312,45 @@ defmodule Mix.Tasks.DarkMode.ScanTest do
       |> Enum.with_index(1)
 
     lines_map = Map.new(lines, fn {line, n} -> {n, line} end)
-    Enum.flat_map(lines, fn entry -> classify_line(entry, lines_map, path) end)
+    style_lines = style_list_linenos(lines)
+    Enum.flat_map(lines, fn entry -> classify_line(entry, lines_map, style_lines, path) end)
   end
 
-  defp classify_line({line, n}, lines_map, path) do
-    if ignored?(lines_map, n) or not match_any?(line), do: [], else: [{path, n, line}]
+  defp classify_line({line, n}, lines_map, style_lines, path) do
+    cond do
+      ignored?(lines_map, n) -> []
+      match_any?(line, MapSet.member?(style_lines, n)) -> [{path, n, line}]
+      true -> []
+    end
   end
 
-  defp match_any?(line) do
+  defp match_any?(line, in_style_list?) do
     Regex.match?(class_pattern(), line) or Regex.match?(colored_utility_pattern(), line) or
       Regex.match?(arbitrary_hex_pattern(), line) or Regex.match?(oklch_pattern(), line) or
-      Regex.match?(hex_pattern(), line)
+      Regex.match?(hex_pattern(), line) or
+      (in_style_list? and raw_color_in_style?(line))
+  end
+
+  # Mirrors scan.ex: raw oklch()/hex on a line, with var(--token, <fallback>)
+  # expressions stripped first so legitimate fallbacks are not flagged.
+  defp raw_color_in_style?(line) do
+    stripped = Regex.replace(var_fallback_pattern(), line, "")
+    Regex.match?(~r/\boklch\s*\(/, stripped) or Regex.match?(~r/#[0-9a-fA-F]{3,8}\b/, stripped)
+  end
+
+  defp var_fallback_pattern, do: ~r/var\((?:[^()]|\([^()]*\))*\)/
+
+  # Mirrors scan.ex: line numbers inside a `style={[ ... ]}` list.
+  defp style_list_linenos(lines) do
+    {set, _open?} = Enum.reduce(lines, {MapSet.new(), false}, &track_style_line/2)
+    set
+  end
+
+  defp track_style_line({line, n}, {set, open?}) do
+    active? = open? or String.contains?(line, "style={[")
+    set = if active?, do: MapSet.put(set, n), else: set
+    closes? = active? and String.contains?(line, "]}")
+    {set, active? and not closes?}
   end
 
   defp class_pattern,

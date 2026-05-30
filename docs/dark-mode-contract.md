@@ -153,21 +153,32 @@ The scanner intentionally **does not** scan:
 - `docs/*` — docs reference forbidden patterns as examples.
 - Test files (`*_test.exs`, files under `test/`).
 
-### Known scanner limitations (documented follow-up)
+### Known scanner limitations
 
-The scanner is line-based, so it does **not** catch every theme-blind colour:
+W938 closed the multi-line blind spot: raw `oklch()` / hex literals on the
+continuation lines of a multi-line **`style={[ ... ]}` list** are now flagged,
+in addition to the `style="..."` and single-line `style={"..."}` forms. A
+`var(--token, oklch(...))` fallback is exempt (the `var(...)` is stripped before
+the raw-color check), so legitimate fallbacks do not false-positive.
 
-- Raw `oklch()` / hex literals that sit on their **own line inside a
-  multi-line `style={[ ... ]}` list** (rather than on the `style=` line) are
-  not flagged. The `style="..."` and single-line `style={"..."}` forms are.
-- Bare `oklch()` literals **outside** a `style=` attribute are not flagged.
-  Flagging them broadly would false-positive on legitimate
+Two limitations remain **by design**:
+
+- Bare `oklch()` / hex literals **outside** any `style=` attribute are not
+  flagged. Flagging them broadly would false-positive on legitimate
   `var(--token, oklch(...))` fallbacks and on intentional fixed-palette
   components (e.g. generated avatar palettes, the light-locked auth frame).
+- `assets/css/app.css` is **not** scanned. It legitimately *defines* the oklch
+  tokens, so a literal scan there is meaningless — the objective legibility of
+  those values is measured by `mix dark_mode.contrast` instead.
+- Two narrow line-based edge cases remain (both allow-listable and effectively
+  absent in practice): a `var()` fallback whose colour argument itself wraps a
+  nested function (e.g. `var(--ink, oklch(calc(…) …))`) is only partially
+  stripped and can false-positive, and a CSS value literally containing `]}`
+  ends the style-list scan one line early.
 
-These remain a tracked follow-up rather than an enforced rule. When adding a
-multi-line inline gradient, prefer a composite gradient token (see the
-**Composite gradient tokens** table) so the scanner gap never matters.
+When adding a multi-line inline gradient, prefer a composite gradient token (see
+the **Composite gradient tokens** table); if a fixed-palette literal is genuinely
+intentional (like the auth-frame gradient), allow-list it with a real reason.
 
 ## Allow-listing
 
