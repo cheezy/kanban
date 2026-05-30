@@ -54,7 +54,7 @@ defmodule KanbanWeb.ReviewReportPanel do
     <section
       :if={@branch != :empty}
       data-review-report-panel={Atom.to_string(@branch)}
-      class="bg-base-100 border border-base-300 rounded-lg p-4 text-base-content"
+      class="bg-base-100 border border-base-300 dark:border-base-content/15 rounded-lg p-4 text-base-content"
     >
       <%= case @branch do %>
         <% :structured -> %>

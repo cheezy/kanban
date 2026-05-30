@@ -85,7 +85,10 @@ defmodule KanbanWeb.Layouts do
           page_title={@page_title}
           show_sidebar_toggle={@current_scope != nil}
         />
-        <main class="flex-1 min-h-0 overflow-auto bg-base-100">
+        <%!-- D48: in dark the canvas must sit at --bg (base-200, 16%), not the
+              raised-card tone (base-100, 20%), so cards/columns read above it.
+              dark: variant keeps light mode (base-100, 98%) identical. --%>
+        <main class="flex-1 min-h-0 overflow-auto bg-base-100 dark:bg-base-200">
           {render_slot(@inner_block)}
         </main>
       </div>

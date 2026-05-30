@@ -122,7 +122,7 @@ defmodule KanbanWeb.NavComponents do
       </button>
       <div
         data-dropdown-menu
-        class="hidden absolute top-full right-0 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
+        class="hidden absolute top-full right-0 mt-1 bg-base-100 border border-base-300 dark:border-base-content/15 rounded-lg shadow-lg py-1 min-w-[140px] z-50"
       >
         <%= for locale <- @locales do %>
           <form action={~p"/locale/#{locale.code}"} method="post">

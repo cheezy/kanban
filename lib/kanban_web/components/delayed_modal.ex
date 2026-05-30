@@ -59,14 +59,19 @@ defmodule KanbanWeb.DelayedModal do
               data-modal-container
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
-              class={[
-                "shadow-base-300/20 ring-base-300/40 relative hidden bg-base-100 shadow-lg ring-1 transition",
-                if(@mobile_fullscreen,
-                  do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0",
-                  else: "rounded-2xl"
-                ),
-                @padding
-              ]}
+              class={
+                [
+                  # D48: ring-base-300 resolves to the sunken token (darker than the
+                  # base-100 modal fill) so the modal edge vanished in dark. Add a
+                  # visible raised edge in dark via base-content; light unchanged.
+                  "shadow-base-300/20 ring-base-300/40 dark:ring-base-content/15 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                  if(@mobile_fullscreen,
+                    do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0",
+                    else: "rounded-2xl"
+                  ),
+                  @padding
+                ]
+              }
             >
               <div class="absolute top-6 right-5">
                 <button

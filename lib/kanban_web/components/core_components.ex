@@ -600,13 +600,17 @@ defmodule KanbanWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class={[
-                "shadow-base-300/20 ring-base-300/40 relative hidden bg-base-100 shadow-lg ring-1 transition",
-                if(@mobile_fullscreen,
-                  do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0 p-4 md:p-10 lg:p-14",
-                  else: "rounded-2xl p-14"
-                )
-              ]}
+              class={
+                [
+                  # D48: visible raised modal edge in dark (ring-base-300 = sunken,
+                  # invisible on the base-100 fill); light unchanged.
+                  "shadow-base-300/20 ring-base-300/40 dark:ring-base-content/15 relative hidden bg-base-100 shadow-lg ring-1 transition",
+                  if(@mobile_fullscreen,
+                    do: "rounded-none md:rounded-2xl min-h-screen md:min-h-0 p-4 md:p-10 lg:p-14",
+                    else: "rounded-2xl p-14"
+                  )
+                ]
+              }
             >
               <div class="absolute top-6 right-5">
                 <button
