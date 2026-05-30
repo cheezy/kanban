@@ -916,17 +916,23 @@
   --stride-orange-ink: oklch(85% 0.14 60);
   --stride-violet-ink: oklch(85% 0.10 280);
 
-  /* Neutrals — inverted lightness ladder */
-  --bg: oklch(15% 0.005 270);          /* canvas */
-  --surface: oklch(20% 0.005 270);     /* cards, panels */
-  --surface-2: oklch(18% 0.005 270);   /* nested surfaces */
-  --surface-sunken: oklch(13% 0.005 270);
+  /* Neutrals — dark surface ladder with real depth. Lightness encodes
+     elevation: the sunken well is darkest, then the canvas, then raised cards,
+     then nested surfaces, with ~4% L between adjacent levels. D42 fixed the old
+     collapsed/inverted ladder (surface-2 had sat *below* surface and the total
+     span was only 7%) — the span is now 12% (12% → 24%) and the ordering is
+     sunken < bg < surface < surface-2. */
+  --bg: oklch(16% 0.005 270);          /* canvas */
+  --surface: oklch(20% 0.005 270);     /* raised cards, panels */
+  --surface-2: oklch(24% 0.005 270);   /* nested surfaces, one step up */
+  --surface-sunken: oklch(12% 0.005 270); /* most recessed wells */
   --ink: oklch(95% 0.005 270);
   --ink-2: oklch(82% 0.005 270);
-  /* W900: ink-3 was oklch(62% ...) — only ~4.2:1 on var(--surface-sunken).
-     Raised to 75% L so it crosses WCAG AA body-text threshold. */
+  /* W900 raised ink-3 to 75% L for AA on the sunken well; D42 raised ink-4
+     62% → 66% L so all four ink levels clear WCAG AA on the lightest dark
+     surface (--surface-2, now 24% L) — verified by mix dark_mode.contrast. */
   --ink-3: oklch(75% 0.005 270);
-  --ink-4: oklch(62% 0.005 270);
+  --ink-4: oklch(66% 0.005 270);
   --line: oklch(28% 0.005 270);
   --line-2: oklch(32% 0.005 270);
   --line-strong: oklch(40% 0.005 270);
