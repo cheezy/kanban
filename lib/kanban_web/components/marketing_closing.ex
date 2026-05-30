@@ -15,7 +15,7 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   Renders the lower CTA section: large two-line headline with orange emphasis on
-  "approving them.", sub-copy, and a single centered dark "Start free" CTA
+  "approving them.", sub-copy, and a single centered dark "Start now" CTA
   (swaps to "Go to my boards" when the user is signed in).
 
   Mirrors lines ~347-371 of `landing.jsx`.
@@ -63,7 +63,7 @@ defmodule KanbanWeb.MarketingClosing do
             class="inline-flex items-center justify-center gap-1.5 font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); color: var(--surface); font-size: 14px;"
           >
-            {gettext("Start free")}
+            {gettext("Start now")}
             <.icon name="hero-arrow-right" class="w-3 h-3" />
           </.link>
         <% end %>

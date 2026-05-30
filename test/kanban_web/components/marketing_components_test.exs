@@ -87,7 +87,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~s|href="/pricing"|
     end
 
-    test "unauthenticated state renders Sign in and Start free" do
+    test "unauthenticated state renders Sign in and Start now" do
       assigns = %{current_scope: nil}
 
       html =
@@ -96,7 +96,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
         """)
 
       assert html =~ "Sign in"
-      assert html =~ "Start free"
+      assert html =~ "Start now"
       assert html =~ ~s|href="/users/log-in"|
       assert html =~ ~s|href="/users/register"|
 
@@ -104,7 +104,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ "Go to boards"
     end
 
-    test "authenticated state renders Sign out + Go to boards instead of Sign in / Start free" do
+    test "authenticated state renders Sign out + Go to boards instead of Sign in / Start now" do
       assigns = %{current_scope: %{user: %{email: "alice@example.com", type: :member}}}
 
       html =
@@ -121,7 +121,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       # Anonymous CTAs must NOT appear
       refute html =~ "Sign in"
-      refute html =~ "Start free"
+      refute html =~ "Start now"
 
       # Non-admin must NOT see admin-only links
       refute html =~ "Dashboard"
@@ -268,7 +268,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Free for you and your teams · self-hosting options available"
     end
 
-    test "unauthenticated CTA is Start free and links to /users/register" do
+    test "unauthenticated CTA is Start now and links to /users/register" do
       assigns = %{current_scope: nil}
 
       html =
@@ -276,7 +276,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_hero current_scope={@current_scope} />
         """)
 
-      assert html =~ "Start free"
+      assert html =~ "Start now"
       assert html =~ ~s|href="/users/register"|
       refute html =~ "Go to my boards"
     end
@@ -291,7 +291,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "Go to my boards"
       assert html =~ ~s|href="/boards"|
-      refute html =~ "Start free"
+      refute html =~ "Start now"
     end
 
     test "secondary CTA points at the create-a-board guide when the user has no boards" do
@@ -635,7 +635,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Bring any agent"
     end
 
-    test "unauthenticated state shows Start free linking to /users/register" do
+    test "unauthenticated state shows Start now linking to /users/register" do
       assigns = %{current_scope: nil}
 
       html =
@@ -643,7 +643,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <KanbanWeb.MarketingClosing.marketing_cta_section current_scope={@current_scope} />
         """)
 
-      assert html =~ "Start free"
+      assert html =~ "Start now"
       assert html =~ ~s|href="/users/register"|
     end
 
@@ -657,7 +657,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       assert html =~ "Go to my boards"
       assert html =~ ~s|href="/boards"|
-      refute html =~ "Start free"
+      refute html =~ "Start now"
     end
   end
 
