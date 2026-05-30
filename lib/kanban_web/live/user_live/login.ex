@@ -6,7 +6,7 @@ defmodule KanbanWeb.UserLive.Login do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame quote_key={:signin}>
+    <.auth_frame>
       <:footer_switch>
         <span>{gettext("New to Stride?")}</span>
         <.link

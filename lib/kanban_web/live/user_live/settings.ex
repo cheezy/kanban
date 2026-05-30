@@ -7,7 +7,7 @@ defmodule KanbanWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="stride-screen" style="padding: 20px 28px 28px;">
+      <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
         <header style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
           <div style="flex: 1; min-width: 0;">
             <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);">
@@ -21,23 +21,30 @@ defmodule KanbanWeb.UserLive.Settings do
           </div>
         </header>
 
-        <div style="flex: 1; display: flex; min-height: 0; gap: 28px;">
-          <nav style="width: 184px; flex-shrink: 0; padding-top: 4px; display: flex; flex-direction: column; gap: 1px;">
+        <div class="flex flex-col md:flex-row gap-4 md:gap-7 flex-1 min-h-0">
+          <nav
+            role="tablist"
+            aria-orientation="vertical"
+            aria-label={gettext("Settings sections")}
+            class="flex flex-row md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
+          >
             <.section_link
-              href="#profile"
-              active
+              section={:profile}
+              active={@section == :profile}
               label={gettext("Profile")}
               hint={gettext("name · email")}
             />
             <.section_link
-              href="#password"
+              section={:password}
+              active={@section == :password}
               label={gettext("Password")}
               hint={gettext("change credentials")}
             />
           </nav>
 
-          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px;">
+          <div class="flex-1 min-w-0 flex flex-col gap-[18px]">
             <.settings_card
+              :if={@section == :profile}
               id="profile"
               title={gettext("Profile")}
               hint={
@@ -91,6 +98,7 @@ defmodule KanbanWeb.UserLive.Settings do
             </.settings_card>
 
             <.settings_card
+              :if={@section == :password}
               id="password"
               title={gettext("Password")}
               hint={
@@ -162,22 +170,29 @@ defmodule KanbanWeb.UserLive.Settings do
   # Local components (mirror board-settings.jsx primitives)
   # -------------------------------------------------------------------------
 
-  attr :href, :string, required: true
+  attr :section, :atom, required: true
   attr :label, :string, required: true
   attr :hint, :string, default: nil
   attr :active, :boolean, default: false
 
   defp section_link(assigns) do
     ~H"""
-    <a
-      href={@href}
+    <button
+      type="button"
+      role="tab"
+      aria-selected={if @active, do: "true", else: "false"}
+      aria-controls={"section-#{@section}"}
+      phx-click="select_section"
+      phx-value-section={Atom.to_string(@section)}
+      class="flex-1 md:flex-initial"
       style={[
         "display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px;",
+        "border: 0; text-align: left; min-width: 0; font: inherit;",
         if(@active,
           do: "background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);",
           else: "background: transparent;"
         ),
-        "text-decoration: none; cursor: pointer;"
+        "cursor: pointer;"
       ]}
     >
       <span style={[
@@ -195,7 +210,7 @@ defmodule KanbanWeb.UserLive.Settings do
       >
         {@hint}
       </span>
-    </a>
+    </button>
     """
   end
 
@@ -290,11 +305,17 @@ defmodule KanbanWeb.UserLive.Settings do
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:trigger_submit, false)
+      |> assign(:section, :profile)
 
     {:ok, socket}
   end
 
   @impl true
+  def handle_event("select_section", %{"section" => section}, socket)
+      when section in ["profile", "password"] do
+    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+  end
+
   def handle_event("validate_email", params, socket) do
     %{"user" => user_params} = params
 

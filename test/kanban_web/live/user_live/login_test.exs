@@ -14,24 +14,26 @@ defmodule KanbanWeb.UserLive.LoginTest do
       assert html =~ "Forgot?"
     end
 
-    test "renders inside the editorial auth_frame", %{conn: conn} do
+    test "renders inside the centered, theme-aware auth_frame", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      # The auth_frame brand panel renders the rotating signin quote and
-      # the warm gradient — both unique to the new design's 2-column shell.
-      assert html =~ "Agents finally have somewhere good to work."
-      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+      # Centered shell: the Stride wordmark on a canvas-backed frame that
+      # follows the active theme — no light-lock, no editorial gradient.
+      assert html =~ ~s(class="stride-screen")
+      assert html =~ "background: var(--bg)"
+      assert html =~ "Stride"
+      refute html =~ "data-stride-auth-frame"
+      refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
     test "no blue Tailwind classes inside the login surface", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      # Scope to the <main> auth-frame column (the surrounding NavComponents
-      # still has blue hover states — covered by W665 in the same goal).
-      [_, main_and_after] = String.split(html, ~r/<main[^>]*>/, parts: 2)
-      [main, _] = String.split(main_and_after, "</main>", parts: 2)
+      # Scope to the auth-frame surface (.stride-screen, the last block on the
+      # page) — the surrounding NavComponents still has blue hover states.
+      [_, surface] = String.split(html, ~s(class="stride-screen"), parts: 2)
 
-      refute main =~ ~r/(text|bg|from|to|border)-blue-\d+/
+      refute surface =~ ~r/(text|bg|from|to|border)-blue-\d+/
     end
   end
 
@@ -73,7 +75,7 @@ defmodule KanbanWeb.UserLive.LoginTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Create an account")
+        |> element("a", "Create an account")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/register")
 

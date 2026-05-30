@@ -97,7 +97,7 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element(~s|main a|, "Back to sign in")
+        |> element("a", "Back to sign in")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 

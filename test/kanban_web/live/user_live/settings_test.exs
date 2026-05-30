@@ -7,14 +7,21 @@ defmodule KanbanWeb.UserLive.SettingsTest do
   alias Kanban.Accounts
 
   describe "Settings page" do
-    test "renders settings page", %{conn: conn} do
-      {:ok, _lv, html} =
+    test "renders settings page — Profile is the default tab, Password swaps in on select",
+         %{conn: conn} do
+      {:ok, lv, html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
+      # Profile is the default-active tab; its submit button must appear.
+      # Password is hidden until its tab is clicked.
       assert html =~ "Update profile"
+      refute html =~ "Save password"
+
+      html = render_click(lv, "select_section", %{"section" => "password"})
       assert html =~ "Save password"
+      refute html =~ "Update profile"
     end
 
     test "renders the settings page header with title and subtitle", %{conn: conn} do
@@ -27,24 +34,36 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert html =~ "Manage your account profile and password"
     end
 
-    test "renders the profile and password sections in their own SettingsCards", %{conn: conn} do
-      {:ok, _lv, html} =
+    test "renders the profile section on mount and the password section after selecting its tab",
+         %{conn: conn} do
+      {:ok, lv, html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
 
-      # New design: section nav + sectioned cards per board-settings.jsx
+      # The Profile tab is selected by default — only the profile card renders.
       assert html =~ ~s(id="profile")
-      assert html =~ ~s(id="password")
+      refute html =~ ~s(id="password")
       assert html =~ "var(--surface)"
       assert html =~ "var(--line)"
+
+      # Selecting the Password tab swaps which card is in the DOM.
+      html = render_click(lv, "select_section", %{"section" => "password"})
+
+      assert html =~ ~s(id="password")
+      refute html =~ ~s(id="profile")
     end
 
     test "preserves the hidden username field for password managers", %{conn: conn} do
-      {:ok, _lv, html} =
+      # Password-manager autofill needs the username field in the same form.
+      # The hidden username field is now inside the Password card, which only
+      # renders when its tab is selected — switch to it before asserting.
+      {:ok, lv, _html} =
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/settings")
+
+      html = render_click(lv, "select_section", %{"section" => "password"})
 
       assert html =~ ~s(id="hidden_user_email")
       assert html =~ ~s(autocomplete="username")
@@ -147,10 +166,20 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       %{conn: log_in_user(conn, user), user: user}
     end
 
+    # The settings page is tabbed (W: settings-tabs) — Profile renders by
+    # default, Password only when its sidebar tab is selected. Each password
+    # test must select the Password tab first or #password_form is absent
+    # from the DOM.
+    defp select_password_tab(lv) do
+      render_click(lv, "select_section", %{"section" => "password"})
+      lv
+    end
+
     test "updates the user password", %{conn: conn, user: user} do
       new_password = valid_user_password()
 
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
+      lv = select_password_tab(lv)
 
       form =
         form(lv, "#password_form", %{
@@ -177,6 +206,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
 
     test "renders errors with invalid data (phx-change)", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
+      lv = select_password_tab(lv)
 
       result =
         lv
@@ -195,6 +225,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
 
     test "renders errors with invalid data (phx-submit)", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
+      lv = select_password_tab(lv)
 
       result =
         lv

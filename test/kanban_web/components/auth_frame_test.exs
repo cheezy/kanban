@@ -1,17 +1,15 @@
 defmodule KanbanWeb.AuthFrameTest do
   @moduledoc """
-  Unit tests for the editorial auth shell built per
-  `design_handoff_stride/design_source/screens/auth.jsx`.
+  Unit tests for the centered, theme-aware auth shell.
 
   These tests assert that:
-    * the canonical Stride design tokens are used (--ink, --surface, --line,
-      --stride-orange, --stride-violet, --st-done);
-    * the rotating editorial quote is selected by `quote_key`;
-    * the left brand panel renders the logo gradient and decorative blobs;
-    * the right form column renders the inner_block + footer_switch slot;
-    * primary_full_button uses background var(--ink) (NOT a blue gradient);
-    * sso_row renders the three known providers with the right glyphs;
-    * no blue Tailwind classes leak into any rendered output.
+    * the centered frame uses canonical Stride design tokens (--bg, --ink,
+      --ink-3) and is NOT light-locked — it follows the active theme;
+    * the inner_block form and the footer_switch slot render (the Stride
+      wordmark + logo gradient were removed);
+    * primary_full_button uses background var(--ink) with a var(--surface)
+      label (the inverted button — legible in both themes), not blue/bare-white;
+    * no blue / gray / white Tailwind classes leak into any rendered output.
   """
 
   use KanbanWeb.ConnCase, async: true
@@ -21,142 +19,43 @@ defmodule KanbanWeb.AuthFrameTest do
 
   alias KanbanWeb.AuthFrame
 
-  describe "auth_frame/1 — left brand panel" do
-    test "renders the Stride brand mark with the orange→violet logo gradient" do
+  describe "auth_frame/1 — shell" do
+    test "no longer renders the Stride wordmark or logo gradient" do
+      # The S-gradient badge and "Stride" wordmark used to sit in the header
+      # row of the auth frame. They were removed so the frame defers entirely
+      # to the surrounding marketing nav for brand identity.
       html = render_default()
 
-      assert html =~ "linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%)"
-      # The letter glyph + Stride wordmark
-      assert html =~ "Stride"
+      refute html =~ "linear-gradient(135deg, var(--stride-orange) 0%, var(--stride-violet) 100%)"
+      refute html =~ ~s(>Stride</span>)
     end
 
-    test "renders the decorative orange blob top-right and violet blob bottom-left" do
+    test "is centered on the canvas and follows the theme (not light-locked)" do
       html = render_default()
 
-      assert html =~
-               "background: radial-gradient(circle, var(--stride-orange) 0%, transparent 70%)"
-
-      assert html =~
-               "background: radial-gradient(circle, var(--stride-violet) 0%, transparent 70%)"
-
-      assert html =~ "filter: blur(80px)"
-      assert html =~ "filter: blur(90px)"
+      assert html =~ ~s(class="stride-screen")
+      assert html =~ "background: var(--bg)"
+      assert html =~ "align-items: center"
+      assert html =~ "justify-content: center"
+      # No light-lock attribute and no fixed light editorial gradient.
+      refute html =~ "data-stride-auth-frame"
+      refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
-    test "renders the warm-gradient brand panel background verbatim from the design" do
+    test "constrains the content column to max-width 440" do
       html = render_default()
 
-      assert html =~
-               "linear-gradient(155deg, oklch(96% 0.025 60) 0%, oklch(94% 0.035 280) 100%)"
-    end
-
-    test "renders the green 'All systems normal' indicator using --st-done" do
-      html = render_default()
-
-      assert html =~ "All systems normal"
-      assert html =~ "color: var(--st-done)"
-    end
-
-    test "renders the footer links: Privacy, Terms, Security" do
-      html = render_default()
-
-      assert html =~ "Privacy"
-      assert html =~ "Terms"
-      assert html =~ "Security"
+      assert html =~ "max-width: 440px"
     end
   end
 
-  describe "auth_frame/1 — rotating quote" do
-    test "renders the signin quote when quote_key=:signin" do
+  describe "auth_frame/1 — slots" do
+    test "renders the inner_block (form) content" do
       assigns = %{}
 
       html =
         rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:signin}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "Agents finally have somewhere good to work."
-      assert html =~ "Jamie K"
-    end
-
-    test "renders the signup quote when quote_key=:signup" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:signup}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "shipped 38%"
-      assert html =~ "Mei L"
-    end
-
-    test "renders the forgot quote when quote_key=:forgot" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:forgot}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "A task structure that AI agents can actually pull from."
-      assert html =~ "Rohan S"
-    end
-
-    test "renders the magic-link quote when quote_key=:magic" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:magic}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "Tokens rotate, claims survive"
-      assert html =~ "Dani O"
-    end
-
-    test "renders the twofa quote when quote_key=:twofa" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:twofa}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "Security model is built for agents"
-    end
-
-    test "falls back to the signin quote when quote_key is unknown" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:nonexistent}>
-          <span>body</span>
-        </AuthFrame.auth_frame>
-        """)
-
-      assert html =~ "Agents finally have somewhere good to work."
-    end
-  end
-
-  describe "auth_frame/1 — right form column" do
-    test "renders the inner_block content in the right column" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:signin}>
+        <AuthFrame.auth_frame>
           <form id="form-under-test"><input name="email" /></form>
         </AuthFrame.auth_frame>
         """)
@@ -165,12 +64,12 @@ defmodule KanbanWeb.AuthFrameTest do
       assert html =~ ~s(name="email")
     end
 
-    test "renders the footer_switch slot in the top-right" do
+    test "renders the footer_switch (cross-state) slot" do
       assigns = %{}
 
       html =
         rendered_to_string(~H"""
-        <AuthFrame.auth_frame quote_key={:signin}>
+        <AuthFrame.auth_frame>
           <:footer_switch>
             <span data-cross-state>New here? Sign up</span>
           </:footer_switch>
@@ -181,28 +80,18 @@ defmodule KanbanWeb.AuthFrameTest do
       assert html =~ "data-cross-state"
       assert html =~ "New here? Sign up"
     end
-
-    test "constrains the form column to max-width 440 per the design" do
-      html = render_default()
-
-      assert html =~ "max-width: 440px"
-    end
   end
 
   describe "auth_frame/1 — design-token compliance" do
-    test "outer wrapper has the stride-screen class so Geist typography applies" do
+    test "uses the design's color tokens, not daisyUI base-* classes" do
       html = render_default()
 
-      assert html =~ ~s(class="stride-screen")
-    end
-
-    test "uses the design's ink color tokens, not daisyUI base-* classes" do
-      html = render_default()
-
-      assert html =~ "var(--ink)"
-      assert html =~ "var(--ink-3)"
-      assert html =~ "var(--line)"
+      # The default render only emits the outer canvas + the footer_switch
+      # slot wrapper. var(--ink) used to appear on the (now-removed) Stride
+      # wordmark — it survives via primary_full_button which is verified
+      # in its own describe block below.
       assert html =~ "var(--bg)"
+      assert html =~ "var(--ink-3)"
     end
 
     test "renders no blue Tailwind classes anywhere" do
@@ -211,7 +100,7 @@ defmodule KanbanWeb.AuthFrameTest do
       refute html =~ ~r/(text|bg|from|to|border)-blue-\d+/
     end
 
-    test "renders no forbidden gray/white Tailwind classes" do
+    test "renders no forbidden gray / white Tailwind classes" do
       html = render_default()
 
       refute html =~ ~r/(text|bg|border)-gray-\d+/
@@ -220,7 +109,7 @@ defmodule KanbanWeb.AuthFrameTest do
   end
 
   describe "primary_full_button/1" do
-    test "uses background var(--ink) and white text — NOT blue" do
+    test "uses background var(--ink) with a var(--surface) label — NOT blue, NOT bare white" do
       assigns = %{}
 
       html =
@@ -229,12 +118,14 @@ defmodule KanbanWeb.AuthFrameTest do
         """)
 
       assert html =~ "background: var(--ink)"
-      assert html =~ "color: white"
+      assert html =~ "color: var(--surface)"
       assert html =~ "Sign in"
+      # The inverted button must NOT pin a bare white label (invisible in dark).
+      refute html =~ "color: white"
       refute html =~ ~r/(text|bg|from|to|border)-blue-\d+/
     end
 
-    test "renders at height 40 with 6px border-radius per the design" do
+    test "renders at height 40 with 6px border-radius" do
       assigns = %{}
 
       html =
@@ -292,66 +183,11 @@ defmodule KanbanWeb.AuthFrameTest do
     end
   end
 
-  describe "sso_row/1" do
-    test "renders the Google provider with the multicolor glyph and Google label" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.sso_row provider={:google} />
-        """)
-
-      assert html =~ "Continue with"
-      assert html =~ "Google"
-      assert html =~ ~s(fill="#4285F4")
-      assert html =~ ~s(fill="#34A853")
-      assert html =~ ~s(fill="#FBBC05")
-      assert html =~ ~s(fill="#EA4335")
-    end
-
-    test "renders the GitHub provider with the silhouette glyph and label" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.sso_row provider={:github} />
-        """)
-
-      assert html =~ "GitHub"
-      assert html =~ ~s(fill="currentColor")
-    end
-
-    test "renders the SAML provider with the lock glyph and SSO label" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.sso_row provider={:saml} />
-        """)
-
-      assert html =~ "SSO (SAML)"
-      assert html =~ ~s(<rect x="2" y="6")
-    end
-
-    test "uses surface bg + line-strong border, not blue" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <AuthFrame.sso_row provider={:google} />
-        """)
-
-      assert html =~ "background: var(--surface)"
-      assert html =~ "border: 1px solid var(--line-strong)"
-      refute html =~ ~r/(text|bg|from|to|border)-blue-\d+/
-    end
-  end
-
   defp render_default do
     assigns = %{}
 
     rendered_to_string(~H"""
-    <AuthFrame.auth_frame quote_key={:signin}>
+    <AuthFrame.auth_frame>
       <span>body</span>
     </AuthFrame.auth_frame>
     """)

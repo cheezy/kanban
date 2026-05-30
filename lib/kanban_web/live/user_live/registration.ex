@@ -9,7 +9,7 @@ defmodule KanbanWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame quote_key={:signup}>
+    <.auth_frame>
       <:footer_switch>
         <span>{gettext("Already have an account?")}</span>
         <.link
@@ -24,20 +24,6 @@ defmodule KanbanWeb.UserLive.Registration do
         <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
           {gettext("Create your account")}
         </h1>
-        <p style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3);">
-          {gettext("Free for 30 days. No credit card. Up to 5 agents on the free plan.")}
-        </p>
-      </div>
-
-      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
-        <.sso_row provider={:google} />
-        <.sso_row provider={:github} />
-      </div>
-
-      <div style="margin-top: 18px; display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
-        <span style="flex: 1; height: 1px; background: var(--line);"></span>
-        {gettext("or with email")}
-        <span style="flex: 1; height: 1px; background: var(--line);"></span>
       </div>
 
       <.form

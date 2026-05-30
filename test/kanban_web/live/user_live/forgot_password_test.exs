@@ -14,12 +14,14 @@ defmodule KanbanWeb.UserLive.ForgotPasswordTest do
       assert html =~ "We&#39;ll email a one-time link"
     end
 
-    test "renders inside the editorial auth_frame", %{conn: conn} do
+    test "renders inside the centered, theme-aware auth_frame", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")
 
-      # Rotating forgot quote + warm gradient confirm the new shell renders
-      assert html =~ "A task structure that AI agents can actually pull from."
-      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+      # Centered, theme-following shell — no light-lock, no editorial gradient.
+      assert html =~ ~s(class="stride-screen")
+      assert html =~ "background: var(--bg)"
+      refute html =~ "data-stride-auth-frame"
+      refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
     test "renders the For-agents callout panel", %{conn: conn} do

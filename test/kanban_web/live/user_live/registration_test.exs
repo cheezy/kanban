@@ -12,20 +12,22 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
       assert html =~ "Sign in"
     end
 
-    test "renders inside the editorial auth_frame", %{conn: conn} do
+    test "renders inside the centered, theme-aware auth_frame", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      # The auth_frame brand panel renders the rotating signup quote
-      assert html =~ "shipped 38"
-      assert html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+      # Centered, theme-following shell — no light-lock, no editorial gradient.
+      assert html =~ ~s(class="stride-screen")
+      assert html =~ "background: var(--bg)"
+      refute html =~ "data-stride-auth-frame"
+      refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
-    test "renders the SSO rows (Google + GitHub) per design's Sign Up state", %{conn: conn} do
+    test "no longer renders the SSO rows (no OAuth backend was ever wired)", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      assert html =~ "Continue with"
-      assert html =~ "Google"
-      assert html =~ "GitHub"
+      refute html =~ "Continue with"
+      refute html =~ "Continue with Google"
+      refute html =~ "Continue with GitHub"
     end
 
     test "renders the terms-and-conditions checkbox", %{conn: conn} do
@@ -115,7 +117,7 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Sign in")
+        |> element("a", "Sign in")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 

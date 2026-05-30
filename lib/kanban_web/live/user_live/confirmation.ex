@@ -8,7 +8,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame quote_key={:magic}>
+    <.auth_frame>
       <:footer_switch>
         <.link
           navigate={~p"/users/log-in"}
@@ -51,10 +51,12 @@ defmodule KanbanWeb.UserLive.Confirmation do
         <%= if @confirmed do %>
           <div style="margin-top: 28px; width: 100%;">
             <.primary_full_button>
-              <%!-- color: white is intentional: this link sits inside the auth-frame's
-                    primary_full_button, which is theme-neutral (see KanbanWeb.AuthFrame
-                    moduledoc — `data-stride-auth-frame` locks the surface to dark-ink). --%>
-              <.link navigate={~p"/users/log-in"} style="color: white; text-decoration: none;">
+              <%!-- Match the button's label token (var(--surface)) so the link stays
+                    legible on the inverted ink button in both light and dark. --%>
+              <.link
+                navigate={~p"/users/log-in"}
+                style="color: var(--surface); text-decoration: none;"
+              >
                 {gettext("Sign in")} <span aria-hidden="true">→</span>
               </.link>
             </.primary_full_button>
