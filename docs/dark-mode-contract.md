@@ -3,9 +3,20 @@
 Single source of truth for theming rules across the Stride app. Read this before
 adding or changing any user-visible UI; honor it on every PR.
 
-This document is enforced by `mix dark_mode.scan` and the wider `mix precommit`
-alias. New violations fail CI. Existing violations are explicitly allow-listed
-inline; do not propagate them.
+This document is enforced by **two** mix tasks:
+
+- `mix dark_mode.scan` catches theme-**blind** patterns (hardcoded greys/whites,
+  numbered-palette utilities, raw hex/`oklch()` in `style`). It runs in
+  `mix precommit`.
+- `mix dark_mode.contrast` measures whether the resulting colors are actually
+  **legible** — it parses the token palette and computes WCAG contrast for both
+  themes. Its enforcing mode is wired into `mix precommit` by the lock-in task.
+
+A green scanner alone does **not** mean dark mode is correct: the scanner only
+checks that you used *tokens*, not that the tokens are *readable*. That gap is
+exactly why earlier "dark-mode-fixed" goals shipped an illegible UI. See
+**Definition of done** below. New violations fail CI; existing exceptions are
+allow-listed inline — do not propagate them.
 
 ## Architecture in one paragraph
 
@@ -25,6 +36,43 @@ at `assets/css/app.css:887+` and `1160+`.
 
 Every theme-aware element must use one of these three vocabularies, never raw
 greys, whites, hex literals, or `oklch()` literals inline.
+
+## The unified dark palette (one ladder, two vocabularies)
+
+The G202 work re-tuned dark mode into **one coherent palette**. The daisyUI base
+tokens and the Stride surface tokens now resolve to the **same** dark values, so
+`bg-base-100` and `var(--surface)` paint identically — there is no longer a
+"daisyUI surface" and a separate, brighter "Stride surface" fighting each other.
+Keep them aligned; if you re-tune one, re-tune its twin (and re-run
+`mix dark_mode.contrast`).
+
+**Dark surface ladder** (lightness encodes elevation — recessed is darkest,
+raised is lightest; hue 270 / chroma 0.005 throughout):
+
+| Role | Stride token | daisyUI twin | Dark L |
+|---|---|---|---|
+| Recessed wells / sunken | `var(--surface-sunken)` | `bg-base-300` | 12% |
+| Page canvas | `var(--bg)` | `bg-base-200` | 16% |
+| Raised cards / components | `var(--surface)` | `bg-base-100` | 20% |
+| Nested / highest surface | `var(--surface-2)` | *(none)* | 24% |
+
+**Dark ink** (all clear WCAG AA on every surface above): `var(--ink)` 95% ·
+`var(--ink-2)` 82% · `var(--ink-3)` 75% · `var(--ink-4)` 66%. daisyUI
+`text-base-content` = `var(--ink)` (95%).
+
+**Dark borders** (raised so edges are visible, subtle not harsh):
+`var(--line)` 38% · `var(--line-2)` 44% · `var(--line-strong)` 50%.
+
+**Dark brand accents** (brightened for vibrancy on dark; also feed
+`--loading-bar-gradient`): `var(--stride-orange)` 72% · `var(--stride-violet)`
+68%.
+
+**Dark priority dots** (four *distinct* lightnesses so they are differentiable
+by brightness as well as hue): critical 64% · high 72% · medium 80% · low 74%.
+
+The light palette is unchanged by this work; the dark overrides live in the
+`:where([data-theme="dark"]) .stride-marketing, .stride-screen` block and the
+daisyUI `@plugin "…" { name: "dark"; … }` block in `assets/css/app.css`.
 
 ## Theme activation mechanism
 
@@ -71,6 +119,27 @@ documents and use the same resolve-to-explicit core, minus the toggle machinery
 | **daisyUI tokens** | Inside daisyUI components and form controls; works everywhere `data-theme` is set | `bg-base-100`, `text-base-content`, `border-base-300`, `btn-primary` |
 | **Stride custom tokens** | Inside `.stride-screen` or `.stride-marketing` for app chrome, panels, typography | `var(--ink)`, `var(--surface)`, `var(--line)`, `var(--stride-orange)` |
 | **Tailwind `dark:` variant** | When you need a one-off override that the daisyUI/Stride tokens don't cover | `dark:opacity-80`, `dark:shadow-none` (rare — prefer the tokens) |
+
+### Choosing daisyUI base-\* vs Stride `--surface`/`--ink`
+
+Because the two ladders now **coincide** (see the table above), the choice is
+about scope and consistency, not color:
+
+- Inside `.stride-screen` / `.stride-marketing`, prefer the **Stride tokens**
+  (`var(--surface)`, `var(--ink)`, `var(--line)`) — they carry the full design
+  ladder (including `--surface-2` and `--ink-2..4`, which have no daisyUI twin)
+  and match the surrounding app chrome.
+- For **daisyUI components/form controls**, or anything rendered **outside** a
+  Stride scope, use the **daisyUI tokens** (`bg-base-100`, `text-base-content`,
+  `border-base-300`) — the `var(--*)` tokens are undefined out there.
+- **Match elevation, not just "a surface."** Page canvas = `--bg` / `bg-base-200`;
+  raised card = `--surface` / `bg-base-100`; recessed well or column = sunken /
+  `bg-base-300`; a nested surface that must sit *above* a card = `--surface-2`.
+  A surface that is one tier too light reads as a "bright box" in dark — the
+  exact regression D48 fixed.
+- When an element needs a **different dark elevation without changing light**,
+  use a `dark:` variant of the daisyUI tier (e.g. `bg-base-100 dark:bg-base-200`)
+  — the base classes are theme-coupled, so a bare swap would move light too.
 
 ### Token mapping (the substitutions that come up most)
 
@@ -201,14 +270,39 @@ task identifier:
 <!-- dark-mode-ignore: TODO W903 — translucent overlay needs dark-mode variant -->
 ```
 
+## Definition of done
+
+Dark mode for a change is **done** only when ALL THREE hold — not just the first:
+
+1. **`mix dark_mode.scan` passes** — no theme-blind patterns (you used tokens).
+2. **`mix dark_mode.contrast` passes** — the tokens you used are objectively
+   legible: every canonical text-on-surface, border, status, brand, and daisyUI
+   pair clears its threshold in BOTH light and dark (run `--enforce` for a
+   non-zero exit on any failure). Scanner-green with contrast-red means you used
+   the right *vocabulary* but the wrong *values* — that is still broken.
+3. **A human verified both themes visually** — toggle light AND dark (and try
+   OS-dark with the in-app theme on "system") and confirm the changed surfaces
+   read coherently: correct elevation, visible borders, legible text, on-palette
+   accents. The contrast task cannot catch layout/elevation mistakes — a
+   correctly-*colored* surface placed at the wrong elevation tier still looks
+   wrong (the "bright box" class of bug).
+
+"The scanner passed" is **necessary but not sufficient**. Treating it as
+sufficient is what shipped the illegible dark mode this contract now guards
+against.
+
 ## Verification process
 
 When adding or changing user-visible UI:
 
-1. Run `mix dark_mode.scan` locally before committing.
-2. Toggle `data-theme="dark"` in DevTools and inspect the changed surface.
-3. Check WCAG AA contrast on body text (≥ 4.5:1) and large text (≥ 3:1) in
-   both themes. The `browser_eval` MCP tool can read computed styles.
+1. Run `mix dark_mode.scan` **and** `mix dark_mode.contrast` locally before
+   committing (the scanner is in `mix precommit`; the contrast validator's
+   enforcing mode is wired in by the lock-in task).
+2. Toggle `data-theme="dark"` in DevTools and inspect the changed surface; also
+   confirm light is unchanged.
+3. Read the `mix dark_mode.contrast` report for the pairs your change touches;
+   for any new token pair, confirm it clears AA (text, ≥ 4.5:1) / the graphical
+   floor (≥ 3:1) / the border floor (≥ 1.5:1) in both themes.
 4. For form controls, confirm inputs, labels, placeholders, and focus rings
    are all visible in dark mode.
 
@@ -221,8 +315,10 @@ browser-eval snippets.
 - `assets/css/app.css` — token definitions and the dark variant
 - `lib/kanban_web/components/layouts.ex` — `.stride-screen` wrapper
 - `lib/kanban_web/components/layouts/marketing.html.heex` — `.stride-marketing` wrapper
-- `lib/mix/tasks/dark_mode/scan.ex` — the scanner implementation
+- `lib/mix/tasks/dark_mode/scan.ex` — the pattern scanner implementation
 - `test/mix/tasks/dark_mode/scan_test.exs` — scanner unit tests
+- `lib/mix/tasks/dark_mode/contrast.ex` — the WCAG contrast validator
+- `test/mix/tasks/dark_mode/contrast_test.exs` — contrast validator tests
 
 
 
