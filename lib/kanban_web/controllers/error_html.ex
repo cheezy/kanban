@@ -28,6 +28,26 @@ defmodule KanbanWeb.ErrorHTML do
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{@page_title} · Stride</title>
         <link rel="stylesheet" href="/assets/css/app.css" />
+        <%!-- Error pages are standalone documents (no app layout), so they need
+             their own inline theme bootstrap — the established pattern, see
+             root.html.heex. Unlike the app layout's script (which removes
+             data-theme for "system" and leans on CSS prefers-color-scheme),
+             error pages mix daisyUI base-* tokens (which honor prefersdark) with
+             Stride var(--*) tokens (which only flip on an explicit
+             [data-theme="dark"]). A removed data-theme would leave the Stride
+             accents light against a dark daisyUI surface. So we resolve the
+             system preference and set data-theme EXPLICITLY, keeping both token
+             systems coherent for explicit-dark AND system-dark users. --%>
+        <script nonce={assigns[:csp_nonce]}>
+          (() => {
+            const stored = localStorage.getItem("phx:theme");
+            const systemDark =
+              window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const theme =
+              stored === "dark" || stored === "light" ? stored : systemDark ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", theme);
+          })();
+        </script>
       </head>
       <body class="h-full bg-base-100">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
@@ -36,6 +56,9 @@ defmodule KanbanWeb.ErrorHTML do
             <h1 class="text-6xl font-bold text-base-content mb-4">{@status_code}</h1>
             <h2 class="text-2xl font-bold text-base-content mb-4">{@heading}</h2>
             <p class="text-base-content opacity-70 mb-8 leading-relaxed">{@message}</p>
+            <%!-- Intentionally inverted: --ink (the primary text token) is used
+                  as the button FILL, with --color-base-100 as the label, for a
+                  high-contrast "Go Home" button that reads in both themes. --%>
             <a
               href="/"
               class="stride-screen"
