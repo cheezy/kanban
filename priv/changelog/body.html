@@ -3,6 +3,70 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.2.0] - 2026-05-30
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Stride plugin code-review results now display on the review queue
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              When the stride plugin's <code>task-reviewer</code> agent reviews a
+              task before completion, the verdict it produces — submitted as the
+              <code>reviewer_result</code> field on
+              <code>PATCH /api/tasks/:id/complete</code> — is now rendered in the
+              app instead of living only inside the API payload. A new shared
+              component surfaces it on the Review Queue for the selected task, and
+              the same panel is embedded in the task-detail review section and the
+              agent-handoff completion view, so a reviewer sees the same report
+              wherever a task is inspected.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The panel chooses one of three render branches from the task's
+              review fields:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Structured</strong> — when <code>reviewer_result</code>
+                carries a structured payload, it renders the reviewer's findings
+                grouped by severity (Critical / Important / Minor), each issue
+                showing its category (correctness, security, testing, …) and
+                description, so a human can scan what the automated review flagged
+                at a glance.
+              </li>
+              <li>
+                <strong>Fallback</strong> — when only the legacy
+                <code>review_report</code> markdown is present, it renders that
+                report as formatted HTML (via Earmark).
+              </li>
+              <li>
+                <strong>Empty</strong> — when a task has neither field, the panel
+                renders nothing, so callers can embed it unconditionally.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.1.0] - 2026-05-24
         </h2>
 

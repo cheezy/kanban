@@ -342,7 +342,7 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
           <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          v2.1.0 · `after_goal` hook gates goal completion
+          v2.2.0 · Code Review displayed on Review Queue
         </span>
         <.link
           navigate={~p"/changelog"}

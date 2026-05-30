@@ -5,6 +5,20 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-30
+
+### Added
+
+#### Stride plugin code-review results now display on the review queue
+
+When the stride plugin's `task-reviewer` agent reviews a task before completion, the verdict it produces — submitted as the `reviewer_result` field on `PATCH /api/tasks/:id/complete` — is now rendered in the app instead of living only inside the API payload. A new shared component surfaces it on the Review Queue for the selected task, and the same panel is embedded in the task-detail review section and the agent-handoff completion view, so a reviewer sees the same report wherever a task is inspected.
+
+The panel chooses one of three render branches from the task's review fields:
+
+- **Structured** — when `reviewer_result` carries a structured payload, it renders the reviewer's findings grouped by severity (Critical / Important / Minor), each issue showing its category (correctness, security, testing, …) and description, so a human can scan what the automated review flagged at a glance.
+- **Fallback** — when only the legacy `review_report` markdown is present, it renders that report as formatted HTML (via Earmark).
+- **Empty** — when a task has neither field, the panel renders nothing, so callers can embed it unconditionally.
+
 ## [2.1.0] - 2026-05-24
 
 ### Added
