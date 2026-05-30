@@ -874,11 +874,13 @@
   --banner-border: oklch(85% 0.12 50 / 0.55);
   --loading-bar-gradient: linear-gradient(to right, var(--stride-orange) 0%, var(--stride-violet) 50%, var(--stride-orange) 100%);
 
-  /* Priority dots */
+  /* Priority dots — D45 spread the lightness so the four levels are
+     differentiable by brightness as well as hue (high/medium/low were all
+     clustered at 68% L). Hue identity preserved. */
   --pri-critical: oklch(58% 0.22 25);
-  --pri-high:    oklch(68% 0.18 50);
-  --pri-medium:  oklch(68% 0.12 80);
-  --pri-low:     oklch(68% 0.005 270);
+  --pri-high:    oklch(66% 0.19 50);
+  --pri-medium:  oklch(74% 0.13 82);
+  --pri-low:     oklch(70% 0.012 270);
 
   /* Type */
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -921,6 +923,20 @@
   /* Brand inks — light, saturated text that reads on the dark softs above */
   --stride-orange-ink: oklch(85% 0.14 60);
   --stride-violet-ink: oklch(85% 0.10 280);
+
+  /* Brand accents — D45: brightened in dark so the orange/violet stay vibrant
+     on dark surfaces (light keeps 68%/60% L). Hue/chroma identity preserved.
+     These also feed --loading-bar-gradient. */
+  --stride-orange: oklch(72% 0.18 47);
+  --stride-violet: oklch(68% 0.19 277);
+
+  /* Priority dots — D45: distinct, brighter dark values, each a different
+     lightness so the four levels stay differentiable by brightness as well as
+     hue on dark surfaces. */
+  --pri-critical: oklch(64% 0.23 25);
+  --pri-high:     oklch(72% 0.19 50);
+  --pri-medium:   oklch(80% 0.14 82);
+  --pri-low:      oklch(74% 0.015 270);
 
   /* Neutrals — dark surface ladder with real depth. Lightness encodes
      elevation: the sunken well is darkest, then the canvas, then raised cards,
