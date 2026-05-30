@@ -109,6 +109,41 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "the theme bootstrap resolves system preference and never strips data-theme", %{conn: conn} do
+    body = conn |> get(~p"/") |> html_response(200)
+    # Always resolves to a concrete data-theme so daisyUI AND the Stride
+    # :where([data-theme=dark]) override (no prefers-color-scheme fallback)
+    # engage together for system-dark users...
+    assert body =~ ~s|matchMedia("(prefers-color-scheme: dark)")|
+    assert body =~ ~s|setAttribute("data-theme"|
+    # ...and tracks the user's choice separately for the 3-way toggle pill...
+    assert body =~ "data-theme-choice"
+    # ...and never removes data-theme (the old behavior that left a system-dark
+    # user with a half-dark page).
+    refute body =~ "removeAttribute"
+  end
+
+  test "all three layout theme bootstraps use the resolve-to-explicit mechanism and stay identical" do
+    bootstraps =
+      for layout <- ~w(root marketing app_chrome) do
+        src = File.read!("lib/kanban_web/components/layouts/#{layout}.html.heex")
+
+        assert src =~ ~s|matchMedia("(prefers-color-scheme: dark)")|,
+               "#{layout} missing system resolution"
+
+        assert src =~ "data-theme-choice", "#{layout} missing the choice attribute"
+        refute src =~ "removeAttribute", "#{layout} still strips data-theme (the half-dark bug)"
+        # Extract the bootstrap IIFE so the three can be compared exactly.
+        [_, body] = String.split(src, "(() => {", parts: 2)
+        [iife, _] = String.split(body, "})();", parts: 2)
+        iife
+      end
+
+    # Stated pitfall: the three bootstraps must stay byte-identical (no drift).
+    assert match?([_], Enum.uniq(bootstraps)),
+           "the three layout theme bootstraps have drifted — keep them byte-identical"
+  end
+
   describe "POST /locale/:locale" do
     test "sets locale and redirects to referer", %{conn: conn} do
       conn =

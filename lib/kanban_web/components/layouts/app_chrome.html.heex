@@ -22,21 +22,33 @@
     </script>
     <script nonce={assigns[:csp_nonce]}>
       (() => {
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
-          } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
-          }
+        const mql = window.matchMedia("(prefers-color-scheme: dark)");
+        // Resolve a user choice ("system" | "light" | "dark") to a concrete theme.
+        const resolve = (choice) =>
+          choice === "light" || choice === "dark" ? choice : mql.matches ? "dark" : "light";
+        // Paint only. data-theme drives the CSS — BOTH daisyUI and the Stride
+        // :where([data-theme=dark]) override (which has no prefers-color-scheme
+        // fallback), so we always set a concrete value. data-theme-choice drives
+        // the 3-way toggle indicator so "system" still reads as system.
+        const render = (choice) => {
+          const el = document.documentElement;
+          el.setAttribute("data-theme", resolve(choice));
+          el.setAttribute("data-theme-choice", choice);
         };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
-        }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+        // Persist the user's choice, then paint. Absent phx:theme means system.
+        const apply = (choice) => {
+          if (choice === "light" || choice === "dark") {
+            localStorage.setItem("phx:theme", choice);
+          } else {
+            localStorage.removeItem("phx:theme");
+            choice = "system";
+          }
+          render(choice);
+        };
+        render(localStorage.getItem("phx:theme") || "system");
+        window.addEventListener("phx:set-theme", (e) => apply(e.target.dataset.phxTheme));
+        window.addEventListener("storage", (e) => e.key === "phx:theme" && render(e.newValue || "system"));
+        mql.addEventListener("change", () => render(localStorage.getItem("phx:theme") || "system"));
       })();
     </script>
   </head>

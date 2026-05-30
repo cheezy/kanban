@@ -26,6 +26,44 @@ at `assets/css/app.css:887+` and `1160+`.
 Every theme-aware element must use one of these three vocabularies, never raw
 greys, whites, hex literals, or `oklch()` literals inline.
 
+## Theme activation mechanism
+
+There is **one** activation mechanism, and both token systems key off it: the
+inline bootstrap script in
+`lib/kanban_web/components/layouts/{root,marketing,app_chrome}.html.heex` (kept
+byte-identical across all three) **always resolves a concrete theme and writes
+an explicit `data-theme` to `<html>`**.
+
+Why "always concrete": daisyUI's `dark` theme has `prefersdark: true`, so it
+honors `@media (prefers-color-scheme: dark)` on its own — but the Stride token
+override (`:where([data-theme="dark"]) .stride-screen`) has **no
+`prefers-color-scheme` fallback**; it only fires on an explicit
+`[data-theme="dark"]`. If the bootstrap left `data-theme` unset for "system"
+users (the old behavior), an OS-dark user got daisyUI-dark surfaces with
+Stride-*light* tokens — an incoherent half-dark page. Resolving system → an
+explicit `data-theme` makes both systems engage together.
+
+Two attributes, two jobs:
+
+| Attribute | Set to | Drives |
+|---|---|---|
+| `data-theme` | the **resolved** theme (`light` \| `dark`) | all CSS — daisyUI tokens and the Stride `:where([data-theme=dark])` override |
+| `data-theme-choice` | the **user's choice** (`system` \| `light` \| `dark`) | the 3-way `theme_toggle` pill indicator (so "system" still reads as system even though `data-theme` is concrete) |
+
+Resolution rules:
+
+- `localStorage["phx:theme"]` stores an explicit `light`/`dark`; **absence means
+  "system"**. An explicit choice always wins over and persists across reloads.
+- "system" (or unset) resolves via `matchMedia("(prefers-color-scheme: dark)")`.
+- A `matchMedia` `change` listener re-resolves live, so a system-mode page flips
+  when the OS theme changes while it is open.
+- The script must stay **inline in `<head>`** (it runs before paint to avoid a
+  flash of the wrong theme) and must stay identical across the three layouts.
+
+Error pages (`lib/kanban_web/controllers/error_html.ex`) are standalone
+documents and use the same resolve-to-explicit core, minus the toggle machinery
+(no pill, so no `data-theme-choice`, no `phx:set-theme` listener).
+
 ## The three token vocabularies
 
 | Vocabulary | When to use | Examples |

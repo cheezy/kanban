@@ -29,15 +29,18 @@ defmodule KanbanWeb.ErrorHTML do
         <title>{@page_title} · Stride</title>
         <link rel="stylesheet" href="/assets/css/app.css" />
         <%!-- Error pages are standalone documents (no app layout), so they need
-             their own inline theme bootstrap — the established pattern, see
-             root.html.heex. Unlike the app layout's script (which removes
-             data-theme for "system" and leans on CSS prefers-color-scheme),
-             error pages mix daisyUI base-* tokens (which honor prefersdark) with
-             Stride var(--*) tokens (which only flip on an explicit
-             [data-theme="dark"]). A removed data-theme would leave the Stride
-             accents light against a dark daisyUI surface. So we resolve the
-             system preference and set data-theme EXPLICITLY, keeping both token
-             systems coherent for explicit-dark AND system-dark users. --%>
+             their own inline theme bootstrap. It shares the app layout's
+             resolve-to-explicit core (see root.html.heex and
+             docs/dark-mode-contract.md "Theme activation mechanism"): read the
+             stored preference, resolve "system"/unset against
+             prefers-color-scheme, and set a CONCRETE data-theme on <html>. This
+             is required because the page mixes daisyUI base-* tokens (which honor
+             prefersdark) with Stride var(--*) tokens (which only flip on an
+             explicit [data-theme="dark"]); a removed data-theme would leave the
+             Stride accents light against a dark daisyUI surface. Error pages omit
+             the toggle machinery (no data-theme-choice, no phx:set-theme /
+             matchMedia listeners) since they are one-shot and carry no theme
+             switcher. --%>
         <script nonce={assigns[:csp_nonce]}>
           (() => {
             const stored = localStorage.getItem("phx:theme");
