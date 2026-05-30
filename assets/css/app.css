@@ -31,13 +31,19 @@
   default: false;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  /* W900: base-content was oklch(85% ...) — only ~4.1:1 on bg-base-100; raised
-     to 92% L so body text reaches WCAG AA (4.5:1) without losing the soft
-     bluish tint. */
-  --color-base-content: oklch(92% 0.029 256.847);
+  /* D44: aligned to the re-tuned Stride dark surface ladder so the daisyUI base
+     surfaces and the var(--surface*) tokens are ONE coherent palette instead of
+     two. daisyUI's defaults were bluish (hue ~252) and 10-15% L lighter, so
+     bg-base-100 components (the body, nav, cards) read as bright boxes against
+     the neutral Stride canvas. Mapping (hue 270 / chroma 0.005 to match Stride):
+       base-100    = --surface        (raised card/component surface)
+       base-200    = --bg             (canvas, one step recessed)
+       base-300    = --surface-sunken (deepest wells, borders)
+       base-content = --ink           (primary text — 15-17:1 on every base-*) */
+  --color-base-100: oklch(20% 0.005 270);
+  --color-base-200: oklch(16% 0.005 270);
+  --color-base-300: oklch(12% 0.005 270);
+  --color-base-content: oklch(95% 0.005 270);
   --color-primary: oklch(70% 0.213 47.604);
   /* W900: primary-content was oklch(98% ...) cream — only 2.75:1 vs the orange
      --color-primary, failing WCAG AA. Deep brown of the same hue gives ~7:1 and
