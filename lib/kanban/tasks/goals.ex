@@ -315,7 +315,7 @@ defmodule Kanban.Tasks.Goals do
     children_data =
       from(t in Task,
         where: t.parent_id == ^parent_goal.id,
-        select: {t.id, t.column_id}
+        select: {t.id, t.column_id, t.status}
       )
       |> Repo.all()
 
@@ -327,7 +327,7 @@ defmodule Kanban.Tasks.Goals do
          all_columns: all_columns,
          column_map: column_map,
          children_data: children_data,
-         child_ids: Enum.map(children_data, fn {id, _} -> id end)
+         child_ids: Enum.map(children_data, fn {id, _, _} -> id end)
        }}
     end
   end
@@ -383,16 +383,24 @@ defmodule Kanban.Tasks.Goals do
 
   defp all_children_in_done?(_goal_context, nil), do: false
 
+  # A child counts as "done" when it physically sits in the Done column OR
+  # its status is :completed. The status branch covers tasks completed outside
+  # the normal claim -> complete -> auto_move_to_done pipeline (e.g. a manually
+  # verified task that was never claimed), which would otherwise strand the
+  # goal out of Done forever. This is safe for the AI review workflow because a
+  # task awaiting human review sits in Review as :in_progress (see
+  # Positioning.determine_status_for_column/2) — only genuinely finished work
+  # carries status :completed.
   defp all_children_in_done?(goal_context, done_column) do
-    Enum.all?(goal_context.children_data, fn {_id, column_id} ->
-      column_id == done_column.id
+    Enum.all?(goal_context.children_data, fn {_id, column_id, status} ->
+      column_id == done_column.id or status == :completed
     end)
   end
 
   defp pick_leftmost_child_column(goal_context) do
     valid_columns =
       goal_context.children_data
-      |> Enum.map(fn {_id, column_id} -> goal_context.column_map[column_id] end)
+      |> Enum.map(fn {_id, column_id, _status} -> goal_context.column_map[column_id] end)
       |> Enum.reject(&is_nil/1)
 
     case valid_columns do

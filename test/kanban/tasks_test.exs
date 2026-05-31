@@ -5468,6 +5468,133 @@ defmodule Kanban.TasksTest do
              "Goal moves to Review when child moves there"
     end
 
+    test "goal moves to Done when a :completed child is stranded in a non-Done column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      review_column = column_fixture(board, %{name: "Review", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, child2} =
+        Tasks.create_task(todo_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      # child2 was manually verified: marked :completed but parked in Review
+      # (never moved to Done through the normal claim/complete pipeline).
+      {:ok, _} = Tasks.move_task(child2, review_column, 0)
+      set_completed!(child2, DateTime.utc_now() |> DateTime.truncate(:second))
+
+      # Moving the remaining child to Done triggers the goal recompute.
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      reloaded_goal = Tasks.get_task!(goal.id)
+
+      assert reloaded_goal.column_id == done_column.id,
+             "Goal promotes to Done because every child is :completed, even though child2 sits in Review"
+    end
+
+    test "goal promotes to Done when a :completed child is stranded in Backlog" do
+      user = user_fixture()
+      board = board_fixture(user)
+      backlog_column = column_fixture(board, %{name: "Backlog", position: 0})
+      done_column = column_fixture(board, %{name: "Done", position: 1})
+
+      {:ok, goal} =
+        Tasks.create_task(backlog_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(backlog_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, child2} =
+        Tasks.create_task(backlog_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      # child2 is :completed but never left Backlog.
+      set_completed!(child2, DateTime.utc_now() |> DateTime.truncate(:second))
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      reloaded_goal = Tasks.get_task!(goal.id)
+
+      assert reloaded_goal.column_id == done_column.id,
+             "Goal promotes to Done when all children are :completed regardless of column"
+    end
+
+    test "goal does NOT promote to Done while a needs_review child is :in_progress in Review" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      review_column = column_fixture(board, %{name: "Review", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, child2} =
+        Tasks.create_task(todo_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      # child2 is awaiting human review: moved to Review, status stays :in_progress.
+      {:ok, child2_in_review} = Tasks.move_task(child2, review_column, 0)
+      assert child2_in_review.status == :in_progress
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      reloaded_goal = Tasks.get_task!(goal.id)
+
+      refute reloaded_goal.column_id == done_column.id,
+             "Goal must NOT reach Done while a child is still awaiting review (in_progress in Review)"
+
+      assert reloaded_goal.column_id == review_column.id,
+             "Goal follows its leftmost child to Review"
+    end
+
+    test "dragging an already-:completed child into Done persists and keeps the goal in Done" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      review_column = column_fixture(board, %{name: "Review", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, child2} =
+        Tasks.create_task(todo_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      # child2 was manually verified: :completed but parked in Review.
+      {:ok, _} = Tasks.move_task(child2, review_column, 0)
+      child2 = set_completed!(child2, DateTime.utc_now() |> DateTime.truncate(:second))
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      # Now drag the already-:completed child2 from Review into Done. This is
+      # the literal "revert on refresh" scenario: perform_move runs the
+      # in-transaction goal recompute. The move must persist on reload and the
+      # goal must stay in Done.
+      {:ok, _} = Tasks.move_task(child2, done_column, 1)
+
+      reloaded_child2 = Tasks.get_task!(child2.id)
+      reloaded_goal = Tasks.get_task!(goal.id)
+
+      assert reloaded_child2.column_id == done_column.id,
+             "Completed child stays in Done after being moved there (no revert on reload)"
+
+      assert reloaded_child2.status == :completed
+
+      assert reloaded_goal.column_id == done_column.id,
+             "Goal remains in Done after the completed child is moved into Done"
+    end
+
     test "moving multiple child tasks to same column positions goal correctly" do
       user = user_fixture()
       board = board_fixture(user)
