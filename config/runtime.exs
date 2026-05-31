@@ -29,11 +29,25 @@ if github_token = System.get_env("GITHUB_TOKEN") do
     repo: System.get_env("GITHUB_REPO")
 end
 
-# Flip /complete explorer_result / reviewer_result validation to strict mode
-# without a redeploy by setting STRIDE_STRICT_COMPLETION_VALIDATION=true.
-if System.get_env("STRIDE_STRICT_COMPLETION_VALIDATION") == "true" do
-  config :kanban, :strict_completion_validation, true
-end
+# Strict /complete validation (explorer_result / reviewer_result) is ON by
+# default in production — the grace-period soak is complete (recommendation 1,
+# W242). The env var is an explicit override in either direction:
+#
+#   STRIDE_STRICT_COMPLETION_VALIDATION=false  → emergency rollback to grace
+#                                                 mode without a redeploy
+#   STRIDE_STRICT_COMPLETION_VALIDATION=true   → force strict in any env
+#
+# When the var is unset, prod defaults to strict and all other envs default to
+# grace (matching the `config/config.exs` default), so dev and test are
+# unaffected.
+strict_completion_validation =
+  case System.get_env("STRIDE_STRICT_COMPLETION_VALIDATION") do
+    "true" -> true
+    "false" -> false
+    _ -> config_env() == :prod
+  end
+
+config :kanban, :strict_completion_validation, strict_completion_validation
 
 if config_env() == :prod do
   database_url =

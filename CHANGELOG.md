@@ -5,6 +5,16 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-05-30
+
+### Changed
+
+#### Strict completion validation is now the production default
+
+The `/complete` endpoint's hard gate on `explorer_result` and `reviewer_result` — the API-level enforcement that rejects completions lacking evidence that exploration and review happened — now runs in **strict** mode by default in production. Through the grace-period soak the `:strict_completion_validation` flag defaulted to `false`, so validation failures were logged but the request still proceeded; with the soak complete, `config/runtime.exs` now defaults the flag to `true` whenever the app boots in the `:prod` environment. Development and test environments are unaffected and continue to run in grace mode.
+
+The `STRIDE_STRICT_COMPLETION_VALIDATION` environment variable remains an explicit override in both directions: setting it to `false` is the emergency rollback (production drops back to grace mode on restart, with no schema migration to reverse), and setting it to `true` forces strict mode in any environment. The rollout record and rollback plan are documented in `docs/stride-plugin-enforcement-recommendations.md`, where "API-Level Enforcement" has moved from Remaining Recommendations to the Implemented section.
+
 ## [2.2.0] - 2026-05-30
 
 ### Added

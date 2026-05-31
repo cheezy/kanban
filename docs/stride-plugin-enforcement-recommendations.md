@@ -13,13 +13,13 @@ The agent optimized for throughput over process compliance, resolving the tensio
 
 ### Root Causes
 
-1. **Instructions without enforcement are eventually ignored.** The skills say MANDATORY but nothing prevents the agent from skipping them. The API accepts complete requests without evidence that subagents were dispatched. *(Partially addressed: soft gates added via orchestrator, claiming gate, and verification checklist. Hard API gates remain as future work.)*
+1. **Instructions without enforcement are eventually ignored.** The skills say MANDATORY but nothing prevents the agent from skipping them. The API accepts complete requests without evidence that subagents were dispatched. *(Addressed: soft gates added via orchestrator, claiming gate, and verification checklist; the hard API gate requiring `explorer_result`/`reviewer_result` shipped under G65 and went strict in production via W242.)*
 
 2. **Too many disconnected skills.** The agent must remember to invoke 6+ separate skills at specific moments in a workflow. Each is a separate context load. Under pressure to deliver quickly, the agent drops the ones that feel optional. *(Addressed: stride-workflow orchestrator absorbs all skills into one entry point.)*
 
 3. **Conflicting emphasis.** The `⚡ AUTOMATION NOTICE ⚡` sections in claiming and completing skills emphasize "work continuously without ANY user prompts" and "Do NOT prompt." This primes the agent to prioritize throughput, which it then generalizes to skipping process steps. *(Addressed: all automation notices reframed to "the workflow IS the automation — every step exists because skipping it caused failures.")*
 
-4. **No hard gates.** The after_doing and before_review hooks are enforced because the API rejects requests without their results. The subagent steps have no equivalent enforcement. *(Partially addressed: three soft gates now in place. Hard API gates for explorer/reviewer results remain as future work.)*
+4. **No hard gates.** The after_doing and before_review hooks are enforced because the API rejects requests without their results. The subagent steps have no equivalent enforcement. *(Addressed: three soft gates plus the hard API gate — `/complete` now rejects requests missing `explorer_result`/`reviewer_result` in strict mode (G65, W241-W242).)*
 
 ### Core Principle
 
@@ -28,6 +28,20 @@ The agent optimized for throughput over process compliance, resolving the tensio
 ---
 
 ## Implemented
+
+### API-Level Enforcement (formerly Remaining Recommendation 1)
+
+**Status:** ✅ Completed — 2026-05-30. Server-side validation shipped under G65 (`explorer_result` / `reviewer_result` required on `PATCH /api/tasks/:id/complete`, with the skip-form enum and 40-char `summary` floor); the grace-period kill switch was lifted in W241 and the production flag was flipped to strict in W242. The G65-compliant completion payload is documented in all five plugins' `stride-completing-tasks` skills and the shared `stride-workflow` orchestrator; the authoritative client version map lives in `GET /api/agent/onboarding` → `api_schema.plugin_versions`.
+
+**What changed:** The complete endpoint now requires `explorer_result` and `reviewer_result` alongside the previously-enforced `after_doing_result` and `before_review_result`. A request missing either field — or carrying a `summary` shorter than the 40-non-whitespace-character floor, or a skip `reason` outside the fixed enum (`no_subagent_support`, `small_task_0_1_key_files`, `trivial_change_docs_only`, `self_reported_exploration`, `self_reported_review`) — is rejected with HTTP 422 and a `failures` body naming each offending field. Small tasks legitimately skip exploration/review via the `{"dispatched": false, "reason": "...", "summary": "..."}` skip envelope, so the gate enforces *evidence-or-declared-skip*, not unconditional dispatch.
+
+**Rollout:** The `:strict_completion_validation` flag governs disposition (grace = warn-and-proceed, strict = reject). It defaulted to `false` (`config/config.exs:32`) through the soak so the warn volume could be measured as a faithful predictor of the strict rejection volume. After the grace-mode warn trend went flat-to-declining, `config/runtime.exs` was changed (W242) to default the flag to `true` in production while leaving every other env in grace mode. The `STRIDE_STRICT_COMPLETION_VALIDATION` env var remains an explicit override in both directions.
+
+**Rollback plan:** Strict mode is a config-only disposition change over the same validation logic — there is **no schema migration to reverse**. To return production to grace mode without a redeploy, set `STRIDE_STRICT_COMPLETION_VALIDATION=false` and restart; grace mode resumes immediately and the soft-warn logs continue to show which agents *would* have been rejected. A code-level rollback (reverting the W242 `config/runtime.exs` default) is also available but slower than the env-var switch. No data backfill or down-migration is required in either direction.
+
+**Scope:** Server-side change affecting all plugins equally — `lib/kanban/tasks/completion_validation.ex` (canonical `@skip_reasons` / `@min_summary_length`), `lib/kanban_web/controllers/api/completion_result_gate.ex` (`strict?/0`, `build_body/1` 422 renderer), `config/config.exs` + `config/runtime.exs` (flag wiring), and the G65 completion-format docs in `docs/api/patch_tasks_id_complete.md`, `docs/AI-WORKFLOW.md`, `docs/TASK-WRITING-GUIDE.md`, and `docs/AGENT-HOOK-EXECUTION-GUIDE.md`.
+
+**Impact:** Highest of the recommendations — agents can no longer skip what the API rejects. Validation logic is identical across grace and strict; only the disposition of failures changed at the flip.
 
 ### Reframe Automation Notices (formerly item 4)
 
@@ -148,97 +162,13 @@ All core documentation updated to reference the orchestrator and use process-ove
 
 The following items have not been implemented. They are ordered by impact and listed with enough detail to create Stride tasks from them.
 
-### 1. API-Level Enforcement (Highest Impact)
+> **Recommendation 1 (API-Level Enforcement) has been implemented** — see the
+> [API-Level Enforcement entry](#api-level-enforcement-formerly-remaining-recommendation-1)
+> in the Implemented section above for the shipped server-side gate, the
+> `:strict_completion_validation` flag, and the rollback plan. The items below
+> remain open.
 
-**Problem:** The complete endpoint accepts requests without evidence that exploration or review occurred. The only enforced gates are `after_doing_result` and `before_review_result` because the API rejects requests missing them. Subagent steps have no equivalent enforcement.
-
-**Recommendation:** Make the complete endpoint require `explorer_result` and `reviewer_result` fields, just as it requires hook results:
-
-```json
-PATCH /api/tasks/:id/complete
-{
-  "agent_name": "Claude Opus 4.6",
-  "explorer_result": {
-    "dispatched": true,
-    "summary": "Explored 5 key files, found existing patterns...",
-    "duration_ms": 12000
-  },
-  "reviewer_result": {
-    "dispatched": true,
-    "acceptance_criteria_checked": 5,
-    "issues_found": 0,
-    "duration_ms": 8000
-  },
-  "after_doing_result": { ... },
-  "before_review_result": { ... }
-}
-```
-
-If `explorer_result` or `reviewer_result` is missing, the API rejects with a 422 error explaining what was skipped.
-
-**Scope across plugins:** This is a server-side change that affects all plugins equally. Each plugin's `stride-completing-tasks` skill and `stride-workflow` orchestrator would need to document the new required fields. The orchestrator already captures these results — this change just makes submission mandatory.
-
-**Complexity:** Large — requires API schema changes, migration, validation logic, and updates to all 5 plugins' completion skills.
-
-**Tradeoffs:**
-
-- Hardest to circumvent (agents cannot skip what the API rejects)
-- Requires server-side changes, not just plugin updates
-- Must handle the case where small tasks legitimately skip exploration (the decision matrix allows this) — possibly by accepting `{"dispatched": false, "reason": "small task, 0-1 key_files"}` as a valid result
-- Platforms without subagent support would need a different format for these fields (self-reported exploration rather than agent dispatch)
-
-#### Operational: Enforcement Flag
-
-**Flag:** `:kanban, :strict_completion_validation` — Application env key read by `Kanban.KanbanWeb.Api.CompletionResultGate.strict?/0` (`lib/kanban_web/controllers/api/completion_result_gate.ex:48`).
-
-**Default:** `false` (grace mode). Set in `config/config.exs:32`:
-
-```elixir
-config :kanban, :strict_completion_validation, false
-```
-
-**Runtime override:** `config/runtime.exs:33-36` wires the `STRIDE_STRICT_COMPLETION_VALIDATION` env var to the flag. **Important:** the current override block is an explicit kill switch — when `STRIDE_STRICT_COMPLETION_VALIDATION=true` is set, the flag is held at `false`. This was done deliberately (commit `225be03` — *"setting flag to false — not ready for rollout yet"*) to prevent accidental early activation during the grace-period soak. To flip to strict, revert the override block so the env var enables strict mode, or set the flag in `config/runtime.exs` directly.
-
-**Modes:**
-
-| Mode | Flag value | Behavior |
-|---|---|---|
-| Grace (default) | `false` | Validation runs; failures are logged but request proceeds. Clients see normal 200 responses. |
-| Strict | `true` | Validation runs; failures cause HTTP 422 with `failures` body and the request is rejected. |
-
-Validation logic is identical in both modes — only the disposition of failures changes. The grace-mode warn volume is a faithful predictor of the strict-mode rejection volume (same failure set, different action).
-
-**Soft-warn log format:** `CompletionResultGate.log_warning/3` emits one warning per failing completion, regardless of mode:
-
-```
-[warning] stride.completion.validation_failed (grace): explorer_result: summary; reviewer_result: summary,acceptance_criteria_checked
-```
-
-With structured metadata: `event: "stride.completion.validation_failed"`, `mode: :grace` or `:strict`, `failures: [...]` (per-field list of `{field, errors}` maps), plus any caller-provided metadata such as `task_id` and `agent`.
-
-**Monitoring during grace period:**
-
-```bash
-# Volume of validation failures per hour (log scraping)
-grep "stride.completion.validation_failed" app.log | awk '{print substr($2,1,13)}' | sort | uniq -c
-
-# Per-field breakdown (from structured log metadata)
-# Requires a structured log parser; the metadata.failures list shows which fields fail most often
-```
-
-A dropping trend indicates older plugins (or misconfigured agents) are migrating to the G65-compliant payload shape. Flat or growing volume means clients aren't catching up — hold the flip.
-
-**Rollback:** Revert the flag to `false` in `config/runtime.exs` (or re-enable the kill-switch override block). No data migration required — grace mode restores immediately on deploy. Logs continue to show which agents would have been rejected.
-
-**Cross-references:**
-
-- Canonical validation: `lib/kanban/tasks/completion_validation.ex` (`@skip_reasons`, `@min_summary_length = 40`)
-- Request/response shape: `lib/kanban_web/controllers/api/completion_result_gate.ex` (`build_body/1` renders the 422 payload)
-- Client-facing schema: `GET /api/agent/onboarding` → `api_schema.validation_modes` and `api_schema.plugin_versions`
-- Client docs: `docs/api/patch_tasks_id_complete.md` → Completion Validation Format (G65) section
-- Related task: W242 (flip flag to strict after grace-period soak)
-
-### 2. Claude Code Hooks for Hard Local Gates
+### 1. Claude Code Hooks for Hard Local Gates
 
 **Problem:** On Claude Code specifically, the agent could start editing files before invoking the orchestrator. The hooks.json system can intercept tool calls, but currently only intercepts Stride API calls (claim, complete, mark_reviewed).
 
@@ -271,7 +201,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 - Could be fragile if the state file gets out of sync (e.g., agent crashes mid-workflow)
 - Must handle the case where edits are made outside of Stride tasks (not all edits are task work)
 
-### 3. Skills Version Enforcement
+### 2. Skills Version Enforcement
 
 **Problem:** When skills are updated (reframing, orchestrator), agents running older cached versions won't see the changes. The `skills_update_required` field in API responses is advisory — agents can ignore it.
 
@@ -310,7 +240,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 | 5 | Release all plugins | Small | Deployment | ✅ **Completed** (G53) |
 | 6 | Workflow telemetry and compliance tracking | Large | Observability | ✅ **Completed** (2026-04-14) |
 | 7 | Skills version enforcement | Medium | Hard (API gate) | Not started |
-| 8 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | Not started |
+| 8 | API-level enforcement (explorer/reviewer) | Large | Hard (API gate) | ✅ **Completed** (G65, W241-W242, 2026-05-30) |
 | 9 | Claude Code hooks for edit gating | Large | Hard (local gate) | Not started |
 
 **Recommended sequence:**
@@ -322,7 +252,7 @@ The `check-stride-workflow-state` script would check a local state file (written
 5. ~~Release all plugins (G53)~~ ✅ Done — stride 1.7.0, copilot 2.3.0, gemini 1.3.0, codex 1.2.0, opencode 1.2.0
 6. ~~Workflow telemetry and compliance tracking (2026-04-14)~~ ✅ Done — `workflow_steps` schema + compliance dashboard + all 5 plugins submitting the array
 7. Skills version enforcement — ensures agents actually run the updated skills
-8. API-level enforcement (explorer/reviewer) — the highest-impact hard gate, but requires server changes
+8. ~~API-level enforcement (explorer/reviewer) (G65, W241-W242)~~ ✅ Done — `explorer_result`/`reviewer_result` required on `/complete`; `:strict_completion_validation` flipped to strict-by-default in production after the grace-period soak
 9. Claude Code hooks for edit gating — Claude Code-specific hardening
 
-**Current state (2026-04-14):** All soft enforcement gates are implemented and released, and observability has landed via the `workflow_steps` telemetry pipeline. The three remaining items are hard gates (API enforcement, skills version enforcement, Claude Code edit gating). These require server-side changes and are higher effort, but compliance baselines can now be measured before deciding which hard gates actually need to ship.
+**Current state (2026-05-30):** All soft enforcement gates are implemented and released, observability has landed via the `workflow_steps` telemetry pipeline, and the highest-impact hard gate — API-level enforcement of `explorer_result`/`reviewer_result` — is now live in strict mode in production (G65 server-side validation, grace-soak lifted in W241, strict flip in W242). The two remaining items are skills version enforcement and Claude Code edit gating.
