@@ -437,20 +437,41 @@ defmodule Kanban.Tasks.Goals do
     end
   end
 
-  defp move_goal_to_top_with_other_goals(parent_goal, target_column, _moving_task_id) do
-    min_child_position =
-      from(t in Task,
-        where: t.column_id == ^target_column.id and t.parent_id == ^parent_goal.id,
-        select: min(t.position)
-      )
-      |> Repo.one()
+  # Position queries below exclude archived tasks (is_nil(archived_at)) so the
+  # goal reposition only considers and shifts live cards — archived rows keep
+  # their stale positions and are never renumbered.
+  defp min_live_child_position(column_id, goal_id) do
+    from(t in Task,
+      where: t.column_id == ^column_id and t.parent_id == ^goal_id and is_nil(t.archived_at),
+      select: min(t.position)
+    )
+    |> Repo.one()
+  end
 
-    last_goal_position =
-      from(t in Task,
-        where: t.column_id == ^target_column.id and t.type == :goal and t.id != ^parent_goal.id,
-        select: max(t.position)
-      )
-      |> Repo.one()
+  defp max_other_live_goal_position(column_id, goal_id) do
+    from(t in Task,
+      where:
+        t.column_id == ^column_id and t.type == :goal and t.id != ^goal_id and
+          is_nil(t.archived_at),
+      select: max(t.position)
+    )
+    |> Repo.one()
+  end
+
+  defp live_tasks_to_shift(column_id, target_position, goal_id) do
+    from(t in Task,
+      where:
+        t.column_id == ^column_id and t.position >= ^target_position and t.id != ^goal_id and
+          is_nil(t.archived_at),
+      select: %{id: t.id, position: t.position},
+      order_by: [desc: t.position]
+    )
+    |> Repo.all()
+  end
+
+  defp move_goal_to_top_with_other_goals(parent_goal, target_column, _moving_task_id) do
+    min_child_position = min_live_child_position(target_column.id, parent_goal.id)
+    last_goal_position = max_other_live_goal_position(target_column.id, parent_goal.id)
 
     target_position = calculate_goal_target_position(min_child_position, last_goal_position)
 
@@ -462,16 +483,7 @@ defmodule Kanban.Tasks.Goals do
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
 
-    tasks_to_shift =
-      from(t in Task,
-        where:
-          t.column_id == ^target_column.id and
-            t.position >= ^target_position and
-            t.id != ^parent_goal.id,
-        select: %{id: t.id, position: t.position},
-        order_by: [desc: t.position]
-      )
-      |> Repo.all()
+    tasks_to_shift = live_tasks_to_shift(target_column.id, target_position, parent_goal.id)
 
     Logger.info("Shifting #{length(tasks_to_shift)} tasks from position #{target_position}")
 

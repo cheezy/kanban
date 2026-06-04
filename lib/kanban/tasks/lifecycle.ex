@@ -436,7 +436,7 @@ defmodule Kanban.Tasks.Lifecycle do
       duplicate_of_id: nil
     }
 
-    case task |> Task.archive_changeset(clear_attrs) |> Repo.update() do
+    case clear_archive_with_fresh_position(task, clear_attrs) do
       {:ok, updated_task} ->
         :telemetry.execute(
           [:kanban, :task, :unarchived],
@@ -448,9 +448,32 @@ defmodule Kanban.Tasks.Lifecycle do
 
         {:ok, updated_task}
 
-      error ->
+      {:error, _} = error ->
         error
     end
+  end
+
+  # Clears the archive fields AND assigns a fresh live position in one
+  # transaction. The (column_id, position) unique index is partial on
+  # archived_at, so an archived task can share a position value with a live
+  # one; clearing archived_at without re-positioning would violate the live
+  # constraint. get_next_position_locked takes a transactional advisory lock,
+  # hence the surrounding Repo.transaction.
+  defp clear_archive_with_fresh_position(task, clear_attrs) do
+    Repo.transaction(fn ->
+      column = Kanban.Columns.get_column!(task.column_id)
+      next_position = Positioning.get_next_position_locked(column)
+
+      changeset =
+        task
+        |> Task.archive_changeset(clear_attrs)
+        |> Ecto.Changeset.put_change(:position, next_position)
+
+      case Repo.update(changeset) do
+        {:ok, updated_task} -> updated_task
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """

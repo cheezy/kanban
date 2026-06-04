@@ -17,6 +17,20 @@ defmodule Kanban.TasksTest do
     Kanban.Tasks.get_task!(task.id)
   end
 
+  defp archive_at!(task, position) do
+    Kanban.Tasks.Task
+    |> where([t], t.id == ^task.id)
+    |> Kanban.Repo.update_all(
+      set: [
+        archived_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        archive_reason: :completed,
+        position: position
+      ]
+    )
+
+    Kanban.Tasks.get_task!(task.id)
+  end
+
   defp days_ago(days) do
     DateTime.utc_now()
     |> DateTime.truncate(:second)
@@ -5088,6 +5102,131 @@ defmodule Kanban.TasksTest do
 
       assert {:ok, _deleted} = result
       assert Tasks.get_task!(dep_task.id)
+    end
+  end
+
+  describe "positioning excludes archived tasks" do
+    test "moving a task into a column with archived tasks leaves archived positions untouched" do
+      user = user_fixture()
+      board = board_fixture(user)
+      src = column_fixture(board, %{name: "Src", position: 0})
+      dst = column_fixture(board, %{name: "Dst", position: 1})
+
+      # Archived tasks occupy low positions 0..4 in the destination column.
+      archived =
+        for p <- 0..4 do
+          dst |> task_fixture(%{title: "Arch #{p}"}) |> archive_at!(p)
+        end
+
+      mover = task_fixture(src, %{title: "Mover"})
+
+      {:ok, _} = Tasks.move_task(mover, dst, 0)
+
+      # The archived rows must NOT be renumbered by the live insert.
+      for {t, p} <- Enum.zip(archived, 0..4) do
+        assert Tasks.get_task!(t.id).position == p,
+               "archived task expected to stay at position #{p}"
+      end
+
+      # The moved (live) task lands at position 0 — allowed alongside the
+      # archived task at 0 because the unique index is partial on archived_at.
+      assert Tasks.get_task!(mover.id).position == 0
+    end
+
+    test "reorder_tasks/2 leaves archived tasks' positions untouched" do
+      user = user_fixture()
+      board = board_fixture(user)
+      col = column_fixture(board, %{name: "Col", position: 0})
+
+      # Archived tasks occupying positions 0,1 in the column.
+      archived =
+        for p <- 0..1 do
+          col |> task_fixture(%{title: "Arch #{p}"}) |> archive_at!(p)
+        end
+
+      live1 = task_fixture(col, %{title: "Live 1"})
+      live2 = task_fixture(col, %{title: "Live 2"})
+      live3 = task_fixture(col, %{title: "Live 3"})
+
+      # Same-column reorder of the live tasks (reverse order).
+      :ok = Tasks.reorder_tasks(col, [live3.id, live2.id, live1.id])
+
+      for {t, p} <- Enum.zip(archived, 0..1) do
+        assert Tasks.get_task!(t.id).position == p,
+               "archived task expected to stay at position #{p}"
+      end
+
+      assert Tasks.get_task!(live3.id).position == 0
+      assert Tasks.get_task!(live2.id).position == 1
+      assert Tasks.get_task!(live1.id).position == 2
+    end
+
+    test "unarchive_task assigns a fresh live position and does not collide with a live task" do
+      user = user_fixture()
+      board = board_fixture(user)
+      col = column_fixture(board, %{name: "Col", position: 0})
+
+      # An archived task parked at position 0.
+      archived = col |> task_fixture(%{title: "Archived"}) |> archive_at!(0)
+
+      # A live task also at position 0 (permitted by the partial index).
+      live = task_fixture(col, %{title: "Live"})
+
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^live.id)
+      |> Kanban.Repo.update_all(set: [position: 0])
+
+      assert {:ok, restored} = Tasks.unarchive_task(archived)
+      assert is_nil(restored.archived_at)
+
+      # It must get a fresh position rather than its stale 0 (which would
+      # collide with the live task under the partial unique index).
+      assert restored.position > 0
+      assert Tasks.get_task!(live.id).position == 0
+    end
+
+    test "moving a completed child to the top of a Done column with an archived backlog promotes the goal and leaves archived rows untouched" do
+      user = user_fixture()
+      board = board_fixture(user)
+      review = column_fixture(board, %{name: "Review", position: 0})
+      done = column_fixture(board, %{name: "Done", position: 1})
+
+      # Representative archived backlog at low positions in Done (proves the
+      # shift scope drops to live-only; not 1,000 rows, since the test asserts
+      # SCOPE not wall-clock).
+      archived =
+        for p <- 0..29 do
+          done |> task_fixture(%{title: "Old #{p}"}) |> archive_at!(p)
+        end
+
+      {:ok, goal} = Tasks.create_task(review, %{"title" => "Goal", "type" => "goal"})
+
+      for i <- 1..8 do
+        {:ok, c} = Tasks.create_task(done, %{"title" => "Child #{i}", "parent_id" => goal.id})
+        set_completed!(c, DateTime.utc_now() |> DateTime.truncate(:second))
+      end
+
+      {:ok, child9} = Tasks.create_task(review, %{"title" => "Child 9", "parent_id" => goal.id})
+      child9 = set_completed!(child9, DateTime.utc_now() |> DateTime.truncate(:second))
+
+      {:ok, goal} =
+        goal
+        |> Ecto.Changeset.change(%{
+          status: :completed,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+
+      # Drag the completed child to the TOP of Done.
+      {:ok, _} = Tasks.move_task(child9, done, 0)
+
+      assert Tasks.get_task!(child9.id).column_id == done.id
+      assert Tasks.get_task!(goal.id).column_id == done.id
+
+      for {t, p} <- Enum.zip(archived, 0..29) do
+        assert Tasks.get_task!(t.id).position == p,
+               "archived backlog row expected to stay at position #{p}"
+      end
     end
   end
 

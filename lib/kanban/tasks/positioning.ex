@@ -65,10 +65,12 @@ defmodule Kanban.Tasks.Positioning do
     Repo.transaction(fn ->
       Repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
 
-      # Move ALL tasks in the column (including archived) to temp negative positions
-      # to avoid unique constraint violations on the (column_id, position) index
+      # Move all LIVE tasks in the column to temp negative positions to avoid
+      # unique constraint violations on the partial (column_id, position) index.
+      # Archived tasks are excluded — they keep their stale positions and are
+      # never renumbered (and the partial index ignores them anyway).
       Repo.query!(
-        "UPDATE tasks SET position = -1 * id WHERE column_id = $1 AND position >= 0",
+        "UPDATE tasks SET position = -1 * id WHERE column_id = $1 AND position >= 0 AND archived_at IS NULL",
         [column.id]
       )
 
@@ -90,11 +92,13 @@ defmodule Kanban.Tasks.Positioning do
   end
 
   defp assign_remaining_positions(column, offset) do
-    # Reassign positions to any remaining tasks still at temp positions
-    # (e.g., archived tasks not included in task_ids)
+    # Reassign positions to any remaining LIVE tasks still at temp positions
+    # (live tasks in the column that were not included in task_ids). Archived
+    # tasks were never moved to a temp position, so they are excluded here too.
     remaining_ids =
       Task
       |> where([t], t.column_id == ^column.id and t.position < 0)
+      |> where([t], is_nil(t.archived_at))
       |> order_by([t], asc: t.id)
       |> select([t], t.id)
       |> Repo.all()
@@ -156,6 +160,7 @@ defmodule Kanban.Tasks.Positioning do
     query =
       from t in Task,
         where: t.column_id == ^column_id,
+        where: is_nil(t.archived_at),
         select: max(t.position)
 
     case Repo.one(query) do
@@ -196,6 +201,7 @@ defmodule Kanban.Tasks.Positioning do
       from t in Task,
         where: t.column_id == ^deleted_task.column_id,
         where: t.position > ^deleted_task.position,
+        where: is_nil(t.archived_at),
         order_by: t.position
 
     tasks = Repo.all(query)
@@ -310,6 +316,7 @@ defmodule Kanban.Tasks.Positioning do
       from t in Task,
         where: t.column_id == ^column.id,
         where: t.position > ^removed_position,
+        where: is_nil(t.archived_at),
         order_by: t.position
 
     tasks = Repo.all(query)
@@ -326,6 +333,7 @@ defmodule Kanban.Tasks.Positioning do
       Task
       |> where([t], t.column_id == ^column.id)
       |> where([t], t.position >= ^start_position)
+      |> where([t], is_nil(t.archived_at))
       |> order_by([t], desc: t.position)
       |> Repo.all()
 
@@ -354,6 +362,7 @@ defmodule Kanban.Tasks.Positioning do
       |> where([t], t.column_id == ^column.id)
       |> where([t], t.position >= ^start_position)
       |> where([t], t.position <= ^end_position)
+      |> where([t], is_nil(t.archived_at))
       |> order_by([t], desc: t.position)
       |> Repo.all()
 
@@ -380,6 +389,7 @@ defmodule Kanban.Tasks.Positioning do
       |> where([t], t.column_id == ^column.id)
       |> where([t], t.position >= ^start_position)
       |> where([t], t.position <= ^end_position)
+      |> where([t], is_nil(t.archived_at))
       |> order_by([t], asc: t.position)
       |> Repo.all()
 
