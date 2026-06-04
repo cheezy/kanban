@@ -314,7 +314,7 @@ defmodule Kanban.Tasks.Goals do
 
     children_data =
       from(t in Task,
-        where: t.parent_id == ^parent_goal.id,
+        where: t.parent_id == ^parent_goal.id and is_nil(t.archived_at),
         select: {t.id, t.column_id, t.status}
       )
       |> Repo.all()

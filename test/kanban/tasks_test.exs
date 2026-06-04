@@ -5228,6 +5228,26 @@ defmodule Kanban.TasksTest do
                "archived backlog row expected to stay at position #{p}"
       end
     end
+
+    test "an archived non-Done child does not block the goal from promoting to Done" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo = column_fixture(board, %{name: "To Do", position: 0})
+      done = column_fixture(board, %{name: "Done", position: 1})
+
+      {:ok, goal} = Tasks.create_task(todo, %{"title" => "Goal", "type" => "goal"})
+      {:ok, live_child} = Tasks.create_task(todo, %{"title" => "Live", "parent_id" => goal.id})
+      {:ok, arch_child} = Tasks.create_task(todo, %{"title" => "Arch", "parent_id" => goal.id})
+
+      # Archive the second child while it sits in a non-Done column.
+      archive_at!(arch_child, 5)
+
+      # Move the only live child to Done.
+      {:ok, _} = Tasks.move_task(live_child, done, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == done.id,
+             "goal should promote to Done; an archived non-Done child must not block it"
+    end
   end
 
   describe "goal hierarchy" do

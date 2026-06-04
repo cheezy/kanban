@@ -40,6 +40,22 @@ defmodule Kanban.Tasks.GoalCompletionTest do
     %{user: user, board: board, column: column, goal: goal}
   end
 
+  describe "archived siblings" do
+    test "an archived incomplete sibling does not block the last-child trigger",
+         %{column: column, goal: goal} do
+      child1 = task_fixture(column, %{title: "C1", parent_id: goal.id})
+      child2 = task_fixture(column, %{title: "C2", parent_id: goal.id})
+
+      # Archive child2 while it is still incomplete (status not completed).
+      Task
+      |> where([t], t.id == ^child2.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now() |> DateTime.truncate(:second)])
+
+      assert {:ok, :last_child} =
+               GoalCompletion.finalize_child_and_check_goal_complete(child1)
+    end
+  end
+
   describe "idempotent after_goal_status flip" do
     test "does not overwrite already-:pending status when last-child fires again",
          %{column: column, goal: goal} do

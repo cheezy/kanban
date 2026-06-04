@@ -110,7 +110,7 @@ defmodule Kanban.Tasks.GoalCompletion do
       %Task{type: :goal} = parent ->
         remaining =
           from(t in Task,
-            where: t.parent_id == ^parent_id and t.status != :completed
+            where: t.parent_id == ^parent_id and t.status != :completed and is_nil(t.archived_at)
           )
           |> repo.aggregate(:count)
 
