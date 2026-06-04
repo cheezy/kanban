@@ -53,6 +53,7 @@ defmodule Kanban.Tasks.Positioning do
       Task
       |> where([t], t.column_id == ^new_column.id)
       |> where([t], t.type in [:work, :defect])
+      |> where([t], is_nil(t.archived_at))
       |> Repo.aggregate(:count)
 
     new_column.wip_limit > 0 and current_count >= new_column.wip_limit
@@ -123,6 +124,7 @@ defmodule Kanban.Tasks.Positioning do
         Task
         |> where([t], t.column_id == ^column.id)
         |> where([t], t.type in [:work, :defect])
+        |> where([t], is_nil(t.archived_at))
         |> Repo.aggregate(:count)
 
       current_count < column.wip_limit
