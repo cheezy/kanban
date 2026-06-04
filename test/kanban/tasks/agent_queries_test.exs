@@ -316,4 +316,105 @@ defmodule Kanban.Tasks.AgentQueriesTest do
                task.id
     end
   end
+
+  describe "archived tasks are not claimable" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready_column = Enum.find(columns, &(&1.name == "Ready"))
+      %{user: user, board: board, ready_column: ready_column}
+    end
+
+    test "get_next_task does not return an archived task sitting in Ready", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, archived} =
+        Tasks.create_task(column, %{
+          "title" => "Archived",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} = Tasks.archive_task(archived)
+
+      assert AgentQueries.get_next_task([], board.id) == nil
+    end
+
+    test "get_next_task returns the live task when an archived one is also present", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, archived} =
+        Tasks.create_task(column, %{
+          "title" => "Archived",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} = Tasks.archive_task(archived)
+
+      {:ok, live} =
+        Tasks.create_task(column, %{
+          "title" => "Live",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      assert AgentQueries.get_next_task([], board.id).id == live.id
+    end
+
+    test "get_specific_task_for_claim does not return an archived task by identifier", %{
+      ready_column: column,
+      board: board,
+      user: user
+    } do
+      {:ok, archived} =
+        Tasks.create_task(column, %{
+          "title" => "Archived",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} = Tasks.archive_task(archived)
+
+      assert AgentQueries.get_specific_task_for_claim(archived.identifier, [], board.id) == nil
+    end
+
+    test "get_next_task ignores key-file conflicts from archived in_progress tasks", %{
+      ready_column: ready,
+      board: board,
+      user: user
+    } do
+      columns = Kanban.Columns.list_columns(board)
+      doing = Enum.find(columns, &(&1.name == "Doing"))
+      key_files = [%{"file_path" => "lib/kanban/shared.ex", "position" => 0}]
+
+      # An ARCHIVED in_progress task in Doing touching the same file.
+      {:ok, archived_doing} =
+        Tasks.create_task(doing, %{
+          "title" => "Old WIP",
+          "status" => "in_progress",
+          "key_files" => key_files,
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} = Tasks.archive_task(archived_doing)
+
+      # A live Ready task touching the same file.
+      {:ok, live} =
+        Tasks.create_task(ready, %{
+          "title" => "Live",
+          "status" => "open",
+          "key_files" => key_files,
+          "created_by_id" => user.id
+        })
+
+      # The archived in-progress task must NOT register as a key-file conflict.
+      assert AgentQueries.get_next_task([], board.id).id == live.id
+    end
+  end
 end

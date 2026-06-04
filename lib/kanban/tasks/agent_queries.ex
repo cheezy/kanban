@@ -91,6 +91,7 @@ defmodule Kanban.Tasks.AgentQueries do
         where: c.name in ["Doing", "Review"],
         where: c.board_id == ^board_id,
         where: t.status == :in_progress,
+        where: is_nil(t.archived_at),
         select: %{
           id: t.id,
           key_files: t.key_files
@@ -107,6 +108,7 @@ defmodule Kanban.Tasks.AgentQueries do
         where: t.type in [:work, :defect],
         where: t.human_task == false,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+        where: is_nil(t.archived_at),
         order_by: [
           desc:
             fragment(
@@ -181,6 +183,7 @@ defmodule Kanban.Tasks.AgentQueries do
         where: t.type in [:work, :defect],
         where: t.human_task == false,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
+        where: is_nil(t.archived_at),
         preload: [:column, :assigned_to, :created_by]
       )
 
