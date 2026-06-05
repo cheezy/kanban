@@ -966,7 +966,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       refute html =~ "3/3"
     end
 
-    test "renders 'N/N' green pass when reviewer dispatched + 0 issues",
+    test "renders 'N/N' clean value when reviewer dispatched + 0 issues",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1000,6 +1000,29 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ "4/4 · 2 issues"
+    end
+
+    test "legacy issues_found > 0 renders a neutral Acceptance tone, not red (D56)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD",
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria_checked" => 4,
+            "issues_found" => 2
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # The informational value still renders…
+      assert html =~ "4/4 · 2 issues"
+      # …but the Acceptance cell tone must be neutral, never the blocked-red
+      # verdict, so it cannot contradict the neutral status pill (D56).
+      [acceptance_segment | _] = String.split(html, ~s(data-review-stats-cell="tests"))
+      refute acceptance_segment =~ "var(--st-blocked)"
     end
 
     test "renders em-dash when no acceptance criteria are recorded",
@@ -1249,10 +1272,10 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
-  describe "review_status_pill — derived from legacy reviewer_result fields" do
+  describe "review_status_pill — neutralized when no structured status (D56)" do
     setup [:register_and_log_in_user]
 
-    test "any structured acceptance_criteria with 'not_met' derives changes_requested",
+    test "structured acceptance_criteria 'not_met' without a status renders the neutral pill, never changes_requested",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1269,10 +1292,12 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+      refute html =~ ~s(data-review-detail-summary-status="changes_requested")
+      assert html =~ ~s(data-review-detail-summary-status="unavailable")
+      assert html =~ "Review data unavailable"
     end
 
-    test "legacy issues_found > 0 derives changes_requested",
+    test "legacy issues_found > 0 renders the neutral pill, never changes_requested",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1282,10 +1307,12 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+      refute html =~ ~s(data-review-detail-summary-status="changes_requested")
+      assert html =~ ~s(data-review-detail-summary-status="unavailable")
+      assert html =~ "Review data unavailable"
     end
 
-    test "dispatched=true with no issues derives approved",
+    test "dispatched=true with no structured status renders the neutral pill, never approved",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1295,7 +1322,9 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ ~s(data-review-detail-summary-status="approved")
+      refute html =~ ~s(data-review-detail-summary-status="approved")
+      assert html =~ ~s(data-review-detail-summary-status="unavailable")
+      assert html =~ "Review data unavailable"
     end
 
     test "skipped reviewer (dispatched=false) renders no pill",
@@ -1318,6 +1347,43 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
       refute html =~ "data-review-detail-summary-status"
+    end
+
+    test "genuine status='changes_requested' with populated issues[] still renders changes_requested",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "status" => "changes_requested",
+            "issues" => [
+              %{
+                "severity" => "critical",
+                "category" => "pitfall",
+                "description" => "Direct Ecto in LiveView"
+              }
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="changes_requested")
+      assert html =~ "Changes requested"
+    end
+
+    test "status='approved' with empty issues[] renders approved and does not contradict",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"status" => "approved", "issues" => []}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-detail-summary-status="approved")
+      refute html =~ ~s(data-review-detail-summary-status="changes_requested")
     end
   end
 

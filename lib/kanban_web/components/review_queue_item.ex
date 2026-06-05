@@ -266,12 +266,20 @@ defmodule KanbanWeb.ReviewQueueItem do
     ]
   end
 
+  # Acceptance pill state is driven by the structured reviewer_result.status
+  # first, then by structured acceptance_criteria. It never flips to failed
+  # purely from a legacy issues_found count — a thin/legacy reviewer_result
+  # stays neutral so the pill cannot contradict the (neutral) status pill (D56).
+  defp acceptance_passed?(%{reviewer_result: %{"status" => "approved"}}), do: true
+  defp acceptance_passed?(%{reviewer_result: %{"status" => "changes_requested"}}), do: false
+
   defp acceptance_passed?(%{reviewer_result: %{} = result}) do
-    cond do
-      any_not_met?(Map.get(result, "acceptance_criteria")) -> false
-      is_integer(result["issues_found"]) and result["issues_found"] > 0 -> false
-      result["dispatched"] == true -> true
-      true -> nil
+    case Map.get(result, "acceptance_criteria") do
+      list when is_list(list) and list != [] ->
+        not any_not_met?(list)
+
+      _ ->
+        nil
     end
   end
 

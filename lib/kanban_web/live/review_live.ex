@@ -607,13 +607,14 @@ defmodule KanbanWeb.ReviewLive do
   defp summary_text(%{description: desc}) when is_binary(desc) and desc != "", do: desc
   defp summary_text(_), do: ""
 
-  # Pill rendered next to the summary blurb. Reads the schema 1.0
-  # `reviewer_result.status` directly when present; otherwise derives the
-  # verdict from whatever signals the reviewer did emit (any
-  # `acceptance_criteria` item with `status: "not_met"` or a positive
-  # legacy `issues_found` count → "changes_requested"; a dispatched
-  # reviewer with no issues → "approved"). Returns `nil` only when the
-  # reviewer was skipped or never ran, so the pill hides on those tasks.
+  # Pill rendered next to the summary blurb. The verdict is derived SOLELY
+  # from the structured `reviewer_result.status` field. When a review was
+  # dispatched but carries no recognized structured status (a legacy/thin
+  # `reviewer_result`), the pill renders a neutral "Review data unavailable"
+  # state — it never fabricates "changes_requested"/"approved" from legacy
+  # `issues_found` counts or `acceptance_criteria` heuristics (D56). Returns
+  # `nil` when the reviewer was skipped, never ran, or reported an
+  # unrecognized status, so the pill hides on those tasks.
   defp review_status_pill(task) do
     case derive_review_status(task) do
       "approved" ->
@@ -636,6 +637,14 @@ defmodule KanbanWeb.ReviewLive do
               "color: var(--st-blocked, oklch(50% 0.18 25));"
         }
 
+      :unavailable ->
+        %{
+          status: "unavailable",
+          label: gettext("Review data unavailable"),
+          icon: "hero-question-mark-circle",
+          style: "background: var(--surface-2); color: var(--ink-2);"
+        }
+
       _ ->
         nil
     end
@@ -645,25 +654,14 @@ defmodule KanbanWeb.ReviewLive do
        when status in ["approved", "changes_requested"],
        do: status
 
-  defp derive_review_status(%{reviewer_result: %{} = result}) do
-    cond do
-      any_not_met?(Map.get(result, "acceptance_criteria", [])) -> "changes_requested"
-      is_integer(result["issues_found"]) and result["issues_found"] > 0 -> "changes_requested"
-      result["dispatched"] == true -> "approved"
-      true -> nil
-    end
-  end
+  # A review was dispatched but carries no recognized structured status
+  # (legacy/thin reviewer_result). Show a neutral "data unavailable" state
+  # rather than inferring a verdict from legacy issues_found/acceptance
+  # heuristics — those inferences are exactly what produced false
+  # "Changes requested" pills (D56).
+  defp derive_review_status(%{reviewer_result: %{"dispatched" => true}}), do: :unavailable
 
   defp derive_review_status(_), do: nil
-
-  defp any_not_met?(criteria) when is_list(criteria) do
-    Enum.any?(criteria, fn
-      %{"status" => "not_met"} -> true
-      _ -> false
-    end)
-  end
-
-  defp any_not_met?(_), do: false
 
   defp acceptance_value(task) do
     total = task.acceptance_criteria |> parse_lines() |> length()
@@ -700,16 +698,26 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   # Tone for the Acceptance cell. `true` → green, `false` → red, `nil` →
-  # neutral. Derived strictly from the reviewer subagent's `issues_found`
-  # count so that skipped or pre-subagent tasks render neutrally rather
-  # than falsely-passing.
-  defp acceptance_passed(task) do
-    case {reviewer_dispatched?(task), issues_found(task)} do
-      {true, 0} -> true
-      {true, n} when is_integer(n) and n > 0 -> false
-      _ -> nil
+  # neutral. Driven by the structured `reviewer_result.status` first, then by
+  # structured `acceptance_criteria`. It never flips to failed purely from a
+  # legacy `issues_found` count, so a legacy/thin reviewer_result stays
+  # neutral and cannot contradict the (neutral) status pill (D56). This
+  # mirrors `ReviewQueueItem.acceptance_passed?/1` so the two acceptance
+  # surfaces never disagree.
+  defp acceptance_passed(%{reviewer_result: %{"status" => "approved"}}), do: true
+  defp acceptance_passed(%{reviewer_result: %{"status" => "changes_requested"}}), do: false
+
+  defp acceptance_passed(%{reviewer_result: %{} = result}) do
+    case Map.get(result, "acceptance_criteria") do
+      list when is_list(list) and list != [] ->
+        not Enum.any?(list, &match?(%{"status" => "not_met"}, &1))
+
+      _ ->
+        nil
     end
   end
+
+  defp acceptance_passed(_), do: nil
 
   # Mark each criterion row :met / :not_met / :unchecked. When the
   # `review_report` contains an "Acceptance criteria status" section, parse

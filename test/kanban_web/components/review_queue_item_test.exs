@@ -254,4 +254,46 @@ defmodule KanbanWeb.ReviewQueueItemTest do
       refute html =~ "changes requested"
     end
   end
+
+  describe "review_queue_item/1 — acceptance pill from reviewer_result (D56)" do
+    test "status='approved' renders a passed acceptance pill" do
+      html = render_item(%{reviewer_result: %{"status" => "approved"}})
+
+      assert html =~
+               ~r/data-review-queue-item-summary-pill="acceptance"\s+data-review-queue-item-summary-pill-state="passed"/
+    end
+
+    test "status='changes_requested' renders a failed acceptance pill" do
+      html = render_item(%{reviewer_result: %{"status" => "changes_requested"}})
+
+      assert html =~
+               ~r/data-review-queue-item-summary-pill="acceptance"\s+data-review-queue-item-summary-pill-state="failed"/
+    end
+
+    test "legacy issues_found > 0 (no structured status) stays neutral, never failed" do
+      html = render_item(%{reviewer_result: %{"dispatched" => true, "issues_found" => 3}})
+
+      assert html =~
+               ~r/data-review-queue-item-summary-pill="acceptance"\s+data-review-queue-item-summary-pill-state="neutral"/
+
+      refute html =~
+               ~r/data-review-queue-item-summary-pill="acceptance"\s+data-review-queue-item-summary-pill-state="failed"/
+    end
+
+    test "structured acceptance_criteria with not_met renders a failed pill" do
+      html =
+        render_item(%{
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria" => [
+              %{"criterion" => "A", "status" => "met"},
+              %{"criterion" => "B", "status" => "not_met"}
+            ]
+          }
+        })
+
+      assert html =~
+               ~r/data-review-queue-item-summary-pill="acceptance"\s+data-review-queue-item-summary-pill-state="failed"/
+    end
+  end
 end
