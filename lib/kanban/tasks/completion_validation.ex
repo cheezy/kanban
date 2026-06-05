@@ -17,6 +17,8 @@ defmodule Kanban.Tasks.CompletionValidation do
   anyone paper over a skipped step with a one-word excuse.
   """
 
+  use Gettext, backend: KanbanWeb.Gettext
+
   @skip_reasons [
     :no_subagent_support,
     :small_task_0_1_key_files,
@@ -59,7 +61,7 @@ defmodule Kanban.Tasks.CompletionValidation do
   `skip_reasons/0`) and `"summary"` (≥ #{@min_summary_length}
   non-whitespace characters).
   """
-  def validate_explorer_result(result), do: validate(result, :explorer)
+  def validate_explorer_result(result), do: validate(result, :explorer, [])
 
   @doc """
   Validates a `reviewer_result` payload.
@@ -67,8 +69,22 @@ defmodule Kanban.Tasks.CompletionValidation do
   Same rules as `validate_explorer_result/1`, plus: when `"dispatched"` is
   `true`, also requires `"acceptance_criteria_checked"` and `"issues_found"`
   as non-negative integers.
+
+  ## Options
+
+    * `:require_structured_block` (default `false`) — when `true` and the
+      review was dispatched, the structured block the review queue renders
+      (`"issues"`, `"acceptance_criteria"`, `"status"`/`"issue_counts"`,
+      `"schema_version"`) becomes mandatory; each absent field is reported
+      by name. The strict-validation gate passes `true` so a dispatched but
+      legacy-only payload is surfaced (warned in grace mode, rejected in
+      strict mode). The unconditional schema-layer validator leaves it
+      `false`, so the multi-plugin grace rollout (D55/D57) is preserved —
+      not-yet-updated clients can still persist legacy payloads until the
+      `:strict_completion_validation` flag is flipped.
   """
-  def validate_reviewer_result(result), do: validate(result, :reviewer)
+  def validate_reviewer_result(result, opts \\ []),
+    do: validate(result, :reviewer, opts)
 
   @doc """
   Validates the optional `changed_files` array on the completion payload.
@@ -99,17 +115,18 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   def validate_changed_files(_value), do: {:error, [{:changed_files, "must be a list"}]}
 
-  defp validate(nil, _role), do: {:error, [{:result, "can't be blank"}]}
+  defp validate(nil, _role, _opts), do: {:error, [{:result, "can't be blank"}]}
 
-  defp validate(result, _role) when not is_map(result),
+  defp validate(result, _role, _opts) when not is_map(result),
     do: {:error, [{:result, "must be a map"}]}
 
-  defp validate(result, role) do
+  defp validate(result, role, opts) do
     errors =
       []
       |> check_dispatched(result)
       |> check_summary(result)
       |> check_by_dispatched(result, role)
+      |> check_required_structured_block(result, role, opts)
 
     case errors do
       [] -> {:ok, result}
@@ -307,6 +324,56 @@ defmodule Kanban.Tasks.CompletionValidation do
     do: [{:schema_version, "must be a semver-shaped string"} | errors]
 
   defp check_schema_version(errors, _), do: errors
+
+  # D55: when opted in (the strict-validation gate), a dispatched reviewer
+  # review must carry the structured block the review queue renders — not
+  # merely the legacy summary envelope. Each absent field is named so the
+  # client can fix the payload. Presence is the gate; the type checks above
+  # still validate the values when the fields are present, and an empty
+  # `issues: []` with a `status` is a valid, passing review (not "missing").
+  # Only fires for `dispatched: true`; the skip path is untouched.
+  defp check_required_structured_block(errors, %{"dispatched" => true} = result, :reviewer, opts) do
+    if Keyword.get(opts, :require_structured_block, false) do
+      errors
+      |> require_structured_field(result, "issues", :issues)
+      |> require_structured_field(result, "acceptance_criteria", :acceptance_criteria)
+      |> require_status_or_issue_counts(result)
+      |> require_structured_field(result, "schema_version", :schema_version)
+    else
+      errors
+    end
+  end
+
+  defp check_required_structured_block(errors, _result, _role, _opts), do: errors
+
+  defp require_structured_field(errors, result, key, field) do
+    if Map.has_key?(result, key) do
+      errors
+    else
+      [{field, missing_structured_field_message(key)} | errors]
+    end
+  end
+
+  defp require_status_or_issue_counts(errors, result) do
+    if Map.has_key?(result, "status") or Map.has_key?(result, "issue_counts") do
+      errors
+    else
+      [{:status, missing_status_or_issue_counts_message()} | errors]
+    end
+  end
+
+  defp missing_structured_field_message(key) do
+    gettext(
+      "is required on a dispatched review: the structured %{field} field the review queue renders is missing",
+      field: key
+    )
+  end
+
+  defp missing_status_or_issue_counts_message do
+    gettext(
+      "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
+    )
+  end
 
   # Validates that `map[key]` is present and decodes to a member of `allowed`.
   # Mirrors the binary-or-atom acceptance pattern used by `check_reason/2`.

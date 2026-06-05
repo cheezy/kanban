@@ -505,6 +505,136 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_reviewer_result/2 — require_structured_block (D55)" do
+    test "accepts a dispatched payload carrying the full structured block" do
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(full_structured_payload(),
+                 require_structured_block: true
+               )
+    end
+
+    test "empty issues[] with an approved status is valid, not missing" do
+      payload =
+        full_structured_payload()
+        |> Map.put("issues", [])
+        |> Map.put("status", "approved")
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "rejects a dispatched legacy-only payload naming every missing field" do
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(base_reviewer_payload(),
+                 require_structured_block: true
+               )
+
+      assert error_for(errors, :issues)
+      assert error_for(errors, :acceptance_criteria)
+      assert error_for(errors, :status)
+      assert error_for(errors, :schema_version)
+    end
+
+    test "missing issues[] is reported by name" do
+      payload = Map.delete(full_structured_payload(), "issues")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert {_field, msg} = error_for(errors, :issues)
+      assert msg =~ "issues"
+      refute error_for(errors, :acceptance_criteria)
+    end
+
+    test "missing acceptance_criteria[] is reported by name" do
+      payload = Map.delete(full_structured_payload(), "acceptance_criteria")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert error_for(errors, :acceptance_criteria)
+    end
+
+    test "issue_counts satisfies the status-or-issue_counts requirement" do
+      payload =
+        full_structured_payload()
+        |> Map.delete("status")
+        |> Map.put("issue_counts", %{"critical" => 0, "important" => 0, "minor" => 0})
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "missing both status and issue_counts is reported" do
+      payload =
+        full_structured_payload()
+        |> Map.delete("status")
+        |> Map.delete("issue_counts")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert error_for(errors, :status)
+    end
+
+    test "missing schema_version is reported by name" do
+      payload = Map.delete(full_structured_payload(), "schema_version")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert error_for(errors, :schema_version)
+    end
+
+    test "a dispatched=false skip is unaffected by the structured-block rule" do
+      payload = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => @valid_summary
+      }
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "a present-but-malformed structured field yields one error, not a duplicate presence error" do
+      payload = Map.put(full_structured_payload(), "issues", "not a list")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      issues_errors = Enum.filter(errors, fn {f, _} -> f == :issues end)
+      assert length(issues_errors) == 1
+      assert {:issues, msg} = hd(issues_errors)
+      assert msg =~ "must be a list"
+    end
+
+    test "default (require_structured_block: false) leaves legacy-only payloads valid" do
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(base_reviewer_payload())
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(base_reviewer_payload(),
+                 require_structured_block: false
+               )
+    end
+  end
+
   describe "validate_changed_files/1" do
     test "rejects nil (D36: never silently NULL the column)" do
       assert {:error, [{:changed_files, message}]} =
@@ -652,5 +782,14 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       "acceptance_criteria_checked" => 0,
       "issues_found" => 0
     }
+  end
+
+  defp full_structured_payload do
+    base_reviewer_payload()
+    |> Map.put("status", "approved")
+    |> Map.put("issue_counts", %{"critical" => 0, "important" => 0, "minor" => 0})
+    |> Map.put("issues", [%{"severity" => "minor", "category" => "code_quality"}])
+    |> Map.put("acceptance_criteria", [%{"criterion" => "X", "status" => "met"}])
+    |> Map.put("schema_version", "1.0")
   end
 end

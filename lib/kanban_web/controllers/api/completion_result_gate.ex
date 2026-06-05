@@ -57,7 +57,7 @@ defmodule KanbanWeb.API.CompletionResultGate do
       evaluate(
         "reviewer_result",
         params["reviewer_result"],
-        &CompletionValidation.validate_reviewer_result/1
+        &CompletionValidation.validate_reviewer_result(&1, require_structured_block: true)
       ),
       evaluate_changed_files(params)
     ]
@@ -143,7 +143,14 @@ defmodule KanbanWeb.API.CompletionResultGate do
             "A substantive summary of what the reviewer checked (40+ non-whitespace chars)",
           "duration_ms" => 8_000,
           "acceptance_criteria_checked" => 5,
-          "issues_found" => 0
+          "issues_found" => 0,
+          "status" => "approved",
+          "issue_counts" => %{"critical" => 0, "important" => 0, "minor" => 0},
+          "issues" => [],
+          "acceptance_criteria" => [
+            %{"criterion" => "All positions recalculate on move", "status" => "met"}
+          ],
+          "schema_version" => "1.0"
         },
         "skip_form" => %{
           "dispatched" => false,

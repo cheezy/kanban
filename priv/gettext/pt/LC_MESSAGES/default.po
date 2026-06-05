@@ -381,7 +381,7 @@ msgstr "Não é possível mover tarefa: a coluna atingiu seu limite WIP"
 msgid "Created"
 msgstr "Criado"
 
-#: lib/kanban_web/components/review_report_panel.ex:239
+#: lib/kanban_web/components/review_report_panel.ex:270
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1348,7 +1348,7 @@ msgid "Pending"
 msgstr "Pendente"
 
 #: lib/kanban_web/components/review_queue_item.ex:264
-#: lib/kanban_web/components/review_report_panel.ex:248
+#: lib/kanban_web/components/review_report_panel.ex:279
 #: lib/kanban_web/components/review_stats_strip.ex:76
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
@@ -4948,7 +4948,7 @@ msgstr "concluída"
 msgid "created"
 msgstr "Criado"
 
-#: lib/kanban_web/review_report_helpers.ex:50
+#: lib/kanban_web/review_report_helpers.ex:55
 #: lib/kanban_web/task_tokens.ex:139
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -5033,7 +5033,7 @@ msgstr "há %{m} min"
 msgid "%{s}s ago"
 msgstr "há %{s} s"
 
-#: lib/kanban_web/components/review_report_panel.ex:247
+#: lib/kanban_web/components/review_report_panel.ex:278
 #: lib/kanban_web/components/review_stats_strip.ex:55
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -6125,26 +6125,26 @@ msgstr[1] "%{checked}/%{total} · %{n} problemas"
 msgid "Not met"
 msgstr "Não cumprido"
 
-#: lib/kanban_web/review_report_helpers.ex:47
+#: lib/kanban_web/review_report_helpers.ex:52
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} dias"
 msgstr[1] "%{n} dias"
 
-#: lib/kanban_web/review_report_helpers.ex:39
+#: lib/kanban_web/review_report_helpers.ex:44
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} caso · todos presentes"
 msgstr[1] "%{n} casos · todos presentes"
 
-#: lib/kanban_web/review_report_helpers.ex:123
+#: lib/kanban_web/review_report_helpers.ex:133
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "nenhum violado"
 
-#: lib/kanban_web/review_report_helpers.ex:121
+#: lib/kanban_web/review_report_helpers.ex:131
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "violado"
@@ -6164,13 +6164,13 @@ msgstr "Enviar e-mail a %{name}"
 msgid "Completed by %{name}"
 msgstr "Concluída por %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:249
+#: lib/kanban_web/components/review_report_panel.ex:280
 #: lib/kanban_web/components/review_stats_strip.ex:69
 #, elixir-autogen, elixir-format
 msgid "Patterns"
 msgstr "Padrões"
 
-#: lib/kanban_web/review_report_helpers.ex:85
+#: lib/kanban_web/review_report_helpers.ex:95
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "seguidos"
@@ -6196,37 +6196,37 @@ msgstr "(sem descrição)"
 msgid "Changes requested"
 msgstr "Alterações solicitadas"
 
-#: lib/kanban_web/components/review_report_panel.ex:251
+#: lib/kanban_web/components/review_report_panel.ex:282
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "Qualidade do código"
 
-#: lib/kanban_web/components/review_report_panel.ex:240
+#: lib/kanban_web/components/review_report_panel.ex:271
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "Importante"
 
-#: lib/kanban_web/components/review_report_panel.ex:241
+#: lib/kanban_web/components/review_report_panel.ex:272
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "Menor"
 
-#: lib/kanban_web/components/review_report_panel.ex:250
+#: lib/kanban_web/components/review_report_panel.ex:281
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "Testes"
 
-#: lib/kanban_web/review_report_helpers.ex:169
+#: lib/kanban_web/review_report_helpers.ex:231
 #, elixir-autogen, elixir-format, fuzzy
 msgid "failed"
 msgstr "Falha ao copiar"
 
-#: lib/kanban_web/review_report_helpers.ex:170
+#: lib/kanban_web/review_report_helpers.ex:232
 #, elixir-autogen, elixir-format, fuzzy
 msgid "not assessed"
 msgstr "Não avaliado"
 
-#: lib/kanban_web/review_report_helpers.ex:168
+#: lib/kanban_web/review_report_helpers.ex:230
 #, elixir-autogen, elixir-format, fuzzy
 msgid "passed"
 msgstr "Senha"
@@ -6346,7 +6346,7 @@ msgstr "projetos reportando"
 msgid "Met"
 msgstr "Cumprido"
 
-#: lib/kanban_web/components/review_report_panel.ex:252
+#: lib/kanban_web/components/review_report_panel.ex:283
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr "Verificação de projeto"
@@ -6669,3 +6669,13 @@ msgstr "Seções de configurações"
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "Dados de revisão indisponíveis"
+
+#: lib/kanban/tasks/completion_validation.ex:373
+#, elixir-autogen, elixir-format
+msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
+msgstr "é obrigatório em uma revisão despachada: inclua status ou issue_counts para que a fila de revisão possa exibir o veredito"
+
+#: lib/kanban/tasks/completion_validation.ex:366
+#, elixir-autogen, elixir-format
+msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
+msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field} que a fila de revisão exibe está ausente"

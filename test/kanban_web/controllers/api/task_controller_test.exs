@@ -76,7 +76,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "summary" => "Reviewed the diff against all acceptance criteria and pitfalls",
       "duration_ms" => 8_000,
       "acceptance_criteria_checked" => 5,
-      "issues_found" => 0
+      "issues_found" => 0,
+      "status" => "approved",
+      "issue_counts" => %{"critical" => 0, "important" => 0, "minor" => 0},
+      "issues" => [],
+      "acceptance_criteria" => [
+        %{"criterion" => "Validator rejects legacy-only reviewer_result", "status" => "met"}
+      ],
+      "schema_version" => "1.0"
+    }
+  end
+
+  # The pre-D55 reviewer_result shape: dispatched, legacy summary fields, but
+  # NONE of the structured block the review queue renders. Valid for the
+  # unconditional schema-layer validator; rejected by the strict gate (D55).
+  defp legacy_only_reviewer_result do
+    %{
+      "dispatched" => true,
+      "summary" => "Reviewed the diff against all acceptance criteria and pitfalls",
+      "duration_ms" => 8_000,
+      "acceptance_criteria_checked" => 5,
+      "issues_found" => 1
     }
   end
 
@@ -2751,6 +2771,99 @@ defmodule KanbanWeb.API.TaskControllerTest do
       failure = Enum.find(response["failures"], &(&1["field"] == "reviewer_result"))
       assert failure
       assert Enum.any?(failure["errors"], &(&1["field"] == "issues_found"))
+    end
+
+    test "strict mode: dispatched but legacy-only reviewer_result returns 422 naming the missing structured fields (D55)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", legacy_only_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      failure = Enum.find(response["failures"], &(&1["field"] == "reviewer_result"))
+      assert failure
+      missing = Enum.map(failure["errors"], & &1["field"])
+      assert "issues" in missing
+      assert "acceptance_criteria" in missing
+      assert "status" in missing
+      assert "schema_version" in missing
+    end
+
+    test "strict mode: full structured reviewer_result completes and moves to Review (D55)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "strict mode: empty issues[] with an approved status is valid, not missing (D55)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      reviewer =
+        valid_reviewer_result()
+        |> Map.put("issues", [])
+        |> Map.put("status", "approved")
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", reviewer)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "strict mode: skipped review (dispatched=false) is unaffected by the structured-block rule (D55)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      skip_form = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => "Self-reviewed implementation against the acceptance criteria and pitfalls"
+      }
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", skip_form)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "grace mode: dispatched but legacy-only reviewer_result still completes (rollout preserved, D55)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, false)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", legacy_only_reviewer_result())
+
+      log =
+        capture_log(fn ->
+          conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+          assert json_response(conn, 200)["data"]["id"] == task.id
+        end)
+
+      assert log =~ "stride.completion.validation_failed"
+      assert log =~ "grace"
     end
 
     test "strict mode: 422 body shape shares hook-result error top-level keys",
