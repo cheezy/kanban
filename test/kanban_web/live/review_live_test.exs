@@ -1020,9 +1020,40 @@ defmodule KanbanWeb.ReviewLiveTest do
       # The informational value still renders…
       assert html =~ "4/4 · 2 issues"
       # …but the Acceptance cell tone must be neutral, never the blocked-red
-      # verdict, so it cannot contradict the neutral status pill (D56).
-      [acceptance_segment | _] = String.split(html, ~s(data-review-stats-cell="tests"))
-      refute acceptance_segment =~ "var(--st-blocked)"
+      # verdict, so it cannot contradict the neutral status pill (D56). Scope
+      # strictly to the Acceptance cell (marker → next cell marker) so the
+      # assertion is immune to tones elsewhere on the page.
+      acceptance_cell =
+        html
+        |> String.split(~s(data-review-stats-cell="acceptance"))
+        |> Enum.at(1, "")
+        |> String.split(~s(data-review-stats-cell="tests"))
+        |> List.first()
+
+      refute acceptance_cell =~ "var(--st-blocked)"
+    end
+
+    test "header issue count reflects displayable issues[] length, not a stale issues_found scalar (D59)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD\nE",
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "acceptance_criteria_checked" => 5,
+            "issues" => [],
+            "issues_found" => 2
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # issues[] is empty, so the header shows "5/5" — never "5/5 · 2 issues"
+      # from the stale scalar issues_found (D59).
+      assert html =~ "5/5"
+      refute html =~ "· 2 issues"
     end
 
     test "renders em-dash when no acceptance criteria are recorded",
@@ -1122,7 +1153,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Approved with 0 findings."
     end
 
-    test "renders the structured-branch panel shell when reviewer_result has a summary",
+    test "thin reviewer_result with only a summary renders no panel (D59)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1138,10 +1169,32 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ ~s(data-review-report-panel="structured")
-      # The panel no longer renders the reviewer summary — it lives in the
-      # detail summary div above the strip instead.
+      # A thin reviewer_result (no status/issues/acceptance/section) is no
+      # longer "structured"; with no review_report the panel renders nothing.
+      # The reviewer summary lives in the detail header above the strip (D59).
+      refute html =~ "data-review-report-panel"
       refute html =~ "Reviewer prose summary when no structured report exists."
+    end
+
+    test "thin reviewer_result WITH a review_report renders the fallback markdown, not a suppressed report (D59)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          review_report: "## Review\n\nTwo issues found and described here.",
+          reviewer_result: %{
+            "dispatched" => true,
+            "summary" => "Two issues noted.",
+            "acceptance_criteria_checked" => 0,
+            "issues_found" => 2
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-report-panel="fallback")
+      assert html =~ "Two issues found and described here."
+      refute html =~ "No issues"
     end
 
     test "renders no review report panel when neither report nor reviewer_result exists",

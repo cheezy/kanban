@@ -20,7 +20,12 @@ defmodule KanbanWeb.ReviewReportHelpers do
   Returns a localized string or `nil` when no source has a value.
   """
   def testing_strategy_value(task) do
-    case structured_section_status(task, "testing_strategy") do
+    case structured_or_derived(
+           task,
+           "testing_strategy",
+           "testing",
+           testing_strategy_present?(task)
+         ) do
       nil -> testing_strategy_value_from_report(task)
       status -> structured_status_label(status)
     end
@@ -58,7 +63,12 @@ defmodule KanbanWeb.ReviewReportHelpers do
   to the regex path. Returns `true`/`false`/`nil`.
   """
   def testing_strategy_passed(task) do
-    case structured_section_status(task, "testing_strategy") do
+    case structured_or_derived(
+           task,
+           "testing_strategy",
+           "testing",
+           testing_strategy_present?(task)
+         ) do
       nil -> testing_strategy_passed_from_report(task)
       status -> structured_status_passed(status)
     end
@@ -78,7 +88,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   regex `Patterns followed` section in `review_report`.
   """
   def patterns_value(task) do
-    case structured_section_status(task, "patterns") do
+    case structured_or_derived(task, "patterns", "pattern", patterns_present?(task)) do
       nil ->
         case report_section(task, ~r/patterns\s+followed/i) do
           nil -> nil
@@ -95,7 +105,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   falls back to regex.
   """
   def patterns_passed(task) do
-    case structured_section_status(task, "patterns") do
+    case structured_or_derived(task, "patterns", "pattern", patterns_present?(task)) do
       nil ->
         if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
 
@@ -110,7 +120,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   regex `Pitfalls` section in `review_report`.
   """
   def pitfalls_value(task) do
-    case structured_section_status(task, "pitfalls") do
+    case structured_or_derived(task, "pitfalls", "pitfall", pitfalls_present?(task)) do
       nil ->
         case report_section(task, ~r/pitfalls/i) do
           nil ->
@@ -134,7 +144,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   falls back to regex.
   """
   def pitfalls_passed(task) do
-    case structured_section_status(task, "pitfalls") do
+    case structured_or_derived(task, "pitfalls", "pitfall", pitfalls_present?(task)) do
       nil ->
         case report_section(task, ~r/pitfalls/i) do
           nil -> nil
@@ -160,6 +170,58 @@ defmodule KanbanWeb.ReviewReportHelpers do
         nil
     end
   end
+
+  # Resolves a section status from the structured `reviewer_result[key].status`
+  # first, then — when that is absent — derives one from the structured
+  # `reviewer_result["issues"]` list (a verdict the reviewer agent emits today),
+  # so the section verdict cells render even when the reviewer did not emit an
+  # explicit per-section status object. Returns `nil` only when neither source
+  # has a value, so the caller can still fall back to legacy regex extraction.
+  defp structured_or_derived(task, key, category, metadata_present?) do
+    structured_section_status(task, key) ||
+      issues_derived_status(task, category, metadata_present?)
+  end
+
+  # Derives a section verdict from the categorized issues[] list:
+  #   * a matching-category issue → "failed"
+  #   * no matching issue, but the task carried that metadata → "passed"
+  #   * no matching issue and no metadata → "not_assessed"
+  # Returns `nil` when reviewer_result has no `issues` list, so callers fall
+  # through to the regex path for legacy/thin payloads.
+  defp issues_derived_status(task, category, metadata_present?) do
+    case reviewer_result(task) do
+      %{"issues" => issues} when is_list(issues) ->
+        cond do
+          Enum.any?(issues, fn issue -> issue_category(issue) == category end) -> "failed"
+          metadata_present? -> "passed"
+          true -> "not_assessed"
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp issue_category(%{"category" => category}), do: category
+  defp issue_category(%{category: category}), do: category
+  defp issue_category(_), do: nil
+
+  defp testing_strategy_present?(task), do: present_map?(fetch_field(task, :testing_strategy))
+  defp patterns_present?(task), do: present_string?(fetch_field(task, :patterns_to_follow))
+  defp pitfalls_present?(task), do: present_list?(fetch_field(task, :pitfalls))
+
+  defp fetch_field(task, key) do
+    Map.get(task, key) || Map.get(task, Atom.to_string(key))
+  end
+
+  defp present_map?(value) when is_map(value), do: map_size(value) > 0
+  defp present_map?(_), do: false
+
+  defp present_string?(value) when is_binary(value), do: String.trim(value) != ""
+  defp present_string?(_), do: false
+
+  defp present_list?(value) when is_list(value), do: value != []
+  defp present_list?(_), do: false
 
   defp reviewer_result(%{reviewer_result: %{} = result}), do: result
   defp reviewer_result(%{"reviewer_result" => %{} = result}), do: result

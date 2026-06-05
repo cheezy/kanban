@@ -324,7 +324,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
   end
 
   describe "skip-form / summary-only reviewer_result" do
-    test "renders the structured shell with just the summary when issues is absent" do
+    test "skip-form (dispatched:false) renders the structured shell without a misleading 'No issues'" do
       task = %{
         id: 5,
         identifier: "W5",
@@ -338,15 +338,16 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
 
-      # The panel now only renders an issue list — a skip-form sparse
-      # reviewer_result produces a structured-branch shell with the
-      # "No issues" placeholder.
+      # A skip-form keeps the structured branch, but with no issues[] list it
+      # renders an empty shell — never the misleading "No issues" placeholder,
+      # and never the reviewer summary (owned by the parent LiveView) (D59).
       assert html =~ ~s(data-review-report-panel="structured")
-      assert html =~ "data-review-report-issues-empty"
-      assert html =~ "No issues"
+      refute html =~ "data-review-report-issues-empty"
+      refute html =~ "No issues"
+      refute html =~ "Self-reviewed the diff"
     end
 
-    test "renders the structured shell even when reviewer_result has only a summary" do
+    test "thin dispatched result with only a summary is not structured (no report to suppress)" do
       task = %{
         id: 6,
         identifier: "W6",
@@ -359,9 +360,35 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
 
-      assert html =~ ~s(data-review-report-panel="structured")
-      # Summary text is no longer rendered inside the panel.
-      refute html =~ "Reviewer notes go here."
+      # A thin reviewer_result (no status/issues/acceptance/section) no longer
+      # wins the structured branch; with no review_report it renders nothing
+      # rather than a misleading "No issues" shell (D59).
+      refute html =~ "data-review-report-panel"
+      refute html =~ "No issues"
+      assert String.trim(html) == ""
+    end
+
+    test "thin dispatched result WITH a review_report falls through to the fallback markdown (D59)" do
+      task = %{
+        id: 7,
+        identifier: "W7",
+        reviewer_result: %{
+          "dispatched" => true,
+          "issues_found" => 2,
+          "summary" => "Two issues noted."
+        },
+        review_report: "### Review\n\nFound two issues that need attention."
+      }
+
+      html = render_with(task)
+
+      # The thin reviewer_result must NOT win the structured branch and
+      # suppress the report — it falls through to the markdown, and never
+      # shows "No issues".
+      assert html =~ ~s(data-review-report-panel="fallback")
+      refute html =~ ~s(data-review-report-panel="structured")
+      refute html =~ "No issues"
+      assert html =~ "Found two issues that need attention."
     end
   end
 

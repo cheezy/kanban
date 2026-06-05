@@ -243,4 +243,121 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.testing_strategy_passed(task) == true
     end
   end
+
+  describe "issues[]-category derivation (between structured and regex) (D59)" do
+    test "testing_strategy_passed is false when issues[] has a testing-category issue" do
+      task = %{
+        reviewer_result: %{
+          "issues" => [%{"category" => "testing", "severity" => "important"}]
+        },
+        review_report: nil,
+        testing_strategy: %{"unit_tests" => ["Test login"]}
+      }
+
+      assert ReviewReportHelpers.testing_strategy_passed(task) == false
+      assert ReviewReportHelpers.testing_strategy_value(task) == "failed"
+    end
+
+    test "testing_strategy_passed is true when issues[] has no testing issue and metadata is present" do
+      task = %{
+        reviewer_result: %{"issues" => [%{"category" => "pitfall"}]},
+        review_report: nil,
+        testing_strategy: %{"unit_tests" => ["Test login"]}
+      }
+
+      assert ReviewReportHelpers.testing_strategy_passed(task) == true
+      assert ReviewReportHelpers.testing_strategy_value(task) == "passed"
+    end
+
+    test "testing_strategy_passed is nil (not_assessed) when issues[] present but metadata absent" do
+      task = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        testing_strategy: %{}
+      }
+
+      assert ReviewReportHelpers.testing_strategy_passed(task) == nil
+      assert ReviewReportHelpers.testing_strategy_value(task) == "not assessed"
+    end
+
+    test "patterns derivation uses the 'pattern' category and patterns_to_follow metadata" do
+      failed = %{
+        reviewer_result: %{"issues" => [%{"category" => "pattern"}]},
+        review_report: nil,
+        patterns_to_follow: "Follow the context pattern"
+      }
+
+      passed = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        patterns_to_follow: "Follow the context pattern"
+      }
+
+      not_assessed = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        patterns_to_follow: ""
+      }
+
+      assert ReviewReportHelpers.patterns_passed(failed) == false
+      assert ReviewReportHelpers.patterns_passed(passed) == true
+      assert ReviewReportHelpers.patterns_passed(not_assessed) == nil
+    end
+
+    test "pitfalls derivation uses the 'pitfall' category and pitfalls metadata" do
+      failed = %{
+        reviewer_result: %{"issues" => [%{"category" => "pitfall"}]},
+        review_report: nil,
+        pitfalls: ["Don't query in the LiveView"]
+      }
+
+      passed = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        pitfalls: ["Don't query in the LiveView"]
+      }
+
+      not_assessed = %{reviewer_result: %{"issues" => []}, review_report: nil, pitfalls: []}
+
+      assert ReviewReportHelpers.pitfalls_passed(failed) == false
+      assert ReviewReportHelpers.pitfalls_passed(passed) == true
+      assert ReviewReportHelpers.pitfalls_passed(not_assessed) == nil
+    end
+
+    test "structured per-section status still wins over the issues[] derivation" do
+      task = %{
+        reviewer_result: %{
+          "testing_strategy" => %{"status" => "passed"},
+          "issues" => [%{"category" => "testing"}]
+        },
+        review_report: nil,
+        testing_strategy: %{"unit_tests" => ["x"]}
+      }
+
+      # Explicit section status takes precedence over the derived failure.
+      assert ReviewReportHelpers.testing_strategy_passed(task) == true
+    end
+
+    test "does not fall through to regex when reviewer_result carries an issues[] list" do
+      task = %{
+        reviewer_result: %{"issues" => []},
+        review_report: "### Required test cases\n\n- Login",
+        testing_strategy: %{}
+      }
+
+      # issues[] present + no testing issue + no metadata → not_assessed,
+      # never the regex-derived "reviewed"/"all present".
+      assert ReviewReportHelpers.testing_strategy_passed(task) == nil
+    end
+
+    test "string-keyed metadata fields are recognized for presence" do
+      task = %{
+        "reviewer_result" => %{"issues" => []},
+        "review_report" => nil,
+        "pitfalls" => ["Avoid N+1"]
+      }
+
+      assert ReviewReportHelpers.pitfalls_passed(task) == true
+    end
+  end
 end

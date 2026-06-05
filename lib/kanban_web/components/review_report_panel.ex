@@ -71,10 +71,10 @@ defmodule KanbanWeb.ReviewReportPanel do
   attr :reviewer_result, :map, required: true
 
   defp structured_view(assigns) do
-    assigns = assign(assigns, :issues, Map.get(assigns.reviewer_result, "issues", []))
+    assigns = assign(assigns, :issues, Map.get(assigns.reviewer_result, "issues"))
 
     ~H"""
-    <.issue_list issues={@issues} />
+    <.issue_list :if={is_list(@issues)} issues={@issues} />
     """
   end
 
@@ -167,10 +167,41 @@ defmodule KanbanWeb.ReviewReportPanel do
   # tasks visible after wiring into ReviewLive.
   defp structured?(task) do
     case reviewer_result(task) do
-      %{} = result -> map_size(result) > 0
+      %{} = result -> rich_content?(result) or skip_form?(result)
       _ -> false
     end
   end
+
+  # Rich structured content the panel can render or trust directly: a verdict
+  # status, a schema_version, an issue_counts map, a list of issues, an
+  # acceptance-criteria list, or a per-section verdict object — i.e. the
+  # structured reviewer schema. A thin/legacy reviewer_result (e.g.
+  # %{"dispatched" => true, "issues_found" => 2}, only scalar counts and a
+  # prose summary) has NONE of these and must NOT win the structured branch —
+  # it falls through to the legacy review_report markdown (fallback) instead of
+  # rendering "No issues" and suppressing the report (D59).
+  defp rich_content?(result) do
+    is_binary(Map.get(result, "status")) or
+      is_binary(Map.get(result, "schema_version")) or
+      is_map(Map.get(result, "issue_counts")) or
+      is_list(Map.get(result, "issues")) or
+      is_list(Map.get(result, "acceptance_criteria")) or
+      section_verdict?(result)
+  end
+
+  defp section_verdict?(result) do
+    Enum.any?(["testing_strategy", "patterns", "pitfalls"], fn key ->
+      case Map.get(result, key) do
+        %{"status" => status} when is_binary(status) -> true
+        _ -> false
+      end
+    end)
+  end
+
+  # A skipped review (dispatched: false) keeps the structured branch so its
+  # summary still renders (never collapses to "No issues").
+  defp skip_form?(%{"dispatched" => false}), do: true
+  defp skip_form?(_), do: false
 
   defp fallback?(task) do
     report = review_report(task)

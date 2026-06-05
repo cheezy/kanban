@@ -681,7 +681,7 @@ defmodule KanbanWeb.ReviewLive do
   # Reviewer ran — pick between the clean-pass and issues-found rendering.
   defp reviewer_acceptance_value(task, total) do
     checked = checked_count(task, total)
-    n_issues = issues_found(task) || 0
+    n_issues = displayable_issues_count(task)
 
     if n_issues > 0 do
       ngettext(
@@ -812,6 +812,14 @@ defmodule KanbanWeb.ReviewLive do
 
   defp issues_found(%{reviewer_result: %{"issues_found" => n}}) when is_integer(n), do: n
   defp issues_found(_), do: nil
+
+  # Prefer the count of displayable structured issues so the header never
+  # advertises "N issues" with no corresponding issue list. Falls back to the
+  # legacy scalar issues_found only when no structured issues[] is present (D59).
+  defp displayable_issues_count(%{reviewer_result: %{"issues" => issues}}) when is_list(issues),
+    do: length(issues)
+
+  defp displayable_issues_count(task), do: issues_found(task) || 0
 
   defp checked_count(%{reviewer_result: %{"acceptance_criteria_checked" => n}}, _total)
        when is_integer(n),
