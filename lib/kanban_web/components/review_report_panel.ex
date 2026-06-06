@@ -190,7 +190,7 @@ defmodule KanbanWeb.ReviewReportPanel do
   end
 
   defp section_verdict?(result) do
-    Enum.any?(["testing_strategy", "patterns", "pitfalls"], fn key ->
+    Enum.any?(["testing_strategy", "patterns", "pitfalls", "security_considerations"], fn key ->
       case Map.get(result, key) do
         %{"status" => status} when is_binary(status) -> true
         _ -> false

@@ -3,7 +3,8 @@ defmodule KanbanWeb.ReviewReportHelpers do
   Regex-based extractors for the legacy markdown `review_report` field on a
   task. Centralises the parsing logic so both `KanbanWeb.ReviewLive` and the
   shared `KanbanWeb.ReviewReportPanel` component can derive the testing,
-  patterns, and pitfalls verdict cells from the same source of truth.
+  patterns, pitfalls, and security-considerations verdict cells from the same
+  source of truth.
 
   Every function is pure. Pass a map that may contain a `:review_report`
   string key (the LiveView struct) or a binary `"review_report"` key (raw
@@ -156,6 +157,43 @@ defmodule KanbanWeb.ReviewReportHelpers do
     end
   end
 
+  @doc """
+  Human-readable value for the security-considerations verdict cell. Prefers
+  structured `reviewer_result["security_considerations"]["status"]` when
+  present; otherwise derives a verdict from the categorized `issues` list.
+  Returns a localized string or `nil` — there is no legacy `review_report`
+  regex section for security considerations, so a thin/legacy payload yields
+  `nil` and the caller renders an em-dash default.
+  """
+  def security_considerations_value(task) do
+    case structured_or_derived(
+           task,
+           "security_considerations",
+           "security",
+           security_considerations_present?(task)
+         ) do
+      nil -> nil
+      status -> structured_status_label(status)
+    end
+  end
+
+  @doc """
+  Tone toggle for the security-considerations verdict cell. Prefers the
+  structured field, otherwise derives from the issues list. Returns
+  `true`/`false`/`nil`, keeping neutral (`nil`) tone for absent verdicts.
+  """
+  def security_considerations_passed(task) do
+    case structured_or_derived(
+           task,
+           "security_considerations",
+           "security",
+           security_considerations_present?(task)
+         ) do
+      nil -> nil
+      status -> structured_status_passed(status)
+    end
+  end
+
   # --- Structured-field lookup --------------------------------------------
 
   defp structured_section_status(task, key) do
@@ -209,6 +247,9 @@ defmodule KanbanWeb.ReviewReportHelpers do
   defp testing_strategy_present?(task), do: present_map?(fetch_field(task, :testing_strategy))
   defp patterns_present?(task), do: present_string?(fetch_field(task, :patterns_to_follow))
   defp pitfalls_present?(task), do: present_list?(fetch_field(task, :pitfalls))
+
+  defp security_considerations_present?(task),
+    do: present_list?(fetch_field(task, :security_considerations))
 
   defp fetch_field(task, key) do
     Map.get(task, key) || Map.get(task, Atom.to_string(key))

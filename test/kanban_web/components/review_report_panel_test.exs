@@ -390,6 +390,25 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       refute html =~ "No issues"
       assert html =~ "Found two issues that need attention."
     end
+
+    test "reviewer_result carrying only a security_considerations verdict wins the structured branch" do
+      task = %{
+        id: 8,
+        identifier: "W8",
+        reviewer_result: %{
+          "dispatched" => true,
+          "security_considerations" => %{"status" => "passed"}
+        },
+        review_report: nil
+      }
+
+      html = render_with(task)
+
+      # section_verdict?/1 now recognizes "security_considerations", so a
+      # result carrying only that verdict still wins the structured branch
+      # rather than rendering an empty shell.
+      assert html =~ ~s(data-review-report-panel="structured")
+    end
   end
 
   describe "mixed legacy + structured fields" do

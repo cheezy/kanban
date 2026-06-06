@@ -46,6 +46,29 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.pitfalls_value(task) == "passed"
       assert ReviewReportHelpers.pitfalls_passed(task) == true
     end
+
+    test "security_considerations_value prefers reviewer_result.security_considerations.status" do
+      task = %{
+        reviewer_result: %{"security_considerations" => %{"status" => "passed"}},
+        review_report: nil
+      }
+
+      assert ReviewReportHelpers.security_considerations_value(task) == "passed"
+    end
+
+    test "security_considerations_passed reflects structured status" do
+      assert ReviewReportHelpers.security_considerations_passed(%{
+               reviewer_result: %{"security_considerations" => %{"status" => "passed"}}
+             }) == true
+
+      assert ReviewReportHelpers.security_considerations_passed(%{
+               reviewer_result: %{"security_considerations" => %{"status" => "failed"}}
+             }) == false
+
+      assert ReviewReportHelpers.security_considerations_passed(%{
+               reviewer_result: %{"security_considerations" => %{"status" => "not_assessed"}}
+             }) == nil
+    end
   end
 
   describe "regex fallback when no structured field" do
@@ -100,6 +123,8 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.patterns_passed(task) == nil
       assert ReviewReportHelpers.pitfalls_value(task) == nil
       assert ReviewReportHelpers.pitfalls_passed(task) == nil
+      assert ReviewReportHelpers.security_considerations_value(task) == nil
+      assert ReviewReportHelpers.security_considerations_passed(task) == nil
     end
   end
 
@@ -322,6 +347,33 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.pitfalls_passed(failed) == false
       assert ReviewReportHelpers.pitfalls_passed(passed) == true
       assert ReviewReportHelpers.pitfalls_passed(not_assessed) == nil
+    end
+
+    test "security_considerations derivation uses the 'security' category and security_considerations metadata" do
+      failed = %{
+        reviewer_result: %{"issues" => [%{"category" => "security"}]},
+        review_report: nil,
+        security_considerations: ["Scope queries to current user"]
+      }
+
+      passed = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        security_considerations: ["Scope queries to current user"]
+      }
+
+      not_assessed = %{
+        reviewer_result: %{"issues" => []},
+        review_report: nil,
+        security_considerations: []
+      }
+
+      assert ReviewReportHelpers.security_considerations_passed(failed) == false
+      assert ReviewReportHelpers.security_considerations_value(failed) == "failed"
+      assert ReviewReportHelpers.security_considerations_passed(passed) == true
+      assert ReviewReportHelpers.security_considerations_value(passed) == "passed"
+      assert ReviewReportHelpers.security_considerations_passed(not_assessed) == nil
+      assert ReviewReportHelpers.security_considerations_value(not_assessed) == "not assessed"
     end
 
     test "structured per-section status still wins over the issues[] derivation" do
