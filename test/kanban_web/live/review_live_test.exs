@@ -1207,6 +1207,96 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "security considerations area" do
+    setup [:register_and_log_in_user]
+
+    test "renders the area with a passed verdict and the reviewer note",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "security_considerations" => %{
+              "status" => "passed",
+              "note" => "Query scoped to the current user; no new input surface."
+            }
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-security-considerations"
+      assert html =~ ~s(data-review-security-status="passed")
+      assert html =~ "Security considerations"
+      assert html =~ "passed"
+      assert html =~ "data-review-security-note"
+      assert html =~ "Query scoped to the current user; no new input surface."
+    end
+
+    test "renders a failed verdict tone and omits the note when absent",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "changes_requested",
+            "security_considerations" => %{"status" => "failed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-security-status="failed")
+      assert html =~ "var(--st-blocked)"
+      refute html =~ "data-review-security-note"
+    end
+
+    test "renders a neutral not_assessed verdict",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "security_considerations" => %{"status" => "not_assessed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-security-status="not_assessed")
+      assert html =~ "not assessed"
+    end
+
+    test "derives a passed verdict from an empty issues list plus security metadata",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          security_considerations: ["Scope queries to the current user"],
+          reviewer_result: %{"dispatched" => true, "status" => "approved", "issues" => []}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-security-status="passed")
+      assert html =~ "data-review-security-considerations"
+    end
+
+    test "hides the area when no security verdict can be derived",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{review_report: nil, reviewer_result: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-security-considerations"
+    end
+  end
+
   describe "completion summary panel" do
     setup [:register_and_log_in_user]
 

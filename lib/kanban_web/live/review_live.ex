@@ -360,6 +360,50 @@ defmodule KanbanWeb.ReviewLive do
               </section>
 
               <section
+                :if={ReviewReportHelpers.security_considerations_value(@selected)}
+                data-review-security-considerations
+                data-review-security-status={security_status_key(@selected)}
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 6px;"
+                ]}
+              >
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Security considerations")}
+                </span>
+                <span
+                  data-review-security-pill
+                  style={[
+                    "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
+                    "padding: 2px 10px; border-radius: 999px;",
+                    "font-size: 12px; font-weight: 600; text-transform: capitalize;",
+                    security_tone_style(ReviewReportHelpers.security_considerations_passed(@selected))
+                  ]}
+                >
+                  <.icon
+                    name={
+                      security_icon(ReviewReportHelpers.security_considerations_passed(@selected))
+                    }
+                    class="w-4 h-4"
+                  />
+                  {ReviewReportHelpers.security_considerations_value(@selected)}
+                </span>
+                <p
+                  :if={security_considerations_note(@selected)}
+                  data-review-security-note
+                  style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
+                >
+                  {security_considerations_note(@selected)}
+                </p>
+              </section>
+
+              <section
                 data-review-acceptance
                 style={[
                   "margin: 12px 16px 0; padding: 10px 12px;",
@@ -662,6 +706,50 @@ defmodule KanbanWeb.ReviewLive do
   defp derive_review_status(%{reviewer_result: %{"dispatched" => true}}), do: :unavailable
 
   defp derive_review_status(_), do: nil
+
+  # Maps the security_considerations verdict tone to the same soft-background /
+  # ink token pairs the review status pill uses, so the area stays legible in
+  # both light and dark mode (the tokens have per-theme definitions in app.css).
+  defp security_tone_style(true) do
+    "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
+      "color: var(--st-done, oklch(50% 0.14 155));"
+  end
+
+  defp security_tone_style(false) do
+    "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
+      "color: var(--st-blocked, oklch(50% 0.18 25));"
+  end
+
+  defp security_tone_style(_), do: "background: var(--surface-2); color: var(--ink-2);"
+
+  defp security_icon(false), do: "hero-shield-exclamation"
+  defp security_icon(_), do: "hero-shield-check"
+
+  # A stable status key for the data attribute / tests, derived from the same
+  # pass/fail/neutral semantics as the helpers (nil tone => not_assessed, only
+  # reached when a verdict value is present so the section renders).
+  defp security_status_key(task) do
+    case ReviewReportHelpers.security_considerations_passed(task) do
+      true -> "passed"
+      false -> "failed"
+      _ -> "not_assessed"
+    end
+  end
+
+  # Reads the reviewer's one-line security rationale. The reviewer agent emits
+  # the key as "note" (singular); returns nil for absent/blank/non-string notes
+  # so the paragraph is omitted rather than rendering empty.
+  defp security_considerations_note(%{
+         reviewer_result: %{"security_considerations" => %{"note" => note}}
+       })
+       when is_binary(note) do
+    case String.trim(note) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp security_considerations_note(_), do: nil
 
   defp acceptance_value(task) do
     total = task.acceptance_criteria |> parse_lines() |> length()
