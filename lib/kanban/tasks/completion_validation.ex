@@ -162,6 +162,12 @@ defmodule Kanban.Tasks.CompletionValidation do
     )
     |> check_section_verdict(result, "patterns", :patterns_status, :patterns_entry)
     |> check_section_verdict(result, "pitfalls", :pitfalls_status, :pitfalls_entry)
+    |> check_section_verdict(
+      result,
+      "security_considerations",
+      :security_considerations_status,
+      :security_considerations_entry
+    )
     |> check_schema_version(result)
   end
 

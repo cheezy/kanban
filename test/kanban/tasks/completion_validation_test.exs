@@ -436,6 +436,67 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert error_for(errors, :pitfalls_status)
     end
 
+    test "accepts well-formed security_considerations verdict with notes" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "notes" => "Move query scoped to the current user's board; no new input surface."
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts not_assessed status for security_considerations" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{"status" => "not_assessed"})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects malformed status in security_considerations" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{"status" => "ok"})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :security_considerations_status)
+      assert msg =~ "security_considerations"
+      assert msg =~ "passed, failed, not_assessed"
+    end
+
+    test "rejects security_considerations verdict that is not a map" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", "all good")
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :security_considerations_entry)
+      assert msg =~ "must be a map"
+    end
+
+    test "rejects security_considerations verdict missing status" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{"notes" => "ok"})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :security_considerations_status)
+      assert msg =~ "missing status"
+    end
+
+    test "rejects non-string notes for security_considerations" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "notes" => 42
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :notes)
+      assert msg =~ "security_considerations.notes"
+    end
+
+    test "absent security_considerations verdict still validates (optional)" do
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(base_reviewer_payload())
+    end
+
     test "rejects section verdict that is not a map" do
       payload = Map.put(base_reviewer_payload(), "testing_strategy", "all good")
       assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
@@ -494,6 +555,10 @@ defmodule Kanban.Tasks.CompletionValidationTest do
         |> Map.put("testing_strategy", %{"status" => "passed", "notes" => "5 cases"})
         |> Map.put("patterns", %{"status" => "passed"})
         |> Map.put("pitfalls", %{"status" => "passed", "notes" => "none violated"})
+        |> Map.put("security_considerations", %{
+          "status" => "passed",
+          "notes" => "no new attack surface"
+        })
         |> Map.put("issues", [%{"severity" => "minor", "category" => "code_quality"}])
         |> Map.put("acceptance_criteria", [%{"criterion" => "X", "status" => "met"}])
 
