@@ -6,12 +6,14 @@ defmodule KanbanWeb.ReviewReportPanel do
   Three render branches, gated on the task's `reviewer_result` and
   `review_report` fields:
 
-    * **Structured** — when `reviewer_result["issues"]` is a list. Renders
-      the status banner, prose summary, severity-grouped issue list,
-      acceptance-criteria grid, and three section-verdict tiles
-      (testing strategy, patterns, pitfalls) sourced directly from the
-      structured payload. Emits the `[:kanban, :review, :structured_used]`
-      telemetry event so the rollout can confirm the new path is reached.
+    * **Structured** — when the payload carries structured content. Renders
+      the reviewer's prose summary, the severity-grouped issue list, and the
+      `review_report` markdown body (D62) sourced from the structured payload.
+      The status pill, acceptance-criteria grid, and the per-section verdict
+      tiles (testing strategy, patterns, pitfalls, security considerations) are
+      owned by `ReviewLive`, not this panel. Emits the
+      `[:kanban, :review, :structured_used]` telemetry event so the rollout can
+      confirm the new path is reached.
 
     * **Fallback** — when `reviewer_result["issues"]` is absent but the
       legacy `review_report` markdown is present. Reuses
@@ -58,7 +60,7 @@ defmodule KanbanWeb.ReviewReportPanel do
     >
       <%= case @branch do %>
         <% :structured -> %>
-          <.structured_view reviewer_result={@reviewer_result} />
+          <.structured_view reviewer_result={@reviewer_result} review_report={@review_report} />
         <% :fallback -> %>
           <.fallback_view task={@task} review_report={@review_report} />
       <% end %>
@@ -69,12 +71,38 @@ defmodule KanbanWeb.ReviewReportPanel do
   # --- Structured branch ---------------------------------------------------
 
   attr :reviewer_result, :map, required: true
+  attr :review_report, :string, default: nil
 
+  # The structured branch now surfaces the reviewer's narrative — the summary
+  # and the longer review_report body — alongside the issue list. Previously it
+  # rendered only the issue list, so an approved review with no issues showed
+  # just "No issues" and the write-up was invisible (D62). The summary is
+  # rendered as escaped text; the report body reuses render_markdown/1 exactly
+  # as the fallback branch does (and the two branches are mutually exclusive, so
+  # the body is never rendered twice).
   defp structured_view(assigns) do
-    assigns = assign(assigns, :issues, Map.get(assigns.reviewer_result, "issues"))
+    assigns =
+      assigns
+      |> assign(:issues, Map.get(assigns.reviewer_result, "issues"))
+      |> assign(:summary, Map.get(assigns.reviewer_result, "summary"))
+      |> assign(:report_html, render_markdown(assigns.review_report))
 
     ~H"""
+    <p
+      :if={is_binary(@summary) and @summary != ""}
+      data-review-report-summary
+      class="text-sm text-base-content mb-3"
+    >
+      {@summary}
+    </p>
     <.issue_list :if={is_list(@issues)} issues={@issues} />
+    <div
+      :if={@report_html != ""}
+      data-review-report-body
+      class="prose prose-sm max-w-none text-base-content mt-3"
+    >
+      {Phoenix.HTML.raw(@report_html)}
+    </div>
     """
   end
 

@@ -1170,10 +1170,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Review report"
       assert result =~ ~s(data-review-report-panel="structured")
-      # The reviewer's prose summary moved out of the panel — only the
-      # issue list remains. The panel mounts with an empty body since the
-      # fixture has no issues; the data-attr above confirms wiring.
-      refute result =~ "Reviewed all acceptance criteria; approved."
+      # The reviewer's prose summary now renders inside the panel (D62) so a
+      # completed/approved review is not reduced to a bare issue list.
+      assert result =~ "data-review-report-summary"
+      assert result =~ "Reviewed all acceptance criteria; approved."
     end
 
     test "does not display review_report section when review_report is nil", %{task: task} do

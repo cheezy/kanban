@@ -73,14 +73,15 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ ~s(data-review-report-panel="structured")
     end
 
-    test "no longer renders the status banner or reviewer summary — those are owned by the parent LiveView",
+    test "renders the reviewer summary but not the status banner (the status pill stays in the parent LiveView) (D62)",
          %{task: task} do
-      # The status pill lives next to `summary_text` in `ReviewLive` and
-      # the reviewer summary is not needed once the panel is dedicated to
-      # the Issues section.
+      # The status pill still lives next to `summary_text` in `ReviewLive`, but
+      # the reviewer's own summary is now surfaced in the panel so an approved
+      # review is not reduced to a bare "No issues".
       html = render_with(task)
       refute html =~ "data-review-report-status"
-      refute html =~ "Reviewed all the things"
+      assert html =~ "data-review-report-summary"
+      assert html =~ "Reviewed all the things"
     end
 
     test "renders severity-grouped issue list with critical first", %{task: task} do
@@ -324,7 +325,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
   end
 
   describe "skip-form / summary-only reviewer_result" do
-    test "skip-form (dispatched:false) renders the structured shell without a misleading 'No issues'" do
+    test "skip-form (dispatched:false) renders its summary and the structured shell without a misleading 'No issues' (D62)" do
       task = %{
         id: 5,
         identifier: "W5",
@@ -338,13 +339,39 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
 
-      # A skip-form keeps the structured branch, but with no issues[] list it
-      # renders an empty shell — never the misleading "No issues" placeholder,
-      # and never the reviewer summary (owned by the parent LiveView) (D59).
+      # A skip-form keeps the structured branch; with no issues[] list it never
+      # shows the misleading "No issues" placeholder, but it now surfaces its
+      # own summary so the self-review reasoning is visible (D62).
       assert html =~ ~s(data-review-report-panel="structured")
       refute html =~ "data-review-report-issues-empty"
       refute html =~ "No issues"
-      refute html =~ "Self-reviewed the diff"
+      assert html =~ "data-review-report-summary"
+      assert html =~ "Self-reviewed the diff"
+    end
+
+    test "an approved review with zero issues shows its summary and report body, not only 'No issues' (D62)" do
+      task = %{
+        id: 7,
+        identifier: "W7",
+        reviewer_result: %{
+          "dispatched" => true,
+          "schema_version" => "1.3",
+          "status" => "approved",
+          "summary" => "Reviewed 3 acceptance criteria; all met.",
+          "issues" => []
+        },
+        review_report: "## Review\n\nApproved — the change is clean and well-tested."
+      }
+
+      html = render_with(task)
+
+      assert html =~ ~s(data-review-report-panel="structured")
+      assert html =~ "data-review-report-summary"
+      assert html =~ "Reviewed 3 acceptance criteria; all met."
+      assert html =~ "data-review-report-body"
+      assert html =~ "well-tested"
+      # Zero issues still shows the empty-issues note alongside the narrative.
+      assert html =~ "data-review-report-issues-empty"
     end
 
     test "thin dispatched result with only a summary is not structured (no report to suppress)" do
@@ -449,8 +476,9 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
       assert html =~ ~s(data-review-report-panel="structured")
-      # String-keyed reviewer summaries are no longer rendered in the panel.
-      refute html =~ "String-keyed task"
+      # String-keyed reviewer summaries render in the panel (D62).
+      assert html =~ "data-review-report-summary"
+      assert html =~ "String-keyed task"
     end
 
     test "fallback branch reads review_report through string keys" do
@@ -559,10 +587,9 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ "No category at all"
     end
 
-    test "arbitrary binary statuses no longer surface inside the panel" do
-      # The panel used to render the verbatim status string; with the
-      # status pill moved up to the LiveView, an arbitrary "in_review"
-      # value should NOT leak into the panel HTML at all.
+    test "arbitrary binary statuses do not surface inside the panel, but the summary does (D62)" do
+      # The status pill stays in the LiveView, so the raw status string never
+      # leaks into the panel HTML — but the reviewer summary now renders.
       task = %{
         id: 22,
         identifier: "W22",
@@ -574,7 +601,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
 
       html = render_with(task)
       refute html =~ "in_review"
-      refute html =~ "Custom status"
+      assert html =~ "Custom status"
     end
   end
 end
