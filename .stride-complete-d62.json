@@ -45,11 +45,9 @@
     "security_considerations": {"status": "passed", "note": "Summary is HEEx-escaped text; body uses Earmark which escapes raw HTML, verified a script payload renders as escaped entities, so no new injection surface is added."}
   },
   "workflow_steps": [
-    {"name": "claim", "duration_ms": 2000},
-    {"name": "explore", "duration_ms": 30000},
-    {"name": "implement", "duration_ms": 600000},
-    {"name": "review", "duration_ms": 115446},
-    {"name": "test", "duration_ms": 36000},
-    {"name": "complete", "duration_ms": 5000}
+    {"name": "explorer", "duration_ms": 30000},
+    {"name": "planner", "reason": "Small-complexity defect with a single key file; planning not required by the decision matrix."},
+    {"name": "reviewer", "duration_ms": 115446},
+    {"name": "decomposer", "reason": "Not a goal or large undecomposed task; decomposition not applicable."}
   ]
 }
