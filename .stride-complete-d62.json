@@ -1,6 +1,9 @@
 {
   "agent_name": "Claude Opus 4.8",
   "time_spent_minutes": 35,
+  "actual_complexity": "small",
+  "actual_files_changed": "lib/kanban_web/components/review_report_panel.ex\ntest/kanban_web/components/review_report_panel_test.exs\ntest/kanban_web/live/task_live/view_component_test.exs",
+  "completion_summary": "Rendered the reviewer summary and the review_report markdown body in the structured branch of the shared review report panel, so approved zero-issue reviews no longer collapse to a bare No issues line. Branches stay mutually exclusive so the body renders once. Updated and added tests; mix precommit green. Changes left uncommitted per operator instruction.",
   "after_doing_result": {
     "exit_code": 0,
     "duration_ms": 36000,
@@ -42,11 +45,11 @@
     "security_considerations": {"status": "passed", "note": "Summary is HEEx-escaped text; body uses Earmark which escapes raw HTML, verified a script payload renders as escaped entities, so no new injection surface is added."}
   },
   "workflow_steps": [
-    {"step": "claim", "status": "completed", "note": "Claimed D62 and ran before_doing."},
-    {"step": "explore", "status": "completed", "note": "Located the structured branch, render_markdown helper, and affected test suites."},
-    {"step": "implement", "status": "completed", "note": "Rendered the reviewer summary and report body in the structured branch and refreshed the moduledoc."},
-    {"step": "test", "status": "completed", "note": "Updated two tests, added one new test, corrected one view component test."},
-    {"step": "review", "status": "completed", "note": "task-reviewer approved with one minor nit, which was fixed."},
-    {"step": "complete", "status": "completed", "note": "mix precommit green; changes left uncommitted per operator instruction."}
+    {"name": "claim", "duration_ms": 2000},
+    {"name": "explore", "duration_ms": 30000},
+    {"name": "implement", "duration_ms": 600000},
+    {"name": "review", "duration_ms": 115446},
+    {"name": "test", "duration_ms": 36000},
+    {"name": "complete", "duration_ms": 5000}
   ]
 }
