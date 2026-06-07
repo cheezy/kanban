@@ -551,9 +551,13 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   def put_changed_files(conn, %{"id" => id_or_identifier} = params) do
-    # Accept both the wrapped {changed_files: [...]} shape (canonical) and a
-    # top-level JSON array body (which Plug.Parsers routes to _json). The
-    # latter accommodates older or misshaped plugin payloads.
+    # Accept the wrapped {changed_files: [...]} shape (canonical), a top-level
+    # JSON array body (which Plug.Parsers routes to _json, accommodating older
+    # or misshaped plugin payloads), and the transport-encoded envelope
+    # {changed_files: {encoding: "base64"|"gzip+base64", data: "..."}} (D61).
+    # The encoded form lets a unified code diff upload even when an edge filter
+    # would otherwise misread the raw text as an attack; it is decoded back to
+    # the same list the raw shapes carry (see decode_changed_files_payload/1).
     payload = params["changed_files"] || params["_json"]
 
     case persist_changed_files(conn, id_or_identifier, payload) do
@@ -568,7 +572,7 @@ defmodule KanbanWeb.API.TaskController do
 
     with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
          :ok <- authorize_changed_files(task, user),
-         {:ok, value} <- validate_changed_files_payload(payload),
+         {:ok, value} <- decode_and_validate_changed_files(payload),
          {:ok, updated} <- Tasks.update_changed_files(task, value) do
       {:ok, updated, value}
     end
@@ -622,6 +626,115 @@ defmodule KanbanWeb.API.TaskController do
         ]
       }
     }
+  end
+
+  # --- Transport-encoded changed_files payload (D61) -----------------------
+  #
+  # The diff snapshot may arrive base64- or gzip+base64-encoded so an edge
+  # request filter does not misread a unified code diff as an attack and drop
+  # the upload. The encoded form is an envelope wrapping the same JSON array the
+  # raw shape sends:
+  #
+  #     {"changed_files": {"encoding": "base64", "data": "<base64 of the array>"}}
+  #
+  # The decoded bytes are validated and persisted by the existing path, so the
+  # encoded form is purely additive. A raw list, nil, or any other shape passes
+  # straight through for the validator to handle exactly as before.
+
+  # Caps guarding against an oversized or decompression-bomb upload before it
+  # reaches the validator. The downstream 500-line-per-file rule bounds content
+  # further; these bound the raw transport bytes.
+  @max_decoded_changed_files_bytes 5_000_000
+  @max_encoded_changed_files_bytes 10_000_000
+
+  defp decode_and_validate_changed_files(payload) do
+    with {:ok, decoded} <- decode_changed_files_payload(payload) do
+      validate_changed_files_payload(decoded)
+    end
+  end
+
+  defp decode_changed_files_payload(%{"encoding" => encoding, "data" => data})
+       when is_binary(encoding) and is_binary(data) do
+    with {:ok, raw} <- decode_transport(encoding, data) do
+      decode_json_array(raw)
+    end
+  end
+
+  defp decode_changed_files_payload(payload), do: {:ok, payload}
+
+  defp decode_transport(_encoding, data)
+       when byte_size(data) > @max_encoded_changed_files_bytes,
+       do: changed_files_decode_error("encoded data exceeds the maximum allowed size")
+
+  defp decode_transport("base64", data) do
+    case Base.decode64(data) do
+      {:ok, bin} -> {:ok, bin}
+      :error -> changed_files_decode_error("data is not valid base64")
+    end
+  end
+
+  defp decode_transport("gzip+base64", data) do
+    case Base.decode64(data) do
+      {:ok, gzipped} -> gunzip_changed_files(gzipped)
+      :error -> changed_files_decode_error("data is not valid base64")
+    end
+  end
+
+  defp decode_transport(_encoding, _data),
+    do:
+      changed_files_decode_error("unsupported changed_files encoding (use base64 or gzip+base64)")
+
+  # Inflate gzip data incrementally, aborting as soon as the cumulative
+  # decompressed size exceeds the cap. A one-shot :zlib.gunzip/1 would inflate
+  # the entire payload into memory first, so a small high-ratio "bomb" could
+  # allocate gigabytes before the downstream size guard ever ran. The streaming
+  # loop bounds peak memory to the cap.
+  defp gunzip_changed_files(gzipped) do
+    z = :zlib.open()
+
+    try do
+      :zlib.inflateInit(z, 31)
+      bounded_inflate(z, :zlib.safeInflate(z, gzipped), [], 0)
+    rescue
+      _ -> changed_files_decode_error("data is not valid gzip")
+    catch
+      _, _ -> changed_files_decode_error("data is not valid gzip")
+    after
+      :zlib.close(z)
+    end
+  end
+
+  defp bounded_inflate(z, {status, output}, acc, size) do
+    size = size + IO.iodata_length(output)
+
+    cond do
+      size > @max_decoded_changed_files_bytes ->
+        changed_files_decode_error("decoded payload exceeds the maximum allowed size")
+
+      status == :continue ->
+        bounded_inflate(z, :zlib.safeInflate(z, []), [acc | [output]], size)
+
+      true ->
+        {:ok, IO.iodata_to_binary([acc | [output]])}
+    end
+  end
+
+  defp decode_json_array(raw)
+       when byte_size(raw) > @max_decoded_changed_files_bytes,
+       do: changed_files_decode_error("decoded payload exceeds the maximum allowed size")
+
+  defp decode_json_array(raw) do
+    case Jason.decode(raw) do
+      {:ok, list} when is_list(list) -> {:ok, list}
+      {:ok, _other} -> changed_files_decode_error("decoded payload is not a JSON array")
+      {:error, _} -> changed_files_decode_error("decoded payload is not valid JSON")
+    end
+  end
+
+  defp changed_files_decode_error(message) do
+    {:error,
+     {:completion_validation_failed,
+      build_changed_files_failure_body([{:changed_files, message}])}}
   end
 
   def unclaim(conn, %{"id" => id_or_identifier} = params) do

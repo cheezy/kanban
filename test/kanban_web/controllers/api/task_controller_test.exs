@@ -2947,6 +2947,111 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert [%{"path" => "lib/bare.ex"}] = reloaded.changed_files
     end
 
+    test "accepts a base64-encoded changed_files envelope (D61)", %{conn: conn, task: task} do
+      entries = [
+        %{
+          "path" => "lib/kanban/tasks/goals.ex",
+          "diff" => "@@ -1 +1 @@\n-old line\n+new line a == b"
+        }
+      ]
+
+      payload = %{
+        "changed_files" => %{
+          "encoding" => "base64",
+          "data" => entries |> Jason.encode!() |> Base.encode64()
+        }
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert [entry] = response["changed_files"]
+      assert entry["path"] == "lib/kanban/tasks/goals.ex"
+      assert entry["diff"] =~ "new line a == b"
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [%{"path" => "lib/kanban/tasks/goals.ex"}] = reloaded.changed_files
+    end
+
+    test "accepts a gzip+base64-encoded changed_files envelope (D61)",
+         %{conn: conn, task: task} do
+      entries = [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}]
+
+      payload = %{
+        "changed_files" => %{
+          "encoding" => "gzip+base64",
+          "data" => entries |> Jason.encode!() |> :zlib.gzip() |> Base.encode64()
+        }
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert [%{"path" => "lib/foo.ex"}] = response["changed_files"]
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [%{"path" => "lib/foo.ex"}] = reloaded.changed_files
+    end
+
+    test "rejects an encoded envelope whose data is not valid base64 (D61)",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => %{"encoding" => "base64", "data" => "not valid base64 !!!"}}
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      assert json_response(conn, 422)["error"] == "completion validation failed"
+    end
+
+    test "rejects an unsupported changed_files encoding (D61)", %{conn: conn, task: task} do
+      payload = %{
+        "changed_files" => %{
+          "encoding" => "rot13",
+          "data" => [%{"path" => "lib/foo.ex"}] |> Jason.encode!() |> Base.encode64()
+        }
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      assert json_response(conn, 422)["error"] == "completion validation failed"
+    end
+
+    test "rejects an encoded payload that does not decode to a JSON array (D61)",
+         %{conn: conn, task: task} do
+      payload = %{
+        "changed_files" => %{
+          "encoding" => "base64",
+          "data" => %{"not" => "an array"} |> Jason.encode!() |> Base.encode64()
+        }
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      assert json_response(conn, 422)["error"] == "completion validation failed"
+    end
+
+    test "rejects a gzip+base64 envelope whose data is not valid gzip (D61)",
+         %{conn: conn, task: task} do
+      payload = %{
+        "changed_files" => %{
+          "encoding" => "gzip+base64",
+          "data" => Base.encode64("valid base64 but not gzip")
+        }
+      }
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      assert json_response(conn, 422)["error"] == "completion validation failed"
+    end
+
+    test "rejects a gzip decompression bomb, aborting before it inflates past the cap (D61)",
+         %{conn: conn, task: task} do
+      # A few-KB encoded body that inflates to ~6 MB — over the decoded-size cap.
+      # The streaming inflate must abort at the cap rather than allocating it all.
+      bomb = "A" |> String.duplicate(6_000_000) |> :zlib.gzip() |> Base.encode64()
+      payload = %{"changed_files" => %{"encoding" => "gzip+base64", "data" => bomb}}
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+      assert json_response(conn, 422)["error"] == "completion validation failed"
+    end
+
     test "accepts an empty list and clears the field", %{conn: conn, task: task} do
       # First, seed a non-empty value to confirm it gets cleared.
       {:ok, _} =

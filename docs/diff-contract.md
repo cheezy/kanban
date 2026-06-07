@@ -91,6 +91,23 @@ Untracked new files that the plugin captures via the synthesized new-file patch 
 - Server-side validation accepts entries with or without `diff`; only malformed values (non-string `diff`, missing `path`, oversized per-file `diff`) are rejected.
 - Older plugin versions that emit only `actual_files_changed` continue to work; the review queue shows the file list with no inline diff panel content.
 
+## Transport encoding (optional, edge-filter safe)
+
+Some deployments sit behind an edge request filter (a CDN/WAF layer in front of the app) that inspects request bodies and rejects any body whose text resembles attack syntax. A raw unified diff of ordinary source code can trip such a filter, so the upload is dropped before it reaches the app and `changed_files` silently stays empty (D61).
+
+To avoid that, `PUT /api/tasks/:id/changed_files` **also** accepts a transport-encoded envelope in place of the raw array. The envelope wraps the **same JSON array** (the `[{"path", "diff"}]` shape above), encoded so the body carries no recognizable source text:
+
+```json
+{ "changed_files": { "encoding": "base64", "data": "<base64 of the JSON array>" } }
+```
+
+- `encoding` MUST be `"base64"` or `"gzip+base64"` (gzip the JSON array, then base64 the gzipped bytes).
+- `data` MUST be the encoded JSON array; once decoded it is validated and stored **identically** to the raw shape — all rules above (per-file 500-line cap, binary placeholder, `path` required) apply to the decoded entries.
+- This is **purely additive**. The raw array (`{"changed_files": [...]}`) and the bare top-level array body continue to work unchanged; plugins only need the envelope when an edge filter would otherwise reject the raw diff.
+- The server bounds the encoded and decoded sizes and returns the standard `completion validation failed` (422) envelope for invalid base64, an unsupported `encoding`, a decompression failure, or a payload that does not decode to a JSON array.
+
+Plugin maintainers SHOULD prefer the encoded form for the diff upload when targeting an edge-filtered deployment, and SHOULD surface a failed upload (a non-2xx response) rather than discarding it silently.
+
 ## What plugin maintainers MUST emit vs MAY emit
 
 **MUST**, when emitting `changed_files`:
