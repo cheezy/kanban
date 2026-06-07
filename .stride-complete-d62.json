@@ -1,6 +1,11 @@
 {
   "agent_name": "Claude Opus 4.8",
   "time_spent_minutes": 35,
+  "after_doing_result": {
+    "exit_code": 0,
+    "duration_ms": 36000,
+    "output": "mix precommit passed: 4554 tests and 11 doctests with zero failures, mix format check clean, mix credo --strict clean, mix sobelow clean, dark mode scan 0 failing / 76 pairs."
+  },
   "completion_notes": "Fixed the review queue hiding the reviewer summary and the report body for approved structured reviews. The shared review report panel previously took its structured branch whenever the payload carried structured content and rendered only the issue list, so an approved review with zero issues collapsed to a bare No issues line and both the reviewer summary and the markdown report body were invisible. The structured branch of structured_view now also renders the reviewer summary as escaped text and the review_report markdown body through the existing render_markdown helper, alongside the issue list. The structured and fallback branches stay mutually exclusive through the cond in pick_branch, so the body is never rendered twice. The summary is rendered in the panel per acceptance criterion one rather than added to the LiveView header, which shows the task's own description and would otherwise duplicate the text, so review_live was intentionally left untouched. Earmark escapes raw HTML by default, verified that a script payload renders as escaped entities, so no new injection surface is introduced. Updated two pre-existing tests that asserted the old owned-by-parent behavior, added a new test covering the approved zero-issue summary-and-body path, and corrected one view component test. Also refreshed the stale moduledoc so it describes what the panel actually renders. Per the operator instruction the working tree changes were left uncommitted. mix precommit is green: 4554 tests and 11 doctests with zero failures, credo strict clean, format clean, sobelow clean, and the dark mode scan reports zero failing across 76 pairs.",
   "explorer_result": {
     "dispatched": true,
