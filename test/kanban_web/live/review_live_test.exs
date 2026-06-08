@@ -1714,6 +1714,40 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "data-review-code-review-status=\"not_met\""
     end
 
+    test "renders a full checklist including not_applicable checks as N/A pills (W1058)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "project_checks" => [
+              %{
+                "check" => "No direct Ecto queries in LiveViews",
+                "status" => "met",
+                "evidence" => "All queries live in context modules."
+              },
+              %{
+                "check" => "All user-facing strings are translated",
+                "status" => "not_applicable",
+                "evidence" => "No user-facing strings in this diff."
+              }
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-code-review-section"
+      assert html =~ "data-review-code-review-status=\"met\""
+      assert html =~ "data-review-code-review-status=\"not_applicable\""
+      assert html =~ "No user-facing strings in this diff."
+      # Both checks render — the full checklist is shown, not just the applicable one.
+      assert length(Regex.scan(~r/data-review-code-review-row/, html)) == 2
+    end
+
     test "hides the 'Code review' section when project_checks is an empty list",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)

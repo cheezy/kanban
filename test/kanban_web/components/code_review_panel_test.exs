@@ -62,6 +62,30 @@ defmodule KanbanWeb.CodeReviewPanelTest do
       assert length(Regex.scan(~r/data-review-code-review-row/, html)) == 2
     end
 
+    test "renders a not_applicable check as a neutral N/A pill (W1058)" do
+      task = %{
+        id: 11,
+        identifier: "W11",
+        reviewer_result: %{
+          "project_checks" => [
+            %{
+              "check" => "All user-facing strings are wrapped in gettext.",
+              "status" => "not_applicable",
+              "evidence" => "No user-facing strings in this diff."
+            }
+          ]
+        }
+      }
+
+      html = render_with(task)
+
+      assert html =~ ~s(data-review-code-review-status="not_applicable")
+      # The pill label is the translated "N/A" (note the escaped slash).
+      assert html =~ ~r/N\/A\s*<\/span>/
+      assert html =~ "No user-facing strings in this diff."
+      assert length(Regex.scan(~r/data-review-code-review-row/, html)) == 1
+    end
+
     test "renders nothing when project_checks is absent (legacy reviewer_result shape)" do
       task = %{id: 2, identifier: "W2", reviewer_result: %{"issues" => []}}
 

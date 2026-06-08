@@ -12,8 +12,11 @@ defmodule KanbanWeb.CodeReviewPanel do
 
     * `"check"` — string. The check description, typically the verbatim
       `CODE-REVIEW.md` bullet (including `CRITICAL:` prefix when present).
-    * `"status"` — `"met"` | `"not_met"` (anything else renders as a
-      neutral pill labelled with the raw value).
+    * `"status"` — `"met"` | `"not_met"` | `"not_applicable"`. `"not_applicable"`
+      renders as a neutral "N/A" pill (the reviewer emits it for CODE-REVIEW.md
+      bullets that have no bearing on the diff, so the full checklist is shown
+      rather than silently trimmed). Any other value renders as a neutral pill
+      labelled with the raw value.
     * `"evidence"` — optional string. The reviewer's proof: a file path,
       a quote, or a suggested fix. Omitted entries render the check
       without the secondary line.
@@ -131,11 +134,20 @@ defmodule KanbanWeb.CodeReviewPanel do
   defp project_check_status_style("not_met"),
     do: "background: var(--st-blocked-soft); color: var(--st-blocked);"
 
+  # Not applicable → same neutral surface as the unknown catch-all: the check
+  # was considered but has no bearing on this diff, so it reads as a muted,
+  # non-judgemental pill in both themes.
+  defp project_check_status_style("not_applicable"),
+    do: "background: var(--surface-sunken); color: var(--ink-2);"
+
   defp project_check_status_style(_),
     do: "background: var(--surface-sunken); color: var(--ink-2);"
 
   defp project_check_status_label("met"), do: gettext("Met")
   defp project_check_status_label("not_met"), do: gettext("Not met")
+  # "N/A" here means "not applicable" — the CODE-REVIEW.md bullet has no bearing
+  # on the reviewed diff (not "not available"/"no data"). Translate accordingly.
+  defp project_check_status_label("not_applicable"), do: gettext("N/A")
   defp project_check_status_label(other) when is_binary(other), do: other
   defp project_check_status_label(_), do: gettext("Unknown")
 end
