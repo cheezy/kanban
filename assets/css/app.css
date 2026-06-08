@@ -1216,17 +1216,22 @@
   border-left: 2px solid transparent;
 }
 .stride-diff-line-add {
-  background: var(--stride-diff-add-bg, color-mix(in oklch, var(--st-done-soft) 70%, transparent));
+  /* Slightly darker than the prior 70%-soft mix so the +line highlight reads
+     against var(--surface) without straining the eye. ~88% L green at full
+     opacity. */
+  background: var(--stride-diff-add-bg, oklch(88% 0.10 155));
   border-left-color: var(--st-done);
 }
 .stride-diff-line-del {
-  background: var(--stride-diff-del-bg, color-mix(in oklch, var(--st-blocked-soft) 70%, transparent));
+  /* Matched darken on the -line side. */
+  background: var(--stride-diff-del-bg, oklch(88% 0.10 25));
   border-left-color: var(--st-blocked);
 }
 :where([data-theme="dark"]) .stride-screen,
 :where([data-theme="dark"]) .stride-marketing {
-  --stride-diff-add-bg: oklch(30% 0.09 155 / 0.55);
-  --stride-diff-del-bg: oklch(32% 0.10 25 / 0.55);
+  /* Deeper, more saturated wells in dark mode (was 30%/32% L at 0.55 alpha). */
+  --stride-diff-add-bg: oklch(24% 0.12 155 / 0.7);
+  --stride-diff-del-bg: oklch(26% 0.13 25 / 0.7);
 }
 .stride-diff-line-hunk {
   color: var(--ink-3);
