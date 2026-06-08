@@ -1670,4 +1670,120 @@ defmodule KanbanWeb.ReviewLiveTest do
       refute html =~ "oldest"
     end
   end
+
+  # Regression guard for the project_checks data-loss class of bug (G218):
+  # the completion flow must persist reviewer_result.project_checks verbatim,
+  # and the Review queue "Code review" panel renders only when that list is
+  # non-empty. See KanbanWeb.CodeReviewPanel.checks_for/1 (the render gate) and
+  # the `data-review-code-review-section` gate in ReviewLive.
+  describe "code review panel — project_checks gating (W1050)" do
+    setup [:register_and_log_in_user]
+
+    test "renders the 'Code review' section and the checks when project_checks is non-empty",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "project_checks" => [
+              %{
+                "check" => "No direct Ecto queries in LiveViews",
+                "status" => "met",
+                "evidence" => "All queries live in context modules."
+              },
+              %{
+                "check" => "All user-visible strings are translated",
+                "status" => "not_met",
+                "evidence" => "Hardcoded English string in the new template."
+              }
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-code-review-section"
+      assert html =~ "Code review"
+      assert html =~ "data-review-code-review-row"
+      assert html =~ "No direct Ecto queries in LiveViews"
+      assert html =~ "All user-visible strings are translated"
+      assert html =~ "data-review-code-review-status=\"met\""
+      assert html =~ "data-review-code-review-status=\"not_met\""
+    end
+
+    test "hides the 'Code review' section when project_checks is an empty list",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "status" => "approved", "project_checks" => []}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-code-review-section"
+    end
+
+    test "hides the 'Code review' section when reviewer_result has no project_checks key",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "status" => "approved"}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-code-review-section"
+    end
+
+    test "reviewer_result.project_checks round-trips through completion persistence",
+         %{user: user} do
+      %{column: column} = setup_review_column(user)
+
+      project_checks = [
+        %{
+          "check" => "Migrations are reversible",
+          "status" => "met",
+          "evidence" => "Uses change/0 with reversible primitives."
+        }
+      ]
+
+      task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "project_checks" => project_checks}
+        })
+
+      # The JSONB field must persist project_checks verbatim — not strip it.
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.reviewer_result["project_checks"] == project_checks
+
+      # And the render gate must surface it from the persisted struct.
+      assert KanbanWeb.CodeReviewPanel.checks_for(reloaded) == project_checks
+    end
+
+    test "checks_for/1 returns [] when project_checks is absent or empty" do
+      assert KanbanWeb.CodeReviewPanel.checks_for(%{reviewer_result: %{"status" => "approved"}}) ==
+               []
+
+      assert KanbanWeb.CodeReviewPanel.checks_for(%{reviewer_result: %{"project_checks" => []}}) ==
+               []
+
+      assert KanbanWeb.CodeReviewPanel.checks_for(%{reviewer_result: nil}) == []
+    end
+
+    test "checks_for/1 reads the string-keyed reviewer_result branch" do
+      checks = [%{"check" => "x", "status" => "met", "evidence" => "y"}]
+
+      assert KanbanWeb.CodeReviewPanel.checks_for(%{
+               "reviewer_result" => %{"project_checks" => checks}
+             }) ==
+               checks
+    end
+  end
 end
