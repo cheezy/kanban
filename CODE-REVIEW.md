@@ -62,7 +62,7 @@ already catch automatically, leave it out: those tools run in the
 ## Database / migrations
 
 - New migrations are reversible — every `up` change has a corresponding `down`, or the migration uses the `change/0` callback with reversible primitives. One-way migrations should justify why in a comment.
-- New foreign keys reference the parent's `id` column with an explicit `on_delete:` strategy (`:delete_all`, `:nilify_all`, or `:nothing` — not the default). Missing `on_delete:` strategies cause runtime errors during cascade operations.
+- New foreign keys reference the parent's `id` column with an explicit `on_delete:` strategy (`:delete_all`, `:nilify_all`, or `:nothing` not the default). Missing `on_delete:` strategies cause runtime errors during cascade operations.
 
 ## Cross-plugin compatibility
 
