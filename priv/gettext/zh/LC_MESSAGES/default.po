@@ -1353,7 +1353,7 @@ msgstr "待处理"
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
 #: lib/kanban_web/live/task_live/view_component.ex:197
-#: lib/kanban_web/review_report_helpers.ex:46
+#: lib/kanban_web/review_report_helpers.ex:47
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
 msgstr "陷阱"
@@ -4756,7 +4756,7 @@ msgstr "评审报告"
 
 #: lib/kanban_web/live/review_live.ex:381
 #: lib/kanban_web/live/task_live/view_component.ex:211
-#: lib/kanban_web/review_report_helpers.ex:47
+#: lib/kanban_web/review_report_helpers.ex:48
 #, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "安全注意事项"
@@ -4865,7 +4865,7 @@ msgstr "成功"
 #: lib/kanban_web/components/review_queue_item.ex:252
 #: lib/kanban_web/components/review_stats_strip.ex:62
 #: lib/kanban_web/live/task_live/view_component.ex:268
-#: lib/kanban_web/review_report_helpers.ex:44
+#: lib/kanban_web/review_report_helpers.ex:45
 #, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "测试策略"
@@ -4944,7 +4944,7 @@ msgstr "已完成"
 msgid "created"
 msgstr "创建时间"
 
-#: lib/kanban_web/review_report_helpers.ex:131
+#: lib/kanban_web/review_report_helpers.ex:139
 #: lib/kanban_web/task_tokens.ex:139
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6116,24 +6116,24 @@ msgstr[0] "%{checked}/%{total} · %{n} 个问题"
 msgid "Not met"
 msgstr "未达成"
 
-#: lib/kanban_web/review_report_helpers.ex:128
+#: lib/kanban_web/review_report_helpers.ex:136
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} 天"
 
-#: lib/kanban_web/review_report_helpers.ex:120
+#: lib/kanban_web/review_report_helpers.ex:128
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} 个 · 全部齐备"
 
-#: lib/kanban_web/review_report_helpers.ex:209
+#: lib/kanban_web/review_report_helpers.ex:217
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "未违反"
 
-#: lib/kanban_web/review_report_helpers.ex:207
+#: lib/kanban_web/review_report_helpers.ex:215
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "违反"
@@ -6155,12 +6155,12 @@ msgstr "完成人:%{name}"
 
 #: lib/kanban_web/components/review_report_panel.ex:323
 #: lib/kanban_web/components/review_stats_strip.ex:69
-#: lib/kanban_web/review_report_helpers.ex:45
+#: lib/kanban_web/review_report_helpers.ex:46
 #, elixir-autogen, elixir-format
 msgid "Patterns"
 msgstr "模式"
 
-#: lib/kanban_web/review_report_helpers.ex:171
+#: lib/kanban_web/review_report_helpers.ex:179
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "已遵循"
@@ -6206,17 +6206,17 @@ msgstr "轻微"
 msgid "Testing"
 msgstr "测试"
 
-#: lib/kanban_web/review_report_helpers.ex:347
+#: lib/kanban_web/review_report_helpers.ex:355
 #, elixir-autogen, elixir-format, fuzzy
 msgid "failed"
 msgstr "复制失败"
 
-#: lib/kanban_web/review_report_helpers.ex:348
+#: lib/kanban_web/review_report_helpers.ex:356
 #, elixir-autogen, elixir-format, fuzzy
 msgid "not assessed"
 msgstr "未评估"
 
-#: lib/kanban_web/review_report_helpers.ex:346
+#: lib/kanban_web/review_report_helpers.ex:354
 #, elixir-autogen, elixir-format, fuzzy
 msgid "passed"
 msgstr "密码"
@@ -6645,12 +6645,12 @@ msgstr "设置部分"
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
 
-#: lib/kanban/tasks/completion_validation.ex:575
+#: lib/kanban/tasks/completion_validation.ex:593
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "在已派发的评审中为必填项：请包含 status 或 issue_counts，以便评审队列能够渲染评审结论"
 
-#: lib/kanban/tasks/completion_validation.ex:568
+#: lib/kanban/tasks/completion_validation.ex:586
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字段 %{field} 缺失"
@@ -6660,17 +6660,12 @@ msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字
 msgid "N/A"
 msgstr "不适用"
 
-#: lib/kanban/tasks/completion_validation.ex:595
-#, elixir-autogen, elixir-format
-msgid "cannot be verified: the project checklist file could not be read, so project_checks coverage cannot be confirmed"
-msgstr "无法验证：无法读取项目检查清单文件，因此无法确认 project_checks 的覆盖范围"
-
-#: lib/kanban/tasks/completion_validation.ex:587
+#: lib/kanban/tasks/completion_validation.ex:605
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "不完整：project_checks 仅覆盖了项目检查清单 %{expected} 个条目中的 %{supplied} 个；每个清单条目都必须评估"
 
-#: lib/kanban/tasks/completion_validation.ex:581
+#: lib/kanban/tasks/completion_validation.ex:599
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "在已执行的审查中为必填项：project_checks 必须是涵盖项目检查清单的非空列表"

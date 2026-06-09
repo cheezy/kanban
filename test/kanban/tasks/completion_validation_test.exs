@@ -115,16 +115,24 @@ defmodule Kanban.Tasks.CompletionValidationTest do
   # checklist (CODE-REVIEW.md), not merely be non-empty. The expected count is
   # read once at compile time from the file, never from the client.
   describe "project_checklist_count/0 and coverage (W1067)" do
-    test "reads the bullet count from the canonical checklist file" do
+    test "reads the bullet count from the priv checklist copy (build-reliable source)" do
       file_count =
         File.cwd!()
-        |> Path.join("CODE-REVIEW.md")
+        |> Path.join("priv/CODE-REVIEW.md")
         |> File.read!()
         |> String.split("\n")
         |> Enum.count(&String.starts_with?(&1, "- "))
 
       assert CompletionValidation.project_checklist_count() == file_count
       assert CompletionValidation.project_checklist_count() > 0
+    end
+
+    test "priv/CODE-REVIEW.md is a verbatim copy of the root checklist (drift guard)" do
+      root = File.read!(Path.join(File.cwd!(), "CODE-REVIEW.md"))
+      priv = File.read!(Path.join(File.cwd!(), "priv/CODE-REVIEW.md"))
+
+      assert priv == root,
+             "priv/CODE-REVIEW.md must stay in sync with CODE-REVIEW.md — re-copy it: cp CODE-REVIEW.md priv/CODE-REVIEW.md"
     end
 
     test "coverage_shortfall/2 returns nil when supplied meets or exceeds expected" do
@@ -140,9 +148,12 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert message =~ "25"
     end
 
-    test "coverage_shortfall/2 fails closed when the expected count is unavailable" do
-      assert CompletionValidation.coverage_shortfall(nil, 30) =~ "could not be read"
-      assert CompletionValidation.coverage_shortfall(0, 30) =~ "could not be read"
+    test "coverage_shortfall/2 fails OPEN (returns nil) when the expected count is unavailable" do
+      # An unreadable/unavailable checklist must NOT block completion (it bricked
+      # production once); coverage is simply not enforced. Other contract checks
+      # still run.
+      assert CompletionValidation.coverage_shortfall(nil, 30) == nil
+      assert CompletionValidation.coverage_shortfall(0, 30) == nil
     end
 
     test "rejects a dispatched review whose project_checks fall short (D60 3-of-N)" do

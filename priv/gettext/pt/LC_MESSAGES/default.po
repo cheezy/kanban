@@ -1353,7 +1353,7 @@ msgstr "Pendente"
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:273
 #: lib/kanban_web/live/task_live/view_component.ex:197
-#: lib/kanban_web/review_report_helpers.ex:46
+#: lib/kanban_web/review_report_helpers.ex:47
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
 msgstr "Armadilhas"
@@ -4764,7 +4764,7 @@ msgstr "Relatório de revisão"
 
 #: lib/kanban_web/live/review_live.ex:381
 #: lib/kanban_web/live/task_live/view_component.ex:211
-#: lib/kanban_web/review_report_helpers.ex:47
+#: lib/kanban_web/review_report_helpers.ex:48
 #, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "Considerações de Segurança"
@@ -4873,7 +4873,7 @@ msgstr "Sucesso"
 #: lib/kanban_web/components/review_queue_item.ex:252
 #: lib/kanban_web/components/review_stats_strip.ex:62
 #: lib/kanban_web/live/task_live/view_component.ex:268
-#: lib/kanban_web/review_report_helpers.ex:44
+#: lib/kanban_web/review_report_helpers.ex:45
 #, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "Estratégia de testes"
@@ -4952,7 +4952,7 @@ msgstr "concluída"
 msgid "created"
 msgstr "Criado"
 
-#: lib/kanban_web/review_report_helpers.ex:131
+#: lib/kanban_web/review_report_helpers.ex:139
 #: lib/kanban_web/task_tokens.ex:139
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6129,26 +6129,26 @@ msgstr[1] "%{checked}/%{total} · %{n} problemas"
 msgid "Not met"
 msgstr "Não cumprido"
 
-#: lib/kanban_web/review_report_helpers.ex:128
+#: lib/kanban_web/review_report_helpers.ex:136
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} dias"
 msgstr[1] "%{n} dias"
 
-#: lib/kanban_web/review_report_helpers.ex:120
+#: lib/kanban_web/review_report_helpers.ex:128
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} caso · todos presentes"
 msgstr[1] "%{n} casos · todos presentes"
 
-#: lib/kanban_web/review_report_helpers.ex:209
+#: lib/kanban_web/review_report_helpers.ex:217
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "nenhum violado"
 
-#: lib/kanban_web/review_report_helpers.ex:207
+#: lib/kanban_web/review_report_helpers.ex:215
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "violado"
@@ -6170,12 +6170,12 @@ msgstr "Concluída por %{name}"
 
 #: lib/kanban_web/components/review_report_panel.ex:323
 #: lib/kanban_web/components/review_stats_strip.ex:69
-#: lib/kanban_web/review_report_helpers.ex:45
+#: lib/kanban_web/review_report_helpers.ex:46
 #, elixir-autogen, elixir-format
 msgid "Patterns"
 msgstr "Padrões"
 
-#: lib/kanban_web/review_report_helpers.ex:171
+#: lib/kanban_web/review_report_helpers.ex:179
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "seguidos"
@@ -6221,17 +6221,17 @@ msgstr "Menor"
 msgid "Testing"
 msgstr "Testes"
 
-#: lib/kanban_web/review_report_helpers.ex:347
+#: lib/kanban_web/review_report_helpers.ex:355
 #, elixir-autogen, elixir-format, fuzzy
 msgid "failed"
 msgstr "Falha ao copiar"
 
-#: lib/kanban_web/review_report_helpers.ex:348
+#: lib/kanban_web/review_report_helpers.ex:356
 #, elixir-autogen, elixir-format, fuzzy
 msgid "not assessed"
 msgstr "Não avaliado"
 
-#: lib/kanban_web/review_report_helpers.ex:346
+#: lib/kanban_web/review_report_helpers.ex:354
 #, elixir-autogen, elixir-format, fuzzy
 msgid "passed"
 msgstr "Senha"
@@ -6675,12 +6675,12 @@ msgstr "Seções de configurações"
 msgid "Review data unavailable"
 msgstr "Dados de revisão indisponíveis"
 
-#: lib/kanban/tasks/completion_validation.ex:575
+#: lib/kanban/tasks/completion_validation.ex:593
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "é obrigatório em uma revisão despachada: inclua status ou issue_counts para que a fila de revisão possa exibir o veredito"
 
-#: lib/kanban/tasks/completion_validation.ex:568
+#: lib/kanban/tasks/completion_validation.ex:586
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field} que a fila de revisão exibe está ausente"
@@ -6690,17 +6690,12 @@ msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field}
 msgid "N/A"
 msgstr "N/D"
 
-#: lib/kanban/tasks/completion_validation.ex:595
-#, elixir-autogen, elixir-format
-msgid "cannot be verified: the project checklist file could not be read, so project_checks coverage cannot be confirmed"
-msgstr "não pode ser verificado: não foi possível ler o arquivo da lista de verificação do projeto, portanto a cobertura de project_checks não pode ser confirmada"
-
-#: lib/kanban/tasks/completion_validation.ex:587
+#: lib/kanban/tasks/completion_validation.ex:605
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "está incompleto: project_checks cobre %{supplied} dos %{expected} itens da lista de verificação do projeto; cada item da lista deve ser avaliado"
 
-#: lib/kanban/tasks/completion_validation.ex:581
+#: lib/kanban/tasks/completion_validation.ex:599
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "é obrigatório em uma revisão realizada: project_checks deve ser uma lista não vazia que cubra a lista de verificação do projeto"

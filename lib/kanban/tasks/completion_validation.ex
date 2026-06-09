@@ -68,17 +68,29 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   @max_diff_lines 500
 
-  # The canonical project checklist (`CODE-REVIEW.md`) is read ONCE, at compile
-  # time, and its top-level bullet count baked in as @project_checklist_count.
-  # Compile-time (not runtime) on purpose: the file lives at the repo root, which
-  # is present at build time but NOT inside a deployed release — a runtime read
-  # of that path would fail in production and block every completion. @external_resource
-  # makes the module recompile when the checklist changes, so the count stays
-  # current. A top-level bullet is a line beginning with "- " (CRITICAL bullets
-  # included); indented context lines and "##" headings are not checks. If the
-  # file cannot be read at build time the count is nil and the coverage check
-  # fails closed at request time (see coverage_shortfall/2).
-  @code_review_path [__DIR__, "..", "..", "..", "CODE-REVIEW.md"] |> Path.join() |> Path.expand()
+  # The project checklist count is read ONCE, at compile time, from a copy of
+  # `CODE-REVIEW.md` kept under `priv/` — NOT from the repo-root doc.
+  #
+  # Why `priv/` and not the root: `priv/` is a standard mix application directory
+  # that is reliably present in the source tree at compile time AND copied into
+  # `mix release` artifacts; a repo-root doc is not an app file and can be absent
+  # from a release/Docker build context. Reading the root doc at compile time
+  # baked `nil` in production, which — with the unconditional coverage gate —
+  # rejected every dispatched-review completion (incident: "checklist could not
+  # be read"). `priv/CODE-REVIEW.md` is a verbatim copy of the root checklist,
+  # kept in sync by a drift-guard test; the root doc remains the human-facing
+  # canonical checklist the reviewer agent reads.
+  #
+  # @external_resource makes the module recompile when the checklist changes. A
+  # top-level bullet is a line beginning with "- " (CRITICAL bullets included);
+  # indented context lines and "##" headings are not checks. If the file STILL
+  # cannot be read at build time the count is nil and the coverage check FAILS
+  # OPEN (coverage simply not enforced) rather than blocking every completion —
+  # the other contract checks (section presence, non-empty project_checks,
+  # cross-field consistency) keep enforcing. See coverage_shortfall/2.
+  @code_review_path [__DIR__, "..", "..", "..", "priv", "CODE-REVIEW.md"]
+                    |> Path.join()
+                    |> Path.expand()
   @external_resource @code_review_path
   @project_checklist_count (case File.read(@code_review_path) do
                               {:ok, content} ->
@@ -121,17 +133,23 @@ defmodule Kanban.Tasks.CompletionValidation do
   checklist file, never supplied by the client.
 
   Returns `nil` only if the checklist file could not be read at build time, in
-  which case the coverage check fails closed (rejects) rather than letting an
-  unverified review through.
+  which case the coverage check FAILS OPEN (coverage is not enforced) rather
+  than blocking every completion — the other contract checks still run.
   """
   def project_checklist_count, do: @project_checklist_count
 
   @doc false
   # The pure coverage decision, exposed for direct testing of every branch
-  # (pass, shortfall, and the fail-closed "checklist unavailable" case). Returns
-  # `nil` when coverage is satisfied, or a human-readable failure message.
-  # `expected` is the baked checklist bullet count; `supplied` is the number of
-  # project_checks entries in the review.
+  # (pass, shortfall, and the FAIL-OPEN "checklist unavailable" case). Returns
+  # `nil` when coverage is satisfied OR when it cannot be verified, and a
+  # human-readable failure message only on a genuine shortfall. `expected` is the
+  # baked checklist bullet count; `supplied` is the number of project_checks
+  # entries in the review.
+  #
+  # FAIL OPEN (not closed) when `expected` is unavailable (nil / non-positive):
+  # an unreadable checklist must never block every completion in an environment
+  # where the file is missing — that bricked production once. Coverage is simply
+  # not enforced there; the other contract checks still run.
   def coverage_shortfall(expected, supplied)
 
   def coverage_shortfall(expected, supplied)
@@ -142,7 +160,7 @@ defmodule Kanban.Tasks.CompletionValidation do
       when is_integer(expected) and expected > 0,
       do: coverage_shortfall_message(expected, supplied)
 
-  def coverage_shortfall(_expected, _supplied), do: checklist_unavailable_message()
+  def coverage_shortfall(_expected, _supplied), do: nil
 
   @doc """
   Validates an `explorer_result` payload.
@@ -588,12 +606,6 @@ defmodule Kanban.Tasks.CompletionValidation do
       "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated",
       expected: expected,
       supplied: supplied
-    )
-  end
-
-  defp checklist_unavailable_message do
-    gettext(
-      "cannot be verified: the project checklist file could not be read, so project_checks coverage cannot be confirmed"
     )
   end
 
