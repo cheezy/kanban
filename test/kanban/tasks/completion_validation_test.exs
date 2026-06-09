@@ -128,8 +128,8 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
 
     test "priv/CODE-REVIEW.md is a verbatim copy of the root checklist (drift guard)" do
-      root = File.read!(Path.join(File.cwd!(), "CODE-REVIEW.md"))
-      priv = File.read!(Path.join(File.cwd!(), "priv/CODE-REVIEW.md"))
+      root = File.cwd!() |> Path.join("CODE-REVIEW.md") |> File.read!()
+      priv = File.cwd!() |> Path.join("priv/CODE-REVIEW.md") |> File.read!()
 
       assert priv == root,
              "priv/CODE-REVIEW.md must stay in sync with CODE-REVIEW.md — re-copy it: cp CODE-REVIEW.md priv/CODE-REVIEW.md"
