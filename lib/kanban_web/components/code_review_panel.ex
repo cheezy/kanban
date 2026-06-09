@@ -42,9 +42,13 @@ defmodule KanbanWeb.CodeReviewPanel do
   attr :task, :map, required: true
 
   def code_review_panel(assigns) do
-    assigns = assign(assigns, :project_checks, checks_for(assigns.task))
+    assigns =
+      assigns
+      |> assign(:project_checks, checks_for(assigns.task))
+      |> assign(:gap, KanbanWeb.ReviewReportHelpers.project_checks_gap(assigns.task))
 
     ~H"""
+    <.coverage_warning :if={@gap} gap={@gap} />
     <ul
       :if={@project_checks != []}
       data-review-code-review
@@ -54,6 +58,38 @@ defmodule KanbanWeb.CodeReviewPanel do
         <.project_check_row check={check} />
       </li>
     </ul>
+    """
+  end
+
+  # W1071: an explicit, unmistakable warning when the review's project_checks
+  # cover fewer than the full checklist (the D60 "3 of 26" truncation), instead
+  # of silently rendering only the partial list. Uses the theme-aware blocked
+  # tokens so it stays legible in light and dark mode.
+  attr :gap, :any, required: true
+
+  defp coverage_warning(assigns) do
+    {supplied, expected} = assigns.gap
+    assigns = assign(assigns, supplied: supplied, expected: expected)
+
+    ~H"""
+    <div
+      data-review-code-review-incomplete
+      style={[
+        "display: flex; align-items: flex-start; gap: 8px;",
+        "padding: 8px 10px; border-radius: 5px; margin-bottom: 8px;",
+        "background: var(--st-blocked-soft); color: var(--st-blocked);",
+        "border: 1px solid var(--st-blocked); font-size: 12px; line-height: 1.45;"
+      ]}
+    >
+      <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+      <span>
+        {gettext(
+          "Incomplete review: only %{supplied} of the %{expected} project checks were recorded. Every checklist item must be evaluated.",
+          supplied: @supplied,
+          expected: @expected
+        )}
+      </span>
+    </div>
     """
   end
 

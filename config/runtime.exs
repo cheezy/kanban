@@ -40,6 +40,24 @@ end
 # When the var is unset, prod defaults to strict and all other envs default to
 # grace (matching the `config/config.exs` default), so dev and test are
 # unaffected.
+#
+# W1070 — IMPORTANT: this flag now gates ONLY legacy *shape* nits (a malformed
+# issue entry, a bad schema_version format, a missing legacy summary field). The
+# fully-populated + consistent *review contract* — a dispatched review must carry
+# every required structured section, with project_checks covering the whole
+# CODE-REVIEW.md checklist, and be consistent with the task's own inputs — is
+# enforced UNCONDITIONALLY by `KanbanWeb.API.CompletionResultGate`, in every env
+# and regardless of this flag. Deliberate, accepted consequence: any client that
+# submits a thin or task-inconsistent dispatched review cannot complete the task,
+# even in grace mode. Flipping this var to `false` does NOT relax the contract; it
+# only returns the legacy shape checks to warn-and-pass.
+#
+# SCOPE CARVE-OUT: the unconditional contract applies to a PRESENT, dispatched
+# review only. An ENTIRELY ABSENT `reviewer_result` still follows this flag — the
+# grace rollout for not-yet-updated clients — and is enforced by strict mode
+# (prod default) plus the plugin-side fix (G222) that guarantees a review is
+# always sent. So in grace mode a thin *present* review rejects, but an *omitted*
+# one still warns-and-passes until the flag flips.
 strict_completion_validation =
   case System.get_env("STRIDE_STRICT_COMPLETION_VALIDATION") do
     "true" -> true

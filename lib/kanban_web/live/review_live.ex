@@ -360,7 +360,10 @@ defmodule KanbanWeb.ReviewLive do
               </section>
 
               <section
-                :if={ReviewReportHelpers.security_considerations_value(@selected)}
+                :if={
+                  ReviewReportHelpers.security_considerations_value(@selected) ||
+                    ReviewReportHelpers.section_incomplete?(@selected, :security_considerations)
+                }
                 data-review-security-considerations
                 data-review-security-status={security_status_key(@selected)}
                 style={[
@@ -377,30 +380,51 @@ defmodule KanbanWeb.ReviewLive do
                 ]}>
                   {gettext("Security considerations")}
                 </span>
-                <span
-                  data-review-security-pill
-                  style={[
-                    "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
-                    "padding: 2px 10px; border-radius: 999px;",
-                    "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                    security_tone_style(ReviewReportHelpers.security_considerations_passed(@selected))
-                  ]}
-                >
-                  <.icon
-                    name={
-                      security_icon(ReviewReportHelpers.security_considerations_passed(@selected))
-                    }
-                    class="w-4 h-4"
-                  />
-                  {ReviewReportHelpers.security_considerations_value(@selected)}
-                </span>
-                <p
-                  :if={security_considerations_note(@selected)}
-                  data-review-security-note
-                  style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
-                >
-                  {security_considerations_note(@selected)}
-                </p>
+                <%= if ReviewReportHelpers.section_incomplete?(@selected, :security_considerations) do %>
+                  <div
+                    data-review-security-incomplete
+                    style={[
+                      "display: flex; align-items: flex-start; gap: 8px; align-self: stretch;",
+                      "padding: 8px 10px; border-radius: 5px;",
+                      "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                      "border: 1px solid var(--st-blocked);"
+                    ]}
+                  >
+                    <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+                    <span>
+                      {gettext(
+                        "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
+                      )}
+                    </span>
+                  </div>
+                <% else %>
+                  <span
+                    data-review-security-pill
+                    style={[
+                      "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
+                      "padding: 2px 10px; border-radius: 999px;",
+                      "font-size: 12px; font-weight: 600; text-transform: capitalize;",
+                      security_tone_style(
+                        ReviewReportHelpers.security_considerations_passed(@selected)
+                      )
+                    ]}
+                  >
+                    <.icon
+                      name={
+                        security_icon(ReviewReportHelpers.security_considerations_passed(@selected))
+                      }
+                      class="w-4 h-4"
+                    />
+                    {ReviewReportHelpers.security_considerations_value(@selected)}
+                  </span>
+                  <p
+                    :if={security_considerations_note(@selected)}
+                    data-review-security-note
+                    style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
+                  >
+                    {security_considerations_note(@selected)}
+                  </p>
+                <% end %>
               </section>
 
               <section
@@ -443,7 +467,10 @@ defmodule KanbanWeb.ReviewLive do
               </section>
 
               <section
-                :if={CodeReviewPanel.checks_for(@selected) != []}
+                :if={
+                  CodeReviewPanel.checks_for(@selected) != [] or
+                    ReviewReportHelpers.project_checks_gap(@selected) != nil
+                }
                 data-review-code-review-section
                 style={[
                   "margin: 12px 16px 16px; padding: 10px 12px;",

@@ -1748,7 +1748,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert length(Regex.scan(~r/data-review-code-review-row/, html)) == 2
     end
 
-    test "hides the 'Code review' section when project_checks is an empty list",
+    test "warns when a dispatched review's project_checks is an empty list (W1071)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1759,10 +1759,13 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
 
-      refute html =~ "data-review-code-review-section"
+      # W1071: a thin dispatched review now surfaces the gap instead of hiding it.
+      assert html =~ "data-review-code-review-section"
+      assert html =~ "data-review-code-review-incomplete"
+      refute html =~ "data-review-code-review-row"
     end
 
-    test "hides the 'Code review' section when reviewer_result has no project_checks key",
+    test "warns when a dispatched review has no project_checks key (W1071)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -1773,7 +1776,26 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
 
-      refute html =~ "data-review-code-review-section"
+      assert html =~ "data-review-code-review-section"
+      assert html =~ "data-review-code-review-incomplete"
+    end
+
+    test "does NOT warn about project_checks for a skip-form (non-dispatched) review (W1071)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => false,
+            "reason" => "small_task_0_1_key_files",
+            "summary" => "Skipped review for a tiny docs-only change, nothing to check here."
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-code-review-incomplete"
     end
 
     test "reviewer_result.project_checks round-trips through completion persistence",

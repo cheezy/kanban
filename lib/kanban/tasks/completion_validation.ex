@@ -32,6 +32,34 @@ defmodule Kanban.Tasks.CompletionValidation do
   @status_enum [:met, :not_met]
   @section_status_enum [:passed, :failed, :not_assessed]
 
+  # The canonical, single-source-of-truth list of structured review sections a
+  # fully-populated `reviewer_result` must carry on a dispatched review. The
+  # strict structured-block check (W1066) and every downstream consumer MUST
+  # reference this list rather than re-enumerating the keys inline — an inline
+  # allow-list is exactly how `project_checks` came to be silently dropped.
+  #
+  # `status` / `issue_counts` is required in addition to these sections, but as
+  # an either/or pair it is enforced separately by `require_status_or_issue_counts/2`
+  # rather than listed here.
+  @required_review_sections [
+    # the categorized issues array — may be empty, but must be present
+    :issues,
+    # per-criterion acceptance-criteria results the review queue renders
+    :acceptance_criteria,
+    # the full project checklist verdicts (CODE-REVIEW.md coverage, W1067)
+    :project_checks,
+    # per-section verdict: were the task's specified tests written
+    :testing_strategy,
+    # per-section verdict: was `patterns_to_follow` honored
+    :patterns,
+    # per-section verdict: were the task's `pitfalls` avoided
+    :pitfalls,
+    # per-section verdict: were the task's `security_considerations` addressed
+    :security_considerations,
+    # the reviewer schema version that produced this structured block
+    :schema_version
+  ]
+
   # Permissive semver: MAJOR.MINOR with optional .PATCH, pre-release, and
   # build metadata. Accepts "1.0", "1.2.3", "2.0.0-beta.1", "1.0+build.7".
   @semver_regex ~r/^\d+\.\d+(\.\d+)?(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/
@@ -39,6 +67,28 @@ defmodule Kanban.Tasks.CompletionValidation do
   @min_summary_length 40
 
   @max_diff_lines 500
+
+  # The canonical project checklist (`CODE-REVIEW.md`) is read ONCE, at compile
+  # time, and its top-level bullet count baked in as @project_checklist_count.
+  # Compile-time (not runtime) on purpose: the file lives at the repo root, which
+  # is present at build time but NOT inside a deployed release — a runtime read
+  # of that path would fail in production and block every completion. @external_resource
+  # makes the module recompile when the checklist changes, so the count stays
+  # current. A top-level bullet is a line beginning with "- " (CRITICAL bullets
+  # included); indented context lines and "##" headings are not checks. If the
+  # file cannot be read at build time the count is nil and the coverage check
+  # fails closed at request time (see coverage_shortfall/2).
+  @code_review_path [__DIR__, "..", "..", "..", "CODE-REVIEW.md"] |> Path.join() |> Path.expand()
+  @external_resource @code_review_path
+  @project_checklist_count (case File.read(@code_review_path) do
+                              {:ok, content} ->
+                                content
+                                |> String.split("\n")
+                                |> Enum.count(&String.starts_with?(&1, "- "))
+
+                              {:error, _} ->
+                                nil
+                            end)
 
   @doc """
   The exhaustive list of allowed skip-reason atoms.
@@ -48,6 +98,51 @@ defmodule Kanban.Tasks.CompletionValidation do
   skill so that server-side aggregation groups identical reasons.
   """
   def skip_reasons, do: @skip_reasons
+
+  @doc """
+  The canonical list of structured review sections a dispatched
+  `reviewer_result` must carry to be considered fully populated.
+
+  This is the single source of truth for the strict structured-block check.
+  Callers MUST reference it rather than re-enumerating the section keys — an
+  inline allow-list is exactly how `project_checks` was silently dropped. The
+  `status` / `issue_counts` either/or pair is required in addition to these and
+  is enforced separately.
+
+  See `docs/completion-contract.md` for the full fully-populated-report contract,
+  including the task cross-field rules.
+  """
+  def required_review_sections, do: @required_review_sections
+
+  @doc """
+  The number of top-level bullets in the canonical project checklist
+  (`CODE-REVIEW.md`), read once at compile time. This is the coverage floor a
+  dispatched review's `project_checks` must meet — it is derived from the
+  checklist file, never supplied by the client.
+
+  Returns `nil` only if the checklist file could not be read at build time, in
+  which case the coverage check fails closed (rejects) rather than letting an
+  unverified review through.
+  """
+  def project_checklist_count, do: @project_checklist_count
+
+  @doc false
+  # The pure coverage decision, exposed for direct testing of every branch
+  # (pass, shortfall, and the fail-closed "checklist unavailable" case). Returns
+  # `nil` when coverage is satisfied, or a human-readable failure message.
+  # `expected` is the baked checklist bullet count; `supplied` is the number of
+  # project_checks entries in the review.
+  def coverage_shortfall(expected, supplied)
+
+  def coverage_shortfall(expected, supplied)
+      when is_integer(expected) and expected > 0 and is_integer(supplied) and supplied >= expected,
+      do: nil
+
+  def coverage_shortfall(expected, supplied)
+      when is_integer(expected) and expected > 0,
+      do: coverage_shortfall_message(expected, supplied)
+
+  def coverage_shortfall(_expected, _supplied), do: checklist_unavailable_message()
 
   @doc """
   Validates an `explorer_result` payload.
@@ -85,6 +180,70 @@ defmodule Kanban.Tasks.CompletionValidation do
   """
   def validate_reviewer_result(result, opts \\ []),
     do: validate(result, :reviewer, opts)
+
+  @doc """
+  Cross-checks a dispatched `reviewer_result` against the task it describes,
+  catching reviews that are internally well-formed but inconsistent with their
+  task — e.g. a `not_assessed` security verdict when the task supplied
+  `security_considerations` (the D60 defect).
+
+  This is the task-aware counterpart to `validate_reviewer_result/2`, which
+  stays a pure result-only check for callers that have no task. The three
+  consistency rules live in `Kanban.Tasks.CompletionValidation.TaskConsistency`;
+  see its moduledoc and `docs/completion-contract.md`. Returns the same
+  `{:ok, result}` / `{:error, [{field, message}, ...]}` shape.
+  """
+  defdelegate cross_check_reviewer_result(result, task),
+    to: Kanban.Tasks.CompletionValidation.TaskConsistency,
+    as: :cross_check
+
+  @doc """
+  Returns the **always-reject** "fully populated + consistent" review-contract
+  failures for a completion's `reviewer_result` — the subset the gate enforces
+  unconditionally (W1070), independent of the `:strict_completion_validation`
+  grace flag. Returns `[]` when the contract holds.
+
+  The contract covers exactly the *completeness and consistency* failures, never
+  legacy *shape* nits (a malformed issue entry, a bad `schema_version` format) —
+  those stay grace-gated in `validate_reviewer_result/2`:
+
+    * a dispatched review must carry every required structured section
+      (`required_review_sections/0`) with a non-empty `project_checks` list that
+      covers the full checklist; and
+    * when a `task` is given, the review must be consistent with it
+      (`cross_check_reviewer_result/2`).
+
+  Only a **present, dispatched** review is contract-checked here. A valid
+  skip-form review (`"dispatched" => false`), a malformed-`dispatched` map, and
+  an absent/nil `reviewer_result` carry no always-reject completeness obligation:
+  the first is a legitimate review-less completion, and the latter two remain
+  under the grace flag (the `:strict_completion_validation` rollout enforces a
+  required review post-rollout, and the plugin-side fix G222 guarantees a
+  complete review is always sent). This keeps the grace rollout intact for
+  not-yet-updated clients while making an *incomplete present* review
+  non-completable in any mode.
+  """
+  def review_contract_failures(result, task \\ nil)
+
+  def review_contract_failures(%{"dispatched" => true} = result, task) do
+    structural =
+      []
+      |> check_required_structured_block(result, :reviewer, require_structured_block: true)
+      |> Enum.reverse()
+
+    structural ++ cross_failures(result, task)
+  end
+
+  def review_contract_failures(_result, _task), do: []
+
+  defp cross_failures(_result, nil), do: []
+
+  defp cross_failures(result, task) do
+    case cross_check_reviewer_result(result, task) do
+      {:ok, _} -> []
+      {:error, errors} -> errors
+    end
+  end
 
   @doc """
   Validates the optional `changed_files` array on the completion payload.
@@ -340,11 +499,16 @@ defmodule Kanban.Tasks.CompletionValidation do
   # Only fires for `dispatched: true`; the skip path is untouched.
   defp check_required_structured_block(errors, %{"dispatched" => true} = result, :reviewer, opts) do
     if Keyword.get(opts, :require_structured_block, false) do
-      errors
-      |> require_structured_field(result, "issues", :issues)
-      |> require_structured_field(result, "acceptance_criteria", :acceptance_criteria)
+      # Drive the presence checks from the single source of truth
+      # (@required_review_sections) rather than re-enumerating the keys inline —
+      # an inline allow-list is exactly how project_checks came to be dropped.
+      @required_review_sections
+      |> Enum.reduce(errors, fn section, acc ->
+        require_structured_field(acc, result, Atom.to_string(section), section)
+      end)
       |> require_status_or_issue_counts(result)
-      |> require_structured_field(result, "schema_version", :schema_version)
+      |> require_non_empty_project_checks(result)
+      |> require_project_checks_coverage(result)
     else
       errors
     end
@@ -368,6 +532,38 @@ defmodule Kanban.Tasks.CompletionValidation do
     end
   end
 
+  # An empty (or non-list) project_checks is the truncation failure mode: a bare
+  # presence check passes an empty list, but an empty list is a dropped/trimmed
+  # review. Absence is already reported by the presence check above, so only flag
+  # a present-but-empty or present-but-non-list value here. (W1067 adds the
+  # full-checklist coverage check on top of this non-empty floor.)
+  defp require_non_empty_project_checks(errors, result) do
+    case Map.get(result, "project_checks") do
+      [_ | _] -> errors
+      nil -> errors
+      _ -> [{:project_checks, empty_project_checks_message()} | errors]
+    end
+  end
+
+  # project_checks must account for EVERY top-level checklist bullet, not merely
+  # be non-empty — a short count is the D60 truncation defect (3 of 25). The
+  # expected count is the compile-time-baked @project_checklist_count, never a
+  # client value. Only runs on a non-empty list (absence/empty already reported
+  # above), so it never double-reports. A nil baked count (checklist unreadable
+  # at build time) fails closed via coverage_shortfall/2.
+  defp require_project_checks_coverage(errors, result) do
+    case Map.get(result, "project_checks") do
+      [_ | _] = checks ->
+        case coverage_shortfall(@project_checklist_count, length(checks)) do
+          nil -> errors
+          message -> [{:project_checks, message} | errors]
+        end
+
+      _ ->
+        errors
+    end
+  end
+
   defp missing_structured_field_message(key) do
     gettext(
       "is required on a dispatched review: the structured %{field} field the review queue renders is missing",
@@ -378,6 +574,26 @@ defmodule Kanban.Tasks.CompletionValidation do
   defp missing_status_or_issue_counts_message do
     gettext(
       "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
+    )
+  end
+
+  defp empty_project_checks_message do
+    gettext(
+      "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
+    )
+  end
+
+  defp coverage_shortfall_message(expected, supplied) do
+    gettext(
+      "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated",
+      expected: expected,
+      supplied: supplied
+    )
+  end
+
+  defp checklist_unavailable_message do
+    gettext(
+      "cannot be verified: the project checklist file could not be read, so project_checks coverage cannot be confirmed"
     )
   end
 

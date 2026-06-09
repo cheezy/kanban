@@ -83,6 +83,18 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "acceptance_criteria" => [
         %{"criterion" => "Validator rejects legacy-only reviewer_result", "status" => "met"}
       ],
+      # W1066/W1067: a fully-populated review must carry every section verdict
+      # AND a project_checks list that covers the full checklist (sized from the
+      # canonical count so it stays correct as the checklist grows).
+      "project_checks" =>
+        for(
+          i <- 1..Kanban.Tasks.CompletionValidation.project_checklist_count(),
+          do: %{"check" => "check #{i}", "status" => "met"}
+        ),
+      "testing_strategy" => %{"status" => "passed"},
+      "patterns" => %{"status" => "passed"},
+      "pitfalls" => %{"status" => "passed"},
+      "security_considerations" => %{"status" => "passed"},
       "schema_version" => "1.0"
     }
   end
@@ -98,6 +110,26 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "acceptance_criteria_checked" => 5,
       "issues_found" => 1
     }
+  end
+
+  # A claimed, in-progress task that supplies security_considerations, so the
+  # W1069 gate cross-check has a task field to enforce against.
+  defp security_task(board, user) do
+    doing_column = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Doing"))
+
+    {:ok, task} =
+      Tasks.create_task(doing_column, %{
+        "title" => "Security Task",
+        "status" => "in_progress",
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id,
+        "needs_review" => true,
+        "security_considerations" => ["Keep board scoping intact"]
+      })
+
+    task
   end
 
   defp base_completion_params do
@@ -2605,6 +2637,40 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert Enum.any?(response["failures"], &(&1["field"] == "explorer_result"))
     end
 
+    test "strict mode: gate surfaces a not_assessed security verdict when the task supplied security_considerations (W1069)",
+         %{conn: conn, board: board, user: user} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+      task = security_task(board, user)
+
+      reviewer =
+        Map.put(valid_reviewer_result(), "security_considerations", %{"status" => "not_assessed"})
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", reviewer)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      assert response["error"] == "completion validation failed"
+      assert Enum.any?(response["failures"], &(&1["field"] == "reviewer_result"))
+    end
+
+    test "strict mode: a report consistent with the task's security_considerations passes the cross-check (W1069)",
+         %{conn: conn, board: board, user: user} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+      task = security_task(board, user)
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", valid_reviewer_result())
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      assert json_response(conn, 200)["data"]
+    end
+
     test "strict mode: valid explorer_result and reviewer_result returns 200 and persists",
          %{conn: conn, task: task} do
       Application.put_env(:kanban, :strict_completion_validation, true)
@@ -2847,8 +2913,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 200)["data"]["id"] == task.id
     end
 
-    test "grace mode: dispatched but legacy-only reviewer_result still completes (rollout preserved, D55)",
+    test "grace mode: a dispatched but legacy-only (thin) reviewer_result is REJECTED unconditionally (W1070)",
          %{conn: conn, task: task} do
+      # W1070 supersedes the D55 grace rollout for COMPLETENESS: a present,
+      # dispatched review missing its structured sections is a thin report and
+      # rejects in any mode. (Absent reviews and pure shape nits stay grace-gated.)
       Application.put_env(:kanban, :strict_completion_validation, false)
 
       params =
@@ -2859,11 +2928,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
       log =
         capture_log(fn ->
           conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
-          assert json_response(conn, 200)["data"]["id"] == task.id
+          response = json_response(conn, 422)
+
+          failure = Enum.find(response["failures"], &(&1["field"] == "reviewer_result"))
+          assert failure
+          missing = Enum.map(failure["errors"], & &1["field"])
+          assert "project_checks" in missing
+          assert "security_considerations" in missing
         end)
 
       assert log =~ "stride.completion.validation_failed"
-      assert log =~ "grace"
     end
 
     test "strict mode: 422 body shape shares hook-result error top-level keys",

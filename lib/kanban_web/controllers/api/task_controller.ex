@@ -500,7 +500,7 @@ defmodule KanbanWeb.API.TaskController do
   defp gate_completion_results(task, params) do
     metadata = [task_id: task.id, agent_name: params["agent_name"]]
 
-    case CompletionResultGate.gate(params, metadata: metadata) do
+    case CompletionResultGate.gate(params, task: task, metadata: metadata) do
       :ok -> :ok
       {:warn, _failures} -> :ok
       {:reject, body} -> {:error, {:completion_validation_failed, body}}

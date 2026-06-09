@@ -36,18 +36,38 @@ defmodule KanbanWeb.API.CompletionResultGate do
   def gate(params, opts \\ []) when is_map(params) do
     strict? = Keyword.get(opts, :strict, strict?())
     metadata = Keyword.get(opts, :metadata, [])
+    task = Keyword.get(opts, :task)
 
-    failures = collect_failures(params)
+    always = contract_failures(params, task)
+    gated = gated_failures(params)
 
-    handle_result(failures, strict?, metadata)
+    handle_result(always, gated, strict?, metadata)
   end
 
   @doc """
-  Returns the current value of `:strict_completion_validation`.
+  Returns the current value of `:strict_completion_validation` — the single
+  source of truth for the grace decision. The always-reject review contract
+  (W1070) does NOT consult it; only the legacy-shape grace path does.
   """
   def strict?, do: Application.get_env(:kanban, :strict_completion_validation, false)
 
-  defp collect_failures(params) do
+  # W1070: the fully-populated + consistent review contract is enforced
+  # UNCONDITIONALLY — these failures reject regardless of the grace flag, so a
+  # thin, task-inconsistent, or omitted review can never complete. Scoped to
+  # completeness/consistency only (see CompletionValidation.review_contract_failures/2);
+  # legacy shape nits stay in gated_failures/1. Folded into the same
+  # "reviewer_result" field shape the controller already renders.
+  defp contract_failures(params, task) do
+    case CompletionValidation.review_contract_failures(params["reviewer_result"], task) do
+      [] -> []
+      errors -> [%{field: "reviewer_result", errors: errors}]
+    end
+  end
+
+  # Grace-gated: explorer_result, reviewer_result legacy/shape checks (presence of
+  # the structured block is handled unconditionally by the contract above, so the
+  # base check runs WITHOUT require_structured_block here), and changed_files.
+  defp gated_failures(params) do
     [
       evaluate(
         "explorer_result",
@@ -57,7 +77,7 @@ defmodule KanbanWeb.API.CompletionResultGate do
       evaluate(
         "reviewer_result",
         params["reviewer_result"],
-        &CompletionValidation.validate_reviewer_result(&1, require_structured_block: true)
+        &CompletionValidation.validate_reviewer_result/1
       ),
       evaluate_changed_files(params)
     ]
@@ -86,16 +106,33 @@ defmodule KanbanWeb.API.CompletionResultGate do
     end
   end
 
-  defp handle_result([], _strict?, _metadata), do: :ok
+  defp handle_result([], [], _strict?, _metadata), do: :ok
 
-  defp handle_result(failures, strict?, metadata) do
-    log_warning(failures, metadata, strict?)
+  defp handle_result(always, gated, strict?, metadata) do
+    # The contract and the base/shape checks can both fail under "reviewer_result";
+    # merge by field so the body carries one entry per field with all its errors.
+    all = merge_by_field(always ++ gated)
+    # Reject when the always-on contract failed (any mode) OR strict mode is on.
+    reject? = always != [] or strict?
+    log_warning(all, metadata, reject?)
 
-    if strict?, do: {:reject, build_body(failures)}, else: {:warn, failures}
+    if reject?, do: {:reject, build_body(all)}, else: {:warn, merge_by_field(gated)}
   end
 
-  defp log_warning(failures, metadata, strict?) do
-    mode = if strict?, do: :strict, else: :grace
+  # Stable merge: preserve first-seen field order, concatenating errors per field.
+  defp merge_by_field(failures) do
+    fields = failures |> Enum.map(& &1.field) |> Enum.uniq()
+    Enum.map(fields, &%{field: &1, errors: errors_for_field(failures, &1)})
+  end
+
+  defp errors_for_field(failures, field) do
+    failures
+    |> Enum.filter(&(&1.field == field))
+    |> Enum.flat_map(& &1.errors)
+  end
+
+  defp log_warning(failures, metadata, reject?) do
+    mode = if reject?, do: :reject, else: :grace
 
     summary =
       Enum.map_join(failures, "; ", fn %{field: field, errors: errors} ->

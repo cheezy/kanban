@@ -18,6 +18,252 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "required_review_sections/0" do
+    test "enumerates every required structured review section" do
+      sections = CompletionValidation.required_review_sections()
+
+      for key <- [
+            :issues,
+            :acceptance_criteria,
+            :project_checks,
+            :testing_strategy,
+            :patterns,
+            :pitfalls,
+            :security_considerations,
+            :schema_version
+          ] do
+        assert key in sections, "expected #{key} to be a required review section"
+      end
+    end
+
+    test "includes project_checks and security_considerations (the dropped sections)" do
+      sections = CompletionValidation.required_review_sections()
+
+      assert :project_checks in sections
+      assert :security_considerations in sections
+    end
+  end
+
+  # W1066: a dispatched review must carry the COMPLETE structured block — every
+  # section in @required_review_sections, with a non-empty project_checks list.
+  # This supersedes the W1065 no-op guard: project_checks and the four section
+  # verdicts are now required, driven by the shared attribute (not re-typed).
+  describe "validate_reviewer_result/2 — complete structured block (W1066)" do
+    test "accepts a dispatched review carrying all required sections" do
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(full_structured_payload(),
+                 require_structured_block: true
+               )
+    end
+
+    test "rejects a dispatched review missing project_checks, named" do
+      payload = Map.delete(full_structured_payload(), "project_checks")
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert error_for(errors, :project_checks)
+    end
+
+    test "rejects a dispatched review with an empty project_checks list" do
+      payload = Map.put(full_structured_payload(), "project_checks", [])
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert {:project_checks, msg} = error_for(errors, :project_checks)
+      assert msg =~ "non-empty"
+    end
+
+    test "rejects a dispatched review missing each section verdict, named" do
+      for section <- ["testing_strategy", "patterns", "pitfalls", "security_considerations"] do
+        payload = Map.delete(full_structured_payload(), section)
+        field = String.to_existing_atom(section)
+
+        assert {:error, errors} =
+                 CompletionValidation.validate_reviewer_result(payload,
+                   require_structured_block: true
+                 )
+
+        assert error_for(errors, field), "expected #{section} to be reported as missing"
+      end
+    end
+
+    test "the skip path is unaffected by the new required sections" do
+      payload = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => @valid_summary
+      }
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "the new sections are not required without require_structured_block (grace)" do
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(base_reviewer_payload())
+    end
+  end
+
+  # W1067: project_checks must cover EVERY top-level bullet of the canonical
+  # checklist (CODE-REVIEW.md), not merely be non-empty. The expected count is
+  # read once at compile time from the file, never from the client.
+  describe "project_checklist_count/0 and coverage (W1067)" do
+    test "reads the bullet count from the canonical checklist file" do
+      file_count =
+        File.cwd!()
+        |> Path.join("CODE-REVIEW.md")
+        |> File.read!()
+        |> String.split("\n")
+        |> Enum.count(&String.starts_with?(&1, "- "))
+
+      assert CompletionValidation.project_checklist_count() == file_count
+      assert CompletionValidation.project_checklist_count() > 0
+    end
+
+    test "coverage_shortfall/2 returns nil when supplied meets or exceeds expected" do
+      assert CompletionValidation.coverage_shortfall(25, 25) == nil
+      assert CompletionValidation.coverage_shortfall(25, 30) == nil
+    end
+
+    test "coverage_shortfall/2 names expected and supplied on a shortfall" do
+      message = CompletionValidation.coverage_shortfall(25, 3)
+
+      assert is_binary(message)
+      assert message =~ "3"
+      assert message =~ "25"
+    end
+
+    test "coverage_shortfall/2 fails closed when the expected count is unavailable" do
+      assert CompletionValidation.coverage_shortfall(nil, 30) =~ "could not be read"
+      assert CompletionValidation.coverage_shortfall(0, 30) =~ "could not be read"
+    end
+
+    test "rejects a dispatched review whose project_checks fall short (D60 3-of-N)" do
+      payload =
+        Map.put(full_structured_payload(), "project_checks", [
+          %{"check" => "a", "status" => "met"},
+          %{"check" => "b", "status" => "met"},
+          %{"check" => "c", "status" => "met"}
+        ])
+
+      assert {:error, errors} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+
+      assert {:project_checks, msg} = error_for(errors, :project_checks)
+      assert msg =~ "3"
+      assert msg =~ to_string(CompletionValidation.project_checklist_count())
+    end
+
+    test "accepts a dispatched review whose project_checks cover the full checklist" do
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(full_structured_payload(),
+                 require_structured_block: true
+               )
+    end
+  end
+
+  # W1068: cross-check a dispatched review against the task it describes. A
+  # well-formed review can still be inconsistent with its task — e.g. the D60
+  # bug where security_considerations came back not_assessed though the task
+  # supplied them.
+  describe "cross_check_reviewer_result/2 (W1068)" do
+    test "passes when the report is consistent with the task" do
+      task =
+        task_with(%{
+          security_considerations: ["Keep board scoping intact"],
+          testing_strategy: %{"unit_tests" => ["t1"]},
+          acceptance_criteria: "Criterion one"
+        })
+
+      assert {:ok, _} =
+               CompletionValidation.cross_check_reviewer_result(full_structured_payload(), task)
+    end
+
+    test "rejects an unassessed security verdict when the task supplied security_considerations (D60)" do
+      task = task_with(%{security_considerations: ["Keep board scoping intact"]})
+
+      payload =
+        Map.put(full_structured_payload(), "security_considerations", %{
+          "status" => "not_assessed"
+        })
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert error_for(errors, :security_considerations)
+    end
+
+    test "rejects an absent security verdict when the task supplied security_considerations" do
+      task = task_with(%{security_considerations: ["Keep board scoping intact"]})
+      payload = Map.delete(full_structured_payload(), "security_considerations")
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert error_for(errors, :security_considerations)
+    end
+
+    test "rejects an unassessed testing verdict when the task supplied a testing_strategy" do
+      task = task_with(%{testing_strategy: %{"unit_tests" => ["t1"]}})
+
+      payload =
+        Map.put(full_structured_payload(), "testing_strategy", %{"status" => "not_assessed"})
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert error_for(errors, :testing_strategy)
+    end
+
+    test "rejects when the review checks fewer acceptance criteria than the task lists" do
+      task = task_with(%{acceptance_criteria: "One\nTwo\nThree"})
+
+      payload =
+        Map.put(full_structured_payload(), "acceptance_criteria", [
+          %{"criterion" => "One", "status" => "met"}
+        ])
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert {:acceptance_criteria, msg} = error_for(errors, :acceptance_criteria)
+      assert msg =~ "1"
+      assert msg =~ "3"
+    end
+
+    test "skips each rule when the task supplied no content for that field" do
+      task = task_with(%{})
+
+      payload =
+        full_structured_payload()
+        |> Map.put("security_considerations", %{"status" => "not_assessed"})
+        |> Map.put("testing_strategy", %{"status" => "not_assessed"})
+        |> Map.put("acceptance_criteria", [])
+
+      assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(payload, task)
+    end
+
+    test "a skip-form (dispatched: false) review passes through untouched" do
+      task = task_with(%{security_considerations: ["x"]})
+
+      payload = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => @valid_summary
+      }
+
+      assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(payload, task)
+    end
+
+    test "the result-only entry point is unchanged (no task argument)" do
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(full_structured_payload(),
+                 require_structured_block: true
+               )
+    end
+  end
+
   describe "validate_explorer_result/1 — happy paths" do
     test "accepts dispatched=true with summary and duration_ms" do
       payload = %{"dispatched" => true, "summary" => @valid_summary, "duration_ms" => 12_000}
@@ -600,6 +846,10 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert error_for(errors, :acceptance_criteria)
       assert error_for(errors, :status)
       assert error_for(errors, :schema_version)
+      # W1066: the project_checks list and the section verdicts are now required too.
+      assert error_for(errors, :project_checks)
+      assert error_for(errors, :testing_strategy)
+      assert error_for(errors, :security_considerations)
     end
 
     test "missing issues[] is reported by name" do
@@ -855,6 +1105,27 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     |> Map.put("issue_counts", %{"critical" => 0, "important" => 0, "minor" => 0})
     |> Map.put("issues", [%{"severity" => "minor", "category" => "code_quality"}])
     |> Map.put("acceptance_criteria", [%{"criterion" => "X", "status" => "met"}])
+    |> Map.put("project_checks", full_project_checks())
+    |> Map.put("testing_strategy", %{"status" => "passed"})
+    |> Map.put("patterns", %{"status" => "passed"})
+    |> Map.put("pitfalls", %{"status" => "passed"})
+    |> Map.put("security_considerations", %{"status" => "passed"})
     |> Map.put("schema_version", "1.0")
+  end
+
+  # A minimal task-like map for the W1068 cross-checks, defaulting every
+  # cross-checked field to "not supplied" so each test opts in only what it needs.
+  defp task_with(fields) do
+    Map.merge(
+      %{security_considerations: [], testing_strategy: %{}, acceptance_criteria: nil},
+      fields
+    )
+  end
+
+  # A project_checks list that covers the full checklist (W1067), sized from the
+  # canonical count so it stays correct as the checklist grows.
+  defp full_project_checks do
+    for i <- 1..CompletionValidation.project_checklist_count(),
+        do: %{"check" => "check #{i}", "status" => "met"}
   end
 end

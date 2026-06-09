@@ -412,4 +412,76 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.pitfalls_passed(task) == true
     end
   end
+
+  describe "section_incomplete?/2 and project_checks_gap/1 (W1071)" do
+    test "flags a section the task supplied but the review left unassessed" do
+      task = %{
+        security_considerations: ["Keep board scoping intact"],
+        reviewer_result: %{"security_considerations" => %{"status" => "not_assessed"}}
+      }
+
+      assert ReviewReportHelpers.section_incomplete?(task, :security_considerations)
+    end
+
+    test "flags a section the task supplied but the review left out entirely" do
+      task = %{
+        security_considerations: ["Keep board scoping intact"],
+        reviewer_result: %{"status" => "approved"}
+      }
+
+      assert ReviewReportHelpers.section_incomplete?(task, :security_considerations)
+    end
+
+    test "does not flag a section the task did not supply" do
+      task = %{
+        security_considerations: [],
+        reviewer_result: %{"security_considerations" => %{"status" => "not_assessed"}}
+      }
+
+      refute ReviewReportHelpers.section_incomplete?(task, :security_considerations)
+    end
+
+    test "does not flag a section the review actually assessed" do
+      task = %{
+        security_considerations: ["x"],
+        reviewer_result: %{"security_considerations" => %{"status" => "passed"}}
+      }
+
+      refute ReviewReportHelpers.section_incomplete?(task, :security_considerations)
+    end
+
+    test "incomplete_sections lists only supplied-but-unassessed sections" do
+      task = %{
+        security_considerations: ["x"],
+        testing_strategy: %{"unit_tests" => ["t"]},
+        reviewer_result: %{
+          "security_considerations" => %{"status" => "not_assessed"},
+          "testing_strategy" => %{"status" => "passed"}
+        }
+      }
+
+      assert ReviewReportHelpers.incomplete_sections(task) == [:security_considerations]
+    end
+
+    test "project_checks_gap returns {supplied, expected} for a short dispatched review" do
+      expected = Kanban.Tasks.CompletionValidation.project_checklist_count()
+      task = %{reviewer_result: %{"dispatched" => true, "project_checks" => [%{"check" => "a"}]}}
+
+      assert {1, ^expected} = ReviewReportHelpers.project_checks_gap(task)
+    end
+
+    test "project_checks_gap returns nil for a full dispatched review" do
+      expected = Kanban.Tasks.CompletionValidation.project_checklist_count()
+      checks = for i <- 1..expected, do: %{"check" => "c#{i}"}
+      task = %{reviewer_result: %{"dispatched" => true, "project_checks" => checks}}
+
+      assert ReviewReportHelpers.project_checks_gap(task) == nil
+    end
+
+    test "project_checks_gap returns nil for a skip-form (non-dispatched) review" do
+      task = %{reviewer_result: %{"dispatched" => false, "reason" => "small_task_0_1_key_files"}}
+
+      assert ReviewReportHelpers.project_checks_gap(task) == nil
+    end
+  end
 end

@@ -31,6 +31,8 @@ defmodule KanbanWeb.ReviewReportPanel do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.ReviewReportHelpers
+
   @doc """
   Renders the review-report panel for a task.
 
@@ -51,6 +53,7 @@ defmodule KanbanWeb.ReviewReportPanel do
       |> assign(:branch, branch)
       |> assign(:reviewer_result, reviewer_result(assigns.task))
       |> assign(:review_report, review_report(assigns.task))
+      |> assign(:incomplete_sections, ReviewReportHelpers.incomplete_sections(assigns.task))
 
     ~H"""
     <section
@@ -58,6 +61,18 @@ defmodule KanbanWeb.ReviewReportPanel do
       data-review-report-panel={Atom.to_string(@branch)}
       class="bg-base-100 border border-base-300 dark:border-base-content/15 rounded-lg p-4 text-base-content"
     >
+      <div
+        :if={@incomplete_sections != []}
+        data-review-report-incomplete
+        class="flex items-start gap-2 mb-3 p-2 rounded border border-warning bg-base-200 text-sm text-base-content"
+      >
+        <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0 text-warning" />
+        <span>
+          {gettext(
+            "Incomplete review — the task specified these sections, but the review did not assess them:"
+          )} {Enum.map_join(@incomplete_sections, ", ", &ReviewReportHelpers.section_label/1)}
+        </span>
+      </div>
       <%= case @branch do %>
         <% :structured -> %>
           <.structured_view reviewer_result={@reviewer_result} review_report={@review_report} />

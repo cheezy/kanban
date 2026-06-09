@@ -13,6 +13,89 @@ defmodule KanbanWeb.ReviewReportHelpers do
   """
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias Kanban.Tasks.CompletionValidation
+
+  @incomplete_sections [:testing_strategy, :patterns, :pitfalls, :security_considerations]
+
+  @doc """
+  Returns `true` when a review section is a genuine gap: the task supplied
+  content for it, but the review left it missing or `not_assessed`. Drives the
+  loud incomplete-section warnings on the Review queue (W1071). A section the
+  task did not supply is never flagged — only true gaps. Pure; no DB access.
+  """
+  def section_incomplete?(task, section) when section in @incomplete_sections do
+    section_supplied?(task, section) and
+      effective_section_status(task, section) in [
+        nil,
+        "not_assessed"
+      ]
+  end
+
+  def section_incomplete?(_task, _section), do: false
+
+  @doc """
+  The list of section atoms the task supplied but the review left missing or
+  unassessed — the sections the Review queue should warn about.
+  """
+  def incomplete_sections(task) do
+    Enum.filter(@incomplete_sections, &section_incomplete?(task, &1))
+  end
+
+  @doc "Human-readable label for an incomplete review section."
+  def section_label(:testing_strategy), do: gettext("Testing strategy")
+  def section_label(:patterns), do: gettext("Patterns")
+  def section_label(:pitfalls), do: gettext("Pitfalls")
+  def section_label(:security_considerations), do: gettext("Security considerations")
+
+  @doc """
+  The project-checks coverage gap for a dispatched review: `{supplied, expected}`
+  when the review's `project_checks` covers fewer than the canonical checklist
+  (`CODE-REVIEW.md`) expects, or `nil` when the coverage is complete, the review
+  was not dispatched, or the checklist count is unavailable. Drives the Code
+  Review panel's incomplete warning (W1071). Pure; the expected count is the
+  compile-time-baked checklist size, not a DB read.
+  """
+  def project_checks_gap(task) do
+    with %{"dispatched" => true} = result <- reviewer_result(task),
+         expected when is_integer(expected) and expected > 0 <-
+           CompletionValidation.project_checklist_count() do
+      coverage_gap(result, expected)
+    else
+      _ -> nil
+    end
+  end
+
+  defp coverage_gap(result, expected) do
+    supplied = result |> Map.get("project_checks", []) |> List.wrap() |> length()
+    if supplied < expected, do: {supplied, expected}, else: nil
+  end
+
+  defp effective_section_status(task, :testing_strategy),
+    do:
+      structured_or_derived(task, "testing_strategy", "testing", testing_strategy_present?(task))
+
+  defp effective_section_status(task, :patterns),
+    do: structured_or_derived(task, "patterns", "pattern", patterns_present?(task))
+
+  defp effective_section_status(task, :pitfalls),
+    do: structured_or_derived(task, "pitfalls", "pitfall", pitfalls_present?(task))
+
+  defp effective_section_status(task, :security_considerations),
+    do:
+      structured_or_derived(
+        task,
+        "security_considerations",
+        "security",
+        security_considerations_present?(task)
+      )
+
+  defp section_supplied?(task, :testing_strategy), do: testing_strategy_present?(task)
+  defp section_supplied?(task, :patterns), do: patterns_present?(task)
+  defp section_supplied?(task, :pitfalls), do: pitfalls_present?(task)
+
+  defp section_supplied?(task, :security_considerations),
+    do: security_considerations_present?(task)
+
   @doc """
   Human-readable value for the testing-strategy verdict cell.
 
