@@ -29,6 +29,7 @@ defmodule KanbanWeb.GoalCard do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.BoardIdentity, only: [present?: 1]
   import KanbanWeb.TaskVisuals
 
   alias KanbanWeb.Avatar
@@ -229,9 +230,4 @@ defmodule KanbanWeb.GoalCard do
 
   defp segment_pct(_count, 0), do: 0
   defp segment_pct(count, total), do: round(count / total * 100)
-
-  defp present?(nil), do: false
-  defp present?(""), do: false
-  defp present?(s) when is_binary(s), do: String.trim(s) != ""
-  defp present?(_), do: false
 end

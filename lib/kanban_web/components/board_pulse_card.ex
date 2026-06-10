@@ -15,6 +15,8 @@ defmodule KanbanWeb.BoardPulseCard do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.BoardIdentity
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.PulseSparkline
 
@@ -196,32 +198,6 @@ defmodule KanbanWeb.BoardPulseCard do
   end
 
   # --- Helpers -------------------------------------------------------------
-
-  defp accent_color(:orange), do: "var(--stride-orange)"
-  defp accent_color(:ready), do: "var(--st-ready)"
-  defp accent_color(:doing), do: "var(--st-doing)"
-  defp accent_color(:violet), do: "var(--stride-violet)"
-  defp accent_color(:backlog), do: "var(--st-backlog)"
-  defp accent_color(:blocked), do: "var(--st-blocked)"
-  defp accent_color(_other), do: "var(--ink-3)"
-
-  defp present?(nil), do: false
-  defp present?(""), do: false
-  defp present?(s) when is_binary(s), do: String.trim(s) != ""
-  defp present?(_), do: false
-
-  defp board_prefix(name) when is_binary(name) do
-    letters =
-      name
-      |> String.upcase()
-      |> String.replace(~r/[^A-Z]/, "")
-
-    letters
-    |> String.slice(0, 3)
-    |> String.pad_trailing(3, "?")
-  end
-
-  defp board_prefix(_), do: "???"
 
   # Synthesize a small member list from the agent count so the card
   # works against the metrics map alone. The Boards LiveView is free to
