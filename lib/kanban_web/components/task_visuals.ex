@@ -39,8 +39,7 @@ defmodule KanbanWeb.TaskVisuals do
         "width: 6px; height: 6px; border-radius: 50%;",
         "background: #{@color}; flex-shrink: 0;"
       ]}
-    >
-    </span>
+    ></span>
     """
   end
 

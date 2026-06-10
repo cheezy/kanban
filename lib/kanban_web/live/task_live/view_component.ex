@@ -358,8 +358,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                   "width: 6px; height: 6px; border-radius: 50%;",
                   "background: #{TaskTokens.priority_color(@task.priority)};"
                 ]}
-              >
-              </span>
+              ></span>
               <span>{TaskTokens.priority_word(@task.priority)}</span>
             </MetaItem.meta_item>
 
@@ -475,8 +474,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
           "width: 6px; height: 6px; border-radius: 50%;",
           "background: #{TaskTokens.priority_color(@task.priority)};"
         ]}
-      >
-      </span>
+      ></span>
       <span :if={@task.priority || @task.complexity} style="font-size: 11px; color: var(--ink-3);">
         {pretty_meta(@task.priority, @task.complexity)}
       </span>

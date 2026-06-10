@@ -204,15 +204,15 @@
                 {format_time(val * 3600)}
               </text>
             <% end %>
-            
-<!-- Area fill under the line -->
+
+            <!-- Area fill under the line -->
             <polygon
               points={"0,#{chart_h} #{polyline} #{elem(List.last(points), 0)},#{chart_h}"}
               fill="#10b981"
               fill-opacity="0.1"
             />
-            
-<!-- The line itself -->
+
+            <!-- The line itself -->
             <polyline
               points={polyline}
               fill="none"
@@ -221,8 +221,8 @@
               stroke-linejoin="round"
               stroke-linecap="round"
             />
-            
-<!-- Data points -->
+
+            <!-- Data points -->
             <%= for {x, y} <- points do %>
               <circle cx={x} cy={y} r="3" fill="#10b981" />
             <% end %>

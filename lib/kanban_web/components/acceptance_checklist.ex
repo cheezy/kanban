@@ -268,8 +268,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
         "margin-top: 2px;",
         "border: 1.5px solid var(--line-strong); background: transparent;"
       ]}
-    >
-    </span>
+    ></span>
     """
   end
 

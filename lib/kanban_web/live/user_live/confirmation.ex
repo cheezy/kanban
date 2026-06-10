@@ -63,8 +63,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
           </div>
         <% else %>
           <div style="margin-top: 28px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 12px; width: 100%;">
-            <span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--surface-sunken); border-top-color: var(--stride-orange); animation: authspin 0.8s linear infinite; flex-shrink: 0;">
-            </span>
+            <span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--surface-sunken); border-top-color: var(--stride-orange); animation: authspin 0.8s linear infinite; flex-shrink: 0;"></span>
             <div style="flex: 1; text-align: left;">
               <div style="font-size: 12.5px; color: var(--ink); font-weight: 500;">
                 {gettext("Verifying your confirmation link…")}

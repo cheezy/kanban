@@ -53,6 +53,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
           {gettext("Add user by email")}
         </div>
         <form
+          id="member-search-form"
           phx-submit="search_user"
           phx-target={@myself}
           style="display: flex; align-items: center; gap: 8px;"

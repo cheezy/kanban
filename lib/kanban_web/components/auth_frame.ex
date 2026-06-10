@@ -99,8 +99,7 @@ defmodule KanbanWeb.AuthFrame do
           "border-top-color: var(--surface);",
           "animation: authspin 0.8s linear infinite;"
         ]}
-      >
-      </span>
+      ></span>
       {render_slot(@inner_block)}
       <span
         :if={@kbd}

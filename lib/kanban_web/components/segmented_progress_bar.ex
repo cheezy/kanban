@@ -62,8 +62,7 @@ defmodule KanbanWeb.SegmentedProgressBar do
           "background: #{status_color(status)};",
           "opacity: #{segment_opacity(status)};"
         ]}
-      >
-      </span>
+      ></span>
     </div>
     """
   end

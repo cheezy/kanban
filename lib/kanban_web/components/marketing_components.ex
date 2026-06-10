@@ -199,6 +199,7 @@ defmodule KanbanWeb.MarketingComponents do
       >
         <form
           :for={locale <- @locales}
+          id={"marketing-locale-form-#{locale.code}"}
           action={~p"/locale/#{locale.code}"}
           method="post"
         >

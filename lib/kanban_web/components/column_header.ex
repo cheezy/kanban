@@ -53,8 +53,7 @@ defmodule KanbanWeb.ColumnHeader do
           "background: #{@status_color}; flex-shrink: 0;",
           "box-shadow: 0 0 0 3px #{ring_color(@over_wip)};"
         ]}
-      >
-      </span>
+      ></span>
       <span style="font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em;">
         {@column.name}
       </span>

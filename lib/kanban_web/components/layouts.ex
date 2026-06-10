@@ -356,14 +356,11 @@ defmodule KanbanWeb.Layouts do
       <% end %>
       <div class="hidden md:flex" style="gap: 6px;" aria-hidden="true">
         <%!-- dark-mode-ignore: brand status dot (red), fixed contrast on both themes --%>
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(75% 0.13 25); display: inline-block;">
-        </span>
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(75% 0.13 25); display: inline-block;"></span>
         <%!-- dark-mode-ignore: brand status dot (yellow), fixed contrast on both themes --%>
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(80% 0.13 80); display: inline-block;">
-        </span>
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(80% 0.13 80); display: inline-block;"></span>
         <%!-- dark-mode-ignore: brand status dot (green), fixed contrast on both themes --%>
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(70% 0.14 145); display: inline-block;">
-        </span>
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: oklch(70% 0.14 145); display: inline-block;"></span>
       </div>
       <div style="width: 1px; height: 14px; background: var(--line-2); margin-left: 4px;"></div>
 

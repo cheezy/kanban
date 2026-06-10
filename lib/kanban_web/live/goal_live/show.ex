@@ -175,8 +175,7 @@ defmodule KanbanWeb.GoalLive.Show do
                       "width: 6px; height: 6px; border-radius: 50%;",
                       "background: #{status_dot(status)};"
                     ]}
-                  >
-                  </span>
+                  ></span>
                   <span style="font-size: 11.5px; font-weight: 600; color: var(--ink);">
                     {status_label(status)}
                   </span>

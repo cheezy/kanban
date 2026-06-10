@@ -204,23 +204,19 @@ defmodule KanbanWeb.GoalCard do
         <span
           :if={@done > 0}
           style={"width: #{segment_pct(@done, @total)}%; background: var(--st-done);"}
-        >
-        </span>
+        ></span>
         <span
           :if={@review > 0}
           style={"width: #{segment_pct(@review, @total)}%; background: var(--st-review);"}
-        >
-        </span>
+        ></span>
         <span
           :if={@doing > 0}
           style={"width: #{segment_pct(@doing, @total)}%; background: var(--st-doing);"}
-        >
-        </span>
+        ></span>
         <span
           :if={@ready > 0}
           style={"width: #{segment_pct(@ready, @total)}%; background: var(--st-ready);"}
-        >
-        </span>
+        ></span>
       </div>
     </div>
     """

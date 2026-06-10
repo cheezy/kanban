@@ -83,26 +83,21 @@ defmodule KanbanWeb.BoardLive.Index do
     >
       <div style="display: flex; align-items: center; gap: 8px;">
         <span style="width: 26px; height: 26px; border-radius: 6px; background: var(--line);"></span>
-        <span style="flex: 1; height: 10px; border-radius: 3px; background: var(--surface-sunken);">
-        </span>
+        <span style="flex: 1; height: 10px; border-radius: 3px; background: var(--surface-sunken);"></span>
       </div>
-      <span style="height: 8px; border-radius: 3px; background: var(--surface-sunken); width: 60%;">
-      </span>
+      <span style="height: 8px; border-radius: 3px; background: var(--surface-sunken); width: 60%;"></span>
       <div style="height: 36px; background: var(--surface-sunken); border-radius: 6px; margin-top: 6px;">
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin-top: 6px;">
         <div :for={_ <- 1..4} style="display: flex; flex-direction: column; gap: 4px;">
-          <span style="height: 6px; background: var(--surface-sunken); border-radius: 2px; width: 60%;">
-          </span>
+          <span style="height: 6px; background: var(--surface-sunken); border-radius: 2px; width: 60%;"></span>
           <span style="height: 14px; background: var(--line); border-radius: 3px; width: 50%;"></span>
         </div>
       </div>
       <div style="display: flex; gap: 4px; margin-top: auto;">
         <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line);"></span>
-        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;">
-        </span>
-        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;">
-        </span>
+        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;"></span>
+        <span style="width: 16px; height: 16px; border-radius: 8px; background: var(--line); margin-left: -6px;"></span>
       </div>
     </div>
     """

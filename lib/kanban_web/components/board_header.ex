@@ -90,8 +90,7 @@ defmodule KanbanWeb.BoardHeader do
     <span
       aria-hidden="true"
       style="width: 1px; height: 24px; background: var(--line);"
-    >
-    </span>
+    ></span>
     """
   end
 

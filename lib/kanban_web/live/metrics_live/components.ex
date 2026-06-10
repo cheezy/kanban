@@ -363,7 +363,7 @@ defmodule KanbanWeb.MetricsLive.Components do
           {gettext("Customize your %{view_name} view", view_name: @view_name)}
         </span>
       </header>
-      <form phx-change="filter_change">
+      <form id="metrics-filter-form" phx-change="filter_change">
         <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px;">
           <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;">
             <label style={[

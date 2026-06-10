@@ -42,14 +42,11 @@ defmodule KanbanWeb.MarketingMiniBoard do
         style="height: 32px; background: var(--surface-2); border-bottom: 1px solid var(--line);"
       >
         <%!-- dark-mode-ignore: brand status dot (red), fixed contrast on both themes --%>
-        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(75% 0.13 25);">
-        </span>
+        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(75% 0.13 25);"></span>
         <%!-- dark-mode-ignore: brand status dot (yellow), fixed contrast on both themes --%>
-        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(80% 0.13 80);">
-        </span>
+        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(80% 0.13 80);"></span>
         <%!-- dark-mode-ignore: brand status dot (green), fixed contrast on both themes --%>
-        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(70% 0.14 145);">
-        </span>
+        <span class="rounded-full" style="width: 10px; height: 10px; background: oklch(70% 0.14 145);"></span>
         <span
           class="inline-flex items-center ml-2.5 text-[11.5px] font-medium"
           style="color: var(--ink-2);"
@@ -80,8 +77,7 @@ defmodule KanbanWeb.MarketingMiniBoard do
             <span
               aria-hidden="true"
               style={"width: 8px; height: 8px; border-radius: 50%; background: var(--st-#{col.id}); flex-shrink: 0;"}
-            >
-            </span>
+            ></span>
             <span
               class="text-[11.5px] font-semibold"
               style="letter-spacing: -0.005em; color: var(--ink);"
@@ -181,8 +177,7 @@ defmodule KanbanWeb.MarketingMiniBoard do
     <span
       class="rounded-full"
       style={"width: 6px; height: 6px; background: var(--pri-#{@level});"}
-    >
-    </span>
+    ></span>
     """
   end
 
