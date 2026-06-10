@@ -604,4 +604,114 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ "Custom status"
     end
   end
+
+  # --- JSON payload stripping helpers (D64) --------------------------------
+
+  # Unique token so assertions can't collide with other panel text.
+  @json_fence ~s(```json\n{"zz_json_token_zz": "approved"}\n```)
+
+  defp fallback_task(report) do
+    %{id: 64, identifier: "D64", review_report: report, reviewer_result: nil}
+  end
+
+  defp structured_task(report) do
+    %{
+      id: 65,
+      identifier: "D64",
+      review_report: report,
+      reviewer_result: %{
+        "dispatched" => true,
+        "status" => "approved",
+        "summary" => "Reviewed everything",
+        "issues" => []
+      }
+    }
+  end
+
+  describe "JSON payload stripping (D64)" do
+    test "fallback: strips a json-tagged fence and keeps the prose" do
+      html = render_with(fallback_task("## Summary\n\nProse stays.\n\n" <> @json_fence <> "\n"))
+
+      assert html =~ "data-review-report-fallback-body"
+      assert html =~ "Prose stays."
+      refute html =~ "zz_json_token_zz"
+    end
+
+    test "fallback: a json-only report renders no body div at all" do
+      html = render_with(fallback_task(@json_fence))
+
+      refute html =~ "data-review-report-fallback-body"
+      refute html =~ "zz_json_token_zz"
+    end
+
+    test "structured: strips the json fence from the report body" do
+      html = render_with(structured_task("Narrative first.\n\n" <> @json_fence <> "\n"))
+
+      assert html =~ "data-review-report-body"
+      assert html =~ "Narrative first."
+      refute html =~ "zz_json_token_zz"
+    end
+
+    test "structured: a json-only report renders no body div" do
+      html = render_with(structured_task(@json_fence))
+
+      refute html =~ "data-review-report-body"
+      refute html =~ "zz_json_token_zz"
+    end
+
+    test "keeps fenced code blocks with other language tags" do
+      report = "Look at this:\n\n```elixir\ndefmodule ZzKeepMe do\nend\n```\n"
+      html = render_with(fallback_task(report))
+
+      assert html =~ "ZzKeepMe"
+    end
+
+    test "strips an untagged fence whose content parses as JSON" do
+      report = "Before.\n\n```\n{\"zz_untagged_token_zz\": 1}\n```\n\nAfter."
+      html = render_with(fallback_task(report))
+
+      assert html =~ "Before."
+      assert html =~ "After."
+      refute html =~ "zz_untagged_token_zz"
+    end
+
+    test "keeps an untagged fence with non-JSON content" do
+      html = render_with(fallback_task("```\nzz plain text zz\n```\n"))
+
+      assert html =~ "zz plain text zz"
+    end
+
+    test "a report with no fences renders unchanged" do
+      html = render_with(fallback_task("## Plain\n\nNothing fenced here."))
+
+      assert html =~ "data-review-report-fallback-body"
+      assert html =~ "Nothing fenced here."
+    end
+
+    test "strips two separate json fences" do
+      report =
+        "First.\n\n" <> @json_fence <> "\n\nBetween.\n\n```json\n{\"zz_second_zz\": 2}\n```\n"
+
+      html = render_with(fallback_task(report))
+
+      assert html =~ "First."
+      assert html =~ "Between."
+      refute html =~ "zz_json_token_zz"
+      refute html =~ "zz_second_zz"
+    end
+
+    test "strips an unclosed json fence through end of report" do
+      html = render_with(fallback_task("Prose.\n\n```json\n{\"zz_unclosed_zz\": true}"))
+
+      assert html =~ "Prose."
+      refute html =~ "zz_unclosed_zz"
+    end
+
+    test "strips a json fence with trailing whitespace after the tag" do
+      html = render_with(fallback_task("Prose.\n\n```json  \n{\"zz_ws_token_zz\": 1}\n```\n"))
+
+      assert html =~ "Prose."
+      refute html =~ "zz_ws_token_zz"
+    end
+  end
 end

@@ -1153,6 +1153,22 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Approved with 0 findings."
     end
 
+    test "strips the embedded json payload from the report body (D64)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          review_report:
+            "## Review Summary\n\nApproved, prose only.\n\n" <>
+              "```json\n{\"zz_json_token_zz\": true}\n```\n"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "Approved, prose only."
+      refute html =~ "zz_json_token_zz"
+    end
+
     test "thin reviewer_result with only a summary renders no panel (D59)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)

@@ -100,7 +100,7 @@ defmodule KanbanWeb.ReviewReportPanel do
       assigns
       |> assign(:issues, Map.get(assigns.reviewer_result, "issues"))
       |> assign(:summary, Map.get(assigns.reviewer_result, "summary"))
-      |> assign(:report_html, render_markdown(assigns.review_report))
+      |> assign(:report_html, assigns.review_report |> strip_json_blocks() |> render_markdown())
 
     ~H"""
     <p
@@ -179,10 +179,16 @@ defmodule KanbanWeb.ReviewReportPanel do
   attr :review_report, :string, required: true
 
   defp fallback_view(assigns) do
-    assigns = assign(assigns, :report_html, render_markdown(assigns.review_report))
+    assigns =
+      assign(
+        assigns,
+        :report_html,
+        assigns.review_report |> strip_json_blocks() |> render_markdown()
+      )
 
     ~H"""
     <div
+      :if={@report_html != ""}
       data-review-report-fallback-body
       class="prose prose-sm max-w-none text-base-content"
     >
@@ -296,6 +302,89 @@ defmodule KanbanWeb.ReviewReportPanel do
   end
 
   defp render_markdown(_), do: ""
+
+  # --- JSON-fence stripping (D64) -------------------------------------------
+
+  # Agent-submitted review_report strings embed a fenced ```json copy of the
+  # structured reviewer output. That payload is machine-facing — the same data
+  # already renders as the summary, issue list, and section verdicts — so it
+  # is removed from the markdown before rendering. Display-only: the stored
+  # review_report keeps its JSON block for API consumers. Fences with other
+  # language tags survive; untagged fences are removed only when their content
+  # parses as a JSON object.
+  @fence_close ~r/^```[ \t]*$/
+  @fence_json ~r/^```json[ \t]*$/
+  @fence_tagged ~r/^```\S/
+
+  defp strip_json_blocks(text) when is_binary(text) do
+    text
+    |> String.split("\n")
+    |> drop_json_fences(:outside, [])
+    |> Enum.reverse()
+    |> Enum.join("\n")
+    |> String.trim()
+  end
+
+  defp strip_json_blocks(other), do: other
+
+  # Line-by-line state machine. `kept` accumulates retained lines in reverse.
+  # An unclosed ```json fence at end-of-input stays dropped; an unclosed
+  # untagged fence is kept verbatim (its buffer is flushed back).
+  defp drop_json_fences([], {:untagged, buffer}, kept), do: buffer ++ kept
+  defp drop_json_fences([], _state, kept), do: kept
+
+  defp drop_json_fences([line | rest], :outside, kept) do
+    case classify_fence_line(line) do
+      :json_open -> drop_json_fences(rest, :json, kept)
+      :untagged_open -> drop_json_fences(rest, {:untagged, [line]}, kept)
+      :tagged_open -> drop_json_fences(rest, :kept_fence, [line | kept])
+      :text -> drop_json_fences(rest, :outside, [line | kept])
+    end
+  end
+
+  defp drop_json_fences([line | rest], :json, kept) do
+    if Regex.match?(@fence_close, line),
+      do: drop_json_fences(rest, :outside, kept),
+      else: drop_json_fences(rest, :json, kept)
+  end
+
+  defp drop_json_fences([line | rest], :kept_fence, kept) do
+    next_state = if Regex.match?(@fence_close, line), do: :outside, else: :kept_fence
+    drop_json_fences(rest, next_state, [line | kept])
+  end
+
+  defp drop_json_fences([line | rest], {:untagged, buffer}, kept) do
+    if Regex.match?(@fence_close, line),
+      do: drop_json_fences(rest, :outside, close_untagged_fence(line, buffer, kept)),
+      else: drop_json_fences(rest, {:untagged, [line | buffer]}, kept)
+  end
+
+  defp classify_fence_line(line) do
+    cond do
+      Regex.match?(@fence_json, line) -> :json_open
+      Regex.match?(@fence_close, line) -> :untagged_open
+      Regex.match?(@fence_tagged, line) -> :tagged_open
+      true -> :text
+    end
+  end
+
+  # A closed untagged fence is dropped only when its content is a JSON object;
+  # anything else is flushed back into the kept lines verbatim.
+  defp close_untagged_fence(line, buffer, kept) do
+    if json_content?(buffer), do: kept, else: [line | buffer ++ kept]
+  end
+
+  # `buffer` is reverse-ordered with the opening fence as its last element.
+  defp json_content?(buffer) do
+    content =
+      buffer
+      |> Enum.reverse()
+      |> tl()
+      |> Enum.join("\n")
+      |> String.trim()
+
+    String.starts_with?(content, "{") and match?({:ok, _}, Jason.decode(content))
+  end
 
   # --- Severity / status labels and styles ---------------------------------
 
