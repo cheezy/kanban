@@ -9,7 +9,7 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.Boards
-  alias Kanban.Boards.Board
+  alias KanbanWeb.BoardLive.FieldVisibility
 
   @impl true
   def update(%{board: board, current_scope: scope} = assigns, socket) do
@@ -49,38 +49,12 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
   end
 
   def handle_event("toggle_field", %{"field" => field_name}, socket) do
-    if field_name in Board.toggleable_fields() do
-      perform_toggle(socket, field_name)
-    else
-      {:noreply, put_flash(socket, :error, gettext("Invalid field name"))}
-    end
-  end
-
-  defp perform_toggle(socket, field_name) do
-    new_visibility = build_toggled_visibility(socket.assigns.field_visibility, field_name)
-
-    case Boards.update_field_visibility(
-           socket.assigns.board,
-           new_visibility,
-           socket.assigns.scope.user
-         ) do
-      {:ok, updated_board} ->
-        notify_parent({:field_visibility_updated, updated_board.field_visibility})
-        {:noreply, assign(socket, :field_visibility, updated_board.field_visibility)}
-
-      {:error, :unauthorized} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Only board owners can change field visibility"))}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to update field visibility"))}
-    end
-  end
-
-  defp build_toggled_visibility(current, field_name) do
-    defaults = Map.new(Board.toggleable_fields(), fn key -> {key, false} end)
-    complete = Map.merge(defaults, current)
-    Map.put(complete, field_name, !Map.get(complete, field_name, false))
+    FieldVisibility.toggle_field(
+      socket,
+      socket.assigns.scope.user,
+      field_name,
+      fn visibility -> notify_parent({:field_visibility_updated, visibility}) end
+    )
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

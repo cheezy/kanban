@@ -8,9 +8,8 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
   """
   use KanbanWeb, :live_component
 
-  alias Kanban.Accounts
   alias Kanban.Boards
-  alias Kanban.Repo
+  alias KanbanWeb.BoardLive.Membership
 
   @impl true
   def update(%{board: board, current_scope: scope} = assigns, socket) do
@@ -27,115 +26,16 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
 
   @impl true
   def handle_event("search_user", %{"email" => email}, socket) do
-    email = String.trim(email)
-
-    case Accounts.get_user_by_email(email) do
-      nil -> respond_user_not_found(socket, email)
-      user -> evaluate_searched_user(socket, user, email)
-    end
+    Membership.search_user(socket, socket.assigns.scope.user, email)
   end
 
   def handle_event("add_user", %{"access" => access}, socket) do
-    if owner_authorized?(socket) do
-      do_add_user(socket, access)
-    else
-      {:noreply, put_flash(socket, :error, membership_denied_flash())}
-    end
+    Membership.add_user(socket, socket.assigns.scope.user, access)
   end
 
   def handle_event("remove_user", %{"user_id" => user_id}, socket) do
-    if owner_authorized?(socket) do
-      do_remove_user(socket, user_id)
-    else
-      {:noreply, put_flash(socket, :error, membership_denied_flash())}
-    end
+    Membership.remove_user(socket, socket.assigns.scope.user, user_id)
   end
-
-  defp respond_user_not_found(socket, email) do
-    {:noreply,
-     socket
-     |> assign(:searched_user, nil)
-     |> assign(:search_email, email)
-     |> put_flash(:error, gettext("Could not find a user with that email address"))}
-  end
-
-  defp evaluate_searched_user(socket, user, email) do
-    cond do
-      user.id == socket.assigns.scope.user.id ->
-        reject_searched_user(socket, email, gettext("You cannot add yourself to the board"))
-
-      user_already_in_board?(socket, user) ->
-        reject_searched_user(socket, email, gettext("User is already added to the board"))
-
-      true ->
-        {:noreply,
-         socket
-         |> assign(:searched_user, user)
-         |> assign(:search_email, email)
-         |> clear_flash()}
-    end
-  end
-
-  defp user_already_in_board?(socket, user) do
-    Enum.any?(socket.assigns.board_users, fn %{user: u} -> u.id == user.id end)
-  end
-
-  defp reject_searched_user(socket, email, message) do
-    {:noreply,
-     socket
-     |> assign(:searched_user, nil)
-     |> assign(:search_email, email)
-     |> put_flash(:error, message)}
-  end
-
-  defp do_add_user(socket, access) do
-    user = socket.assigns.searched_user
-    board = socket.assigns.board
-    access_atom = String.to_existing_atom(access)
-
-    case Boards.add_user_to_board(board, user, access_atom, socket.assigns.scope.user) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:board_users, Boards.list_board_users(board))
-         |> assign(:searched_user, nil)
-         |> assign(:search_email, "")
-         |> put_flash(:info, gettext("User added successfully"))}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to add user to board"))}
-    end
-  end
-
-  defp do_remove_user(socket, user_id) do
-    board = socket.assigns.board
-    user_id = String.to_integer(user_id)
-
-    case Repo.get(Accounts.User, user_id) do
-      nil ->
-        {:noreply, put_flash(socket, :error, gettext("User not found"))}
-
-      user ->
-        case Boards.remove_user_from_board(board, user, socket.assigns.scope.user) do
-          {:ok, _} ->
-            {:noreply,
-             socket
-             |> assign(:board_users, Boards.list_board_users(board))
-             |> put_flash(:info, gettext("User removed successfully"))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to remove user from board"))}
-        end
-    end
-  end
-
-  defp owner_authorized?(socket) do
-    board = socket.assigns.board
-    user = socket.assigns.scope.user
-    not is_nil(board.id) and Boards.owner?(board, user)
-  end
-
-  defp membership_denied_flash, do: gettext("Only the board owner can manage board membership")
 
   @impl true
   def render(assigns) do
