@@ -53,9 +53,6 @@ IF anything fails, fix it and re-run. Do NOT mark complete until `mix precommit`
 
 These are IF/THEN rules. When you encounter the trigger condition, you MUST take the specified action.
 
-**IF you are about to write a hardcoded color in a template:**
-→ STOP. Use the theme-aware equivalent from the Dark Mode Color Map below. Never use `text-gray-*`, `bg-white`, `bg-gray-*`, or `border-gray-*` in templates.
-
 **IF you are creating a new function:**
 → You MUST write a unit test for it. No exceptions. Run the test and show it passes.
 
@@ -104,39 +101,6 @@ These are hard failures. If you catch yourself doing any of these, STOP and corr
 | "I'll check dark mode later" | You won't. Check now. |
 | "The module isn't that big" | Count the lines. Over 500 = split it. |
 | "I already know this passes" | Show the output. Knowledge without proof is assumption. |
-
----
-
-## Dark Mode Color Map (Reference)
-
-Use this table when writing or reviewing template colors.
-
-| Never Use          | Always Use Instead              |
-| ------------------ | ------------------------------- |
-| `text-gray-900`    | `text-base-content`             |
-| `text-gray-600`    | `text-base-content opacity-70`  |
-| `text-gray-500`    | `text-base-content opacity-60`  |
-| `bg-white`         | `bg-base-100`                   |
-| `bg-gray-50`       | `bg-base-200`                   |
-| `border-gray-200`  | `border-base-300`               |
-
-### Dark Mode Element Fixes
-
-| Element                | Fix                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Labels invisible       | `text-base-content` with full opacity                                          |
-| Inputs invisible       | `bg-base-100` background, `text-base-content` text, `border-base-300` border   |
-| Low contrast buttons   | `btn-primary` or `var(--color-primary)` background                             |
-| Low contrast links     | `var(--color-primary)` color                                                   |
-| White modal background | `bg-base-100` instead of `bg-white`                                            |
-| Modal backdrop         | `bg-base-200/90` for proper overlay                                            |
-
-### Dark Mode Contrast Targets
-
-| Mode | Text | Background |
-|------|------|------------|
-| Light | Dark text (oklch ~0.21) | Light backgrounds (oklch ~0.98) |
-| Dark | Light text (oklch ~0.97) | Dark backgrounds (oklch ~0.30) |
 
 ---
 

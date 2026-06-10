@@ -48,6 +48,34 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def section_label(:security_considerations), do: gettext("Security considerations")
 
   @doc """
+  The reviewer's note string for one of the four review sections
+  (`:testing_strategy`, `:patterns`, `:pitfalls`, `:security_considerations`).
+
+  Reads the structured `reviewer_result[section]["note"]` the reviewer agent
+  emits alongside each section status and returns the trimmed string, or
+  `nil` when the reviewer_result, the section map, or the note is missing,
+  blank, or not a binary. Tolerates both atom-keyed and string-keyed task
+  maps, matching the module's other accessors. Pure; no DB access.
+  """
+  def section_note(task, section) when section in @incomplete_sections do
+    case reviewer_result(task) do
+      %{} = result -> result |> Map.get(Atom.to_string(section)) |> note_from_section()
+      _ -> nil
+    end
+  end
+
+  def section_note(_task, _section), do: nil
+
+  defp note_from_section(%{"note" => note}) when is_binary(note) do
+    case String.trim(note) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp note_from_section(_), do: nil
+
+  @doc """
   True when the task has anything the review panel can render — a non-empty
   structured `reviewer_result` or a non-empty `review_report` markdown
   string. Drives panel visibility in both the task edit form and the

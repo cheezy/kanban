@@ -763,20 +763,11 @@ defmodule KanbanWeb.ReviewLive do
     end
   end
 
-  # Reads the reviewer's one-line security rationale. The reviewer agent emits
-  # the key as "note" (singular); returns nil for absent/blank/non-string notes
-  # so the paragraph is omitted rather than rendering empty.
-  defp security_considerations_note(%{
-         reviewer_result: %{"security_considerations" => %{"note" => note}}
-       })
-       when is_binary(note) do
-    case String.trim(note) do
-      "" -> nil
-      trimmed -> trimmed
-    end
-  end
-
-  defp security_considerations_note(_), do: nil
+  # Reads the reviewer's one-line security rationale. The shared accessor
+  # returns nil for absent/blank/non-string notes so the paragraph is omitted
+  # rather than rendering empty.
+  defp security_considerations_note(task),
+    do: ReviewReportHelpers.section_note(task, :security_considerations)
 
   defp acceptance_value(task) do
     total = task.acceptance_criteria |> parse_lines() |> length()

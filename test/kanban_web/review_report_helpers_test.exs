@@ -535,4 +535,88 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.review_panel_visible?(task)
     end
   end
+
+  describe "section_note/2 (W1091)" do
+    test "returns the note for each of the four section atoms" do
+      task = %{
+        reviewer_result: %{
+          "testing_strategy" => %{"status" => "passed", "note" => "Covered by unit tests."},
+          "patterns" => %{"status" => "passed", "note" => "Mirrors the reorder pattern."},
+          "pitfalls" => %{"status" => "passed", "note" => "None of the pitfalls violated."},
+          "security_considerations" => %{"status" => "passed", "note" => "Scoped to the board."}
+        }
+      }
+
+      assert ReviewReportHelpers.section_note(task, :testing_strategy) ==
+               "Covered by unit tests."
+
+      assert ReviewReportHelpers.section_note(task, :patterns) ==
+               "Mirrors the reorder pattern."
+
+      assert ReviewReportHelpers.section_note(task, :pitfalls) ==
+               "None of the pitfalls violated."
+
+      assert ReviewReportHelpers.section_note(task, :security_considerations) ==
+               "Scoped to the board."
+    end
+
+    test "trims surrounding whitespace from the note" do
+      task = %{reviewer_result: %{"patterns" => %{"note" => "  trimmed note  \n"}}}
+
+      assert ReviewReportHelpers.section_note(task, :patterns) == "trimmed note"
+    end
+
+    test "works on a string-keyed task map" do
+      task = %{"reviewer_result" => %{"pitfalls" => %{"note" => "String-keyed task."}}}
+
+      assert ReviewReportHelpers.section_note(task, :pitfalls) == "String-keyed task."
+    end
+
+    test "returns nil when reviewer_result is nil or missing" do
+      assert ReviewReportHelpers.section_note(%{reviewer_result: nil}, :patterns) == nil
+      assert ReviewReportHelpers.section_note(%{}, :patterns) == nil
+    end
+
+    test "returns nil when the section map is absent" do
+      task = %{reviewer_result: %{"testing_strategy" => %{"note" => "present"}}}
+
+      assert ReviewReportHelpers.section_note(task, :patterns) == nil
+    end
+
+    test "returns nil when the note key is missing" do
+      task = %{reviewer_result: %{"patterns" => %{"status" => "passed"}}}
+
+      assert ReviewReportHelpers.section_note(task, :patterns) == nil
+    end
+
+    test "returns nil for an empty or whitespace-only note" do
+      assert ReviewReportHelpers.section_note(
+               %{reviewer_result: %{"patterns" => %{"note" => ""}}},
+               :patterns
+             ) == nil
+
+      assert ReviewReportHelpers.section_note(
+               %{reviewer_result: %{"patterns" => %{"note" => "   \n\t"}}},
+               :patterns
+             ) == nil
+    end
+
+    test "returns nil for a non-binary note instead of raising" do
+      assert ReviewReportHelpers.section_note(
+               %{reviewer_result: %{"patterns" => %{"note" => ["a", "list"]}}},
+               :patterns
+             ) == nil
+
+      assert ReviewReportHelpers.section_note(
+               %{reviewer_result: %{"patterns" => %{"note" => %{"nested" => "map"}}}},
+               :patterns
+             ) == nil
+    end
+
+    test "returns nil for an atom outside the four-section domain" do
+      task = %{reviewer_result: %{"patterns" => %{"note" => "present"}}}
+
+      assert ReviewReportHelpers.section_note(task, :acceptance_criteria) == nil
+    end
+  end
 end
