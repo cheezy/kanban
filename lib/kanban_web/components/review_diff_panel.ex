@@ -291,9 +291,12 @@ defmodule KanbanWeb.ReviewDiffPanel do
   end
 
   defp render_diff_lines(lines) do
-    lines
-    |> Enum.map(&render_diff_line/1)
-    |> Enum.intersperse("\n")
+    # Each line renders as a `display: block` span (see `.stride-diff-line` in
+    # app.css), so the spans already stack one per row. Interspersing a literal
+    # "\n" here would add a second, blank line between every row inside the
+    # `white-space: pre-wrap` <pre>, doubling the vertical gap. Concatenate the
+    # block spans directly so the diff reads as tight blocks of source.
+    Enum.map(lines, &render_diff_line/1)
   end
 
   defp render_diff_line({class, text}) do
