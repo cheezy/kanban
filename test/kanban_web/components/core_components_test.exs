@@ -50,4 +50,35 @@ defmodule KanbanWeb.CoreComponentsTest do
       assert html =~ "Something broke"
     end
   end
+
+  describe "show_modal/2 and hide_modal/2 (W1079 — promoted to public)" do
+    test "show_modal builds the reveal command chain with the original timings" do
+      ops = CoreComponents.show_modal("my-modal").ops
+      encoded = Jason.encode!(ops)
+
+      assert encoded =~ "#my-modal-bg"
+      assert encoded =~ "#my-modal-container"
+      assert encoded =~ ~s("time":300)
+      assert encoded =~ "duration-300"
+      assert encoded =~ "overflow-hidden"
+      assert encoded =~ "focus_first"
+      assert encoded =~ "#my-modal-content"
+    end
+
+    test "hide_modal builds the dismiss command chain with the original timings" do
+      ops = CoreComponents.hide_modal("my-modal").ops
+      encoded = Jason.encode!(ops)
+
+      assert encoded =~ "#my-modal-bg"
+      assert encoded =~ "#my-modal-container"
+      assert encoded =~ ~s("time":200)
+      assert encoded =~ "duration-200"
+      assert encoded =~ "overflow-hidden"
+      assert encoded =~ "pop_focus"
+    end
+
+    test "show_modal requires a binary id" do
+      assert_raise FunctionClauseError, fn -> CoreComponents.show_modal(123) end
+    end
+  end
 end

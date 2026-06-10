@@ -1,6 +1,8 @@
 defmodule KanbanWeb.DelayedModal do
   use Phoenix.Component
 
+  import KanbanWeb.CoreComponents, only: [show_modal: 1, hide_modal: 1]
+
   alias Phoenix.LiveView.JS
 
   attr :id, :string, required: true
@@ -92,51 +94,6 @@ defmodule KanbanWeb.DelayedModal do
       </div>
     </div>
     """
-  end
-
-  defp show(js, selector) do
-    JS.show(js,
-      to: selector,
-      time: 300,
-      transition:
-        {"transition-all ease-out duration-300",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95",
-         "opacity-100 translate-y-0 sm:scale-100"}
-    )
-  end
-
-  defp hide(js, selector) do
-    JS.hide(js,
-      to: selector,
-      time: 200,
-      transition:
-        {"transition-all ease-in duration-200", "opacity-100 translate-y-0 sm:scale-100",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
-    )
-  end
-
-  defp show_modal(js \\ %JS{}, id) when is_binary(id) do
-    js
-    |> JS.show(to: "##{id}")
-    |> JS.show(
-      to: "##{id}-bg",
-      transition: {"transition-all ease-out duration-300", "opacity-0", "opacity-100"}
-    )
-    |> show("##{id}-container")
-    |> JS.add_class("overflow-hidden", to: "body")
-    |> JS.focus_first(to: "##{id}-content")
-  end
-
-  defp hide_modal(js \\ %JS{}, id) do
-    js
-    |> JS.hide(
-      to: "##{id}-bg",
-      transition: {"transition-all ease-in duration-200", "opacity-100", "opacity-0"}
-    )
-    |> hide("##{id}-container")
-    |> JS.hide(to: "##{id}", transition: {"block", "block", "hidden"})
-    |> JS.remove_class("overflow-hidden", to: "body")
-    |> JS.pop_focus()
   end
 
   # Maps a `max-w-*` class to its `md:`-prefixed variant as literal strings so

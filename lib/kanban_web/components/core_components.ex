@@ -657,7 +657,12 @@ defmodule KanbanWeb.CoreComponents do
     """
   end
 
-  defp show_modal(js \\ %JS{}, id) when is_binary(id) do
+  @doc """
+  Builds the JS commands that reveal a modal rendered by `modal/1` or
+  `KanbanWeb.DelayedModal.delayed_modal/1` (backdrop fade-in, container
+  transition, body scroll lock, and first-element focus).
+  """
+  def show_modal(js \\ %JS{}, id) when is_binary(id) do
     js
     |> JS.show(to: "##{id}")
     |> JS.show(
@@ -669,7 +674,12 @@ defmodule KanbanWeb.CoreComponents do
     |> JS.focus_first(to: "##{id}-content")
   end
 
-  defp hide_modal(js \\ %JS{}, id) do
+  @doc """
+  Builds the JS commands that dismiss a modal revealed by `show_modal/2`
+  (backdrop fade-out, container transition, scroll-lock release, and focus
+  restoration).
+  """
+  def hide_modal(js \\ %JS{}, id) do
     js
     |> JS.hide(
       to: "##{id}-bg",

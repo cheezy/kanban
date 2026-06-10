@@ -49,6 +49,26 @@ defmodule KanbanWeb.DelayedModalTest do
       assert html =~ "Body"
     end
 
+    test "delegated JS helpers emit the same modal command content as before (W1079)" do
+      html =
+        render_component(&DelayedModal.delayed_modal/1,
+          id: "delegated-modal",
+          show: true,
+          inner_block: simple_inner("Body")
+        )
+
+      # The phx-mounted/phx-remove commands now come from
+      # CoreComponents.show_modal/hide_modal; the encoded JS must keep the
+      # original targets, transitions, and focus behavior.
+      assert html =~ "#delegated-modal-bg"
+      assert html =~ "#delegated-modal-container"
+      assert html =~ "duration-300"
+      assert html =~ "duration-200"
+      assert html =~ "focus_first"
+      assert html =~ "pop_focus"
+      assert html =~ "overflow-hidden"
+    end
+
     test "renders with a custom non-default max_width that md_max_width passes through" do
       html =
         render_component(&DelayedModal.delayed_modal/1,
