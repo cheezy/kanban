@@ -18,8 +18,7 @@ defmodule Kanban.Archives do
 
   import Ecto.Query, warn: false
 
-  alias Kanban.Accounts.Scope
-  alias Kanban.Boards.BoardUser
+  alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -51,7 +50,7 @@ defmodule Kanban.Archives do
     Task
     |> archived_query()
     |> apply_reason(Keyword.get(opts, :reason))
-    |> apply_scope(Keyword.get(opts, :scope))
+    |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
     |> order_by([t], desc: t.archived_at)
     |> preload([:column, :archived_by])
     |> Repo.all()
@@ -105,7 +104,7 @@ defmodule Kanban.Archives do
     rows =
       Task
       |> archived_query()
-      |> apply_scope(Keyword.get(opts, :scope))
+      |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
       |> select([t], %{reason: t.archive_reason, minutes: t.time_spent_minutes})
       |> Repo.all()
 
@@ -167,15 +166,6 @@ defmodule Kanban.Archives do
 
   defp apply_reason(query, reason) when is_atom(reason) do
     where(query, [t], t.archive_reason == ^reason)
-  end
-
-  defp apply_scope(query, nil), do: query
-  defp apply_scope(query, %Scope{user: nil}), do: query
-
-  defp apply_scope(query, %Scope{user: user}) do
-    query
-    |> join(:inner, [t, column: c], bu in BoardUser, on: bu.board_id == c.board_id)
-    |> where([_t, _c, bu], bu.user_id == ^user.id)
   end
 
   # --- archive_stats helpers ------------------------------------------------

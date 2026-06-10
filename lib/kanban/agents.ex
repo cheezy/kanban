@@ -22,10 +22,9 @@ defmodule Kanban.Agents do
 
   import Ecto.Query, warn: false
 
-  alias Kanban.Accounts.Scope
   alias Kanban.Agents.Agent
   alias Kanban.Agents.Event
-  alias Kanban.Boards.BoardUser
+  alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -103,18 +102,8 @@ defmodule Kanban.Agents do
   defp fetch_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
-    |> apply_scope(Keyword.get(opts, :scope))
+    |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
     |> Repo.all()
-  end
-
-  defp apply_scope(query, nil), do: query
-  defp apply_scope(query, %Scope{user: nil}), do: query
-
-  defp apply_scope(query, %Scope{user: user}) do
-    query
-    |> join(:inner, [t], c in assoc(t, :column))
-    |> join(:inner, [t, c], bu in BoardUser, on: bu.board_id == c.board_id)
-    |> where([_t, _c, bu], bu.user_id == ^user.id)
   end
 
   # --- list_agents/1 ---------------------------------------------------------

@@ -30,7 +30,7 @@ defmodule Kanban.Reviews do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
-  alias Kanban.Boards.BoardUser
+  alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Task
@@ -58,7 +58,7 @@ defmodule Kanban.Reviews do
   def list_pending_reviews(opts \\ []) do
     Task
     |> pending_review_query()
-    |> apply_scope(Keyword.get(opts, :scope))
+    |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
     |> order_by([t], asc: t.updated_at)
     |> preload([t], [:completed_by, column: :board])
     |> Repo.all()
@@ -78,7 +78,7 @@ defmodule Kanban.Reviews do
     Task
     |> pending_review_query()
     |> where([t], t.id == ^id)
-    |> apply_scope(scope)
+    |> BoardScope.apply_board_scope(scope)
     |> preload([t], [:completed_by, column: :board])
     |> Repo.one()
     |> case do
@@ -107,7 +107,7 @@ defmodule Kanban.Reviews do
     tasks =
       Task
       |> pending_review_query()
-      |> apply_scope(Keyword.get(opts, :scope))
+      |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
       |> select([t], %{updated_at: t.updated_at, agent: t.completed_by_agent})
       |> Repo.all()
 
@@ -129,15 +129,6 @@ defmodule Kanban.Reviews do
           (is_nil(t.review_status) or t.review_status == :pending) and
           c.name == ^@review_column_name
     )
-  end
-
-  defp apply_scope(query, nil), do: query
-  defp apply_scope(query, %Scope{user: nil}), do: query
-
-  defp apply_scope(query, %Scope{user: user}) do
-    query
-    |> join(:inner, [t, column: c], bu in BoardUser, on: bu.board_id == c.board_id)
-    |> where([_t, _, bu], bu.user_id == ^user.id)
   end
 
   # --- queue_stats helpers ---------------------------------------------------
