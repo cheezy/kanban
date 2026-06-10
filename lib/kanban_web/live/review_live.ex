@@ -27,6 +27,8 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.ReviewStatsStrip
 
+  @review_check_sections [:testing_strategy, :patterns, :pitfalls]
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, load_queue(socket)}
@@ -365,7 +367,7 @@ defmodule KanbanWeb.ReviewLive do
                     ReviewReportHelpers.section_incomplete?(@selected, :security_considerations)
                 }
                 data-review-security-considerations
-                data-review-security-status={security_status_key(@selected)}
+                data-review-security-status={section_status_key(@selected, :security_considerations)}
                 style={[
                   "margin: 12px 16px 0; padding: 10px 12px;",
                   "border-radius: 6px;",
@@ -404,14 +406,17 @@ defmodule KanbanWeb.ReviewLive do
                       "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
                       "padding: 2px 10px; border-radius: 999px;",
                       "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                      security_tone_style(
+                      verdict_tone_style(
                         ReviewReportHelpers.security_considerations_passed(@selected)
                       )
                     ]}
                   >
                     <.icon
                       name={
-                        security_icon(ReviewReportHelpers.security_considerations_passed(@selected))
+                        verdict_icon(
+                          :security_considerations,
+                          ReviewReportHelpers.security_considerations_passed(@selected)
+                        )
                       }
                       class="w-4 h-4"
                     />
@@ -441,6 +446,72 @@ defmodule KanbanWeb.ReviewLive do
                   failed={acceptance_failed(@selected)}
                   structured={structured_acceptance(@selected)}
                 />
+              </section>
+
+              <section
+                :if={review_check_rows(@selected) != []}
+                data-review-checks
+                style={[
+                  "margin: 12px 16px 0; padding: 10px 12px;",
+                  "border-radius: 6px;",
+                  "background: var(--surface); border: 1px solid var(--line);",
+                  "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+                  "display: flex; flex-direction: column; gap: 6px;"
+                ]}
+              >
+                <span style={[
+                  "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+                  "text-transform: uppercase; color: var(--ink-3);"
+                ]}>
+                  {gettext("Review checks")}
+                </span>
+                <div
+                  :for={row <- review_check_rows(@selected)}
+                  data-review-check-row={Atom.to_string(row.section)}
+                  data-review-check-status={row.status}
+                  style="display: flex; flex-direction: column; gap: 4px;"
+                >
+                  <span style="font-weight: 600; color: var(--ink);">{row.label}</span>
+                  <%= if row.incomplete? do %>
+                    <div
+                      data-review-check-incomplete
+                      style={[
+                        "display: flex; align-items: flex-start; gap: 8px; align-self: stretch;",
+                        "padding: 8px 10px; border-radius: 5px;",
+                        "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                        "border: 1px solid var(--st-blocked);"
+                      ]}
+                    >
+                      <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+                      <span>
+                        {gettext(
+                          "Not assessed — this task specified this check, but the review did not record a verdict for it."
+                        )}
+                      </span>
+                    </div>
+                  <% else %>
+                    <span
+                      :if={row.value}
+                      data-review-check-pill
+                      style={[
+                        "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
+                        "padding: 2px 10px; border-radius: 999px;",
+                        "font-size: 12px; font-weight: 600; text-transform: capitalize;",
+                        verdict_tone_style(row.passed)
+                      ]}
+                    >
+                      <.icon name={verdict_icon(row.section, row.passed)} class="w-4 h-4" />
+                      {row.value}
+                    </span>
+                    <p
+                      :if={row.note}
+                      data-review-check-note
+                      style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
+                    >
+                      {row.note}
+                    </p>
+                  <% end %>
+                </div>
               </section>
 
               <section
@@ -734,33 +805,74 @@ defmodule KanbanWeb.ReviewLive do
 
   defp derive_review_status(_), do: nil
 
-  # Maps the security_considerations verdict tone to the same soft-background /
-  # ink token pairs the review status pill uses, so the area stays legible in
-  # both light and dark mode (the tokens have per-theme definitions in app.css).
-  defp security_tone_style(true) do
+  # Maps a section verdict tone to the same soft-background / ink token pairs
+  # the review status pill uses, so the area stays legible in both light and
+  # dark mode (the tokens have per-theme definitions in app.css).
+  defp verdict_tone_style(true) do
     "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
       "color: var(--st-done, oklch(50% 0.14 155));"
   end
 
-  defp security_tone_style(false) do
+  defp verdict_tone_style(false) do
     "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
       "color: var(--st-blocked, oklch(50% 0.18 25));"
   end
 
-  defp security_tone_style(_), do: "background: var(--surface-2); color: var(--ink-2);"
+  defp verdict_tone_style(_), do: "background: var(--surface-2); color: var(--ink-2);"
 
-  defp security_icon(false), do: "hero-shield-exclamation"
-  defp security_icon(_), do: "hero-shield-check"
+  # Security keeps its shield iconography; generic check rows use neutral
+  # pass/fail/unknown circles.
+  defp verdict_icon(:security_considerations, false), do: "hero-shield-exclamation"
+  defp verdict_icon(:security_considerations, _), do: "hero-shield-check"
+  defp verdict_icon(_section, true), do: "hero-check-circle"
+  defp verdict_icon(_section, false), do: "hero-x-circle"
+  defp verdict_icon(_section, _), do: "hero-question-mark-circle"
 
-  # A stable status key for the data attribute / tests, derived from the same
-  # pass/fail/neutral semantics as the helpers (nil tone => not_assessed, only
-  # reached when a verdict value is present so the section renders).
-  defp security_status_key(task) do
-    case ReviewReportHelpers.security_considerations_passed(task) do
+  # A stable status key for the data attributes / tests, derived from the same
+  # pass/fail/neutral semantics as the tone helper.
+  defp section_status_key(task, section) do
+    case section_passed(task, section) do
       true -> "passed"
       false -> "failed"
       _ -> "not_assessed"
     end
+  end
+
+  defp section_passed(task, :testing_strategy),
+    do: ReviewReportHelpers.testing_strategy_passed(task)
+
+  defp section_passed(task, :patterns), do: ReviewReportHelpers.patterns_passed(task)
+  defp section_passed(task, :pitfalls), do: ReviewReportHelpers.pitfalls_passed(task)
+
+  defp section_passed(task, :security_considerations),
+    do: ReviewReportHelpers.security_considerations_passed(task)
+
+  defp section_value(task, :testing_strategy),
+    do: ReviewReportHelpers.testing_strategy_value(task)
+
+  defp section_value(task, :patterns), do: ReviewReportHelpers.patterns_value(task)
+  defp section_value(task, :pitfalls), do: ReviewReportHelpers.pitfalls_value(task)
+
+  # One map per renderable check row. A row is visible when it has a verdict
+  # value, a reviewer note, or an incomplete flag — legacy tasks with none of
+  # these get no rows, and the section hides entirely. Pure; safe to call
+  # twice from the template (once for the section guard, once for :for).
+  defp review_check_rows(task) do
+    @review_check_sections
+    |> Enum.map(&review_check_row(task, &1))
+    |> Enum.filter(fn row -> row.value || row.note || row.incomplete? end)
+  end
+
+  defp review_check_row(task, section) do
+    %{
+      section: section,
+      label: ReviewReportHelpers.section_label(section),
+      value: section_value(task, section),
+      passed: section_passed(task, section),
+      status: section_status_key(task, section),
+      note: ReviewReportHelpers.section_note(task, section),
+      incomplete?: ReviewReportHelpers.section_incomplete?(task, section)
+    }
   end
 
   # Reads the reviewer's one-line security rationale. The shared accessor

@@ -1313,6 +1313,195 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "review checks section (W1092)" do
+    setup [:register_and_log_in_user]
+
+    test "renders a row per structured verdict with label, pill, and note",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "testing_strategy" => %{"status" => "passed", "note" => "All 4 cases present."},
+            "patterns" => %{"status" => "passed"},
+            "pitfalls" => %{"status" => "failed", "note" => "Hardcoded color class found."}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-checks"
+      assert html =~ "Review checks"
+      assert html =~ ~s(data-review-check-row="testing_strategy")
+      assert html =~ ~s(data-review-check-row="patterns")
+      assert html =~ ~s(data-review-check-row="pitfalls")
+      assert html =~ ~s(data-review-check-status="passed")
+      assert html =~ ~s(data-review-check-status="failed")
+      assert html =~ "Testing strategy"
+      assert html =~ "data-review-check-note"
+      assert html =~ "All 4 cases present."
+      assert html =~ "Hardcoded color class found."
+    end
+
+    test "renders the failed tone on a failed verdict row",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "changes_requested",
+            "patterns" => %{"status" => "failed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-check-row="patterns")
+      assert html =~ ~s(data-review-check-status="failed")
+      assert html =~ "var(--st-blocked)"
+      assert html =~ "hero-x-circle"
+    end
+
+    test "renders the passed tone and the neutral not-assessed pill",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "testing_strategy" => %{"status" => "passed"},
+            "patterns" => %{"status" => "not_assessed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-check-row="testing_strategy")
+      assert html =~ ~s(data-review-check-status="passed")
+      assert html =~ "var(--st-done)"
+      assert html =~ "hero-check-circle"
+      assert html =~ ~s(data-review-check-row="patterns")
+      assert html =~ ~s(data-review-check-status="not_assessed")
+      assert html =~ "var(--surface-2)"
+      assert html =~ "hero-question-mark-circle"
+    end
+
+    test "omits rows with no verdict, no note, and no incomplete flag",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "testing_strategy" => %{"status" => "passed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-check-row="testing_strategy")
+      refute html =~ ~s(data-review-check-row="patterns")
+      refute html =~ ~s(data-review-check-row="pitfalls")
+      refute html =~ "data-review-check-note"
+    end
+
+    test "shows the not-assessed warning for a supplied but unassessed section",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          testing_strategy: %{"unit_tests" => ["renders the section"]},
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "patterns" => %{"status" => "passed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-check-row="testing_strategy")
+      assert html =~ ~s(data-review-check-status="not_assessed")
+      assert html =~ "data-review-check-incomplete"
+
+      assert html =~
+               "this task specified this check, but the review did not record a verdict for it."
+    end
+
+    test "hides the entire section for legacy tasks without structured verdicts",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{review_report: nil, reviewer_result: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-checks"
+    end
+
+    test "renders below acceptance criteria and above changed files",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "testing_strategy" => %{"status" => "passed"}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      {acceptance_pos, _} = :binary.match(html, "data-review-acceptance")
+      {checks_pos, _} = :binary.match(html, "data-review-checks")
+      {files_pos, _} = :binary.match(html, "data-review-changed-files")
+      assert acceptance_pos < checks_pos
+      assert checks_pos < files_pos
+    end
+
+    test "does not duplicate security considerations in the checks section",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "security_considerations" => %{
+              "status" => "passed",
+              "note" => "Scoped to the current board."
+            }
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-security-considerations"
+      assert html =~ ~s(data-review-security-status="passed")
+      refute html =~ ~s(data-review-check-row="security_considerations")
+      refute html =~ "data-review-checks"
+    end
+
+    test "renders a row for a regex-derived verdict from a legacy review_report",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "status" => "approved"},
+          review_report: "## Patterns followed\n- Context functions used"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~s(data-review-check-row="patterns")
+      assert html =~ ~s(data-review-check-status="passed")
+    end
+  end
+
   describe "completion summary panel" do
     setup [:register_and_log_in_user]
 
