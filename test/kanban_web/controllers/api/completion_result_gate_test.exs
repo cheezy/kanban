@@ -4,6 +4,12 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
   alias Kanban.Tasks.CompletionValidation
   alias KanbanWeb.API.CompletionResultGate
 
+  # Several tests intentionally drive the gate down its reject/grace paths,
+  # which emit "stride.completion.validation_failed" warnings by design.
+  # Capture them so passing runs stay quiet; ExUnit still prints captured
+  # logs when a test fails.
+  @moduletag :capture_log
+
   @summary "A substantive summary explaining what was checked in detail."
 
   # CompletionResultGate.strict?/0 reads the `:strict_completion_validation`
