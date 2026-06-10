@@ -2,6 +2,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   use KanbanWeb, :live_component
 
   import Ecto.Query
+  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
 
   alias Kanban.Columns
   alias Kanban.Repo
@@ -584,16 +585,4 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp ensure_list(value) when is_list(value), do: value
   defp ensure_list(value) when is_binary(value), do: [value]
   defp ensure_list(_value), do: []
-
-  defp review_panel_visible?(task) do
-    has_reviewer_result?(task) or has_review_report?(task)
-  end
-
-  defp has_reviewer_result?(%{reviewer_result: %{} = result}), do: map_size(result) > 0
-  defp has_reviewer_result?(_), do: false
-
-  defp has_review_report?(%{review_report: report}) when is_binary(report) and report != "",
-    do: true
-
-  defp has_review_report?(_), do: false
 end

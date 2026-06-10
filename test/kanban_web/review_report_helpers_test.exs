@@ -484,4 +484,55 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.project_checks_gap(task) == nil
     end
   end
+
+  describe "review panel visibility predicates (W1085)" do
+    test "visible with a non-empty reviewer_result map" do
+      task = %{reviewer_result: %{"dispatched" => true}, review_report: nil}
+
+      assert ReviewReportHelpers.review_panel_visible?(task)
+      assert ReviewReportHelpers.has_reviewer_result?(task)
+      refute ReviewReportHelpers.has_review_report?(task)
+    end
+
+    test "visible with a non-empty review_report string" do
+      task = %{reviewer_result: nil, review_report: "## Approved"}
+
+      assert ReviewReportHelpers.review_panel_visible?(task)
+      refute ReviewReportHelpers.has_reviewer_result?(task)
+      assert ReviewReportHelpers.has_review_report?(task)
+    end
+
+    test "visible with both present" do
+      task = %{reviewer_result: %{"status" => "approved"}, review_report: "report"}
+
+      assert ReviewReportHelpers.review_panel_visible?(task)
+    end
+
+    test "hidden with neither present" do
+      refute ReviewReportHelpers.review_panel_visible?(%{
+               reviewer_result: nil,
+               review_report: nil
+             })
+
+      refute ReviewReportHelpers.review_panel_visible?(%{})
+    end
+
+    test "an empty-map reviewer_result does not make the panel visible" do
+      task = %{reviewer_result: %{}, review_report: nil}
+
+      refute ReviewReportHelpers.has_reviewer_result?(task)
+      refute ReviewReportHelpers.review_panel_visible?(task)
+    end
+
+    test "an empty review_report string does not make the panel visible" do
+      refute ReviewReportHelpers.has_review_report?(%{review_report: ""})
+    end
+
+    test "a whitespace-only review_report counts as content, matching the original predicate" do
+      task = %{review_report: "   "}
+
+      assert ReviewReportHelpers.has_review_report?(task)
+      assert ReviewReportHelpers.review_panel_visible?(task)
+    end
+  end
 end

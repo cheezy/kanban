@@ -48,6 +48,31 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def section_label(:security_considerations), do: gettext("Security considerations")
 
   @doc """
+  True when the task has anything the review panel can render — a non-empty
+  structured `reviewer_result` or a non-empty `review_report` markdown
+  string. Drives panel visibility in both the task edit form and the
+  read-only task view (W1085). Pure; no DB access.
+  """
+  def review_panel_visible?(task) do
+    has_reviewer_result?(task) or has_review_report?(task)
+  end
+
+  @doc """
+  True when the task carries a non-empty `reviewer_result` map.
+  """
+  def has_reviewer_result?(%{reviewer_result: %{} = result}), do: map_size(result) > 0
+  def has_reviewer_result?(_), do: false
+
+  @doc """
+  True when the task carries a non-empty `review_report` binary (whitespace
+  counts as content, matching the original predicate).
+  """
+  def has_review_report?(%{review_report: report}) when is_binary(report) and report != "",
+    do: true
+
+  def has_review_report?(_), do: false
+
+  @doc """
   The project-checks coverage gap for a dispatched review: `{supplied, expected}`
   when the review's `project_checks` covers fewer than the canonical checklist
   (`CODE-REVIEW.md`) expects, or `nil` when the coverage is complete, the review

@@ -1,6 +1,8 @@
 defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
+  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
   import KanbanWeb.TaskLive.Components.ChecklistSection
   import KanbanWeb.TaskLive.Components.ChildTasksSection
@@ -558,18 +560,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp parent_goal_loaded?(%{parent: nil}), do: false
   defp parent_goal_loaded?(%{parent: _}), do: true
   defp parent_goal_loaded?(_), do: false
-
-  defp review_panel_visible?(task) do
-    has_reviewer_result?(task) or has_review_report?(task)
-  end
-
-  defp has_reviewer_result?(%{reviewer_result: %{} = result}), do: map_size(result) > 0
-  defp has_reviewer_result?(_), do: false
-
-  defp has_review_report?(%{review_report: report}) when is_binary(report) and report != "",
-    do: true
-
-  defp has_review_report?(_), do: false
 
   defp needs_review_pill_style do
     [
