@@ -10,9 +10,9 @@ defmodule KanbanWeb.GoalChildRow do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
-  alias KanbanWeb.AvatarPalette
-  alias KanbanWeb.TaskTokens
 
   @doc """
   Renders a single child-task row.
@@ -56,7 +56,7 @@ defmodule KanbanWeb.GoalChildRow do
         {@title}
       </span>
 
-      <.status_pill status={@status} />
+      <.status_pill status={@status} variant={:compact} />
 
       <.owner_cell owner={@owner} />
 
@@ -68,44 +68,6 @@ defmodule KanbanWeb.GoalChildRow do
   end
 
   # --- Sub-components ----------------------------------------------------
-
-  attr :priority, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, TaskTokens.priority_color(assigns.priority))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
-    """
-  end
-
-  attr :status, :atom, required: true
-
-  defp status_pill(assigns) do
-    assigns =
-      assigns
-      |> assign(:bg, TaskTokens.status_soft(assigns.status))
-      |> assign(:fg, TaskTokens.status_ink(assigns.status))
-      |> assign(:label, TaskTokens.status_label(assigns.status))
-
-    ~H"""
-    <span style={[
-      "display: inline-flex; align-items: center;",
-      "padding: 1px 7px; border-radius: 999px;",
-      "background: #{@bg}; color: #{@fg};",
-      "font-size: 10.5px; font-weight: 600;"
-    ]}>
-      {@label}
-    </span>
-    """
-  end
 
   attr :owner, :map, default: nil
 
@@ -144,23 +106,6 @@ defmodule KanbanWeb.GoalChildRow do
   end
 
   defp owner_kind(owner), do: Map.get(owner, :kind, :human)
-
-  # Prefer an explicit palette from the caller; fall back to the shared
-  # AvatarPalette so each person/agent renders with a stable color
-  # matching their MemberStack chip.
-  defp owner_palette(owner) do
-    case Map.get(owner, :palette) do
-      palette when is_binary(palette) -> palette
-      _ -> resolve_palette(owner)
-    end
-  end
-
-  defp resolve_palette(owner) do
-    case owner_kind(owner) do
-      :agent -> owner |> Map.get(:name) |> AvatarPalette.for_agent()
-      _ -> owner |> Map.get(:id) |> AvatarPalette.for_human()
-    end
-  end
 
   # --- Assign derivation -------------------------------------------------
 

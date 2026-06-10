@@ -29,6 +29,8 @@ defmodule KanbanWeb.GoalCard do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
 
   @default_color "var(--stride-violet)"
@@ -149,7 +151,7 @@ defmodule KanbanWeb.GoalCard do
       ]}>
         {gettext("GOAL")}
       </span>
-      <.priority_dot level={Map.get(@task, :priority, :medium)} />
+      <.priority_dot priority={Map.get(@task, :priority, :medium)} />
       <span style="flex: 1;"></span>
       <Avatar.avatar
         :if={@author}
@@ -223,33 +225,10 @@ defmodule KanbanWeb.GoalCard do
     """
   end
 
-  attr :level, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, priority_color(assigns.level))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
-    """
-  end
-
   # --- Helpers -------------------------------------------------------------
 
   defp segment_pct(_count, 0), do: 0
   defp segment_pct(count, total), do: round(count / total * 100)
-
-  defp priority_color(:critical), do: "var(--pri-critical)"
-  defp priority_color(:high), do: "var(--pri-high)"
-  defp priority_color(:medium), do: "var(--pri-medium)"
-  defp priority_color(:low), do: "var(--pri-low)"
-  defp priority_color(_), do: "var(--ink-4)"
 
   defp present?(nil), do: false
   defp present?(""), do: false

@@ -30,6 +30,8 @@ defmodule KanbanWeb.TaskDetailHeader do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.TaskTokens
@@ -72,15 +74,7 @@ defmodule KanbanWeb.TaskDetailHeader do
           {@identifier}
         </span>
 
-        <span style={[
-          "display: inline-flex; align-items: center; gap: 3px;",
-          "padding: 2px 7px; border-radius: 999px;",
-          "background: #{@status_bg}; color: #{@status_fg};",
-          "border: 1px solid transparent;",
-          "font-size: 10.5px; font-weight: 600; letter-spacing: -0.005em;"
-        ]}>
-          {@status_label}
-        </span>
+        <.status_pill status={@status} variant={:detail} />
 
         <BoardHeader.ai_pill :if={@ai_generated?} />
 
@@ -133,7 +127,6 @@ defmodule KanbanWeb.TaskDetailHeader do
   defp derive_assigns(assigns) do
     assigns
     |> assign_task_fields()
-    |> assign_status_styling()
     |> assign(:padding, padding_for(assigns.variant))
   end
 
@@ -151,65 +144,7 @@ defmodule KanbanWeb.TaskDetailHeader do
     |> assign(:author, Map.get(task, :author))
   end
 
-  defp assign_status_styling(assigns) do
-    status = assigns.status
-
-    assigns
-    |> assign(:status_label, TaskTokens.status_label(status))
-    |> assign(:status_bg, TaskTokens.status_soft(status))
-    |> assign(:status_fg, TaskTokens.status_ink(status))
-  end
-
-  # --- Sub-components ------------------------------------------------------
-
-  attr :type, :atom, required: true
-
-  defp type_icon(%{type: :defect} = assigns) do
-    ~H"""
-    <span style="color: var(--st-blocked); display: inline-flex;">
-      <.icon name="hero-bug-ant" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  defp type_icon(%{type: :goal} = assigns) do
-    ~H"""
-    <span style="color: var(--stride-violet); display: inline-flex;">
-      <.icon name="hero-flag" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  defp type_icon(assigns) do
-    ~H"""
-    <span style="color: var(--st-ready); display: inline-flex;">
-      <.icon name="hero-document-text" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  attr :priority, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, TaskTokens.priority_color(assigns.priority))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
-    """
-  end
-
   # --- Helpers -------------------------------------------------------------
-
-  defp ai_generated?(task) do
-    Map.get(task, :ai_generated?, false) || Map.get(task, :ai_generated, false)
-  end
 
   defp padding_for(:full), do: "20px 32px 16px"
   defp padding_for(_), do: "14px 22px 12px"

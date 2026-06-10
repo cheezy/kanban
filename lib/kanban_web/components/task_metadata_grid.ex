@@ -24,8 +24,9 @@ defmodule KanbanWeb.TaskMetadataGrid do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
-  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -58,7 +59,7 @@ defmodule KanbanWeb.TaskMetadataGrid do
       ]}
     >
       <.row label={gettext("Status")}>
-        <.status_pill status={@status} />
+        <.status_pill status={@status} variant={:detail} />
       </.row>
 
       <.row :if={@column_name} label={gettext("Column")}>
@@ -193,45 +194,6 @@ defmodule KanbanWeb.TaskMetadataGrid do
     """
   end
 
-  attr :status, :atom, required: true
-
-  defp status_pill(assigns) do
-    assigns =
-      assigns
-      |> assign(:bg, TaskTokens.status_soft(assigns.status))
-      |> assign(:fg, TaskTokens.status_ink(assigns.status))
-      |> assign(:label, TaskTokens.status_label(assigns.status))
-
-    ~H"""
-    <span style={[
-      "display: inline-flex; align-items: center; gap: 3px;",
-      "padding: 2px 7px; border-radius: 999px;",
-      "background: #{@bg}; color: #{@fg};",
-      "border: 1px solid transparent;",
-      "font-size: 10.5px; font-weight: 600; letter-spacing: -0.005em;"
-    ]}>
-      {@label}
-    </span>
-    """
-  end
-
-  attr :priority, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, TaskTokens.priority_color(assigns.priority))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
-    """
-  end
-
   attr :required?, :boolean, required: true
 
   defp needs_review_cell(%{required?: true} = assigns) do
@@ -283,20 +245,6 @@ defmodule KanbanWeb.TaskMetadataGrid do
 
   defp owner_name(owner) do
     Map.get(owner, :name) || Map.get(owner, :email) || gettext("Unknown")
-  end
-
-  defp owner_palette(owner) do
-    case Map.get(owner, :palette) do
-      palette when is_binary(palette) -> palette
-      _ -> resolve_owner_palette(owner)
-    end
-  end
-
-  defp resolve_owner_palette(owner) do
-    case owner_kind(owner) do
-      :agent -> owner |> Map.get(:name) |> AvatarPalette.for_agent()
-      _ -> owner |> Map.get(:id) |> AvatarPalette.for_human()
-    end
   end
 
   defp goal_identifier(goal), do: Map.get(goal, :identifier, "")

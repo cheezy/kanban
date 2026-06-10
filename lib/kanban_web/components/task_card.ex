@@ -23,9 +23,10 @@ defmodule KanbanWeb.TaskCard do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.GoalCard
-  alias KanbanWeb.TaskTokens
 
   @doc """
   Renders a task card.
@@ -105,9 +106,9 @@ defmodule KanbanWeb.TaskCard do
   defp top_row(assigns) do
     ~H"""
     <div style="display: flex; align-items: center; gap: 6px; min-height: 16px; padding-left: 10px;">
-      <.type_icon type={@task.type} />
+      <.type_icon type={@task.type} icon_class="w-3 h-3" />
       <span class="ident" style="font-size: 10.5px;">{@task.identifier}</span>
-      <.priority_dot level={@task.priority} />
+      <.priority_dot priority={@task.priority} />
       <span
         :if={Map.get(@task, :status) == :blocked}
         class="tooltip"
@@ -144,50 +145,6 @@ defmodule KanbanWeb.TaskCard do
         size={16}
       />
     </div>
-    """
-  end
-
-  attr :type, :atom, required: true
-
-  defp type_icon(%{type: :defect} = assigns) do
-    ~H"""
-    <span style="color: var(--st-blocked); display: inline-flex;">
-      <.icon name="hero-bug-ant" class="w-3 h-3" />
-    </span>
-    """
-  end
-
-  defp type_icon(%{type: :goal} = assigns) do
-    ~H"""
-    <span style="color: var(--stride-violet); display: inline-flex;">
-      <.icon name="hero-flag" class="w-3 h-3" />
-    </span>
-    """
-  end
-
-  defp type_icon(assigns) do
-    # Default: :work
-    ~H"""
-    <span style="color: var(--st-ready); display: inline-flex;">
-      <.icon name="hero-document-text" class="w-3 h-3" />
-    </span>
-    """
-  end
-
-  attr :level, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, priority_color(assigns.level))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
     """
   end
 
@@ -429,8 +386,6 @@ defmodule KanbanWeb.TaskCard do
   end
 
   # --- Helpers -------------------------------------------------------------
-
-  defp priority_color(p), do: TaskTokens.priority_color(p)
 
   # The primary avatar slot at the top-right of the card: prefer
   # claimed_by, then column-dependent completed_by, then author.

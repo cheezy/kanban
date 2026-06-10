@@ -11,6 +11,8 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
 
+  import KanbanWeb.TaskVisuals
+
   alias Kanban.Tasks
   alias KanbanWeb.AcceptanceChecklist
   alias KanbanWeb.Avatar
@@ -326,7 +328,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             ]}
           >
             <MetaItem.meta_item label={gettext("Status")}>
-              <.status_pill status={@task.status} />
+              <.status_pill status={@task.status} variant={:base} />
             </MetaItem.meta_item>
 
             <MetaItem.meta_item :if={@task.assigned_to || @task.created_by} label={gettext("Author")}>
@@ -463,7 +465,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
       <span class="ident" style="font-size: 11.5px; color: var(--ink-2);">
         {@task.identifier}
       </span>
-      <.status_pill status={@task.status} />
+      <.status_pill status={@task.status} variant={:base} />
       <span
         :if={@task.priority}
         aria-hidden="true"
@@ -478,53 +480,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
       </span>
       <span style="flex: 1;"></span>
     </div>
-    """
-  end
-
-  attr :type, :atom, required: true
-
-  defp type_icon(%{type: :defect} = assigns) do
-    ~H"""
-    <span style="color: var(--st-blocked); display: inline-flex;">
-      <.icon name="hero-bug-ant" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  defp type_icon(%{type: :goal} = assigns) do
-    ~H"""
-    <span style="color: var(--stride-violet); display: inline-flex;">
-      <.icon name="hero-flag" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  defp type_icon(assigns) do
-    ~H"""
-    <span style="color: var(--st-ready); display: inline-flex;">
-      <.icon name="hero-document-text" class="w-4 h-4" />
-    </span>
-    """
-  end
-
-  attr :status, :atom, required: true
-
-  defp status_pill(assigns) do
-    assigns =
-      assigns
-      |> assign(:bg, TaskTokens.status_soft(assigns.status))
-      |> assign(:fg, TaskTokens.status_ink(assigns.status))
-      |> assign(:label, TaskTokens.status_label(assigns.status))
-
-    ~H"""
-    <span style={[
-      "display: inline-flex; align-items: center;",
-      "padding: 2px 7px; border-radius: 999px;",
-      "background: #{@bg}; color: #{@fg};",
-      "font-size: 10.5px; font-weight: 600;"
-    ]}>
-      {@label}
-    </span>
     """
   end
 

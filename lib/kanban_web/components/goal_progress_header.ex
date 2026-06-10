@@ -14,6 +14,8 @@ defmodule KanbanWeb.GoalProgressHeader do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.TaskVisuals
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.SegmentedProgressBar
@@ -129,23 +131,6 @@ defmodule KanbanWeb.GoalProgressHeader do
 
   # --- Sub-components ----------------------------------------------------
 
-  attr :priority, :atom, required: true
-
-  defp priority_dot(assigns) do
-    assigns = assign(assigns, :color, TaskTokens.priority_color(assigns.priority))
-
-    ~H"""
-    <span
-      aria-hidden="true"
-      style={[
-        "width: 6px; height: 6px; border-radius: 50%;",
-        "background: #{@color}; flex-shrink: 0;"
-      ]}
-    >
-    </span>
-    """
-  end
-
   attr :label, :string, required: true
   attr :count, :integer, required: true
   attr :tone, :string, required: true
@@ -222,10 +207,6 @@ defmodule KanbanWeb.GoalProgressHeader do
       {gettext("Review"), Map.get(by_status, :review, 0), "var(--st-review)"},
       {gettext("Done"), Map.get(by_status, :done, 0), "var(--st-done)"}
     ]
-  end
-
-  defp ai_generated?(goal) do
-    Map.get(goal, :ai_generated?, false) || Map.get(goal, :ai_generated, false)
   end
 
   defp present_or_nil(nil), do: nil
