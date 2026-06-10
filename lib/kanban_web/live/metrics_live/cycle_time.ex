@@ -9,32 +9,18 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias KanbanWeb.MetricsLive.Base
   alias KanbanWeb.MetricsLive.Helpers
 
   @impl KanbanWeb.MetricsLive.Base
   def load_data(socket) do
-    opts = [
-      time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
-    ]
-
-    opts =
-      if socket.assigns.agent_name do
-        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
-      else
-        opts
-      end
-
-    {:ok, stats} = Metrics.get_cycle_time_stats(socket.assigns.board.id, opts)
-    tasks = get_cycle_time_tasks(socket.assigns.board.id, opts)
-    grouped_tasks = group_tasks_by_date(tasks)
-    daily_cycle_times = calculate_daily_cycle_times(tasks)
-
-    socket
-    |> assign(:summary_stats, stats)
-    |> assign(:tasks, tasks)
-    |> assign(:grouped_tasks, grouped_tasks)
-    |> assign(:daily_cycle_times, daily_cycle_times)
+    Base.load_metric_data(
+      socket,
+      &Metrics.get_cycle_time_stats/2,
+      &get_cycle_time_tasks/2,
+      :cycle_time_seconds,
+      :daily_cycle_times
+    )
   end
 
   defp get_cycle_time_tasks(board_id, opts) do
@@ -125,10 +111,4 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   defp format_cycle_time(seconds), do: Helpers.format_time(seconds)
   defp format_cycle_time_hours(hours), do: Helpers.format_time_hours(hours)
   defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
-
-  defp group_tasks_by_date(tasks), do: Helpers.group_tasks_by_completion_date(tasks)
-
-  defp calculate_daily_cycle_times(tasks) do
-    Helpers.calculate_daily_times(tasks, :cycle_time_seconds)
-  end
 end

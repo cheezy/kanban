@@ -129,4 +129,46 @@ defmodule KanbanWeb.MetricsLive.Base do
     |> assign(:exclude_weekends, Helpers.parse_exclude_weekends(params["exclude_weekends"]))
     |> load_data_fn.()
   end
+
+  @doc """
+  Shared `c:load_data/1` body for the cycle-time and lead-time LiveViews
+  (W1084).
+
+  Builds the standard opts (time_range, exclude_weekends, plus agent_name
+  only when one is selected — a nil agent_name key is never inserted),
+  fetches stats and tasks via the supplied functions, and assigns
+  `:summary_stats`, `:tasks`, `:grouped_tasks`, and the metric-specific
+  daily series under `daily_assign_key`.
+
+    * `stats_fn` — `(board_id, opts -> {:ok, map})`, e.g.
+      `&Metrics.get_cycle_time_stats/2`
+    * `tasks_fn` — `(board_id, opts -> [map])`, a capture of the caller's
+      private task loader. The loaders stay local on purpose: cycle time
+      has an AI/regular two-path dispatch that lead time does not share.
+    * `time_field` — the per-task seconds field, `:cycle_time_seconds` or
+      `:lead_time_seconds`
+    * `daily_assign_key` — `:daily_cycle_times` or `:daily_lead_times`
+  """
+  def load_metric_data(socket, stats_fn, tasks_fn, time_field, daily_assign_key) do
+    opts = [
+      time_range: socket.assigns.time_range,
+      exclude_weekends: socket.assigns.exclude_weekends
+    ]
+
+    opts =
+      if socket.assigns.agent_name do
+        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
+      else
+        opts
+      end
+
+    {:ok, stats} = stats_fn.(socket.assigns.board.id, opts)
+    tasks = tasks_fn.(socket.assigns.board.id, opts)
+
+    socket
+    |> assign(:summary_stats, stats)
+    |> assign(:tasks, tasks)
+    |> assign(:grouped_tasks, Helpers.group_tasks_by_completion_date(tasks))
+    |> assign(daily_assign_key, Helpers.calculate_daily_times(tasks, time_field))
+  end
 end

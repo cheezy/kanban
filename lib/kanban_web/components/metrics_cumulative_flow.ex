@@ -22,6 +22,8 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.MetricsComponents
+
   @view_w 800
   @view_h 200
   @top_padding_px 20
@@ -96,21 +98,6 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
         </svg>
       </div>
     </section>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :color, :string, required: true
-
-  defp legend_swatch(assigns) do
-    ~H"""
-    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-2);">
-      <span
-        aria-hidden="true"
-        style={"width: 8px; height: 8px; border-radius: 2px; background: #{@color};"}
-      />
-      {@label}
-    </span>
     """
   end
 

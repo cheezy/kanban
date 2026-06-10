@@ -4,6 +4,8 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
 
   import KanbanWeb.MetricsLive.Components
 
+  alias KanbanWeb.MetricsLive.Helpers
+
   @impl KanbanWeb.MetricsLive.Base
   def load_data(socket) do
     opts = build_dashboard_opts(socket)
@@ -74,17 +76,7 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   shape that includes nil hour values.
   """
   def format_hours(hours) when is_number(hours) and hours == 0, do: "0h"
-
-  def format_hours(hours) when is_number(hours) do
-    hours_float = hours / 1
-
-    cond do
-      hours_float < 1 -> "#{Float.round(hours_float * 60, 1)}m"
-      hours_float < 24 -> "#{Float.round(hours_float, 1)}h"
-      true -> "#{Float.round(hours_float / 24, 1)}d"
-    end
-  end
-
+  def format_hours(hours) when is_number(hours), do: Helpers.format_time_hours(hours)
   def format_hours(_), do: "N/A"
 
   defp total_throughput(throughput) do

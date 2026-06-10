@@ -31,10 +31,13 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   def format_time(_), do: "N/A"
 
   def format_time_hours(hours) when is_number(hours) do
+    # Promote integers so Float.round/2 never raises; identity for floats.
+    hours_float = hours / 1
+
     cond do
-      hours < 1 -> "#{Float.round(hours * 60, 1)}m"
-      hours < 24 -> "#{Float.round(hours, 1)}h"
-      true -> "#{Float.round(hours / 24, 1)}d"
+      hours_float < 1 -> "#{Float.round(hours_float * 60, 1)}m"
+      hours_float < 24 -> "#{Float.round(hours_float, 1)}h"
+      true -> "#{Float.round(hours_float / 24, 1)}d"
     end
   end
 

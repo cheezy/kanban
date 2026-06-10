@@ -26,6 +26,8 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.MetricsComponents
+
   @chart_height_px 180
   @bars_area_px 170
   @y_axis_ticks [0, 50, 100, 150]
@@ -107,21 +109,6 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
         </div>
       </div>
     </section>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :color, :string, required: true
-
-  defp legend_swatch(assigns) do
-    ~H"""
-    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-2);">
-      <span
-        aria-hidden="true"
-        style={"width: 8px; height: 8px; border-radius: 2px; background: #{@color};"}
-      />
-      {@label}
-    </span>
     """
   end
 

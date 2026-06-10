@@ -37,6 +37,81 @@ defmodule KanbanWeb.MetricsLive.BaseTest do
     }
   end
 
+  defp loader_socket(agent_name \\ nil) do
+    socket = empty_socket()
+
+    put_in(socket.assigns[:board], %{id: 1})
+    |> then(&put_in(&1.assigns[:agent_name], agent_name))
+  end
+
+  defp stats_stub(test_pid) do
+    fn board_id, opts ->
+      send(test_pid, {:stats_called, board_id, opts})
+      {:ok, %{average: 1}}
+    end
+  end
+
+  defp tasks_stub(tasks) do
+    fn _board_id, _opts -> tasks end
+  end
+
+  describe "load_metric_data/5" do
+    test "builds opts without an agent_name key when none is selected" do
+      test_pid = self()
+
+      Base.load_metric_data(
+        loader_socket(),
+        stats_stub(test_pid),
+        tasks_stub([]),
+        :cycle_time_seconds,
+        :daily_cycle_times
+      )
+
+      assert_received {:stats_called, 1, opts}
+      refute Keyword.has_key?(opts, :agent_name)
+      assert opts[:time_range] == :last_30_days
+      assert opts[:exclude_weekends] == false
+    end
+
+    test "includes agent_name in opts when one is selected" do
+      test_pid = self()
+      socket = loader_socket("Claude")
+
+      Base.load_metric_data(
+        socket,
+        stats_stub(test_pid),
+        tasks_stub([]),
+        :lead_time_seconds,
+        :daily_lead_times
+      )
+
+      assert_received {:stats_called, 1, opts}
+      assert opts[:agent_name] == "Claude"
+    end
+
+    test "assigns stats, tasks, grouped tasks, and the daily series under the given key" do
+      tasks = [
+        %{completed_at: ~U[2026-06-01 12:00:00Z], cycle_time_seconds: 7200},
+        %{completed_at: ~U[2026-06-01 15:00:00Z], cycle_time_seconds: 3600}
+      ]
+
+      socket =
+        Base.load_metric_data(
+          loader_socket(),
+          stats_stub(self()),
+          tasks_stub(tasks),
+          :cycle_time_seconds,
+          :daily_cycle_times
+        )
+
+      assert socket.assigns.summary_stats == %{average: 1}
+      assert socket.assigns.tasks == tasks
+      assert [{~D[2026-06-01], _}] = socket.assigns.grouped_tasks
+      assert [%{date: ~D[2026-06-01], average_hours: avg}] = socket.assigns.daily_cycle_times
+      assert avg == 1.5
+    end
+  end
+
   describe "mount/3 (generated)" do
     test "assigns time_range, agent_name, and exclude_weekends defaults" do
       {:ok, socket} = FakeMetric.mount(%{}, %{}, empty_socket())
