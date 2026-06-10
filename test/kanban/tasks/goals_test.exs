@@ -1,0 +1,152 @@
+defmodule Kanban.Tasks.GoalsTest do
+  @moduledoc """
+  Unit tests for `Kanban.Tasks.Goals` archived-child exclusion (D60).
+
+  `fetch_scoped_children/3` is the single base query behind
+  `get_task_children/2` and `get_task_tree/2`; archived children must not
+  appear in either result, otherwise goal-progress badges report inflated
+  denominators (e.g. "5/8 · 62%" when every active child is done).
+  `promote_goal_to_ready/2` filters archived tasks in its own query
+  (`collect_backlog_tasks/2`) and is covered here as a regression guard.
+
+  The W397 cross-board scoping tests live in `test/kanban/tasks_test.exs`
+  and continue to cover the `board_id` half of the where-clause.
+  """
+
+  use Kanban.DataCase
+
+  import Ecto.Query
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
+
+  alias Kanban.Repo
+  alias Kanban.Tasks
+  alias Kanban.Tasks.Task
+
+  setup do
+    user = user_fixture()
+    board = board_fixture(user)
+    column = column_fixture(board)
+    goal = task_fixture(column, %{title: "Goal", type: :goal})
+
+    %{user: user, board: board, column: column, goal: goal}
+  end
+
+  defp archive!(task) do
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [archived_at: DateTime.utc_now() |> DateTime.truncate(:second)])
+
+    task
+  end
+
+  defp complete!(task) do
+    {:ok, task} =
+      Tasks.update_task(task, %{
+        "status" => "completed",
+        "completed_at" => DateTime.utc_now()
+      })
+
+    task
+  end
+
+  describe "get_task_children/2 (archived-child exclusion)" do
+    test "returns only non-archived children when archived children exist",
+         %{board: board, column: column, goal: goal} do
+      active1 = task_fixture(column, %{title: "Active 1", parent_id: goal.id})
+      active2 = task_fixture(column, %{title: "Active 2", parent_id: goal.id})
+
+      column
+      |> task_fixture(%{title: "Archived", parent_id: goal.id})
+      |> archive!()
+
+      children = Tasks.get_task_children(goal.id, board.id)
+
+      assert Enum.map(children, & &1.id) |> Enum.sort() ==
+               Enum.sort([active1.id, active2.id])
+    end
+
+    test "returns [] when every child is archived", %{board: board, column: column, goal: goal} do
+      column
+      |> task_fixture(%{title: "Archived only", parent_id: goal.id})
+      |> archive!()
+
+      assert Tasks.get_task_children(goal.id, board.id) == []
+    end
+  end
+
+  describe "get_task_tree/2 (archived-child exclusion)" do
+    # counts.total is 1 (the goal itself) + the number of ACTIVE children;
+    # this is the denominator consumed by compute_goal_progress/2 in
+    # KanbanWeb.BoardLive.Show (lib/kanban_web/live/board_live/show.ex:939).
+    test "children and counts.total reflect only non-archived children",
+         %{board: board, column: column, goal: goal} do
+      active = task_fixture(column, %{title: "Active", parent_id: goal.id})
+
+      column
+      |> task_fixture(%{title: "Archived", parent_id: goal.id})
+      |> archive!()
+
+      tree = Tasks.get_task_tree(goal.id, board.id)
+
+      assert Enum.map(tree.children, & &1.id) == [active.id]
+      assert tree.counts.total == 2
+    end
+
+    test "counts.completed excludes archived completed children",
+         %{board: board, column: column, goal: goal} do
+      column
+      |> task_fixture(%{title: "Active done", parent_id: goal.id})
+      |> complete!()
+
+      column
+      |> task_fixture(%{title: "Archived done", parent_id: goal.id})
+      |> complete!()
+      |> archive!()
+
+      tree = Tasks.get_task_tree(goal.id, board.id)
+
+      assert tree.counts.completed == 1
+      assert tree.counts.total == 2
+    end
+
+    test "counts.blocked excludes archived blocked children",
+         %{board: board, column: column, goal: goal} do
+      task_fixture(column, %{title: "Active blocked", parent_id: goal.id, status: :blocked})
+
+      column
+      |> task_fixture(%{title: "Archived blocked", parent_id: goal.id, status: :blocked})
+      |> archive!()
+
+      tree = Tasks.get_task_tree(goal.id, board.id)
+
+      assert tree.counts.blocked == 1
+      assert tree.counts.total == 2
+    end
+  end
+
+  describe "promote_goal_to_ready/2 (archived-child exclusion)" do
+    test "does not move archived backlog children into Ready", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+      active_child = task_fixture(backlog, %{title: "Active child", parent_id: goal.id})
+
+      archived_child =
+        backlog
+        |> task_fixture(%{title: "Archived child", parent_id: goal.id})
+        |> archive!()
+
+      # Goal + active child move; the archived child stays put.
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      assert Tasks.get_task!(goal.id).column_id == ready.id
+      assert Tasks.get_task!(active_child.id).column_id == ready.id
+      assert Tasks.get_task!(archived_child.id).column_id == backlog.id
+    end
+  end
+end

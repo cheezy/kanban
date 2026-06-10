@@ -165,6 +165,46 @@ defmodule KanbanWeb.BoardLiveTest do
     end
   end
 
+  describe "Goal progress badge" do
+    setup [:register_and_log_in_user]
+
+    # D60 regression: archived children must not inflate the badge
+    # denominator computed by compute_goal_progress/2.
+    test "excludes archived children from the badge denominator",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Badge Goal", type: :goal})
+
+      for n <- 1..5 do
+        child = task_fixture(column, %{title: "Active #{n}", parent_id: goal.id})
+
+        {:ok, _} =
+          Kanban.Tasks.update_task(child, %{
+            "status" => "completed",
+            "completed_at" => DateTime.utc_now()
+          })
+      end
+
+      archived_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for n <- 1..3 do
+        archived = task_fixture(column, %{title: "Archived #{n}", parent_id: goal.id})
+
+        {:ok, _} =
+          archived
+          |> Ecto.Changeset.change(%{archived_at: archived_at})
+          |> Kanban.Repo.update()
+      end
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ "5/5"
+      assert html =~ "children complete"
+      refute html =~ "5/8"
+    end
+  end
+
   describe "Show" do
     setup [:register_and_log_in_user]
 

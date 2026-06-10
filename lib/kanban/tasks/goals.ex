@@ -47,7 +47,8 @@ defmodule Kanban.Tasks.Goals do
     base =
       from(t in Task,
         join: c in assoc(t, :column),
-        where: t.parent_id == ^parent_task_id and c.board_id == ^board_id,
+        where:
+          is_nil(t.archived_at) and t.parent_id == ^parent_task_id and c.board_id == ^board_id,
         order_by: [asc: t.position]
       )
 
