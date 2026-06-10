@@ -19,6 +19,8 @@ defmodule KanbanWeb.ReviewDetailHeader do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.TimeAgo
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
 
@@ -168,21 +170,6 @@ defmodule KanbanWeb.ReviewDetailHeader do
 
   defp agent_name_for(_), do: nil
 
-  defp age_label_for(%{completed_at: %DateTime{} = dt}), do: format_age(dt)
+  defp age_label_for(%{completed_at: %DateTime{} = dt}), do: TimeAgo.format_age(dt, :fine)
   defp age_label_for(_), do: nil
-
-  defp format_age(%DateTime{} = dt) do
-    DateTime.utc_now()
-    |> DateTime.diff(dt, :second)
-    |> age_label()
-  end
-
-  defp age_label(seconds) when seconds < 5, do: gettext("just now")
-  defp age_label(seconds) when seconds < 60, do: gettext("%{s}s ago", s: seconds)
-  defp age_label(seconds) when seconds < 3600, do: gettext("%{m}m ago", m: div(seconds, 60))
-
-  defp age_label(seconds) when seconds < 86_400,
-    do: gettext("%{h}h ago", h: div(seconds, 3600))
-
-  defp age_label(seconds), do: gettext("%{d}d ago", d: div(seconds, 86_400))
 end

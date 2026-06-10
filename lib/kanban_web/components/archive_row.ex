@@ -23,6 +23,8 @@ defmodule KanbanWeb.ArchiveRow do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.TimeAgo
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.TaskTokens
@@ -291,7 +293,7 @@ defmodule KanbanWeb.ArchiveRow do
         :if={@user}
         style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);"
       >
-        {format_age(@task.archived_at)} · {gettext("by")} {user_name(@user)}
+        {TimeAgo.format_age(@task.archived_at, :coarse)} · {gettext("by")} {user_name(@user)}
       </span>
     </div>
     """
@@ -354,20 +356,4 @@ defmodule KanbanWeb.ArchiveRow do
   defp format_date(%DateTime{} = dt) do
     Calendar.strftime(dt, "%b %-d")
   end
-
-  defp format_age(nil), do: ""
-
-  defp format_age(%DateTime{} = dt) do
-    DateTime.utc_now()
-    |> DateTime.diff(dt, :second)
-    |> age_label()
-  end
-
-  defp age_label(seconds) when seconds < 60, do: gettext("just now")
-  defp age_label(seconds) when seconds < 3600, do: gettext("%{m}m ago", m: div(seconds, 60))
-
-  defp age_label(seconds) when seconds < 86_400,
-    do: gettext("%{h}h ago", h: div(seconds, 3600))
-
-  defp age_label(seconds), do: gettext("%{d}d ago", d: div(seconds, 86_400))
 end

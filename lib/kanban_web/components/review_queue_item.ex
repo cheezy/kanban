@@ -13,6 +13,8 @@ defmodule KanbanWeb.ReviewQueueItem do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.TimeAgo
+
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.ReviewReportHelpers
@@ -131,7 +133,7 @@ defmodule KanbanWeb.ReviewQueueItem do
             "color: var(--ink-3);"
           ]}
         >
-          {format_age(@item.completed_at)}
+          {TimeAgo.format_age(@item.completed_at, :fine)}
         </time>
       </div>
 
@@ -373,19 +375,4 @@ defmodule KanbanWeb.ReviewQueueItem do
   defp completed_by_display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp completed_by_display_name(%{email: email}) when is_binary(email), do: email
   defp completed_by_display_name(_), do: ""
-
-  defp format_age(%DateTime{} = dt) do
-    DateTime.utc_now()
-    |> DateTime.diff(dt, :second)
-    |> age_label()
-  end
-
-  defp age_label(seconds) when seconds < 5, do: gettext("just now")
-  defp age_label(seconds) when seconds < 60, do: gettext("%{s}s ago", s: seconds)
-  defp age_label(seconds) when seconds < 3600, do: gettext("%{m}m ago", m: div(seconds, 60))
-
-  defp age_label(seconds) when seconds < 86_400,
-    do: gettext("%{h}h ago", h: div(seconds, 3600))
-
-  defp age_label(seconds), do: gettext("%{d}d ago", d: div(seconds, 86_400))
 end
