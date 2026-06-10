@@ -14,6 +14,7 @@ defmodule KanbanWeb.ArchiveStatsStrip do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Duration
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -73,7 +74,7 @@ defmodule KanbanWeb.ArchiveStatsStrip do
       <.cell
         marker="avg-cycle"
         label={gettext("Avg cycle · completed")}
-        value={format_avg_minutes(@stats.avg_cycle_minutes)}
+        value={Duration.format_minutes(@stats.avg_cycle_minutes)}
         caption={gettext("time spent before archive")}
         tone="var(--ink)"
         border_left={true}
@@ -123,19 +124,5 @@ defmodule KanbanWeb.ArchiveStatsStrip do
       </p>
     </div>
     """
-  end
-
-  defp format_avg_minutes(nil), do: "—"
-  defp format_avg_minutes(0), do: "0m"
-
-  defp format_avg_minutes(minutes) when is_integer(minutes) and minutes < 60 do
-    "#{minutes}m"
-  end
-
-  defp format_avg_minutes(minutes) when is_integer(minutes) do
-    hours = div(minutes, 60)
-    remainder = rem(minutes, 60)
-
-    if remainder == 0, do: "#{hours}h", else: "#{hours}h #{remainder}m"
   end
 end

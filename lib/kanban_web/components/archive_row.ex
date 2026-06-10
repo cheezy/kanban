@@ -23,11 +23,11 @@ defmodule KanbanWeb.ArchiveRow do
   """
   use KanbanWeb, :html
 
-  alias KanbanWeb.TimeAgo
-
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.Duration
   alias KanbanWeb.TaskTokens
+  alias KanbanWeb.TimeAgo
 
   @doc """
   Renders one archive row.
@@ -210,7 +210,7 @@ defmodule KanbanWeb.ArchiveRow do
   attr :reason, :atom, required: true
 
   defp outcome_cell(%{reason: :completed} = assigns) do
-    cycle = format_minutes(assigns.task.time_spent_minutes)
+    cycle = Duration.format_minutes(assigns.task.time_spent_minutes)
     assigns = assign(assigns, :cycle, cycle)
 
     ~H"""
@@ -340,16 +340,6 @@ defmodule KanbanWeb.ArchiveRow do
   defp user_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp user_name(%{email: email}) when is_binary(email), do: email
   defp user_name(_), do: "?"
-
-  defp format_minutes(nil), do: "—"
-  defp format_minutes(0), do: "0m"
-  defp format_minutes(m) when is_integer(m) and m < 60, do: "#{m}m"
-
-  defp format_minutes(m) when is_integer(m) do
-    hours = div(m, 60)
-    remainder = rem(m, 60)
-    if remainder == 0, do: "#{hours}h", else: "#{hours}h #{remainder}m"
-  end
 
   defp format_date(nil), do: ""
 

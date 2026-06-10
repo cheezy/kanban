@@ -16,6 +16,7 @@ defmodule KanbanWeb.GoalSidebar do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Duration
   alias KanbanWeb.PulseSparkline
 
   @doc """
@@ -78,11 +79,11 @@ defmodule KanbanWeb.GoalSidebar do
         />
         <.metric_row
           label={gettext("Time spent")}
-          value={format_duration(@metrics.time_spent_minutes)}
+          value={Duration.format_minutes(@metrics.time_spent_minutes, zero_label: "—")}
         />
         <.metric_row
           label={gettext("Avg cycle")}
-          value={format_duration(@metrics.avg_cycle_minutes)}
+          value={Duration.format_minutes(@metrics.avg_cycle_minutes, zero_label: "—")}
         />
         <.metric_row
           label={gettext("Last activity")}
@@ -187,21 +188,6 @@ defmodule KanbanWeb.GoalSidebar do
   defp format_days(1), do: gettext("1 day")
   defp format_days(n) when is_integer(n), do: gettext("%{n} days", n: n)
   defp format_days(_), do: "—"
-
-  defp format_duration(nil), do: "—"
-  defp format_duration(0), do: "—"
-
-  defp format_duration(minutes) when is_integer(minutes) and minutes < 60 do
-    "#{minutes}m"
-  end
-
-  defp format_duration(minutes) when is_integer(minutes) do
-    hours = div(minutes, 60)
-    rem_min = rem(minutes, 60)
-    if rem_min == 0, do: "#{hours}h", else: "#{hours}h #{rem_min}m"
-  end
-
-  defp format_duration(_), do: "—"
 
   defp format_relative(nil), do: "—"
 

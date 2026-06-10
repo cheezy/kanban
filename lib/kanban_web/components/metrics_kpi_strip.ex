@@ -21,6 +21,8 @@ defmodule KanbanWeb.MetricsKpiStrip do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.Duration
+
   @doc """
   Renders the KPI strip.
 
@@ -44,7 +46,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
       <.cell
         marker="cycle-time"
         label={gettext("Cycle time · median")}
-        value={format_minutes(@kpis.cycle_time_median_minutes)}
+        value={Duration.format_minutes(@kpis.cycle_time_median_minutes, pad_remainder: true)}
         delta_pct={@kpis.cycle_time_delta_pct}
         delta_direction={:down}
         sub={gettext("vs prev 14d")}
@@ -53,7 +55,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
       <.cell
         marker="lead-time"
         label={gettext("Lead time · p75")}
-        value={format_minutes(@kpis.lead_time_p75_minutes)}
+        value={Duration.format_minutes(@kpis.lead_time_p75_minutes, pad_remainder: true)}
         delta_pct={@kpis.lead_time_delta_pct}
         delta_direction={:down}
         sub={gettext("idea → done")}
@@ -71,7 +73,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
       <.cell
         marker="review-wait"
         label={gettext("Wait time · Review")}
-        value={format_minutes(@kpis.review_wait_minutes)}
+        value={Duration.format_minutes(@kpis.review_wait_minutes, pad_remainder: true)}
         delta_pct={@kpis.review_wait_delta_pct}
         delta_direction={:down}
         sub={gettext("human response avg")}
@@ -148,18 +150,6 @@ defmodule KanbanWeb.MetricsKpiStrip do
   end
 
   # --- Formatters ----------------------------------------------------------
-
-  defp format_minutes(0), do: "0m"
-  defp format_minutes(m) when is_integer(m) and m < 60, do: "#{m}m"
-
-  defp format_minutes(m) when is_integer(m) do
-    hours = div(m, 60)
-    remainder = rem(m, 60)
-    if remainder == 0, do: "#{hours}h", else: "#{hours}h #{padded(remainder)}m"
-  end
-
-  defp padded(n) when is_integer(n) and n < 10, do: "0#{n}"
-  defp padded(n) when is_integer(n), do: Integer.to_string(n)
 
   defp format_throughput(0), do: "0 / day"
   defp format_throughput(+0.0), do: "0 / day"
