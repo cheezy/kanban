@@ -1,6 +1,8 @@
 defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
+  import KanbanWeb.FormHelpers
+
   alias Kanban.Accounts
 
   @impl true
@@ -263,16 +265,6 @@ defmodule KanbanWeb.UserLive.Settings do
         {@hint}
       </span>
     </label>
-    """
-  end
-
-  attr :errors, :list, default: []
-
-  defp field_errors(assigns) do
-    ~H"""
-    <span :for={msg <- @errors} style="font-size: 11.5px; color: var(--st-blocked);">
-      {translate_error(msg)}
-    </span>
     """
   end
 

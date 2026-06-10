@@ -2,6 +2,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
   use KanbanWeb, :live_view
 
   import KanbanWeb.AuthFrame
+  import KanbanWeb.FormHelpers
 
   alias Kanban.Accounts
 
@@ -76,16 +77,6 @@ defmodule KanbanWeb.UserLive.ResetPassword do
         </div>
       </.form>
     </.auth_frame>
-    """
-  end
-
-  attr :errors, :list, default: []
-
-  defp field_errors(assigns) do
-    ~H"""
-    <span :for={msg <- @errors} style="font-size: 11.5px; color: var(--st-blocked);">
-      {translate_error(msg)}
-    </span>
     """
   end
 

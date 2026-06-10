@@ -316,7 +316,7 @@ defmodule KanbanWeb.CoreComponents do
   end
 
   defp assign_form_field(assigns, field) do
-    errors = field_errors(field)
+    errors = form_field_errors(field)
     name_fn = fn -> form_field_name(field, assigns.multiple) end
 
     assigns
@@ -326,7 +326,7 @@ defmodule KanbanWeb.CoreComponents do
     |> assign_new(:value, fn -> field.value end)
   end
 
-  defp field_errors(field) do
+  defp form_field_errors(field) do
     if Phoenix.Component.used_input?(field), do: field.errors, else: []
   end
 
