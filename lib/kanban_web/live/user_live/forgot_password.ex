@@ -36,7 +36,7 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
       >
         <label style="display: flex; flex-direction: column; gap: 5px;">
           <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
-            {gettext("Work email")}
+            {gettext("Email")}
           </span>
           <input
             type="email"
