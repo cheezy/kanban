@@ -5,6 +5,28 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-06-11
+
+### Added
+
+#### Terms of Service and Acceptable Use Policy pages
+
+The registration form's consent checkbox ("I agree to the Terms of Service and Acceptable Use Policy — including the agent-action attribution clause") previously pointed both policy links at the Privacy Policy page, and the clause it names was not written down anywhere. Two new public pages now back that checkbox: `/terms` and `/acceptable-use`, both rendered under the marketing layout alongside `/privacy` and covered by controller tests.
+
+The Terms of Service carries the standard sections — the service, accounts, content ownership (with an explicit commitment that workspace content is never used to train AI models), acceptable use (incorporating the AUP by reference), fees, termination, disclaimers, and limitation of liability — plus the binding definition of the **agent-action attribution clause**: every action an AI agent takes with an API token issued from an account (claiming a task, completing work, running a hook, posting a comment) is attributed to that account, and the holder accepts responsibility for it as if they had performed it themselves. The Acceptable Use Policy enumerates prohibited uses (illegal activity, security compromise, harming others, spam and malware, IP infringement, impersonation) and restates the attribution rule from the enforcement side — an agent acting outside the policy is a violation by the token-issuing account, even when the behavior was unintended — alongside API fair-use limits and the enforcement and reporting process.
+
+Both registration checkbox links now navigate to the real pages, and all visible copy on both pages is fully translated in the six non-English locales (de, es, fr, ja, pt, zh).
+
+### Changed
+
+#### Review queue: server-enforced review reports, richer detail pane, and reliable diffs
+
+A series of changes since 2.3.0 hardened the review queue end to end. The "fully populated review report" guarantee moved off the agent plugins and onto the server: the completion endpoint now rejects a dispatched review whose structured report is incomplete or inconsistent with the task it describes — including project checks that don't cover the full `CODE-REVIEW.md` checklist — and the queue renders explicit warnings for any remaining gap. This closed the recurring defects where project checks arrived truncated and security considerations came back "not assessed" on tasks that had supplied them.
+
+The detail pane became richer and more truthful: new Security considerations and Review checks sections render alongside acceptance criteria, the code-review panel shows every project-check row, review status is derived from the reviewer's structured verdict instead of inferred from legacy issue counts, approved reviews no longer repeat their summary and report body, and raw JSON payloads are no longer rendered.
+
+Per-file diffs are now delivered reliably and read cleanly: an optional base64 transport envelope on the changed-files endpoint lets code-bearing diffs through the production edge filter that was silently rejecting them, and the diff panel's highlighting and line spacing were tightened so patches read like blocks of source.
+
 ## [2.3.0] - 2026-05-30
 
 ### Changed

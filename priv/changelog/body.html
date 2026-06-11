@@ -3,6 +3,114 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.4.0] - 2026-06-11
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Terms of Service and Acceptable Use Policy pages
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The registration form's consent checkbox ("I agree to the Terms of
+              Service and Acceptable Use Policy — including the agent-action
+              attribution clause") previously pointed both policy links at the
+              Privacy Policy page, and the clause it names was not written down
+              anywhere. Two new public pages now back that checkbox:
+              <code>/terms</code> and <code>/acceptable-use</code>, both rendered
+              under the marketing layout alongside <code>/privacy</code> and
+              covered by controller tests.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The Terms of Service carries the standard sections — the service,
+              accounts, content ownership (with an explicit commitment that
+              workspace content is never used to train AI models), acceptable use
+              (incorporating the AUP by reference), fees, termination,
+              disclaimers, and limitation of liability — plus the binding
+              definition of the <strong>agent-action attribution clause</strong>:
+              every action an AI agent takes with an API token issued from an
+              account (claiming a task, completing work, running a hook, posting
+              a comment) is attributed to that account, and the holder accepts
+              responsibility for it as if they had performed it themselves. The
+              Acceptable Use Policy enumerates prohibited uses (illegal activity,
+              security compromise, harming others, spam and malware, IP
+              infringement, impersonation) and restates the attribution rule from
+              the enforcement side — an agent acting outside the policy is a
+              violation by the token-issuing account, even when the behavior was
+              unintended — alongside API fair-use limits and the enforcement and
+              reporting process.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Both registration checkbox links now navigate to the real pages,
+              and all visible copy on both pages is fully translated in the six
+              non-English locales (de, es, fr, ja, pt, zh).
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Changed
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Review queue: server-enforced review reports, richer detail pane,
+              and reliable diffs
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A series of changes since 2.3.0 hardened the review queue end to
+              end. The "fully populated review report" guarantee moved off the
+              agent plugins and onto the server: the completion endpoint now
+              rejects a dispatched review whose structured report is incomplete
+              or inconsistent with the task it describes — including project
+              checks that don't cover the full <code>CODE-REVIEW.md</code>
+              checklist — and the queue renders explicit warnings for any
+              remaining gap. This closed the recurring defects where project
+              checks arrived truncated and security considerations came back
+              "not assessed" on tasks that had supplied them.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The detail pane became richer and more truthful: new Security
+              considerations and Review checks sections render alongside
+              acceptance criteria, the code-review panel shows every
+              project-check row, review status is derived from the reviewer's
+              structured verdict instead of inferred from legacy issue counts,
+              approved reviews no longer repeat their summary and report body,
+              and raw JSON payloads are no longer rendered.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Per-file diffs are now delivered reliably and read cleanly: an
+              optional base64 transport envelope on the changed-files endpoint
+              lets code-bearing diffs through the production edge filter that
+              was silently rejecting them, and the diff panel's highlighting and
+              line spacing were tightened so patches read like blocks of source.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.3.0] - 2026-05-30
         </h2>
 
