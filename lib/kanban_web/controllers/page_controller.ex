@@ -13,6 +13,7 @@ defmodule KanbanWeb.PageController do
               :privacy,
               :product,
               :security,
+              :terms,
               :workflows
             ]
 
@@ -55,6 +56,10 @@ defmodule KanbanWeb.PageController do
 
   def security(conn, _params) do
     render(conn, :security)
+  end
+
+  def terms(conn, _params) do
+    render(conn, :terms)
   end
 
   def workflows(conn, _params) do

@@ -97,7 +97,7 @@ defmodule KanbanWeb.UserLive.Registration do
           </span>
           <span>
             {gettext("I agree to the")}
-            <.link navigate={~p"/privacy"} style="color: var(--ink); text-decoration: underline;">
+            <.link navigate={~p"/terms"} style="color: var(--ink); text-decoration: underline;">
               {gettext("Terms of Service")}
             </.link>
             {gettext("and")}

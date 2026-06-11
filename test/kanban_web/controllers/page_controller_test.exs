@@ -30,6 +30,16 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "privacy@letstango.ca"
   end
 
+  test "GET /terms", %{conn: conn} do
+    conn = get(conn, ~p"/terms")
+    body = html_response(conn, 200)
+    assert body =~ "Terms of Service"
+    assert body =~ "Your content"
+    assert body =~ "AI agents and the attribution clause"
+    assert body =~ "Limitation of liability"
+    assert body =~ "privacy@letstango.ca"
+  end
+
   test "GET /privacy", %{conn: conn} do
     conn = get(conn, ~p"/privacy")
     body = html_response(conn, 200)

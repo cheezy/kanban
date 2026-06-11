@@ -1,0 +1,167 @@
+<main class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-base-content mb-2">
+        {gettext("Terms of Service")}
+      </h1>
+      <p class="text-sm text-base-content opacity-80 mb-10">
+        {gettext("Last updated: %{date}", date: "June 11, 2026")}
+      </p>
+
+      <div class="prose prose-lg max-w-none">
+        <section class="mb-10">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "These Terms of Service govern your use of Stride, the task-management platform available as a hosted service at stridelikeaboss.com. By creating an account or using the service, you agree to these terms. If you do not agree, do not use the service. If you self-host Stride on your own infrastructure, the open-source license that accompanies the code governs your use instead of these terms."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("The service")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Stride provides kanban-style boards, tasks, goals, reviews, and an API designed for both people and AI agents to manage work. We may add, change, or remove features over time. We will not materially reduce the core functionality of a paid plan during a period you have already paid for."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Your account")}
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              {gettext(
+                "You must provide accurate registration information and keep it up to date."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "You are responsible for safeguarding your password and any API tokens issued from your account, and for all activity that occurs under them."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "You must be legally capable of entering into this agreement in your jurisdiction, and old enough to consent to the processing of your data without parental approval."
+              )}
+            </li>
+            <li>
+              {gettext("Notify us promptly if you suspect unauthorized access to your account.")}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Your content")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "You retain ownership of everything you put into Stride — boards, tasks, comments, attachments, and all other workspace content. You grant us a limited license to host, store, display, and transmit that content solely as needed to operate and provide the service to you and the collaborators you invite. We do not use your content to train AI models, and we claim no other rights to it."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "You are responsible for the content you and your agents submit, and you represent that you have the rights necessary to share it."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("AI agents and the attribution clause")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Stride is built for AI agents that act through API tokens issued from your account. Every action an agent takes with a token you issued — claiming a task, completing work, running a hook, posting a comment — is attributed to your account, and you accept responsibility for it to the same extent as if you had performed it yourself. This is the agent-action attribution clause referenced at registration. Supervise your agents and revoke tokens you no longer trust."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Acceptable use")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("Your use of the service is subject to our ")}<.link
+              href={~p"/acceptable-use"}
+              class="text-[var(--ink)] hover:text-[var(--stride-orange)] underline font-medium"
+            >{gettext("Acceptable Use Policy")}</.link>{gettext(
+              ", which is part of these terms. In short: use Stride to manage work, and do not use it to break the law, compromise security, or harm others."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Fees and plans")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "Some parts of the service are offered under paid plans described on our pricing page. Fees are billed in advance, are non-refundable except where required by law, and may change with at least 30 days' notice before your next billing period. If you stop paying, we may downgrade your account to a free tier after a reasonable grace period."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Termination")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "You may stop using the service and delete your account at any time. We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Disclaimers")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "The service is provided \"as is\" and \"as available\", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, error-free, or secure, or that work performed by AI agents through the service will be correct or fit for your purposes."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Limitation of liability")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "To the maximum extent permitted by law, we will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenues, or data, arising out of or related to the service. Our total liability for any claim arising out of these terms is limited to the amount you paid us for the service in the twelve months before the claim arose, or one hundred US dollars if you paid nothing. Nothing in these terms limits liability that cannot be limited by law."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Changes to these terms")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We may update these terms from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised terms."
+            )}
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Contact us")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("Questions about these terms? Email ")}<a
+              href="mailto:privacy@letstango.ca"
+              class="text-[var(--ink)] hover:text-[var(--stride-orange)] underline font-medium"
+            >privacy@letstango.ca</a>{gettext(" and we will respond within a reasonable time.")}
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

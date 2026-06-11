@@ -3289,6 +3289,7 @@ msgstr "最新发布 →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:190
+#: lib/kanban_web/controllers/page_html/terms.html.heex:163
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
 msgstr ",我们将在合理的时间内回复。"
@@ -3571,6 +3572,7 @@ msgstr "联系"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:184
+#: lib/kanban_web/controllers/page_html/terms.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "联系我们"
@@ -3744,6 +3746,7 @@ msgstr "最近14天"
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:8
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:8
 #: lib/kanban_web/controllers/page_html/security.html.heex:8
+#: lib/kanban_web/controllers/page_html/terms.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Last updated: %{date}"
 msgstr "最后更新:%{date}"
@@ -5433,6 +5436,7 @@ msgid "Key collaboration features"
 msgstr "关键协作功能"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:5
+#: lib/kanban_web/controllers/page_html/terms.html.heex:94
 #: lib/kanban_web/live/user_live/registration.ex:108
 #, elixir-autogen, elixir-format
 msgid "Acceptable Use Policy"
@@ -5589,6 +5593,7 @@ msgstr "希望快速行动而不牺牲质量的初创公司。"
 msgid "Tango"
 msgstr "Tango"
 
+#: lib/kanban_web/controllers/page_html/terms.html.heex:5
 #: lib/kanban_web/live/user_live/registration.ex:101
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
@@ -6839,3 +6844,138 @@ msgstr "未经我们书面同意，您不得将托管服务转售、再许可或
 #, elixir-autogen, elixir-format
 msgid "You may not use Stride to:"
 msgstr "您不得使用 Stride 进行以下行为："
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:94
+#, elixir-autogen, elixir-format
+msgid ", which is part of these terms. In short: use Stride to manage work, and do not use it to break the law, compromise security, or harm others."
+msgstr "的约束，该政策是本条款的一部分。简而言之：用 Stride 管理工作，不要用它违法、破坏安全或伤害他人。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "AI agents and the attribution clause"
+msgstr "AI 代理与归属条款"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:88
+#, elixir-autogen, elixir-format
+msgid "Acceptable use"
+msgstr "可接受的使用"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:146
+#, elixir-autogen, elixir-format
+msgid "Changes to these terms"
+msgstr "本条款的变更"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "Disclaimers"
+msgstr "免责声明"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:102
+#, elixir-autogen, elixir-format
+msgid "Fees and plans"
+msgstr "费用与套餐"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:135
+#, elixir-autogen, elixir-format
+msgid "Limitation of liability"
+msgstr "责任限制"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Notify us promptly if you suspect unauthorized access to your account."
+msgstr "如果您怀疑您的账户遭到未经授权的访问，请立即通知我们。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Questions about these terms? Email "
+msgstr "对本条款有疑问？请发送邮件至 "
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Some parts of the service are offered under paid plans described on our pricing page. Fees are billed in advance, are non-refundable except where required by law, and may change with at least 30 days' notice before your next billing period. If you stop paying, we may downgrade your account to a free tier after a reasonable grace period."
+msgstr "本服务的某些部分按照我们定价页面所述的付费套餐提供。费用预先收取，除法律要求外不予退款，并且可能在您的下一个计费周期开始前至少提前 30 天通知后进行调整。如果您停止付款，我们可能在合理的宽限期后将您的账户降级为免费套餐。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:80
+#, elixir-autogen, elixir-format
+msgid "Stride is built for AI agents that act through API tokens issued from your account. Every action an agent takes with a token you issued — claiming a task, completing work, running a hook, posting a comment — is attributed to your account, and you accept responsibility for it to the same extent as if you had performed it yourself. This is the agent-action attribution clause referenced at registration. Supervise your agents and revoke tokens you no longer trust."
+msgstr "Stride 专为通过您账户签发的 API 令牌行事的 AI 代理打造。代理使用您签发的令牌所执行的每一个操作——认领任务、完成工作、运行钩子、发表评论——都归属于您的账户，您接受与亲自执行时同等程度的责任。这就是注册时提及的代理行为归属条款。请监督您的代理，并撤销您不再信任的令牌。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Stride provides kanban-style boards, tasks, goals, reviews, and an API designed for both people and AI agents to manage work. We may add, change, or remove features over time. We will not materially reduce the core functionality of a paid plan during a period you have already paid for."
+msgstr "Stride 提供看板式面板、任务、目标、审查以及为人和 AI 代理共同管理工作而设计的 API。我们可能会随时间添加、更改或移除功能。在您已付费的期间内，我们不会实质性削减付费套餐的核心功能。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Termination"
+msgstr "终止"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "The service"
+msgstr "本服务"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "The service is provided \"as is\" and \"as available\", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, error-free, or secure, or that work performed by AI agents through the service will be correct or fit for your purposes."
+msgstr "本服务按“现状”和“可用状态”提供，不附带任何形式的明示或暗示保证，包括适销性、特定用途适用性和不侵权。我们不保证本服务不中断、无错误或安全，也不保证 AI 代理通过本服务执行的工作正确或符合您的目的。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "These Terms of Service govern your use of Stride, the task-management platform available as a hosted service at stridelikeaboss.com. By creating an account or using the service, you agree to these terms. If you do not agree, do not use the service. If you self-host Stride on your own infrastructure, the open-source license that accompanies the code governs your use instead of these terms."
+msgstr "本服务条款约束您对 Stride 的使用。Stride 是一个任务管理平台，以托管服务的形式在 stridelikeaboss.com 提供。创建账户或使用本服务即表示您同意本条款。如果您不同意，请不要使用本服务。如果您在自己的基础设施上自托管 Stride，则适用随代码附带的开源许可证，而非本条款。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:138
+#, elixir-autogen, elixir-format
+msgid "To the maximum extent permitted by law, we will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenues, or data, arising out of or related to the service. Our total liability for any claim arising out of these terms is limited to the amount you paid us for the service in the twelve months before the claim arose, or one hundred US dollars if you paid nothing. Nothing in these terms limits liability that cannot be limited by law."
+msgstr "在法律允许的最大范围内，我们不对因本服务引起或与之相关的间接、附带、特殊、后果性或惩罚性损害，或利润、收入或数据损失承担责任。对于因本条款引起的任何索赔，我们的总责任以您在索赔发生前十二个月内为本服务支付给我们的金额为限；如果您未支付任何费用，则以一百美元为限。本条款中的任何内容均不限制依法不能限制的责任。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:149
+#, elixir-autogen, elixir-format
+msgid "We may update these terms from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised terms."
+msgstr "我们可能会不时更新本条款。当我们做出重大变更时，我们会在本页顶部注明新的生效日期，并在适当情况下，在变更生效前通过电子邮件或应用内横幅通知您。变更生效后继续使用本服务即表示接受修订后的条款。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "You are responsible for safeguarding your password and any API tokens issued from your account, and for all activity that occurs under them."
+msgstr "您有责任保护您的密码和从您账户签发的任何 API 令牌，并对在其下发生的所有活动负责。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "You are responsible for the content you and your agents submit, and you represent that you have the rights necessary to share it."
+msgstr "您对您和您的代理提交的内容负责，并声明您拥有分享这些内容所需的权利。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:116
+#, elixir-autogen, elixir-format
+msgid "You may stop using the service and delete your account at any time. We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
+msgstr "您可以随时停止使用本服务并删除您的账户。如果您严重违反本条款、法律有要求，或我们停止提供本服务，我们可能会暂停或终止您的访问——在停止服务的情况下，我们会提前合理通知您，并提供导出数据的方式。本条款中按其性质应在终止后继续有效的条款（如所有权、免责声明和责任限制）将继续有效。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "You must be legally capable of entering into this agreement in your jurisdiction, and old enough to consent to the processing of your data without parental approval."
+msgstr "您必须在您所在的司法管辖区具有订立本协议的法律行为能力，并且达到无需父母同意即可同意处理您数据的年龄。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "You must provide accurate registration information and keep it up to date."
+msgstr "您必须提供准确的注册信息并保持其更新。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "You retain ownership of everything you put into Stride — boards, tasks, comments, attachments, and all other workspace content. You grant us a limited license to host, store, display, and transmit that content solely as needed to operate and provide the service to you and the collaborators you invite. We do not use your content to train AI models, and we claim no other rights to it."
+msgstr "您保留您放入 Stride 的所有内容的所有权——面板、任务、评论、附件以及所有其他工作区内容。您授予我们有限的许可，仅在为您和您邀请的协作者运营和提供本服务所需的范围内托管、存储、展示和传输这些内容。我们不会使用您的内容训练 AI 模型，也不主张其他任何权利。"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Your account"
+msgstr "您的账户"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:61
+#, elixir-autogen, elixir-format
+msgid "Your content"
+msgstr "您的内容"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Your use of the service is subject to our "
+msgstr "您对本服务的使用须遵守我们的"
