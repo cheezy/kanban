@@ -7,6 +7,7 @@ defmodule KanbanWeb.PageController do
   plug :put_root_layout,
        [html: {KanbanWeb.Layouts, :marketing}]
        when action in [
+              :acceptable_use,
               :home,
               :pricing,
               :privacy,
@@ -38,6 +39,10 @@ defmodule KanbanWeb.PageController do
 
   def pricing(conn, _params) do
     render(conn, :pricing)
+  end
+
+  def acceptable_use(conn, _params) do
+    render(conn, :acceptable_use)
   end
 
   def privacy(conn, _params) do

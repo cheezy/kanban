@@ -20,6 +20,16 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "GET /acceptable-use", %{conn: conn} do
+    conn = get(conn, ~p"/acceptable-use")
+    body = html_response(conn, 200)
+    assert body =~ "Acceptable Use Policy"
+    assert body =~ "Prohibited uses"
+    assert body =~ "Agent-action attribution"
+    assert body =~ "Enforcement"
+    assert body =~ "privacy@letstango.ca"
+  end
+
   test "GET /privacy", %{conn: conn} do
     conn = get(conn, ~p"/privacy")
     body = html_response(conn, 200)

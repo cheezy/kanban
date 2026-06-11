@@ -1,0 +1,163 @@
+<main class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-8 md:p-12">
+      <h1 class="text-4xl font-bold text-base-content mb-2">
+        {gettext("Acceptable Use Policy")}
+      </h1>
+      <p class="text-sm text-base-content opacity-80 mb-10">
+        {gettext("Last updated: %{date}", date: "June 11, 2026")}
+      </p>
+
+      <div class="prose prose-lg max-w-none">
+        <section class="mb-10">
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "This Acceptable Use Policy describes what you may and may not do with Stride, whether you use the hosted service at stridelikeaboss.com or interact with it through the API, an AI agent, or any other client. It applies to every user and every agent acting on a user's behalf. By creating an account or using the service, you agree to this policy."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "The short version: use Stride to manage work, don't use it to harm people or systems, and remember that you are responsible for what your agents do."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Prohibited uses")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext("You may not use Stride to:")}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              <strong>{gettext("Break the law")}</strong>
+              {gettext(
+                " — engage in, promote, or facilitate any activity that violates applicable laws or regulations, including fraud, money laundering, or the distribution of illegal material."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Compromise security")}</strong>
+              {gettext(
+                " — probe, scan, or test the vulnerability of the service without authorization; circumvent authentication or access controls; or use the service to attack, disrupt, or gain unauthorized access to any other system, network, or account."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Harm others")}</strong>
+              {gettext(
+                " — store or distribute content that is defamatory, harassing, threatening, or that exploits or endangers minors; or use the service to stalk, dox, or intimidate any person."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Send spam or malware")}</strong>
+              {gettext(
+                " — distribute unsolicited bulk messages, phishing content, viruses, worms, or any other malicious code through the service."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Infringe intellectual property")}</strong>
+              {gettext(
+                " — store or share content that infringes copyrights, trademarks, trade secrets, or other proprietary rights of any party."
+              )}
+            </li>
+            <li>
+              <strong>{gettext("Misrepresent identity")}</strong>
+              {gettext(
+                " — impersonate any person or organization, or misrepresent your affiliation with one, including registering accounts or naming agents in a deliberately misleading way."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Agent-action attribution")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride is built for AI agents that claim tasks, run hooks, and complete work using API tokens issued from your account. Every action an agent takes with a token you issued is attributed to you. You are responsible for that action to the same extent as if you had performed it yourself."
+            )}
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-base-content opacity-70 mb-4 ml-4">
+            <li>
+              {gettext(
+                "Keep your API tokens secret. Revoke any token you no longer use or that you suspect has been exposed."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "Supervise your agents. Configure hooks, review gates, and permissions appropriate to the work you delegate."
+              )}
+            </li>
+            <li>
+              {gettext(
+                "An agent acting outside this policy is a violation by the account that issued its token, even if the behavior was unintended."
+              )}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("API and fair use")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "The API is provided for legitimate task-management automation. You may not place an unreasonable load on the service — for example by polling at excessive rates, ignoring rate-limit responses, or scripting bulk operations designed to degrade the service for others. We may throttle or suspend access that interferes with the stability of the platform."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "You may not resell, sublicense, or provide access to the hosted service to third parties as a service of your own without our written agreement. If you want to run Stride for others, self-host it."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Enforcement")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We may investigate suspected violations of this policy and take any action we consider appropriate, including removing content, suspending or revoking API tokens, suspending or terminating accounts, and reporting activity to law enforcement where required. Where practical, we will warn you and give you a chance to correct the problem before taking action — but we are not obligated to do so when a violation is severe or causes ongoing harm."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Reporting violations")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "If you believe someone is violating this policy, or you have discovered a security vulnerability, please tell us. Reports are handled confidentially, and we do not take action against good-faith security research conducted responsibly."
+            )}
+          </p>
+        </section>
+
+        <section class="mb-10">
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Changes to this policy")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext(
+              "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised policy."
+            )}
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-2xl font-semibold text-base-content mb-4">
+            {gettext("Contact us")}
+          </h2>
+          <p class="text-base-content opacity-70 leading-relaxed">
+            {gettext("Questions about this policy, or a violation to report? Email ")}<a
+              href="mailto:privacy@letstango.ca"
+              class="text-[var(--ink)] hover:text-[var(--stride-orange)] underline font-medium"
+            >privacy@letstango.ca</a>{gettext(" and we will respond within a reasonable time.")}
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>

@@ -101,7 +101,10 @@ defmodule KanbanWeb.UserLive.Registration do
               {gettext("Terms of Service")}
             </.link>
             {gettext("and")}
-            <.link navigate={~p"/privacy"} style="color: var(--ink); text-decoration: underline;">
+            <.link
+              navigate={~p"/acceptable-use"}
+              style="color: var(--ink); text-decoration: underline;"
+            >
               {gettext("Acceptable Use Policy")}
             </.link>
             {gettext("— including the agent-action attribution clause.")}
