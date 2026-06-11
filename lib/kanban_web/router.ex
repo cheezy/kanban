@@ -112,7 +112,12 @@ defmodule KanbanWeb.Router do
         user_activity: KanbanWeb.Telemetry.UserActivityPage
       ]
 
+    # csp_nonce_assign_key lets ErrorTracker stamp our per-request CSP nonce
+    # (KanbanWeb.Plugs.CspNonce) onto its inline <script>/<style> tags —
+    # without it the browser blocks the dashboard's inlined JS and buttons
+    # like "Mark as resolved" silently do nothing.
     error_tracker_dashboard("/errors",
+      csp_nonce_assign_key: :csp_nonce,
       on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}]
     )
   end
