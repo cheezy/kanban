@@ -723,7 +723,7 @@ msgstr "利用可能な履歴がありません"
 msgid "Status"
 msgstr "ステータス"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:106
+#: lib/kanban_web/live/user_live/confirmation.ex:97
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "確認リンクが無効または期限切れです。"
@@ -735,7 +735,7 @@ msgstr "確認リンクが無効または期限切れです。"
 msgid "Dashboard"
 msgstr "ダッシュボード"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:100
+#: lib/kanban_web/live/user_live/confirmation.ex:91
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "このアカウントは既に確認されています。ログインできます。"
@@ -3198,7 +3198,7 @@ msgstr "セキュリティ"
 
 #: lib/kanban_web/components/marketing_components.ex:133
 #: lib/kanban_web/components/marketing_components.ex:301
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:51
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -5445,7 +5445,7 @@ msgstr "主な協働機能"
 msgid "Acceptable Use Policy"
 msgstr "利用規約"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:32
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Account confirmed"
 msgstr "アカウントが確認されました！"
@@ -5467,7 +5467,6 @@ msgstr "12文字以上"
 msgid "Audit log for column reordering"
 msgstr "列の並び替えに関する監査ログ"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:17
 #: lib/kanban_web/live/user_live/forgot_password.ex:17
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -5495,7 +5494,7 @@ msgstr "アカウントの新しいパスワードを選択してください。
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "強力なパスワードを選んで確認してください。変更が成功すると、このデバイスでサインインされたままになります。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:42
+#: lib/kanban_web/live/user_live/confirmation.ex:33
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "アカウントを確認中..."
@@ -5525,7 +5524,7 @@ msgstr "エージェント向け"
 msgid "Forgot?"
 msgstr "お忘れですか?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:48
+#: lib/kanban_web/live/user_live/confirmation.ex:39
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "少々お待ちください — すぐに完了します。"
@@ -5612,7 +5611,7 @@ msgstr "Strideを支える人々とAIコラボレーター。"
 msgid "Update profile"
 msgstr "プロフィールを更新"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:69
+#: lib/kanban_web/live/user_live/confirmation.ex:60
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "確認リンクを検証中…"
@@ -5632,7 +5631,7 @@ msgstr "ワンタイムリンクをメールでお送りします。リンクは
 msgid "Welcome back. Use the same method you used last time."
 msgstr "お帰りなさい。前回と同じ方法をご利用ください。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:47
+#: lib/kanban_web/live/user_live/confirmation.ex:38
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Your account has been confirmed successfully. You can now sign in."
 msgstr "アカウントが正常に確認されました。ログインできます。"
@@ -5677,7 +5676,7 @@ msgstr "オペレータパスワードのリセットはそうしますが"
 msgid "rotate API tokens. Rotate from"
 msgstr "APIトークンをローテーションします。次からローテーション:"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:72
+#: lib/kanban_web/live/user_live/confirmation.ex:63
 #, elixir-autogen, elixir-format
 msgid "this tab will sign you in automatically"
 msgstr "このタブが自動的にサインインします"

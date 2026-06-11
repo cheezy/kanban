@@ -723,7 +723,7 @@ msgstr "Kein Verlauf verfügbar"
 msgid "Status"
 msgstr "Status"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:106
+#: lib/kanban_web/live/user_live/confirmation.ex:97
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "Der Bestätigungslink ist ungültig oder abgelaufen."
@@ -735,7 +735,7 @@ msgstr "Der Bestätigungslink ist ungültig oder abgelaufen."
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:100
+#: lib/kanban_web/live/user_live/confirmation.ex:91
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "Dieses Konto wurde bereits bestätigt. Sie können sich anmelden."
@@ -3201,7 +3201,7 @@ msgstr "Sicherheit"
 
 #: lib/kanban_web/components/marketing_components.ex:133
 #: lib/kanban_web/components/marketing_components.ex:301
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:51
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -5457,7 +5457,7 @@ msgstr "Wichtige Kollaborationsfunktionen"
 msgid "Acceptable Use Policy"
 msgstr "Richtlinie zur akzeptablen Nutzung"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:32
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Account confirmed"
 msgstr "Konto bestätigt!"
@@ -5479,7 +5479,6 @@ msgstr "Mindestens 12 Zeichen"
 msgid "Audit log for column reordering"
 msgstr "Audit-Log für die Neuanordnung von Spalten"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:17
 #: lib/kanban_web/live/user_live/forgot_password.ex:17
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -5507,7 +5506,7 @@ msgstr "Wählen Sie ein neues Passwort für Ihr Konto."
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "Wählen Sie ein starkes Passwort und bestätigen Sie es. Sie bleiben nach einer erfolgreichen Änderung auf diesem Gerät angemeldet."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:42
+#: lib/kanban_web/live/user_live/confirmation.ex:33
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "Ihr Konto wird bestätigt..."
@@ -5537,7 +5536,7 @@ msgstr "Für Agenten"
 msgid "Forgot?"
 msgstr "Vergessen?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:48
+#: lib/kanban_web/live/user_live/confirmation.ex:39
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "Bitte warten — das dauert nur einen Moment."
@@ -5624,7 +5623,7 @@ msgstr "Die Menschen und der KI-Mitarbeiter hinter Stride."
 msgid "Update profile"
 msgstr "Profil aktualisieren"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:69
+#: lib/kanban_web/live/user_live/confirmation.ex:60
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "Ihr Bestätigungslink wird überprüft…"
@@ -5644,7 +5643,7 @@ msgstr "Wir senden Ihnen einen Einmal-Link per E-Mail. Der Link läuft in 15 Min
 msgid "Welcome back. Use the same method you used last time."
 msgstr "Willkommen zurück. Verwenden Sie dieselbe Methode wie beim letzten Mal."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:47
+#: lib/kanban_web/live/user_live/confirmation.ex:38
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Your account has been confirmed successfully. You can now sign in."
 msgstr "Ihr Konto wurde erfolgreich bestätigt. Sie können sich jetzt anmelden."
@@ -5689,7 +5688,7 @@ msgstr "das Zurücksetzen Ihres Operator-Passworts schon"
 msgid "rotate API tokens. Rotate from"
 msgstr "rotieren API-Tokens. Rotieren Sie über"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:72
+#: lib/kanban_web/live/user_live/confirmation.ex:63
 #, elixir-autogen, elixir-format
 msgid "this tab will sign you in automatically"
 msgstr "dieser Tab meldet Sie automatisch an"

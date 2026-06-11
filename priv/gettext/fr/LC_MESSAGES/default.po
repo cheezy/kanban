@@ -723,7 +723,7 @@ msgstr "Aucun historique disponible"
 msgid "Status"
 msgstr "Statut"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:106
+#: lib/kanban_web/live/user_live/confirmation.ex:97
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "Le lien de confirmation est invalide ou a expiré."
@@ -735,7 +735,7 @@ msgstr "Le lien de confirmation est invalide ou a expiré."
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:100
+#: lib/kanban_web/live/user_live/confirmation.ex:91
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
@@ -3201,7 +3201,7 @@ msgstr "Sécurité"
 
 #: lib/kanban_web/components/marketing_components.ex:133
 #: lib/kanban_web/components/marketing_components.ex:301
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:51
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -5457,7 +5457,7 @@ msgstr "Fonctionnalités clés de collaboration"
 msgid "Acceptable Use Policy"
 msgstr "Politique d'utilisation acceptable"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:32
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Account confirmed"
 msgstr "Compte Confirmé !"
@@ -5479,7 +5479,6 @@ msgstr "Au moins 12 caractères"
 msgid "Audit log for column reordering"
 msgstr "Journal d'audit pour la réorganisation des colonnes"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:17
 #: lib/kanban_web/live/user_live/forgot_password.ex:17
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -5507,7 +5506,7 @@ msgstr "Choisissez un nouveau mot de passe pour votre compte."
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "Choisissez un mot de passe fort et confirmez-le. Vous resterez connecté sur cet appareil après un changement réussi."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:42
+#: lib/kanban_web/live/user_live/confirmation.ex:33
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "Confirmation de votre compte..."
@@ -5537,7 +5536,7 @@ msgstr "Pour les agents"
 msgid "Forgot?"
 msgstr "Oublié ?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:48
+#: lib/kanban_web/live/user_live/confirmation.ex:39
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "Veuillez patienter — cela ne prendra qu'un instant."
@@ -5624,7 +5623,7 @@ msgstr "Les personnes et le collaborateur IA derrière Stride."
 msgid "Update profile"
 msgstr "Mettre à jour le profil"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:69
+#: lib/kanban_web/live/user_live/confirmation.ex:60
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "Vérification de votre lien de confirmation…"
@@ -5644,7 +5643,7 @@ msgstr "Nous enverrons un lien à usage unique par e-mail. Le lien expire dans 1
 msgid "Welcome back. Use the same method you used last time."
 msgstr "Bon retour. Utilisez la même méthode que la dernière fois."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:47
+#: lib/kanban_web/live/user_live/confirmation.ex:38
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Your account has been confirmed successfully. You can now sign in."
 msgstr "Votre compte a été confirmé avec succès. Vous pouvez maintenant vous connecter."
@@ -5689,7 +5688,7 @@ msgstr "réinitialiser votre mot de passe opérateur oui"
 msgid "rotate API tokens. Rotate from"
 msgstr "fait tourner les jetons API. Renouvelez depuis"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:72
+#: lib/kanban_web/live/user_live/confirmation.ex:63
 #, elixir-autogen, elixir-format
 msgid "this tab will sign you in automatically"
 msgstr "cet onglet vous connectera automatiquement"
