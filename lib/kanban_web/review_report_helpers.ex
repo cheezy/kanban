@@ -219,6 +219,84 @@ defmodule KanbanWeb.ReviewReportHelpers do
     end
   end
 
+  @testing_strategy_categories ~w(unit_tests integration_tests manual_tests edge_cases coverage_target)
+
+  @doc """
+  Per-category breakdown of the task's own `testing_strategy` field for the
+  Review checks panel. Returns one map per non-empty category, in the fixed
+  order unit_tests → integration_tests → manual_tests → edge_cases →
+  coverage_target:
+
+      %{key: "unit_tests", label: "Unit tests", items: ["..."], passed: true}
+
+  `items` is the category's list of strings; `coverage_target` (a single
+  string) becomes a one-item list. `passed` prefers a per-category verdict
+  at `reviewer_result["testing_strategy"]["categories"][key]["status"]`
+  when the reviewer supplied one, and falls back to the section-level
+  testing-strategy verdict so each category shows the most specific status
+  available. Returns `[]` when the task carries no testing strategy.
+  """
+  def testing_strategy_breakdown(task) do
+    case fetch_field(task, :testing_strategy) do
+      %{} = strategy when map_size(strategy) > 0 ->
+        @testing_strategy_categories
+        |> Enum.map(&breakdown_category(task, strategy, &1))
+        |> Enum.reject(&is_nil/1)
+
+      _ ->
+        []
+    end
+  end
+
+  defp breakdown_category(task, strategy, key) do
+    case category_items(Map.get(strategy, key)) do
+      [] ->
+        nil
+
+      items ->
+        %{key: key, label: category_label(key), items: items, passed: category_passed(task, key)}
+    end
+  end
+
+  defp category_items(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> []
+      trimmed -> [trimmed]
+    end
+  end
+
+  defp category_items(value) when is_list(value) do
+    value
+    |> Enum.filter(&is_binary/1)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp category_items(_), do: []
+
+  defp category_label("unit_tests"), do: gettext("Unit tests")
+  defp category_label("integration_tests"), do: gettext("Integration tests")
+  defp category_label("manual_tests"), do: gettext("Manual tests")
+  defp category_label("edge_cases"), do: gettext("Edge cases")
+  defp category_label("coverage_target"), do: gettext("Coverage target")
+
+  defp category_passed(task, key) do
+    case category_status(task, key) do
+      nil -> testing_strategy_passed(task)
+      status -> structured_status_passed(status)
+    end
+  end
+
+  defp category_status(task, key) do
+    with %{} = result <- reviewer_result(task),
+         %{"categories" => %{} = categories} <- Map.get(result, "testing_strategy"),
+         %{"status" => status} when is_binary(status) <- Map.get(categories, key) do
+      status
+    else
+      _ -> nil
+    end
+  end
+
   @doc """
   Human-readable value for the patterns verdict cell. Prefers structured
   `reviewer_result["patterns"]["status"]` when present; falls back to the

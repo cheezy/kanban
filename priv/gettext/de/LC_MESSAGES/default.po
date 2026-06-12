@@ -1065,7 +1065,7 @@ msgstr "Verifizierungsschritt hinzufügen"
 msgid "Agent"
 msgstr "Agent"
 
-#: lib/kanban_web/live/review_live.ex:765
+#: lib/kanban_web/live/review_live.ex:807
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -4053,7 +4053,7 @@ msgstr "Ihre Rechte"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:740
+#: lib/kanban_web/live/review_live.ex:782
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "gerade eben"
@@ -5005,19 +5005,19 @@ msgid "live"
 msgstr "live"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:746
+#: lib/kanban_web/live/review_live.ex:788
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "vor %{d} Tg."
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:744
+#: lib/kanban_web/live/review_live.ex:786
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "vor %{h} Std."
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:741
+#: lib/kanban_web/live/review_live.ex:783
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "vor %{m} Min."
@@ -5065,14 +5065,14 @@ msgstr[1] "%{count} fehlgeschlagene Tests"
 msgid "No files changed."
 msgstr "Keine Dateien geändert."
 
-#: lib/kanban_web/live/review_live.ex:725
+#: lib/kanban_web/live/review_live.ex:767
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} Aufgabe von %{agents} Agent wartet auf Sie"
 msgstr[1] "%{count} Aufgaben von %{agents} Agenten warten auf Sie"
 
-#: lib/kanban_web/live/review_live.ex:720
+#: lib/kanban_web/live/review_live.ex:762
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 Aufgaben warten auf Sie."
@@ -5092,7 +5092,7 @@ msgstr "Ø Zeit bis zur Prüfung · 17 Min."
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "Inbox Zero — nichts wartet auf Prüfung."
 
-#: lib/kanban_web/live/review_live.ex:603
+#: lib/kanban_web/live/review_live.ex:645
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "Beim Anfordern von Änderungen sind Notizen erforderlich."
@@ -5102,7 +5102,7 @@ msgstr "Beim Anfordern von Änderungen sind Notizen erforderlich."
 msgid "Notes for the agent"
 msgstr "Notizen für den Agenten"
 
-#: lib/kanban_web/live/review_live.ex:598
+#: lib/kanban_web/live/review_live.ex:640
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "Änderungen an %{ident} angefordert"
@@ -5122,12 +5122,12 @@ msgstr "Anfrage senden"
 msgid "Unable to approve task."
 msgstr "Aufgabe konnte nicht genehmigt werden."
 
-#: lib/kanban_web/live/review_live.ex:607
+#: lib/kanban_web/live/review_live.ex:649
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "Änderungen an der Aufgabe konnten nicht angefordert werden."
 
-#: lib/kanban_web/live/review_live.ex:735
+#: lib/kanban_web/live/review_live.ex:777
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "älteste %{age}"
@@ -6101,7 +6101,7 @@ msgstr "Durchlaufzeit, aufgeteilt nach Agent vs. Mensch auf allen Ebenen"
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "Jede Aufgabe trägt Warum, Was, Akzeptanzkriterien, Teststrategie, Sicherheitsaspekte, zu vermeidende Fallstricke und Observability. Agenten beanspruchen mit genug Kontext, um ohne Rückfragen auszuführen; Menschen prüfen anhand der Kriterien, die sie selbst geschrieben haben — nicht nach Bauchgefühl."
 
-#: lib/kanban_web/live/review_live.ex:905
+#: lib/kanban_web/live/review_live.ex:964
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
@@ -6115,11 +6115,11 @@ msgid "Not met"
 msgstr "Nicht erfüllt"
 
 #: lib/kanban_web/review_report_helpers.ex:189
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
-msgstr[0] "%{n} Tg."
-msgstr[1] "%{n} Tg."
+msgstr[0] "%{n} Fall"
+msgstr[1] "%{n} Fälle"
 
 #: lib/kanban_web/review_report_helpers.ex:181
 #, elixir-autogen, elixir-format
@@ -6128,12 +6128,12 @@ msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} Fall · alle vorhanden"
 msgstr[1] "%{n} Fälle · alle vorhanden"
 
-#: lib/kanban_web/review_report_helpers.ex:270
+#: lib/kanban_web/review_report_helpers.ex:348
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "keine verletzt"
 
-#: lib/kanban_web/review_report_helpers.ex:268
+#: lib/kanban_web/review_report_helpers.ex:346
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "verletzt"
@@ -6160,7 +6160,7 @@ msgstr "Abgeschlossen von %{name}"
 msgid "Patterns"
 msgstr "Muster"
 
-#: lib/kanban_web/review_report_helpers.ex:232
+#: lib/kanban_web/review_report_helpers.ex:310
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "befolgt"
@@ -6181,7 +6181,7 @@ msgstr "Änderungen angefordert"
 msgid "(no description)"
 msgstr "(keine Beschreibung)"
 
-#: lib/kanban_web/live/review_live.ex:775
+#: lib/kanban_web/live/review_live.ex:817
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "Änderungen angefordert"
@@ -6206,20 +6206,23 @@ msgstr "Geringfügig"
 msgid "Testing"
 msgstr "Tests"
 
-#: lib/kanban_web/review_report_helpers.ex:408
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/review_live.ex:934
+#: lib/kanban_web/review_report_helpers.ex:486
+#, elixir-autogen, elixir-format
 msgid "failed"
-msgstr "Kopieren fehlgeschlagen"
+msgstr "fehlgeschlagen"
 
-#: lib/kanban_web/review_report_helpers.ex:409
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/review_live.ex:935
+#: lib/kanban_web/review_report_helpers.ex:487
+#, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr "Nicht bewertet"
 
-#: lib/kanban_web/review_report_helpers.ex:407
-#, elixir-autogen, elixir-format, fuzzy
+#: lib/kanban_web/live/review_live.ex:933
+#: lib/kanban_web/review_report_helpers.ex:485
+#, elixir-autogen, elixir-format
 msgid "passed"
-msgstr "Passwort"
+msgstr "bestanden"
 
 #: lib/kanban_web/components/review_queue_item.ex:246
 #, elixir-autogen, elixir-format
@@ -6246,7 +6249,7 @@ msgstr "Befolgte Muster"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.ex:531
+#: lib/kanban_web/live/review_live.ex:573
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Geänderte Dateien"
@@ -6256,17 +6259,17 @@ msgstr "Geänderte Dateien"
 msgid "Issues"
 msgstr "Probleme"
 
-#: lib/kanban_web/components/review_diff_panel.ex:223
+#: lib/kanban_web/components/review_diff_panel.ex:232
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr "Binärdatei geändert – keine Diff-Vorschau."
 
-#: lib/kanban_web/components/review_diff_panel.ex:276
+#: lib/kanban_web/components/review_diff_panel.ex:285
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr "Diff bei 500 Zeilen abgeschnitten."
 
-#: lib/kanban_web/components/review_diff_panel.ex:239
+#: lib/kanban_web/components/review_diff_panel.ex:248
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr "Für diese Datei ist kein Diff verfügbar."
@@ -6276,7 +6279,7 @@ msgstr "Für diese Datei ist kein Diff verfügbar."
 msgid "No issues"
 msgstr "Keine Probleme"
 
-#: lib/kanban_web/components/review_diff_panel.ex:286
+#: lib/kanban_web/components/review_diff_panel.ex:295
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "Vollständigen Diff im Repo ansehen"
@@ -6675,7 +6678,7 @@ msgstr "Stride umschließt jede Aufgabe in einem vierstufigen Lebenszyklus. Mens
 "eigenständig arbeiten lassen. Das Board steuert eine echte Codebasis, kein "
 "bloßes Bauchgefühl."
 
-#: lib/kanban_web/live/review_live.ex:558
+#: lib/kanban_web/live/review_live.ex:600
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Code-Review"
@@ -6685,7 +6688,7 @@ msgstr "Code-Review"
 msgid "Settings sections"
 msgstr "Einstellungsbereiche"
 
-#: lib/kanban_web/live/review_live.ex:785
+#: lib/kanban_web/live/review_live.ex:827
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "Überprüfungsdaten nicht verfügbar"
@@ -7035,13 +7038,38 @@ msgstr "Ihre Inhalte"
 msgid "Your use of the service is subject to our "
 msgstr "Ihre Nutzung des Dienstes unterliegt unserer "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:62
+#: lib/kanban_web/controllers/user_session_controller.ex:61
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Sie müssen Ihr Konto bestätigen, bevor Sie sich anmelden. Prüfen Sie Ihre E-Mails auf einen Bestätigungslink."
 
 #: lib/kanban_web/user_auth.ex:237
-#: lib/kanban_web/user_auth.ex:315
+#: lib/kanban_web/user_auth.ex:316
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Sie müssen Ihr Konto bestätigen, um auf diese Seite zuzugreifen."
+
+#: lib/kanban_web/review_report_helpers.ex:281
+#, elixir-autogen, elixir-format
+msgid "Coverage target"
+msgstr "Abdeckungsziel"
+
+#: lib/kanban_web/review_report_helpers.ex:280
+#, elixir-autogen, elixir-format
+msgid "Edge cases"
+msgstr "Randfälle"
+
+#: lib/kanban_web/review_report_helpers.ex:278
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Integration tests"
+msgstr "Integrationstests"
+
+#: lib/kanban_web/review_report_helpers.ex:279
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Manual tests"
+msgstr "Manuelle Tests"
+
+#: lib/kanban_web/review_report_helpers.ex:277
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Unit tests"
+msgstr "Unit-Tests"

@@ -1065,7 +1065,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:765
+#: lib/kanban_web/live/review_live.ex:807
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:960
 #, elixir-autogen, elixir-format
@@ -4053,7 +4053,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:740
+#: lib/kanban_web/live/review_live.ex:782
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -5005,19 +5005,19 @@ msgid "live"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:746
+#: lib/kanban_web/live/review_live.ex:788
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:744
+#: lib/kanban_web/live/review_live.ex:786
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:741
+#: lib/kanban_web/live/review_live.ex:783
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr ""
@@ -5065,14 +5065,14 @@ msgstr[1] ""
 msgid "No files changed."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:725
+#: lib/kanban_web/live/review_live.ex:767
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/review_live.ex:720
+#: lib/kanban_web/live/review_live.ex:762
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr ""
@@ -5092,7 +5092,7 @@ msgstr ""
 msgid "Inbox zero — nothing is waiting for review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:603
+#: lib/kanban_web/live/review_live.ex:645
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr ""
@@ -5102,7 +5102,7 @@ msgstr ""
 msgid "Notes for the agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:598
+#: lib/kanban_web/live/review_live.ex:640
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr ""
@@ -5122,12 +5122,12 @@ msgstr ""
 msgid "Unable to approve task."
 msgstr "Unable to approve task."
 
-#: lib/kanban_web/live/review_live.ex:607
+#: lib/kanban_web/live/review_live.ex:649
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:735
+#: lib/kanban_web/live/review_live.ex:777
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr ""
@@ -6101,7 +6101,7 @@ msgstr "Cycle time, split by agent vs human on all levels"
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 
-#: lib/kanban_web/live/review_live.ex:905
+#: lib/kanban_web/live/review_live.ex:964
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
@@ -6128,12 +6128,12 @@ msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} case · all present"
 msgstr[1] "%{n} cases · all present"
 
-#: lib/kanban_web/review_report_helpers.ex:270
+#: lib/kanban_web/review_report_helpers.ex:348
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "none violated"
 
-#: lib/kanban_web/review_report_helpers.ex:268
+#: lib/kanban_web/review_report_helpers.ex:346
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "violated"
@@ -6160,7 +6160,7 @@ msgstr "Completed by %{name}"
 msgid "Patterns"
 msgstr "Patterns"
 
-#: lib/kanban_web/review_report_helpers.ex:232
+#: lib/kanban_web/review_report_helpers.ex:310
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "followed"
@@ -6181,7 +6181,7 @@ msgstr "changes requested"
 msgid "(no description)"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:775
+#: lib/kanban_web/live/review_live.ex:817
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "Changes requested"
@@ -6206,17 +6206,20 @@ msgstr "Minor"
 msgid "Testing"
 msgstr "Testing"
 
-#: lib/kanban_web/review_report_helpers.ex:408
+#: lib/kanban_web/live/review_live.ex:934
+#: lib/kanban_web/review_report_helpers.ex:486
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:409
+#: lib/kanban_web/live/review_live.ex:935
+#: lib/kanban_web/review_report_helpers.ex:487
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:407
+#: lib/kanban_web/live/review_live.ex:933
+#: lib/kanban_web/review_report_helpers.ex:485
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr ""
@@ -6246,7 +6249,7 @@ msgstr "Patterns followed"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.ex:531
+#: lib/kanban_web/live/review_live.ex:573
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Changed files"
@@ -6256,17 +6259,17 @@ msgstr "Changed files"
 msgid "Issues"
 msgstr "Issues"
 
-#: lib/kanban_web/components/review_diff_panel.ex:223
+#: lib/kanban_web/components/review_diff_panel.ex:232
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr ""
 
-#: lib/kanban_web/components/review_diff_panel.ex:276
+#: lib/kanban_web/components/review_diff_panel.ex:285
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr ""
 
-#: lib/kanban_web/components/review_diff_panel.ex:239
+#: lib/kanban_web/components/review_diff_panel.ex:248
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr ""
@@ -6276,7 +6279,7 @@ msgstr ""
 msgid "No issues"
 msgstr "No issues"
 
-#: lib/kanban_web/components/review_diff_panel.ex:286
+#: lib/kanban_web/components/review_diff_panel.ex:295
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr ""
@@ -6569,7 +6572,7 @@ msgstr ""
 msgid "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
 msgstr "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
 
-#: lib/kanban_web/live/review_live.ex:558
+#: lib/kanban_web/live/review_live.ex:600
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Code review"
@@ -6579,7 +6582,7 @@ msgstr "Code review"
 msgid "Settings sections"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:785
+#: lib/kanban_web/live/review_live.ex:827
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr ""
@@ -6929,13 +6932,38 @@ msgstr ""
 msgid "Your use of the service is subject to our "
 msgstr ""
 
-#: lib/kanban_web/controllers/user_session_controller.ex:62
+#: lib/kanban_web/controllers/user_session_controller.ex:61
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr ""
 
 #: lib/kanban_web/user_auth.ex:237
-#: lib/kanban_web/user_auth.ex:315
+#: lib/kanban_web/user_auth.ex:316
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
+msgstr ""
+
+#: lib/kanban_web/review_report_helpers.ex:281
+#, elixir-autogen, elixir-format
+msgid "Coverage target"
+msgstr ""
+
+#: lib/kanban_web/review_report_helpers.ex:280
+#, elixir-autogen, elixir-format
+msgid "Edge cases"
+msgstr ""
+
+#: lib/kanban_web/review_report_helpers.ex:278
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Integration tests"
+msgstr ""
+
+#: lib/kanban_web/review_report_helpers.ex:279
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Manual tests"
+msgstr ""
+
+#: lib/kanban_web/review_report_helpers.ex:277
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Unit tests"
 msgstr ""

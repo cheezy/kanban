@@ -469,7 +469,7 @@ defmodule KanbanWeb.ReviewLive do
                   :for={row <- review_check_rows(@selected)}
                   data-review-check-row={Atom.to_string(row.section)}
                   data-review-check-status={row.status}
-                  style="display: flex; flex-direction: column; gap: 4px;"
+                  style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;"
                 >
                   <span style="font-weight: 600; color: var(--ink);">{row.label}</span>
                   <%= if row.incomplete? do %>
@@ -491,7 +491,7 @@ defmodule KanbanWeb.ReviewLive do
                     </div>
                   <% else %>
                     <span
-                      :if={row.value}
+                      :if={row.value && row.breakdown == []}
                       data-review-check-pill
                       style={[
                         "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
@@ -504,13 +504,55 @@ defmodule KanbanWeb.ReviewLive do
                       {row.value}
                     </span>
                     <p
-                      :if={row.note}
+                      :if={row.note && row.breakdown == []}
                       data-review-check-note
                       style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
                     >
                       {row.note}
                     </p>
                   <% end %>
+                  <div
+                    :if={row.breakdown != []}
+                    data-review-check-breakdown
+                    style="display: flex; flex-direction: column; gap: 8px; margin-top: 2px; margin-left: 14px;"
+                  >
+                    <div
+                      :for={category <- row.breakdown}
+                      data-review-check-category={category.key}
+                      data-review-check-category-status={category_status_key(category.passed)}
+                      style="display: flex; flex-direction: column; gap: 3px;"
+                    >
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style={[
+                          "font-size: 11.5px; font-weight: 600;",
+                          "font-family: var(--font-mono); color: var(--ink);"
+                        ]}>
+                          {category.label}
+                        </span>
+                        <span
+                          data-review-check-category-pill
+                          style={[
+                            "display: inline-flex; align-items: center; gap: 4px;",
+                            "padding: 0 8px; border-radius: 999px;",
+                            "font-size: 11px; font-weight: 600; text-transform: capitalize;",
+                            verdict_tone_style(category.passed)
+                          ]}
+                        >
+                          <.icon
+                            name={verdict_icon(row.section, category.passed)}
+                            class="w-3.5 h-3.5"
+                          />
+                          {category_verdict_label(category.passed)}
+                        </span>
+                      </div>
+                      <ul style={[
+                        "margin: 0; padding-left: 18px; color: var(--ink-2);",
+                        "display: flex; flex-direction: column; gap: 2px;"
+                      ]}>
+                        <li :for={item <- category.items}>{item}</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </section>
 
@@ -854,13 +896,14 @@ defmodule KanbanWeb.ReviewLive do
   defp section_value(task, :pitfalls), do: ReviewReportHelpers.pitfalls_value(task)
 
   # One map per renderable check row. A row is visible when it has a verdict
-  # value, a reviewer note, or an incomplete flag — legacy tasks with none of
-  # these get no rows, and the section hides entirely. Pure; safe to call
-  # twice from the template (once for the section guard, once for :for).
+  # value, a reviewer note, an incomplete flag, or a per-category breakdown —
+  # legacy tasks with none of these get no rows, and the section hides
+  # entirely. Pure; safe to call twice from the template (once for the
+  # section guard, once for :for).
   defp review_check_rows(task) do
     @review_check_sections
     |> Enum.map(&review_check_row(task, &1))
-    |> Enum.filter(fn row -> row.value || row.note || row.incomplete? end)
+    |> Enum.filter(fn row -> row.value || row.note || row.incomplete? || row.breakdown != [] end)
   end
 
   defp review_check_row(task, section) do
@@ -871,9 +914,25 @@ defmodule KanbanWeb.ReviewLive do
       passed: section_passed(task, section),
       status: section_status_key(task, section),
       note: ReviewReportHelpers.section_note(task, section),
-      incomplete?: ReviewReportHelpers.section_incomplete?(task, section)
+      incomplete?: ReviewReportHelpers.section_incomplete?(task, section),
+      breakdown: section_breakdown(task, section)
     }
   end
+
+  # The testing-strategy row expands into the task's own per-category
+  # strategy entries; the other sections have no structured breakdown.
+  defp section_breakdown(task, :testing_strategy),
+    do: ReviewReportHelpers.testing_strategy_breakdown(task)
+
+  defp section_breakdown(_task, _section), do: []
+
+  defp category_status_key(true), do: "passed"
+  defp category_status_key(false), do: "failed"
+  defp category_status_key(_), do: "not_assessed"
+
+  defp category_verdict_label(true), do: gettext("passed")
+  defp category_verdict_label(false), do: gettext("failed")
+  defp category_verdict_label(_), do: gettext("not assessed")
 
   # Reads the reviewer's one-line security rationale. The shared accessor
   # returns nil for absent/blank/non-string notes so the paragraph is omitted

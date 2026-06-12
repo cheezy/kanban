@@ -619,4 +619,114 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.section_note(task, :acceptance_criteria) == nil
     end
   end
+
+  describe "testing_strategy_breakdown/1" do
+    @full_strategy %{
+      "unit_tests" => ["case one", "case two", "case three"],
+      "integration_tests" => ["end to end flow"],
+      "manual_tests" => ["check it in the browser"],
+      "edge_cases" => ["empty board"],
+      "coverage_target" => "all new functions covered"
+    }
+
+    test "returns one entry per category in fixed order with the items" do
+      task = %{
+        testing_strategy: @full_strategy,
+        reviewer_result: %{"testing_strategy" => %{"status" => "passed"}}
+      }
+
+      breakdown = ReviewReportHelpers.testing_strategy_breakdown(task)
+
+      assert Enum.map(breakdown, & &1.key) == [
+               "unit_tests",
+               "integration_tests",
+               "manual_tests",
+               "edge_cases",
+               "coverage_target"
+             ]
+
+      unit = hd(breakdown)
+      assert unit.items == ["case one", "case two", "case three"]
+      assert unit.label == "Unit tests"
+    end
+
+    test "categories inherit the section-level verdict when no per-category status exists" do
+      task = %{
+        testing_strategy: @full_strategy,
+        reviewer_result: %{"testing_strategy" => %{"status" => "passed"}}
+      }
+
+      assert ReviewReportHelpers.testing_strategy_breakdown(task)
+             |> Enum.all?(&(&1.passed == true))
+    end
+
+    test "a per-category reviewer status overrides the section-level verdict" do
+      task = %{
+        testing_strategy: @full_strategy,
+        reviewer_result: %{
+          "testing_strategy" => %{
+            "status" => "passed",
+            "categories" => %{"edge_cases" => %{"status" => "failed"}}
+          }
+        }
+      }
+
+      breakdown = ReviewReportHelpers.testing_strategy_breakdown(task)
+      edge = Enum.find(breakdown, &(&1.key == "edge_cases"))
+      unit = Enum.find(breakdown, &(&1.key == "unit_tests"))
+
+      assert edge.passed == false
+      assert unit.passed == true
+    end
+
+    test "coverage_target string becomes a one-item list" do
+      task = %{testing_strategy: %{"coverage_target" => "everything"}, reviewer_result: nil}
+
+      assert [%{key: "coverage_target", items: ["everything"]}] =
+               ReviewReportHelpers.testing_strategy_breakdown(task)
+    end
+
+    test "empty categories and blank entries are skipped" do
+      task = %{
+        testing_strategy: %{
+          "unit_tests" => ["real case", "", "  "],
+          "integration_tests" => [],
+          "manual_tests" => nil,
+          "coverage_target" => "   "
+        },
+        reviewer_result: nil
+      }
+
+      assert [%{key: "unit_tests", items: ["real case"]}] =
+               ReviewReportHelpers.testing_strategy_breakdown(task)
+    end
+
+    test "returns [] when the task has no testing strategy" do
+      assert ReviewReportHelpers.testing_strategy_breakdown(%{
+               testing_strategy: nil,
+               reviewer_result: nil
+             }) == []
+
+      assert ReviewReportHelpers.testing_strategy_breakdown(%{
+               testing_strategy: %{},
+               reviewer_result: nil
+             }) == []
+    end
+
+    test "passed is nil when no reviewer verdict exists at any level" do
+      task = %{testing_strategy: %{"unit_tests" => ["a case"]}, reviewer_result: nil}
+
+      assert [%{passed: nil}] = ReviewReportHelpers.testing_strategy_breakdown(task)
+    end
+
+    test "tolerates string-keyed task maps" do
+      task = %{
+        "testing_strategy" => %{"unit_tests" => ["a case"]},
+        "reviewer_result" => %{"testing_strategy" => %{"status" => "passed"}}
+      }
+
+      assert [%{key: "unit_tests", passed: true}] =
+               ReviewReportHelpers.testing_strategy_breakdown(task)
+    end
+  end
 end
