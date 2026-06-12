@@ -8,7 +8,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame>
+    <.auth_frame flash={@flash}>
       <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
         <div style="width: 72px; height: 72px; border-radius: 16px; background: linear-gradient(135deg, var(--stride-orange-soft) 0%, var(--stride-violet-soft) 100%); display: inline-flex; align-items: center; justify-content: center; color: var(--stride-orange-ink); box-shadow: inset 0 0 0 1px var(--line);">
           <svg

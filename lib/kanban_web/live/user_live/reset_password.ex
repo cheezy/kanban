@@ -9,7 +9,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame>
+    <.auth_frame flash={@flash}>
       <:footer_switch>
         <.link
           navigate={~p"/users/log-in"}

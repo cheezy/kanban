@@ -26,6 +26,10 @@ defmodule KanbanWeb.AuthFrame do
     router: KanbanWeb.Router,
     statics: KanbanWeb.static_paths()
 
+  attr :flash, :map,
+    default: %{},
+    doc: "Flash map from the LiveView (`@flash`). Renders :error and :info banners."
+
   slot :footer_switch,
     doc:
       "Cross-state link shown next to the wordmark (e.g., 'New to Stride? Create an account →')."
@@ -47,6 +51,26 @@ defmodule KanbanWeb.AuthFrame do
             {render_slot(@footer_switch)}
           </div>
         </div>
+
+        <%!-- Flash banners. The --st-* token pairs are contrast-verified in both
+              themes by mix dark_mode.contrast, keeping the frame's no-daisyUI
+              contract intact. --%>
+        <p
+          :if={Phoenix.Flash.get(@flash, :error)}
+          id="auth-flash-error"
+          role="alert"
+          style="margin: 0 0 16px; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.45; background: var(--st-blocked-soft); color: var(--st-blocked);"
+        >
+          {Phoenix.Flash.get(@flash, :error)}
+        </p>
+        <p
+          :if={Phoenix.Flash.get(@flash, :info)}
+          id="auth-flash-info"
+          role="status"
+          style="margin: 0 0 16px; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.45; background: var(--st-done-soft); color: var(--st-done);"
+        >
+          {Phoenix.Flash.get(@flash, :info)}
+        </p>
 
         {render_slot(@inner_block)}
       </div>

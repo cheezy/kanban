@@ -10,7 +10,7 @@ defmodule KanbanWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <.auth_frame>
+    <.auth_frame flash={@flash}>
       <:footer_switch>
         <span>{gettext("Already have an account?")}</span>
         <.link
