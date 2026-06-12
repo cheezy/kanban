@@ -259,6 +259,28 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
     end
   end
 
+  describe "review_diff_panel/1 — inline diff placement" do
+    test "renders the diff inside the selected file's row, before later rows" do
+      html =
+        render_panel(["lib/a.ex", "lib/b.ex"],
+          selected_file: %{"path" => "lib/a.ex", "diff" => "+ added line"}
+        )
+
+      assert html =~ "data-review-diff-panel-inline-diff"
+
+      # The diff block must appear between the selected row and the next
+      # file's row — inline in the list, not appended after it.
+      {diff_pos, _} = :binary.match(html, "data-review-diff-panel-inline-diff")
+      {next_row_pos, _} = :binary.match(html, "lib/b.ex")
+      assert diff_pos < next_row_pos
+    end
+
+    test "renders no inline diff block when no file is selected" do
+      html = render_panel(["lib/a.ex", "lib/b.ex"])
+      refute html =~ "data-review-diff-panel-inline-diff"
+    end
+  end
+
   describe "review_diff_panel/1 — edge cases" do
     test "renders the empty state when :files is []" do
       html = render_panel([])

@@ -13,7 +13,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
   the named phx-click event with a `path` value; the parent LiveView
   manages `selected_changed_file` selection state. When the LiveView
   passes a per-file payload via `selected_file`, that file's unified
-  diff is rendered below the list.
+  diff is rendered inline, directly below its row in the list.
 
   ## Per-file diff contract
 
@@ -83,7 +83,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
       `docs/diff-contract.md`):
       `%{"path" => string, "diff" => string | nil, "diff_url" => string | nil}`.
       When `path` matches an entry in `files`, that row renders with the
-      active state and the diff content area renders the file's diff.
+      active state and the file's diff renders inline below that row.
     * `on_file_click` — optional `phx-click` event name. When set, each
       row becomes a button that pushes `{event, %{"path" => path}}`. When
       `nil`, rows render as plain `<span>` (legacy display behavior).
@@ -199,10 +199,19 @@ defmodule KanbanWeb.ReviewDiffPanel do
           >
             {file}
           </span>
+          <div
+            :if={file == @selected_file_path}
+            data-review-diff-panel-inline-diff
+            style={[
+              "margin: 4px 0 8px;",
+              "border: 1px solid var(--line); border-radius: 6px;",
+              "overflow: hidden;"
+            ]}
+          >
+            <.diff_content view={@diff_view} />
+          </div>
         </li>
       </ul>
-
-      <.diff_content :if={@selected_file_path} view={@diff_view} />
     </section>
     """
   end
