@@ -95,7 +95,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
               <.onboarding_step number="3" title={gettext("Create your first board")}>
                 {gettext("Boards are where your work lives — set one up for your team or project.")}
                 <.link
-                  navigate={~p"/resources/creating-your-first-board"}
+                  href={~p"/resources/creating-your-first-board"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style="color: var(--ink); text-decoration: underline;"
                 >
                   {gettext("Guide: Creating your first board")}
@@ -107,7 +109,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
                   "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
                 )}
                 <.link
-                  navigate={~p"/resources/api-authentication"}
+                  href={~p"/resources/api-authentication"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style="color: var(--ink); text-decoration: underline;"
                 >
                   {gettext("Guide: Configuring API authentication")}
@@ -117,7 +121,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
               <.onboarding_step number="5" title={gettext("Add your team")}>
                 {gettext("Invite collaborators to your board and choose what they can do.")}
                 <.link
-                  navigate={~p"/resources/inviting-team-members"}
+                  href={~p"/resources/inviting-team-members"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style="color: var(--ink); text-decoration: underline;"
                 >
                   {gettext("Guide: Adding team members")}

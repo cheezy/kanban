@@ -53,7 +53,10 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       assert has_element?(lv, "button", "Copy")
     end
 
-    test "links to the getting-started guides", %{conn: conn, unconfirmed_user: user} do
+    test "links to the getting-started guides in a new tab", %{
+      conn: conn,
+      unconfirmed_user: user
+    } do
       token =
         extract_user_token(fn url ->
           Accounts.deliver_user_confirmation_instructions(user, url)
@@ -62,9 +65,13 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
       render(lv)
 
-      assert has_element?(lv, ~s{a[href="/resources/creating-your-first-board"]})
-      assert has_element?(lv, ~s{a[href="/resources/api-authentication"]})
-      assert has_element?(lv, ~s{a[href="/resources/inviting-team-members"]})
+      for path <- [
+            "/resources/creating-your-first-board",
+            "/resources/api-authentication",
+            "/resources/inviting-team-members"
+          ] do
+        assert has_element?(lv, ~s{a[href="#{path}"][target="_blank"]})
+      end
     end
 
     test "describes the board-level API token flow without exposing a token", %{
