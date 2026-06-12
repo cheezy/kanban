@@ -7,7 +7,7 @@ defmodule KanbanWeb.UserSessionController do
   def register(conn, %{"user" => user_params}) do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
-        deliver_confirmation_and_log_in(conn, user, user_params)
+        deliver_confirmation_and_redirect(conn, user)
 
       {:error, %Ecto.Changeset{} = _changeset} ->
         # This shouldn't happen since LiveView validated, but handle it gracefully
@@ -17,7 +17,7 @@ defmodule KanbanWeb.UserSessionController do
     end
   end
 
-  defp deliver_confirmation_and_log_in(conn, user, user_params) do
+  defp deliver_confirmation_and_redirect(conn, user) do
     case Accounts.deliver_user_confirmation_instructions(
            user,
            &url(~p"/users/confirm/#{&1}")
@@ -28,7 +28,7 @@ defmodule KanbanWeb.UserSessionController do
           :info,
           "Account created successfully! An email was sent to #{user.email}. Please check your email to confirm your account."
         )
-        |> UserAuth.log_in_user(user, user_params)
+        |> redirect(to: ~p"/users/log-in")
 
       {:error, _reason} ->
         conn
@@ -36,7 +36,7 @@ defmodule KanbanWeb.UserSessionController do
           :info,
           "Account created successfully! We were unable to send a confirmation email. You can request a new one from your settings."
         )
-        |> UserAuth.log_in_user(user, user_params)
+        |> redirect(to: ~p"/users/log-in")
     end
   end
 
@@ -51,17 +51,34 @@ defmodule KanbanWeb.UserSessionController do
   defp create(conn, %{"user" => user_params}, info) do
     %{"email" => email, "password" => password} = user_params
 
-    if user = Accounts.get_user_by_email_and_password(email, password) do
-      conn
-      |> put_flash(:info, info)
-      |> UserAuth.log_in_user(user, user_params)
-    else
-      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
-      conn
-      |> put_flash(:error, "Invalid email or password")
-      |> put_flash(:email, String.slice(email, 0, 160))
-      |> redirect(to: ~p"/users/log-in")
+    case Accounts.get_user_by_email_and_password(email, password) do
+      %{confirmed_at: nil} ->
+        # Only shown after the password verified, so this discloses nothing
+        # to an attacker probing for registered emails.
+        deny_login(
+          conn,
+          email,
+          gettext(
+            "You must confirm your account before signing in. Check your email for a confirmation link."
+          )
+        )
+
+      nil ->
+        # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
+        deny_login(conn, email, "Invalid email or password")
+
+      user ->
+        conn
+        |> put_flash(:info, info)
+        |> UserAuth.log_in_user(user, user_params)
     end
+  end
+
+  defp deny_login(conn, email, message) do
+    conn
+    |> put_flash(:error, message)
+    |> put_flash(:email, String.slice(email, 0, 160))
+    |> redirect(to: ~p"/users/log-in")
   end
 
   def update_password(conn, %{"user" => user_params} = params) do

@@ -62,7 +62,7 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
   end
 
   describe "register user" do
-    test "creates account and logs in automatically", %{conn: conn} do
+    test "creates account without logging in", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/register")
 
       email = unique_user_email()
@@ -74,12 +74,13 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
 
       conn = submit_form(form, conn)
 
-      assert redirected_to(conn) == ~p"/boards"
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/users/log-in"
 
-      # Follow the redirect to verify the flash message
-      conn = get(conn, ~p"/boards")
-      assert html_response(conn, 200) =~ "Account created successfully"
-      assert html_response(conn, 200) =~ "Please check your email to confirm your account"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Account created successfully"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
+               "Please check your email to confirm your account"
     end
 
     test "renders errors for duplicated email", %{conn: conn} do

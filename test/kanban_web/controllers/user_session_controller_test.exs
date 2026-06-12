@@ -8,7 +8,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
   end
 
   describe "POST /users/register" do
-    test "registers the user and logs them in", %{conn: conn} do
+    test "registers the user, sends a confirmation email, and does not log them in", %{conn: conn} do
       email = unique_user_email()
 
       conn =
@@ -16,8 +16,8 @@ defmodule KanbanWeb.UserSessionControllerTest do
           "user" => %{"email" => email, "password" => valid_user_password()}
         })
 
-      assert get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/boards"
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/users/log-in"
 
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
                "Account created successfully! An email was sent to #{email}."
@@ -90,6 +90,68 @@ defmodule KanbanWeb.UserSessionControllerTest do
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       assert redirected_to(conn) == ~p"/users/log-in"
+    end
+
+    test "does not log in an unconfirmed user with valid credentials", %{
+      conn: conn,
+      unconfirmed_user: unconfirmed_user
+    } do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
+        })
+
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
+               "confirm your account before signing in"
+    end
+
+    test "does not issue a remember-me cookie for an unconfirmed user", %{
+      conn: conn,
+      unconfirmed_user: unconfirmed_user
+    } do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => unconfirmed_user.email,
+            "password" => valid_user_password(),
+            "remember_me" => "true"
+          }
+        })
+
+      refute conn.resp_cookies["_kanban_web_user_remember_me"]
+      refute get_session(conn, :user_token)
+    end
+
+    test "does not log in an unconfirmed user via the _action confirmed path", %{
+      conn: conn,
+      unconfirmed_user: unconfirmed_user
+    } do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "_action" => "confirmed",
+          "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
+        })
+
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
+               "confirm your account before signing in"
+    end
+
+    test "logs in a confirmed user via the _action confirmed path", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "_action" => "confirmed",
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/boards"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "User confirmed successfully."
     end
   end
 

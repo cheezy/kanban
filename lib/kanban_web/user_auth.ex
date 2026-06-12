@@ -1,5 +1,6 @@
 defmodule KanbanWeb.UserAuth do
   use KanbanWeb, :verified_routes
+  use Gettext, backend: KanbanWeb.Gettext
 
   import Plug.Conn
   import Phoenix.Controller
@@ -225,16 +226,30 @@ defmodule KanbanWeb.UserAuth do
 
   def on_mount(:require_authenticated, _params, session, socket) do
     socket = mount_current_scope(socket, session)
+    user = socket.assigns.current_scope && socket.assigns.current_scope.user
 
-    if socket.assigns.current_scope && socket.assigns.current_scope.user do
-      {:cont, socket}
-    else
-      socket =
-        socket
-        |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
-        |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
+    cond do
+      user && is_nil(user.confirmed_at) ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(
+            :error,
+            gettext("You must confirm your account to access this page.")
+          )
+          |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
 
-      {:halt, socket}
+        {:halt, socket}
+
+      user ->
+        {:cont, socket}
+
+      true ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
+          |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
+
+        {:halt, socket}
     end
   end
 
@@ -292,15 +307,29 @@ defmodule KanbanWeb.UserAuth do
   Plug for routes that require the user to be authenticated.
   """
   def require_authenticated_user(conn, _opts) do
-    if conn.assigns.current_scope && conn.assigns.current_scope.user do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must log in to access this page.")
-      |> maybe_store_return_to()
-      |> redirect(to: ~p"/users/log-in")
-      |> halt()
+    user = conn.assigns.current_scope && conn.assigns.current_scope.user
+
+    cond do
+      user && is_nil(user.confirmed_at) ->
+        halt_with_login_redirect(
+          conn,
+          gettext("You must confirm your account to access this page.")
+        )
+
+      user ->
+        conn
+
+      true ->
+        halt_with_login_redirect(conn, "You must log in to access this page.")
     end
+  end
+
+  defp halt_with_login_redirect(conn, message) do
+    conn
+    |> put_flash(:error, message)
+    |> maybe_store_return_to()
+    |> redirect(to: ~p"/users/log-in")
+    |> halt()
   end
 
   @doc """

@@ -280,6 +280,21 @@ defmodule KanbanWeb.UserAuthTest do
       {:halt, updated_socket} = UserAuth.on_mount(:require_authenticated, %{}, session, socket)
       assert updated_socket.assigns.current_scope == nil
     end
+
+    test "halts and redirects if the user is unconfirmed", %{conn: conn} do
+      unconfirmed_user = unconfirmed_user_fixture()
+      user_token = Accounts.generate_user_session_token(unconfirmed_user)
+      session = conn |> put_session(:user_token, user_token) |> get_session()
+
+      socket = %LiveView.Socket{
+        endpoint: KanbanWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      {:halt, updated_socket} = UserAuth.on_mount(:require_authenticated, %{}, session, socket)
+      assert updated_socket.assigns.current_scope.user.id == unconfirmed_user.id
+      assert is_nil(updated_socket.assigns.current_scope.user.confirmed_at)
+    end
   end
 
   describe "on_mount :require_sudo_mode" do
@@ -363,6 +378,38 @@ defmodule KanbanWeb.UserAuthTest do
 
       refute conn.halted
       refute conn.status
+    end
+
+    test "redirects if user is unconfirmed", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:current_scope, Scope.for_user(unconfirmed_user_fixture()))
+        |> fetch_flash()
+        |> UserAuth.require_authenticated_user([])
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "You must confirm your account to access this page."
+    end
+
+    test "redirects an unconfirmed user with a valid session token", %{conn: conn} do
+      unconfirmed_user = unconfirmed_user_fixture()
+      user_token = Accounts.generate_user_session_token(unconfirmed_user)
+
+      conn =
+        conn
+        |> put_session(:user_token, user_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+        |> fetch_flash()
+        |> UserAuth.require_authenticated_user([])
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "You must confirm your account to access this page."
     end
   end
 

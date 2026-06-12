@@ -6974,3 +6974,14 @@ msgstr "お客様のコンテンツ"
 #, elixir-autogen, elixir-format
 msgid "Your use of the service is subject to our "
 msgstr "本サービスの利用には、当社の"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:62
+#, elixir-autogen, elixir-format
+msgid "You must confirm your account before signing in. Check your email for a confirmation link."
+msgstr "サインインする前にアカウントを確認する必要があります。確認リンクが記載されたメールをご確認ください。"
+
+#: lib/kanban_web/user_auth.ex:237
+#: lib/kanban_web/user_auth.ex:315
+#, elixir-autogen, elixir-format
+msgid "You must confirm your account to access this page."
+msgstr "このページにアクセスするには、アカウントを確認する必要があります。"

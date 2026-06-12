@@ -6974,3 +6974,14 @@ msgstr "您的内容"
 #, elixir-autogen, elixir-format
 msgid "Your use of the service is subject to our "
 msgstr "您对本服务的使用须遵守我们的"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:62
+#, elixir-autogen, elixir-format
+msgid "You must confirm your account before signing in. Check your email for a confirmation link."
+msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件以获取确认链接。"
+
+#: lib/kanban_web/user_auth.ex:237
+#: lib/kanban_web/user_auth.ex:315
+#, elixir-autogen, elixir-format
+msgid "You must confirm your account to access this page."
+msgstr "您必须确认您的账户才能访问此页面。"
