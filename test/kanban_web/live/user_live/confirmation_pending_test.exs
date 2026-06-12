@@ -18,6 +18,13 @@ defmodule KanbanWeb.UserLive.ConfirmationPendingTest do
       assert html =~ "Resend confirmation email"
     end
 
+    test "links back to the landing page", %{conn: conn} do
+      {:ok, lv, html} = live(conn, ~p"/users/confirmation-pending?email=#{unique_user_email()}")
+
+      assert html =~ "Return to Stride"
+      assert has_element?(lv, ~s{a[href="/"]}, "Return to Stride")
+    end
+
     test "renders for a logged-in user as well", %{conn: conn} do
       user = user_fixture()
       conn = log_in_user(conn, user)

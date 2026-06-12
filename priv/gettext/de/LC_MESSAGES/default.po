@@ -5479,7 +5479,6 @@ msgstr "Mindestens 12 Zeichen"
 msgid "Audit log for column reordering"
 msgstr "Audit-Log für die Neuanordnung von Spalten"
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:18
 #: lib/kanban_web/live/user_live/forgot_password.ex:17
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -7034,7 +7033,7 @@ msgstr "Ihre Inhalte"
 msgid "Your use of the service is subject to our "
 msgstr "Ihre Nutzung des Dienstes unterliegt unserer "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:58
+#: lib/kanban_web/controllers/user_session_controller.ex:56
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Sie müssen Ihr Konto bestätigen, bevor Sie sich anmelden. Prüfen Sie Ihre E-Mails auf einen Bestätigungslink."
@@ -7080,22 +7079,22 @@ msgstr "Prüfen Sie Ihre E-Mails"
 msgid "Didn't get it? Check your spam folder or resend below."
 msgstr "Nichts erhalten? Prüfen Sie Ihren Spam-Ordner oder senden Sie unten erneut."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:93
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:97
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
 msgstr "Wenn Ihre E-Mail in unserem System ist und das Konto noch nicht bestätigt wurde, erhalten Sie in Kürze einen neuen Bestätigungslink."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:80
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:84
 #, elixir-autogen, elixir-format
 msgid "Please wait a moment before requesting another email."
 msgstr "Bitte warten Sie einen Moment, bevor Sie eine weitere E-Mail anfordern."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:57
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:61
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation email"
 msgstr "Bestätigungs-E-Mail erneut senden"
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:56
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:59
 #, elixir-autogen, elixir-format
 msgid "Sending…"
 msgstr "Wird gesendet…"
@@ -7114,3 +7113,8 @@ msgstr "Wir haben einen Bestätigungslink an %{email} gesendet. Sie können sich
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr "Sie können sich anmelden, sobald er verifiziert ist"
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:18
+#, elixir-autogen, elixir-format
+msgid "Return to Stride"
+msgstr "Zurück zu Stride"

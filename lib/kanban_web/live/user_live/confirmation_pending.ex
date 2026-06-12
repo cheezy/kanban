@@ -14,11 +14,8 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
     ~H"""
     <.auth_frame flash={@flash}>
       <:footer_switch>
-        <.link
-          navigate={~p"/users/log-in"}
-          style="color: var(--ink); font-weight: 500; text-decoration: none;"
-        >
-          <span aria-hidden="true">←</span> {gettext("Back to sign in")}
+        <.link navigate={~p"/"} style="color: var(--ink); font-weight: 500; text-decoration: none;">
+          <span aria-hidden="true">←</span> {gettext("Return to Stride")}
         </.link>
       </:footer_switch>
 
