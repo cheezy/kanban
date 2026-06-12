@@ -75,12 +75,12 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
       conn = submit_form(form, conn)
 
       refute get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/users/log-in"
+      assert redirected_to(conn) == ~p"/users/confirmation-pending?email=#{email}"
 
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Account created successfully"
-
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Please check your email to confirm your account"
+      # Follow the redirect to the pending page and verify the copy
+      {:ok, _lv, html} = live(conn, redirected_to(conn))
+      assert html =~ "Check your email"
+      assert html =~ email
     end
 
     test "renders errors for duplicated email", %{conn: conn} do

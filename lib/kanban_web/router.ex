@@ -201,6 +201,7 @@ defmodule KanbanWeb.Router do
       live "/users/confirm/:token", UserLive.Confirmation, :new
       live "/users/forgot-password", UserLive.ForgotPassword, :new
       live "/users/reset-password/:token", UserLive.ResetPassword, :edit
+      live "/users/confirmation-pending", UserLive.ConfirmationPending, :new
     end
 
     live_session :public,

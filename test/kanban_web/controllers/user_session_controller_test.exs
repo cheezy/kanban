@@ -17,10 +17,14 @@ defmodule KanbanWeb.UserSessionControllerTest do
         })
 
       refute get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/users/log-in"
+      assert redirected_to(conn) == ~p"/users/confirmation-pending?email=#{email}"
 
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Account created successfully! An email was sent to #{email}."
+      user = Kanban.Repo.get_by!(Kanban.Accounts.User, email: email)
+
+      assert Kanban.Repo.get_by!(Kanban.Accounts.UserToken,
+               user_id: user.id,
+               context: "confirm"
+             )
     end
 
     test "returns error flash with invalid data", %{conn: conn} do

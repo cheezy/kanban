@@ -60,7 +60,7 @@ defmodule KanbanWeb.UserLive.Confirmation do
                 {gettext("Verifying your confirmation link…")}
               </div>
               <div style="font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: -0.01em;">
-                {gettext("this tab will sign you in automatically")}
+                {gettext("you can sign in as soon as it's verified")}
               </div>
             </div>
           </div>

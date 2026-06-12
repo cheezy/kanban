@@ -5479,6 +5479,7 @@ msgstr "Pelo menos 12 caracteres"
 msgid "Audit log for column reordering"
 msgstr "Log de auditoria para reordenação de colunas"
 
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:18
 #: lib/kanban_web/live/user_live/forgot_password.ex:17
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -5687,11 +5688,6 @@ msgstr "redefinir sua senha de operador sim"
 #, elixir-autogen, elixir-format
 msgid "rotate API tokens. Rotate from"
 msgstr "rotaciona os tokens de API. Rotacione em"
-
-#: lib/kanban_web/live/user_live/confirmation.ex:63
-#, elixir-autogen, elixir-format
-msgid "this tab will sign you in automatically"
-msgstr "esta aba vai te logar automaticamente"
 
 #: lib/kanban_web/live/user_live/registration.ex:110
 #, elixir-autogen, elixir-format
@@ -7008,7 +7004,7 @@ msgstr "Seu conteúdo"
 msgid "Your use of the service is subject to our "
 msgstr "O seu uso do serviço está sujeito à nossa "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:61
+#: lib/kanban_web/controllers/user_session_controller.ex:58
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Você deve confirmar sua conta antes de entrar. Verifique seu e-mail para encontrar o link de confirmação."
@@ -7043,3 +7039,48 @@ msgstr "Testes manuais"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unit tests"
 msgstr "Testes unitários"
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:41
+#, elixir-autogen, elixir-format
+msgid "Check your email"
+msgstr "Verifique seu e-mail"
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:52
+#, elixir-autogen, elixir-format
+msgid "Didn't get it? Check your spam folder or resend below."
+msgstr "Não recebeu? Verifique a pasta de spam ou reenvie abaixo."
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:93
+#, elixir-autogen, elixir-format
+msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
+msgstr "Se seu e-mail estiver em nosso sistema e a conta ainda não estiver confirmada, você receberá um novo link de confirmação em breve."
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:80
+#, elixir-autogen, elixir-format
+msgid "Please wait a moment before requesting another email."
+msgstr "Aguarde um momento antes de solicitar outro e-mail."
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:57
+#, elixir-autogen, elixir-format
+msgid "Resend confirmation email"
+msgstr "Reenviar e-mail de confirmação"
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:56
+#, elixir-autogen, elixir-format
+msgid "Sending…"
+msgstr "Enviando…"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:32
+#, elixir-autogen, elixir-format
+msgid "We couldn't send the confirmation email. Use the resend button to try again."
+msgstr "Não foi possível enviar o e-mail de confirmação. Use o botão de reenvio para tentar novamente."
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:45
+#, elixir-autogen, elixir-format
+msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
+msgstr "Enviamos um link de confirmação para %{email}. Você não poderá entrar até que sua conta seja confirmada."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:63
+#, elixir-autogen, elixir-format
+msgid "you can sign in as soon as it's verified"
+msgstr "você poderá entrar assim que for verificado"

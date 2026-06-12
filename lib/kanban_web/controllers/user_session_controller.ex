@@ -23,20 +23,15 @@ defmodule KanbanWeb.UserSessionController do
            &url(~p"/users/confirm/#{&1}")
          ) do
       {:ok, _} ->
-        conn
-        |> put_flash(
-          :info,
-          "Account created successfully! An email was sent to #{user.email}. Please check your email to confirm your account."
-        )
-        |> redirect(to: ~p"/users/log-in")
+        redirect(conn, to: ~p"/users/confirmation-pending?email=#{user.email}")
 
       {:error, _reason} ->
         conn
         |> put_flash(
-          :info,
-          "Account created successfully! We were unable to send a confirmation email. You can request a new one from your settings."
+          :error,
+          gettext("We couldn't send the confirmation email. Use the resend button to try again.")
         )
-        |> redirect(to: ~p"/users/log-in")
+        |> redirect(to: ~p"/users/confirmation-pending?email=#{user.email}")
     end
   end
 
