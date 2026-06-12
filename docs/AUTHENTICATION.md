@@ -9,6 +9,33 @@ This guide explains how to authenticate with the Stride API using API tokens.
 3. **You read `.stride_auth.md`** to get your token and configuration
 4. **You include the token** in every API request as a Bearer token
 
+## User Accounts: Email Confirmation Gate
+
+Before any API token can exist, the human needs a confirmed Stride account.
+Registration is gated on email confirmation:
+
+1. **Register** at `/users/register`. The account is created and a confirmation
+   email is sent, but **no session is established** — registration does not log
+   the user in.
+2. **Confirmation-pending page**. The browser lands on
+   `/users/confirmation-pending`, which shows the destination email address and
+   offers a throttled resend button. Until the emailed link is clicked, the
+   account cannot sign in, and any existing session for an unconfirmed account
+   is redirected away from authenticated pages.
+3. **Click the emailed link** (`/users/confirm/{token}`). The account is
+   confirmed and the page becomes a getting-started guide: a copy-paste prompt
+   that points an agent at `/api/agent/onboarding` to scaffold `.stride_auth.md`
+   and `.stride.md`, followed by steps for signing in, creating a first board,
+   generating an API token (the **Tokens** tab on an AI-optimized board), and
+   inviting team members.
+4. **Sign in** at `/users/log-in`. Only confirmed accounts can authenticate;
+   an unconfirmed login attempt is denied with an explanatory message and no
+   session or remember-me cookie is issued.
+
+Invalid or already-used confirmation links redirect to the login page with an
+explanatory message. Accounts created before the confirmation gate shipped were
+grandfathered in as confirmed.
+
 ## Authentication Method: Bearer Token
 
 All API requests require authentication using a Bearer token in the Authorization header:
