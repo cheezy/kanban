@@ -469,7 +469,7 @@ defmodule KanbanWeb.ReviewLive do
                   :for={row <- review_check_rows(@selected)}
                   data-review-check-row={Atom.to_string(row.section)}
                   data-review-check-status={row.status}
-                  style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;"
+                  style="display: flex; flex-direction: column; gap: 4px; margin-top: 14px;"
                 >
                   <span style="font-weight: 600; color: var(--ink);">{row.label}</span>
                   <%= if row.incomplete? do %>
