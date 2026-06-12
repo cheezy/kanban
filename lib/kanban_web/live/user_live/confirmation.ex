@@ -45,11 +45,54 @@ defmodule KanbanWeb.UserLive.Confirmation do
               role="list"
               style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px;"
             >
-              <.onboarding_step number="1" title={gettext("Sign in to your account")}>
+              <.onboarding_step number="1" title={gettext("Set up your coding agent")}>
+                {gettext("Paste this prompt into your agent to configure Stride in your project:")}
+                <span style="display: flex; gap: 8px; align-items: flex-start; margin-top: 6px;">
+                  <code
+                    id="agent-onboarding-prompt"
+                    style="flex: 1; padding: 6px 10px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; word-break: break-word;"
+                  >
+                    {agent_onboarding_prompt()}
+                  </code>
+                  <button
+                    type="button"
+                    data-token-value={agent_onboarding_prompt()}
+                    data-copy-text={gettext("Copy")}
+                    data-copied-text={"✓ " <> gettext("Copied!")}
+                    data-failed-msg={gettext("Failed to copy")}
+                    onclick="
+                      const text = this.getAttribute('data-token-value');
+                      const copiedText = this.getAttribute('data-copied-text');
+                      const copyText = this.getAttribute('data-copy-text');
+                      const failedMsg = this.getAttribute('data-failed-msg');
+                      const textarea = document.createElement('textarea');
+                      textarea.value = text;
+                      textarea.style.position = 'fixed';
+                      textarea.style.opacity = '0';
+                      document.body.appendChild(textarea);
+                      textarea.select();
+                      try {
+                        document.execCommand('copy');
+                        this.innerHTML = copiedText;
+                        setTimeout(() => { this.innerHTML = copyText; }, 2000);
+                      } catch (err) {
+                        alert(failedMsg + ': ' + err.message);
+                      } finally {
+                        document.body.removeChild(textarea);
+                      }
+                    "
+                    style="padding: 6px 12px; border-radius: 5px; border: none; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer; flex-shrink: 0;"
+                  >
+                    {gettext("Copy")}
+                  </button>
+                </span>
+              </.onboarding_step>
+
+              <.onboarding_step number="2" title={gettext("Sign in to your account")}>
                 {gettext("Use the button below to sign in with your new credentials.")}
               </.onboarding_step>
 
-              <.onboarding_step number="2" title={gettext("Create your first board")}>
+              <.onboarding_step number="3" title={gettext("Create your first board")}>
                 {gettext("Boards are where your work lives — set one up for your team or project.")}
                 <.link
                   navigate={~p"/resources/creating-your-first-board"}
@@ -59,13 +102,19 @@ defmodule KanbanWeb.UserLive.Confirmation do
                 </.link>
               </.onboarding_step>
 
-              <.onboarding_step number="3" title={gettext("Generate an API token")}>
+              <.onboarding_step number="4" title={gettext("Generate an API token")}>
                 {gettext(
                   "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
                 )}
+                <.link
+                  navigate={~p"/resources/api-authentication"}
+                  style="color: var(--ink); text-decoration: underline;"
+                >
+                  {gettext("Guide: Configuring API authentication")}
+                </.link>
               </.onboarding_step>
 
-              <.onboarding_step number="4" title={gettext("Add your team")}>
+              <.onboarding_step number="5" title={gettext("Add your team")}>
                 {gettext("Invite collaborators to your board and choose what they can do.")}
                 <.link
                   navigate={~p"/resources/inviting-team-members"}
@@ -113,6 +162,16 @@ defmodule KanbanWeb.UserLive.Confirmation do
       </div>
     </.auth_frame>
     """
+  end
+
+  # The copy-paste prompt for the user's coding agent. The onboarding endpoint
+  # returns the full setup instructions, so the prompt only needs to point the
+  # agent at it and name the two files the setup produces.
+  defp agent_onboarding_prompt do
+    gettext(
+      "Fetch %{url} and follow the instructions it returns to set up Stride in this project, creating the .stride_auth.md and .stride.md configuration files.",
+      url: url(~p"/api/agent/onboarding")
+    )
   end
 
   attr :number, :string, required: true

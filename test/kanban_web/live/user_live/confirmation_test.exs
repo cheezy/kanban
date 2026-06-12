@@ -25,6 +25,7 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       html = render(lv)
       assert html =~ "Your account is confirmed"
       assert html =~ "Getting started"
+      assert html =~ "Set up your coding agent"
       assert html =~ "Sign in to your account"
       assert html =~ "Create your first board"
       assert html =~ "Generate an API token"
@@ -32,7 +33,27 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       refute html =~ "Account confirmed"
     end
 
-    test "links to both getting-started guides", %{conn: conn, unconfirmed_user: user} do
+    test "presents a copyable agent onboarding prompt as the first step", %{
+      conn: conn,
+      unconfirmed_user: user
+    } do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_confirmation_instructions(user, url)
+        end)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      html = render(lv)
+
+      assert html =~ "Paste this prompt into your agent"
+      assert html =~ "/api/agent/onboarding"
+      assert html =~ ".stride_auth.md"
+      assert html =~ ".stride.md"
+      assert has_element?(lv, "#agent-onboarding-prompt")
+      assert has_element?(lv, "button", "Copy")
+    end
+
+    test "links to the getting-started guides", %{conn: conn, unconfirmed_user: user} do
       token =
         extract_user_token(fn url ->
           Accounts.deliver_user_confirmation_instructions(user, url)
@@ -42,6 +63,7 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       render(lv)
 
       assert has_element?(lv, ~s{a[href="/resources/creating-your-first-board"]})
+      assert has_element?(lv, ~s{a[href="/resources/api-authentication"]})
       assert has_element?(lv, ~s{a[href="/resources/inviting-team-members"]})
     end
 
