@@ -469,6 +469,55 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     end
   end
 
+  describe "complete_task/4 — re-completion after changes requested" do
+    setup :setup_board
+
+    test "clears the previous review verdict so the task re-enters the review queue", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      reviewed =
+        completed
+        |> Repo.preload([:column])
+        |> set_review_status(:changes_requested, ctx.user)
+
+      {:ok, back_in_doing} = AgentWorkflow.mark_reviewed(reviewed, ctx.user)
+
+      {:ok, recompleted, _hooks} =
+        AgentWorkflow.complete_task(back_in_doing, ctx.user, valid_complete_params(), "Claude")
+
+      assert recompleted.column_id == ctx.review.id
+      assert is_nil(recompleted.review_status)
+      assert is_nil(recompleted.reviewed_at)
+      assert is_nil(recompleted.reviewed_by_id)
+    end
+
+    test "a re-completed task is listed by Reviews.list_pending_reviews/1", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      reviewed =
+        completed
+        |> Repo.preload([:column])
+        |> set_review_status(:changes_requested, ctx.user)
+
+      {:ok, back_in_doing} = AgentWorkflow.mark_reviewed(reviewed, ctx.user)
+
+      refute Enum.any?(Kanban.Reviews.list_pending_reviews(), &(&1.id == task.id))
+
+      {:ok, _recompleted, _hooks} =
+        AgentWorkflow.complete_task(back_in_doing, ctx.user, valid_complete_params(), "Claude")
+
+      assert Enum.any?(Kanban.Reviews.list_pending_reviews(), &(&1.id == task.id))
+    end
+  end
+
   describe "mark_reviewed/2" do
     setup ctx do
       ctx = setup_board(ctx)

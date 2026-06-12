@@ -499,46 +499,59 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end)
   end
 
+  # A re-completion after a changes-requested/rejected round must re-enter
+  # the review queue, which only lists tasks without a review verdict — clear
+  # the previous round's verdict and reviewer metadata.
+  defp reset_review_round(changeset) do
+    changeset
+    |> Ecto.Changeset.put_change(:review_status, nil)
+    |> Ecto.Changeset.put_change(:reviewed_at, nil)
+    |> Ecto.Changeset.put_change(:reviewed_by_id, nil)
+  end
+
   defp move_to_review(task, user, params, review_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(review_column)
-
-      # `:changed_files` is owned by `PUT /api/tasks/:id/changed_files`
-      # (hook-uploaded); do not cast here, even if the legacy completion body
-      # includes it. The PUT endpoint is the only writer.
-      changeset =
-        task
-        |> Ecto.Changeset.cast(params, [
-          :completion_summary,
-          :actual_complexity,
-          :actual_files_changed,
-          :time_spent_minutes,
-          :completed_by_agent,
-          :review_report,
-          :workflow_steps,
-          :explorer_result,
-          :reviewer_result
-        ])
-        |> Ecto.Changeset.put_change(:column_id, review_column.id)
-        |> Ecto.Changeset.put_change(:position, next_position)
-        |> Ecto.Changeset.put_change(:completed_by_id, user.id)
-        |> Ecto.Changeset.validate_required([
-          :completion_summary,
-          :actual_complexity,
-          :actual_files_changed,
-          :time_spent_minutes
-        ])
-        |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
-        |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
-        |> validate_explorer_result_payload(params)
-        |> validate_reviewer_result_payload(params)
-        |> validate_workflow_steps_shape(params)
+      changeset = completion_changeset(task, user, params, review_column, next_position)
 
       case Repo.update(changeset) do
         {:ok, updated_task} -> updated_task
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  # `:changed_files` is owned by `PUT /api/tasks/:id/changed_files`
+  # (hook-uploaded); do not cast here, even if the legacy completion body
+  # includes it. The PUT endpoint is the only writer.
+  defp completion_changeset(task, user, params, review_column, next_position) do
+    task
+    |> Ecto.Changeset.cast(params, [
+      :completion_summary,
+      :actual_complexity,
+      :actual_files_changed,
+      :time_spent_minutes,
+      :completed_by_agent,
+      :review_report,
+      :workflow_steps,
+      :explorer_result,
+      :reviewer_result
+    ])
+    |> Ecto.Changeset.put_change(:column_id, review_column.id)
+    |> Ecto.Changeset.put_change(:position, next_position)
+    |> Ecto.Changeset.put_change(:completed_by_id, user.id)
+    |> reset_review_round()
+    |> Ecto.Changeset.validate_required([
+      :completion_summary,
+      :actual_complexity,
+      :actual_files_changed,
+      :time_spent_minutes
+    ])
+    |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
+    |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
+    |> validate_explorer_result_payload(params)
+    |> validate_reviewer_result_payload(params)
+    |> validate_workflow_steps_shape(params)
   end
 
   # Belt-and-suspenders schema-layer validation for the JSON blobs that the API
