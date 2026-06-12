@@ -5,6 +5,28 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-06-12
+
+### Added
+
+#### Email confirmation is now required to sign in
+
+Registration no longer logs the user in. Creating an account sends a confirmation email and lands the browser on a new public confirmation-pending page that shows the destination address, explains that the account has no access until the emailed link is clicked, and offers a resend button — throttled against abuse and deliberately neutral about whether an address has an account, so the endpoint cannot be used to enumerate emails or bomb arbitrary inboxes. The gate is enforced at every entry point: signing in with correct credentials is denied while the account is unconfirmed (with an explanatory message, and without issuing a session or remember-me cookie), and a pre-existing session for an unconfirmed account is turned away from authenticated pages by both the router plug and the LiveView mount hook, so neither full-page requests nor live navigation can slip past. The denial message appears only after the password has verified, keeping the login form enumeration-safe.
+
+Accounts created before the gate shipped never needed to confirm, so a data migration grandfathers them in as confirmed — existing users sign in exactly as before, while every account registered after the deploy goes through the email step. An end-to-end integration test locks the whole journey together (register, pending page, blocked login, confirmation link, onboarding, successful sign-in), and `docs/AUTHENTICATION.md` now documents the flow.
+
+#### The post-confirmation page is a getting-started onboarding experience
+
+Clicking a valid confirmation link no longer dead-ends on a bare "account confirmed" message. The page now walks a new user through getting productive as ordered steps: a copy-paste prompt for their coding agent that points at the `/api/agent/onboarding` endpoint to scaffold the `.stride_auth.md` and `.stride.md` configuration files (with a one-click Copy button), signing in, creating a first board, generating an API token — with navigation copy matching the real UI (the Tokens tab on an AI-optimized board) and a reminder that the token value is shown only once — and inviting team members. The board-creation, API-authentication, and team-member steps each link to their resources guide, opening in a new tab so the user keeps their place. Invalid and already-used confirmation links still redirect to the login page with their existing messages, and the single-use confirmation token never appears in the page or its URLs.
+
+### Fixed
+
+#### Auth pages now display their status messages
+
+The sign-in, registration, forgot/reset-password, confirmation, and confirmation-pending pages render inside a custom auth frame that never displayed flash messages — even the long-standing "Invalid email or password" denial was invisible, leaving every failed attempt looking like a silent bounce back to a blank form. The frame now renders error and info banners using the theme's contrast-checked status tokens, so denial reasons, confirmation notices, and resend feedback are actually visible in both light and dark mode.
+
+All new user-facing copy across these flows is translated in the six non-English locales (de, es, fr, ja, pt, zh).
+
 ## [2.4.0] - 2026-06-11
 
 ### Added
