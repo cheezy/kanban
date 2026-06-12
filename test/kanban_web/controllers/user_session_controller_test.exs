@@ -108,6 +108,31 @@ defmodule KanbanWeb.UserSessionControllerTest do
                "confirm your account before signing in"
     end
 
+    test "renders the unconfirmed denial message on the login page", %{
+      conn: conn,
+      unconfirmed_user: unconfirmed_user
+    } do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
+        })
+
+      conn = get(conn, ~p"/users/log-in")
+
+      assert html_response(conn, 200) =~
+               "You must confirm your account before signing in."
+    end
+
+    test "renders the invalid-credentials message on the login page", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => "invalid_password"}
+        })
+
+      conn = get(conn, ~p"/users/log-in")
+      assert html_response(conn, 200) =~ "Invalid email or password"
+    end
+
     test "does not issue a remember-me cookie for an unconfirmed user", %{
       conn: conn,
       unconfirmed_user: unconfirmed_user
