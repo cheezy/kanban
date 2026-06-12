@@ -11,7 +11,10 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
   end
 
   describe "Confirm user" do
-    test "renders confirmation page for unconfirmed user", %{conn: conn, unconfirmed_user: user} do
+    test "renders getting-started onboarding after confirmation", %{
+      conn: conn,
+      unconfirmed_user: user
+    } do
       token =
         extract_user_token(fn url ->
           Accounts.deliver_user_confirmation_instructions(user, url)
@@ -20,8 +23,47 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
 
       html = render(lv)
-      assert html =~ "Account confirmed"
-      assert html =~ "Your account has been confirmed successfully"
+      assert html =~ "Your account is confirmed"
+      assert html =~ "Getting started"
+      assert html =~ "Sign in to your account"
+      assert html =~ "Create your first board"
+      assert html =~ "Generate an API token"
+      assert html =~ "Add your team"
+      refute html =~ "Account confirmed"
+    end
+
+    test "links to both getting-started guides", %{conn: conn, unconfirmed_user: user} do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_confirmation_instructions(user, url)
+        end)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      render(lv)
+
+      assert has_element?(lv, ~s{a[href="/resources/creating-your-first-board"]})
+      assert has_element?(lv, ~s{a[href="/resources/inviting-team-members"]})
+    end
+
+    test "describes the board-level API token flow without exposing a token", %{
+      conn: conn,
+      unconfirmed_user: user
+    } do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_confirmation_instructions(user, url)
+        end)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      html = render(lv)
+
+      # Accurate navigation: Tokens tab on the board, AI-optimized boards only.
+      assert html =~ "open the Tokens tab"
+      assert html =~ "AI-optimized boards"
+      # Security reminder; the confirmation token itself is never rendered.
+      assert html =~ "shown only once"
+      assert html =~ "keep it secret"
+      refute html =~ token
     end
 
     test "renders inside the centered, theme-aware auth_frame", %{
@@ -59,7 +101,8 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
 
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{encoded_token}")
 
-      assert_redirect(lv, ~p"/users/log-in", 1_000)
+      flash = assert_redirect(lv, ~p"/users/log-in", 1_000)
+      assert flash["info"] =~ "already been confirmed"
     end
 
     test "confirms the user account", %{conn: conn, unconfirmed_user: user} do
@@ -92,7 +135,8 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
     test "redirects to login for invalid token", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/confirm/invalid-token")
 
-      assert_redirect(lv, ~p"/users/log-in", 1_000)
+      flash = assert_redirect(lv, ~p"/users/log-in", 1_000)
+      assert flash["error"] =~ "Confirmation link is invalid or has expired"
     end
   end
 end

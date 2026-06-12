@@ -723,7 +723,7 @@ msgstr "利用可能な履歴がありません"
 msgid "Status"
 msgstr "ステータス"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:97
+#: lib/kanban_web/live/user_live/confirmation.ex:164
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "確認リンクが無効または期限切れです。"
@@ -735,7 +735,7 @@ msgstr "確認リンクが無効または期限切れです。"
 msgid "Dashboard"
 msgstr "ダッシュボード"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:91
+#: lib/kanban_web/live/user_live/confirmation.ex:158
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "このアカウントは既に確認されています。ログインできます。"
@@ -3198,7 +3198,7 @@ msgstr "セキュリティ"
 
 #: lib/kanban_web/components/marketing_components.ex:133
 #: lib/kanban_web/components/marketing_components.ex:301
-#: lib/kanban_web/live/user_live/confirmation.ex:51
+#: lib/kanban_web/live/user_live/confirmation.ex:85
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -4102,6 +4102,7 @@ msgid "Coming soon"
 msgstr "近日公開"
 
 #: lib/kanban_web/live/board_live/index.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:49
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "最初のボードを作成"
@@ -5445,11 +5446,6 @@ msgstr "主な協働機能"
 msgid "Acceptable Use Policy"
 msgstr "利用規約"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:32
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Account confirmed"
-msgstr "アカウントが確認されました！"
-
 #: lib/kanban_web/live/user_live/registration.ex:15
 #, elixir-autogen, elixir-format
 msgid "Already have an account?"
@@ -5494,7 +5490,7 @@ msgstr "アカウントの新しいパスワードを選択してください。
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "強力なパスワードを選んで確認してください。変更が成功すると、このデバイスでサインインされたままになります。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:33
+#: lib/kanban_web/live/user_live/confirmation.ex:91
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "アカウントを確認中..."
@@ -5524,7 +5520,7 @@ msgstr "エージェント向け"
 msgid "Forgot?"
 msgstr "お忘れですか?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:39
+#: lib/kanban_web/live/user_live/confirmation.ex:95
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "少々お待ちください — すぐに完了します。"
@@ -5611,7 +5607,7 @@ msgstr "Strideを支える人々とAIコラボレーター。"
 msgid "Update profile"
 msgstr "プロフィールを更新"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:102
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "確認リンクを検証中…"
@@ -5630,11 +5626,6 @@ msgstr "ワンタイムリンクをメールでお送りします。リンクは
 #, elixir-autogen, elixir-format
 msgid "Welcome back. Use the same method you used last time."
 msgstr "お帰りなさい。前回と同じ方法をご利用ください。"
-
-#: lib/kanban_web/live/user_live/confirmation.ex:38
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Your account has been confirmed successfully. You can now sign in."
-msgstr "アカウントが正常に確認されました。ログインできます。"
 
 #: lib/kanban_web/live/user_live/registration.ex:41
 #, elixir-autogen, elixir-format
@@ -7049,7 +7040,7 @@ msgstr "確認メールを送信できませんでした。再送信ボタンで
 msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
 msgstr "%{email} に確認リンクを送信しました。アカウントが確認されるまでサインインできません。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:63
+#: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr "確認が完了するとすぐにサインインできます"
@@ -7058,3 +7049,63 @@ msgstr "確認が完了するとすぐにサインインできます"
 #, elixir-autogen, elixir-format
 msgid "Return to Stride"
 msgstr "Strideに戻る"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:65
+#, elixir-autogen, elixir-format
+msgid "Add your team"
+msgstr "チームを追加する"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:50
+#, elixir-autogen, elixir-format
+msgid "Boards are where your work lives — set one up for your team or project."
+msgstr "ボードは作業の拠点です。チームやプロジェクト用に作成しましょう。"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:59
+#, elixir-autogen, elixir-format
+msgid "Generate an API token"
+msgstr "APIトークンを生成する"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:41
+#, elixir-autogen, elixir-format
+msgid "Getting started"
+msgstr "はじめに"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:71
+#, elixir-autogen, elixir-format
+msgid "Guide: Adding team members"
+msgstr "ガイド：チームメンバーを追加する"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:55
+#, elixir-autogen, elixir-format
+msgid "Guide: Creating your first board"
+msgstr "ガイド：最初のボードを作成する"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:66
+#, elixir-autogen, elixir-format
+msgid "Invite collaborators to your board and choose what they can do."
+msgstr "ボードにコラボレーターを招待し、権限を設定しましょう。"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:60
+#, elixir-autogen, elixir-format
+msgid "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
+msgstr "ボードの「APIトークン」タブからトークンを作成できます（AI最適化ボードのみ）。トークンは一度しか表示されないため、コピーして安全に保管してください。"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:45
+#, elixir-autogen, elixir-format
+msgid "Sign in to your account"
+msgstr "アカウントにサインインする"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:46
+#, elixir-autogen, elixir-format
+msgid "Use the button below to sign in with your new credentials."
+msgstr "下のボタンから、登録した認証情報でサインインしてください。"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:36
+#, elixir-autogen, elixir-format
+msgid "You're all set. Follow these steps to get up and running."
+msgstr "準備完了です。次のステップに沿って始めましょう。"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:32
+#, elixir-autogen, elixir-format
+msgid "Your account is confirmed"
+msgstr "アカウントが確認されました"

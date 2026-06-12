@@ -723,7 +723,7 @@ msgstr "Aucun historique disponible"
 msgid "Status"
 msgstr "Statut"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:97
+#: lib/kanban_web/live/user_live/confirmation.ex:164
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "Le lien de confirmation est invalide ou a expiré."
@@ -735,7 +735,7 @@ msgstr "Le lien de confirmation est invalide ou a expiré."
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:91
+#: lib/kanban_web/live/user_live/confirmation.ex:158
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
@@ -3201,7 +3201,7 @@ msgstr "Sécurité"
 
 #: lib/kanban_web/components/marketing_components.ex:133
 #: lib/kanban_web/components/marketing_components.ex:301
-#: lib/kanban_web/live/user_live/confirmation.ex:51
+#: lib/kanban_web/live/user_live/confirmation.ex:85
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -4106,6 +4106,7 @@ msgid "Coming soon"
 msgstr "Bientôt disponible"
 
 #: lib/kanban_web/live/board_live/index.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:49
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Créez votre premier tableau"
@@ -5457,11 +5458,6 @@ msgstr "Fonctionnalités clés de collaboration"
 msgid "Acceptable Use Policy"
 msgstr "Politique d'utilisation acceptable"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:32
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Account confirmed"
-msgstr "Compte Confirmé !"
-
 #: lib/kanban_web/live/user_live/registration.ex:15
 #, elixir-autogen, elixir-format
 msgid "Already have an account?"
@@ -5506,7 +5502,7 @@ msgstr "Choisissez un nouveau mot de passe pour votre compte."
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "Choisissez un mot de passe fort et confirmez-le. Vous resterez connecté sur cet appareil après un changement réussi."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:33
+#: lib/kanban_web/live/user_live/confirmation.ex:91
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "Confirmation de votre compte..."
@@ -5536,7 +5532,7 @@ msgstr "Pour les agents"
 msgid "Forgot?"
 msgstr "Oublié ?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:39
+#: lib/kanban_web/live/user_live/confirmation.ex:95
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "Veuillez patienter — cela ne prendra qu'un instant."
@@ -5623,7 +5619,7 @@ msgstr "Les personnes et le collaborateur IA derrière Stride."
 msgid "Update profile"
 msgstr "Mettre à jour le profil"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:60
+#: lib/kanban_web/live/user_live/confirmation.ex:102
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "Vérification de votre lien de confirmation…"
@@ -5642,11 +5638,6 @@ msgstr "Nous enverrons un lien à usage unique par e-mail. Le lien expire dans 1
 #, elixir-autogen, elixir-format
 msgid "Welcome back. Use the same method you used last time."
 msgstr "Bon retour. Utilisez la même méthode que la dernière fois."
-
-#: lib/kanban_web/live/user_live/confirmation.ex:38
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Your account has been confirmed successfully. You can now sign in."
-msgstr "Votre compte a été confirmé avec succès. Vous pouvez maintenant vous connecter."
 
 #: lib/kanban_web/live/user_live/registration.ex:41
 #, elixir-autogen, elixir-format
@@ -7049,7 +7040,7 @@ msgstr "Nous n'avons pas pu envoyer l'e-mail de confirmation. Utilisez le bouton
 msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
 msgstr "Nous avons envoyé un lien de confirmation à %{email}. Vous ne pourrez pas vous connecter tant que votre compte n'est pas confirmé."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:63
+#: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr "vous pourrez vous connecter dès qu'il sera vérifié"
@@ -7058,3 +7049,63 @@ msgstr "vous pourrez vous connecter dès qu'il sera vérifié"
 #, elixir-autogen, elixir-format
 msgid "Return to Stride"
 msgstr "Retour à Stride"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:65
+#, elixir-autogen, elixir-format
+msgid "Add your team"
+msgstr "Ajoutez votre équipe"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:50
+#, elixir-autogen, elixir-format
+msgid "Boards are where your work lives — set one up for your team or project."
+msgstr "Les tableaux sont le cœur de votre travail — créez-en un pour votre équipe ou votre projet."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:59
+#, elixir-autogen, elixir-format
+msgid "Generate an API token"
+msgstr "Générez un jeton API"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:41
+#, elixir-autogen, elixir-format
+msgid "Getting started"
+msgstr "Premiers pas"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:71
+#, elixir-autogen, elixir-format
+msgid "Guide: Adding team members"
+msgstr "Guide : Ajouter des membres à l'équipe"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:55
+#, elixir-autogen, elixir-format
+msgid "Guide: Creating your first board"
+msgstr "Guide : Créer votre premier tableau"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:66
+#, elixir-autogen, elixir-format
+msgid "Invite collaborators to your board and choose what they can do."
+msgstr "Invitez des collaborateurs sur votre tableau et choisissez leurs permissions."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:60
+#, elixir-autogen, elixir-format
+msgid "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
+msgstr "Sur votre tableau, ouvrez l'onglet « Jetons API » pour en créer un (disponible sur les tableaux optimisés pour l'IA). Le jeton n'est affiché qu'une seule fois — copiez-le et gardez-le secret."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:45
+#, elixir-autogen, elixir-format
+msgid "Sign in to your account"
+msgstr "Connectez-vous à votre compte"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:46
+#, elixir-autogen, elixir-format
+msgid "Use the button below to sign in with your new credentials."
+msgstr "Utilisez le bouton ci-dessous pour vous connecter avec vos nouveaux identifiants."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:36
+#, elixir-autogen, elixir-format
+msgid "You're all set. Follow these steps to get up and running."
+msgstr "Tout est prêt. Suivez ces étapes pour bien démarrer."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:32
+#, elixir-autogen, elixir-format
+msgid "Your account is confirmed"
+msgstr "Votre compte est confirmé"

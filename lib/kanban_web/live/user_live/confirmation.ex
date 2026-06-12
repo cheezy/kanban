@@ -27,20 +27,57 @@ defmodule KanbanWeb.UserLive.Confirmation do
           </svg>
         </div>
 
-        <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
-          {if @confirmed,
-            do: gettext("Account confirmed"),
-            else: gettext("Confirming your account…")}
-        </h1>
-
-        <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
-          {if @confirmed,
-            do: gettext("Your account has been confirmed successfully. You can now sign in."),
-            else: gettext("Hold tight — this will only take a moment.")}
-        </p>
-
         <%= if @confirmed do %>
-          <div style="margin-top: 28px; width: 100%;">
+          <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+            {gettext("Your account is confirmed")}
+          </h1>
+
+          <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+            {gettext("You're all set. Follow these steps to get up and running.")}
+          </p>
+
+          <div style="margin-top: 24px; width: 100%; text-align: left;">
+            <div style="font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin-bottom: 12px;">
+              {gettext("Getting started")}
+            </div>
+
+            <ol
+              role="list"
+              style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px;"
+            >
+              <.onboarding_step number="1" title={gettext("Sign in to your account")}>
+                {gettext("Use the button below to sign in with your new credentials.")}
+              </.onboarding_step>
+
+              <.onboarding_step number="2" title={gettext("Create your first board")}>
+                {gettext("Boards are where your work lives — set one up for your team or project.")}
+                <.link
+                  navigate={~p"/resources/creating-your-first-board"}
+                  style="color: var(--ink); text-decoration: underline;"
+                >
+                  {gettext("Guide: Creating your first board")}
+                </.link>
+              </.onboarding_step>
+
+              <.onboarding_step number="3" title={gettext("Generate an API token")}>
+                {gettext(
+                  "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
+                )}
+              </.onboarding_step>
+
+              <.onboarding_step number="4" title={gettext("Add your team")}>
+                {gettext("Invite collaborators to your board and choose what they can do.")}
+                <.link
+                  navigate={~p"/resources/inviting-team-members"}
+                  style="color: var(--ink); text-decoration: underline;"
+                >
+                  {gettext("Guide: Adding team members")}
+                </.link>
+              </.onboarding_step>
+            </ol>
+          </div>
+
+          <div style="margin-top: 24px; width: 100%;">
             <.primary_full_button>
               <%!-- Match the button's label token (var(--surface)) so the link stays
                     legible on the inverted ink button in both light and dark. --%>
@@ -53,6 +90,14 @@ defmodule KanbanWeb.UserLive.Confirmation do
             </.primary_full_button>
           </div>
         <% else %>
+          <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+            {gettext("Confirming your account…")}
+          </h1>
+
+          <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+            {gettext("Hold tight — this will only take a moment.")}
+          </p>
+
           <div style="margin-top: 28px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 12px; width: 100%;">
             <span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--surface-sunken); border-top-color: var(--stride-orange); animation: authspin 0.8s linear infinite; flex-shrink: 0;"></span>
             <div style="flex: 1; text-align: left;">
@@ -67,6 +112,31 @@ defmodule KanbanWeb.UserLive.Confirmation do
         <% end %>
       </div>
     </.auth_frame>
+    """
+  end
+
+  attr :number, :string, required: true
+  attr :title, :string, required: true
+  slot :inner_block, required: true
+
+  defp onboarding_step(assigns) do
+    ~H"""
+    <li style="display: flex; gap: 12px;">
+      <span
+        aria-hidden="true"
+        style="width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font-family: var(--font-mono); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;"
+      >
+        {@number}
+      </span>
+      <div style="flex: 1;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--ink);">
+          {@title}
+        </div>
+        <p style="margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-3); text-wrap: pretty;">
+          {render_slot(@inner_block)}
+        </p>
+      </div>
+    </li>
     """
   end
 
