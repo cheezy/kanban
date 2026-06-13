@@ -129,6 +129,49 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       assert html =~ "Remove"
     end
 
+    test "renders the Read Only access chip for read-only members", %{
+      board: board,
+      scope: scope,
+      user: owner
+    } do
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+
+      html =
+        render_component(
+          &MembersFormComponent.render/1,
+          render_assigns(board, scope)
+        )
+
+      assert html =~ member.email
+      assert html =~ "Read Only"
+      assert html =~ "Remove"
+    end
+
+    test "renders an unrecognized access level with fallback styling and no label", %{
+      board: board,
+      scope: scope
+    } do
+      # The chip helpers carry catch-all clauses so a future access level can
+      # never crash the members list; an unknown atom renders the row with the
+      # fallback colors and an empty label.
+      stranger = user_fixture()
+
+      board_users = [
+        %{user: stranger, access: :future_access_level}
+      ]
+
+      html =
+        render_component(
+          &MembersFormComponent.render/1,
+          render_assigns(board, scope, %{board_users: board_users})
+        )
+
+      assert html =~ stranger.email
+      refute html =~ "Read Only"
+      refute html =~ "Can Edit"
+    end
+
     test "Close link points at @patch", %{board: board, scope: scope} do
       html =
         render_component(
@@ -233,6 +276,25 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
 
       access_list = Enum.map(socket.assigns.board_users, & &1.access)
       assert :modify in access_list
+    end
+
+    test "owner: adds the searched user with read_only access",
+         %{board: board, scope: scope} do
+      candidate = user_fixture()
+      socket = build_update_socket(board, scope)
+
+      socket =
+        socket
+        |> Phoenix.Component.assign(:searched_user, candidate)
+        |> Phoenix.Component.assign(:search_email, candidate.email)
+
+      {:noreply, socket} =
+        MembersFormComponent.handle_event("add_user", %{"access" => "read_only"}, socket)
+
+      assert socket.assigns.flash["info"] == "User added successfully"
+
+      access_list = Enum.map(socket.assigns.board_users, & &1.access)
+      assert :read_only in access_list
     end
 
     test "boards-context error: flashes failure when add_user_to_board fails",

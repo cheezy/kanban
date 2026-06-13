@@ -255,6 +255,48 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(payload, task)
     end
 
+    test "treats a nil task field as not supplied" do
+      task = task_with(%{security_considerations: nil})
+
+      payload =
+        Map.put(full_structured_payload(), "security_considerations", %{
+          "status" => "not_assessed"
+        })
+
+      assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(payload, task)
+    end
+
+    test "treats an empty-string task field as not supplied" do
+      task = task_with(%{testing_strategy: ""})
+
+      payload =
+        Map.put(full_structured_payload(), "testing_strategy", %{"status" => "not_assessed"})
+
+      assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(payload, task)
+    end
+
+    test "treats non-text task content (numeric coverage target) as supplied" do
+      # A testing_strategy whose only value is numeric still counts as supplied,
+      # so an unassessed verdict is rejected.
+      task = task_with(%{testing_strategy: %{"coverage_target" => 95}})
+
+      payload =
+        Map.put(full_structured_payload(), "testing_strategy", %{"status" => "not_assessed"})
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert error_for(errors, :testing_strategy)
+    end
+
+    test "counts a missing acceptance_criteria array as zero checked criteria" do
+      task = task_with(%{acceptance_criteria: "One\nTwo"})
+      payload = Map.delete(full_structured_payload(), "acceptance_criteria")
+
+      assert {:error, errors} = CompletionValidation.cross_check_reviewer_result(payload, task)
+      assert {:acceptance_criteria, msg} = error_for(errors, :acceptance_criteria)
+      assert msg =~ "0"
+      assert msg =~ "2"
+    end
+
     test "a skip-form (dispatched: false) review passes through untouched" do
       task = task_with(%{security_considerations: ["x"]})
 

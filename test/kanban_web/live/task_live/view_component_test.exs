@@ -1902,4 +1902,130 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       refute result =~ "Some criteria"
     end
   end
+
+  describe "board scoping and not-found state" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      %{user: user, board: board, column: column}
+    end
+
+    test "renders the not-found state when the task does not exist", %{board: board} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: -1,
+          board_id: board.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Task Not Found"
+      assert result =~ "hero-exclamation-triangle"
+      assert result =~ "This task may have been deleted"
+    end
+
+    test "refuses to render a task that belongs to a different board", %{board: board} do
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      other_column = column_fixture(other_board)
+      foreign_task = task_fixture(other_column, %{title: "Foreign Task"})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: foreign_task.id,
+          board_id: board.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Task Not Found"
+      refute result =~ "Foreign Task"
+    end
+  end
+
+  describe "metadata panel branches" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user, %{name: "Render Branch Board"})
+      column = column_fixture(board)
+
+      %{user: user, board: board, column: column}
+    end
+
+    test "shows only the priority word when complexity is unset", %{column: column} do
+      task = task_fixture(column, %{priority: :high, complexity: nil})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "High"
+      refute result =~ "High ·"
+    end
+
+    test "shows the human task indicator when human_task is set", %{column: column} do
+      task = task_fixture(column, %{human_task: true})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Human task"
+      assert result =~ "Yes"
+    end
+
+    # The component's own loader does not preload :parent or column: :board,
+    # so these render branches are exercised by driving render/1 directly with
+    # a deeply-loaded task — the same path a caller with a preloaded task hits.
+    test "shows the parent goal when the parent association is loaded", %{column: column} do
+      goal = task_fixture(column, %{type: :goal, title: "Epic Goal"})
+      child = task_fixture(column, %{parent_id: goal.id})
+
+      task =
+        child.id
+        |> Tasks.get_task_for_view()
+        |> Repo.preload(:parent)
+
+      result =
+        render_component(&KanbanWeb.TaskLive.ViewComponent.render/1, %{
+          task: task,
+          board_id: nil,
+          can_modify: false,
+          field_visibility: all_fields_visible()
+        })
+
+      assert result =~ "Goal"
+      assert result =~ "hero-flag"
+      assert result =~ goal.identifier
+      assert result =~ "Epic Goal"
+    end
+
+    test "shows the board name when column.board is loaded", %{column: column} do
+      task_record = task_fixture(column)
+
+      task =
+        task_record.id
+        |> Tasks.get_task_for_view()
+        |> Repo.preload(column: :board)
+
+      result =
+        render_component(&KanbanWeb.TaskLive.ViewComponent.render/1, %{
+          task: task,
+          board_id: nil,
+          can_modify: false,
+          field_visibility: all_fields_visible()
+        })
+
+      assert result =~ "Board"
+      assert result =~ "Render Branch Board"
+    end
+  end
 end

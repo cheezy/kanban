@@ -105,4 +105,73 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Metrics"
     end
   end
+
+  describe "goal-to-done latency formatting" do
+    setup [:register_and_log_in_user]
+
+    # Stages a completed goal whose final child finished `latency_seconds`
+    # before the goal did, so the goal contributes exactly that latency sample
+    # to goal_to_done_latency_percentiles (compact version of the seeding
+    # helper in test/kanban/metrics_test.exs).
+    defp seed_goal_latency!(column, latency_seconds) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      goal_completed_at = DateTime.add(now, -3600, :second)
+      child_completed_at = DateTime.add(goal_completed_at, -latency_seconds, :second)
+
+      goal = task_fixture(column, %{type: :goal})
+      child = task_fixture(column, %{parent_id: goal.id})
+
+      {:ok, _} =
+        Tasks.update_task(child, %{
+          claimed_at: DateTime.add(child_completed_at, -600, :second),
+          completed_at: child_completed_at
+        })
+
+      {:ok, goal} = Tasks.update_task(goal, %{completed_at: goal_completed_at})
+
+      {:ok, _} =
+        goal
+        |> Ecto.Changeset.change(%{
+          after_goal_status: :succeeded,
+          after_goal_result: %{"exit_code" => 0, "output" => "ok", "duration_ms" => 1}
+        })
+        |> Kanban.Repo.update()
+
+      :ok
+    end
+
+    test "formats sub-minute latency as seconds", %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      seed_goal_latency!(column, 45)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-goal-done-latency"
+      assert html =~ "45s"
+    end
+
+    test "formats whole minutes and whole hours without a remainder", %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      # Two samples: p50 takes the lower (240s = 4m), p95 the higher (7200s = 2h).
+      seed_goal_latency!(column, 240)
+      seed_goal_latency!(column, 7200)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "4m"
+      assert html =~ "2h"
+    end
+
+    test "formats minute and hour latencies with remainders", %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      # Two samples: p50 = 210s = 3m 30s, p95 = 9000s = 2h 30m.
+      seed_goal_latency!(column, 210)
+      seed_goal_latency!(column, 9000)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "3m 30s"
+      assert html =~ "2h 30m"
+    end
+  end
 end
