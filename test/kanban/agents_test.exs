@@ -139,6 +139,38 @@ defmodule Kanban.AgentsTest do
       assert kinds == [:claim, :complete, :create, :review]
     end
 
+    test "the :claim event actor is the completing agent, falling back to the creator (D82)",
+         %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Completed task: the claim actor is the agent that worked/completed it.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Creator",
+          completed_by_agent: "Worker",
+          claimed_at: now,
+          completed_at: now
+        })
+
+      claim = Agents.recent_activity() |> Enum.find(&(&1.kind == :claim))
+      assert claim.actor == "Worker"
+    end
+
+    test "the :claim event actor falls back to the creating agent when not yet completed (D82)",
+         %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Creator", claimed_at: now})
+
+      claim = Agents.recent_activity() |> Enum.find(&(&1.kind == :claim))
+      assert claim.actor == "Creator"
+    end
+
     test "respects the :limit option", %{column: column} do
       Enum.each(1..10, fn _ -> task_fixture(column) end)
 

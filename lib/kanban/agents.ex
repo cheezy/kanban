@@ -244,12 +244,19 @@ defmodule Kanban.Agents do
   defp events_for(task) do
     [
       build_event(:create, task.created_by_agent, task, task.inserted_at),
-      build_event(:claim, task.created_by_agent, task, task.claimed_at),
+      build_event(:claim, claim_actor(task), task, task.claimed_at),
       build_event(:complete, task.completed_by_agent, task, task.completed_at),
       build_event(:review, task.completed_by_agent, task, task.reviewed_at)
     ]
     |> Enum.reject(&is_nil/1)
   end
+
+  # The agent associated with a claim. In Stride's single-claim model the agent
+  # that completes a task is the one that claimed and worked it, so prefer
+  # `completed_by_agent`; fall back to the creating agent, then to nil (the feed
+  # renders nil as a neutral fallback avatar). This keeps the Claims/All views
+  # showing the working agent instead of a blank, without inventing a name.
+  defp claim_actor(task), do: task.completed_by_agent || task.created_by_agent
 
   defp build_event(_kind, _actor, _task, nil), do: nil
 

@@ -203,16 +203,21 @@ defmodule KanbanWeb.AgentActivityFeed do
 
   attr :actor, :any, required: true
 
+  # When no agent name is known (e.g. a claim/create on an API- or human-created
+  # task), render a consistent neutral avatar — same square + size as a real
+  # agent avatar — rather than an empty placeholder box, so the All/Claims/
+  # Completions rows line up visually. The Avatar component renders a "?" glyph
+  # on a neutral background for a blank name.
   defp row_avatar(%{actor: nil} = assigns) do
     ~H"""
     <span
       data-agent-feed-avatar-fallback
-      aria-hidden="true"
-      style={[
-        "width: 26px; height: 26px; border-radius: 4px;",
-        "background: var(--surface-sunken); border: 1px solid var(--line);"
-      ]}
-    />
+      title={gettext("Unknown agent")}
+      aria-label={gettext("Unknown agent")}
+      style="display: inline-flex;"
+    >
+      <Avatar.avatar kind={:agent} name="" size={26} />
+    </span>
     """
   end
 

@@ -4836,7 +4836,7 @@ msgstr "Hijos"
 msgid "Claimed"
 msgstr "Reclamado"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:276
 #: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4905,30 +4905,30 @@ msgstr "Trabajando"
 msgid "Yes"
 msgstr "Sí"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:283
+#: lib/kanban_web/components/agent_activity_feed.ex:287
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}h %{m}m"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:287
+#: lib/kanban_web/components/agent_activity_feed.ex:291
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}m"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:271
+#: lib/kanban_web/components/agent_activity_feed.ex:275
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Todos"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:274
+#: lib/kanban_web/components/agent_activity_feed.ex:278
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "Finalizaciones"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:273
+#: lib/kanban_web/components/agent_activity_feed.ex:277
 #, elixir-autogen, elixir-format
 msgid "Hooks"
 msgstr "Hooks"
@@ -5048,6 +5048,8 @@ msgstr "Aprobar"
 msgid "Request changes"
 msgstr "Solicitar cambios"
 
+#: lib/kanban_web/components/agent_activity_feed.ex:215
+#: lib/kanban_web/components/agent_activity_feed.ex:216
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -6676,12 +6678,12 @@ msgstr "Secciones de configuración"
 msgid "Review data unavailable"
 msgstr "Datos de revisión no disponibles"
 
-#: lib/kanban/tasks/completion_validation.ex:681
+#: lib/kanban/tasks/completion_validation.ex:684
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "es obligatorio en una revisión despachada: incluya status o issue_counts para que la cola de revisión pueda mostrar el veredicto"
 
-#: lib/kanban/tasks/completion_validation.ex:674
+#: lib/kanban/tasks/completion_validation.ex:677
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "es obligatorio en una revisión despachada: falta el campo estructurado %{field} que muestra la cola de revisión"
@@ -6691,12 +6693,12 @@ msgstr "es obligatorio en una revisión despachada: falta el campo estructurado 
 msgid "N/A"
 msgstr "N/D"
 
-#: lib/kanban/tasks/completion_validation.ex:693
+#: lib/kanban/tasks/completion_validation.ex:696
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "está incompleto: project_checks cubre %{supplied} de los %{expected} puntos de la lista de verificación del proyecto; cada punto de la lista debe evaluarse"
 
-#: lib/kanban/tasks/completion_validation.ex:687
+#: lib/kanban/tasks/completion_validation.ex:690
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "es obligatorio en una revisión realizada: project_checks debe ser una lista no vacía que cubra la lista de verificación del proyecto"
@@ -7192,12 +7194,12 @@ msgstr "Configura tu agente de programación"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "El recuento de revisión registrado no coincide con los criterios de aceptación de esta tarea; se muestra el recuento de la tarea."
 
-#: lib/kanban/tasks/completion_validation.ex:339
+#: lib/kanban/tasks/completion_validation.ex:342
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "es incoherente con la tarea: la revisión enumera %{supplied} entradas de criterios de aceptación, pero la tarea define %{expected}; los recuentos deben coincidir"
 
-#: lib/kanban/tasks/completion_validation.ex:347
+#: lib/kanban/tasks/completion_validation.ex:350
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "es incoherente con la tarea: la revisión informa %{checked} criterios de aceptación verificados, pero la tarea define %{expected}; los recuentos deben coincidir"

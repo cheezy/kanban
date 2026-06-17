@@ -171,11 +171,15 @@ defmodule KanbanWeb.AgentActivityFeedTest do
   end
 
   describe "feed/1 — actor avatar edge cases" do
-    test "renders a fallback placeholder when event.actor is nil" do
+    test "renders a consistent fallback avatar (not an empty box) when event.actor is nil" do
       html = render([event(%{actor: nil})], :all)
 
+      # The fallback is now a labeled neutral avatar, not an empty placeholder box,
+      # so claim/create rows line up with completion rows (D82).
       assert html =~ "data-agent-feed-avatar-fallback"
-      refute html =~ ~s(text-white font-semibold)
+      assert html =~ "Unknown agent"
+      # Still an agent-shaped square (4px radius), matching real avatars.
+      assert html =~ "border-radius: 4px"
     end
 
     test "renders an Avatar for an unknown actor name (fallback palette)" do

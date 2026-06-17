@@ -4836,7 +4836,7 @@ msgstr ""
 msgid "Claimed"
 msgstr "Claimed"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:276
 #: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4905,30 +4905,30 @@ msgstr "Working"
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:283
+#: lib/kanban_web/components/agent_activity_feed.ex:287
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:287
+#: lib/kanban_web/components/agent_activity_feed.ex:291
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:271
+#: lib/kanban_web/components/agent_activity_feed.ex:275
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:274
+#: lib/kanban_web/components/agent_activity_feed.ex:278
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:273
+#: lib/kanban_web/components/agent_activity_feed.ex:277
 #, elixir-autogen, elixir-format
 msgid "Hooks"
 msgstr ""
@@ -5048,6 +5048,8 @@ msgstr ""
 msgid "Request changes"
 msgstr ""
 
+#: lib/kanban_web/components/agent_activity_feed.ex:215
+#: lib/kanban_web/components/agent_activity_feed.ex:216
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -6577,12 +6579,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:681
+#: lib/kanban/tasks/completion_validation.ex:684
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:674
+#: lib/kanban/tasks/completion_validation.ex:677
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -6592,12 +6594,12 @@ msgstr ""
 msgid "N/A"
 msgstr "N/A"
 
-#: lib/kanban/tasks/completion_validation.ex:693
+#: lib/kanban/tasks/completion_validation.ex:696
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:687
+#: lib/kanban/tasks/completion_validation.ex:690
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr ""
@@ -7093,12 +7095,12 @@ msgstr ""
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:339
+#: lib/kanban/tasks/completion_validation.ex:342
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:347
+#: lib/kanban/tasks/completion_validation.ex:350
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr ""

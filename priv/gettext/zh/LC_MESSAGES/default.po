@@ -4828,7 +4828,7 @@ msgstr "子项"
 msgid "Claimed"
 msgstr "已认领"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:276
 #: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4897,30 +4897,30 @@ msgstr "工作中"
 msgid "Yes"
 msgstr "是"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:283
+#: lib/kanban_web/components/agent_activity_feed.ex:287
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}小时 %{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:287
+#: lib/kanban_web/components/agent_activity_feed.ex:291
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:271
+#: lib/kanban_web/components/agent_activity_feed.ex:275
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "全部"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:274
+#: lib/kanban_web/components/agent_activity_feed.ex:278
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "完成数"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:273
+#: lib/kanban_web/components/agent_activity_feed.ex:277
 #, elixir-autogen, elixir-format
 msgid "Hooks"
 msgstr "钩子"
@@ -5038,6 +5038,8 @@ msgstr "批准"
 msgid "Request changes"
 msgstr "请求更改"
 
+#: lib/kanban_web/components/agent_activity_feed.ex:215
+#: lib/kanban_web/components/agent_activity_feed.ex:216
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -6623,12 +6625,12 @@ msgstr "设置部分"
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
 
-#: lib/kanban/tasks/completion_validation.ex:681
+#: lib/kanban/tasks/completion_validation.ex:684
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "在已派发的评审中为必填项：请包含 status 或 issue_counts，以便评审队列能够渲染评审结论"
 
-#: lib/kanban/tasks/completion_validation.ex:674
+#: lib/kanban/tasks/completion_validation.ex:677
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字段 %{field} 缺失"
@@ -6638,12 +6640,12 @@ msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字
 msgid "N/A"
 msgstr "不适用"
 
-#: lib/kanban/tasks/completion_validation.ex:693
+#: lib/kanban/tasks/completion_validation.ex:696
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "不完整：project_checks 仅覆盖了项目检查清单 %{expected} 个条目中的 %{supplied} 个；每个清单条目都必须评估"
 
-#: lib/kanban/tasks/completion_validation.ex:687
+#: lib/kanban/tasks/completion_validation.ex:690
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "在已执行的审查中为必填项：project_checks 必须是涵盖项目检查清单的非空列表"
@@ -7139,12 +7141,12 @@ msgstr "设置您的编码代理"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "记录的审查数量与此任务的验收标准不匹配；显示任务的数量。"
 
-#: lib/kanban/tasks/completion_validation.ex:339
+#: lib/kanban/tasks/completion_validation.ex:342
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "与任务不一致：审查列出了 %{supplied} 个验收标准条目，但任务定义了 %{expected} 个；数量必须匹配"
 
-#: lib/kanban/tasks/completion_validation.ex:347
+#: lib/kanban/tasks/completion_validation.ex:350
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "与任务不一致：审查报告已检查 %{checked} 个验收标准，但任务定义了 %{expected} 个；数量必须匹配"
