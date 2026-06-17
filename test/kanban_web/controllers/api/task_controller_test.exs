@@ -549,6 +549,54 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "varchar(255) length validation (D81)" do
+    @over_long_title String.duplicate("a", 256)
+
+    test "POST /api/tasks with an over-long title returns 422, not 500", %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks", task: %{"title" => @over_long_title})
+
+      assert json_response(conn, 422)["errors"] != %{}
+    end
+
+    test "PATCH /api/tasks/:id with an over-long title returns 422, not 500",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{"title" => "Original D81", "created_by_id" => user.id})
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => @over_long_title})
+
+      assert json_response(conn, 422)["errors"] != %{}
+    end
+
+    test "POST /api/tasks/batch with an over-long child title returns 422 and rolls back",
+         %{conn: conn} do
+      import Ecto.Query, only: [from: 2]
+
+      goals_params = [
+        %{
+          "title" => "Batch Goal D81",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "Valid sibling D81", "type" => "work"},
+            %{"title" => @over_long_title, "type" => "work"}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+
+      # Clean 422 (not a raised 22001 / 500) — reaching this assertion proves the
+      # request did not raise.
+      assert json_response(conn, 422)
+
+      # …and the whole batch rolled back: the valid sibling was not persisted.
+      sibling_query = from(t in Kanban.Tasks.Task, where: t.title == "Valid sibling D81")
+      goal_query = from(t in Kanban.Tasks.Task, where: t.title == "Batch Goal D81")
+      refute Kanban.Repo.exists?(sibling_query)
+      refute Kanban.Repo.exists?(goal_query)
+    end
+  end
+
   describe "POST /api/tasks/batch" do
     test "creates multiple goals with child tasks", %{conn: conn} do
       goals_params = [

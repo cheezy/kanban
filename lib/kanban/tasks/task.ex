@@ -434,6 +434,23 @@ defmodule Kanban.Tasks.Task do
     timestamps()
   end
 
+  # Free-text columns stored as Postgres varchar(255). Their changesets carried no
+  # length bound, so oversized input bypassed validation and raised a 22001
+  # (string_data_right_truncation) → HTTP 500 instead of a clean 422 (D81). The
+  # enum columns (type/priority/status/complexity/actual_complexity/review_status,
+  # and archive_reason — an Ecto.Enum) are varchar too but already guarded by the
+  # cast/validate_inclusion, which rejects any out-of-range value long before a
+  # length could matter; identifier is server-generated and bounded. None of those
+  # needs a length cap here.
+  @varchar_255_max 255
+  @varchar_255_fields [
+    :title,
+    :estimated_files,
+    :telemetry_event,
+    :created_by_agent,
+    :completed_by_agent
+  ]
+
   @doc false
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def changeset(task, attrs) do
@@ -540,6 +557,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_inclusion(:review_status, [:pending, :approved, :changes_requested, :rejected],
       message: "must be 'pending', 'approved', 'changes_requested', or 'rejected'"
     )
+    |> validate_varchar_255_lengths()
     |> validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> validate_technology_requirements()
     |> validate_required_capabilities()
@@ -662,6 +680,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
+    |> validate_varchar_255_lengths()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:created_by_id)
     |> unique_constraint([:column_id, :position])
@@ -699,7 +718,35 @@ defmodule Kanban.Tasks.Task do
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
+    |> validate_varchar_255_lengths()
   end
+
+  # Caps the free-text varchar(255) columns so oversized input fails with a 422
+  # changeset error instead of reaching Postgres and raising a 22001 / 500 (D81).
+  #
+  # Postgres varchar(n) limits by Unicode code point. That is NOT the grapheme
+  # count Ecto's `validate_length` uses by default — a multi-codepoint grapheme
+  # (e.g. an emoji with modifiers, or a base char + combining mark) would pass a
+  # 255-grapheme check yet still overflow the column — and it is NOT a byte count
+  # either, which would wrongly reject legitimate multibyte text well under 255
+  # characters. So count code points directly to match the database exactly.
+  defp validate_varchar_255_lengths(changeset) do
+    Enum.reduce(@varchar_255_fields, changeset, fn field, acc ->
+      validate_change(acc, field, fn ^field, value ->
+        if is_binary(value) and codepoint_length(value) > @varchar_255_max do
+          [
+            {field,
+             {"should be at most %{count} character(s)",
+              [count: @varchar_255_max, validation: :length, kind: :max, type: :string]}}
+          ]
+        else
+          []
+        end
+      end)
+    end)
+  end
+
+  defp codepoint_length(value), do: value |> String.codepoints() |> length()
 
   # Validate that embed fields are arrays before casting
   defp validate_embed_type(changeset, field, attrs) do

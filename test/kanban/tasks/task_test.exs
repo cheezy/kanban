@@ -27,6 +27,82 @@ defmodule Kanban.Tasks.TaskTest do
   # constraint when we later persist via Repo.update/1.
   defp base_attrs(overrides), do: overrides
 
+  describe "varchar(255) length validation (D81)" do
+    @over String.duplicate("a", 256)
+    @at_limit String.duplicate("a", 255)
+
+    test "changeset/2 rejects a title over 255 characters", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{title: @over}))
+
+      refute changeset.valid?
+      assert %{title: ["should be at most 255 character(s)"]} = errors_on(changeset)
+    end
+
+    test "changeset/2 accepts a title of exactly 255 characters", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{title: @at_limit}))
+
+      assert changeset.valid?
+    end
+
+    test "changeset/2 rejects each free-text varchar(255) field over 255 characters",
+         %{column: column} do
+      task = task_fixture(column)
+
+      for field <- [
+            :title,
+            :estimated_files,
+            :telemetry_event,
+            :created_by_agent,
+            :completed_by_agent
+          ] do
+        changeset = Task.changeset(task, base_attrs(%{field => @over}))
+
+        refute changeset.valid?, "expected #{field} over 255 chars to be invalid"
+        assert Keyword.has_key?(changeset.errors, field)
+      end
+    end
+
+    test "api_create_changeset/2 rejects an oversized title" do
+      attrs = %{
+        "title" => @over,
+        "position" => 0,
+        "type" => "work",
+        "priority" => "medium"
+      }
+
+      changeset = Task.api_create_changeset(%Task{}, attrs)
+
+      refute changeset.valid?
+      assert %{title: ["should be at most 255 character(s)"]} = errors_on(changeset)
+    end
+
+    test "api_update_changeset/2 rejects an oversized title", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.api_update_changeset(task, %{"title" => @over})
+
+      refute changeset.valid?
+      assert %{title: ["should be at most 255 character(s)"]} = errors_on(changeset)
+    end
+
+    test "counts Unicode code points, not graphemes, to match Postgres varchar(255)",
+         %{column: column} do
+      task = task_fixture(column)
+
+      # 200 grapheme clusters of "é" (e + combining acute) = 400 code points.
+      # A grapheme-based check would see 200 (<= 255) and wrongly pass, letting
+      # the value overflow varchar(255) in the DB. Code-point counting rejects it.
+      decomposed = String.duplicate("é", 200)
+      assert String.length(decomposed) == 200
+      assert decomposed |> String.codepoints() |> length() == 400
+
+      changeset = Task.changeset(task, base_attrs(%{title: decomposed}))
+      refute changeset.valid?
+      assert Keyword.has_key?(changeset.errors, :title)
+    end
+  end
+
   describe "archive_reason field" do
     test "accepts :completed with no archive_note", %{column: column} do
       task = task_fixture(column)
