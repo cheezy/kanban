@@ -317,6 +317,155 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "acceptance_criteria_count_failures/2 (W1102)" do
+    test "passes when array length and checked count equal the task's criterion count" do
+      task = task_with(%{acceptance_criteria: "One\nTwo\nThree"})
+
+      payload =
+        full_structured_payload()
+        |> Map.put("acceptance_criteria", [
+          %{"criterion" => "One", "status" => "met"},
+          %{"criterion" => "Two", "status" => "met"},
+          %{"criterion" => "Three", "status" => "met"}
+        ])
+        |> Map.put("acceptance_criteria_checked", 3)
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+
+    test "flags a structured array longer than the task's criterion count (the W1099 6/5 over-count)" do
+      task = task_with(%{acceptance_criteria: "One\nTwo\nThree\nFour\nFive"})
+
+      payload =
+        Map.put(
+          full_structured_payload(),
+          "acceptance_criteria",
+          for(i <- 1..6, do: %{"criterion" => "C#{i}", "status" => "met"})
+        )
+
+      failures = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+      assert {:acceptance_criteria, msg} = error_for(failures, :acceptance_criteria)
+      assert msg =~ "6"
+      assert msg =~ "5"
+    end
+
+    test "flags a structured array shorter than the task's criterion count" do
+      task = task_with(%{acceptance_criteria: "One\nTwo\nThree"})
+
+      payload =
+        Map.put(full_structured_payload(), "acceptance_criteria", [
+          %{"criterion" => "One", "status" => "met"}
+        ])
+
+      assert {:acceptance_criteria, _} =
+               error_for(
+                 CompletionValidation.acceptance_criteria_count_failures(payload, task),
+                 :acceptance_criteria
+               )
+    end
+
+    test "flags a legacy acceptance_criteria_checked that disagrees with the task" do
+      task = task_with(%{acceptance_criteria: "One\nTwo\nThree"})
+
+      payload =
+        full_structured_payload()
+        |> Map.delete("acceptance_criteria")
+        |> Map.put("acceptance_criteria_checked", 6)
+
+      assert {:acceptance_criteria_checked, msg} =
+               error_for(
+                 CompletionValidation.acceptance_criteria_count_failures(payload, task),
+                 :acceptance_criteria_checked
+               )
+
+      assert msg =~ "6"
+      assert msg =~ "3"
+    end
+
+    test "checks the legacy count even when no structured array is present" do
+      task = task_with(%{acceptance_criteria: "One\nTwo"})
+
+      payload =
+        full_structured_payload()
+        |> Map.delete("acceptance_criteria")
+        |> Map.put("acceptance_criteria_checked", 2)
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+
+    test "checks the structured array even when no legacy count is present" do
+      task = task_with(%{acceptance_criteria: "One\nTwo"})
+
+      payload =
+        full_structured_payload()
+        |> Map.delete("acceptance_criteria_checked")
+        |> Map.put("acceptance_criteria", [%{"criterion" => "One", "status" => "met"}])
+
+      assert {:acceptance_criteria, _} =
+               error_for(
+                 CompletionValidation.acceptance_criteria_count_failures(payload, task),
+                 :acceptance_criteria
+               )
+    end
+
+    test "returns [] when the task defines no acceptance criteria" do
+      task = task_with(%{acceptance_criteria: nil})
+
+      payload = Map.put(full_structured_payload(), "acceptance_criteria_checked", 6)
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+
+    test "does not count blank or whitespace-only criterion lines toward the task total" do
+      task = task_with(%{acceptance_criteria: "One\n\n   \nTwo\n"})
+
+      payload =
+        full_structured_payload()
+        |> Map.put("acceptance_criteria", [
+          %{"criterion" => "One", "status" => "met"},
+          %{"criterion" => "Two", "status" => "met"}
+        ])
+        |> Map.put("acceptance_criteria_checked", 2)
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+
+    test "a dispatched: false (skip-form) review carries no count obligation" do
+      task = task_with(%{acceptance_criteria: "One\nTwo"})
+
+      payload = %{
+        "dispatched" => false,
+        "reason" => "self_reported_review",
+        "summary" => @valid_summary
+      }
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+
+    test "a nil task and a nil result both produce no failures" do
+      assert [] =
+               CompletionValidation.acceptance_criteria_count_failures(
+                 full_structured_payload(),
+                 nil
+               )
+
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(nil, task_with(%{}))
+    end
+
+    test "a malformed (non-list) acceptance_criteria degrades to no count failure" do
+      task = task_with(%{acceptance_criteria: "One\nTwo"})
+
+      payload =
+        full_structured_payload()
+        |> Map.put("acceptance_criteria", "not a list")
+        |> Map.put("acceptance_criteria_checked", 2)
+
+      # The non-list array is left to the shape validator; the legacy count agrees,
+      # so this function reports nothing rather than raising.
+      assert [] = CompletionValidation.acceptance_criteria_count_failures(payload, task)
+    end
+  end
+
   describe "validate_explorer_result/1 — happy paths" do
     test "accepts dispatched=true with summary and duration_ms" do
       payload = %{"dispatched" => true, "summary" => @valid_summary, "duration_ms" => 12_000}

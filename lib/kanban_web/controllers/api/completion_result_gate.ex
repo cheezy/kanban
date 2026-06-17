@@ -39,7 +39,7 @@ defmodule KanbanWeb.API.CompletionResultGate do
     task = Keyword.get(opts, :task)
 
     always = contract_failures(params, task)
-    gated = gated_failures(params)
+    gated = gated_failures(params, task)
 
     handle_result(always, gated, strict?, metadata)
   end
@@ -66,8 +66,10 @@ defmodule KanbanWeb.API.CompletionResultGate do
 
   # Grace-gated: explorer_result, reviewer_result legacy/shape checks (presence of
   # the structured block is handled unconditionally by the contract above, so the
-  # base check runs WITHOUT require_structured_block here), and changed_files.
-  defp gated_failures(params) do
+  # base check runs WITHOUT require_structured_block here), changed_files, and the
+  # W1102 acceptance-criteria count consistency check (task-aware, but grace-gated
+  # by design — it warns in grace mode and rejects only in strict mode).
+  defp gated_failures(params, task) do
     [
       evaluate(
         "explorer_result",
@@ -79,9 +81,21 @@ defmodule KanbanWeb.API.CompletionResultGate do
         params["reviewer_result"],
         &CompletionValidation.validate_reviewer_result/1
       ),
-      evaluate_changed_files(params)
+      evaluate_changed_files(params),
+      evaluate_criteria_consistency(params, task)
     ]
     |> Enum.reject(&is_nil/1)
+  end
+
+  # W1102: the reviewer's acceptance-criteria counts (structured array length and
+  # the legacy acceptance_criteria_checked integer) must agree with the task's own
+  # criterion count. Folded into the same "reviewer_result" field the controller
+  # already renders. Returns nil when consistent / not applicable.
+  defp evaluate_criteria_consistency(params, task) do
+    case CompletionValidation.acceptance_criteria_count_failures(params["reviewer_result"], task) do
+      [] -> nil
+      errors -> %{field: "reviewer_result", errors: errors}
+    end
   end
 
   # `changed_files` is optional on /complete (D36): the field is no longer

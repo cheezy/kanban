@@ -28,9 +28,13 @@ defmodule KanbanWeb.ReviewStatsStrip do
     * `diff` — display string for the Diff cell (e.g. `"3 files"`).
     * `hooks` — display string for the Hooks cell.
     * `hooks_passed` — boolean (or nil).
+    * `acceptance_inconsistent` — boolean; when `true`, the Acceptance cell
+      shows a data-inconsistency indicator (the stored review count drifted
+      from the task's own acceptance-criteria count, W1102).
   """
   attr :acceptance, :string, default: nil
   attr :acceptance_passed, :any, default: nil
+  attr :acceptance_inconsistent, :boolean, default: false
   attr :tests, :string, default: nil
   attr :tests_passed, :any, default: nil
   attr :diff, :string, default: nil
@@ -56,6 +60,12 @@ defmodule KanbanWeb.ReviewStatsStrip do
         value={@acceptance}
         tone={tone_for(@acceptance_passed)}
         border_right={true}
+        indicator={@acceptance_inconsistent}
+        indicator_title={
+          gettext(
+            "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
+          )
+        }
       />
       <.cell
         marker="tests"
@@ -87,6 +97,8 @@ defmodule KanbanWeb.ReviewStatsStrip do
   attr :value, :string, default: nil
   attr :tone, :string, required: true
   attr :border_right, :boolean, required: true
+  attr :indicator, :boolean, default: false
+  attr :indicator_title, :string, default: nil
 
   defp cell(assigns) do
     ~H"""
@@ -107,11 +119,21 @@ defmodule KanbanWeb.ReviewStatsStrip do
       </dt>
       <dd style={[
         "margin: 4px 0 0;",
+        "display: inline-flex; align-items: center; gap: 6px;",
         "font-size: 18px; font-weight: 600;",
         "color: #{@tone};",
         "font-variant-numeric: tabular-nums;"
       ]}>
         {display_value(@value)}
+        <span
+          :if={@indicator}
+          data-review-stats-indicator={@marker}
+          title={@indicator_title}
+          aria-label={@indicator_title}
+          style="display: inline-flex; color: var(--st-blocked);"
+        >
+          <.icon name="hero-exclamation-triangle" class="w-4 h-4" />
+        </span>
       </dd>
     </div>
     """

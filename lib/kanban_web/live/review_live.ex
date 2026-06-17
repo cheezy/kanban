@@ -312,6 +312,7 @@ defmodule KanbanWeb.ReviewLive do
               <ReviewStatsStrip.review_stats_strip
                 acceptance={acceptance_value(@selected)}
                 acceptance_passed={acceptance_passed(@selected)}
+                acceptance_inconsistent={acceptance_inconsistent?(@selected)}
                 tests={ReviewReportHelpers.testing_strategy_value(@selected)}
                 tests_passed={ReviewReportHelpers.testing_strategy_passed(@selected)}
                 diff={ReviewReportHelpers.patterns_value(@selected)}
@@ -945,6 +946,24 @@ defmodule KanbanWeb.ReviewLive do
     format_acceptance_value(task, total)
   end
 
+  # True when the stored review counts drifted from the task's own
+  # acceptance-criteria count, so the header shows a data-inconsistency indicator
+  # next to the (clamped) value (W1102). Mirrors the server's grace-gated check:
+  # the legacy `acceptance_criteria_checked` integer OR the structured
+  # `acceptance_criteria` array length disagreeing with the task's line count.
+  defp acceptance_inconsistent?(task) do
+    total = task.acceptance_criteria |> parse_lines() |> length()
+    total > 0 and reviewer_dispatched?(task) and acceptance_count_drift?(task, total)
+  end
+
+  defp acceptance_count_drift?(task, total) do
+    legacy_drift? = checked_count(task, total) != total
+    structured_len = task |> structured_acceptance() |> length()
+    structured_drift? = structured_len > 0 and structured_len != total
+
+    legacy_drift? or structured_drift?
+  end
+
   defp format_acceptance_value(_task, 0), do: nil
 
   defp format_acceptance_value(task, total) do
@@ -956,8 +975,12 @@ defmodule KanbanWeb.ReviewLive do
   end
 
   # Reviewer ran — pick between the clean-pass and issues-found rendering.
+  # The checked count is clamped to `total` so the header can never render an
+  # impossible value like "6/5" when the stored review record drifted from the
+  # task (W1102). The honest drift signal is surfaced separately by
+  # `acceptance_inconsistent?/1`.
   defp reviewer_acceptance_value(task, total) do
-    checked = checked_count(task, total)
+    checked = task |> checked_count(total) |> min(total)
     n_issues = displayable_issues_count(task)
 
     if n_issues > 0 do

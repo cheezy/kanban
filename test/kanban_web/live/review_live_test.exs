@@ -1002,6 +1002,47 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "4/4 · 2 issues"
     end
 
+    test "clamps the Acceptance header to the task total and flags the drift (W1102)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD\nE",
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria_checked" => 6,
+            "issues_found" => 0
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      # Header never renders the impossible 6/5 — it clamps to the task total.
+      assert html =~ ~r/>\s*5\/5\s*</
+      refute html =~ "6/5"
+      # …and surfaces an honest data-inconsistency indicator.
+      assert html =~ ~s(data-review-stats-indicator="acceptance")
+    end
+
+    test "a count-consistent review shows no inconsistency indicator (W1102)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "A\nB\nC\nD",
+          reviewer_result: %{
+            "dispatched" => true,
+            "acceptance_criteria_checked" => 4,
+            "issues_found" => 0
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ ~r/>\s*4\/4\s*</
+      refute html =~ ~s(data-review-stats-indicator="acceptance")
+    end
+
     test "legacy issues_found > 0 renders a neutral Acceptance tone, not red (D56)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)

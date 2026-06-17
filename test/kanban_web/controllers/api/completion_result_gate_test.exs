@@ -86,6 +86,54 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
     end
   end
 
+  # W1102: the acceptance-criteria count consistency check is grace-GATED — it
+  # warns in grace mode and rejects only in strict mode (unlike the W1070
+  # contract above, which rejects unconditionally).
+  describe "gate/2 — acceptance-criteria count consistency (W1102)" do
+    test "an over-count warns in grace mode (does not reject)" do
+      request = build_request(over_count_reviewer())
+
+      assert {:warn, failures} =
+               CompletionResultGate.gate(request, strict: false, task: task_with_one_criterion())
+
+      assert "reviewer_result" in Enum.map(failures, & &1.field)
+    end
+
+    test "an over-count rejects with strict mode ON" do
+      request = build_request(over_count_reviewer())
+
+      assert {:reject, body} =
+               CompletionResultGate.gate(request, strict: true, task: task_with_one_criterion())
+
+      assert "acceptance_criteria" in reviewer_failure_fields(body) or
+               "acceptance_criteria_checked" in reviewer_failure_fields(body)
+    end
+
+    test "a count-consistent review passes in both modes" do
+      request = build_request(full_reviewer())
+      task = %{acceptance_criteria: "X"}
+
+      assert :ok = CompletionResultGate.gate(request, strict: false, task: task)
+      assert :ok = CompletionResultGate.gate(request, strict: true, task: task)
+    end
+
+    test "with no task supplied, the count check is skipped" do
+      request = build_request(over_count_reviewer())
+      assert :ok = CompletionResultGate.gate(request, strict: false)
+    end
+  end
+
+  defp task_with_one_criterion, do: %{acceptance_criteria: "Only one criterion"}
+
+  defp over_count_reviewer do
+    full_reviewer()
+    |> Map.put("acceptance_criteria", [
+      %{"criterion" => "X", "status" => "met"},
+      %{"criterion" => "Y", "status" => "met"}
+    ])
+    |> Map.put("acceptance_criteria_checked", 2)
+  end
+
   defp build_request(reviewer) do
     %{"explorer_result" => valid_explorer(), "reviewer_result" => reviewer}
   end
