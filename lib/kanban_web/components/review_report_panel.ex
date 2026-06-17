@@ -295,9 +295,10 @@ defmodule KanbanWeb.ReviewReportPanel do
   # --- Markdown ------------------------------------------------------------
 
   defp render_markdown(text) when is_binary(text) do
-    case Earmark.as_html(text, smartypants: false) do
-      {:ok, html, _warnings} -> html
-      {:error, html, _warnings} -> html
+    # case Earmark.as_html(text, smartypants: false) do
+    case MDEx.to_html(text) do
+      {:ok, html} -> html
+      {:error, html} -> html
     end
   end
 
