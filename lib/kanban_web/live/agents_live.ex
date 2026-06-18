@@ -181,13 +181,13 @@ defmodule KanbanWeb.AgentsLive do
 
   defp parse_filter("all"), do: :all
   defp parse_filter("claims"), do: :claims
-  defp parse_filter("hooks"), do: :hooks
+  defp parse_filter("reviewed"), do: :reviewed
   defp parse_filter("completions"), do: :completions
   defp parse_filter(_), do: :all
 
   defp filter_events(events, :all), do: events
   defp filter_events(events, :claims), do: Enum.filter(events, &(&1.kind == :claim))
-  defp filter_events(events, :hooks), do: Enum.filter(events, &(&1.kind == :hook))
+  defp filter_events(events, :reviewed), do: Enum.filter(events, &(&1.kind == :review))
   defp filter_events(events, :completions), do: Enum.filter(events, &(&1.kind == :complete))
 
   defp count_events_within_24h(events) do

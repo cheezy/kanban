@@ -384,7 +384,7 @@ msgstr "タスクを移動できません：列がWIP制限に達しています
 msgid "Created"
 msgstr "作成日"
 
-#: lib/kanban_web/components/review_report_panel.ex:402
+#: lib/kanban_web/components/review_report_panel.ex:403
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1342,7 +1342,7 @@ msgid "Pending"
 msgstr "保留中"
 
 #: lib/kanban_web/components/review_queue_item.ex:266
-#: lib/kanban_web/components/review_report_panel.ex:411
+#: lib/kanban_web/components/review_report_panel.ex:412
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:247
@@ -4828,7 +4828,7 @@ msgstr "子要素"
 msgid "Claimed"
 msgstr "クレーム済み"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:276
+#: lib/kanban_web/components/agent_activity_feed.ex:277
 #: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4897,33 +4897,28 @@ msgstr "作業中"
 msgid "Yes"
 msgstr "はい"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:287
+#: lib/kanban_web/components/agent_activity_feed.ex:288
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}時間 %{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:291
+#: lib/kanban_web/components/agent_activity_feed.ex:292
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:275
+#: lib/kanban_web/components/agent_activity_feed.ex:276
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "すべて"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:278
+#: lib/kanban_web/components/agent_activity_feed.ex:279
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "完了数"
-
-#: lib/kanban_web/components/agent_activity_feed.ex:277
-#, elixir-autogen, elixir-format
-msgid "Hooks"
-msgstr "フック"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:76
 #, elixir-autogen, elixir-format
@@ -5022,7 +5017,7 @@ msgstr "%{m}分前"
 msgid "%{s}s ago"
 msgstr "%{s}秒前"
 
-#: lib/kanban_web/components/review_report_panel.ex:410
+#: lib/kanban_web/components/review_report_panel.ex:411
 #: lib/kanban_web/components/review_stats_strip.ex:59
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -6130,7 +6125,7 @@ msgstr "%{name} にメール"
 msgid "Completed by %{name}"
 msgstr "完了者: %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:412
+#: lib/kanban_web/components/review_report_panel.ex:413
 #: lib/kanban_web/components/review_stats_strip.ex:79
 #: lib/kanban_web/review_report_helpers.ex:46
 #, elixir-autogen, elixir-format
@@ -6163,22 +6158,22 @@ msgstr "（説明なし）"
 msgid "Changes requested"
 msgstr "変更要求あり"
 
-#: lib/kanban_web/components/review_report_panel.ex:414
+#: lib/kanban_web/components/review_report_panel.ex:415
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "コード品質"
 
-#: lib/kanban_web/components/review_report_panel.ex:403
+#: lib/kanban_web/components/review_report_panel.ex:404
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "重要"
 
-#: lib/kanban_web/components/review_report_panel.ex:404
+#: lib/kanban_web/components/review_report_panel.ex:405
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "軽微"
 
-#: lib/kanban_web/components/review_report_panel.ex:413
+#: lib/kanban_web/components/review_report_panel.ex:414
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "テスト"
@@ -6316,7 +6311,7 @@ msgstr "報告中のプロジェクト"
 msgid "Met"
 msgstr "達成"
 
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:416
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr "プロジェクトチェック"
@@ -7150,3 +7145,8 @@ msgstr "タスクと矛盾しています: レビューには %{supplied} 件の
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "タスクと矛盾しています: レビューは %{checked} 件の受け入れ基準を確認済みと報告していますが、タスクは %{expected} 件を定義しています。件数は一致する必要があります"
+
+#: lib/kanban_web/components/agent_activity_feed.ex:278
+#, elixir-autogen, elixir-format
+msgid "Reviewed"
+msgstr "レビュー完了"

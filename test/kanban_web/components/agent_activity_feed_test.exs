@@ -73,8 +73,12 @@ defmodule KanbanWeb.AgentActivityFeedTest do
 
       assert html =~ ~s(data-agent-feed-tab="all")
       assert html =~ ~s(data-agent-feed-tab="claims")
-      assert html =~ ~s(data-agent-feed-tab="hooks")
+      assert html =~ ~s(data-agent-feed-tab="reviewed")
       assert html =~ ~s(data-agent-feed-tab="completions")
+
+      # The renamed tab surfaces the translated "Reviewed" label.
+      assert html =~ "Reviewed"
+      refute html =~ "Hooks"
     end
 
     test "highlights the active filter tab via aria-selected" do
@@ -85,10 +89,10 @@ defmodule KanbanWeb.AgentActivityFeedTest do
     end
 
     test "the active tab uses the ink background palette" do
-      html = render([], :hooks)
+      html = render([], :reviewed)
 
       assert html =~
-               ~r/data-agent-feed-tab="hooks"[^>]*style="[^"]*background: var\(--ink\)/
+               ~r/data-agent-feed-tab="reviewed"[^>]*style="[^"]*background: var\(--ink\)/
     end
 
     test "tab clicks emit the configured phx-click event with phx-value-filter" do

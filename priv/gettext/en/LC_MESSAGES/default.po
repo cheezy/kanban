@@ -384,7 +384,7 @@ msgstr ""
 msgid "Created"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:402
+#: lib/kanban_web/components/review_report_panel.ex:403
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -1342,7 +1342,7 @@ msgid "Pending"
 msgstr ""
 
 #: lib/kanban_web/components/review_queue_item.ex:266
-#: lib/kanban_web/components/review_report_panel.ex:411
+#: lib/kanban_web/components/review_report_panel.ex:412
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:247
@@ -4836,7 +4836,7 @@ msgstr ""
 msgid "Claimed"
 msgstr "Claimed"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:276
+#: lib/kanban_web/components/agent_activity_feed.ex:277
 #: lib/kanban_web/components/agent_roster_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4905,32 +4905,27 @@ msgstr "Working"
 msgid "Yes"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:287
+#: lib/kanban_web/components/agent_activity_feed.ex:288
 #: lib/kanban_web/components/agents_header.ex:151
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:291
+#: lib/kanban_web/components/agent_activity_feed.ex:292
 #: lib/kanban_web/components/agents_header.ex:154
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:275
+#: lib/kanban_web/components/agent_activity_feed.ex:276
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
 
-#: lib/kanban_web/components/agent_activity_feed.ex:278
+#: lib/kanban_web/components/agent_activity_feed.ex:279
 #, elixir-autogen, elixir-format
 msgid "Completions"
-msgstr ""
-
-#: lib/kanban_web/components/agent_activity_feed.ex:277
-#, elixir-autogen, elixir-format
-msgid "Hooks"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:76
@@ -5032,7 +5027,7 @@ msgstr ""
 msgid "%{s}s ago"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:410
+#: lib/kanban_web/components/review_report_panel.ex:411
 #: lib/kanban_web/components/review_stats_strip.ex:59
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -6145,7 +6140,7 @@ msgstr "Email %{name}"
 msgid "Completed by %{name}"
 msgstr "Completed by %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:412
+#: lib/kanban_web/components/review_report_panel.ex:413
 #: lib/kanban_web/components/review_stats_strip.ex:79
 #: lib/kanban_web/review_report_helpers.ex:46
 #, elixir-autogen, elixir-format
@@ -6178,22 +6173,22 @@ msgstr ""
 msgid "Changes requested"
 msgstr "Changes requested"
 
-#: lib/kanban_web/components/review_report_panel.ex:414
+#: lib/kanban_web/components/review_report_panel.ex:415
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "Code quality"
 
-#: lib/kanban_web/components/review_report_panel.ex:403
+#: lib/kanban_web/components/review_report_panel.ex:404
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:404
+#: lib/kanban_web/components/review_report_panel.ex:405
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "Minor"
 
-#: lib/kanban_web/components/review_report_panel.ex:413
+#: lib/kanban_web/components/review_report_panel.ex:414
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "Testing"
@@ -6331,7 +6326,7 @@ msgstr ""
 msgid "Met"
 msgstr ""
 
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:416
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr ""
@@ -7104,3 +7099,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr ""
+
+#: lib/kanban_web/components/agent_activity_feed.ex:278
+#, elixir-autogen, elixir-format
+msgid "Reviewed"
+msgstr "Reviewed"

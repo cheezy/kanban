@@ -4,7 +4,7 @@ defmodule KanbanWeb.AgentActivityFeed do
 
   Renders two stacked pieces:
 
-    * A row of filter tabs (`All / Claims / Hooks / Completions`). Tab
+    * A row of filter tabs (`All / Claims / Reviewed / Completions`). Tab
       clicks dispatch a `phx-click` event whose name is provided by the
       caller via `:on_filter_change`, with a `phx-value-filter` carrying
       the clicked tab's atom (as a string).
@@ -21,10 +21,10 @@ defmodule KanbanWeb.AgentActivityFeed do
   `KanbanWeb.TaskTokens.kind_tone/1` so the palette is shared with task
   status pills (claim ↔ doing, complete ↔ review, review ↔ done).
 
-  The `:hooks` filter tab is wired here for parity with the mobile design,
-  but `Kanban.Agents.Event` does not currently emit a `:hook` kind. The
-  upstream filter therefore decides which events to send — this component
-  renders whatever it is given.
+  The `:reviewed` filter tab maps to `:review` events: the upstream
+  `KanbanWeb.AgentsLive` translates `:reviewed` into a filter over events
+  whose `kind` is `:review`. This component stays purely presentational —
+  it renders whatever events it is given.
   """
   use KanbanWeb, :html
 
@@ -32,7 +32,7 @@ defmodule KanbanWeb.AgentActivityFeed do
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.TaskTokens
 
-  @filters [:all, :claims, :hooks, :completions]
+  @filters [:all, :claims, :reviewed, :completions]
 
   @doc """
   Renders the filter tabs and event-row feed.
@@ -42,7 +42,7 @@ defmodule KanbanWeb.AgentActivityFeed do
     * `events` — list of `%Kanban.Agents.Event{}` (or compatible map).
       Required.
     * `filter` — currently active filter atom; one of
-      `:all | :claims | :hooks | :completions`. Required.
+      `:all | :claims | :reviewed | :completions`. Required.
     * `on_filter_change` — `phx-click` event name fired when a tab is
       clicked. The clicked tab's atom is sent as `phx-value-filter`.
       Required.
@@ -275,7 +275,7 @@ defmodule KanbanWeb.AgentActivityFeed do
 
   defp filter_label(:all), do: gettext("All")
   defp filter_label(:claims), do: gettext("Claims")
-  defp filter_label(:hooks), do: gettext("Hooks")
+  defp filter_label(:reviewed), do: gettext("Reviewed")
   defp filter_label(:completions), do: gettext("Completions")
 
   defp format_time(%DateTime{} = dt) do

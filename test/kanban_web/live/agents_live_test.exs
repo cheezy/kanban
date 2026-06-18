@@ -166,7 +166,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ ~s(data-agent-feed-kind="claim")
     end
 
-    test "filtering to hooks renders the empty-state copy when no hook events exist",
+    test "filtering to reviewed renders the empty-state copy when no review events exist",
          %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board)
@@ -178,12 +178,46 @@ defmodule KanbanWeb.AgentsLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/agents")
 
-      hooks_html =
+      reviewed_html =
         view
-        |> element(~s([data-agent-feed-tab="hooks"]))
+        |> element(~s([data-agent-feed-tab="reviewed"]))
         |> render_click()
 
-      assert hooks_html =~ "data-agent-feed-empty"
+      assert reviewed_html =~ "data-agent-feed-empty"
+    end
+
+    test "filtering to reviewed shows only review events",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # A claim event (should be hidden under the Reviewed filter)
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      # A review event (should be the only one shown)
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          reviewed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      reviewed_html =
+        view
+        |> element(~s([data-agent-feed-tab="reviewed"]))
+        |> render_click()
+
+      assert reviewed_html =~ ~s(data-agent-feed-kind="review")
+      refute reviewed_html =~ ~s(data-agent-feed-kind="claim")
     end
   end
 
