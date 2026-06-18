@@ -822,6 +822,24 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(vs["example"])
     end
 
+    test "api_schema documents technical_details as a free-form object field (W1178)",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      schema = json_response(conn, 200)["api_schema"]
+
+      # Present as a task_field (optional, object type).
+      td_field = schema["task_fields"]["technical_details"]
+      assert td_field["type"] == "object"
+      assert td_field["required"] == false
+
+      # Present as an embedded_object with an example and, unlike
+      # testing_strategy, NO fixed valid_keys.
+      td_obj = schema["embedded_objects"]["technical_details"]
+      assert td_obj["type"] == "object"
+      assert is_map(td_obj["example"])
+      refute Map.has_key?(td_obj, "valid_keys")
+    end
+
     test "api_schema valid_capabilities matches Task.valid_capabilities", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       schema = json_response(conn, 200)["api_schema"]

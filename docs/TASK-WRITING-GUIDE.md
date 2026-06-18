@@ -564,10 +564,32 @@ In this example:
 - `testing_strategy` tells the agent to consider null priorities, combined filters, and persistence
 - `verification_steps` tells the agent exactly which test commands to run
 
+#### `technical_details` - Free-Form Technical Notes
+
+**Why useful:** Gives an agent a place to record any additional technical
+information that does not fit the other structured fields.
+
+The `technical_details` field is an **optional free-form JSON object**. Unlike
+`testing_strategy`, it has **no fixed keys** — record whatever technical
+information is useful (design decisions, migration notes, rollback plans,
+configuration, etc.). Any keys and values are accepted; nested objects and
+arrays are fine. Omitting it stores an empty object (`{}`).
+
+**Format:**
+
+```json
+"technical_details": {
+  "db_migration": "Adds a technical_details :map column with default {}",
+  "rollback": { "steps": ["Drop the technical_details column"] },
+  "notes": "Mirror the integration_points wiring throughout the schema"
+}
+```
+
 **Always structure these other fields:**
 
 - `verification_steps` - What to test (array of objects with step_type, step_text, expected_result)
 - `testing_strategy` - Overall testing approach (JSON object - see detailed format above)
+- `technical_details` - Free-form technical notes (JSON object, no fixed keys)
 - `pitfalls` - What NOT to do (array of strings)
 - `patterns_to_follow` - Code patterns to replicate (newline-separated string)
 - `acceptance_criteria` - Definition of done (newline-separated string)

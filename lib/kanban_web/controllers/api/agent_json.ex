@@ -1611,7 +1611,13 @@ defmodule KanbanWeb.API.AgentJSON do
         pitfalls: %{type: "array_of_strings", required: false},
         technology_requirements: %{type: "array_of_strings", required: false},
         security_considerations: %{type: "array_of_strings", required: false},
-        out_of_scope: %{type: "array_of_strings", required: false}
+        out_of_scope: %{type: "array_of_strings", required: false},
+        technical_details: %{
+          type: "object",
+          required: false,
+          description:
+            "Free-form JSON object for any additional technical information an agent wants to record. Unlike testing_strategy, it has no fixed keys — any keys and values are accepted."
+        }
       },
       embedded_objects: %{
         key_files: %{
@@ -1653,6 +1659,16 @@ defmodule KanbanWeb.API.AgentJSON do
             unit_tests: ["Test valid login", "Test invalid login"],
             edge_cases: ["Empty password", "SQL injection attempt"],
             coverage_target: "100% for auth module"
+          }
+        },
+        technical_details: %{
+          type: "object",
+          description:
+            "Free-form JSON object for arbitrary technical information. Unlike testing_strategy, it has NO fixed valid_keys — any keys and values are accepted.",
+          example: %{
+            db_migration: "Adds a technical_details :map column",
+            rollback: %{steps: ["Drop the column"]},
+            notes: "Mirror the integration_points wiring"
           }
         }
       },

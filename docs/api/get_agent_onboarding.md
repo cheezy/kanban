@@ -216,6 +216,26 @@ Each endpoint includes:
 
 Links to additional documentation and resources.
 
+### `api_schema`
+
+Machine-readable schema for the task fields accepted by the creation
+endpoints, split into `task_fields` (scalar/array fields) and
+`embedded_objects` (structured fields like `key_files`, `verification_steps`,
+and `testing_strategy`).
+
+Among the `task_fields`/`embedded_objects` is `technical_details` — an
+**optional free-form JSON object** for arbitrary technical information. Unlike
+`testing_strategy`, it has **no fixed `valid_keys`**: any keys and values
+(including nested objects and arrays) are accepted. Omitting it stores an empty
+object (`{}`). Example:
+
+```json
+"technical_details": {
+  "db_migration": "Adds a technical_details :map column",
+  "rollback": { "steps": ["Drop the column"] }
+}
+```
+
 ## Example Usage
 
 ### Get onboarding info
