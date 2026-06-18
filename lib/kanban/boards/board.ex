@@ -85,6 +85,7 @@ defmodule Kanban.Boards.Board do
     security_considerations
     testing_strategy
     integration_points
+    technical_details
   )
 
   @doc """

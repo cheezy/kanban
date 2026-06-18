@@ -11,6 +11,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.DependenciesSection
   import KanbanWeb.TaskLive.Components.IntegrationPointsSection
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
+  import KanbanWeb.TaskLive.Components.TechnicalDetailsSection
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
 
   import KanbanWeb.TaskVisuals
@@ -276,6 +277,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <%= if @task.integration_points && map_size(@task.integration_points) > 0 && field_visible?(@field_visibility, "integration_points") do %>
               <SectionHead.section_head title={gettext("Integration points")} />
               <.integration_points_section integration_points={@task.integration_points} />
+            <% end %>
+
+            <%= if @task.technical_details && map_size(@task.technical_details) > 0 && field_visible?(@field_visibility, "technical_details") do %>
+              <SectionHead.section_head title={gettext("Technical details")} />
+              <.technical_details_section technical_details={@task.technical_details} />
             <% end %>
 
             <%= if @task.status == :completed && (@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes) do %>

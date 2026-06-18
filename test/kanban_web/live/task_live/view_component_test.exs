@@ -28,7 +28,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       "required_capabilities" => true,
       "security_considerations" => true,
       "testing_strategy" => true,
-      "integration_points" => true
+      "integration_points" => true,
+      "technical_details" => true
     }
   end
 
@@ -95,6 +96,51 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "Column"
       assert result =~ column.name
+    end
+
+    test "shows the Technical details section when technical_details is non-empty and visible",
+         %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{technical_details: %{"approach" => "use Ecto.Multi"}})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Technical details"
+      assert result =~ "approach"
+      assert result =~ "use Ecto.Multi"
+    end
+
+    test "hides the Technical details section when technical_details is empty", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{technical_details: %{}})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Technical details"
+    end
+
+    test "hides the Technical details section when the field is not visible", %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{technical_details: %{"approach" => "use Ecto.Multi"}})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: Map.put(all_fields_visible(), "technical_details", false)
+        )
+
+      refute result =~ "Technical details"
     end
 
     test "displays Work type with blue badge", %{board: board} do

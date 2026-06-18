@@ -227,6 +227,16 @@
               />
               {gettext("Integration Points")}
             </label>
+            <label class="flex items-center text-sm cursor-pointer hover:bg-base-200 p-2 rounded">
+              <input
+                type="checkbox"
+                phx-click="toggle_field"
+                phx-value-field="technical_details"
+                checked={Map.get(@field_visibility, "technical_details", false)}
+                class="checkbox checkbox-sm mr-2"
+              />
+              {gettext("Technical Details")}
+            </label>
           </div>
         </div>
       <% end %>

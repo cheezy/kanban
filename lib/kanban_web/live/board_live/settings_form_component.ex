@@ -249,7 +249,8 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
       {"required_capabilities", gettext("Required Agent Capabilities")},
       {"security_considerations", gettext("Security Considerations")},
       {"testing_strategy", gettext("Testing Strategy")},
-      {"integration_points", gettext("Integration Points")}
+      {"integration_points", gettext("Integration Points")},
+      {"technical_details", gettext("Technical Details")}
     ]
   end
 end
