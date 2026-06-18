@@ -334,6 +334,23 @@
       </div>
     <% end %>
 
+    <%= if field_visible?(@field_visibility, "technical_details") do %>
+      <%!-- Technical Details (free-form JSON) Section --%>
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
+        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+          {gettext("Technical Details")}
+        </h3>
+        <.input
+          field={f[:technical_details]}
+          value={@technical_details_raw}
+          type="textarea"
+          label={gettext("Technical Details (JSON object)")}
+          rows="6"
+          placeholder={~S({"key": "value"})}
+        />
+      </div>
+    <% end %>
+
     <%= if field_visible?(@field_visibility, "technology_requirements") do %>
       <%!-- Technology Requirements Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">

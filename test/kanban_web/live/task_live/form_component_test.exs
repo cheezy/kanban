@@ -3635,4 +3635,175 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       refute Map.has_key?(result, "completed_at")
     end
   end
+
+  describe "technical_details JSON editor (W1177)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      board =
+        board
+        |> Ecto.Changeset.change(%{field_visibility: %{"technical_details" => true}})
+        |> Kanban.Repo.update!()
+
+      %{user: user, board: board, column: column}
+    end
+
+    defp td_socket(board, column, task) do
+      action = if is_nil(task.id), do: :new_task, else: :edit_task
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: action,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # The save path calls put_flash/3 and push_patch/2, which need a flash assign.
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
+    test "initial raw value is pretty-printed JSON for an existing map", %{
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{technical_details: %{"db" => "postgres"}})
+      socket = td_socket(board, column, task)
+
+      assert socket.assigns.technical_details_raw =~ ~s("db")
+      assert socket.assigns.technical_details_raw =~ ~s("postgres")
+      # pretty-printed output spans multiple lines
+      assert socket.assigns.technical_details_raw =~ "\n"
+    end
+
+    test "initial raw value is an empty string for an empty map", %{board: board, column: column} do
+      task = %Tasks.Task{column_id: column.id}
+      socket = td_socket(board, column, task)
+      assert socket.assigns.technical_details_raw == ""
+    end
+
+    test "validate with a valid JSON object decodes into the changeset without error", %{
+      board: board,
+      column: column
+    } do
+      socket = td_socket(board, column, %Tasks.Task{column_id: column.id})
+
+      {:noreply, updated} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "T", "technical_details" => ~s({"k": "v"})}},
+          socket
+        )
+
+      refute updated.assigns.form.source.errors[:technical_details]
+
+      assert Ecto.Changeset.get_field(updated.assigns.form.source, :technical_details) == %{
+               "k" => "v"
+             }
+
+      assert updated.assigns.technical_details_raw == ~s({"k": "v"})
+    end
+
+    test "validate with invalid JSON adds a friendly error and preserves the raw input", %{
+      board: board,
+      column: column
+    } do
+      socket = td_socket(board, column, %Tasks.Task{column_id: column.id})
+      raw = "{not json"
+
+      {:noreply, updated} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "T", "technical_details" => raw}},
+          socket
+        )
+
+      assert {"must be a JSON object", _} = updated.assigns.form.source.errors[:technical_details]
+      assert updated.assigns.technical_details_raw == raw
+    end
+
+    test "validate with a JSON array (non-object) is rejected", %{board: board, column: column} do
+      socket = td_socket(board, column, %Tasks.Task{column_id: column.id})
+
+      {:noreply, updated} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "T", "technical_details" => "[1, 2, 3]"}},
+          socket
+        )
+
+      assert updated.assigns.form.source.errors[:technical_details]
+      assert updated.assigns.technical_details_raw == "[1, 2, 3]"
+    end
+
+    test "validate with whitespace-only input is treated as an empty object", %{
+      board: board,
+      column: column
+    } do
+      socket = td_socket(board, column, %Tasks.Task{column_id: column.id})
+
+      {:noreply, updated} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "T", "technical_details" => "   "}},
+          socket
+        )
+
+      refute updated.assigns.form.source.errors[:technical_details]
+      assert Ecto.Changeset.get_field(updated.assigns.form.source, :technical_details) == %{}
+    end
+
+    test "save with a valid JSON object persists the map", %{board: board, column: column} do
+      task = task_fixture(column, %{title: "Persist"})
+      socket = td_socket(board, column, task)
+
+      {:noreply, _updated} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Persist", "technical_details" => ~s({"env": "prod"})}},
+          socket
+        )
+
+      assert Kanban.Repo.get!(Tasks.Task, task.id).technical_details == %{"env" => "prod"}
+    end
+
+    test "save with an empty textarea persists an empty object", %{board: board, column: column} do
+      task = task_fixture(column, %{title: "Empty", technical_details: %{"old" => "x"}})
+      socket = td_socket(board, column, task)
+
+      {:noreply, _updated} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Empty", "technical_details" => ""}},
+          socket
+        )
+
+      assert Kanban.Repo.get!(Tasks.Task, task.id).technical_details == %{}
+    end
+
+    test "save with invalid JSON surfaces an error and does not persist", %{
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Keep", technical_details: %{"keep" => "me"}})
+      socket = td_socket(board, column, task)
+
+      {:noreply, updated} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Keep", "technical_details" => "{bad"}},
+          socket
+        )
+
+      assert updated.assigns.form.source.errors[:technical_details]
+      assert updated.assigns.technical_details_raw == "{bad"
+      assert Kanban.Repo.get!(Tasks.Task, task.id).technical_details == %{"keep" => "me"}
+    end
+  end
 end

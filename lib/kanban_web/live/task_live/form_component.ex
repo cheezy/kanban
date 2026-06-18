@@ -27,7 +27,18 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(:goal_options, task_data.goal_options)
      |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:error_message, nil)
+     |> assign(:technical_details_raw, encode_technical_details(task_data.changeset))
      |> assign_form(task_data.changeset)}
+  end
+
+  # Render the current technical_details map as the textarea's initial value:
+  # an empty map shows an empty textarea; any populated map is pretty-printed.
+  defp encode_technical_details(%Ecto.Changeset{} = changeset) do
+    case Ecto.Changeset.get_field(changeset, :technical_details) do
+      map when map == %{} -> ""
+      map when is_map(map) -> Jason.encode!(map, pretty: true)
+      _ -> ""
+    end
   end
 
   defp prepare_task_data(task, board, action, assigns) do
@@ -70,21 +81,44 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   def handle_event("validate", %{"task" => task_params}, socket) do
     # Normalize params before validation to avoid false validation errors
     task_params = ParamNormalizer.normalize_array_params(task_params)
+    raw = Map.get(task_params, "technical_details")
+
+    {decoded_params, td_error} = decode_technical_details_for_changeset(task_params)
 
     changeset =
       socket.assigns.task
-      |> Tasks.Task.changeset(task_params)
+      |> Tasks.Task.changeset(decoded_params)
+      |> maybe_add_technical_details_error(td_error)
       |> Map.put(:action, :validate)
 
     {:noreply,
      socket
      |> assign(:error_message, nil)
+     |> maybe_assign_technical_details_raw(raw)
      |> assign_form(changeset)}
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
     task_params = ParamNormalizer.normalize_array_params(task_params)
-    save_task(socket, socket.assigns.action, task_params)
+    raw = Map.get(task_params, "technical_details")
+
+    case decode_technical_details(task_params) do
+      {:ok, decoded_params} ->
+        save_task(socket, socket.assigns.action, decoded_params)
+
+      {:error, _raw} ->
+        changeset =
+          socket.assigns.task
+          |> Tasks.Task.changeset(Map.delete(task_params, "technical_details"))
+          |> Ecto.Changeset.add_error(:technical_details, "must be a JSON object")
+          |> Map.put(:action, :validate)
+
+        {:noreply,
+         socket
+         |> assign(:error_message, gettext("Please fix the errors below"))
+         |> maybe_assign_technical_details_raw(raw)
+         |> assign_form(changeset)}
+    end
   end
 
   def handle_event("add_comment", %{"task_comment" => comment_params}, socket) do
@@ -305,6 +339,61 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       |> Ecto.Changeset.put_change(field, new_map)
 
     {:noreply, assign_form(socket, changeset)}
+  end
+
+  # Convert the technical_details textarea string into a map for the changeset.
+  #   - key absent (field hidden) or already a map (API path): passthrough
+  #   - empty / whitespace-only string: %{}
+  #   - valid JSON object: the decoded map
+  #   - valid JSON non-object (array/scalar) or invalid JSON: {:error, raw}
+  # Jason.decode/1 returns {:error, _} on garbage and never raises, so a
+  # malformed entry becomes a friendly changeset error rather than a crash.
+  defp decode_technical_details(task_params) do
+    case Map.fetch(task_params, "technical_details") do
+      :error -> {:ok, task_params}
+      {:ok, value} when is_map(value) -> {:ok, task_params}
+      {:ok, value} when is_binary(value) -> decode_technical_details_string(task_params, value)
+    end
+  end
+
+  defp decode_technical_details_string(task_params, raw) do
+    case String.trim(raw) do
+      "" ->
+        {:ok, Map.put(task_params, "technical_details", %{})}
+
+      trimmed ->
+        case Jason.decode(trimmed) do
+          {:ok, decoded} when is_map(decoded) ->
+            {:ok, Map.put(task_params, "technical_details", decoded)}
+
+          _ ->
+            {:error, raw}
+        end
+    end
+  end
+
+  # Variant for the validate path: on error, drop the uncastable string from the
+  # params (so Ecto does not emit a generic "is invalid" cast error) and signal
+  # :error so the caller can attach the friendly message.
+  defp decode_technical_details_for_changeset(task_params) do
+    case decode_technical_details(task_params) do
+      {:ok, params} -> {params, nil}
+      {:error, _raw} -> {Map.delete(task_params, "technical_details"), :error}
+    end
+  end
+
+  defp maybe_add_technical_details_error(changeset, nil), do: changeset
+
+  defp maybe_add_technical_details_error(changeset, :error) do
+    Ecto.Changeset.add_error(changeset, :technical_details, "must be a JSON object")
+  end
+
+  # Only refresh the raw assign when the textarea actually posted (field visible);
+  # when absent, keep the value set in update/2.
+  defp maybe_assign_technical_details_raw(socket, nil), do: socket
+
+  defp maybe_assign_technical_details_raw(socket, raw) when is_binary(raw) do
+    assign(socket, :technical_details_raw, raw)
   end
 
   defp save_task(socket, :edit_task, task_params) do
