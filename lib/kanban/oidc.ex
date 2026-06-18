@@ -51,11 +51,17 @@ defmodule Kanban.OIDC do
       client_secret: Keyword.fetch!(config, :client_secret),
       base_url: Keyword.fetch!(config, :issuer),
       redirect_uri: redirect_uri,
-      nonce: true,
+      nonce: nonce(),
       authorization_params: [
         scope: Keyword.get(config, :scopes, "openid email profile")
       ]
     ]
+  end
+
+  defp nonce do
+    16
+    |> :crypto.strong_rand_bytes()
+    |> Base.url_encode64(padding: false)
   end
 
   defp strategy_module do
