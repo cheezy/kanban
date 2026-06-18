@@ -45,6 +45,7 @@ TOKENS
 .stride-hook.log
 .stride-env-cache
 .stride-changed-files.json
+.stride-diff-upload-state
 priv/repo/seed_metrics_data.exs
 package.json
 package-lock.json
