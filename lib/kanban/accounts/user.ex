@@ -12,6 +12,7 @@ defmodule Kanban.Accounts.User do
     field :authenticated_at, :utc_datetime, virtual: true
 
     has_many :board_users, Kanban.Boards.BoardUser
+    has_many :user_identities, Kanban.Accounts.UserIdentity
     many_to_many :boards, Kanban.Boards.Board, join_through: Kanban.Boards.BoardUser
 
     timestamps(type: :utc_datetime)
@@ -69,6 +70,20 @@ defmodule Kanban.Accounts.User do
     |> validate_email(opts)
     |> validate_required([:password])
     |> validate_password(opts)
+  end
+
+  @doc """
+  A user changeset for externally authenticated OIDC users.
+
+  OIDC users are confirmed immediately because the identity provider has already
+  authenticated them.
+  """
+  def oidc_registration_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email, :name])
+    |> validate_name()
+    |> validate_email(opts)
+    |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
 
   # Disallow HTML/markup metacharacters and control characters (including CR/LF

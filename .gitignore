@@ -51,6 +51,8 @@ package-lock.json
 node_modules
 
 stride/
+!lib/mix/tasks/stride/
+!lib/mix/tasks/stride/**
 stride-copilot/
 stride-gemini/
 stride-ideation/

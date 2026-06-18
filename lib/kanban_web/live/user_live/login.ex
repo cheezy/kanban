@@ -28,6 +28,32 @@ defmodule KanbanWeb.UserLive.Login do
         </p>
       </div>
 
+      <div :if={@oidc_enabled} style="margin-top: 24px;">
+        <.link
+          id="sso-login-link"
+          href={~p"/users/sso"}
+          style={[
+            "height: 40px; border-radius: 6px;",
+            "background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong);",
+            "font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em;",
+            "display: inline-flex; align-items: center; justify-content: center; gap: 8px;",
+            "box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.12);",
+            "cursor: pointer; width: 100%; text-decoration: none;"
+          ]}
+        >
+          <.icon name="hero-key" class="h-4 w-4" />
+          {gettext("Sign in with %{provider}", provider: @oidc_display_name)}
+        </.link>
+
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 16px;">
+          <span style="height: 1px; flex: 1; background: var(--line);"></span>
+          <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
+            {gettext("or")}
+          </span>
+          <span style="height: 1px; flex: 1; background: var(--line);"></span>
+        </div>
+      </div>
+
       <.form
         :let={f}
         for={@form}
@@ -103,7 +129,13 @@ defmodule KanbanWeb.UserLive.Login do
 
     form = to_form(%{"email" => email}, as: "user")
 
-    {:ok, assign(socket, form: form, trigger_submit: false)}
+    {:ok,
+     assign(socket,
+       form: form,
+       trigger_submit: false,
+       oidc_enabled: Kanban.OIDC.enabled?(),
+       oidc_display_name: Kanban.OIDC.display_name()
+     )}
   end
 
   @impl true

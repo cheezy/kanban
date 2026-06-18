@@ -224,6 +224,8 @@ defmodule KanbanWeb.Router do
       live "/resources/:id", ResourcesLive.Show, :show
     end
 
+    get "/users/sso", OIDCController, :request
+    get "/users/sso/callback", OIDCController, :callback
     post "/users/register", UserSessionController, :register
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete

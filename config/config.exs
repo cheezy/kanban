@@ -24,6 +24,8 @@ config :kanban,
   ecto_repos: [Kanban.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :kanban, :oidc, enabled: false
+
 # Strict mode gate for PATCH /api/tasks/:id/complete explorer_result and
 # reviewer_result fields. When false (default), missing or invalid results
 # produce a structured warning log but the request succeeds (grace mode).
