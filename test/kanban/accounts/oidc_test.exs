@@ -15,7 +15,6 @@ defmodule Kanban.Accounts.OIDCTest do
         %{
           "sub" => "authentik-user-1",
           "email" => unique_user_email(),
-          "email_verified" => true,
           "name" => "SSO User",
           "groups" => []
         },
@@ -26,7 +25,6 @@ defmodule Kanban.Accounts.OIDCTest do
       %{
         issuer: @issuer,
         claims: claims,
-        require_verified_email: true,
         admin_group_claim: "groups",
         admin_groups: []
       },
@@ -52,7 +50,7 @@ defmodule Kanban.Accounts.OIDCTest do
                )
     end
 
-    test "links a new OIDC identity to an existing user by verified email" do
+    test "links a new OIDC identity to an existing user by email" do
       user = user_fixture()
       attrs = oidc_attrs(%{"email" => user.email, "sub" => "new-subject"})
 
@@ -65,7 +63,7 @@ defmodule Kanban.Accounts.OIDCTest do
       assert user_id == user.id
     end
 
-    test "confirms an existing unconfirmed user when linking by verified email" do
+    test "confirms an existing unconfirmed user when linking by email" do
       user = unconfirmed_user_fixture()
       attrs = oidc_attrs(%{"email" => user.email, "sub" => "new-subject"})
 
@@ -101,18 +99,6 @@ defmodule Kanban.Accounts.OIDCTest do
       attrs = oidc_attrs(%{"email" => nil})
 
       assert {:error, :missing_email} = Accounts.authenticate_oidc(attrs)
-    end
-
-    test "rejects unverified email when configured to require verification" do
-      attrs = oidc_attrs(%{"email_verified" => false})
-
-      assert {:error, :email_not_verified} = Accounts.authenticate_oidc(attrs)
-    end
-
-    test "allows unverified email when verification is not required" do
-      attrs = oidc_attrs(%{"email_verified" => false}, %{require_verified_email: false})
-
-      assert {:ok, %User{}} = Accounts.authenticate_oidc(attrs)
     end
 
     test "authoritatively promotes and demotes admins from OIDC groups" do

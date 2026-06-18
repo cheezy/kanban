@@ -76,7 +76,7 @@ defmodule Kanban.Accounts.User do
   A user changeset for externally authenticated OIDC users.
 
   OIDC users are confirmed immediately because the identity provider has already
-  authenticated them and, when configured, verified their email claim.
+  authenticated them.
   """
   def oidc_registration_changeset(user, attrs, opts \\ []) do
     user

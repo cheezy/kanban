@@ -14,11 +14,16 @@ defmodule Kanban.Accounts.OIDC do
   records the login, and applies authoritative admin group sync when configured.
   """
   def authenticate(attrs) when is_map(attrs) do
-    with {:ok, oidc} <- normalize_attrs(attrs),
-         {:ok, user} <- find_or_create_user(oidc),
-         {:ok, user} <- sync_admin_role(user, oidc),
-         {:ok, _identity} <- upsert_identity(user, oidc) do
-      {:ok, user}
+    with {:ok, oidc} <- normalize_attrs(attrs) do
+      Repo.transaction(fn ->
+        with {:ok, user} <- find_or_create_user(oidc),
+             {:ok, user} <- sync_admin_role(user, oidc),
+             {:ok, _identity} <- upsert_identity(user, oidc) do
+          user
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
     end
   end
 
@@ -30,8 +35,6 @@ defmodule Kanban.Accounts.OIDC do
       subject: claim(claims, "sub"),
       email: normalize_email(claim(claims, "email")),
       name: normalize_name(claim(claims, "name")),
-      email_verified: verified?(claim(claims, "email_verified")),
-      require_verified_email: Map.get(attrs, :require_verified_email, true),
       admin_group_claim: Map.get(attrs, :admin_group_claim, "groups"),
       admin_groups: Map.get(attrs, :admin_groups, []),
       claims: claims
@@ -48,9 +51,6 @@ defmodule Kanban.Accounts.OIDC do
 
   defp validate_oidc_attrs(%{email: email}) when email in [nil, ""],
     do: {:error, :missing_email}
-
-  defp validate_oidc_attrs(%{require_verified_email: true, email_verified: false}),
-    do: {:error, :email_not_verified}
 
   defp validate_oidc_attrs(oidc), do: {:ok, oidc}
 
@@ -168,10 +168,6 @@ defmodule Kanban.Accounts.OIDC do
   end
 
   defp normalize_name(_name), do: nil
-
-  defp verified?(true), do: true
-  defp verified?("true"), do: true
-  defp verified?(_), do: false
 
   defp normalize_groups(groups) when is_list(groups) do
     groups

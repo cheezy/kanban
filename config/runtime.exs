@@ -79,9 +79,6 @@ if oidc_issuer && oidc_client_id && oidc_client_secret do
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
 
-  require_verified_email =
-    System.get_env("STRIDE_OIDC_REQUIRE_VERIFIED_EMAIL", "true") not in ~w(false 0 no)
-
   config :kanban, :oidc,
     enabled: true,
     issuer: oidc_issuer,
@@ -89,7 +86,6 @@ if oidc_issuer && oidc_client_id && oidc_client_secret do
     client_secret: oidc_client_secret,
     display_name: System.get_env("STRIDE_OIDC_DISPLAY_NAME", "SSO"),
     scopes: System.get_env("STRIDE_OIDC_SCOPES", "openid email profile"),
-    require_verified_email: require_verified_email,
     admin_group_claim: System.get_env("STRIDE_OIDC_ADMIN_GROUP_CLAIM", "groups"),
     admin_groups: admin_groups
 else

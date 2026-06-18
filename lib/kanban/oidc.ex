@@ -38,7 +38,6 @@ defmodule Kanban.OIDC do
     %{
       issuer: Keyword.fetch!(config, :issuer),
       claims: claims,
-      require_verified_email: Keyword.get(config, :require_verified_email, true),
       admin_group_claim: Keyword.get(config, :admin_group_claim, "groups"),
       admin_groups: Keyword.get(config, :admin_groups, [])
     }

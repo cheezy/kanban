@@ -15,7 +15,6 @@ defmodule KanbanWeb.OIDCControllerTest.FakeStrategy do
            user: %{
              "sub" => "authentik-user-1",
              "email" => "oidc-user@example.com",
-             "email_verified" => true,
              "name" => "OIDC User",
              "groups" => ["stride-admins"]
            }
@@ -45,7 +44,6 @@ defmodule KanbanWeb.OIDCControllerTest do
       client_secret: "secret",
       display_name: "Authentik",
       scopes: "openid email profile",
-      require_verified_email: true,
       admin_group_claim: "groups",
       admin_groups: ["stride-admins"],
       strategy_module: KanbanWeb.OIDCControllerTest.FakeStrategy
