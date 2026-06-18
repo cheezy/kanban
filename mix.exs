@@ -67,6 +67,7 @@ defmodule Kanban.MixProject do
       {:castore, "~> 1.0"},
       {:chromic_pdf, "~> 1.17"},
       {:elixlsx, "~> 0.6"},
+      {:assent, "~> 0.3"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},

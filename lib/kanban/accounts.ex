@@ -6,6 +6,7 @@ defmodule Kanban.Accounts do
   import Ecto.Query, warn: false
   alias Kanban.Repo
 
+  alias Kanban.Accounts.OIDC
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserToken
@@ -315,6 +316,13 @@ defmodule Kanban.Accounts do
   """
   def admin?(%User{type: :admin}), do: true
   def admin?(_), do: false
+
+  ## OIDC
+
+  @doc """
+  Finds or provisions a confirmed Stride user from verified OIDC claims.
+  """
+  def authenticate_oidc(attrs), do: OIDC.authenticate(attrs)
 
   ## Session
 

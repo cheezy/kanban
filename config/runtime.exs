@@ -67,6 +67,35 @@ strict_completion_validation =
 
 config :kanban, :strict_completion_validation, strict_completion_validation
 
+oidc_issuer = System.get_env("STRIDE_OIDC_ISSUER")
+oidc_client_id = System.get_env("STRIDE_OIDC_CLIENT_ID")
+oidc_client_secret = System.get_env("STRIDE_OIDC_CLIENT_SECRET")
+
+if oidc_issuer && oidc_client_id && oidc_client_secret do
+  admin_groups =
+    "STRIDE_OIDC_ADMIN_GROUPS"
+    |> System.get_env("")
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+
+  require_verified_email =
+    System.get_env("STRIDE_OIDC_REQUIRE_VERIFIED_EMAIL", "true") not in ~w(false 0 no)
+
+  config :kanban, :oidc,
+    enabled: true,
+    issuer: oidc_issuer,
+    client_id: oidc_client_id,
+    client_secret: oidc_client_secret,
+    display_name: System.get_env("STRIDE_OIDC_DISPLAY_NAME", "SSO"),
+    scopes: System.get_env("STRIDE_OIDC_SCOPES", "openid email profile"),
+    require_verified_email: require_verified_email,
+    admin_group_claim: System.get_env("STRIDE_OIDC_ADMIN_GROUP_CLAIM", "groups"),
+    admin_groups: admin_groups
+else
+  config :kanban, :oidc, enabled: false
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

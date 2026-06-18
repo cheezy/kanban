@@ -1,10 +1,15 @@
 defmodule KanbanWeb.UserLive.LoginTest do
-  use KanbanWeb.ConnCase, async: true
+  use KanbanWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
 
   describe "login page" do
+    setup do
+      original = Application.get_env(:kanban, :oidc)
+      on_exit(fn -> Application.put_env(:kanban, :oidc, original) end)
+    end
+
     test "renders login page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
@@ -34,6 +39,23 @@ defmodule KanbanWeb.UserLive.LoginTest do
       [_, surface] = String.split(html, ~s(class="stride-screen"), parts: 2)
 
       refute surface =~ ~r/(text|bg|from|to|border)-blue-\d+/
+    end
+
+    test "does not show SSO button when OIDC is disabled", %{conn: conn} do
+      Application.put_env(:kanban, :oidc, enabled: false)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      refute has_element?(lv, "#sso-login-link")
+    end
+
+    test "shows SSO button when OIDC is enabled", %{conn: conn} do
+      Application.put_env(:kanban, :oidc, enabled: true, display_name: "Authentik")
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      assert has_element?(lv, "#sso-login-link[href='/users/sso']")
+      assert has_element?(lv, "#sso-login-link", "Sign in with Authentik")
     end
   end
 
