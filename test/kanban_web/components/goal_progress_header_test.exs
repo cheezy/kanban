@@ -212,6 +212,25 @@ defmodule KanbanWeb.GoalProgressHeaderTest do
     end
   end
 
+  describe "goal_progress_header/1 — total derivation" do
+    test "sums the per-status counts when flow omits :total" do
+      # No :total key forces the sum_statuses/1 fallback over the status map.
+      assigns = %{
+        goal: goal(),
+        flow: %{backlog: 1, ready: 2, doing: 1, review: 0, done: 4}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <GoalProgressHeader.goal_progress_header goal={@goal} flow={@flow} />
+        """)
+
+      # 4 done out of a derived total of 8 → 50%.
+      assert html =~ "50%"
+      assert html =~ "4 of 8 complete"
+    end
+  end
+
   describe "goal_progress_header/1 — optional why text" do
     test "omits the why paragraph when missing" do
       assigns = %{goal: goal(%{why: nil}), flow: flow(%{total: 1, done: 0})}
@@ -234,6 +253,30 @@ defmodule KanbanWeb.GoalProgressHeaderTest do
 
       # The <p> with max-width:720px would be present if rendered; refute its
       # distinctive style block.
+      refute html =~ "max-width: 720px"
+    end
+
+    test "treats an empty-string why as absent" do
+      assigns = %{goal: goal(%{why: ""}), flow: flow(%{total: 1, done: 0})}
+
+      html =
+        rendered_to_string(~H"""
+        <GoalProgressHeader.goal_progress_header goal={@goal} flow={@flow} />
+        """)
+
+      refute html =~ "max-width: 720px"
+    end
+
+    test "treats a non-string why as absent" do
+      # A non-binary value (e.g. an atom leaking through a dynamic map) is
+      # coerced to nil rather than rendered.
+      assigns = %{goal: goal(%{why: :unexpected}), flow: flow(%{total: 1, done: 0})}
+
+      html =
+        rendered_to_string(~H"""
+        <GoalProgressHeader.goal_progress_header goal={@goal} flow={@flow} />
+        """)
+
       refute html =~ "max-width: 720px"
     end
   end

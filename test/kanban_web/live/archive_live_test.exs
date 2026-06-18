@@ -632,6 +632,28 @@ defmodule KanbanWeb.ArchiveLiveTest do
       # rendering proves the :all fallback path executes.
     end
 
+    test "filter_archive with the \"all\" reason renders every archived row",
+         %{conn: conn, board: board, column: column} do
+      completed = task_fixture(column, %{title: "Completed one"})
+      cancelled = task_fixture(column, %{title: "Cancelled one"})
+      {:ok, _} = Tasks.archive_task(completed, %{archive_reason: :completed})
+
+      {:ok, _} =
+        Tasks.archive_task(cancelled, %{
+          archive_reason: :cancelled,
+          archive_note: "no longer needed"
+        })
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Narrow first, then widen back to "all" to exercise parse_filter("all").
+      render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+      html = render_click(index_live, "filter_archive", %{"reason" => "all"})
+
+      assert html =~ "Completed one"
+      assert html =~ "Cancelled one"
+    end
+
     test "filter narrowed to zero rows shows the empty-state copy",
          %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Only completed"})
@@ -776,6 +798,23 @@ defmodule KanbanWeb.ArchiveLiveTest do
 
       assert Kanban.Tasks.get_task!(old_task.id).archived_at != nil
       assert Kanban.Tasks.get_task!(recent_task.id).archived_at == nil
+    end
+
+    test "bulk_archive_old flashes the pluralized count when several tasks match",
+         %{conn: conn, board: board, column: column} do
+      column
+      |> task_fixture(%{title: "Old Done One"})
+      |> complete_task!(days_ago(45))
+
+      column
+      |> task_fixture(%{title: "Old Done Two"})
+      |> complete_task!(days_ago(50))
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "bulk_archive_old")
+
+      assert html =~ "Archived 2 completed tasks older than 30 days."
     end
 
     test "bulk_archive_old flashes the zero-count message when no tasks match",

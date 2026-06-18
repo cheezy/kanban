@@ -89,6 +89,16 @@ defmodule Kanban.ApiTokensTest do
       assert {:error, %Ecto.Changeset{}} = ApiTokens.create_api_token(user, board, @invalid_attrs)
     end
 
+    test "create_api_token/2 defaults attrs to an empty map and fails name validation" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               ApiTokens.create_api_token(user, board)
+
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
     test "revoke_api_token/1 marks the token as revoked" do
       user = user_fixture()
       board = board_fixture(user)

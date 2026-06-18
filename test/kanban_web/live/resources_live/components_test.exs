@@ -252,6 +252,84 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
       assert html =~ "py-0.5"
       assert html =~ "h-3 w-3"
     end
+
+    test "capitalizes an unrecognized type via the type_label fallback" do
+      html = render_component(&Components.content_type_badge/1, type: "webinar")
+
+      # Unknown types fall through to String.capitalize/1 and the generic icon.
+      assert html =~ "Webinar"
+      assert html =~ "hero-document"
+    end
+  end
+
+  describe "how_to_content/1 — SVG placeholder captions" do
+    test "renders the per-image placeholder caption for an .svg in step.images" do
+      steps = [
+        %{
+          title: "Diagram step",
+          content: "Content",
+          images: [%{url: "diagram.svg", width: 800, height: 450}]
+        }
+      ]
+
+      html =
+        render_component(&Components.how_to_content/1,
+          steps: steps,
+          render_markdown_fn: &simple_markdown/1
+        )
+
+      assert html =~ "Placeholder - 800 × 450px"
+    end
+
+    test "renders the single-image placeholder caption for an .svg step.image" do
+      steps = [
+        %{
+          title: "Screenshot step",
+          content: "Content",
+          image: "screenshot.svg",
+          image_width: 1024,
+          image_height: 576
+        }
+      ]
+
+      html =
+        render_component(&Components.how_to_content/1,
+          steps: steps,
+          render_markdown_fn: &simple_markdown/1
+        )
+
+      assert html =~ "Placeholder image - Replace with actual screenshot (1024 × 576px)"
+    end
+
+    test "omits the placeholder caption for a non-svg image" do
+      steps = [%{title: "PNG step", content: "Content", image: "screenshot.png"}]
+
+      html =
+        render_component(&Components.how_to_content/1,
+          steps: steps,
+          render_markdown_fn: &simple_markdown/1
+        )
+
+      refute html =~ "Placeholder image"
+    end
+  end
+
+  describe "category_illustration/1" do
+    test "falls back to the :default category for unrecognized tags" do
+      html = render_component(&Components.category_illustration/1, tags: ["something-unmapped"])
+
+      assert html =~ ~s(data-category="default")
+      assert html =~ "hero-book-open"
+      assert html =~ "from-info/30 to-secondary/30"
+      assert html =~ "text-info"
+    end
+
+    test "selects the getting_started category when its tag is present" do
+      html = render_component(&Components.category_illustration/1, tags: ["getting-started"])
+
+      assert html =~ ~s(data-category="getting_started")
+      assert html =~ "hero-rocket-launch"
+    end
   end
 
   describe "reading_time/1" do

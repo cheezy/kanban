@@ -95,6 +95,12 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
       assert String.starts_with?(result.area_path, "M0,130")
     end
 
+    test "places a single-point series at x=0 (no division by zero)" do
+      result = MetricsThroughputChart.compute_geometry([7])
+      assert [{x, _y}] = result.points
+      assert x == +0.0
+    end
+
     test "spaces points evenly across the 600-unit viewBox" do
       result = MetricsThroughputChart.compute_geometry([1, 1, 1, 1, 1])
       xs = Enum.map(result.points, &elem(&1, 0))

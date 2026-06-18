@@ -238,6 +238,16 @@ defmodule Kanban.AccountsTest do
       assert Repo.get_by(UserToken, user_id: user.id)
     end
 
+    test "does not update email with an undecodable token", %{user: user} do
+      # A token that is not valid Base64URL drives the decode `:error` branch
+      # in verify_change_email_token_query/2 rather than a failed lookup.
+      assert Accounts.update_user_email(user, "not valid base64 @@@") ==
+               {:error, :transaction_aborted}
+
+      assert Repo.get!(User, user.id).email == user.email
+      assert Repo.get_by(UserToken, user_id: user.id)
+    end
+
     test "does not update email if user email changed", %{user: user, token: token} do
       assert Accounts.update_user_email(%{user | email: "current@example.com"}, token) ==
                {:error, :transaction_aborted}

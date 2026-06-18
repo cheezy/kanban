@@ -23,6 +23,7 @@ defmodule Kanban.Tasks.GoalsTest do
 
   alias Kanban.Repo
   alias Kanban.Tasks
+  alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Task
 
   setup do
@@ -147,6 +148,46 @@ defmodule Kanban.Tasks.GoalsTest do
       assert Tasks.get_task!(goal.id).column_id == ready.id
       assert Tasks.get_task!(active_child.id).column_id == ready.id
       assert Tasks.get_task!(archived_child.id).column_id == backlog.id
+    end
+  end
+
+  describe "mark_after_goal_succeeded_and_promote/2 — Done column resolution" do
+    @attempt %{
+      "exit_code" => 0,
+      "output" => "after_goal hook succeeded",
+      "source" => "test"
+    }
+
+    test "flips to succeeded but stays put when the board has no Done column",
+         %{column: column, goal: goal} do
+      # The default board has a single non-Done column, so find_done_column/1
+      # returns nil and promotion becomes a no-op move.
+      assert {:ok, updated} = Goals.mark_after_goal_succeeded_and_promote(goal, @attempt)
+
+      assert updated.after_goal_status == :succeeded
+      assert Tasks.get_task!(goal.id).column_id == column.id
+    end
+
+    test "is a no-op move when the goal already sits in the Done column",
+         %{board: board} do
+      done = column_fixture(board, %{name: "Done"})
+      goal = task_fixture(done, %{title: "Done goal", type: :goal})
+
+      assert {:ok, updated} = Goals.mark_after_goal_succeeded_and_promote(goal, @attempt)
+
+      assert updated.after_goal_status == :succeeded
+      assert Tasks.get_task!(goal.id).column_id == done.id
+    end
+
+    test "moves the goal into the Done column when one exists elsewhere",
+         %{board: board, column: column, goal: goal} do
+      done = column_fixture(board, %{name: "Done"})
+
+      assert {:ok, updated} = Goals.mark_after_goal_succeeded_and_promote(goal, @attempt)
+
+      assert updated.after_goal_status == :succeeded
+      refute Tasks.get_task!(goal.id).column_id == column.id
+      assert Tasks.get_task!(goal.id).column_id == done.id
     end
   end
 end

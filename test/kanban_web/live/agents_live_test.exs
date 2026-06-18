@@ -112,6 +112,60 @@ defmodule KanbanWeb.AgentsLiveTest do
       refute completions_html =~ ~s(data-agent-feed-kind="claim")
     end
 
+    test "clicking the All tab after narrowing restores every event kind",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      view |> element(~s([data-agent-feed-tab="claims"])) |> render_click()
+
+      all_html =
+        view
+        |> element(~s([data-agent-feed-tab="all"]))
+        |> render_click()
+
+      assert all_html =~ ~s(data-agent-feed-kind="claim")
+      assert all_html =~ ~s(data-agent-feed-kind="complete")
+    end
+
+    test "an unrecognized filter value falls back to showing all events",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      # A value none of the explicit tab clauses match exercises the
+      # parse_filter/1 catch-all, which defaults to :all.
+      html = render_click(view, "filter_events", %{"filter" => "bogus-filter"})
+
+      assert html =~ ~s(data-agent-feed-kind="claim")
+    end
+
     test "filtering to hooks renders the empty-state copy when no hook events exist",
          %{conn: conn, user: user} do
       board = board_fixture(user)
@@ -166,6 +220,20 @@ defmodule KanbanWeb.AgentsLiveTest do
       updated = render(view)
 
       assert updated =~ ~s(data-agent-feed-kind="complete")
+    end
+
+    test "rapid agent events coalesce into a single debounced refresh", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      # The first event schedules a refresh; the second arrives while one is
+      # already pending and must be a no-op (the debounce guard), not a second
+      # timer. Both are handled without crashing the LiveView.
+      send(view.pid, {:agent_event, %{}})
+      send(view.pid, {:agent_event, %{}})
+
+      # A render round-trips through the LiveView process, proving it stayed
+      # alive after handling both messages.
+      assert render(view) =~ "data-agent-feed"
     end
 
     test "presence count reflects in the live indicator", %{conn: conn} do

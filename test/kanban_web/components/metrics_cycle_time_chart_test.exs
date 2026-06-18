@@ -115,6 +115,16 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
     end
   end
 
+  describe "cycle_time_chart/1 — degenerate data" do
+    test "renders gridlines but no bars for an empty data list" do
+      html = render_chart([])
+      # The chart_max falls back to the 150m baseline (Enum.max default).
+      assert html =~ "data-metrics-cycle-time-chart"
+      assert html =~ ~s(data-metrics-cycle-time-gridline="150")
+      assert Regex.scan(~r/data-metrics-cycle-time-bar(?!-)/, html) == []
+    end
+  end
+
   describe "cycle_time_chart/1 — accessibility and tokens" do
     test "no hardcoded Tailwind greys or daisyUI base colors" do
       html = render_chart(data())

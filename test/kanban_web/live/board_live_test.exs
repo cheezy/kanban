@@ -24,6 +24,20 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ board.name
     end
 
+    test "handle_info(:refresh_metrics) reloads the listing without crashing",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, index_live, _html} = live(conn, ~p"/boards")
+
+      # The periodic refresh timer is disabled in the test config, so drive the
+      # reload handler directly to exercise it.
+      send(index_live.pid, :refresh_metrics)
+
+      html = render(index_live)
+      assert html =~ board.name
+      assert html =~ "1 active"
+    end
+
     test "saves new board", %{conn: conn} do
       {:ok, form_live, _html} = live(conn, ~p"/boards/new")
 
