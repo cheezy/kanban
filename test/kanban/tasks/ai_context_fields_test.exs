@@ -484,4 +484,114 @@ defmodule Kanban.Tasks.AIContextFieldsTest do
       assert task.integration_points == %{}
     end
   end
+
+  describe "technical_details field (W1174)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, column: column}
+    end
+
+    test "accepts empty map for technical_details", %{column: column} do
+      attrs = %{title: "Test task", technical_details: %{}}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technical_details == %{}
+    end
+
+    test "accepts nil technical_details (normalized to empty map)", %{column: column} do
+      attrs = %{title: "Test task", technical_details: nil}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technical_details == %{}
+    end
+
+    test "defaults to empty map when not provided", %{column: column} do
+      attrs = %{title: "Test task"}
+      {:ok, task} = Tasks.create_task(column, attrs)
+      assert task.technical_details == %{}
+    end
+
+    test "accepts an arbitrary nested object with any keys/values (free-form)", %{column: column} do
+      attrs = %{
+        title: "Test task",
+        technical_details: %{
+          "approach" => "use Ecto.Multi",
+          "nested" => %{"k" => [1, 2, 3]},
+          "count" => 42,
+          "flags" => [true, false]
+        }
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.technical_details["approach"] == "use Ecto.Multi"
+      assert task.technical_details["nested"] == %{"k" => [1, 2, 3]}
+      assert task.technical_details["count"] == 42
+      assert task.technical_details["flags"] == [true, false]
+    end
+
+    test "rejects a non-map technical_details value", %{column: _column} do
+      task = %Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        technical_details: "not a map"
+      }
+
+      changeset = Task.changeset(task, %{})
+      refute changeset.valid?
+
+      assert "must be a JSON object" in errors_on(changeset).technical_details
+    end
+
+    test "rejects a list technical_details value", %{column: _column} do
+      task = %Task{
+        title: "Test task",
+        position: 0,
+        type: :work,
+        priority: :medium,
+        status: :open,
+        technical_details: ["not", "a", "map"]
+      }
+
+      changeset = Task.changeset(task, %{})
+      refute changeset.valid?
+
+      assert "must be a JSON object" in errors_on(changeset).technical_details
+    end
+
+    test "updates technical_details", %{column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          title: "Test task",
+          technical_details: %{"step" => "one"}
+        })
+
+      {:ok, updated_task} =
+        Tasks.update_task(task, %{
+          technical_details: %{"step" => "two", "extra" => %{"deep" => true}}
+        })
+
+      assert updated_task.technical_details == %{"step" => "two", "extra" => %{"deep" => true}}
+    end
+
+    test "coexists with the other AI context fields", %{column: column} do
+      attrs = %{
+        title: "Coexistence task",
+        security_considerations: ["Note"],
+        testing_strategy: %{"unit_tests" => ["t"]},
+        integration_points: %{"pubsub_broadcasts" => ["b"]},
+        technical_details: %{"design" => "documented"}
+      }
+
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      assert task.security_considerations == ["Note"]
+      assert task.testing_strategy == %{"unit_tests" => ["t"]}
+      assert task.integration_points == %{"pubsub_broadcasts" => ["b"]}
+      assert task.technical_details == %{"design" => "documented"}
+    end
+  end
 end

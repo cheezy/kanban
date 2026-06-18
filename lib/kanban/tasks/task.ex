@@ -52,6 +52,7 @@ defmodule Kanban.Tasks.Task do
   - `security_considerations` - Security implications
   - `testing_strategy` - Comprehensive testing approach
   - `integration_points` - External systems/events involved
+  - `technical_details` - Free-form technical implementation notes (any JSON object)
   - `technology_requirements` - Specific tools/libraries needed
 
   ### Observability
@@ -300,6 +301,10 @@ defmodule Kanban.Tasks.Task do
     # Example: %{"email_service" => "SendGrid", "pubsub" => ["UserPasswordReset", "UserNotified"]}
     field :integration_points, :map, default: %{}
 
+    # Free-form technical implementation notes - Validated: Map only (inner keys/values unvalidated)
+    # Example: %{"db_migration" => "Add column", "rollback" => %{"steps" => ["..."]}}
+    field :technical_details, :map, default: %{}
+
     # Creator Tracking
     # Agent model that created task - Example: "claude-sonnet-4-5", "gpt-4"
     field :created_by_agent, :string
@@ -491,6 +496,7 @@ defmodule Kanban.Tasks.Task do
       :security_considerations,
       :testing_strategy,
       :integration_points,
+      :technical_details,
       # Creator tracking (02)
       :created_by_id,
       :created_by_agent,
@@ -569,6 +575,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
+    |> validate_technical_details()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:assigned_to_id)
     |> foreign_key_constraint(:created_by_id)
@@ -614,6 +621,7 @@ defmodule Kanban.Tasks.Task do
     :security_considerations,
     :testing_strategy,
     :integration_points,
+    :technical_details,
     :dependencies,
     # Observability hints
     :telemetry_event,
@@ -680,6 +688,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
+    |> validate_technical_details()
     |> validate_varchar_255_lengths()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:created_by_id)
@@ -718,6 +727,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_security_considerations()
     |> validate_testing_strategy()
     |> validate_integration_points()
+    |> validate_technical_details()
     |> validate_varchar_255_lengths()
   end
 
@@ -863,6 +873,7 @@ defmodule Kanban.Tasks.Task do
     |> normalize_field(:security_considerations, [])
     |> normalize_field(:testing_strategy, %{})
     |> normalize_field(:integration_points, %{})
+    |> normalize_field(:technical_details, %{})
   end
 
   defp normalize_field(changeset, field, default) do
@@ -1197,6 +1208,22 @@ defmodule Kanban.Tasks.Task do
 
   defp validate_integration_points_values(changeset, points) do
     validate_string_or_string_list_map(changeset, :integration_points, points)
+  end
+
+  # Free-form: any map (including empty) is valid; only a non-map value is an
+  # error. Deliberately does NOT validate inner keys/values (contrast with
+  # validate_testing_strategy/validate_integration_points which constrain values).
+  defp validate_technical_details(changeset) do
+    case get_field(changeset, :technical_details) do
+      nil ->
+        changeset
+
+      %{} ->
+        changeset
+
+      _ ->
+        add_error(changeset, :technical_details, "must be a JSON object")
+    end
   end
 
   defp validate_string_or_string_list_map(changeset, field, map) do
