@@ -66,6 +66,7 @@ defmodule KanbanWeb.API.TaskJSON do
       security_considerations: task.security_considerations,
       testing_strategy: task.testing_strategy,
       integration_points: task.integration_points,
+      technical_details: task.technical_details,
       created_by_id: task.created_by_id,
       created_by_agent: task.created_by_agent,
       completed_at: task.completed_at,

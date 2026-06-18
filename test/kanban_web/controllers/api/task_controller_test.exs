@@ -4778,4 +4778,92 @@ defmodule KanbanWeb.API.TaskControllerTest do
       refute body["message"] =~ "unexpected"
     end
   end
+
+  describe "technical_details API (W1175)" do
+    test "POST /api/tasks persists and echoes technical_details", %{conn: conn, column: column} do
+      td = %{"approach" => "use Ecto.Multi", "steps" => ["a", "b"], "nested" => %{"k" => 1}}
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "TD Task", "column_id" => column.id, "technical_details" => td}
+        )
+
+      assert %{"id" => id, "technical_details" => ^td} = json_response(conn, 201)["data"]
+
+      conn = get(conn, ~p"/api/tasks/#{id}")
+      assert json_response(conn, 200)["data"]["technical_details"] == td
+    end
+
+    test "a task without technical_details serializes an empty object, not null", %{
+      conn: conn,
+      column: column
+    } do
+      conn =
+        post(conn, ~p"/api/tasks", task: %{"title" => "No TD", "column_id" => column.id})
+
+      assert json_response(conn, 201)["data"]["technical_details"] == %{}
+    end
+
+    test "POST /api/tasks rejects a non-object technical_details with 422", %{
+      conn: conn,
+      column: column
+    } do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "Bad TD", "column_id" => column.id, "technical_details" => "nope"}
+        )
+
+      assert json_response(conn, 422)["errors"] != %{}
+    end
+
+    test "PATCH /api/tasks/:id updates technical_details", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Patch TD",
+          "created_by_id" => user.id,
+          "technical_details" => %{"old" => "value"}
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"technical_details" => %{"new" => "value", "more" => [1, 2]}}
+        )
+
+      assert json_response(conn, 200)["data"]["technical_details"] == %{
+               "new" => "value",
+               "more" => [1, 2]
+             }
+    end
+
+    test "POST /api/tasks/batch persists technical_details on a nested task", %{conn: conn} do
+      td = %{"design" => "documented"}
+
+      goals_params = [
+        %{
+          "title" => "TD Goal",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "TD Child", "type" => "work", "technical_details" => td}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(conn, 201)
+
+      assert %{"success" => true, "goals" => goals} = response
+
+      # The batch response renders a minimal child summary; assert the field
+      # PERSISTED by fetching the created child through the full task JSON.
+      child_id =
+        goals |> Enum.at(0) |> Map.fetch!("child_tasks") |> Enum.at(0) |> Map.fetch!("id")
+
+      conn = get(conn, ~p"/api/tasks/#{child_id}")
+      assert json_response(conn, 200)["data"]["technical_details"] == td
+    end
+  end
 end
