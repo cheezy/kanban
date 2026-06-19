@@ -7246,3 +7246,28 @@ msgstr "休止中 (%{count})"
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days}日前に最終アクティブ"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Current work"
+msgstr "現在の作業"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "No active task"
+msgstr "アクティブなタスクなし"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Failures"
+msgstr "失敗"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Recent activity"
+msgstr "最近のアクティビティ"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "None"
+msgstr "なし"

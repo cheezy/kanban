@@ -7306,3 +7306,28 @@ msgstr "Inaktiv (%{count})"
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Zuletzt vor %{days} T"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Current work"
+msgstr "Aktuelle Arbeit"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "No active task"
+msgstr "Keine aktive Aufgabe"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Failures"
+msgstr "Fehlschläge"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "Recent activity"
+msgstr "Letzte Aktivität"
+
+#: lib/kanban_web/components/agent_detail_panel.ex
+#, elixir-autogen, elixir-format
+msgid "None"
+msgstr "Keine"
