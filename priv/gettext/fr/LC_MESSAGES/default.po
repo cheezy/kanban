@@ -2501,7 +2501,7 @@ msgstr "Temps que les tâches passent dans la file d'attente avant le début du 
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Temps que les tâches passent en attente de révision après achèvement"
 
-#: lib/kanban_web/components/agent_roster_card.ex:165
+#: lib/kanban_web/components/agent_roster_card.ex:176
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4812,7 +4812,7 @@ msgstr "Étapes de Vérification"
 msgid "today"
 msgstr "Aujourd'hui"
 
-#: lib/kanban_web/components/agent_roster_card.ex:166
+#: lib/kanban_web/components/agent_roster_card.ex:177
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7 j"
@@ -4838,7 +4838,7 @@ msgid "Claimed"
 msgstr "Réservé"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:277
-#: lib/kanban_web/components/agent_roster_card.ex:168
+#: lib/kanban_web/components/agent_roster_card.ex:179
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "Réservations"
@@ -4853,7 +4853,7 @@ msgstr "Fichiers estimés"
 msgid "Human task"
 msgstr "Tâche humaine"
 
-#: lib/kanban_web/components/agent_roster_card.ex:203
+#: lib/kanban_web/components/agent_roster_card.ex:214
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr "Inactif"
@@ -4868,7 +4868,7 @@ msgstr "Points d'Intégration"
 msgid "Review status"
 msgstr "Statut de relecture"
 
-#: lib/kanban_web/components/agent_roster_card.ex:167
+#: lib/kanban_web/components/agent_roster_card.ex:178
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "Succès"
@@ -4881,7 +4881,7 @@ msgstr "Succès"
 msgid "Testing strategy"
 msgstr "Stratégie de tests"
 
-#: lib/kanban_web/components/agent_roster_card.ex:202
+#: lib/kanban_web/components/agent_roster_card.ex:213
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "En attente de relecture"
@@ -4896,7 +4896,7 @@ msgstr "Où"
 msgid "Workflow steps"
 msgstr "Étapes du workflow"
 
-#: lib/kanban_web/components/agent_roster_card.ex:201
+#: lib/kanban_web/components/agent_roster_card.ex:212
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr "Au travail"
@@ -4988,7 +4988,7 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:243
+#: lib/kanban_web/live/agents_live.ex:247
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -7169,12 +7169,12 @@ msgstr "Détails techniques"
 msgid "Technical Details (JSON object)"
 msgstr "Détails techniques (objet JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:189
-#, elixir-autogen, elixir-format
-msgid "Clear agent filter"
-msgstr "Effacer le filtre d'agent"
-
 #: lib/kanban_web/live/agents_live.ex:184
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtré par %{agent}"
+
+#: lib/kanban_web/live/agents_live.ex:201
+#, elixir-autogen, elixir-format
+msgid "Clear"
+msgstr "Effacer"

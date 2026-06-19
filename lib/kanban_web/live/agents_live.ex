@@ -169,12 +169,12 @@ defmodule KanbanWeb.AgentsLive do
           <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
             <div
               :if={@selected_agent}
-              data-agent-filter-active
+              data-agent-filter-indicator
               data-selected-agent={@selected_agent}
               style={[
                 "display: inline-flex; align-items: center; gap: 8px;",
                 "align-self: flex-start;",
-                "margin-bottom: 12px; padding: 5px 6px 5px 12px;",
+                "margin-bottom: 12px; padding: 4px 4px 4px 12px;",
                 "background: var(--stride-violet-soft);",
                 "color: var(--stride-violet);",
                 "border-radius: 999px;",
@@ -186,15 +186,19 @@ defmodule KanbanWeb.AgentsLive do
                 type="button"
                 phx-click="clear_agent_filter"
                 data-clear-agent-filter
-                aria-label={gettext("Clear agent filter")}
+                class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={[
-                  "display: inline-flex; align-items: center; justify-content: center;",
-                  "width: 18px; height: 18px; padding: 0;",
-                  "border: none; border-radius: 50%; cursor: pointer;",
-                  "background: transparent; color: var(--stride-violet);"
+                  "display: inline-flex; align-items: center; gap: 4px;",
+                  "padding: 2px 9px;",
+                  "border: 1px solid var(--stride-violet); border-radius: 999px;",
+                  "background: transparent; color: var(--stride-violet);",
+                  "cursor: pointer; font-size: 11px; font-weight: 600; line-height: 1.4;"
                 ]}
               >
-                <.icon name="hero-x-mark" class="w-3.5 h-3.5" />
+                <span aria-hidden="true" style="display: inline-flex;">
+                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                </span>
+                <span>{gettext("Clear")}</span>
               </button>
             </div>
 

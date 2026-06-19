@@ -2499,7 +2499,7 @@ msgstr "作業が始まるまでキューで待機する時間"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
 
-#: lib/kanban_web/components/agent_roster_card.ex:165
+#: lib/kanban_web/components/agent_roster_card.ex:176
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4804,7 +4804,7 @@ msgstr "検証ステップ"
 msgid "today"
 msgstr "今日"
 
-#: lib/kanban_web/components/agent_roster_card.ex:166
+#: lib/kanban_web/components/agent_roster_card.ex:177
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7日"
@@ -4830,7 +4830,7 @@ msgid "Claimed"
 msgstr "クレーム済み"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:277
-#: lib/kanban_web/components/agent_roster_card.ex:168
+#: lib/kanban_web/components/agent_roster_card.ex:179
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "クレーム"
@@ -4845,7 +4845,7 @@ msgstr "見積もりファイル"
 msgid "Human task"
 msgstr "人間のタスク"
 
-#: lib/kanban_web/components/agent_roster_card.ex:203
+#: lib/kanban_web/components/agent_roster_card.ex:214
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr "アイドル"
@@ -4860,7 +4860,7 @@ msgstr "統合ポイント"
 msgid "Review status"
 msgstr "レビュー状態"
 
-#: lib/kanban_web/components/agent_roster_card.ex:167
+#: lib/kanban_web/components/agent_roster_card.ex:178
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "成功"
@@ -4873,7 +4873,7 @@ msgstr "成功"
 msgid "Testing strategy"
 msgstr "テスト戦略"
 
-#: lib/kanban_web/components/agent_roster_card.ex:202
+#: lib/kanban_web/components/agent_roster_card.ex:213
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "レビュー待ち"
@@ -4888,7 +4888,7 @@ msgstr "どこで"
 msgid "Workflow steps"
 msgstr "ワークフロー手順"
 
-#: lib/kanban_web/components/agent_roster_card.ex:201
+#: lib/kanban_web/components/agent_roster_card.ex:212
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr "作業中"
@@ -4979,7 +4979,7 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "過去24時間 · %{count}件のイベント"
 
-#: lib/kanban_web/live/agents_live.ex:243
+#: lib/kanban_web/live/agents_live.ex:247
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -7169,12 +7169,12 @@ msgstr "技術的な詳細"
 msgid "Technical Details (JSON object)"
 msgstr "技術的な詳細 (JSONオブジェクト)"
 
-#: lib/kanban_web/live/agents_live.ex:189
-#, elixir-autogen, elixir-format
-msgid "Clear agent filter"
-msgstr "エージェントフィルターをクリア"
-
 #: lib/kanban_web/live/agents_live.ex:184
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "%{agent} で絞り込み中"
+
+#: lib/kanban_web/live/agents_live.ex:201
+#, elixir-autogen, elixir-format
+msgid "Clear"
+msgstr "クリア"

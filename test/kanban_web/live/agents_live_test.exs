@@ -259,7 +259,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       # Claude's claim survives; Codex's completion is filtered out.
       assert claude_html =~ ~s(data-agent-feed-kind="claim")
       refute claude_html =~ ~s(data-agent-feed-kind="complete")
-      assert claude_html =~ "data-agent-filter-active"
+      assert claude_html =~ "data-agent-filter-indicator"
     end
 
     test "the kind filter and the agent filter compose",
@@ -341,7 +341,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       restored_html = view |> element(selector) |> render_click()
       assert restored_html =~ ~s(data-agent-feed-kind="claim")
       assert restored_html =~ ~s(data-agent-feed-kind="complete")
-      refute restored_html =~ "data-agent-filter-active"
+      refute restored_html =~ "data-agent-filter-indicator"
     end
 
     test "clear_agent_filter resets the selection and restores the full feed",
@@ -371,7 +371,7 @@ defmodule KanbanWeb.AgentsLiveTest do
         |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
         |> render_click()
 
-      assert narrowed_html =~ "data-agent-filter-active"
+      assert narrowed_html =~ "data-agent-filter-indicator"
       refute narrowed_html =~ ~s(data-agent-feed-kind="complete")
 
       cleared_html =
@@ -379,7 +379,7 @@ defmodule KanbanWeb.AgentsLiveTest do
         |> element(~s([data-clear-agent-filter]))
         |> render_click()
 
-      refute cleared_html =~ "data-agent-filter-active"
+      refute cleared_html =~ "data-agent-filter-indicator"
       assert cleared_html =~ ~s(data-agent-feed-kind="claim")
       assert cleared_html =~ ~s(data-agent-feed-kind="complete")
     end
@@ -415,9 +415,61 @@ defmodule KanbanWeb.AgentsLiveTest do
       send(view.pid, :refresh_agents_data)
 
       refreshed_html = render(view)
-      assert refreshed_html =~ "data-agent-filter-active"
+      assert refreshed_html =~ "data-agent-filter-indicator"
       assert refreshed_html =~ ~s(data-agent-feed-kind="claim")
       refute refreshed_html =~ ~s(data-agent-feed-kind="complete")
+    end
+
+    test "end-to-end: clicking a card shows the labeled indicator; Clear restores the feed",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+
+      # No agent selected yet: the indicator is absent and both kinds show.
+      refute html =~ "data-agent-filter-indicator"
+      assert html =~ ~s(data-agent-feed-kind="claim")
+      assert html =~ ~s(data-agent-feed-kind="complete")
+
+      # Click the Claude card: feed narrows and a discoverable, labeled
+      # indicator appears (name + visible "Clear" affordance).
+      filtered_html =
+        view
+        |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
+        |> render_click()
+
+      assert filtered_html =~ "data-agent-filter-indicator"
+      assert filtered_html =~ "Filtering by Claude"
+      assert filtered_html =~ "data-clear-agent-filter"
+      assert filtered_html =~ "Clear"
+      assert filtered_html =~ ~s(data-agent-feed-kind="claim")
+      refute filtered_html =~ ~s(data-agent-feed-kind="complete")
+
+      # Activate Clear: indicator disappears and the full feed returns.
+      restored_html =
+        view
+        |> element(~s([data-clear-agent-filter]))
+        |> render_click()
+
+      refute restored_html =~ "data-agent-filter-indicator"
+      assert restored_html =~ ~s(data-agent-feed-kind="claim")
+      assert restored_html =~ ~s(data-agent-feed-kind="complete")
     end
   end
 
