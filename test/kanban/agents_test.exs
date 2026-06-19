@@ -614,4 +614,88 @@ defmodule Kanban.AgentsTest do
       [%Agent{name: "Claude", owner: nil}] = Agents.list_agents()
     end
   end
+
+  describe "fleet_health/1" do
+    test "returns all zeros for an empty agent set" do
+      assert Agents.fleet_health() == %{working: 0, waiting: 0, idle: 0, stuck: 0}
+    end
+
+    test "counts agents per status with stuck as a cross-cutting count", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+      done = column_fixture(board, %{name: "Done"})
+
+      # working, not stuck
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Worker",
+          status: :in_progress,
+          claimed_at: ago(5)
+        })
+
+      # waiting (sitting in review), not stuck
+      {:ok, _} =
+        review
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Reviewer",
+          completed_by_agent: "Reviewer",
+          status: :in_progress,
+          completed_at: ago(5),
+          needs_review: true
+        })
+
+      # idle (only a done task)
+      {:ok, _} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Idler",
+          completed_by_agent: "Idler",
+          status: :completed,
+          completed_at: ago(5)
+        })
+
+      # working AND stuck (stalled in Doing past the threshold)
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Stalled",
+          status: :in_progress,
+          claimed_at: ago(90)
+        })
+
+      assert Agents.fleet_health() == %{working: 2, waiting: 1, idle: 1, stuck: 1}
+    end
+
+    test "all-idle agent set counts only idle", %{column: column} do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: ago(5)
+        })
+
+      assert Agents.fleet_health() == %{working: 0, waiting: 0, idle: 1, stuck: 0}
+    end
+
+    test "respects :scope board filtering", %{column: column} do
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Claude"})
+
+      other_scope = Scope.for_user(user_fixture())
+
+      assert Agents.fleet_health(scope: other_scope) == %{
+               working: 0,
+               waiting: 0,
+               idle: 0,
+               stuck: 0
+             }
+    end
+  end
 end

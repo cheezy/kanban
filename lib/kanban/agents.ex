@@ -136,6 +136,39 @@ defmodule Kanban.Agents do
     }
   end
 
+  @doc """
+  Returns fleet-health rollup counts for the scoped agent set.
+
+  The returned map carries one count per dimension:
+
+    * `:working` / `:waiting` / `:idle` — number of agents in each derived
+      `Agent.status`. These three partition the agent set.
+    * `:stuck` — number of agents whose `Agent.stuck` flag is set. Because
+      stuck-ness is orthogonal to status (see the "Stuck agents" section),
+      this is a cross-cutting count that overlaps the status buckets — a
+      stalled `:working` agent is counted in both `:working` and `:stuck`.
+
+  Counts are derived from `list_agents/1`, so the status and stuck rules are
+  shared verbatim (no drift) and the `:scope` board filtering is respected.
+  An empty agent set returns all zeros.
+  """
+  @spec fleet_health(keyword()) :: %{
+          working: non_neg_integer(),
+          waiting: non_neg_integer(),
+          idle: non_neg_integer(),
+          stuck: non_neg_integer()
+        }
+  def fleet_health(opts \\ []) do
+    agents = list_agents(opts)
+
+    %{
+      working: Enum.count(agents, &(&1.status == :working)),
+      waiting: Enum.count(agents, &(&1.status == :waiting)),
+      idle: Enum.count(agents, &(&1.status == :idle)),
+      stuck: Enum.count(agents, & &1.stuck)
+    }
+  end
+
   # --- Query helpers ---------------------------------------------------------
 
   defp fetch_tasks(opts) do
