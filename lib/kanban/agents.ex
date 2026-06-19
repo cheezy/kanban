@@ -48,15 +48,12 @@ defmodule Kanban.Agents do
   alias Kanban.Accounts.User
   alias Kanban.Agents.Agent
   alias Kanban.Agents.Event
+  alias Kanban.Agents.Metrics
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
   @default_event_limit 50
-
-  # Default number of trailing days in the throughput time-series window when
-  # the caller does not pass `:days`. One bucket per UTC date.
-  @default_trend_days 14
 
   # Sentinel recency for an agent with no tasks at all, so it sorts to the
   # bottom of the roster. Agents that have tasks always derive a real
@@ -129,16 +126,8 @@ defmodule Kanban.Agents do
   @doc """
   Returns aggregate header counters for the Agents view.
 
-  The returned map contains:
-
-    * `:claimed_today` — count of tasks whose `claimed_at` falls on the
-      current UTC date
-    * `:completed_today` — count of tasks whose `completed_at` falls on
-      the current UTC date
-    * `:approved_today` — count of tasks whose `reviewed_at` falls on the
-      current UTC date with `review_status` `:approved`
-    * `:avg_cycle_minutes` — average `time_spent_minutes` across completed
-      tasks where the value is set, or `0` when no qualifying tasks exist
+  Delegates to `Kanban.Agents.Metrics.header_stats/1`; see there for the
+  returned map shape.
   """
   @spec header_stats(keyword()) :: %{
           claimed_today: non_neg_integer(),
@@ -146,35 +135,13 @@ defmodule Kanban.Agents do
           approved_today: non_neg_integer(),
           avg_cycle_minutes: number()
         }
-  def header_stats(opts \\ []) do
-    tasks = fetch_tasks(opts)
-    today = Date.utc_today()
-
-    %{
-      claimed_today: count_on_day(tasks, :claimed_at, today),
-      completed_today: count_on_day(tasks, :completed_at, today),
-      approved_today: count_approved_on(tasks, today),
-      avg_cycle_minutes: avg_cycle_minutes(tasks)
-    }
-  end
+  def header_stats(opts \\ []), do: Metrics.header_stats(opts)
 
   @doc """
   Returns fleet-health rollup counts for the scoped agent set.
 
-  The returned map carries one count per dimension:
-
-    * `:working` / `:waiting` / `:idle` — number of agents in each derived
-      `Agent.status`. These three partition the agent set.
-    * `:stuck` — number of agents whose `Agent.stuck` flag is set. Because
-      stuck-ness is orthogonal to status (see the "Stuck agents" section),
-      this is a cross-cutting count that overlaps the status buckets — a
-      stalled `:working` agent is counted in both `:working` and `:stuck`.
-
-  Counts are derived from `list_agents/1`, so the status and stuck rules are
-  shared verbatim (no drift) and the `:scope` board filtering is respected.
-  **Dormant agents are excluded** (see the "Dormant agents" moduledoc
-  section), so the rollup reflects only live agents. An empty (or all-dormant)
-  agent set returns all zeros.
+  Delegates to `Kanban.Agents.Metrics.fleet_health/1`; see there for the
+  returned map shape and the dormant-exclusion rule.
   """
   @spec fleet_health(keyword()) :: %{
           working: non_neg_integer(),
@@ -182,38 +149,13 @@ defmodule Kanban.Agents do
           idle: non_neg_integer(),
           stuck: non_neg_integer()
         }
-  def fleet_health(opts \\ []) do
-    # Dormant agents are excluded so the rollup reflects only live agents — a
-    # long tail of weeks-idle agents must not inflate the idle bucket.
-    agents = opts |> list_agents() |> Enum.reject(& &1.dormant)
-    by_status = Enum.frequencies_by(agents, & &1.status)
-
-    %{
-      working: Map.get(by_status, :working, 0),
-      waiting: Map.get(by_status, :waiting, 0),
-      idle: Map.get(by_status, :idle, 0),
-      stuck: Enum.count(agents, & &1.stuck)
-    }
-  end
+  def fleet_health(opts \\ []), do: Metrics.fleet_health(opts)
 
   @doc """
   Returns fleet-wide throughput counts and an overall success rate.
 
-  Throughput is the number of tasks whose `completed_at` falls within each
-  window, counted once per task. The returned map contains:
-
-    * `:completed_today` — completions on the current UTC date
-    * `:completed_7d` — completions within the trailing 7-day window
-      (today and the six prior days)
-    * `:completed_30d` — completions within the trailing 30-day window
-    * `:success_rate` — approved over (approved + rejected) across the
-      visible tasks, as a float in `0.0..1.0`; `0.0` when no task has been
-      approved or rejected
-
-  Counts are derived directly from the visible Task set — not summed across
-  per-agent rollups — so a task touched by two agents is counted once, and
-  there is no double-count. `:scope` board filtering is respected. An empty
-  task set returns all zeros.
+  Delegates to `Kanban.Agents.Metrics.throughput_and_success/1`; see there for
+  the returned map shape.
   """
   @spec throughput_and_success(keyword()) :: %{
           completed_today: non_neg_integer(),
@@ -221,58 +163,27 @@ defmodule Kanban.Agents do
           completed_30d: non_neg_integer(),
           success_rate: float()
         }
-  def throughput_and_success(opts \\ []) do
-    tasks = fetch_tasks(opts)
-    today = Date.utc_today()
-
-    %{
-      completed_today: count_completed_on_day(tasks, today),
-      completed_7d: count_completed_within(tasks, today, 7),
-      completed_30d: count_completed_within(tasks, today, 30),
-      success_rate: success_rate(tasks)
-    }
-  end
+  def throughput_and_success(opts \\ []), do: Metrics.throughput_and_success(opts)
 
   @doc """
   Returns a per-day throughput time-series and an aggregate cycle-time metric.
 
-  Accepts an optional `:days` window (default `#{@default_trend_days}`). The
-  returned map contains:
-
-    * `:series` — one bucket per day across the trailing window, oldest
-      first, each a `%{date: Date.t(), count: non_neg_integer()}` where
-      `count` is the number of tasks completed on that UTC date. The series
-      always has exactly `:days` buckets (zero-filled), so a window with no
-      activity yields all-zero counts rather than a short list. A non-positive
-      `:days` yields an empty series.
-    * `:avg_cycle_minutes` — the average `time_spent_minutes` across completed
-      tasks with a recorded value, or `0.0` when none qualify. This reuses the
-      module's canonical cycle-time definition (`time_spent_minutes`, the same
-      value surfaced on `#{inspect(Event)}.cycle_time_minutes`) — no new
-      definition is introduced.
-
-  Buckets are keyed by `DateTime.to_date/1` of `completed_at`, which is stored
-  in UTC, so bucketing is deterministic and time-zone independent. `:scope`
-  board filtering is respected.
+  Delegates to `Kanban.Agents.Metrics.throughput_trends/1`; see there for the
+  returned map shape and the `:days` window option.
   """
   @spec throughput_trends(keyword()) :: %{
           series: [%{date: Date.t(), count: non_neg_integer()}],
           avg_cycle_minutes: number()
         }
-  def throughput_trends(opts \\ []) do
-    tasks = fetch_tasks(opts)
-    today = Date.utc_today()
-    days = Keyword.get(opts, :days, @default_trend_days)
-
-    %{
-      series: throughput_buckets(tasks, today, days),
-      avg_cycle_minutes: avg_cycle_minutes(tasks)
-    }
-  end
+  def throughput_trends(opts \\ []), do: Metrics.throughput_trends(opts)
 
   # --- Query helpers ---------------------------------------------------------
 
-  defp fetch_tasks(opts) do
+  @doc false
+  # Exposed (not part of the documented API) so `Kanban.Agents.Metrics` can
+  # share the single scoped task fetch. The visible, goal-excluded Task set
+  # with `:column`, `:created_by`, and `:completed_by` preloaded.
+  def fetch_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
     |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
@@ -447,11 +358,18 @@ defmodule Kanban.Agents do
 
   defp now_naive, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
-  defp count_completed_on_day(tasks, date) do
+  @doc false
+  # Exposed for `Kanban.Agents.Metrics`. Count of tasks completed on `date`
+  # (UTC date of `completed_at`). Also used by the roster's per-agent stats.
+  def count_completed_on_day(tasks, date) do
     Enum.count(tasks, &completed_on?(&1, date))
   end
 
-  defp count_completed_within(tasks, today, days) do
+  @doc false
+  # Exposed for `Kanban.Agents.Metrics`. Count of tasks completed within the
+  # trailing `days`-day window ending today (inclusive). Also used by the
+  # roster's per-agent stats.
+  def count_completed_within(tasks, today, days) do
     earliest = Date.add(today, -(days - 1))
 
     Enum.count(tasks, fn task ->
@@ -462,57 +380,17 @@ defmodule Kanban.Agents do
     end)
   end
 
-  # One zero-filled throughput bucket per UTC date across the trailing window,
-  # oldest first. Reuses completed_on?/2 so bucketing matches the rest of the
-  # module (UTC date of completed_at, time-zone independent). A non-positive
-  # window yields an empty series.
-  defp throughput_buckets(_tasks, _today, days) when days < 1, do: []
-
-  defp throughput_buckets(tasks, today, days) do
-    earliest = Date.add(today, -(days - 1))
-
-    earliest
-    |> Date.range(today)
-    |> Enum.map(fn date -> %{date: date, count: count_completed_on_day(tasks, date)} end)
-  end
-
-  defp success_rate(tasks) do
+  @doc false
+  # Exposed for `Kanban.Agents.Metrics`. Approved over (approved + rejected)
+  # across the given tasks, or `0.0` when none have been reviewed. Also used
+  # by the roster's per-agent success rate.
+  def success_rate(tasks) do
     approved = Enum.count(tasks, &(&1.review_status == :approved))
     rejected = Enum.count(tasks, &(&1.review_status == :rejected))
 
     case approved + rejected do
       0 -> 0.0
       total -> approved / total
-    end
-  end
-
-  # --- header_stats/1 --------------------------------------------------------
-
-  defp count_on_day(tasks, field, date) do
-    Enum.count(tasks, fn task ->
-      case Map.get(task, field) do
-        nil -> false
-        %DateTime{} = dt -> DateTime.to_date(dt) == date
-      end
-    end)
-  end
-
-  defp count_approved_on(tasks, date) do
-    Enum.count(tasks, fn task ->
-      task.review_status == :approved and not is_nil(task.reviewed_at) and
-        DateTime.to_date(task.reviewed_at) == date
-    end)
-  end
-
-  defp avg_cycle_minutes(tasks) do
-    minutes =
-      tasks
-      |> Enum.filter(&(not is_nil(&1.completed_at) and is_integer(&1.time_spent_minutes)))
-      |> Enum.map(& &1.time_spent_minutes)
-
-    case minutes do
-      [] -> 0.0
-      list -> Enum.sum(list) / length(list)
     end
   end
 
