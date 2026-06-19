@@ -1,7 +1,7 @@
 {
   "source_spec": "docs/ideation/2026-06-19T123205-agents-view-usefulness-requirements.md",
   "source_spec_sha256": "1696463e64e434fad97c26c18cca9dc154361790ad0566105466b8b8b90d7139",
-  "decomposition_notes": "Four goals, one per seam in the doc's '## Decomposition seams' section, per the explicit instruction that this initiative ships as multiple independent goals scheduled one at a time. Grounding verified against the codebase: the data layer is the read-only Kanban.Agents context (lib/kanban/agents.ex) deriving Agent/Event structs (lib/kanban/agents/agent.ex, event.ex) from Kanban.Tasks.Task; the web layer is KanbanWeb.AgentsLive (lib/kanban_web/live/agents_live.ex) composing AgentsHeader, AgentRosterCard, and AgentActivityFeed components, with AgentsPresence for the live indicator. Owner linkage data already exists: Task has belongs_to :created_by/:completed_by (Accounts.User) alongside the created_by_agent/completed_by_agent string fields, so the Owner-linkage goal needs no schema change (Constraint: read-only, no schema changes). Each goal spans the data->context->web layers for its own slice but those tasks are code-coupled within the slice (one Agent/Event field, one component) so they stay together. CLAIM ORDER across goals reflects doc-stated dependencies: G1 (Owner linkage) is foundational for 'show the person not the agent' and should be claimed first; G2 (Fleet health) explicitly depends on first fixing display bugs D83/D84/D85, so its first tasks are those defect fixes; G3 (PM trends) and G4 (Developer drill-down) are independent of each other and of G2, and may be claimed in any order after G1. No cross-goal array-index dependencies are encoded (the batch API cannot express them); within each goal tasks use array-index dependencies. Verification commands are limited to `mix test <path>` against existing test files/conventions and manual curl-of-localhost:4000 / browser checks, since no other test command is justified by the doc or codebase.",
+  "decomposition_notes": "Four goals, one per seam in the doc's '## Decomposition seams' section, per the explicit instruction that this initiative ships as multiple independent goals scheduled one at a time. Grounding verified against the codebase: the data layer is the read-only Kanban.Agents context (lib/kanban/agents.ex) deriving Agent/Event structs (lib/kanban/agents/agent.ex, event.ex) from Kanban.Tasks.Task; the web layer is KanbanWeb.AgentsLive (lib/kanban_web/live/agents_live.ex) composing AgentsHeader, AgentRosterCard, and AgentActivityFeed components, with AgentsPresence for the live indicator. Owner linkage data already exists: Task has belongs_to :created_by/:completed_by (Accounts.User) alongside the created_by_agent/completed_by_agent string fields, so the Owner-linkage goal needs no schema change (Constraint: read-only, no schema changes). Each goal spans the data->context->web layers for its own slice but those tasks are code-coupled within the slice (one Agent/Event field, one component) so they stay together. CLAIM ORDER across goals reflects doc-stated dependencies: G1 (Owner linkage) is foundational for 'show the person not the agent' and should be claimed first; G2 (Fleet health) explicitly depends on first fixing display bugs D83/D84/D85, so its first tasks are those defect fixes; G3 (PM trends) and G4 (Developer drill-down) are independent of each other and of G2, and may be claimed in any order after G1. No cross-goal array-index dependencies are encoded (the batch API cannot express them); within each goal tasks use array-index dependencies. Verification commands are limited to `mix test <path>` against existing test files/conventions and manual curl-of-localhost:4000 / browser checks, since no other test command is justified by the doc or codebase. EDIT (post-decomposition): the three 'Fix D83/D84/D85' tasks were removed from the fleet-health goal because those defects already exist as standalone Stride tasks (D83, D84, D85); claim and complete those first, then the fleet-health rollup tasks. The goal title was narrowed accordingly and the rollup tasks no longer carry an index dependency on the removed fixes.",
   "goals": [
     {
       "title": "Surface the human owner behind each agent across the /agents roster and feed",
@@ -247,7 +247,7 @@
       ]
     },
     {
-      "title": "Fix agent display bugs and add a fleet-health rollup to /agents",
+      "title": "Add a fleet-health rollup to /agents",
       "type": "goal",
       "complexity": "medium",
       "priority": "high",
@@ -264,171 +264,12 @@
       ],
       "tasks": [
         {
-          "title": "Fix D83 agent status mislabeling in Kanban.Agents status derivation",
-          "type": "defect",
-          "complexity": "small",
-          "priority": "high",
-          "needs_review": false,
-          "description": "Correct the agent status derivation so agents are labeled with the right status (the Agent.status currently supports :working | :waiting | :idle). D83 reports statuses being mislabeled; fix the classification logic in Kanban.Agents and cover with tests.",
-          "why": "The fleet-health rollup is only trustworthy once status labels are correct; D83 is a prerequisite called out in the doc.",
-          "what": "Fix the status classification in Kanban.Agents.build_agent / list_agents so each agent's derived status is accurate.",
-          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex",
-          "acceptance_criteria": "Agents are assigned the correct status from their Task-derived state\nRegression test reproduces the D83 mislabeling and now passes\nNo schema changes",
-          "patterns_to_follow": "Keep status derivation in the context; follow the existing build_agent pattern",
-          "pitfalls": [
-            "Do not change the Agent.status type values without confirming all consumers"
-          ],
-          "dependencies": [],
-          "key_files": [
-            {
-              "file_path": "lib/kanban/agents.ex",
-              "note": "Status classification fix",
-              "position": 0
-            },
-            {
-              "file_path": "test/kanban/agents_test.exs",
-              "note": "D83 regression coverage",
-              "position": 1
-            }
-          ],
-          "verification_steps": [
-            {
-              "step_type": "command",
-              "step_text": "mix test test/kanban/agents_test.exs",
-              "expected_result": "All tests pass; D83 regression case is covered and green",
-              "position": 0
-            }
-          ],
-          "testing_strategy": {
-            "unit_tests": [
-              "Working agent labeled :working",
-              "Waiting agent labeled :waiting",
-              "Idle agent labeled :idle"
-            ],
-            "integration_tests": [],
-            "manual_tests": [],
-            "edge_cases": [
-              "agent with overlapping signals",
-              "agent with no recent activity"
-            ],
-            "coverage_target": ""
-          }
-        },
-        {
-          "title": "Fix D84 roster/feed sort order",
-          "type": "defect",
-          "complexity": "small",
-          "priority": "high",
-          "needs_review": false,
-          "description": "Correct the sort order reported in D84 for the agents roster and/or activity feed so ordering is correct and stable. Confirm whether the bug is in list_agents ordering (currently Enum.sort by name) or recent_activity ordering and fix at the appropriate layer.",
-          "why": "Trustworthy ordering is a prerequisite for the health rollup; D84 is called out in the doc.",
-          "what": "Fix the ordering logic so the roster/feed display the correct, stable order.",
-          "where_context": "lib/kanban/agents.ex",
-          "acceptance_criteria": "Roster and feed display in the correct, stable order described by D84\nRegression test covers the corrected ordering\nNo schema changes",
-          "patterns_to_follow": "Keep ordering in the context queries/derivation, not the LiveView",
-          "pitfalls": [
-            "Do not introduce non-deterministic ordering \u2014 ties must break consistently"
-          ],
-          "dependencies": [],
-          "key_files": [
-            {
-              "file_path": "lib/kanban/agents.ex",
-              "note": "Sort-order fix",
-              "position": 0
-            },
-            {
-              "file_path": "test/kanban/agents_test.exs",
-              "note": "D84 ordering coverage",
-              "position": 1
-            }
-          ],
-          "verification_steps": [
-            {
-              "step_type": "command",
-              "step_text": "mix test test/kanban/agents_test.exs",
-              "expected_result": "All tests pass; ordering regression case green",
-              "position": 0
-            }
-          ],
-          "testing_strategy": {
-            "unit_tests": [
-              "Agents/events returned in expected order",
-              "Ties break deterministically"
-            ],
-            "integration_tests": [],
-            "manual_tests": [],
-            "edge_cases": [
-              "equal sort keys",
-              "empty list"
-            ],
-            "coverage_target": ""
-          }
-        },
-        {
-          "title": "Fix D85 stat overlap in the agents header and roster stats",
-          "type": "defect",
-          "complexity": "small",
-          "priority": "high",
-          "needs_review": false,
-          "description": "Correct the D85 stat overlap so header_stats and per-agent stats (today, last_7d, success_rate, claim_count) no longer double-count or overlap. Fix in Kanban.Agents.header_stats / build_agent and the AgentsHeader rendering as needed.",
-          "why": "Overlapping stats make the page untrustworthy; D85 is a prerequisite for the health rollup.",
-          "what": "Fix the stat aggregation so counts are correct and non-overlapping.",
-          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex, lib/kanban_web/components/agents_header.ex",
-          "acceptance_criteria": "Header stats and per-agent stats are correct with no double-counting/overlap\nRegression test covers the corrected aggregation\nHeader renders correctly in light and dark mode\nNo schema changes",
-          "patterns_to_follow": "Keep aggregation in header_stats/build_agent; follow existing agents_header markup",
-          "pitfalls": [
-            "Do not change stat field names consumed by the header without updating the header",
-            "Do not hardcode colors in the header"
-          ],
-          "dependencies": [],
-          "key_files": [
-            {
-              "file_path": "lib/kanban/agents.ex",
-              "note": "header_stats / stat aggregation fix",
-              "position": 0
-            },
-            {
-              "file_path": "lib/kanban_web/components/agents_header.ex",
-              "note": "Stat rendering fix",
-              "position": 1
-            },
-            {
-              "file_path": "test/kanban_web/components/agents_header_test.exs",
-              "note": "D85 coverage",
-              "position": 2
-            }
-          ],
-          "verification_steps": [
-            {
-              "step_type": "command",
-              "step_text": "mix test test/kanban/agents_test.exs test/kanban_web/components/agents_header_test.exs",
-              "expected_result": "All tests pass; D85 regression case green",
-              "position": 0
-            }
-          ],
-          "testing_strategy": {
-            "unit_tests": [
-              "header_stats counts are non-overlapping",
-              "per-agent stats sum correctly"
-            ],
-            "integration_tests": [],
-            "manual_tests": [
-              "Header visual check in both modes"
-            ],
-            "edge_cases": [
-              "agent active across multiple stat windows",
-              "zero activity"
-            ],
-            "coverage_target": ""
-          }
-        },
-        {
           "title": "Add stuck-agent classification to Kanban.Agents",
           "type": "work",
           "complexity": "small",
           "priority": "high",
           "needs_review": false,
-          "description": "Extend agent status derivation so an agent that has stalled or is sitting in review past a reasonable threshold is classified as stuck (in addition to working/waiting/idle), purely from existing Task timestamps (claimed_at, reviewed_at, review_status, completed_at). This powers the rollup's emphasis on stuck agents and the stuck-agent-detection-time metric.",
+          "description": "Extend agent status derivation so an agent that has stalled or is sitting in review past a reasonable threshold is classified as stuck (in addition to working/waiting/idle), purely from existing Task timestamps (claimed_at, reviewed_at, review_status, completed_at). This powers the rollup's emphasis on stuck agents and the stuck-agent-detection-time metric. (Prerequisite: standalone defects D83, D84, and D85 must be fixed first; they are tracked separately and are not part of this goal.)",
           "why": "The doc's lagging metric is reducing stuck-agent detection time; the page cannot emphasize stuck agents without first deriving stuck-ness.",
           "what": "Add a stuck classification (e.g. extend Agent.status or a derived flag) computed from existing timestamps, with a documented threshold.",
           "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex",
@@ -438,9 +279,7 @@
             "Do not require a schema field for stuck-ness \u2014 derive it from timestamps",
             "Build on the D83 fix; do not reintroduce mislabeling"
           ],
-          "dependencies": [
-            0
-          ],
+          "dependencies": [],
           "key_files": [
             {
               "file_path": "lib/kanban/agents/agent.ex",
@@ -497,7 +336,7 @@
             "Do not recompute status differently from list_agents \u2014 share the derivation to avoid drift"
           ],
           "dependencies": [
-            3
+            0
           ],
           "key_files": [
             {
@@ -552,7 +391,7 @@
             "Do not hardcode colors for the emphasis styling"
           ],
           "dependencies": [
-            4
+            1
           ],
           "key_files": [
             {
