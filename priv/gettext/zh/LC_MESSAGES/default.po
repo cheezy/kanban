@@ -2499,7 +2499,7 @@ msgstr "任务在队列中等待开始的时间"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "任务完成后等待人工审查的时间"
 
-#: lib/kanban_web/components/agent_roster_card.ex:176
+#: lib/kanban_web/components/agent_roster_card.ex:190
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4804,7 +4804,7 @@ msgstr "验证步骤"
 msgid "today"
 msgstr "今天"
 
-#: lib/kanban_web/components/agent_roster_card.ex:177
+#: lib/kanban_web/components/agent_roster_card.ex:191
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7 天"
@@ -4830,7 +4830,7 @@ msgid "Claimed"
 msgstr "已认领"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:277
-#: lib/kanban_web/components/agent_roster_card.ex:179
+#: lib/kanban_web/components/agent_roster_card.ex:193
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "认领"
@@ -4845,7 +4845,7 @@ msgstr "预估文件"
 msgid "Human task"
 msgstr "人工任务"
 
-#: lib/kanban_web/components/agent_roster_card.ex:214
+#: lib/kanban_web/components/agent_roster_card.ex:230
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr "空闲"
@@ -4860,7 +4860,7 @@ msgstr "集成点"
 msgid "Review status"
 msgstr "审核状态"
 
-#: lib/kanban_web/components/agent_roster_card.ex:178
+#: lib/kanban_web/components/agent_roster_card.ex:192
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "成功"
@@ -4873,7 +4873,7 @@ msgstr "成功"
 msgid "Testing strategy"
 msgstr "测试策略"
 
-#: lib/kanban_web/components/agent_roster_card.ex:213
+#: lib/kanban_web/components/agent_roster_card.ex:229
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "等待审核"
@@ -4888,7 +4888,7 @@ msgstr "在哪里"
 msgid "Workflow steps"
 msgstr "工作流步骤"
 
-#: lib/kanban_web/components/agent_roster_card.ex:212
+#: lib/kanban_web/components/agent_roster_card.ex:228
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr "工作中"
@@ -7178,3 +7178,8 @@ msgstr "按 %{agent} 筛选"
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
+
+#: lib/kanban_web/components/agent_roster_card.ex:88
+#, elixir-autogen, elixir-format
+msgid "Operator"
+msgstr "操作员"

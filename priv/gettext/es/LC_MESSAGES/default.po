@@ -2501,7 +2501,7 @@ msgstr "Tiempo que las tareas pasan en cola antes de comenzar el trabajo"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Tiempo que las tareas esperan revisión después del completado"
 
-#: lib/kanban_web/components/agent_roster_card.ex:176
+#: lib/kanban_web/components/agent_roster_card.ex:190
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4812,7 +4812,7 @@ msgstr "Pasos de Verificación"
 msgid "today"
 msgstr "Hoy"
 
-#: lib/kanban_web/components/agent_roster_card.ex:177
+#: lib/kanban_web/components/agent_roster_card.ex:191
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7d"
@@ -4838,7 +4838,7 @@ msgid "Claimed"
 msgstr "Reclamado"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:277
-#: lib/kanban_web/components/agent_roster_card.ex:179
+#: lib/kanban_web/components/agent_roster_card.ex:193
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "Reclamos"
@@ -4853,7 +4853,7 @@ msgstr "Archivos estimados"
 msgid "Human task"
 msgstr "Tarea humana"
 
-#: lib/kanban_web/components/agent_roster_card.ex:214
+#: lib/kanban_web/components/agent_roster_card.ex:230
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr "Inactivo"
@@ -4868,7 +4868,7 @@ msgstr "Puntos de Integración"
 msgid "Review status"
 msgstr "Estado de revisión"
 
-#: lib/kanban_web/components/agent_roster_card.ex:178
+#: lib/kanban_web/components/agent_roster_card.ex:192
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "Éxito"
@@ -4881,7 +4881,7 @@ msgstr "Éxito"
 msgid "Testing strategy"
 msgstr "Estrategia de pruebas"
 
-#: lib/kanban_web/components/agent_roster_card.ex:213
+#: lib/kanban_web/components/agent_roster_card.ex:229
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "Esperando revisión"
@@ -4896,7 +4896,7 @@ msgstr "Dónde"
 msgid "Workflow steps"
 msgstr "Pasos del flujo de trabajo"
 
-#: lib/kanban_web/components/agent_roster_card.ex:212
+#: lib/kanban_web/components/agent_roster_card.ex:228
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr "Trabajando"
@@ -7231,3 +7231,8 @@ msgstr "Filtrando por %{agent}"
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Borrar"
+
+#: lib/kanban_web/components/agent_roster_card.ex:88
+#, elixir-autogen, elixir-format
+msgid "Operator"
+msgstr "Operador"

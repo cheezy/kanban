@@ -51,6 +51,58 @@ defmodule KanbanWeb.AgentRosterCardTest do
     end
   end
 
+  describe "card/1 — owner line" do
+    test "renders the owner name alongside the agent name when present" do
+      assigns = %{
+        agent: agent(%{name: "Claude", owner: %{id: 1, name: "Jeffrey", email: "j@x.io"}})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      assert html =~ "data-agent-owner"
+      assert html =~ "Claude"
+      assert html =~ "Jeffrey"
+    end
+
+    test "falls back to the owner email when the owner has no name" do
+      assigns = %{agent: agent(%{owner: %{id: 1, name: nil, email: "owner@example.com"}})}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      assert html =~ "data-agent-owner"
+      assert html =~ "owner@example.com"
+    end
+
+    test "renders the agent name only when owner is nil (no broken layout)" do
+      assigns = %{agent: agent(%{name: "Codex", owner: nil})}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      assert html =~ "Codex"
+      refute html =~ "data-agent-owner"
+    end
+
+    test "owner line uses the muted ink token, not a hardcoded color" do
+      assigns = %{agent: agent(%{owner: %{id: 1, name: "Jeffrey", email: "j@x.io"}})}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      assert html =~ "color: var(--ink-3)"
+    end
+  end
+
   describe "card/1 — status dot animation and token color" do
     test "renders the sp-pulse animation on the status dot" do
       assigns = %{agent: agent()}

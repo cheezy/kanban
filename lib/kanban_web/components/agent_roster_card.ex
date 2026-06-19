@@ -24,8 +24,10 @@ defmodule KanbanWeb.AgentRosterCard do
   ## Attrs
 
     * `agent` — a `%Kanban.Agents.Agent{}` struct (or equivalent map)
-      with `:name`, `:status`, `:current_task`, `:capabilities`,
-      `:today`, `:last_7d`, `:success_rate`, and `:claim_count`.
+      with `:name`, `:owner`, `:status`, `:current_task`, `:capabilities`,
+      `:today`, `:last_7d`, `:success_rate`, and `:claim_count`. The
+      `:owner` (a `%{name, email}`-shaped map or `nil`) renders as a
+      secondary line under the agent name when present.
     * `on_select` — optional LiveView event name fired (with a
       `phx-value-agent` of the agent's name) when the card is activated.
       When set, the card becomes a keyboard-operable button (role,
@@ -79,6 +81,18 @@ defmodule KanbanWeb.AgentRosterCard do
             "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
           ]}>
             {@agent.name}
+          </div>
+          <div
+            :if={owner_label(@agent.owner)}
+            data-agent-owner
+            aria-label={gettext("Operator")}
+            style={[
+              "font-size: 11px; font-weight: 500;",
+              "color: var(--ink-3);",
+              "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+            ]}
+          >
+            {owner_label(@agent.owner)}
           </div>
         </div>
         <.status_dot status={@agent.status} />
@@ -220,4 +234,11 @@ defmodule KanbanWeb.AgentRosterCard do
   end
 
   defp format_percent(_), do: "0%"
+
+  # Derives the display label for the human owner behind an agent. Prefers
+  # the owner's name, falls back to their email, and returns nil when no
+  # owner is present so the card renders the agent name alone.
+  defp owner_label(%{name: name}) when is_binary(name) and name != "", do: name
+  defp owner_label(%{email: email}) when is_binary(email) and email != "", do: email
+  defp owner_label(_), do: nil
 end
