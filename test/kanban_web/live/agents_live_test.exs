@@ -52,6 +52,46 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "roster ordering" do
+    setup [:register_and_log_in_user]
+
+    test "renders the most recently active agent first in the roster",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      recent = DateTime.utc_now() |> DateTime.truncate(:second)
+      older = DateTime.add(recent, -3600, :second)
+
+      # "Zoe" is alphabetically last but most recently active, so the roster
+      # must render her card above "Adam".
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Adam", claimed_at: older})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Zoe", claimed_at: recent})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      roster = roster_html(html)
+      assert {zoe, _} = :binary.match(roster, "Zoe")
+      assert {adam, _} = :binary.match(roster, "Adam")
+      assert zoe < adam
+    end
+  end
+
+  # Slices the rendered page down to the roster region (between the roster
+  # container marker and the activity feed) so ordering assertions are not
+  # confused by agent names that also appear in the feed.
+  defp roster_html(html) do
+    [_, rest] = String.split(html, "data-agents-roster", parts: 2)
+    [roster, _] = String.split(rest, "data-agent-feed", parts: 2)
+    roster
+  end
+
   describe "unauthenticated access" do
     test "redirects to the log-in page when the user is not signed in", %{conn: conn} do
       assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/agents")

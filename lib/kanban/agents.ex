@@ -30,21 +30,34 @@ defmodule Kanban.Agents do
 
   @default_event_limit 50
 
+  # Sentinel recency for an agent with no tasks at all, so it sorts to the
+  # bottom of the roster. Agents that have tasks always derive a real
+  # timestamp from `task_recency/1` (which falls back to `inserted_at`).
+  @epoch_recency ~N[0000-01-01 00:00:00]
+
   @doc """
   Returns the list of agents derived from Task records.
 
   An agent is any distinct non-nil value of `completed_by_agent` or
   `created_by_agent` across the visible Task set. The returned list is
-  ordered by name.
+  ordered by most recent activity, newest first, so agents working right
+  now surface at the top of the roster. Most recent activity is the latest
+  timestamp across an agent's tasks (claimed, completed, reviewed, or
+  created). Ties — including agents whose only activity is task creation —
+  break alphabetically by name for a stable order.
   """
   @spec list_agents(keyword()) :: [Agent.t()]
   def list_agents(opts \\ []) do
     tasks = fetch_tasks(opts)
     today = Date.utc_today()
 
+    # Sort by name first, then stable-sort by recency descending: because
+    # `Enum.sort_by/3` is stable, agents with equal recency keep the
+    # name-ascending order as a deterministic alphabetical tiebreak.
     tasks
     |> distinct_agent_names()
     |> Enum.sort()
+    |> Enum.sort_by(&agent_recency(&1, tasks), {:desc, NaiveDateTime})
     |> Enum.map(&build_agent(&1, tasks, today))
   end
 
@@ -134,6 +147,16 @@ defmodule Kanban.Agents do
     Enum.filter(tasks, fn t ->
       t.created_by_agent == name or t.completed_by_agent == name
     end)
+  end
+
+  # Latest activity timestamp across an agent's tasks, reusing the same
+  # recency rule used to pick an agent's most recent task. Returns a
+  # `NaiveDateTime` so the roster can be ordered newest-first.
+  defp agent_recency(name, tasks) do
+    case tasks |> filter_by_agent(name) |> most_recent_task() do
+      nil -> @epoch_recency
+      task -> task_recency(task)
+    end
   end
 
   defp infer_status(tasks) do

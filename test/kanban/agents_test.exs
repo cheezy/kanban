@@ -1,6 +1,7 @@
 defmodule Kanban.AgentsTest do
   use Kanban.DataCase
 
+  import Ecto.Query, only: [from: 2]
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
@@ -31,8 +32,72 @@ defmodule Kanban.AgentsTest do
       {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{completed_by_agent: "Codex"})
       _bare = task_fixture(column)
 
-      names = Agents.list_agents() |> Enum.map(& &1.name)
+      # Ordering is asserted separately; here we only care about the set of
+      # distinct names, so compare order-independently.
+      names = Agents.list_agents() |> Enum.map(& &1.name) |> Enum.sort()
       assert names == ["Claude", "Codex"]
+    end
+
+    test "orders agents by most recent activity, newest first", %{column: column} do
+      recent = DateTime.utc_now() |> DateTime.truncate(:second)
+      older = DateTime.add(recent, -3600, :second)
+
+      # "Zoe" is alphabetically last but most recently active, so a recency
+      # ordering must place her above "Adam" — proving it is not alphabetical.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Adam", claimed_at: older})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Zoe", claimed_at: recent})
+
+      names = Agents.list_agents() |> Enum.map(& &1.name)
+      assert names == ["Zoe", "Adam"]
+    end
+
+    test "breaks recency ties alphabetically by name", %{column: column} do
+      at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Both agents derive their recency from the same task timestamp, so the
+      # tie must break on name for a stable, non-flaky order.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Zeta",
+          completed_by_agent: "Alpha",
+          completed_at: at,
+          status: :completed
+        })
+
+      names = Agents.list_agents() |> Enum.map(& &1.name)
+      assert names == ["Alpha", "Zeta"]
+    end
+
+    test "sorts an agent whose only timestamp is task creation to the bottom",
+         %{column: column} do
+      {:ok, idle} =
+        column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Idle"})
+
+      # Backdate the idle agent's only timestamp (task creation) well into the
+      # past so it is unambiguously older than the active agent's activity.
+      backdate_query = from(t in Kanban.Tasks.Task, where: t.id == ^idle.id)
+      Repo.update_all(backdate_query, set: [inserted_at: ~N[2020-01-01 00:00:00]])
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Active",
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          status: :completed
+        })
+
+      names = Agents.list_agents() |> Enum.map(& &1.name)
+      assert names == ["Active", "Idle"]
     end
 
     test "infers :working when the agent has an in-progress task", %{column: column} do
