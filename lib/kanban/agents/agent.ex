@@ -11,6 +11,7 @@ defmodule Kanban.Agents.Agent do
 
   @type t :: %__MODULE__{
           name: String.t(),
+          owner: map() | nil,
           status: status(),
           current_task: %{identifier: String.t(), title: String.t()} | nil,
           capabilities: [String.t()],
@@ -22,6 +23,7 @@ defmodule Kanban.Agents.Agent do
 
   defstruct [
     :name,
+    :owner,
     :status,
     :current_task,
     capabilities: [],

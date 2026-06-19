@@ -438,4 +438,15 @@ defmodule Kanban.AgentsTest do
              }
     end
   end
+
+  describe "Agent struct" do
+    test "defaults owner to nil" do
+      assert %Agent{}.owner == nil
+    end
+
+    test "carries a derived owner map when set" do
+      owner = %{id: 1, name: "Jeffrey"}
+      assert %Agent{owner: owner}.owner == owner
+    end
+  end
 end
