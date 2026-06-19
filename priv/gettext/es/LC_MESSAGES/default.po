@@ -7289,3 +7289,13 @@ msgstr "%{date}: %{count} completadas"
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "de los cuales"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Dormant (%{count})"
+msgstr "Inactivos (%{count})"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen %{days}d ago"
+msgstr "Visto hace %{days} d"

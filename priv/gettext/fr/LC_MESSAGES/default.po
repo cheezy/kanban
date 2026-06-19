@@ -7236,3 +7236,13 @@ msgstr "%{date} : %{count} terminées"
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "dont"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Dormant (%{count})"
+msgstr "Inactifs (%{count})"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen %{days}d ago"
+msgstr "Vu il y a %{days} j"

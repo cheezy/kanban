@@ -7236,3 +7236,13 @@ msgstr "%{date}：完成 %{count} 个"
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "其中"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Dormant (%{count})"
+msgstr "休眠 (%{count})"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen %{days}d ago"
+msgstr "%{days} 天前活跃"

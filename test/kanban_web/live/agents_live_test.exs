@@ -898,4 +898,92 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert pm_trends_value(render(view), "throughput-today") == "1"
     end
   end
+
+  describe "dormant agents group" do
+    setup [:register_and_log_in_user]
+
+    test "shows dormant agents in a collapsed group, excluded from the main roster",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      seed_live_agent(column, "LiveBot")
+      seed_dormant_agent(column, "GhostBot")
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+      roster = roster_html(html)
+
+      assert roster =~ "data-agents-dormant-group"
+      assert roster =~ "data-agents-dormant-toggle"
+      assert roster =~ "Dormant (1)"
+      # Live agent sits in the main roster.
+      assert roster =~ "LiveBot"
+      # Dormant group is collapsed by default, so its cards are not rendered.
+      refute roster =~ "data-agent-dormant-card"
+      refute roster =~ "GhostBot"
+    end
+
+    test "toggling the group reveals and hides the dormant agents with a last-seen label",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      seed_dormant_agent(column, "GhostBot")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      expanded = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
+      assert expanded =~ "data-agent-dormant-card"
+      assert expanded =~ "GhostBot"
+      assert expanded =~ "Last seen"
+
+      collapsed = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
+      refute collapsed =~ "data-agent-dormant-card"
+    end
+
+    test "the expanded/collapsed state survives a live refresh",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      seed_dormant_agent(column, "GhostBot")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-agents-dormant-toggle])) |> render_click()
+
+      send(view.pid, :refresh_agents_data)
+
+      assert render(view) =~ "data-agent-dormant-card"
+    end
+
+    test "renders no dormant group when every agent is live",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      seed_live_agent(column, "LiveBot")
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      refute roster_html(html) =~ "data-agents-dormant-group"
+    end
+  end
+
+  defp seed_live_agent(column, name) do
+    recent = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {:ok, _} =
+      column
+      |> task_fixture()
+      |> Tasks.update_task(%{created_by_agent: name, claimed_at: recent, status: :in_progress})
+  end
+
+  defp seed_dormant_agent(column, name) do
+    stale =
+      DateTime.utc_now()
+      |> DateTime.add(-15 * 24 * 60 * 60, :second)
+      |> DateTime.truncate(:second)
+
+    {:ok, _} =
+      column
+      |> task_fixture()
+      |> Tasks.update_task(%{created_by_agent: name, claimed_at: stale, status: :in_progress})
+  end
 end

@@ -41,6 +41,7 @@ defmodule KanbanWeb.AgentsLive do
      |> assign(:filter, @default_filter)
      |> assign(:selected_agent, nil)
      |> assign(:refresh_scheduled?, false)
+     |> assign(:dormant_expanded?, false)
      |> assign(:connected_count, connected_count(socket))
      |> load_agents_data()}
   end
@@ -77,6 +78,11 @@ defmodule KanbanWeb.AgentsLive do
      socket
      |> assign(:selected_agent, nil)
      |> assign(:events, apply_filters(socket.assigns.all_events, socket.assigns.filter, nil))}
+  end
+
+  @impl true
+  def handle_event("toggle_dormant", _params, socket) do
+    {:noreply, assign(socket, :dormant_expanded?, !socket.assigns.dormant_expanded?)}
   end
 
   @impl true
@@ -157,7 +163,7 @@ defmodule KanbanWeb.AgentsLive do
             ]}
           >
             <p
-              :if={@agents == []}
+              :if={@agents == [] and @dormant_agents == []}
               data-agents-roster-empty
               style={[
                 "margin: 0; padding: 16px; text-align: center;",
@@ -173,6 +179,57 @@ defmodule KanbanWeb.AgentsLive do
               on_select="select_agent"
               selected?={agent.name == @selected_agent}
             />
+
+            <div
+              :if={@dormant_agents != []}
+              data-agents-dormant-group
+              style={[
+                "margin-top: 8px; padding-top: 8px;",
+                "border-top: 1px solid var(--line);",
+                "display: flex; flex-direction: column; gap: 8px;"
+              ]}
+            >
+              <button
+                type="button"
+                phx-click="toggle_dormant"
+                data-agents-dormant-toggle
+                aria-expanded={to_string(@dormant_expanded?)}
+                class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={[
+                  "display: flex; align-items: center; gap: 6px;",
+                  "width: 100%; padding: 4px 2px;",
+                  "background: transparent; border: 0; cursor: pointer;",
+                  "font-size: 11px; font-weight: 600;",
+                  "text-transform: uppercase; letter-spacing: 0.06em;",
+                  "color: var(--ink-3);"
+                ]}
+              >
+                <.icon
+                  name={if @dormant_expanded?, do: "hero-chevron-down", else: "hero-chevron-right"}
+                  class="w-3 h-3"
+                />
+                <span>{gettext("Dormant (%{count})", count: length(@dormant_agents))}</span>
+              </button>
+
+              <div
+                :if={@dormant_expanded?}
+                style="display: flex; flex-direction: column; gap: 8px;"
+              >
+                <div :for={agent <- @dormant_agents} data-agent-dormant-card>
+                  <AgentRosterCard.card
+                    agent={agent}
+                    on_select="select_agent"
+                    selected?={agent.name == @selected_agent}
+                  />
+                  <p style={[
+                    "margin: 2px 0 0; padding-left: 2px;",
+                    "font-size: 10px; color: var(--ink-3);"
+                  ]}>
+                    {format_last_seen(agent.last_active_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </aside>
 
           <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
@@ -226,9 +283,14 @@ defmodule KanbanWeb.AgentsLive do
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
     events = Agents.recent_activity(scope: scope, limit: @recent_activity_limit)
+    # Dormant agents are split out of the main roster into a collapsible group;
+    # the dormant flag is derived in the context (W1222), not recomputed here.
+    {live_agents, dormant_agents} =
+      [scope: scope] |> Agents.list_agents() |> Enum.split_with(&(not &1.dormant))
 
     assign(socket, %{
-      agents: Agents.list_agents(scope: scope),
+      agents: live_agents,
+      dormant_agents: dormant_agents,
       all_events: events,
       events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
       stats: Agents.header_stats(scope: scope),
@@ -290,4 +352,14 @@ defmodule KanbanWeb.AgentsLive do
       _ -> false
     end)
   end
+
+  # Compact "last seen Nd ago" label for a dormant agent's last activity.
+  # Uses whole-days elapsed (the dormancy granularity) to avoid a relative-time
+  # dependency; the count-only string sidesteps per-locale plural forms.
+  defp format_last_seen(%NaiveDateTime{} = last_active_at) do
+    days = NaiveDateTime.diff(NaiveDateTime.utc_now(), last_active_at, :day)
+    gettext("Last seen %{days}d ago", days: days)
+  end
+
+  defp format_last_seen(_), do: "—"
 end

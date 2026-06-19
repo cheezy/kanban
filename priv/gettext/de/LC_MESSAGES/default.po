@@ -7296,3 +7296,13 @@ msgstr "%{date}: %{count} abgeschlossen"
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "davon"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Dormant (%{count})"
+msgstr "Inaktiv (%{count})"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen %{days}d ago"
+msgstr "Zuletzt vor %{days} T"

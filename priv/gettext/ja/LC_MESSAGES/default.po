@@ -7236,3 +7236,13 @@ msgstr "%{date}: %{count} 件完了"
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "うち"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Dormant (%{count})"
+msgstr "休止中 (%{count})"
+
+#: lib/kanban_web/live/agents_live.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen %{days}d ago"
+msgstr "%{days}日前に最終アクティブ"
