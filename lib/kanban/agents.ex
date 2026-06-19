@@ -22,6 +22,7 @@ defmodule Kanban.Agents do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Accounts.User
   alias Kanban.Agents.Agent
   alias Kanban.Agents.Event
   alias Kanban.Queries.BoardScope
@@ -126,8 +127,10 @@ defmodule Kanban.Agents do
     |> Repo.all()
     # The column name drives status inference, so preload it (one batched
     # query for the whole list). The scope join above is filter-only and does
-    # not select the column.
-    |> Repo.preload(:column)
+    # not select the column. The owner associations resolve the human behind
+    # each agent and are likewise batched (one query per association), so no
+    # per-task query leaks into the callers.
+    |> Repo.preload([:column, :created_by, :completed_by])
   end
 
   # --- list_agents/1 ---------------------------------------------------------
@@ -144,6 +147,7 @@ defmodule Kanban.Agents do
 
     %Agent{
       name: name,
+      owner: resolve_owner(name, own_tasks),
       status: infer_status(own_tasks),
       current_task: current_task(own_tasks),
       capabilities: [],
@@ -159,6 +163,25 @@ defmodule Kanban.Agents do
       t.created_by_agent == name or t.completed_by_agent == name
     end)
   end
+
+  # Resolves the human owner behind a derived agent. Prefers the User who
+  # created a task as this agent; falls back to the User who completed one.
+  # Returns nil when neither association resolves to a User.
+  defp resolve_owner(name, own_tasks) do
+    owner_from(own_tasks, name, :created_by_agent, :created_by) ||
+      owner_from(own_tasks, name, :completed_by_agent, :completed_by)
+  end
+
+  defp owner_from(tasks, name, agent_field, user_field) do
+    Enum.find_value(tasks, fn task ->
+      if Map.get(task, agent_field) == name do
+        to_owner_map(Map.get(task, user_field))
+      end
+    end)
+  end
+
+  defp to_owner_map(%User{} = user), do: %{id: user.id, name: user.name, email: user.email}
+  defp to_owner_map(_), do: nil
 
   # Latest activity timestamp across an agent's tasks, reusing the same
   # recency rule used to pick an agent's most recent task. Returns a

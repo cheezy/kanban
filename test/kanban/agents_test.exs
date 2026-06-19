@@ -449,4 +449,45 @@ defmodule Kanban.AgentsTest do
       assert %Agent{owner: owner}.owner == owner
     end
   end
+
+  describe "list_agents/1 owner derivation" do
+    test "derives owner from the created_by user", %{column: column} do
+      owner_user = user_fixture(%{name: "Jeffrey"})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", created_by_id: owner_user.id})
+
+      [%Agent{name: "Claude", owner: owner}] = Agents.list_agents()
+
+      assert owner.id == owner_user.id
+      assert owner.name == "Jeffrey"
+      assert owner.email == owner_user.email
+    end
+
+    test "derives owner from completed_by when created_by has no user", %{column: column} do
+      owner_user = user_fixture(%{name: "Casey"})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          completed_by_id: owner_user.id
+        })
+
+      [%Agent{name: "Claude", owner: owner}] = Agents.list_agents()
+
+      assert owner.id == owner_user.id
+      assert owner.name == "Casey"
+    end
+
+    test "owner is nil when no user association can be derived", %{column: column} do
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Claude"})
+
+      [%Agent{name: "Claude", owner: nil}] = Agents.list_agents()
+    end
+  end
 end
