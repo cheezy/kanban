@@ -1,0 +1,998 @@
+{
+  "source_spec": "docs/ideation/2026-06-19T123205-agents-view-usefulness-requirements.md",
+  "source_spec_sha256": "1696463e64e434fad97c26c18cca9dc154361790ad0566105466b8b8b90d7139",
+  "decomposition_notes": "Four goals, one per seam in the doc's '## Decomposition seams' section, per the explicit instruction that this initiative ships as multiple independent goals scheduled one at a time. Grounding verified against the codebase: the data layer is the read-only Kanban.Agents context (lib/kanban/agents.ex) deriving Agent/Event structs (lib/kanban/agents/agent.ex, event.ex) from Kanban.Tasks.Task; the web layer is KanbanWeb.AgentsLive (lib/kanban_web/live/agents_live.ex) composing AgentsHeader, AgentRosterCard, and AgentActivityFeed components, with AgentsPresence for the live indicator. Owner linkage data already exists: Task has belongs_to :created_by/:completed_by (Accounts.User) alongside the created_by_agent/completed_by_agent string fields, so the Owner-linkage goal needs no schema change (Constraint: read-only, no schema changes). Each goal spans the data->context->web layers for its own slice but those tasks are code-coupled within the slice (one Agent/Event field, one component) so they stay together. CLAIM ORDER across goals reflects doc-stated dependencies: G1 (Owner linkage) is foundational for 'show the person not the agent' and should be claimed first; G2 (Fleet health) explicitly depends on first fixing display bugs D83/D84/D85, so its first tasks are those defect fixes; G3 (PM trends) and G4 (Developer drill-down) are independent of each other and of G2, and may be claimed in any order after G1. No cross-goal array-index dependencies are encoded (the batch API cannot express them); within each goal tasks use array-index dependencies. Verification commands are limited to `mix test <path>` against existing test files/conventions and manual curl-of-localhost:4000 / browser checks, since no other test command is justified by the doc or codebase.",
+  "goals": [
+    {
+      "title": "Surface the human owner behind each agent across the /agents roster and feed",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "The /agents view identifies work only by agent model name (e.g. 'Claude Opus 4.8') and never ties it to the human owner/operator behind it. This is the foundational slice for the initiative's core goal of showing the person, not just the agent. The linkage data already exists on Task (belongs_to :created_by / :completed_by -> Accounts.User) but is not derived or displayed.",
+      "what": "Extend the read-only Kanban.Agents context to derive a human owner/operator for each agent and event from the existing Task associations, then surface that owner alongside the agent model name on the roster cards and in the activity feed. No schema or task-lifecycle changes.",
+      "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex, lib/kanban/agents/event.ex, lib/kanban_web/components/agent_roster_card.ex, lib/kanban_web/components/agent_activity_feed.ex",
+      "description": "Map each derived agent to the human who owns/operates it using the Task.created_by / Task.completed_by User associations that already exist, and render the person next to the agent model name on the roster and in the feed. Read-only over existing data; must work in light and dark mode and respect existing board scope.",
+      "acceptance_criteria": "Each agent in the roster shows the human owner/operator (when one can be derived) alongside the agent model name\nActivity feed events show the owner alongside the actor agent name\nOwner derivation reuses existing Task->User associations; no schema, migration, or task-lifecycle changes are introduced\nWhen no owner can be derived, the UI degrades gracefully (agent name only, no broken layout)\nBoard scope filtering and existing PubSub live updates continue to work\nRoster and feed render correctly in both light and dark mode",
+      "pitfalls": [
+        "Do not add a schema, migration, or new Ecto field \u2014 owner linkage must come from existing Task associations only",
+        "Do not put Ecto queries in the LiveView or components \u2014 owner derivation belongs in Kanban.Agents",
+        "Do not break the existing board-scope access filtering when joining the owner association"
+      ],
+      "tasks": [
+        {
+          "title": "Add owner field to the derived Agent struct in Kanban.Agents.Agent",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add an :owner field to the Kanban.Agents.Agent struct and @type to carry the derived human owner/operator (e.g. %{id, name/email} or nil) alongside the existing agent model :name. Default to nil so existing callers keep working.",
+          "why": "The roster card needs a place to read the person from; the struct currently only carries the agent model name.",
+          "what": "Add :owner to defstruct (defaulting nil) and to the @type t spec in agent.ex.",
+          "where_context": "lib/kanban/agents/agent.ex",
+          "acceptance_criteria": "Agent struct has an :owner field defaulting to nil\n@type t reflects the owner shape (a small map or nil)\nExisting Agent struct usages still compile",
+          "patterns_to_follow": "Mirror the existing field + @type style already in agent.ex (status, current_task)\nKeep the owner value a plain map or nil, not an Ecto schema struct",
+          "pitfalls": [
+            "Do not make owner required \u2014 many agents may have no derivable owner"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents/agent.ex",
+              "note": "Add :owner field + @type",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All existing agents context tests still pass",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Agent struct defaults owner to nil"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "owner is nil"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Derive agent owner from Task created_by/completed_by in Kanban.Agents.list_agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "In Kanban.Agents, populate the new Agent :owner by resolving the human User behind each derived agent from the existing Task associations (created_by / completed_by). Preload or join the User association inside the context's task fetch so no query leaks into the web layer. Respect the existing :scope board filtering.",
+          "why": "The struct field added in the prior task must be filled from real data; this is where the person-behind-the-agent linkage is computed.",
+          "what": "Resolve the owner for each distinct agent name from the visible Task set's created_by/completed_by User associations and assign it to Agent.owner.",
+          "where_context": "lib/kanban/agents.ex",
+          "acceptance_criteria": "list_agents returns agents with :owner populated when a User can be derived from created_by/completed_by\n:owner is nil when no User can be derived\nThe User association is loaded inside the context (preload/join), not in the LiveView\nExisting :scope board filtering is preserved\nNo schema or migration changes",
+          "patterns_to_follow": "Follow the existing fetch_tasks/build_agent pattern in agents.ex\nKeep all Ecto.Query usage inside the context module",
+          "pitfalls": [
+            "Avoid an N+1 query when resolving owners \u2014 preload or join in the single task fetch",
+            "Do not break board-scope filtering when adding the association"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Resolve and assign Agent.owner from Task associations",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "Owner derivation coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including new owner-derivation cases",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Agent owner derived from created_by user",
+              "Agent owner derived from completed_by user when created_by absent",
+              "Owner nil when no user association"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "agent with no owning user",
+              "scoped board excludes some tasks"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Render owner alongside agent name on the roster card",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Update AgentRosterCard to display the derived owner (person) alongside the agent model name. When owner is nil, show the agent name alone without layout breakage. Use existing stride-screen design tokens; verify both light and dark mode.",
+          "why": "Ops and developers need to see who owns each agent at a glance on the roster.",
+          "what": "Add an owner line/label to the roster card markup, reading agent.owner.",
+          "where_context": "lib/kanban_web/components/agent_roster_card.ex",
+          "acceptance_criteria": "Roster card shows the owner alongside the agent model name when present\nCard renders cleanly with no owner (agent name only)\nUses existing design tokens (var(--ink-*), etc.), no hardcoded colors\nReadable in light and dark mode\nUI text is gettext-wrapped",
+          "patterns_to_follow": "Follow existing markup and token usage in agent_roster_card.ex\nWrap visible strings in gettext and run mix gettext.extract --merge",
+          "pitfalls": [
+            "Do not hardcode Tailwind colors \u2014 use the existing design-system tokens",
+            "Do not break the selected-state styling already on the card"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/agent_roster_card.ex",
+              "note": "Render owner alongside agent name",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban_web/components/agent_roster_card_test.exs",
+              "note": "Owner rendering coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/agent_roster_card_test.exs",
+              "expected_result": "All tests pass including owner rendering",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Open /agents at localhost:4000 and confirm the owner shows next to the agent name on roster cards in both light and dark mode",
+              "expected_result": "Owner visible alongside agent name, no layout breakage, readable in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Card renders owner when present",
+              "Card renders agent name only when owner nil"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Visual check in light and dark mode"
+            ],
+            "edge_cases": [
+              "nil owner",
+              "long owner name"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add owner to derived Event and surface it in the activity feed",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add an :owner field to Kanban.Agents.Event, populate it in Kanban.Agents.recent_activity from the same Task->User associations, and render the owner alongside the actor agent name in AgentActivityFeed. Degrade gracefully when nil.",
+          "why": "The feed currently shows only the actor agent name; ops/devs need to see the person behind each event too, consistently with the roster.",
+          "what": "Extend Event struct + recent_activity derivation + feed markup to carry and display the owner.",
+          "where_context": "lib/kanban/agents/event.ex, lib/kanban/agents.ex, lib/kanban_web/components/agent_activity_feed.ex",
+          "acceptance_criteria": "Event struct has an :owner field (nil default) with updated @type\nrecent_activity populates owner from the same Task->User associations used for the roster\nActivity feed renders owner alongside the actor agent name when present\nFeed degrades gracefully when owner is nil\nUses existing tokens; readable in light and dark mode; UI text is gettext-wrapped",
+          "patterns_to_follow": "Mirror the Agent owner derivation from the earlier task for consistency\nFollow existing event-row markup in agent_activity_feed.ex",
+          "pitfalls": [
+            "Avoid N+1 \u2014 reuse the same preloaded/joined association strategy as the roster",
+            "Do not change the existing kind/actor filtering behavior in the feed"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents/event.ex",
+              "note": "Add :owner field + @type",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Populate Event.owner in recent_activity",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban_web/components/agent_activity_feed.ex",
+              "note": "Render owner alongside actor",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including Event owner derivation",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Open /agents at localhost:4000 and confirm the feed shows the owner alongside the actor agent name",
+              "expected_result": "Owner visible in feed rows where derivable, no breakage when absent",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Event owner derived correctly",
+              "Event owner nil when no user"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Feed visual check in both modes"
+            ],
+            "edge_cases": [
+              "nil owner on event",
+              "agent-only event with no owner"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Fix agent display bugs and add a fleet-health rollup to /agents",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Ops cannot answer 'is the fleet healthy right now?' from the current page, and stuck/idle agents go unnoticed (a lagging metric is dropping stuck-agent detection time from a day to under an hour). The doc states this rollup depends on first correcting the known display bugs D83 (status mislabeling), D84 (sort order), and D85 (stat overlap) so the underlying data can be trusted.",
+      "what": "Fix the three known display bugs, then add a fleet-health rollup at the top of /agents that classifies agents as working / waiting / stuck / idle with counts and visual emphasis on stuck and idle agents. Read-only over existing derived data.",
+      "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex, lib/kanban_web/components/agents_header.ex, lib/kanban_web/components/agent_roster_card.ex, lib/kanban_web/live/agents_live.ex",
+      "description": "Correct the trust-blocking display bugs, then surface a health rollup so ops sees who is working/waiting/stuck/idle at a glance, with counts and emphasis on stuck and idle agents. Live PubSub updates and board scope must keep working in both light and dark mode.",
+      "acceptance_criteria": "D83 status mislabeling fixed \u2014 agent status labels are correct\nD84 sort order fixed \u2014 roster/feed ordering is correct and stable\nD85 stat overlap fixed \u2014 header/roster stats no longer double-count or overlap\nA fleet-health rollup shows counts of working / waiting / stuck / idle agents\nStuck and idle agents are visually emphasized\nRollup updates live via the existing PubSub flow and respects board scope\nWorks in light and dark mode",
+      "pitfalls": [
+        "Do not introduce schema or task-lifecycle changes \u2014 health classification is derived only",
+        "Do not regress the existing live PubSub refresh/debounce behavior",
+        "Do not put status-classification logic in the LiveView \u2014 keep it in Kanban.Agents"
+      ],
+      "tasks": [
+        {
+          "title": "Fix D83 agent status mislabeling in Kanban.Agents status derivation",
+          "type": "defect",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Correct the agent status derivation so agents are labeled with the right status (the Agent.status currently supports :working | :waiting | :idle). D83 reports statuses being mislabeled; fix the classification logic in Kanban.Agents and cover with tests.",
+          "why": "The fleet-health rollup is only trustworthy once status labels are correct; D83 is a prerequisite called out in the doc.",
+          "what": "Fix the status classification in Kanban.Agents.build_agent / list_agents so each agent's derived status is accurate.",
+          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex",
+          "acceptance_criteria": "Agents are assigned the correct status from their Task-derived state\nRegression test reproduces the D83 mislabeling and now passes\nNo schema changes",
+          "patterns_to_follow": "Keep status derivation in the context; follow the existing build_agent pattern",
+          "pitfalls": [
+            "Do not change the Agent.status type values without confirming all consumers"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Status classification fix",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "D83 regression coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass; D83 regression case is covered and green",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Working agent labeled :working",
+              "Waiting agent labeled :waiting",
+              "Idle agent labeled :idle"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "agent with overlapping signals",
+              "agent with no recent activity"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Fix D84 roster/feed sort order",
+          "type": "defect",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Correct the sort order reported in D84 for the agents roster and/or activity feed so ordering is correct and stable. Confirm whether the bug is in list_agents ordering (currently Enum.sort by name) or recent_activity ordering and fix at the appropriate layer.",
+          "why": "Trustworthy ordering is a prerequisite for the health rollup; D84 is called out in the doc.",
+          "what": "Fix the ordering logic so the roster/feed display the correct, stable order.",
+          "where_context": "lib/kanban/agents.ex",
+          "acceptance_criteria": "Roster and feed display in the correct, stable order described by D84\nRegression test covers the corrected ordering\nNo schema changes",
+          "patterns_to_follow": "Keep ordering in the context queries/derivation, not the LiveView",
+          "pitfalls": [
+            "Do not introduce non-deterministic ordering \u2014 ties must break consistently"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Sort-order fix",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "D84 ordering coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass; ordering regression case green",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Agents/events returned in expected order",
+              "Ties break deterministically"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "equal sort keys",
+              "empty list"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Fix D85 stat overlap in the agents header and roster stats",
+          "type": "defect",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Correct the D85 stat overlap so header_stats and per-agent stats (today, last_7d, success_rate, claim_count) no longer double-count or overlap. Fix in Kanban.Agents.header_stats / build_agent and the AgentsHeader rendering as needed.",
+          "why": "Overlapping stats make the page untrustworthy; D85 is a prerequisite for the health rollup.",
+          "what": "Fix the stat aggregation so counts are correct and non-overlapping.",
+          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex, lib/kanban_web/components/agents_header.ex",
+          "acceptance_criteria": "Header stats and per-agent stats are correct with no double-counting/overlap\nRegression test covers the corrected aggregation\nHeader renders correctly in light and dark mode\nNo schema changes",
+          "patterns_to_follow": "Keep aggregation in header_stats/build_agent; follow existing agents_header markup",
+          "pitfalls": [
+            "Do not change stat field names consumed by the header without updating the header",
+            "Do not hardcode colors in the header"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "header_stats / stat aggregation fix",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/components/agents_header.ex",
+              "note": "Stat rendering fix",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/components/agents_header_test.exs",
+              "note": "D85 coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs test/kanban_web/components/agents_header_test.exs",
+              "expected_result": "All tests pass; D85 regression case green",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "header_stats counts are non-overlapping",
+              "per-agent stats sum correctly"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Header visual check in both modes"
+            ],
+            "edge_cases": [
+              "agent active across multiple stat windows",
+              "zero activity"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add stuck-agent classification to Kanban.Agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Extend agent status derivation so an agent that has stalled or is sitting in review past a reasonable threshold is classified as stuck (in addition to working/waiting/idle), purely from existing Task timestamps (claimed_at, reviewed_at, review_status, completed_at). This powers the rollup's emphasis on stuck agents and the stuck-agent-detection-time metric.",
+          "why": "The doc's lagging metric is reducing stuck-agent detection time; the page cannot emphasize stuck agents without first deriving stuck-ness.",
+          "what": "Add a stuck classification (e.g. extend Agent.status or a derived flag) computed from existing timestamps, with a documented threshold.",
+          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/agent.ex",
+          "acceptance_criteria": "Agents that have stalled or are sitting in review past a documented threshold are classified as stuck\nClassification uses only existing Task fields (no schema change)\nThreshold is a named module attribute, documented in the moduledoc\nUnit tests cover stuck vs working/waiting/idle boundaries",
+          "patterns_to_follow": "Follow the existing status derivation in build_agent (fixed by D83 first)\nUse a named @attribute for the threshold like other timing constants",
+          "pitfalls": [
+            "Do not require a schema field for stuck-ness \u2014 derive it from timestamps",
+            "Build on the D83 fix; do not reintroduce mislabeling"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents/agent.ex",
+              "note": "Add stuck to status or a stuck flag + @type",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Derive stuck classification",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "Stuck classification coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including stuck-classification cases",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Agent stalled past threshold is stuck",
+              "Agent in review past threshold is stuck",
+              "Agent just below threshold is not stuck"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "boundary at exactly the threshold",
+              "agent with no claimed_at"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add fleet-health rollup counts to Kanban.Agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a context function (e.g. Kanban.Agents.fleet_health/1) that returns counts of agents by status (working / waiting / stuck / idle) for the scoped, visible agent set, reusing the corrected status derivation. Respects the :scope option.",
+          "why": "The rollup component needs a single trustworthy data source for the health counts; aggregation belongs in the context, not the LiveView.",
+          "what": "Add a scoped fleet_health aggregation returning per-status counts.",
+          "where_context": "lib/kanban/agents.ex",
+          "acceptance_criteria": "fleet_health returns counts for working, waiting, stuck, and idle for the scoped agent set\nReuses the corrected/extended status derivation (D83 + stuck)\nRespects the :scope board filtering\nUnit tests cover the counts including the empty case",
+          "patterns_to_follow": "Follow the opts/:scope convention used by list_agents/header_stats\nKeep the function read-only",
+          "pitfalls": [
+            "Do not recompute status differently from list_agents \u2014 share the derivation to avoid drift"
+          ],
+          "dependencies": [
+            3
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Add fleet_health/1 aggregation",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "fleet_health coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including fleet_health counts",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Counts per status correct",
+              "Empty agent set returns all zeros",
+              "Scope excludes out-of-board agents"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "no agents",
+              "all agents idle"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Render the fleet-health rollup on /agents with emphasis on stuck and idle",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a fleet-health rollup to the top of the /agents page (in or beside AgentsHeader) showing working / waiting / stuck / idle counts, with visual emphasis on stuck and idle. Wire it in AgentsLive's load_agents_data via the new fleet_health function so it updates on the existing PubSub refresh. Use existing tokens; verify both modes.",
+          "why": "Ops needs the health answer at a glance; this is the user-facing payoff of the goal and supports faster stuck-agent detection.",
+          "what": "Add the rollup component, assign fleet_health in the LiveView, and emphasize stuck/idle.",
+          "where_context": "lib/kanban_web/components/agents_header.ex, lib/kanban_web/live/agents_live.ex",
+          "acceptance_criteria": "Rollup shows working / waiting / stuck / idle counts at the top of /agents\nStuck and idle agents are visually emphasized\nLiveView assigns fleet_health in load_agents_data so it refreshes on the existing PubSub debounce\nUses existing design tokens; readable in light and dark mode; UI text gettext-wrapped\nBoard scope respected (counts reflect the scoped agent set)",
+          "patterns_to_follow": "Follow the existing AgentsHeader composition and load_agents_data assign pattern\nWrap strings in gettext and run mix gettext.extract --merge",
+          "pitfalls": [
+            "Do not query in the LiveView \u2014 read from Kanban.Agents.fleet_health",
+            "Do not regress the existing refresh debounce / presence behavior",
+            "Do not hardcode colors for the emphasis styling"
+          ],
+          "dependencies": [
+            4
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/agents_header.ex",
+              "note": "Render the health rollup",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Assign fleet_health in load_agents_data",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "Rollup render + refresh coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass including the rollup rendering",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Open /agents at localhost:4000 and confirm the health rollup shows working/waiting/stuck/idle counts with stuck/idle emphasized, in both light and dark mode",
+              "expected_result": "Rollup visible and correct, updates live, readable in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Rollup renders the four status counts",
+              "Stuck/idle emphasis applied"
+            ],
+            "integration_tests": [
+              "LiveView re-renders rollup on agent_event broadcast"
+            ],
+            "manual_tests": [
+              "Visual check in both modes"
+            ],
+            "edge_cases": [
+              "zero agents",
+              "all stuck"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add throughput and quality trend views for product managers on /agents",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "Product managers leave /agents without throughput, success-rate, and cycle-time trends; the page should let PMs see throughput and quality trends so they go there first and trust it. Open question in the doc: which trends matter most \u2014 start with throughput, success rate, and cycle time, which are all derivable from existing Task data.",
+      "what": "Add aggregate and time-series derivations (throughput, success rate, cycle time) to the read-only Kanban.Agents context and surface them on /agents for the PM persona, within the existing LiveView and design system. No schema or workflow changes.",
+      "where_context": "lib/kanban/agents.ex, lib/kanban_web/components, lib/kanban_web/live/agents_live.ex",
+      "description": "Derive throughput (completions over time), success rate (completed vs failed/abandoned), and cycle time (existing Event.cycle_time_minutes / claim-to-complete) as aggregates and simple time-series, and present them in a PM-focused section of /agents. Read-only; respects scope; works in both modes. Not a BI tool \u2014 no report builder, no exportable charts (non-goal).",
+      "acceptance_criteria": "Throughput, success rate, and cycle-time trends are derived from existing Task data with no schema changes\nTrends are presented in a PM-focused section of /agents within the existing design system\nSection respects board scope and updates with the existing live refresh\nReadable in light and dark mode\nScope stays within the page \u2014 no report builder, dashboards-as-code, or exportable charts",
+      "pitfalls": [
+        "Do not build a generic BI/report-builder \u2014 non-goal",
+        "Do not add exportable charts \u2014 non-goal",
+        "Do not put aggregation queries in the LiveView \u2014 keep them in Kanban.Agents",
+        "Do not introduce schema or workflow changes"
+      ],
+      "tasks": [
+        {
+          "title": "Derive throughput and success-rate aggregates in Kanban.Agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a scoped context function returning fleet throughput (completion counts over a window) and overall success rate, derived from existing Task fields (completed_at, review_status, status). Respect the :scope option. Read-only.",
+          "why": "PMs need throughput and quality numbers; aggregation must live in the context.",
+          "what": "Add a throughput + success-rate aggregate function to Kanban.Agents.",
+          "where_context": "lib/kanban/agents.ex",
+          "acceptance_criteria": "Function returns throughput counts over a defined window and an overall success rate\nDerived only from existing Task fields; no schema change\nRespects :scope\nUnit tests cover happy path and empty data",
+          "patterns_to_follow": "Follow the opts/:scope and fetch_tasks conventions in agents.ex",
+          "pitfalls": [
+            "Do not double-count completions already fixed under D85 conventions",
+            "Avoid N+1 \u2014 aggregate from the single task fetch"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Throughput + success-rate aggregates",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "Aggregate coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including throughput/success-rate cases",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Throughput counts over window",
+              "Success rate computed correctly",
+              "Empty data returns zeros"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "no completed tasks",
+              "all failed"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Derive cycle-time and a throughput time-series in Kanban.Agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a scoped context function returning a simple time-series of throughput (e.g. per day over a window) and an aggregate cycle-time metric, reusing the existing Event.cycle_time_minutes / claim-to-complete derivation. Read-only, respects :scope.",
+          "why": "Trends (not just point values) are what PMs track; cycle time is one of the three trends called out.",
+          "what": "Add a time-series throughput + cycle-time aggregate to Kanban.Agents.",
+          "where_context": "lib/kanban/agents.ex, lib/kanban/agents/event.ex",
+          "acceptance_criteria": "Function returns a per-bucket throughput series over a window and an aggregate cycle-time metric\nReuses existing cycle_time derivation; no schema change\nRespects :scope\nUnit tests cover bucketing and empty windows",
+          "patterns_to_follow": "Reuse the existing cycle_time_minutes computation feeding Event\nFollow the opts/:scope convention",
+          "pitfalls": [
+            "Do not invent a new cycle-time definition \u2014 reuse the existing one",
+            "Keep bucketing deterministic across time zones"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Time-series + cycle-time aggregates",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "Time-series coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including time-series and cycle-time cases",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Throughput bucketed per day",
+              "Cycle-time aggregate correct",
+              "Empty window returns empty/zero series"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "window with no activity",
+              "single bucket"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add a PM trends component and render it on /agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Create a PM-focused trends component showing throughput (with its time-series), success rate, and cycle time, and render it in a section of /agents. Wire the new aggregates into AgentsLive.load_agents_data so they refresh on the existing PubSub debounce. Use existing tokens; verify both modes; gettext all text.",
+          "why": "This is the PM-facing payoff: a place on /agents where PMs see throughput and quality trends.",
+          "what": "Add the trends component, assign the aggregates in the LiveView, and render the PM section.",
+          "where_context": "lib/kanban_web/components, lib/kanban_web/live/agents_live.ex",
+          "acceptance_criteria": "A PM trends section on /agents shows throughput (incl. time-series), success rate, and cycle time\nAggregates assigned in load_agents_data and refresh on the existing PubSub flow\nUses existing design tokens; readable in light and dark mode; text gettext-wrapped\nBoard scope respected\nNo exportable charts / report builder",
+          "patterns_to_follow": "Follow the existing component + load_agents_data assign pattern in agents_live.ex\nKeep the time-series rendering simple (no charting library); use the existing design system\nRun mix gettext.extract --merge after adding text",
+          "pitfalls": [
+            "Do not add a charting/BI dependency \u2014 render with the existing design system",
+            "Do not query in the LiveView \u2014 read from Kanban.Agents",
+            "Do not regress the refresh debounce/presence behavior"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/agents_header.ex",
+              "note": "May host or sit beside the PM trends section",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Assign trend aggregates and render the section",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "Trends rendering coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass including the PM trends section",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Open /agents at localhost:4000 and confirm the PM section shows throughput, success rate, and cycle time and refreshes live, in both light and dark mode",
+              "expected_result": "Trends visible and correct, live-updating, readable in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Component renders throughput, success rate, cycle time",
+              "Time-series renders for a sample window"
+            ],
+            "integration_tests": [
+              "Section updates on agent_event broadcast"
+            ],
+            "manual_tests": [
+              "Visual check in both modes"
+            ],
+            "edge_cases": [
+              "no data",
+              "single data point"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add a developer per-agent drill-down to /agents",
+      "type": "goal",
+      "complexity": "medium",
+      "priority": "medium",
+      "needs_review": false,
+      "why": "Developers want to inspect a single agent's activity, claims, failures, and current work, but the page offers no detail view. The selected-agent filter already exists in AgentsLive (select_agent / clear_agent_filter); this goal turns that selection into a real drill-down for the developer persona.",
+      "what": "Add a context function returning a detailed view of one agent (current work, claims, failures, recent activity) derived from existing Task data, and a detail panel on /agents that opens for the currently selected agent within the existing LiveView and design system. Read-only; scope-respecting; both modes.",
+      "where_context": "lib/kanban/agents.ex, lib/kanban_web/components, lib/kanban_web/live/agents_live.ex",
+      "description": "Build on the existing selected_agent state to show a per-agent detail panel: current task, claim history, failures/abandoned work, and recent activity for that one agent. All derived read-only from Task data; respects board scope; works in light and dark mode. Not transcripts or token-level detail (non-goal); not agent control (non-goal).",
+      "acceptance_criteria": "A detail view shows a single agent's current work, claims, failures, and recent activity\nThe detail opens for the agent selected via the existing select_agent flow and closes via clear_agent_filter\nAll detail data is derived read-only from existing Task fields; no schema change\nRespects board scope and the existing live refresh\nReadable in light and dark mode\nNo conversation logs / token detail; no start/stop/reassign controls",
+      "pitfalls": [
+        "Do not add transcript or token-level detail \u2014 non-goal",
+        "Do not add agent control actions \u2014 view-only",
+        "Do not query in the LiveView \u2014 keep the detail derivation in Kanban.Agents",
+        "Do not break the existing select_agent / clear_agent_filter behavior"
+      ],
+      "tasks": [
+        {
+          "title": "Add agent_detail derivation to Kanban.Agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Add a scoped context function Kanban.Agents.agent_detail(name, opts) returning a single agent's current task, claim history, failures/abandoned work, and recent activity, derived from existing Task fields. Returns nil/empty gracefully for an unknown agent. Respects :scope.",
+          "why": "The detail panel needs one trustworthy, scope-aware data source; this is the data layer for the drill-down.",
+          "what": "Add agent_detail/2 deriving per-agent detail from the visible Task set.",
+          "where_context": "lib/kanban/agents.ex",
+          "acceptance_criteria": "agent_detail returns current task, claims, failures, and recent activity for the named agent\nDerived only from existing Task fields; no schema change\nRespects :scope and returns gracefully for an unknown/empty agent\nUnit tests cover a populated agent and an unknown agent",
+          "patterns_to_follow": "Follow the opts/:scope, fetch_tasks, and Event-derivation patterns already in agents.ex",
+          "pitfalls": [
+            "Avoid N+1 \u2014 derive from a single scoped task fetch",
+            "Do not leak tasks outside the scoped board set"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/agents.ex",
+              "note": "Add agent_detail/2",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/agents_test.exs",
+              "note": "agent_detail coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/agents_test.exs",
+              "expected_result": "All tests pass including agent_detail cases",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Detail for a populated agent",
+              "Unknown agent returns empty/nil",
+              "Failures/abandoned work surfaced"
+            ],
+            "integration_tests": [],
+            "manual_tests": [],
+            "edge_cases": [
+              "agent with no current task",
+              "agent only with failures"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Add a per-agent detail panel component",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Create a detail-panel component that renders an agent_detail: current work, claim history, failures, and recent activity, using the existing stride-screen design tokens. Verify both light and dark mode; gettext all text.",
+          "why": "Developers need a clear presentational surface for the drilled-into agent.",
+          "what": "Build the detail-panel component reading the agent_detail data shape.",
+          "where_context": "lib/kanban_web/components",
+          "acceptance_criteria": "Component renders current work, claims, failures, and recent activity from agent_detail\nUses existing design tokens; readable in light and dark mode; text gettext-wrapped\nDegrades gracefully for sparse data (e.g. no current task)",
+          "patterns_to_follow": "Follow the markup/token conventions in agent_roster_card.ex and agent_activity_feed.ex\nRun mix gettext.extract --merge after adding text",
+          "pitfalls": [
+            "Do not show transcripts/token detail \u2014 non-goal",
+            "Do not add control buttons (start/stop/reassign) \u2014 view-only",
+            "Do not hardcode colors"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/agent_roster_card.ex",
+              "note": "Reference for token/markup conventions; detail panel may live in a sibling component file",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/components/agent_activity_feed.ex",
+              "note": "Reference for activity-row rendering",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "manual",
+              "step_text": "Render the component with sample agent_detail data and confirm current work, claims, failures, and activity display correctly in both light and dark mode",
+              "expected_result": "Panel renders all sections cleanly with no hardcoded-color issues in either mode",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Panel renders all detail sections",
+              "Panel handles missing current task"
+            ],
+            "integration_tests": [],
+            "manual_tests": [
+              "Visual check in both modes"
+            ],
+            "edge_cases": [
+              "no failures",
+              "no recent activity"
+            ],
+            "coverage_target": ""
+          }
+        },
+        {
+          "title": "Wire the detail panel into AgentsLive for the selected agent",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "In AgentsLive, when an agent is selected (existing select_agent flow), load agent_detail for that agent and render the detail-panel component; clear it on clear_agent_filter. Refresh the detail on the existing PubSub debounce while a selection is active. Respect board scope.",
+          "why": "This connects the existing selection state to the new data and component, delivering the developer drill-down end to end.",
+          "what": "Assign agent_detail on selection, render the panel, and refresh it on live updates.",
+          "where_context": "lib/kanban_web/live/agents_live.ex",
+          "acceptance_criteria": "Selecting an agent opens the detail panel populated via Kanban.Agents.agent_detail\nclear_agent_filter closes the panel\nDetail refreshes on the existing PubSub debounce while a selection is active\nQuerying stays in the context; LiveView only assigns\nWorks in light and dark mode; board scope respected",
+          "patterns_to_follow": "Reuse the existing select_agent / clear_agent_filter handlers and selected_agent assign\nFollow the load_agents_data assign pattern and refresh debounce",
+          "pitfalls": [
+            "Do not put the agent_detail query in the LiveView \u2014 call the context",
+            "Do not break the existing event filtering tied to selected_agent",
+            "Do not redrive detail on every event without the existing debounce"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Load agent_detail on selection, render panel, refresh on debounce",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "Drill-down open/close + refresh coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass including selecting an agent opens the detail panel and clearing closes it",
+              "position": 0
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Open /agents at localhost:4000, click an agent, and confirm the detail panel shows current work, claims, failures, and activity; click Clear to close it; verify both light and dark mode",
+              "expected_result": "Panel opens on select, refreshes live, closes on clear, readable in both modes",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Selecting an agent assigns agent_detail",
+              "clear_agent_filter clears the detail"
+            ],
+            "integration_tests": [
+              "Detail re-renders on agent_event broadcast while selected"
+            ],
+            "manual_tests": [
+              "Visual check in both modes"
+            ],
+            "edge_cases": [
+              "select then deselect",
+              "select an agent with no current task"
+            ],
+            "coverage_target": ""
+          }
+        }
+      ]
+    }
+  ]
+}
