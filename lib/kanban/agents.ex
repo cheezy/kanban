@@ -18,6 +18,18 @@ defmodule Kanban.Agents do
       tasks are considered.
     * `:limit` — for `recent_activity/1`, maximum number of events to
       return. Defaults to `50`. Ignored by the other functions.
+
+  ## Stuck agents
+
+  An agent is classified as **stuck** when it holds an active task (sitting
+  in the Doing or Review column) whose most recent activity is older than
+  `@stuck_threshold_minutes` (60 minutes) — that is, it has stalled mid-work
+  or has been sitting in review past the threshold.
+  Stuck-ness is derived purely from existing Task timestamps (the same
+  `task_recency/1` rule used to order the roster) with no schema change, and
+  is reported as the independent boolean `Agent.stuck` field, orthogonal to
+  `:working` / `:waiting` / `:idle`. The threshold mirrors the 60-minute
+  claim-expiry window: a task still held past it is a strong stuck signal.
   """
 
   import Ecto.Query, warn: false
@@ -42,6 +54,12 @@ defmodule Kanban.Agents do
   # in `Kanban.Boards`.
   @doing_column "Doing"
   @review_column "Review"
+
+  # An agent holding an active (Doing/Review) task whose most recent activity
+  # is older than this many minutes is classified as stuck. Mirrors the
+  # 60-minute claim-expiry window — a task still held past it has stalled or
+  # is sitting in review too long. See the "Stuck agents" moduledoc section.
+  @stuck_threshold_minutes 60
 
   @doc """
   Returns the list of agents derived from Task records.
@@ -149,6 +167,7 @@ defmodule Kanban.Agents do
       name: name,
       owner: resolve_owner(name, own_tasks),
       status: infer_status(own_tasks),
+      stuck: stuck?(own_tasks, now_naive()),
       current_task: current_task(own_tasks),
       capabilities: [],
       today: count_completed_on_day(own_tasks, today),
@@ -244,6 +263,30 @@ defmodule Kanban.Agents do
       task -> %{identifier: task.identifier, title: task.title}
     end
   end
+
+  # An agent is stuck when any of its active tasks (Doing or Review column)
+  # has not progressed within @stuck_threshold_minutes — it has stalled
+  # mid-work or is sitting in review past the threshold. Derived from the
+  # same task_recency/1 timestamps used to order the roster, so no new field.
+  defp stuck?(tasks, now) do
+    Enum.any?(tasks, &task_stuck?(&1, now))
+  end
+
+  defp task_stuck?(task, now) do
+    active_task?(task) and stale?(task, now)
+  end
+
+  defp active_task?(task) do
+    in_column?(task, @doing_column) or in_column?(task, @review_column)
+  end
+
+  defp stale?(task, now) do
+    cutoff = NaiveDateTime.add(now, -@stuck_threshold_minutes * 60, :second)
+    recency = task_recency(task)
+    NaiveDateTime.compare(recency, cutoff) == :lt
+  end
+
+  defp now_naive, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
   defp count_completed_on_day(tasks, date) do
     Enum.count(tasks, &completed_on?(&1, date))

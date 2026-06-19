@@ -488,6 +488,90 @@ defmodule Kanban.AgentsTest do
       owner = %{id: 1, name: "Jeffrey"}
       assert %Agent{owner: owner}.owner == owner
     end
+
+    test "defaults stuck to false" do
+      assert %Agent{}.stuck == false
+    end
+  end
+
+  describe "list_agents/1 stuck classification" do
+    defp ago(minutes) do
+      DateTime.utc_now() |> DateTime.add(-minutes * 60, :second) |> DateTime.truncate(:second)
+    end
+
+    test "an agent stalled in Doing past the threshold is stuck", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: ago(90)
+        })
+
+      assert [%Agent{name: "Claude", status: :working, stuck: true}] = Agents.list_agents()
+    end
+
+    test "an agent sitting in review past the threshold is stuck", %{board: board} do
+      review = column_fixture(board, %{name: "Review"})
+
+      {:ok, _} =
+        review
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :in_progress,
+          completed_at: ago(90),
+          needs_review: true
+        })
+
+      assert [%Agent{name: "Claude", status: :waiting, stuck: true}] = Agents.list_agents()
+    end
+
+    test "an agent active just below the threshold is not stuck", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: ago(30)
+        })
+
+      assert [%Agent{name: "Claude", status: :working, stuck: false}] = Agents.list_agents()
+    end
+
+    test "an active agent with no claimed_at is not stuck (recent inserted_at)", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
+
+      assert [%Agent{name: "Claude", stuck: false}] = Agents.list_agents()
+    end
+
+    test "an idle agent is not stuck even with an old completed task", %{board: board} do
+      done = column_fixture(board, %{name: "Done"})
+
+      {:ok, _} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: ago(90)
+        })
+
+      assert [%Agent{name: "Claude", status: :idle, stuck: false}] = Agents.list_agents()
+    end
   end
 
   describe "list_agents/1 owner derivation" do
