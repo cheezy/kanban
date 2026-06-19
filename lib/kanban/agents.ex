@@ -43,6 +43,10 @@ defmodule Kanban.Agents do
 
   @default_event_limit 50
 
+  # Default number of trailing days in the throughput time-series window when
+  # the caller does not pass `:days`. One bucket per UTC date.
+  @default_trend_days 14
+
   # Sentinel recency for an agent with no tasks at all, so it sorts to the
   # bottom of the roster. Agents that have tasks always derive a real
   # timestamp from `task_recency/1` (which falls back to `inserted_at`).
@@ -203,6 +207,43 @@ defmodule Kanban.Agents do
       completed_7d: count_completed_within(tasks, today, 7),
       completed_30d: count_completed_within(tasks, today, 30),
       success_rate: success_rate(tasks)
+    }
+  end
+
+  @doc """
+  Returns a per-day throughput time-series and an aggregate cycle-time metric.
+
+  Accepts an optional `:days` window (default `#{@default_trend_days}`). The
+  returned map contains:
+
+    * `:series` — one bucket per day across the trailing window, oldest
+      first, each a `%{date: Date.t(), count: non_neg_integer()}` where
+      `count` is the number of tasks completed on that UTC date. The series
+      always has exactly `:days` buckets (zero-filled), so a window with no
+      activity yields all-zero counts rather than a short list. A non-positive
+      `:days` yields an empty series.
+    * `:avg_cycle_minutes` — the average `time_spent_minutes` across completed
+      tasks with a recorded value, or `0.0` when none qualify. This reuses the
+      module's canonical cycle-time definition (`time_spent_minutes`, the same
+      value surfaced on `#{inspect(Event)}.cycle_time_minutes`) — no new
+      definition is introduced.
+
+  Buckets are keyed by `DateTime.to_date/1` of `completed_at`, which is stored
+  in UTC, so bucketing is deterministic and time-zone independent. `:scope`
+  board filtering is respected.
+  """
+  @spec throughput_trends(keyword()) :: %{
+          series: [%{date: Date.t(), count: non_neg_integer()}],
+          avg_cycle_minutes: number()
+        }
+  def throughput_trends(opts \\ []) do
+    tasks = fetch_tasks(opts)
+    today = Date.utc_today()
+    days = Keyword.get(opts, :days, @default_trend_days)
+
+    %{
+      series: throughput_buckets(tasks, today, days),
+      avg_cycle_minutes: avg_cycle_minutes(tasks)
     }
   end
 
@@ -371,6 +412,20 @@ defmodule Kanban.Agents do
         %DateTime{} = dt -> Date.compare(DateTime.to_date(dt), earliest) != :lt
       end
     end)
+  end
+
+  # One zero-filled throughput bucket per UTC date across the trailing window,
+  # oldest first. Reuses completed_on?/2 so bucketing matches the rest of the
+  # module (UTC date of completed_at, time-zone independent). A non-positive
+  # window yields an empty series.
+  defp throughput_buckets(_tasks, _today, days) when days < 1, do: []
+
+  defp throughput_buckets(tasks, today, days) do
+    earliest = Date.add(today, -(days - 1))
+
+    earliest
+    |> Date.range(today)
+    |> Enum.map(fn date -> %{date: date, count: count_completed_on_day(tasks, date)} end)
   end
 
   defp success_rate(tasks) do

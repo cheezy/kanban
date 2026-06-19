@@ -835,4 +835,94 @@ defmodule Kanban.AgentsTest do
       |> DateTime.truncate(:second)
     end
   end
+
+  describe "throughput_trends/1" do
+    test "buckets throughput per day across the window, oldest first", %{
+      column: column,
+      user: user
+    } do
+      complete_with_cycle(column, user, days_ago(0), 10)
+      complete_with_cycle(column, user, days_ago(0), 20)
+      complete_with_cycle(column, user, days_ago(1), 30)
+
+      today = Date.utc_today()
+
+      assert Agents.throughput_trends(days: 3).series == [
+               %{date: Date.add(today, -2), count: 0},
+               %{date: Date.add(today, -1), count: 1},
+               %{date: today, count: 2}
+             ]
+    end
+
+    test "averages time_spent_minutes as the aggregate cycle-time metric", %{
+      column: column,
+      user: user
+    } do
+      complete_with_cycle(column, user, days_ago(0), 10)
+      complete_with_cycle(column, user, days_ago(0), 20)
+      complete_with_cycle(column, user, days_ago(1), 60)
+      # A completed task with no recorded time is excluded from the average.
+      complete_at(column, user, days_ago(0), :approved)
+
+      assert Agents.throughput_trends().avg_cycle_minutes == 30.0
+    end
+
+    test "returns a zero-filled series and zero cycle time for an empty window" do
+      today = Date.utc_today()
+
+      assert Agents.throughput_trends(days: 3) == %{
+               series: [
+                 %{date: Date.add(today, -2), count: 0},
+                 %{date: Date.add(today, -1), count: 0},
+                 %{date: today, count: 0}
+               ],
+               avg_cycle_minutes: 0.0
+             }
+    end
+
+    test "returns a single bucket for a one-day window", %{column: column, user: user} do
+      complete_with_cycle(column, user, days_ago(0), 15)
+
+      assert Agents.throughput_trends(days: 1).series == [
+               %{date: Date.utc_today(), count: 1}
+             ]
+    end
+
+    test "returns an empty series for a non-positive window" do
+      assert Agents.throughput_trends(days: 0).series == []
+    end
+
+    test "respects :scope board filtering", %{column: column, user: user} do
+      complete_with_cycle(column, user, days_ago(0), 10)
+
+      other_scope = Scope.for_user(user_fixture())
+      today = Date.utc_today()
+
+      assert Agents.throughput_trends(days: 2, scope: other_scope) == %{
+               series: [
+                 %{date: Date.add(today, -1), count: 0},
+                 %{date: today, count: 0}
+               ],
+               avg_cycle_minutes: 0.0
+             }
+    end
+
+    defp complete_with_cycle(column, user, completed_at, minutes) do
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: completed_at,
+          time_spent_minutes: minutes,
+          review_status: :approved,
+          reviewed_at: completed_at,
+          reviewed_by_id: user.id
+        })
+
+      task
+    end
+  end
 end
