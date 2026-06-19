@@ -146,6 +146,190 @@ defmodule KanbanWeb.AgentsHeader do
     """
   end
 
+  @doc """
+  Renders the PM-facing delivery-trends band.
+
+  Sits below the header/live-indicator and above the two-column body. Shows
+  throughput counters (today / 7d / 30d), the overall success rate, and the
+  average cycle time as stat cards, followed by a compact per-day throughput
+  bar strip. Purely presentational — the caller passes the aggregate maps.
+
+  ## Attrs
+
+    * `throughput_and_success` — map with `:completed_today`, `:completed_7d`,
+      `:completed_30d`, and `:success_rate` keys (the shape returned by
+      `Kanban.Agents.throughput_and_success/1`). Required.
+    * `throughput_trends` — map with `:series` (a list of
+      `%{date: Date.t(), count: non_neg_integer()}`) and `:avg_cycle_minutes`
+      (the shape returned by `Kanban.Agents.throughput_trends/1`). Required.
+  """
+  attr :throughput_and_success, :map, required: true
+  attr :throughput_trends, :map, required: true
+
+  def pm_trends(assigns) do
+    series = assigns.throughput_trends.series
+
+    max_count =
+      case Enum.map(series, & &1.count) do
+        [] -> 0
+        counts -> Enum.max(counts)
+      end
+
+    assigns = assign(assigns, :max_count, max_count)
+
+    ~H"""
+    <section
+      data-agents-pm-trends
+      class="stride-screen"
+      style={[
+        "display: flex; flex-direction: column; gap: 12px;",
+        "padding: 12px 24px;",
+        "border-bottom: 1px solid var(--line);",
+        "background: var(--surface);"
+      ]}
+    >
+      <div style={[
+        "display: flex; align-items: flex-end; justify-content: space-between;",
+        "gap: 16px; flex-wrap: wrap;"
+      ]}>
+        <h2 style={[
+          "margin: 0;",
+          "font-size: 11px; font-weight: 600;",
+          "text-transform: uppercase; letter-spacing: 0.08em;",
+          "color: var(--ink-3);"
+        ]}>
+          {gettext("Delivery trends")}
+        </h2>
+
+        <dl
+          data-agents-pm-trends-stats
+          style={[
+            "display: flex; align-items: stretch; flex-wrap: wrap; gap: 18px;",
+            "margin: 0; padding: 0;"
+          ]}
+        >
+          <.trend_stat
+            marker="throughput-today"
+            label={gettext("Completed today")}
+            value={@throughput_and_success.completed_today}
+            tone="var(--st-done)"
+          />
+          <.trend_stat
+            marker="throughput-7d"
+            label={gettext("Completed · 7d")}
+            value={@throughput_and_success.completed_7d}
+            tone="var(--st-done)"
+          />
+          <.trend_stat
+            marker="throughput-30d"
+            label={gettext("Completed · 30d")}
+            value={@throughput_and_success.completed_30d}
+            tone="var(--st-done)"
+          />
+          <.trend_stat
+            marker="success-rate"
+            label={gettext("Success rate")}
+            value={format_rate(@throughput_and_success.success_rate)}
+            tone="var(--st-review)"
+          />
+          <.trend_stat
+            marker="avg-cycle"
+            label={gettext("Cycle time · avg")}
+            value={format_cycle(@throughput_trends.avg_cycle_minutes)}
+            tone="var(--ink)"
+          />
+        </dl>
+      </div>
+
+      <div
+        :if={@max_count > 0}
+        data-agents-pm-trends-series
+        style={[
+          "display: flex; align-items: flex-end; gap: 4px;",
+          "height: 64px; overflow-x: auto;"
+        ]}
+      >
+        <div
+          :for={entry <- @throughput_trends.series}
+          data-agents-pm-trends-bar={Date.to_iso8601(entry.date)}
+          title={trend_bar_title(entry)}
+          style={[
+            "display: flex; flex-direction: column; align-items: center; gap: 3px;",
+            "min-width: 18px;"
+          ]}
+        >
+          <span style={[
+            "font-size: 9px; color: var(--ink-3);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {entry.count}
+          </span>
+          <span
+            aria-hidden="true"
+            style={[
+              "width: 14px; border-radius: 3px 3px 0 0;",
+              "background: var(--st-done);",
+              "height: #{bar_height(entry.count, @max_count)}px;"
+            ]}
+          />
+          <span style={[
+            "font-size: 9px; color: var(--ink-3);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {format_day(entry.date)}
+          </span>
+        </div>
+      </div>
+
+      <p
+        :if={@max_count == 0}
+        data-agents-pm-trends-empty
+        style={[
+          "margin: 0;",
+          "font-size: 12px; font-style: italic;",
+          "color: var(--ink-3);"
+        ]}
+      >
+        {gettext("No completed tasks in this window yet.")}
+      </p>
+    </section>
+    """
+  end
+
+  attr :marker, :string, required: true
+  attr :label, :string, required: true
+  attr :value, :any, required: true
+  attr :tone, :string, required: true
+
+  # One PM-trends stat card. Mirrors `kv/1` styling but carries its own
+  # `data-agents-pm-trends-stat` marker so it is queryable independently of
+  # the header's daily stat cards (which reuse some of the same labels).
+  defp trend_stat(assigns) do
+    ~H"""
+    <div
+      data-agents-pm-trends-stat={@marker}
+      style="display: flex; flex-direction: column; gap: 2px; min-width: 92px;"
+    >
+      <dt style={[
+        "margin: 0;",
+        "font-size: 10px; font-weight: 600;",
+        "text-transform: uppercase; letter-spacing: 0.08em;",
+        "color: var(--ink-3);"
+      ]}>
+        {@label}
+      </dt>
+      <dd style={[
+        "margin: 0;",
+        "font-size: 18px; font-weight: 600;",
+        "color: #{@tone};",
+        "font-variant-numeric: tabular-nums;"
+      ]}>
+        {@value}
+      </dd>
+    </div>
+    """
+  end
+
   attr :marker, :string, required: true
   attr :label, :string, required: true
   attr :value, :any, required: true
@@ -247,4 +431,26 @@ defmodule KanbanWeb.AgentsHeader do
   end
 
   defp format_cycle(_), do: "—"
+
+  # Overall success rate (a 0.0..1.0 float) rendered as a whole-number percent.
+  defp format_rate(rate) when is_number(rate), do: gettext("%{pct}%", pct: round(rate * 100))
+  defp format_rate(_), do: "—"
+
+  # Compact day-of-month label under each throughput bar.
+  defp format_day(%Date{} = date), do: Calendar.strftime(date, "%-d")
+
+  # Hover title for a throughput bar — full month/day and the completion count.
+  defp trend_bar_title(%{date: %Date{} = date, count: count}) do
+    gettext("%{date}: %{count} completed",
+      date: Calendar.strftime(date, "%b %-d"),
+      count: count
+    )
+  end
+
+  # Bar pixel height scaled to the window's busiest day (max 40px). A minimum
+  # of 2px keeps non-zero-but-tiny days visible; the series is only rendered
+  # when at least one day has activity, so `max` is always positive here.
+  defp bar_height(count, max) when is_integer(count) and is_integer(max) and max > 0 do
+    max(2, round(count / max * 40))
+  end
 end

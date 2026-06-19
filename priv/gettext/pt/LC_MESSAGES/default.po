@@ -7226,3 +7226,38 @@ msgstr "Bloqueado"
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr "Em espera"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Delivery trends"
+msgstr "Tendências de entrega"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 7d"
+msgstr "Concluídas · 7 d"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 30d"
+msgstr "Concluídas · 30 d"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Success rate"
+msgstr "Taxa de sucesso"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "No completed tasks in this window yet."
+msgstr "Ainda não há tarefas concluídas neste período."
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{pct}%"
+msgstr "%{pct} %"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{date}: %{count} completed"
+msgstr "%{date}: %{count} concluídas"

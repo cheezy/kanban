@@ -7150,3 +7150,38 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Delivery trends"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 7d"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 30d"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Success rate"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "No completed tasks in this window yet."
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{pct}%"
+msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{date}: %{count} completed"
+msgstr ""

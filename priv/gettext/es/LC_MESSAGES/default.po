@@ -7249,3 +7249,38 @@ msgstr "Atascado"
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr "Esperando"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Delivery trends"
+msgstr "Tendencias de entrega"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 7d"
+msgstr "Completadas · 7 d"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 30d"
+msgstr "Completadas · 30 d"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Success rate"
+msgstr "Tasa de éxito"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "No completed tasks in this window yet."
+msgstr "Aún no hay tareas completadas en este período."
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{pct}%"
+msgstr "%{pct} %"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{date}: %{count} completed"
+msgstr "%{date}: %{count} completadas"

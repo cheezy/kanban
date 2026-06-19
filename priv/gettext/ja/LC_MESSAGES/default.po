@@ -7196,3 +7196,38 @@ msgstr "停滞中"
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr "待機中"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Delivery trends"
+msgstr "デリバリーの傾向"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 7d"
+msgstr "完了 · 7日"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 30d"
+msgstr "完了 · 30日"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Success rate"
+msgstr "成功率"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "No completed tasks in this window yet."
+msgstr "この期間に完了したタスクはまだありません。"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{pct}%"
+msgstr "%{pct}%"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{date}: %{count} completed"
+msgstr "%{date}: %{count} 件完了"

@@ -7256,3 +7256,38 @@ msgstr "Festgefahren"
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr "Wartend"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Delivery trends"
+msgstr "Liefertrends"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 7d"
+msgstr "Abgeschlossen · 7 T"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Completed · 30d"
+msgstr "Abgeschlossen · 30 T"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "Success rate"
+msgstr "Erfolgsquote"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "No completed tasks in this window yet."
+msgstr "Noch keine abgeschlossenen Aufgaben in diesem Zeitraum."
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{pct}%"
+msgstr "%{pct} %"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "%{date}: %{count} completed"
+msgstr "%{date}: %{count} abgeschlossen"

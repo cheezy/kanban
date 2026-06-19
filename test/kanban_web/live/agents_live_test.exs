@@ -135,6 +135,18 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  # Pulls the rendered value (count, percent, or cycle-time string) from a
+  # PM-trends stat card for a given marker (throughput-today, success-rate, …).
+  defp pm_trends_value(html, marker) do
+    case Regex.run(
+           ~r/data-agents-pm-trends-stat="#{marker}".*?<dd[^>]*>\s*(.*?)\s*<\/dd>/s,
+           html
+         ) do
+      [_, v] -> v
+      _ -> nil
+    end
+  end
+
   describe "unauthenticated access" do
     test "redirects to the log-in page when the user is not signed in", %{conn: conn} do
       assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/agents")
@@ -728,6 +740,109 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert fleet_count(html, "waiting") == 0
       assert fleet_count(html, "stuck") == 0
       assert fleet_count(html, "idle") == 0
+    end
+  end
+
+  describe "PM trends section" do
+    setup [:register_and_log_in_user]
+
+    test "renders throughput counters, success rate, and cycle time",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Three completions today: two approved, one rejected (success 67%),
+      # with cycle times 10/20/30 (avg 20m).
+      for {minutes, status} <- [{10, :approved}, {20, :approved}, {30, :rejected}] do
+        {:ok, _} =
+          column
+          |> task_fixture()
+          |> Tasks.update_task(%{
+            created_by_agent: "Claude",
+            completed_by_agent: "Claude",
+            status: :completed,
+            completed_at: now,
+            time_spent_minutes: minutes,
+            review_status: status,
+            reviewed_at: now,
+            reviewed_by_id: user.id
+          })
+      end
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-pm-trends"
+      assert pm_trends_value(html, "throughput-today") == "3"
+      assert pm_trends_value(html, "throughput-7d") == "3"
+      assert pm_trends_value(html, "throughput-30d") == "3"
+      assert pm_trends_value(html, "success-rate") == "67%"
+      assert pm_trends_value(html, "avg-cycle") == "20m"
+    end
+
+    test "renders the per-day throughput time-series as a bar strip",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # A single completed task (the "single data point" edge case) still
+      # renders the full zero-filled 14-day window.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-pm-trends-series"
+      refute html =~ "data-agents-pm-trends-empty"
+      # Default 14-day window -> 14 day buckets.
+      assert length(Regex.scan(~r/data-agents-pm-trends-bar=/, html)) == 14
+      # Bars use the design-system completion token, not a hardcoded color.
+      assert html =~ "var(--st-done)"
+    end
+
+    test "shows the empty hint and zeroed stats when nothing has completed",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-pm-trends"
+      assert html =~ "data-agents-pm-trends-empty"
+      refute html =~ "data-agents-pm-trends-series"
+      assert pm_trends_value(html, "throughput-today") == "0"
+      assert pm_trends_value(html, "success-rate") == "0%"
+      assert pm_trends_value(html, "avg-cycle") == "—"
+    end
+
+    test "refreshes the PM trends on an agent_event broadcast",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert pm_trends_value(html, "throughput-today") == "0"
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      send(view.pid, :refresh_agents_data)
+
+      assert pm_trends_value(render(view), "throughput-today") == "1"
     end
   end
 end

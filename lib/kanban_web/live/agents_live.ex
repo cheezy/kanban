@@ -140,6 +140,11 @@ defmodule KanbanWeb.AgentsLive do
           <span>{live_indicator_label(@connected_count)}</span>
         </div>
 
+        <AgentsHeader.pm_trends
+          throughput_and_success={@throughput_and_success}
+          throughput_trends={@throughput_trends}
+        />
+
         <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside
             data-agents-roster
@@ -220,22 +225,18 @@ defmodule KanbanWeb.AgentsLive do
 
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
-
-    agents = Agents.list_agents(scope: scope)
     events = Agents.recent_activity(scope: scope, limit: @recent_activity_limit)
-    stats = Agents.header_stats(scope: scope)
-    fleet_health = Agents.fleet_health(scope: scope)
 
-    socket
-    |> assign(:agents, agents)
-    |> assign(:all_events, events)
-    |> assign(
-      :events,
-      apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent)
-    )
-    |> assign(:stats, stats)
-    |> assign(:fleet_health, fleet_health)
-    |> assign(:event_count_24h, count_events_within_24h(events))
+    assign(socket, %{
+      agents: Agents.list_agents(scope: scope),
+      all_events: events,
+      events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
+      stats: Agents.header_stats(scope: scope),
+      fleet_health: Agents.fleet_health(scope: scope),
+      throughput_and_success: Agents.throughput_and_success(scope: scope),
+      throughput_trends: Agents.throughput_trends(scope: scope),
+      event_count_24h: count_events_within_24h(events)
+    })
   end
 
   defp maybe_schedule_refresh(%{assigns: %{refresh_scheduled?: true}} = socket), do: socket
