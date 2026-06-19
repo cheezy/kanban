@@ -260,6 +260,51 @@ defmodule KanbanWeb.AgentRosterCardTest do
       assert html =~ ~r{<dd[^>]*>\s*30\s*</dd>}
     end
 
+    test "labels each of the four stats in its own cell" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      assert html =~ ~r{<dt[^>]*>\s*Today\s*</dt>}
+      assert html =~ ~r{<dt[^>]*>\s*7d\s*</dt>}
+      assert html =~ ~r{<dt[^>]*>\s*Success\s*</dt>}
+      assert html =~ ~r{<dt[^>]*>\s*Claims\s*</dt>}
+    end
+
+    test "uses a stable two-column layout that does not collapse to four columns" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      # A 2x2 grid keeps each stat in a wide cell at the fixed roster width so
+      # Success and Claims never overlap. The old narrow four-up layout
+      # (sm:grid-cols-4) is what caused the overlap and must not return.
+      assert html =~ "grid-cols-2"
+      refute html =~ "sm:grid-cols-4"
+    end
+
+    test "keeps wide values readable without overlap" do
+      assigns = %{
+        agent: agent(%{today: 644, last_7d: 644, success_rate: 1.0, claim_count: 644})
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      # A three-digit claim count and a 100% success rate must each render in
+      # their own cell rather than spilling over a neighbour.
+      assert html =~ ~r{<dd[^>]*>\s*100%\s*</dd>}
+      assert html =~ ~r{<dd[^>]*>\s*644\s*</dd>}
+    end
+
     test "renders zeros for an idle agent with no activity" do
       assigns = %{agent: agent()}
 

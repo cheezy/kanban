@@ -171,7 +171,7 @@ defmodule KanbanWeb.AgentRosterCard do
     ~H"""
     <dl
       data-agent-stats-grid
-      class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 m-0 p-0"
+      class="grid grid-cols-2 gap-x-3 gap-y-2 m-0 p-0"
     >
       <.stat label={gettext("Today")} value={@agent.today} />
       <.stat label={gettext("7d")} value={@agent.last_7d} />
@@ -186,10 +186,11 @@ defmodule KanbanWeb.AgentRosterCard do
 
   defp stat(assigns) do
     ~H"""
-    <div style="display: flex; flex-direction: column; gap: 2px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
       <dt style={[
         "font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;",
-        "color: var(--ink-3);"
+        "color: var(--ink-3);",
+        "overflow-wrap: anywhere;"
       ]}>
         {@label}
       </dt>
@@ -197,7 +198,8 @@ defmodule KanbanWeb.AgentRosterCard do
         "margin: 0;",
         "font-size: 13px; font-weight: 600;",
         "color: var(--ink);",
-        "font-variant-numeric: tabular-nums;"
+        "font-variant-numeric: tabular-nums;",
+        "overflow-wrap: anywhere;"
       ]}>
         {@value}
       </dd>
