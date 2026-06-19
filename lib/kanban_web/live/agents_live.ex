@@ -19,6 +19,7 @@ defmodule KanbanWeb.AgentsLive do
 
   alias Kanban.Agents
   alias KanbanWeb.AgentActivityFeed
+  alias KanbanWeb.AgentDetailPanel
   alias KanbanWeb.AgentRosterCard
   alias KanbanWeb.AgentsHeader
   alias KanbanWeb.AgentsPresence
@@ -66,6 +67,7 @@ defmodule KanbanWeb.AgentsLive do
     {:noreply,
      socket
      |> assign(:selected_agent, selected)
+     |> assign(:agent_detail, agent_detail_for(socket.assigns.current_scope, selected))
      |> assign(
        :events,
        apply_filters(socket.assigns.all_events, socket.assigns.filter, selected)
@@ -77,6 +79,7 @@ defmodule KanbanWeb.AgentsLive do
     {:noreply,
      socket
      |> assign(:selected_agent, nil)
+     |> assign(:agent_detail, nil)
      |> assign(:events, apply_filters(socket.assigns.all_events, socket.assigns.filter, nil))}
   end
 
@@ -268,6 +271,10 @@ defmodule KanbanWeb.AgentsLive do
               </button>
             </div>
 
+            <div :if={@agent_detail} data-agent-detail style="margin-bottom: 16px;">
+              <AgentDetailPanel.panel detail={@agent_detail} />
+            </div>
+
             <AgentActivityFeed.feed
               events={@events}
               filter={@filter}
@@ -288,18 +295,39 @@ defmodule KanbanWeb.AgentsLive do
     {live_agents, dormant_agents} =
       [scope: scope] |> Agents.list_agents() |> Enum.split_with(&(not &1.dormant))
 
-    assign(socket, %{
-      agents: live_agents,
-      dormant_agents: dormant_agents,
-      all_events: events,
-      events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
+    assign(
+      socket,
+      Map.merge(
+        %{
+          agents: live_agents,
+          dormant_agents: dormant_agents,
+          all_events: events,
+          events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
+          # Recompute the open agent's drill-down so it refreshes on the same
+          # PubSub debounce as the rest of the view; nil when nothing is selected.
+          agent_detail: agent_detail_for(scope, socket.assigns.selected_agent),
+          event_count_24h: count_events_within_24h(events)
+        },
+        metric_assigns(scope)
+      )
+    )
+  end
+
+  # The fleet-level aggregate rollups, grouped so load_agents_data/1 stays
+  # under the complexity budget.
+  defp metric_assigns(scope) do
+    %{
       stats: Agents.header_stats(scope: scope),
       fleet_health: Agents.fleet_health(scope: scope),
       throughput_and_success: Agents.throughput_and_success(scope: scope),
-      throughput_trends: Agents.throughput_trends(scope: scope),
-      event_count_24h: count_events_within_24h(events)
-    })
+      throughput_trends: Agents.throughput_trends(scope: scope)
+    }
   end
+
+  # The drill-down for the selected agent, or nil when no agent is selected.
+  # Reads from the Kanban.Agents context (no query in the LiveView).
+  defp agent_detail_for(_scope, nil), do: nil
+  defp agent_detail_for(scope, name), do: Agents.agent_detail(name, scope: scope)
 
   defp maybe_schedule_refresh(%{assigns: %{refresh_scheduled?: true}} = socket), do: socket
 

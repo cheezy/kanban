@@ -986,4 +986,127 @@ defmodule KanbanWeb.AgentsLiveTest do
       |> task_fixture()
       |> Tasks.update_task(%{created_by_agent: name, claimed_at: stale, status: :in_progress})
   end
+
+  describe "agent detail drill-down" do
+    setup [:register_and_log_in_user]
+
+    @roster_card_for ~s([data-agent-roster-card][data-agent-name="Claude"])
+
+    test "selecting an agent opens the populated detail panel", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      refute html =~ "data-agent-detail-panel"
+
+      selected = view |> element(@roster_card_for) |> render_click()
+
+      assert selected =~ "data-agent-detail-panel"
+      assert selected =~ "data-agent-detail-name"
+      assert selected =~ "Current work"
+    end
+
+    test "clearing the filter closes the detail panel", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+      assert render(view) =~ "data-agent-detail-panel"
+
+      cleared = view |> element(~s([data-clear-agent-filter])) |> render_click()
+      refute cleared =~ "data-agent-detail-panel"
+    end
+
+    test "selecting the same agent again closes the panel", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+      assert render(view) =~ "data-agent-detail-panel"
+
+      toggled_off = view |> element(@roster_card_for) |> render_click()
+      refute toggled_off =~ "data-agent-detail-panel"
+    end
+
+    test "the detail panel refreshes on a broadcast while an agent is selected",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, new_task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      # The just-created completion is not in the panel until the debounced
+      # refresh re-runs load_agents_data.
+      refute detail_html(render(view)) =~ new_task.identifier
+
+      send(view.pid, :refresh_agents_data)
+
+      # After the refresh it surfaces inside the detail panel region (not just the feed).
+      assert detail_html(render(view)) =~ new_task.identifier
+    end
+
+    test "shows No active task for a selected agent without a Doing task",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      selected = view |> element(@roster_card_for) |> render_click()
+
+      assert selected =~ "data-agent-detail-panel"
+      assert selected =~ "No active task"
+    end
+  end
+
+  defp seed_working_agent(board, name) do
+    doing = column_fixture(board, %{name: "Doing"})
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {:ok, _} =
+      doing
+      |> task_fixture()
+      |> Tasks.update_task(%{
+        created_by_agent: name,
+        completed_by_agent: name,
+        status: :in_progress,
+        claimed_at: now
+      })
+  end
+
+  # Slices the rendered page down to the detail-panel region (between the panel
+  # wrapper and the activity feed) so assertions are not confused by content
+  # that also appears in the feed.
+  defp detail_html(html) do
+    case String.split(html, "data-agent-detail", parts: 2) do
+      [_, rest] -> rest |> String.split("data-agent-feed", parts: 2) |> hd()
+      _ -> ""
+    end
+  end
 end
