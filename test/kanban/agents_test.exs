@@ -1039,4 +1039,124 @@ defmodule Kanban.AgentsTest do
       assert Agents.fleet_health() == %{working: 0, waiting: 0, idle: 0, stuck: 0}
     end
   end
+
+  describe "agent_detail/2" do
+    test "returns the drill-down for a populated agent", %{board: board, user: user} do
+      doing = column_fixture(board, %{name: "Doing"})
+      done = column_fixture(board, %{name: "Done"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, doing_task} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: now
+        })
+
+      {:ok, _rejected} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          claimed_at: now,
+          completed_at: now,
+          review_status: :rejected,
+          reviewed_at: now,
+          reviewed_by_id: user.id
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert detail.name == "Claude"
+      assert detail.current_task == %{identifier: doing_task.identifier, title: doing_task.title}
+      # Both tasks were claimed by Claude.
+      assert length(detail.claims) == 2
+      assert [%{identifier: _, title: _, at: %DateTime{}} | _] = detail.claims
+      assert length(detail.failures) == 1
+      assert detail.recent_activity != []
+    end
+
+    test "returns nil for an unknown agent" do
+      assert Agents.agent_detail("Nobody") == nil
+    end
+
+    test "surfaces rejected tasks as failures", %{column: column, user: user} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now,
+          review_status: :rejected,
+          reviewed_at: now,
+          reviewed_by_id: user.id
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert [%{identifier: id, title: _, at: %DateTime{}}] = detail.failures
+      assert id == task.identifier
+    end
+
+    test "returns a nil current_task when the agent holds no Doing task", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          claimed_at: now,
+          completed_at: now
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert detail.current_task == nil
+      # Claim history is still surfaced even with no active task.
+      assert length(detail.claims) == 1
+      assert detail.failures == []
+    end
+
+    test "handles an agent whose only work was rejected", %{column: column, user: user} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now,
+          review_status: :rejected,
+          reviewed_at: now,
+          reviewed_by_id: user.id
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert detail.current_task == nil
+      assert length(detail.failures) == 1
+    end
+
+    test "respects :scope and returns nil for another user's scope", %{column: column} do
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Claude"})
+
+      other_scope = Scope.for_user(user_fixture())
+
+      assert Agents.agent_detail("Claude", scope: other_scope) == nil
+    end
+  end
 end

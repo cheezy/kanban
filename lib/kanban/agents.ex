@@ -55,6 +55,10 @@ defmodule Kanban.Agents do
 
   @default_event_limit 50
 
+  # Maximum number of derived events surfaced in a single agent's drill-down
+  # (`agent_detail/2`), newest first.
+  @agent_detail_activity_limit 20
+
   # Sentinel recency for an agent with no tasks at all, so it sorts to the
   # bottom of the roster. Agents that have tasks always derive a real
   # timestamp from `task_recency/1` (which falls back to `inserted_at`).
@@ -176,6 +180,51 @@ defmodule Kanban.Agents do
           avg_cycle_minutes: number()
         }
   def throughput_trends(opts \\ []), do: Metrics.throughput_trends(opts)
+
+  @doc """
+  Returns a per-agent drill-down for the named agent, or `nil` if unknown.
+
+  Derived from the single scoped Task fetch (no N+1) for the agent's own tasks
+  (those it created or completed). The returned map contains:
+
+    * `:name` — the agent name (echoed back)
+    * `:current_task` — the agent's active Doing-column task as
+      `%{identifier, title}`, or `nil` when it holds none
+    * `:claims` — claim history: the tasks this agent claimed, each
+      `%{identifier, title, at}` (the `claimed_at` time), newest first
+    * `:failures` — tasks whose review was rejected, each
+      `%{identifier, title, at}` (the `reviewed_at` time), newest first
+    * `:recent_activity` — up to #{@agent_detail_activity_limit} of the
+      agent's derived `Event`s (create/claim/complete/review), newest first
+
+  Returns `nil` for an unknown agent (one with no visible tasks). `:scope`
+  board filtering is respected via the shared task fetch, so no task outside
+  the scoped board set is surfaced.
+  """
+  @spec agent_detail(String.t(), keyword()) ::
+          %{
+            name: String.t(),
+            current_task: %{identifier: String.t(), title: String.t()} | nil,
+            claims: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
+            failures: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
+            recent_activity: [Event.t()]
+          }
+          | nil
+  def agent_detail(name, opts \\ []) do
+    case opts |> fetch_tasks() |> filter_by_agent(name) do
+      [] ->
+        nil
+
+      own_tasks ->
+        %{
+          name: name,
+          current_task: current_task(own_tasks),
+          claims: claim_history(own_tasks, name),
+          failures: failures(own_tasks),
+          recent_activity: agent_events(own_tasks, name)
+        }
+    end
+  end
 
   # --- Query helpers ---------------------------------------------------------
 
@@ -466,4 +515,42 @@ defmodule Kanban.Agents do
 
   defp to_datetime(%DateTime{} = dt), do: dt
   defp to_datetime(%NaiveDateTime{} = ndt), do: DateTime.from_naive!(ndt, "Etc/UTC")
+
+  # --- agent_detail/2 --------------------------------------------------------
+
+  # Tasks this agent claimed (claim actor matches and a claim timestamp
+  # exists), newest first. Mirrors claim_actor/1's completer-then-creator
+  # precedence so the history reflects the agent that worked the task.
+  defp claim_history(tasks, name) do
+    tasks
+    |> Enum.filter(&(not is_nil(&1.claimed_at) and claim_actor(&1) == name))
+    |> Enum.map(&task_ref(&1, &1.claimed_at))
+    |> Enum.sort_by(& &1.at, {:desc, DateTime})
+  end
+
+  # Tasks whose review was rejected, newest first by review time. A rejected
+  # task always carries a `reviewed_at` (the review changeset requires it).
+  defp failures(tasks) do
+    tasks
+    |> Enum.filter(&(&1.review_status == :rejected))
+    |> Enum.map(&task_ref(&1, &1.reviewed_at))
+    |> Enum.sort_by(& &1.at, {:desc, DateTime})
+  end
+
+  # A lightweight task reference for the drill-down lists: identifier, title,
+  # and the relevant timestamp coerced to a DateTime.
+  defp task_ref(task, at) do
+    %{identifier: task.identifier, title: task.title, at: to_datetime(at)}
+  end
+
+  # The agent's own derived events (create/claim/complete/review), newest
+  # first, capped at @agent_detail_activity_limit. Reuses events_for/1 so the
+  # event shape matches the activity feed exactly.
+  defp agent_events(tasks, name) do
+    tasks
+    |> Enum.flat_map(&events_for/1)
+    |> Enum.filter(&(&1.actor == name))
+    |> Enum.sort_by(& &1.at, {:desc, DateTime})
+    |> Enum.take(@agent_detail_activity_limit)
+  end
 end
