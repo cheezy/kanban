@@ -7261,3 +7261,8 @@ msgstr "%{pct} %"
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr "%{date}: %{count} concluídas"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "of which"
+msgstr "dos quais"

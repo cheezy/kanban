@@ -741,6 +741,59 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert fleet_count(html, "stuck") == 0
       assert fleet_count(html, "idle") == 0
     end
+
+    test "renders working/waiting/idle as a partition and stuck as a separated overlay",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+      recent = DateTime.utc_now() |> DateTime.truncate(:second)
+      stale = DateTime.utc_now() |> DateTime.add(-90 * 60, :second) |> DateTime.truncate(:second)
+
+      # Working agent (not stuck).
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Worker",
+          status: :in_progress,
+          claimed_at: recent
+        })
+
+      # Waiting agent that is also stuck (parked in review past the threshold).
+      {:ok, _} =
+        review
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Reviewer",
+          completed_by_agent: "Reviewer",
+          status: :in_progress,
+          completed_at: stale
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # The partition, divider, and overlay structure is present.
+      assert html =~ "data-agents-fleet-health-partition"
+      assert html =~ "data-agents-fleet-health-divider"
+      assert html =~ "data-agents-fleet-health-overlay"
+      assert html =~ "of which"
+
+      # working + waiting + idle partition the 2 live agents; stuck (1) overlaps
+      # one of them rather than adding a fourth bucket.
+      assert fleet_count(html, "working") + fleet_count(html, "waiting") +
+               fleet_count(html, "idle") == 2
+
+      assert fleet_count(html, "stuck") == 1
+
+      # Stuck renders inside the overlay (after the partition), not among the
+      # partition chips.
+      {working_pos, _} = :binary.match(html, ~s(data-agents-fleet-health-stat="working"))
+      {overlay_pos, _} = :binary.match(html, "data-agents-fleet-health-overlay")
+      {stuck_pos, _} = :binary.match(html, ~s(data-agents-fleet-health-stat="stuck"))
+      assert working_pos < overlay_pos
+      assert overlay_pos < stuck_pos
+    end
   end
 
   describe "PM trends section" do

@@ -111,36 +111,67 @@ defmodule KanbanWeb.AgentsHeader do
       <dl
         data-agents-fleet-health
         style={[
-          "display: flex; align-items: stretch; flex-wrap: wrap; gap: 10px;",
+          "display: flex; align-items: center; flex-wrap: wrap; gap: 10px;",
           "margin: 0; padding: 0;"
         ]}
       >
-        <.health_stat
-          marker="working"
-          label={gettext("Working")}
-          value={@fleet_health.working}
-          tone="var(--st-doing)"
+        <%!-- Working / Waiting / Idle partition the live agent set and sum to it. --%>
+        <div
+          data-agents-fleet-health-partition
+          style="display: flex; align-items: stretch; flex-wrap: wrap; gap: 10px;"
+        >
+          <.health_stat
+            marker="working"
+            label={gettext("Working")}
+            value={@fleet_health.working}
+            tone="var(--st-doing)"
+          />
+          <.health_stat
+            marker="waiting"
+            label={gettext("Waiting")}
+            value={@fleet_health.waiting}
+            tone="var(--ink-3)"
+          />
+          <.health_stat
+            marker="idle"
+            label={gettext("Idle")}
+            value={@fleet_health.idle}
+            tone="var(--stride-orange-ink)"
+            soft="var(--stride-orange-soft)"
+          />
+        </div>
+
+        <span
+          data-agents-fleet-health-divider
+          aria-hidden="true"
+          style={[
+            "align-self: center;",
+            "width: 1px; height: 28px;",
+            "background: var(--line);"
+          ]}
         />
-        <.health_stat
-          marker="waiting"
-          label={gettext("Waiting")}
-          value={@fleet_health.waiting}
-          tone="var(--ink-3)"
-        />
-        <.health_stat
-          marker="stuck"
-          label={gettext("Stuck")}
-          value={@fleet_health.stuck}
-          tone="var(--st-blocked)"
-          soft="var(--st-blocked-soft)"
-        />
-        <.health_stat
-          marker="idle"
-          label={gettext("Idle")}
-          value={@fleet_health.idle}
-          tone="var(--stride-orange-ink)"
-          soft="var(--stride-orange-soft)"
-        />
+
+        <%!-- Stuck is a cross-cutting overlay, not part of the partition above:
+             a stuck agent is already counted in working or waiting. --%>
+        <div
+          data-agents-fleet-health-overlay
+          style="display: flex; align-items: center; gap: 8px;"
+        >
+          <span style={[
+            "font-size: 10px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.08em;",
+            "color: var(--ink-3);"
+          ]}>
+            {gettext("of which")}
+          </span>
+          <.health_stat
+            marker="stuck"
+            label={gettext("Stuck")}
+            value={@fleet_health.stuck}
+            tone="var(--st-blocked)"
+            soft="var(--st-blocked-soft)"
+          />
+        </div>
       </dl>
     </header>
     """
