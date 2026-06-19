@@ -169,6 +169,43 @@ defmodule Kanban.Agents do
     }
   end
 
+  @doc """
+  Returns fleet-wide throughput counts and an overall success rate.
+
+  Throughput is the number of tasks whose `completed_at` falls within each
+  window, counted once per task. The returned map contains:
+
+    * `:completed_today` — completions on the current UTC date
+    * `:completed_7d` — completions within the trailing 7-day window
+      (today and the six prior days)
+    * `:completed_30d` — completions within the trailing 30-day window
+    * `:success_rate` — approved over (approved + rejected) across the
+      visible tasks, as a float in `0.0..1.0`; `0.0` when no task has been
+      approved or rejected
+
+  Counts are derived directly from the visible Task set — not summed across
+  per-agent rollups — so a task touched by two agents is counted once, and
+  there is no double-count. `:scope` board filtering is respected. An empty
+  task set returns all zeros.
+  """
+  @spec throughput_and_success(keyword()) :: %{
+          completed_today: non_neg_integer(),
+          completed_7d: non_neg_integer(),
+          completed_30d: non_neg_integer(),
+          success_rate: float()
+        }
+  def throughput_and_success(opts \\ []) do
+    tasks = fetch_tasks(opts)
+    today = Date.utc_today()
+
+    %{
+      completed_today: count_completed_on_day(tasks, today),
+      completed_7d: count_completed_within(tasks, today, 7),
+      completed_30d: count_completed_within(tasks, today, 30),
+      success_rate: success_rate(tasks)
+    }
+  end
+
   # --- Query helpers ---------------------------------------------------------
 
   defp fetch_tasks(opts) do

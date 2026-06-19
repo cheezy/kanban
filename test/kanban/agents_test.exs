@@ -698,4 +698,141 @@ defmodule Kanban.AgentsTest do
              }
     end
   end
+
+  describe "throughput_and_success/1" do
+    test "returns all zeros for empty data" do
+      assert Agents.throughput_and_success() == %{
+               completed_today: 0,
+               completed_7d: 0,
+               completed_30d: 0,
+               success_rate: 0.0
+             }
+    end
+
+    test "counts throughput over the today, 7-day, and 30-day windows", %{
+      column: column,
+      user: user
+    } do
+      complete_at(column, user, days_ago(0), :approved)
+      complete_at(column, user, days_ago(3), :approved)
+      complete_at(column, user, days_ago(20), :approved)
+      complete_at(column, user, days_ago(40), :approved)
+
+      assert Agents.throughput_and_success() == %{
+               completed_today: 1,
+               completed_7d: 2,
+               completed_30d: 3,
+               success_rate: 1.0
+             }
+    end
+
+    test "computes the overall success rate from approved and rejected tasks", %{
+      column: column,
+      user: user
+    } do
+      complete_at(column, user, days_ago(0), :approved)
+      complete_at(column, user, days_ago(0), :approved)
+      complete_at(column, user, days_ago(0), :approved)
+      complete_at(column, user, days_ago(0), :rejected)
+
+      assert Agents.throughput_and_success() == %{
+               completed_today: 4,
+               completed_7d: 4,
+               completed_30d: 4,
+               success_rate: 0.75
+             }
+    end
+
+    test "returns zero throughput and zero success rate when no task is completed", %{
+      column: column
+    } do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
+
+      assert Agents.throughput_and_success() == %{
+               completed_today: 0,
+               completed_7d: 0,
+               completed_30d: 0,
+               success_rate: 0.0
+             }
+    end
+
+    test "reports a 0.0 success rate when every reviewed task failed", %{
+      column: column,
+      user: user
+    } do
+      complete_at(column, user, days_ago(0), :rejected)
+      complete_at(column, user, days_ago(0), :rejected)
+
+      assert Agents.throughput_and_success() == %{
+               completed_today: 2,
+               completed_7d: 2,
+               completed_30d: 2,
+               success_rate: 0.0
+             }
+    end
+
+    test "counts a task touched by two agents once, with no double-count", %{
+      column: column,
+      user: user
+    } do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Creator",
+          completed_by_agent: "Worker",
+          status: :completed,
+          completed_at: days_ago(0),
+          review_status: :approved,
+          reviewed_at: days_ago(0),
+          reviewed_by_id: user.id
+        })
+
+      assert Agents.throughput_and_success() == %{
+               completed_today: 1,
+               completed_7d: 1,
+               completed_30d: 1,
+               success_rate: 1.0
+             }
+    end
+
+    test "respects :scope board filtering", %{column: column, user: user} do
+      complete_at(column, user, days_ago(0), :approved)
+
+      other_scope = Scope.for_user(user_fixture())
+
+      assert Agents.throughput_and_success(scope: other_scope) == %{
+               completed_today: 0,
+               completed_7d: 0,
+               completed_30d: 0,
+               success_rate: 0.0
+             }
+    end
+
+    defp complete_at(column, user, completed_at, review_status) do
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: completed_at,
+          review_status: review_status,
+          reviewed_at: completed_at,
+          reviewed_by_id: user.id
+        })
+
+      task
+    end
+
+    defp days_ago(days) do
+      DateTime.utc_now()
+      |> DateTime.add(-days * 86_400, :second)
+      |> DateTime.truncate(:second)
+    end
+  end
 end
