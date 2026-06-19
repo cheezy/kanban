@@ -171,6 +171,75 @@ defmodule KanbanWeb.AgentRosterCardTest do
     end
   end
 
+  describe "card/1 — selection and interactivity" do
+    test "wires phx-click to on_select and phx-value-agent to the agent name" do
+      assigns = %{agent: agent(%{name: "Codex"})}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} on_select="select_agent" />
+        """)
+
+      assert html =~ ~s(phx-click="select_agent")
+      assert html =~ ~s(phx-value-agent="Codex")
+    end
+
+    test "is a keyboard-operable button when on_select is set" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} on_select="select_agent" />
+        """)
+
+      assert html =~ ~s(role="button")
+      assert html =~ ~s(tabindex="0")
+      assert html =~ "focus-visible:outline"
+    end
+
+    test "renders aria-pressed=\"true\" and the violet highlight when selected?" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} on_select="select_agent" selected?={true} />
+        """)
+
+      assert html =~ ~s(aria-pressed="true")
+      assert html =~ ~s(data-agent-selected="true")
+      assert html =~ "border: 1px solid var(--stride-violet)"
+      assert html =~ "background: var(--stride-violet-soft)"
+    end
+
+    test "renders aria-pressed=\"false\" and no highlight when not selected" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} on_select="select_agent" />
+        """)
+
+      assert html =~ ~s(aria-pressed="false")
+      assert html =~ ~s(data-agent-selected="false")
+      assert html =~ "border: 1px solid var(--line)"
+      assert html =~ "background: var(--surface)"
+    end
+
+    test "omits button semantics when on_select is nil (presentational default)" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      refute html =~ ~s(role="button")
+      refute html =~ "aria-pressed"
+      refute html =~ "tabindex"
+      refute html =~ "phx-click"
+    end
+  end
+
   describe "card/1 — stats grid" do
     test "renders the four-cell grid with tabular-nums" do
       assigns = %{

@@ -162,7 +162,7 @@ defmodule KanbanWeb.AgentsLive do
               :for={agent <- @agents}
               agent={agent}
               on_select="select_agent"
-              selected={@selected_agent == agent.name}
+              selected?={agent.name == @selected_agent}
             />
           </aside>
 

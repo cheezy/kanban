@@ -27,30 +27,41 @@ defmodule KanbanWeb.AgentRosterCard do
       with `:name`, `:status`, `:current_task`, `:capabilities`,
       `:today`, `:last_7d`, `:success_rate`, and `:claim_count`.
     * `on_select` — optional LiveView event name fired (with a
-      `phx-value-agent` of the agent's name) when the card is clicked.
-      When `nil` the card is non-interactive.
-    * `selected` — whether this card is the currently-selected agent;
-      drives the highlighted border/background.
+      `phx-value-agent` of the agent's name) when the card is activated.
+      When set, the card becomes a keyboard-operable button (role,
+      `aria-pressed`, `tabindex`, focus-visible outline); when `nil` the
+      card is purely presentational.
+    * `selected?` — whether this card is the currently-selected agent;
+      drives the highlighted border/background and `aria-pressed`.
   """
   attr :agent, :map, required: true
   attr :on_select, :string, default: nil
-  attr :selected, :boolean, default: false
+  attr :selected?, :boolean, default: false
 
   def card(assigns) do
     ~H"""
     <article
       data-agent-roster-card
       data-agent-name={@agent.name}
-      data-agent-selected={@selected}
+      data-agent-selected={to_string(@selected?)}
+      role={@on_select && "button"}
+      aria-pressed={@on_select && if(@selected?, do: "true", else: "false")}
+      tabindex={@on_select && "0"}
       phx-click={@on_select}
       phx-value-agent={@agent.name}
-      class="stride-screen"
+      class={
+        "stride-screen" <>
+          if(@on_select,
+            do: " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+            else: ""
+          )
+      }
       style={[
         "display: flex; flex-direction: column; gap: 10px;",
         "padding: 14px;",
-        "border: 1px solid #{if @selected, do: "var(--stride-violet)", else: "var(--line)"};",
+        "border: 1px solid #{if @selected?, do: "var(--stride-violet)", else: "var(--line)"};",
         "border-radius: 10px;",
-        "background: #{if @selected, do: "var(--stride-violet-soft)", else: "var(--surface)"};",
+        "background: #{if @selected?, do: "var(--stride-violet-soft)", else: "var(--surface)"};",
         if(@on_select, do: "cursor: pointer;", else: "")
       ]}
     >
