@@ -26,20 +26,32 @@ defmodule KanbanWeb.AgentRosterCard do
     * `agent` — a `%Kanban.Agents.Agent{}` struct (or equivalent map)
       with `:name`, `:status`, `:current_task`, `:capabilities`,
       `:today`, `:last_7d`, `:success_rate`, and `:claim_count`.
+    * `on_select` — optional LiveView event name fired (with a
+      `phx-value-agent` of the agent's name) when the card is clicked.
+      When `nil` the card is non-interactive.
+    * `selected` — whether this card is the currently-selected agent;
+      drives the highlighted border/background.
   """
   attr :agent, :map, required: true
+  attr :on_select, :string, default: nil
+  attr :selected, :boolean, default: false
 
   def card(assigns) do
     ~H"""
     <article
       data-agent-roster-card
+      data-agent-name={@agent.name}
+      data-agent-selected={@selected}
+      phx-click={@on_select}
+      phx-value-agent={@agent.name}
       class="stride-screen"
       style={[
         "display: flex; flex-direction: column; gap: 10px;",
         "padding: 14px;",
-        "border: 1px solid var(--line);",
+        "border: 1px solid #{if @selected, do: "var(--stride-violet)", else: "var(--line)"};",
         "border-radius: 10px;",
-        "background: var(--surface);"
+        "background: #{if @selected, do: "var(--stride-violet-soft)", else: "var(--surface)"};",
+        if(@on_select, do: "cursor: pointer;", else: "")
       ]}
     >
       <header style="display: flex; align-items: center; gap: 10px;">

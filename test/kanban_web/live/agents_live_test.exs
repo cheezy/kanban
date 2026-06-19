@@ -221,6 +221,206 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "agent selection" do
+    setup [:register_and_log_in_user]
+
+    test "selecting an agent filters the feed to only that agent's events",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # A claim by Claude and a completion by Codex.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      all_html = render(view)
+      assert all_html =~ ~s(data-agent-feed-kind="claim")
+      assert all_html =~ ~s(data-agent-feed-kind="complete")
+
+      claude_html =
+        view
+        |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
+        |> render_click()
+
+      # Claude's claim survives; Codex's completion is filtered out.
+      assert claude_html =~ ~s(data-agent-feed-kind="claim")
+      refute claude_html =~ ~s(data-agent-feed-kind="complete")
+      assert claude_html =~ "data-agent-filter-active"
+    end
+
+    test "the kind filter and the agent filter compose",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Claude is actively working (a claim) and also has a completion.
+      {:ok, _claude_claim} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, claude_done} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_at: now,
+          status: :completed
+        })
+
+      # Codex only has a completion.
+      {:ok, codex_done} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      view
+      |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
+      |> render_click()
+
+      composed_html =
+        view
+        |> element(~s([data-agent-feed-tab="completions"]))
+        |> render_click()
+
+      # Only Claude's completion remains: the kind filter drops the claim and
+      # the agent filter drops Codex's completion.
+      assert composed_html =~ claude_done.identifier
+      refute composed_html =~ codex_done.identifier
+      refute composed_html =~ ~s(data-agent-feed-kind="claim")
+    end
+
+    test "clicking the already-selected agent toggles the filter off",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      selector = ~s([data-agent-roster-card][data-agent-name="Claude"])
+
+      narrowed_html = view |> element(selector) |> render_click()
+      refute narrowed_html =~ ~s(data-agent-feed-kind="complete")
+
+      restored_html = view |> element(selector) |> render_click()
+      assert restored_html =~ ~s(data-agent-feed-kind="claim")
+      assert restored_html =~ ~s(data-agent-feed-kind="complete")
+      refute restored_html =~ "data-agent-filter-active"
+    end
+
+    test "clear_agent_filter resets the selection and restores the full feed",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      narrowed_html =
+        view
+        |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
+        |> render_click()
+
+      assert narrowed_html =~ "data-agent-filter-active"
+      refute narrowed_html =~ ~s(data-agent-feed-kind="complete")
+
+      cleared_html =
+        view
+        |> element(~s([data-clear-agent-filter]))
+        |> render_click()
+
+      refute cleared_html =~ "data-agent-filter-active"
+      assert cleared_html =~ ~s(data-agent-feed-kind="claim")
+      assert cleared_html =~ ~s(data-agent-feed-kind="complete")
+    end
+
+    test "the selected agent survives a real-time refresh",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", claimed_at: now, status: :in_progress})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Codex",
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      view
+      |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
+      |> render_click()
+
+      # Drive the debounced reload path directly; the selection lives in the
+      # socket assigns and must be re-applied by load_agents_data/1.
+      send(view.pid, :refresh_agents_data)
+
+      refreshed_html = render(view)
+      assert refreshed_html =~ "data-agent-filter-active"
+      assert refreshed_html =~ ~s(data-agent-feed-kind="claim")
+      refute refreshed_html =~ ~s(data-agent-feed-kind="complete")
+    end
+  end
+
   describe "real-time updates via PubSub" do
     setup [:register_and_log_in_user]
 

@@ -2501,7 +2501,7 @@ msgstr ""
 msgid "Time tasks spend waiting for human review after completion"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:153
+#: lib/kanban_web/components/agent_roster_card.ex:165
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4158,7 +4158,7 @@ msgid "Active goals"
 msgstr ""
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/agents_live.ex:82
+#: lib/kanban_web/live/agents_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr ""
@@ -4220,7 +4220,7 @@ msgstr ""
 msgid "Stride home"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:80
+#: lib/kanban_web/live/agents_live.ex:105
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4812,7 +4812,7 @@ msgstr ""
 msgid "today"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:154
+#: lib/kanban_web/components/agent_roster_card.ex:166
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr ""
@@ -4838,7 +4838,7 @@ msgid "Claimed"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:277
-#: lib/kanban_web/components/agent_roster_card.ex:156
+#: lib/kanban_web/components/agent_roster_card.ex:168
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr ""
@@ -4853,7 +4853,7 @@ msgstr ""
 msgid "Human task"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:191
+#: lib/kanban_web/components/agent_roster_card.ex:203
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr ""
@@ -4868,7 +4868,7 @@ msgstr ""
 msgid "Review status"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:155
+#: lib/kanban_web/components/agent_roster_card.ex:167
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr ""
@@ -4881,7 +4881,7 @@ msgstr ""
 msgid "Testing strategy"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:190
+#: lib/kanban_web/components/agent_roster_card.ex:202
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr ""
@@ -4896,7 +4896,7 @@ msgstr ""
 msgid "Workflow steps"
 msgstr ""
 
-#: lib/kanban_web/components/agent_roster_card.ex:189
+#: lib/kanban_web/components/agent_roster_card.ex:201
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr ""
@@ -4988,19 +4988,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:179
+#: lib/kanban_web/live/agents_live.ex:243
 #, elixir-autogen, elixir-format
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:134
+#: lib/kanban_web/live/agents_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:109
+#: lib/kanban_web/live/agents_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr ""
@@ -7121,4 +7121,14 @@ msgstr ""
 #: lib/kanban_web/live/task_live/form_component.html.heex:347
 #, elixir-autogen, elixir-format
 msgid "Technical Details (JSON object)"
+msgstr ""
+
+#: lib/kanban_web/live/agents_live.ex:189
+#, elixir-autogen, elixir-format
+msgid "Clear agent filter"
+msgstr ""
+
+#: lib/kanban_web/live/agents_live.ex:184
+#, elixir-autogen, elixir-format
+msgid "Filtering by %{agent}"
 msgstr ""

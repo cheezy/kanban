@@ -39,6 +39,7 @@ defmodule KanbanWeb.AgentsLive do
     {:ok,
      socket
      |> assign(:filter, @default_filter)
+     |> assign(:selected_agent, nil)
      |> assign(:refresh_scheduled?, false)
      |> assign(:connected_count, connected_count(socket))
      |> load_agents_data()}
@@ -51,7 +52,31 @@ defmodule KanbanWeb.AgentsLive do
     {:noreply,
      socket
      |> assign(:filter, filter)
-     |> assign(:events, filter_events(socket.assigns.all_events, filter))}
+     |> assign(
+       :events,
+       apply_filters(socket.assigns.all_events, filter, socket.assigns.selected_agent)
+     )}
+  end
+
+  @impl true
+  def handle_event("select_agent", %{"agent" => name}, socket) do
+    selected = toggle_agent(socket.assigns.selected_agent, name)
+
+    {:noreply,
+     socket
+     |> assign(:selected_agent, selected)
+     |> assign(
+       :events,
+       apply_filters(socket.assigns.all_events, socket.assigns.filter, selected)
+     )}
+  end
+
+  @impl true
+  def handle_event("clear_agent_filter", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected_agent, nil)
+     |> assign(:events, apply_filters(socket.assigns.all_events, socket.assigns.filter, nil))}
   end
 
   @impl true
@@ -133,10 +158,46 @@ defmodule KanbanWeb.AgentsLive do
             >
               {gettext("No agents have activity yet.")}
             </p>
-            <AgentRosterCard.card :for={agent <- @agents} agent={agent} />
+            <AgentRosterCard.card
+              :for={agent <- @agents}
+              agent={agent}
+              on_select="select_agent"
+              selected={@selected_agent == agent.name}
+            />
           </aside>
 
           <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
+            <div
+              :if={@selected_agent}
+              data-agent-filter-active
+              data-selected-agent={@selected_agent}
+              style={[
+                "display: inline-flex; align-items: center; gap: 8px;",
+                "align-self: flex-start;",
+                "margin-bottom: 12px; padding: 5px 6px 5px 12px;",
+                "background: var(--stride-violet-soft);",
+                "color: var(--stride-violet);",
+                "border-radius: 999px;",
+                "font-size: 12px; font-weight: 500;"
+              ]}
+            >
+              <span>{gettext("Filtering by %{agent}", agent: @selected_agent)}</span>
+              <button
+                type="button"
+                phx-click="clear_agent_filter"
+                data-clear-agent-filter
+                aria-label={gettext("Clear agent filter")}
+                style={[
+                  "display: inline-flex; align-items: center; justify-content: center;",
+                  "width: 18px; height: 18px; padding: 0;",
+                  "border: none; border-radius: 50%; cursor: pointer;",
+                  "background: transparent; color: var(--stride-violet);"
+                ]}
+              >
+                <.icon name="hero-x-mark" class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <AgentActivityFeed.feed
               events={@events}
               filter={@filter}
@@ -159,7 +220,10 @@ defmodule KanbanWeb.AgentsLive do
     socket
     |> assign(:agents, agents)
     |> assign(:all_events, events)
-    |> assign(:events, filter_events(events, socket.assigns.filter))
+    |> assign(
+      :events,
+      apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent)
+    )
     |> assign(:stats, stats)
     |> assign(:event_count_24h, count_events_within_24h(events))
   end
@@ -189,6 +253,23 @@ defmodule KanbanWeb.AgentsLive do
   defp filter_events(events, :claims), do: Enum.filter(events, &(&1.kind == :claim))
   defp filter_events(events, :reviewed), do: Enum.filter(events, &(&1.kind == :review))
   defp filter_events(events, :completions), do: Enum.filter(events, &(&1.kind == :complete))
+
+  # Composes the kind filter with the optional agent filter. The kind filter
+  # always runs first; when an agent is selected, only events whose actor
+  # matches that agent survive. A nil selection leaves the kind-filtered list
+  # untouched.
+  defp apply_filters(events, kind_filter, nil), do: filter_events(events, kind_filter)
+
+  defp apply_filters(events, kind_filter, selected_agent) do
+    events
+    |> filter_events(kind_filter)
+    |> Enum.filter(&(&1.actor == selected_agent))
+  end
+
+  # Toggling the currently-selected agent clears the selection; any other
+  # agent name replaces it.
+  defp toggle_agent(selected_agent, selected_agent), do: nil
+  defp toggle_agent(_current, name), do: name
 
   defp count_events_within_24h(events) do
     cutoff = DateTime.add(DateTime.utc_now(), -@event_window_hours, :hour)
