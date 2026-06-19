@@ -10,6 +10,12 @@ defmodule Kanban.Agents.Agent do
   dimensions: `stuck` flags an agent that has stalled mid-work or has been
   sitting in review past a threshold, regardless of which active status it
   carries. The stuck threshold and derivation live in `Kanban.Agents`.
+
+  `last_active_at` is the agent's most recent activity timestamp (the same
+  recency rule used to order the roster), and `dormant` flags an agent whose
+  most recent activity is older than the dormancy threshold. The threshold and
+  derivation live in `Kanban.Agents`. Dormant agents are excluded from the
+  fleet-health rollup so its counts reflect only live agents.
   """
 
   @type status :: :working | :waiting | :idle
@@ -19,6 +25,8 @@ defmodule Kanban.Agents.Agent do
           owner: map() | nil,
           status: status(),
           stuck: boolean(),
+          last_active_at: NaiveDateTime.t() | nil,
+          dormant: boolean(),
           current_task: %{identifier: String.t(), title: String.t()} | nil,
           capabilities: [String.t()],
           today: non_neg_integer(),
@@ -32,7 +40,9 @@ defmodule Kanban.Agents.Agent do
     :owner,
     :status,
     :current_task,
+    :last_active_at,
     stuck: false,
+    dormant: false,
     capabilities: [],
     today: 0,
     last_7d: 0,

@@ -925,4 +925,118 @@ defmodule Kanban.AgentsTest do
       task
     end
   end
+
+  describe "dormant classification" do
+    test "flags an agent dormant when its last activity is older than 14 days",
+         %{column: column} do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Stale", claimed_at: days_ago(20)})
+
+      agent = Enum.find(Agents.list_agents(), &(&1.name == "Stale"))
+      expected_date = days_ago(20) |> DateTime.to_date()
+
+      assert agent.dormant == true
+      assert %NaiveDateTime{} = agent.last_active_at
+      assert NaiveDateTime.to_date(agent.last_active_at) == expected_date
+    end
+
+    test "does not flag an agent active within the last 14 days as dormant",
+         %{column: column} do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Fresh", claimed_at: days_ago(13)})
+
+      agent = Enum.find(Agents.list_agents(), &(&1.name == "Fresh"))
+
+      assert agent.dormant == false
+    end
+
+    test "flags an agent just past the 14-day threshold as dormant", %{column: column} do
+      # 14 days and one hour ago — unambiguously older than the 14-day cutoff,
+      # bracketing the threshold against the 13-day not-dormant case above.
+      just_past =
+        DateTime.utc_now()
+        |> DateTime.add(-(14 * 24 * 60 * 60 + 3600), :second)
+        |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Edge", claimed_at: just_past})
+
+      agent = Enum.find(Agents.list_agents(), &(&1.name == "Edge"))
+
+      assert agent.dormant == true
+    end
+
+    test "last_active_at reflects the most recent activity across the agent's tasks",
+         %{column: column} do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Multi", claimed_at: days_ago(30)})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Multi",
+          completed_by_agent: "Multi",
+          status: :completed,
+          completed_at: days_ago(2)
+        })
+
+      agent = Enum.find(Agents.list_agents(), &(&1.name == "Multi"))
+      expected_date = days_ago(2) |> DateTime.to_date()
+
+      assert NaiveDateTime.to_date(agent.last_active_at) == expected_date
+      assert agent.dormant == false
+    end
+
+    test "fleet_health excludes dormant agents from all counts but list_agents keeps them",
+         %{board: board, column: column} do
+      doing = column_fixture(board, %{name: "Doing"})
+
+      # Live working agent (active 5 minutes ago).
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Live",
+          status: :in_progress,
+          claimed_at: ago(5)
+        })
+
+      # Dormant idle agent (last completed 20 days ago).
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ghost",
+          completed_by_agent: "Ghost",
+          status: :completed,
+          completed_at: days_ago(20)
+        })
+
+      assert Agents.fleet_health() == %{working: 1, waiting: 0, idle: 0, stuck: 0}
+      assert Enum.any?(Agents.list_agents(), &(&1.name == "Ghost" and &1.dormant))
+    end
+
+    test "fleet_health returns all zeros when every agent is dormant", %{column: column} do
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ghost",
+          completed_by_agent: "Ghost",
+          status: :completed,
+          completed_at: days_ago(30)
+        })
+
+      assert Agents.fleet_health() == %{working: 0, waiting: 0, idle: 0, stuck: 0}
+    end
+  end
 end

@@ -30,6 +30,17 @@ defmodule Kanban.Agents do
   is reported as the independent boolean `Agent.stuck` field, orthogonal to
   `:working` / `:waiting` / `:idle`. The threshold mirrors the 60-minute
   claim-expiry window: a task still held past it is a strong stuck signal.
+
+  ## Dormant agents
+
+  An agent is classified as **dormant** when its most recent activity
+  (`Agent.last_active_at`, the same `task_recency/1` rule used to order the
+  roster) is older than `@dormant_threshold_days` (14 days). Dormant agents
+  remain in `list_agents/1` — flagged via the `Agent.dormant` boolean and
+  carrying `last_active_at` — so the UI can surface them separately, but they
+  are **excluded from the `fleet_health/1` rollup** so its counts reflect only
+  live agents and a long tail of weeks-idle agents does not inflate the idle
+  bucket. Derived purely from existing Task timestamps; no schema change.
   """
 
   import Ecto.Query, warn: false
@@ -64,6 +75,13 @@ defmodule Kanban.Agents do
   # 60-minute claim-expiry window — a task still held past it has stalled or
   # is sitting in review too long. See the "Stuck agents" moduledoc section.
   @stuck_threshold_minutes 60
+
+  # An agent whose most recent activity is older than this many days is
+  # classified as dormant. Dormant agents stay in `list_agents/1` (so the UI
+  # can surface them separately) but are excluded from the `fleet_health/1`
+  # rollup so its counts reflect only live agents. See the "Dormant agents"
+  # moduledoc section.
+  @dormant_threshold_days 14
 
   @doc """
   Returns the list of agents derived from Task records.
@@ -154,7 +172,9 @@ defmodule Kanban.Agents do
 
   Counts are derived from `list_agents/1`, so the status and stuck rules are
   shared verbatim (no drift) and the `:scope` board filtering is respected.
-  An empty agent set returns all zeros.
+  **Dormant agents are excluded** (see the "Dormant agents" moduledoc
+  section), so the rollup reflects only live agents. An empty (or all-dormant)
+  agent set returns all zeros.
   """
   @spec fleet_health(keyword()) :: %{
           working: non_neg_integer(),
@@ -163,12 +183,15 @@ defmodule Kanban.Agents do
           stuck: non_neg_integer()
         }
   def fleet_health(opts \\ []) do
-    agents = list_agents(opts)
+    # Dormant agents are excluded so the rollup reflects only live agents — a
+    # long tail of weeks-idle agents must not inflate the idle bucket.
+    agents = opts |> list_agents() |> Enum.reject(& &1.dormant)
+    by_status = Enum.frequencies_by(agents, & &1.status)
 
     %{
-      working: Enum.count(agents, &(&1.status == :working)),
-      waiting: Enum.count(agents, &(&1.status == :waiting)),
-      idle: Enum.count(agents, &(&1.status == :idle)),
+      working: Map.get(by_status, :working, 0),
+      waiting: Map.get(by_status, :waiting, 0),
+      idle: Map.get(by_status, :idle, 0),
       stuck: Enum.count(agents, & &1.stuck)
     }
   end
@@ -273,12 +296,16 @@ defmodule Kanban.Agents do
 
   defp build_agent(name, tasks, today) do
     own_tasks = filter_by_agent(tasks, name)
+    now = now_naive()
+    last_active_at = last_active(own_tasks)
 
     %Agent{
       name: name,
       owner: resolve_owner(name, own_tasks),
       status: infer_status(own_tasks),
-      stuck: stuck?(own_tasks, now_naive()),
+      stuck: stuck?(own_tasks, now),
+      last_active_at: last_active_at,
+      dormant: dormant?(last_active_at, now),
       current_task: current_task(own_tasks),
       capabilities: [],
       today: count_completed_on_day(own_tasks, today),
@@ -364,6 +391,27 @@ defmodule Kanban.Agents do
 
   defp to_naive(%NaiveDateTime{} = ndt), do: ndt
   defp to_naive(%DateTime{} = dt), do: DateTime.to_naive(dt)
+
+  # The agent's most recent activity timestamp, reusing the same recency rule
+  # used to order the roster. nil only when the agent has no tasks (which does
+  # not occur for a derived agent — it always has at least one task).
+  defp last_active(own_tasks) do
+    case most_recent_task(own_tasks) do
+      nil -> nil
+      task -> task_recency(task)
+    end
+  end
+
+  # An agent is dormant when its most recent activity is older than
+  # @dormant_threshold_days. Derived from the same task_recency/1 timestamps as
+  # the roster ordering, so no new field. An agent with no activity timestamp
+  # is treated as not dormant.
+  defp dormant?(nil, _now), do: false
+
+  defp dormant?(last_active_at, now) do
+    cutoff = NaiveDateTime.add(now, -@dormant_threshold_days * 24 * 60 * 60, :second)
+    NaiveDateTime.compare(last_active_at, cutoff) == :lt
+  end
 
   # The current-task pill reflects active work only, so it surfaces a
   # Doing-column task. When an agent has work in both Doing and Review, the
