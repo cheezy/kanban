@@ -12,6 +12,7 @@ defmodule Kanban.Agents.Event do
   @type t :: %__MODULE__{
           kind: kind(),
           actor: String.t() | nil,
+          owner: map() | nil,
           identifier: String.t() | nil,
           title: String.t() | nil,
           at: DateTime.t(),
@@ -23,6 +24,7 @@ defmodule Kanban.Agents.Event do
   defstruct [
     :kind,
     :actor,
+    :owner,
     :identifier,
     :title,
     :at,

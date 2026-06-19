@@ -189,6 +189,12 @@ defmodule KanbanWeb.AgentActivityFeed do
         "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
       ]}>
         <span :if={@event.actor} style="font-weight: 600;">{@event.actor}</span>
+        <span
+          :if={owner_label(@event.owner)}
+          data-agent-feed-owner
+          aria-label={gettext("Operator")}
+          style="color: var(--ink-3);"
+        >({owner_label(@event.owner)})</span>
         <span style="color: var(--ink-3);">{TaskTokens.kind_label(@event.kind)}</span>
         <span :if={@event.identifier} style="font-weight: 600; letter-spacing: 0.02em;">
           {@event.identifier}
@@ -272,6 +278,14 @@ defmodule KanbanWeb.AgentActivityFeed do
     </div>
     """
   end
+
+  # Derives the display label for the human owner behind an event's actor.
+  # Prefers the owner's name, falls back to their email, and returns nil when
+  # no owner is present so the row renders the actor name alone — mirroring the
+  # roster card's owner_label/1 for cross-view consistency.
+  defp owner_label(%{name: name}) when is_binary(name) and name != "", do: name
+  defp owner_label(%{email: email}) when is_binary(email) and email != "", do: email
+  defp owner_label(_), do: nil
 
   defp filter_label(:all), do: gettext("All")
   defp filter_label(:claims), do: gettext("Claims")

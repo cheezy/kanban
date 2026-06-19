@@ -307,10 +307,34 @@ defmodule Kanban.Agents do
 
   defp events_for(task) do
     [
-      build_event(:create, task.created_by_agent, task, task.inserted_at),
-      build_event(:claim, claim_actor(task), task, task.claimed_at),
-      build_event(:complete, task.completed_by_agent, task, task.completed_at),
-      build_event(:review, task.completed_by_agent, task, task.reviewed_at)
+      build_event(
+        :create,
+        task.created_by_agent,
+        to_owner_map(task.created_by),
+        task,
+        task.inserted_at
+      ),
+      build_event(
+        :claim,
+        claim_actor(task),
+        to_owner_map(claim_owner(task)),
+        task,
+        task.claimed_at
+      ),
+      build_event(
+        :complete,
+        task.completed_by_agent,
+        to_owner_map(task.completed_by),
+        task,
+        task.completed_at
+      ),
+      build_event(
+        :review,
+        task.completed_by_agent,
+        to_owner_map(task.completed_by),
+        task,
+        task.reviewed_at
+      )
     ]
     |> Enum.reject(&is_nil/1)
   end
@@ -322,12 +346,18 @@ defmodule Kanban.Agents do
   # showing the working agent instead of a blank, without inventing a name.
   defp claim_actor(task), do: task.completed_by_agent || task.created_by_agent
 
-  defp build_event(_kind, _actor, _task, nil), do: nil
+  # The User behind a claim event, mirroring claim_actor's precedence: prefer
+  # the completer, fall back to the creator. Uses the same preloaded
+  # created_by/completed_by associations as the roster, so no extra query.
+  defp claim_owner(task), do: task.completed_by || task.created_by
 
-  defp build_event(kind, actor, task, at) do
+  defp build_event(_kind, _actor, _owner, _task, nil), do: nil
+
+  defp build_event(kind, actor, owner, task, at) do
     %Event{
       kind: kind,
       actor: actor,
+      owner: owner,
       identifier: task.identifier,
       title: task.title,
       at: to_datetime(at),

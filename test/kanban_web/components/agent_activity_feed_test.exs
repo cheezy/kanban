@@ -67,6 +67,44 @@ defmodule KanbanWeb.AgentActivityFeedTest do
     end
   end
 
+  describe "feed/1 — owner alongside actor" do
+    test "renders the owner alongside the actor agent name when present" do
+      events = [event(%{actor: "Claude", owner: %{id: 1, name: "Jeffrey", email: "j@x.io"}})]
+
+      html = render(events, :all)
+
+      assert html =~ "data-agent-feed-owner"
+      assert html =~ "Claude"
+      assert html =~ "Jeffrey"
+    end
+
+    test "falls back to the owner email when the owner has no name" do
+      events = [event(%{owner: %{id: 1, name: nil, email: "owner@example.com"}})]
+
+      html = render(events, :all)
+
+      assert html =~ "data-agent-feed-owner"
+      assert html =~ "owner@example.com"
+    end
+
+    test "degrades gracefully to actor-only when owner is nil" do
+      events = [event(%{actor: "Claude", owner: nil})]
+
+      html = render(events, :all)
+
+      assert html =~ "Claude"
+      refute html =~ "data-agent-feed-owner"
+    end
+
+    test "owner uses the muted ink token, not a hardcoded color" do
+      events = [event(%{owner: %{id: 1, name: "Jeffrey", email: "j@x.io"}})]
+
+      html = render(events, :all)
+
+      assert html =~ "color: var(--ink-3)"
+    end
+  end
+
   describe "feed/1 — filter tabs" do
     test "renders all four filter tabs" do
       html = render([], :all)

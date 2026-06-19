@@ -279,6 +279,46 @@ defmodule Kanban.AgentsTest do
       assert claim.actor == "Creator"
     end
 
+    test "derives the event owner from the same Task->User associations", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      owner_user = user_fixture(%{name: "Jeffrey"})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          created_by_id: owner_user.id,
+          completed_by_id: owner_user.id,
+          claimed_at: now,
+          completed_at: now
+        })
+
+      for event <- Agents.recent_activity() do
+        assert event.owner.id == owner_user.id
+        assert event.owner.name == "Jeffrey"
+      end
+    end
+
+    test "event owner is nil when no user association can be derived", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          claimed_at: now,
+          completed_at: now
+        })
+
+      for event <- Agents.recent_activity() do
+        assert event.owner == nil
+      end
+    end
+
     test "respects the :limit option", %{column: column} do
       Enum.each(1..10, fn _ -> task_fixture(column) end)
 
