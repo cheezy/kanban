@@ -22,11 +22,23 @@ defmodule KanbanWeb.AgentsHeaderTest do
     )
   end
 
-  defp render(stats, event_count_24h) do
-    assigns = %{stats: stats, event_count_24h: event_count_24h}
+  defp fleet_health(overrides \\ %{}) do
+    Map.merge(%{working: 0, waiting: 0, stuck: 0, idle: 0}, overrides)
+  end
+
+  defp render(
+         stats,
+         event_count_24h,
+         fleet_health \\ %{working: 0, waiting: 0, stuck: 0, idle: 0}
+       ) do
+    assigns = %{stats: stats, event_count_24h: event_count_24h, fleet_health: fleet_health}
 
     rendered_to_string(~H"""
-    <AgentsHeader.header stats={@stats} event_count_24h={@event_count_24h} />
+    <AgentsHeader.header
+      stats={@stats}
+      fleet_health={@fleet_health}
+      event_count_24h={@event_count_24h}
+    />
     """)
   end
 
@@ -152,6 +164,46 @@ defmodule KanbanWeb.AgentsHeaderTest do
       html = render(stats(), 0)
 
       assert html =~ "border-bottom: 1px solid var(--line)"
+    end
+  end
+
+  describe "header/1 — fleet-health rollup" do
+    test "renders the four status counts in the rollup" do
+      html =
+        render(stats(), 0, fleet_health(%{working: 3, waiting: 2, stuck: 1, idle: 4}))
+
+      assert html =~ "data-agents-fleet-health"
+      assert html =~ ~s(data-agents-fleet-health-stat="working")
+      assert html =~ ~s(data-agents-fleet-health-stat="waiting")
+      assert html =~ ~s(data-agents-fleet-health-stat="stuck")
+      assert html =~ ~s(data-agents-fleet-health-stat="idle")
+    end
+
+    test "renders gettext-wrapped labels for each status" do
+      html = render(stats(), 0, fleet_health())
+
+      assert html =~ "Working"
+      assert html =~ "Waiting"
+      assert html =~ "Stuck"
+      assert html =~ "Idle"
+    end
+
+    test "emphasizes stuck and idle with soft-background design tokens" do
+      html = render(stats(), 0, fleet_health(%{stuck: 2, idle: 5}))
+
+      # stuck uses the blocked/danger palette; idle the brand-orange palette
+      assert html =~ "var(--st-blocked-soft)"
+      assert html =~ "var(--st-blocked)"
+      assert html =~ "var(--stride-orange-soft)"
+      assert html =~ "var(--stride-orange-ink)"
+    end
+
+    test "working and waiting stay as plain cards (no soft pill background)" do
+      html = render(stats(), 0, fleet_health(%{working: 1, waiting: 1}))
+
+      # working uses the doing tone; waiting the muted ink — neither gets a soft bg
+      assert html =~ "var(--st-doing)"
+      assert html =~ "var(--ink-3)"
     end
   end
 end

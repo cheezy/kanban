@@ -123,6 +123,18 @@ defmodule KanbanWeb.AgentsLiveTest do
     roster
   end
 
+  # Pulls the integer count rendered in the fleet-health rollup chip for a
+  # given status marker (working/waiting/stuck/idle).
+  defp fleet_count(html, marker) do
+    case Regex.run(
+           ~r/data-agents-fleet-health-stat="#{marker}".*?<dd[^>]*>\s*(\d+)\s*<\/dd>/s,
+           html
+         ) do
+      [_, n] -> String.to_integer(n)
+      _ -> nil
+    end
+  end
+
   describe "unauthenticated access" do
     test "redirects to the log-in page when the user is not signed in", %{conn: conn} do
       assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/agents")
@@ -598,6 +610,30 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ ~r/\d+\s*connected/
     end
 
+    test "the fleet-health rollup refreshes on a broadcast", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert fleet_count(html, "stuck") == 0
+
+      stale =
+        DateTime.utc_now() |> DateTime.add(-90 * 60, :second) |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Stalled",
+          status: :in_progress,
+          claimed_at: stale
+        })
+
+      send(view.pid, :refresh_agents_data)
+
+      assert fleet_count(render(view), "stuck") == 1
+    end
+
     test "two-pane layout renders with mobile stack + md side-by-side responsive classes", %{
       conn: conn
     } do
@@ -616,6 +652,82 @@ defmodule KanbanWeb.AgentsLiveTest do
       # No inline width: 380px or flex: 1 style attributes remain.
       refute html =~ "width: 380px"
       refute html =~ "flex: 1; min-width: 0;"
+    end
+  end
+
+  describe "fleet-health rollup" do
+    setup [:register_and_log_in_user]
+
+    test "renders the rollup with the four status counts", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-fleet-health"
+      assert fleet_count(html, "working") == 1
+      assert fleet_count(html, "waiting") == 0
+      assert fleet_count(html, "stuck") == 0
+      assert fleet_count(html, "idle") == 0
+    end
+
+    test "emphasizes stuck and idle with soft-background pills", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      done = column_fixture(board, %{name: "Done"})
+
+      stale =
+        DateTime.utc_now() |> DateTime.add(-90 * 60, :second) |> DateTime.truncate(:second)
+
+      recent = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # stalled working agent -> counted as stuck
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Stalled",
+          status: :in_progress,
+          claimed_at: stale
+        })
+
+      # idle agent (only a done task)
+      {:ok, _} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Idler",
+          completed_by_agent: "Idler",
+          status: :completed,
+          completed_at: recent
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert fleet_count(html, "stuck") == 1
+      assert fleet_count(html, "idle") == 1
+      # emphasis pills use the soft-background design tokens, not hardcoded colors
+      assert html =~ "var(--st-blocked-soft)"
+      assert html =~ "var(--stride-orange-soft)"
+    end
+
+    test "shows all zeros when there are no agents", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-fleet-health"
+      assert fleet_count(html, "working") == 0
+      assert fleet_count(html, "waiting") == 0
+      assert fleet_count(html, "stuck") == 0
+      assert fleet_count(html, "idle") == 0
     end
   end
 end

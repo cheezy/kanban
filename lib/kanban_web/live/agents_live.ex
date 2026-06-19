@@ -111,7 +111,11 @@ defmodule KanbanWeb.AgentsLive do
         class="stride-screen"
         style="display: flex; flex-direction: column; height: 100%; min-height: 0;"
       >
-        <AgentsHeader.header stats={@stats} event_count_24h={@event_count_24h} />
+        <AgentsHeader.header
+          stats={@stats}
+          fleet_health={@fleet_health}
+          event_count_24h={@event_count_24h}
+        />
 
         <div
           data-agents-live-indicator
@@ -220,6 +224,7 @@ defmodule KanbanWeb.AgentsLive do
     agents = Agents.list_agents(scope: scope)
     events = Agents.recent_activity(scope: scope, limit: @recent_activity_limit)
     stats = Agents.header_stats(scope: scope)
+    fleet_health = Agents.fleet_health(scope: scope)
 
     socket
     |> assign(:agents, agents)
@@ -229,6 +234,7 @@ defmodule KanbanWeb.AgentsLive do
       apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent)
     )
     |> assign(:stats, stats)
+    |> assign(:fleet_health, fleet_health)
     |> assign(:event_count_24h, count_events_within_24h(events))
   end
 
