@@ -35,6 +35,13 @@ defmodule Kanban.Agents do
   # timestamp from `task_recency/1` (which falls back to `inserted_at`).
   @epoch_recency ~N[0000-01-01 00:00:00]
 
+  # Board column names that drive an agent's derived status. A task's
+  # `:in_progress` status spans both Doing and Review, so status is inferred
+  # from the column name instead. These mirror the default column names seeded
+  # in `Kanban.Boards`.
+  @doing_column "Doing"
+  @review_column "Review"
+
   @doc """
   Returns the list of agents derived from Task records.
 
@@ -117,6 +124,10 @@ defmodule Kanban.Agents do
     |> where([t], t.type != ^:goal)
     |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
     |> Repo.all()
+    # The column name drives status inference, so preload it (one batched
+    # query for the whole list). The scope join above is filter-only and does
+    # not select the column.
+    |> Repo.preload(:column)
   end
 
   # --- list_agents/1 ---------------------------------------------------------
@@ -159,22 +170,26 @@ defmodule Kanban.Agents do
     end
   end
 
+  # Status is derived from the board column, not the `:in_progress` status,
+  # because that status spans both Doing and Review. An agent is `:working`
+  # only when it holds a Doing-column task; an agent whose tasks sit in the
+  # Review column (and none in Doing) is `:waiting`; everything else is `:idle`.
   defp infer_status(tasks) do
     cond do
-      Enum.any?(tasks, &(&1.status == :in_progress)) -> :working
+      Enum.any?(tasks, &in_column?(&1, @doing_column)) -> :working
       awaiting_review?(tasks) -> :waiting
       true -> :idle
     end
   end
 
   defp awaiting_review?(tasks) do
-    case most_recent_task(tasks) do
-      nil ->
-        false
+    Enum.any?(tasks, &in_column?(&1, @review_column))
+  end
 
-      task ->
-        task.status == :completed and task.needs_review == true and
-          is_nil(task.reviewed_at)
+  defp in_column?(task, column_name) do
+    case task.column do
+      %{name: ^column_name} -> true
+      _ -> false
     end
   end
 
@@ -197,8 +212,11 @@ defmodule Kanban.Agents do
   defp to_naive(%NaiveDateTime{} = ndt), do: ndt
   defp to_naive(%DateTime{} = dt), do: DateTime.to_naive(dt)
 
+  # The current-task pill reflects active work only, so it surfaces a
+  # Doing-column task. When an agent has work in both Doing and Review, the
+  # Doing task wins; when its only open tasks are in Review, there is no pill.
   defp current_task(tasks) do
-    case Enum.find(tasks, &(&1.status == :in_progress)) do
+    case Enum.find(tasks, &in_column?(&1, @doing_column)) do
       nil -> nil
       task -> %{identifier: task.identifier, title: task.title}
     end

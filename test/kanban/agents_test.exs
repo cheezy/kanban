@@ -100,9 +100,11 @@ defmodule Kanban.AgentsTest do
       assert names == ["Active", "Idle"]
     end
 
-    test "infers :working when the agent has an in-progress task", %{column: column} do
+    test "infers :working when the agent has a task in the Doing column", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+
       {:ok, task} =
-        column
+        doing
         |> task_fixture()
         |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
 
@@ -111,20 +113,61 @@ defmodule Kanban.AgentsTest do
       assert current == %{identifier: task.identifier, title: task.title}
     end
 
-    test "infers :waiting when the most-recent task is completed and awaiting review",
-         %{column: column} do
+    test "infers :waiting when the agent's only in-progress tasks are in the Review column",
+         %{board: board} do
+      review = column_fixture(board, %{name: "Review"})
+
+      # A task that needs review is moved to the Review column but deliberately
+      # keeps the :in_progress status until approval — the agent is waiting, not
+      # working, and there must be no current-task pill.
       {:ok, _} =
-        column
+        review
         |> task_fixture()
         |> Tasks.update_task(%{
           created_by_agent: "Claude",
           completed_by_agent: "Claude",
           completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
-          status: :completed,
+          status: :in_progress,
           needs_review: true
         })
 
       [%Agent{name: "Claude", status: :waiting, current_task: nil}] = Agents.list_agents()
+    end
+
+    test "prefers the Doing-column task as current when work spans Doing and Review",
+         %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+
+      {:ok, _review_task} =
+        review
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
+
+      {:ok, doing_task} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
+
+      [%Agent{name: "Claude", status: :working, current_task: current}] = Agents.list_agents()
+
+      assert current == %{identifier: doing_task.identifier, title: doing_task.title}
+    end
+
+    test "infers :idle when the agent's only tasks are in the Done column", %{board: board} do
+      done = column_fixture(board, %{name: "Done"})
+
+      {:ok, _} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          status: :completed
+        })
+
+      [%Agent{name: "Claude", status: :idle, current_task: nil}] = Agents.list_agents()
     end
 
     test "infers :idle otherwise", %{column: column, user: user} do

@@ -83,6 +83,37 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "column-aware roster status" do
+    setup [:register_and_log_in_user]
+
+    test "shows the current-task pill for Doing work and waiting-for-review for Review-only work",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+
+      {:ok, doing_task} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Worker", status: :in_progress})
+
+      {:ok, review_task} =
+        review
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Reviewer", status: :in_progress})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+      roster = roster_html(html)
+
+      # The Doing agent surfaces its task as the active-work pill.
+      assert roster =~ doing_task.identifier
+      # The Review-only agent is shown as waiting for review, with no pill for
+      # its parked review task.
+      assert roster =~ "Waiting for review"
+      refute roster =~ review_task.identifier
+    end
+  end
+
   # Slices the rendered page down to the roster region (between the roster
   # container marker and the activity feed) so ordering assertions are not
   # confused by agent names that also appear in the feed.
