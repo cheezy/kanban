@@ -180,6 +180,19 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       assert html =~ "hero-arrow-uturn-left"
       assert html =~ ~s(data-agent-feed-kind="unclaim")
     end
+
+    test "each row carries a kind-colored left accent via the shared kind tone" do
+      for {kind, tone} <- [
+            {:claim, "var(--st-doing)"},
+            {:complete, "var(--st-review)"},
+            {:review, "var(--st-done)"},
+            {:create, "var(--ink-3)"}
+          ] do
+        html = render([event(%{kind: kind})], :all)
+
+        assert html =~ "border-left: 3px solid #{tone}"
+      end
+    end
   end
 
   describe "feed/1 — optional trailing chips" do

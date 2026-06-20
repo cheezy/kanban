@@ -154,11 +154,16 @@ defmodule KanbanWeb.AgentActivityFeed do
       data-agent-feed-row
       data-agent-feed-kind={@event.kind}
       class="grid grid-cols-[44px_14px_20px_1fr_auto] sm:grid-cols-[54px_18px_26px_1fr_auto] items-center gap-1.5 sm:gap-2"
-      style={[
-        "padding: 6px 4px;",
-        "font-size: 12px;",
-        "border-bottom: 1px solid var(--line);"
-      ]}
+      style={
+        [
+          "padding: 6px 4px 6px 8px;",
+          "font-size: 12px;",
+          "border-bottom: 1px solid var(--line);",
+          # A thin kind-colored left accent so created/claimed/completed/reviewed
+          # rows are distinguishable at a glance; reuses the shared kind palette.
+          "border-left: 3px solid #{TaskTokens.kind_tone(@event.kind)};"
+        ]
+      }
     >
       <time
         datetime={DateTime.to_iso8601(@event.at)}
