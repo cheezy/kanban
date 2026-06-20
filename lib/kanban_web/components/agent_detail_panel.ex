@@ -22,8 +22,17 @@ defmodule KanbanWeb.AgentDetailPanel do
       Each `claims`/`failures` entry is `%{identifier, title, at}` and each
       `recent_activity` entry is a `Kanban.Agents.Event`. `current_task` is
       `nil` when the agent holds no active task; the lists may be empty.
+    * `expanded_sections` — a `MapSet` of the section keys (`"current"`,
+      `"claims"`, `"failures"`, `"activity"`) that are currently expanded.
+      `nil` (the default) means every section is expanded, so the component
+      renders fully when used standalone.
+    * `on_toggle` — the `phx-click` event name a section's title row fires to
+      collapse/expand itself (with `phx-value-section`). `nil` (the default)
+      renders the title rows as inert buttons, for standalone/preview use.
   """
   attr :detail, :map, required: true
+  attr :expanded_sections, :any, default: nil
+  attr :on_toggle, :string, default: nil
 
   def panel(assigns) do
     ~H"""
@@ -49,9 +58,16 @@ defmodule KanbanWeb.AgentDetailPanel do
       </h2>
 
       <div data-agent-detail-current style="display: flex; flex-direction: column; gap: 6px;">
-        <.section_heading label={gettext("Current work")} />
+        <.section_heading
+          label={gettext("Current work")}
+          section="current"
+          expanded={expanded?(@expanded_sections, "current")}
+          on_toggle={@on_toggle}
+          highlight_soft={TaskTokens.kind_soft(:claim)}
+          highlight_tone={TaskTokens.kind_tone(:claim)}
+        />
         <div
-          :if={@detail.current_task}
+          :if={@detail.current_task && expanded?(@expanded_sections, "current")}
           style="display: flex; align-items: baseline; gap: 8px; font-size: 13px;"
         >
           <span style="font-weight: 600; letter-spacing: 0.02em; color: var(--ink);">
@@ -60,7 +76,7 @@ defmodule KanbanWeb.AgentDetailPanel do
           <span style="color: var(--ink-2);">{@detail.current_task.title}</span>
         </div>
         <p
-          :if={is_nil(@detail.current_task)}
+          :if={is_nil(@detail.current_task) && expanded?(@expanded_sections, "current")}
           data-agent-detail-no-current
           style={["margin: 0;", "font-size: 12px; font-style: italic; color: var(--ink-3);"]}
         >
@@ -70,28 +86,46 @@ defmodule KanbanWeb.AgentDetailPanel do
 
       <.ref_section
         marker="claims"
+        section="claims"
         label={gettext("Claims")}
         entries={@detail.claims}
         tone="var(--ink)"
+        expanded={expanded?(@expanded_sections, "claims")}
+        on_toggle={@on_toggle}
+        highlight_soft={TaskTokens.kind_soft(:claim)}
+        highlight_tone={TaskTokens.kind_tone(:claim)}
       />
 
       <.ref_section
         marker="failures"
+        section="failures"
         label={gettext("Failures")}
         entries={@detail.failures}
         tone="var(--st-blocked)"
+        expanded={expanded?(@expanded_sections, "failures")}
+        on_toggle={@on_toggle}
+        highlight_soft={TaskTokens.status_soft(:blocked)}
+        highlight_tone={TaskTokens.status_ink(:blocked)}
       />
 
       <div data-agent-detail-activity style="display: flex; flex-direction: column; gap: 6px;">
-        <.section_heading label={gettext("Recent activity")} count={length(@detail.recent_activity)} />
+        <.section_heading
+          label={gettext("Recent activity")}
+          count={length(@detail.recent_activity)}
+          section="activity"
+          expanded={expanded?(@expanded_sections, "activity")}
+          on_toggle={@on_toggle}
+          highlight_soft="var(--surface-sunken)"
+          highlight_tone="var(--ink-3)"
+        />
         <ul
-          :if={@detail.recent_activity != []}
+          :if={@detail.recent_activity != [] && expanded?(@expanded_sections, "activity")}
           style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;"
         >
           <.event_row :for={event <- @detail.recent_activity} event={event} />
         </ul>
         <p
-          :if={@detail.recent_activity == []}
+          :if={@detail.recent_activity == [] && expanded?(@expanded_sections, "activity")}
           style={["margin: 0;", "font-size: 12px; font-style: italic; color: var(--ink-3);"]}
         >
           {gettext("No recent activity.")}
@@ -103,11 +137,17 @@ defmodule KanbanWeb.AgentDetailPanel do
 
   # A section of task references (claims or failures) with a count and an
   # empty-state caption. `tone` colors the identifier so failures read as the
-  # danger palette while claims stay neutral ink.
+  # danger palette while claims stay neutral ink. The title row is a collapse
+  # toggle (see `section_heading/1`); its body is guarded by `@expanded`.
   attr :marker, :string, required: true
+  attr :section, :string, required: true
   attr :label, :string, required: true
   attr :entries, :list, required: true
   attr :tone, :string, required: true
+  attr :expanded, :boolean, default: true
+  attr :on_toggle, :string, default: nil
+  attr :highlight_soft, :string, default: nil
+  attr :highlight_tone, :string, default: nil
 
   defp ref_section(assigns) do
     ~H"""
@@ -115,9 +155,17 @@ defmodule KanbanWeb.AgentDetailPanel do
       data-agent-detail-section={@marker}
       style="display: flex; flex-direction: column; gap: 6px;"
     >
-      <.section_heading label={@label} count={length(@entries)} />
+      <.section_heading
+        label={@label}
+        count={length(@entries)}
+        section={@section}
+        expanded={@expanded}
+        on_toggle={@on_toggle}
+        highlight_soft={@highlight_soft}
+        highlight_tone={@highlight_tone}
+      />
       <ul
-        :if={@entries != []}
+        :if={@entries != [] && @expanded}
         style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;"
       >
         <li
@@ -140,7 +188,7 @@ defmodule KanbanWeb.AgentDetailPanel do
         </li>
       </ul>
       <p
-        :if={@entries == []}
+        :if={@entries == [] && @expanded}
         style={["margin: 0;", "font-size: 12px; font-style: italic; color: var(--ink-3);"]}
       >
         {gettext("None")}
@@ -184,12 +232,43 @@ defmodule KanbanWeb.AgentDetailPanel do
     """
   end
 
+  # The clickable title row for a detail-panel section. Mirrors the dormant-
+  # agents collapse on the roster: a full-width button with a chevron that
+  # flips hero-chevron-down (expanded) / hero-chevron-right (collapsed) and an
+  # `aria-expanded` reflecting state. The row carries the activity-list
+  # highlight — `highlight_soft` as the row band and `highlight_tone` as the
+  # left accent (and chevron color, inherited via the button's `color`) — both
+  # theme-aware tokens from `TaskTokens`, never a hardcoded color.
   attr :label, :string, required: true
   attr :count, :integer, default: nil
+  attr :section, :string, default: nil
+  attr :expanded, :boolean, default: true
+  attr :on_toggle, :string, default: nil
+  attr :highlight_soft, :string, default: nil
+  attr :highlight_tone, :string, default: nil
 
   defp section_heading(assigns) do
     ~H"""
-    <div style="display: flex; align-items: center; gap: 6px;">
+    <button
+      type="button"
+      phx-click={@on_toggle}
+      phx-value-section={@section}
+      data-agent-detail-section-toggle={@section}
+      aria-expanded={to_string(@expanded)}
+      class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={[
+        "display: flex; align-items: center; gap: 6px;",
+        "width: 100%; padding: 4px 8px;",
+        "border: 0; border-left: 3px solid #{@highlight_tone || "transparent"};",
+        "border-radius: 4px; cursor: pointer; text-align: left;",
+        "background: #{@highlight_soft || "transparent"};",
+        "color: #{@highlight_tone || "var(--ink-3)"};"
+      ]}
+    >
+      <.icon
+        name={if @expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
+        class="w-3 h-3"
+      />
       <span style={[
         "font-size: 10px; font-weight: 600;",
         "text-transform: uppercase; letter-spacing: 0.04em;",
@@ -206,9 +285,15 @@ defmodule KanbanWeb.AgentDetailPanel do
       >
         {@count}
       </span>
-    </div>
+    </button>
     """
   end
+
+  # Whether a detail-panel section is currently expanded. A `nil` set (the
+  # component's default) means every section is expanded, so the panel renders
+  # fully when used standalone (e.g. in component tests/previews).
+  defp expanded?(nil, _section), do: true
+  defp expanded?(%MapSet{} = sections, section), do: MapSet.member?(sections, section)
 
   # Compact "month day, HH:MM" UTC label. Claim/failure/activity timestamps can
   # span days, so the date is shown alongside the time (the feed uses HH:MM

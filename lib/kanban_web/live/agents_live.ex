@@ -30,6 +30,12 @@ defmodule KanbanWeb.AgentsLive do
   @refresh_debounce_ms 250
   @presence_topic "agents"
 
+  # The detail-panel category keys that can be collapsed/expanded. Used both to
+  # seed the all-expanded default and to validate an incoming toggle payload so
+  # the event can only flip a known section's view state (never an arbitrary
+  # key). Keep in sync with the `section=` values passed in AgentDetailPanel.
+  @detail_sections ~w(current claims failures activity)
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -43,6 +49,7 @@ defmodule KanbanWeb.AgentsLive do
      |> assign(:selected_agent, nil)
      |> assign(:refresh_scheduled?, false)
      |> assign(:dormant_expanded?, false)
+     |> assign(:expanded_detail_sections, MapSet.new(@detail_sections))
      |> assign(:connected_count, connected_count(socket))
      |> load_agents_data()}
   end
@@ -95,6 +102,22 @@ defmodule KanbanWeb.AgentsLive do
   def handle_event("toggle_dormant", _params, socket) do
     {:noreply, assign(socket, :dormant_expanded?, !socket.assigns.dormant_expanded?)}
   end
+
+  @impl true
+  def handle_event("toggle_detail_section", %{"section" => section}, socket)
+      when section in @detail_sections do
+    {:noreply,
+     assign(
+       socket,
+       :expanded_detail_sections,
+       toggle_member(socket.assigns.expanded_detail_sections, section)
+     )}
+  end
+
+  # Ignore toggles for any key that is not a known detail-panel section: the
+  # payload is client-supplied, so an unrecognized section must not mutate
+  # state (security).
+  def handle_event("toggle_detail_section", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_info({:agent_event, _payload}, socket) do
@@ -280,7 +303,11 @@ defmodule KanbanWeb.AgentsLive do
             </div>
 
             <div :if={@agent_detail} data-agent-detail style="margin-bottom: 16px;">
-              <AgentDetailPanel.panel detail={@agent_detail} />
+              <AgentDetailPanel.panel
+                detail={@agent_detail}
+                expanded_sections={@expanded_detail_sections}
+                on_toggle="toggle_detail_section"
+              />
             </div>
 
             <AgentActivityFeed.feed
@@ -414,6 +441,14 @@ defmodule KanbanWeb.AgentsLive do
   # equality is by value.
   defp toggle_agent(selected_identity, selected_identity), do: nil
   defp toggle_agent(_current, identity), do: identity
+
+  # Flip a member's presence in a MapSet: drop it when present, add it when
+  # absent. Backs the per-section collapse state for the detail panel.
+  defp toggle_member(set, member) do
+    if MapSet.member?(set, member),
+      do: MapSet.delete(set, member),
+      else: MapSet.put(set, member)
+  end
 
   defp count_events_within_24h(events) do
     cutoff = DateTime.add(DateTime.utc_now(), -@event_window_hours, :hour)

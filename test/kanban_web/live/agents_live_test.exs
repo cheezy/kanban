@@ -1198,6 +1198,62 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert selected =~ "data-agent-detail-panel"
       assert selected =~ "No active task"
     end
+
+    test "clicking a category toggle collapses then expands that category",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+
+      # Recent activity is expanded by default, so its event rows render.
+      assert detail_html(render(view)) =~ "data-agent-detail-event"
+
+      collapsed =
+        view
+        |> element(~s([data-agent-detail-section-toggle="activity"]))
+        |> render_click()
+
+      # Collapsing hides only the activity body; the panel and other sections stay.
+      refute detail_html(collapsed) =~ "data-agent-detail-event"
+      assert detail_html(collapsed) =~ "data-agent-detail-panel"
+      assert detail_html(collapsed) =~ "Current work"
+
+      expanded =
+        view
+        |> element(~s([data-agent-detail-section-toggle="activity"]))
+        |> render_click()
+
+      assert detail_html(expanded) =~ "data-agent-detail-event"
+    end
+
+    test "collapsing one category leaves the others expanded",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+
+      view
+      |> element(~s([data-agent-detail-section-toggle="activity"]))
+      |> render_click()
+
+      # The toggled category reflects the collapsed state...
+      activity_toggle =
+        view |> element(~s([data-agent-detail-section-toggle="activity"])) |> render()
+
+      assert activity_toggle =~ ~s(aria-expanded="false")
+      assert activity_toggle =~ "hero-chevron-right"
+
+      # ...while an untouched category stays expanded.
+      current_toggle =
+        view |> element(~s([data-agent-detail-section-toggle="current"])) |> render()
+
+      assert current_toggle =~ ~s(aria-expanded="true")
+      assert current_toggle =~ "hero-chevron-down"
+    end
   end
 
   defp seed_working_agent(board, name) do
