@@ -400,7 +400,7 @@ defmodule KanbanWeb.AgentsHeader do
       </dt>
       <dd style={[
         "margin: 0;",
-        "font-size: 18px; font-weight: 600;",
+        "font-size: 24px; font-weight: 600;",
         "color: #{@tone};",
         "font-variant-numeric: tabular-nums;"
       ]}>

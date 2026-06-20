@@ -107,6 +107,15 @@ defmodule KanbanWeb.AgentsHeaderTest do
       assert html =~ ~r{<dd[^>]*>\s*1\s*</dd>}
     end
 
+    test "renders the stat values at 24px to match the Delivery-trends values" do
+      html = render(stats(%{claimed_today: 7}), 0)
+
+      # The kv value <dd> uses the 24px size (matching trend_stat/1).
+      assert html =~ ~r{<dd[^>]*font-size: 24px[^>]*>\s*7\s*</dd>}
+      # The h1 and fleet-health values are untouched (still 18px).
+      assert html =~ "font-size: 18px"
+    end
+
     test "applies the doing/review/done tone CSS variables to the correct cards" do
       html = render(stats(%{claimed_today: 1, completed_today: 1, approved_today: 1}), 0)
 
