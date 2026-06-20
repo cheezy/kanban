@@ -96,8 +96,16 @@ defmodule Kanban.Agents do
   break alphabetically by name for a stable order.
   """
   @spec list_agents(keyword()) :: [Agent.t()]
-  def list_agents(opts \\ []) do
-    tasks = fetch_tasks(opts)
+  def list_agents(opts \\ []), do: list_agents_from(fetch_tasks(opts))
+
+  @doc """
+  Builds the agent roster from an already-fetched task list.
+
+  Same contract as `list_agents/1` but operates on a caller-supplied task set
+  so the Agents view can fetch once and share the result across every metric.
+  """
+  @spec list_agents_from([Task.t()]) :: [Agent.t()]
+  def list_agents_from(tasks) do
     today = Date.utc_today()
 
     # Sort by name first, then stable-sort by recency descending: because
@@ -118,10 +126,17 @@ defmodule Kanban.Agents do
   """
   @spec recent_activity(keyword()) :: [Event.t()]
   def recent_activity(opts \\ []) do
-    limit = Keyword.get(opts, :limit, @default_event_limit)
+    recent_activity_from(fetch_tasks(opts), Keyword.get(opts, :limit, @default_event_limit))
+  end
 
-    opts
-    |> fetch_tasks()
+  @doc """
+  Synthesizes the descending activity-event list from an already-fetched task
+  list, capped at `limit`. The cap is applied in Elixir (after sorting), never
+  pushed into the DB, so the shared task fetch feeds this without a new query.
+  """
+  @spec recent_activity_from([Task.t()], non_neg_integer()) :: [Event.t()]
+  def recent_activity_from(tasks, limit \\ @default_event_limit) do
+    tasks
     |> Enum.flat_map(&events_for/1)
     |> Enum.sort_by(& &1.at, {:desc, DateTime})
     |> Enum.take(limit)
@@ -142,6 +157,18 @@ defmodule Kanban.Agents do
   def header_stats(opts \\ []), do: Metrics.header_stats(opts)
 
   @doc """
+  Header counters computed from an already-fetched task list. Same shape as
+  `header_stats/1`; lets the Agents view share one fetch across metrics.
+  """
+  @spec header_stats_from([Task.t()]) :: %{
+          claimed_today: non_neg_integer(),
+          completed_today: non_neg_integer(),
+          approved_today: non_neg_integer(),
+          avg_cycle_minutes: number()
+        }
+  def header_stats_from(tasks), do: Metrics.header_stats_from(tasks)
+
+  @doc """
   Returns fleet-health rollup counts for the scoped agent set.
 
   Delegates to `Kanban.Agents.Metrics.fleet_health/1`; see there for the
@@ -156,6 +183,18 @@ defmodule Kanban.Agents do
   def fleet_health(opts \\ []), do: Metrics.fleet_health(opts)
 
   @doc """
+  Fleet-health rollup computed from an already-built agent list. Same shape as
+  `fleet_health/1`; the caller supplies the roster so it is built only once.
+  """
+  @spec fleet_health_from([Agent.t()]) :: %{
+          working: non_neg_integer(),
+          waiting: non_neg_integer(),
+          idle: non_neg_integer(),
+          stuck: non_neg_integer()
+        }
+  def fleet_health_from(agents), do: Metrics.fleet_health_from(agents)
+
+  @doc """
   Returns fleet-wide throughput counts and an overall success rate.
 
   Delegates to `Kanban.Agents.Metrics.throughput_and_success/1`; see there for
@@ -165,9 +204,27 @@ defmodule Kanban.Agents do
           completed_today: non_neg_integer(),
           completed_7d: non_neg_integer(),
           completed_30d: non_neg_integer(),
+          completed_prev_today: non_neg_integer(),
+          completed_prev_7d: non_neg_integer(),
+          completed_prev_30d: non_neg_integer(),
           success_rate: float()
         }
   def throughput_and_success(opts \\ []), do: Metrics.throughput_and_success(opts)
+
+  @doc """
+  Throughput counts and success rate computed from an already-fetched task
+  list. Same shape as `throughput_and_success/1`.
+  """
+  @spec throughput_and_success_from([Task.t()]) :: %{
+          completed_today: non_neg_integer(),
+          completed_7d: non_neg_integer(),
+          completed_30d: non_neg_integer(),
+          completed_prev_today: non_neg_integer(),
+          completed_prev_7d: non_neg_integer(),
+          completed_prev_30d: non_neg_integer(),
+          success_rate: float()
+        }
+  def throughput_and_success_from(tasks), do: Metrics.throughput_and_success_from(tasks)
 
   @doc """
   Returns a per-day throughput time-series and an aggregate cycle-time metric.
@@ -180,6 +237,18 @@ defmodule Kanban.Agents do
           avg_cycle_minutes: number()
         }
   def throughput_trends(opts \\ []), do: Metrics.throughput_trends(opts)
+
+  @doc """
+  Per-day throughput series and cycle-time metric computed from an
+  already-fetched task list over a `days`-day window. Same shape as
+  `throughput_trends/1`.
+  """
+  @spec throughput_trends_from([Task.t()], integer()) :: %{
+          series: [%{date: Date.t(), count: non_neg_integer()}],
+          avg_cycle_minutes: number()
+        }
+  def throughput_trends_from(tasks, days \\ Metrics.default_trend_days()),
+    do: Metrics.throughput_trends_from(tasks, days)
 
   @doc """
   Returns a per-agent drill-down for the named agent, or `nil` if unknown.
@@ -210,8 +279,24 @@ defmodule Kanban.Agents do
             recent_activity: [Event.t()]
           }
           | nil
-  def agent_detail(name, opts \\ []) do
-    case opts |> fetch_tasks() |> filter_by_agent(name) do
+  def agent_detail(name, opts \\ []), do: agent_detail_from(fetch_tasks(opts), name)
+
+  @doc """
+  Per-agent drill-down derived from an already-fetched task list. Same shape as
+  `agent_detail/2` (or `nil` for an unknown agent). The task list is assumed to
+  be scope-filtered already, so no scope is re-applied here.
+  """
+  @spec agent_detail_from([Task.t()], String.t()) ::
+          %{
+            name: String.t(),
+            current_task: %{identifier: String.t(), title: String.t()} | nil,
+            claims: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
+            failures: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
+            recent_activity: [Event.t()]
+          }
+          | nil
+  def agent_detail_from(tasks, name) do
+    case filter_by_agent(tasks, name) do
       [] ->
         nil
 

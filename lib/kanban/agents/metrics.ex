@@ -46,8 +46,19 @@ defmodule Kanban.Agents.Metrics do
           approved_today: non_neg_integer(),
           avg_cycle_minutes: number()
         }
-  def header_stats(opts \\ []) do
-    tasks = Agents.fetch_tasks(opts)
+  def header_stats(opts \\ []), do: header_stats_from(Agents.fetch_tasks(opts))
+
+  @doc """
+  Header counters computed from an already-fetched task list. Same shape and
+  rules as `header_stats/1`; lets the Agents view share one fetch.
+  """
+  @spec header_stats_from([Kanban.Tasks.Task.t()]) :: %{
+          claimed_today: non_neg_integer(),
+          completed_today: non_neg_integer(),
+          approved_today: non_neg_integer(),
+          avg_cycle_minutes: number()
+        }
+  def header_stats_from(tasks) do
     today = Date.utc_today()
 
     %{
@@ -83,17 +94,31 @@ defmodule Kanban.Agents.Metrics do
           idle: non_neg_integer(),
           stuck: non_neg_integer()
         }
-  def fleet_health(opts \\ []) do
+  def fleet_health(opts \\ []), do: fleet_health_from(Agents.list_agents(opts))
+
+  @doc """
+  Fleet-health rollup computed from an already-built agent list. Same shape and
+  dormant-exclusion rule as `fleet_health/1`; the caller supplies the roster so
+  it is built only once. Pass the full roster (including dormant agents) — this
+  function applies the dormant exclusion itself.
+  """
+  @spec fleet_health_from([Agents.Agent.t()]) :: %{
+          working: non_neg_integer(),
+          waiting: non_neg_integer(),
+          idle: non_neg_integer(),
+          stuck: non_neg_integer()
+        }
+  def fleet_health_from(agents) do
     # Dormant agents are excluded so the rollup reflects only live agents — a
     # long tail of weeks-idle agents must not inflate the idle bucket.
-    agents = opts |> Agents.list_agents() |> Enum.reject(& &1.dormant)
-    by_status = Enum.frequencies_by(agents, & &1.status)
+    live_agents = Enum.reject(agents, & &1.dormant)
+    by_status = Enum.frequencies_by(live_agents, & &1.status)
 
     %{
       working: Map.get(by_status, :working, 0),
       waiting: Map.get(by_status, :waiting, 0),
       idle: Map.get(by_status, :idle, 0),
-      stuck: Enum.count(agents, & &1.stuck)
+      stuck: Enum.count(live_agents, & &1.stuck)
     }
   end
 
@@ -131,7 +156,23 @@ defmodule Kanban.Agents.Metrics do
           success_rate: float()
         }
   def throughput_and_success(opts \\ []) do
-    tasks = Agents.fetch_tasks(opts)
+    throughput_and_success_from(Agents.fetch_tasks(opts))
+  end
+
+  @doc """
+  Throughput counts and success rate computed from an already-fetched task
+  list. Same 7-key shape and rules as `throughput_and_success/1`.
+  """
+  @spec throughput_and_success_from([Kanban.Tasks.Task.t()]) :: %{
+          completed_today: non_neg_integer(),
+          completed_7d: non_neg_integer(),
+          completed_30d: non_neg_integer(),
+          completed_prev_today: non_neg_integer(),
+          completed_prev_7d: non_neg_integer(),
+          completed_prev_30d: non_neg_integer(),
+          success_rate: float()
+        }
+  def throughput_and_success_from(tasks) do
     today = Date.utc_today()
 
     %{
@@ -181,15 +222,38 @@ defmodule Kanban.Agents.Metrics do
           avg_cycle_minutes: number()
         }
   def throughput_trends(opts \\ []) do
-    tasks = Agents.fetch_tasks(opts)
+    throughput_trends_from(
+      Agents.fetch_tasks(opts),
+      Keyword.get(opts, :days, @default_trend_days)
+    )
+  end
+
+  @doc """
+  Per-day throughput series and cycle-time metric computed from an
+  already-fetched task list over a `days`-day window. Same shape and rules as
+  `throughput_trends/1`. Callers that want the default window should pass
+  `default_trend_days/0`.
+  """
+  @spec throughput_trends_from([Kanban.Tasks.Task.t()], integer()) :: %{
+          series: [%{date: Date.t(), count: non_neg_integer()}],
+          avg_cycle_minutes: number()
+        }
+  def throughput_trends_from(tasks, days \\ @default_trend_days) do
     today = Date.utc_today()
-    days = Keyword.get(opts, :days, @default_trend_days)
 
     %{
       series: throughput_buckets(tasks, today, days),
       avg_cycle_minutes: avg_cycle_minutes(tasks)
     }
   end
+
+  @doc """
+  The default throughput-trends window (in days) used when no `:days` option is
+  given. Exposed so callers of `throughput_trends_from/2` can request the same
+  default window the keyword API uses.
+  """
+  @spec default_trend_days() :: pos_integer()
+  def default_trend_days, do: @default_trend_days
 
   # --- private helpers -------------------------------------------------------
 

@@ -67,7 +67,7 @@ defmodule KanbanWeb.AgentsLive do
     {:noreply,
      socket
      |> assign(:selected_agent, selected)
-     |> assign(:agent_detail, agent_detail_for(socket.assigns.current_scope, selected))
+     |> assign(:agent_detail, selected_agent_detail(socket.assigns.current_scope, selected))
      |> assign(
        :events,
        apply_filters(socket.assigns.all_events, socket.assigns.filter, selected)
@@ -289,45 +289,60 @@ defmodule KanbanWeb.AgentsLive do
 
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
-    events = Agents.recent_activity(scope: scope, limit: @recent_activity_limit)
-    # Dormant agents are split out of the main roster into a collapsible group;
-    # the dormant flag is derived in the context (W1222), not recomputed here.
-    {live_agents, dormant_agents} =
-      [scope: scope] |> Agents.list_agents() |> Enum.split_with(&(not &1.dormant))
+    # Fetch the scoped task set ONCE and derive every roster, event, and metric
+    # from it. Previously each of the 6-7 calls below re-ran the unbounded task
+    # fetch (W1242), turning a single render into ~24-28 queries.
+    tasks = Agents.fetch_tasks(scope: scope)
+    agents = Agents.list_agents_from(tasks)
+    events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
-    assign(
-      socket,
-      Map.merge(
-        %{
-          agents: live_agents,
-          dormant_agents: dormant_agents,
-          all_events: events,
-          events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
-          # Recompute the open agent's drill-down so it refreshes on the same
-          # PubSub debounce as the rest of the view; nil when nothing is selected.
-          agent_detail: agent_detail_for(scope, socket.assigns.selected_agent),
-          event_count_24h: count_events_within_24h(events)
-        },
-        metric_assigns(scope)
-      )
-    )
+    metrics = metric_assigns(tasks, agents)
+    assigns = socket |> base_assigns(tasks, agents, events) |> Map.merge(metrics)
+
+    assign(socket, assigns)
   end
 
-  # The fleet-level aggregate rollups, grouped so load_agents_data/1 stays
-  # under the complexity budget.
-  defp metric_assigns(scope) do
+  # The roster, event, and drill-down assigns derived from the shared task fetch.
+  defp base_assigns(socket, tasks, agents, events) do
+    # Dormant agents are split out of the main roster into a collapsible group;
+    # the dormant flag is derived in the context (W1222), not recomputed here.
+    {live_agents, dormant_agents} = Enum.split_with(agents, &(not &1.dormant))
+
     %{
-      stats: Agents.header_stats(scope: scope),
-      fleet_health: Agents.fleet_health(scope: scope),
-      throughput_and_success: Agents.throughput_and_success(scope: scope),
-      throughput_trends: Agents.throughput_trends(scope: scope)
+      agents: live_agents,
+      dormant_agents: dormant_agents,
+      all_events: events,
+      events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
+      # Recompute the open agent's drill-down so it refreshes on the same
+      # PubSub debounce as the rest of the view; nil when nothing is selected.
+      agent_detail: agent_detail_for(tasks, socket.assigns.selected_agent),
+      event_count_24h: count_events_within_24h(events)
+    }
+  end
+
+  # The fleet-level aggregate rollups, derived from the single shared task fetch
+  # (and the roster built from it), grouped so load_agents_data/1 stays under the
+  # complexity budget.
+  defp metric_assigns(tasks, agents) do
+    %{
+      stats: Agents.header_stats_from(tasks),
+      fleet_health: Agents.fleet_health_from(agents),
+      throughput_and_success: Agents.throughput_and_success_from(tasks),
+      throughput_trends: Agents.throughput_trends_from(tasks)
     }
   end
 
   # The drill-down for the selected agent, or nil when no agent is selected.
-  # Reads from the Kanban.Agents context (no query in the LiveView).
-  defp agent_detail_for(_scope, nil), do: nil
-  defp agent_detail_for(scope, name), do: Agents.agent_detail(name, scope: scope)
+  # Reads from the shared task list already fetched in load_agents_data/1 (no
+  # query in the LiveView).
+  defp agent_detail_for(_tasks, nil), do: nil
+  defp agent_detail_for(tasks, name), do: Agents.agent_detail_from(tasks, name)
+
+  # On a discrete select-agent click we don't have the shared task list in hand,
+  # so fall back to the keyword API (a single fetch on the click path — not the
+  # per-render hot path that load_agents_data/1 optimizes).
+  defp selected_agent_detail(_scope, nil), do: nil
+  defp selected_agent_detail(scope, name), do: Agents.agent_detail(name, scope: scope)
 
   defp maybe_schedule_refresh(%{assigns: %{refresh_scheduled?: true}} = socket), do: socket
 

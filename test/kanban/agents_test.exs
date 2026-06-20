@@ -1203,4 +1203,72 @@ defmodule Kanban.AgentsTest do
       assert Agents.agent_detail("Claude", scope: other_scope) == nil
     end
   end
+
+  describe "shared-fetch parity (W1242)" do
+    setup %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          claimed_at: now,
+          completed_at: now,
+          status: :completed,
+          time_spent_minutes: 30
+        })
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Codex", claimed_at: now, status: :in_progress})
+
+      :ok
+    end
+
+    test "every _from variant matches its keyword counterpart for the same scope", %{user: user} do
+      scope = Scope.for_user(user)
+      tasks = Agents.fetch_tasks(scope: scope)
+
+      assert Agents.list_agents_from(tasks) == Agents.list_agents(scope: scope)
+      assert Agents.header_stats_from(tasks) == Agents.header_stats(scope: scope)
+
+      assert Agents.throughput_and_success_from(tasks) ==
+               Agents.throughput_and_success(scope: scope)
+
+      assert Agents.throughput_trends_from(tasks) == Agents.throughput_trends(scope: scope)
+
+      assert Agents.throughput_trends_from(tasks, 3) ==
+               Agents.throughput_trends(days: 3, scope: scope)
+
+      agents = Agents.list_agents_from(tasks)
+      assert Agents.fleet_health_from(agents) == Agents.fleet_health(scope: scope)
+
+      assert Agents.recent_activity_from(tasks, 200) ==
+               Agents.recent_activity(scope: scope, limit: 200)
+
+      assert Agents.agent_detail_from(tasks, "Claude") ==
+               Agents.agent_detail("Claude", scope: scope)
+    end
+
+    test "agent_detail_from returns nil for an unknown agent", %{user: user} do
+      scope = Scope.for_user(user)
+      tasks = Agents.fetch_tasks(scope: scope)
+      assert Agents.agent_detail_from(tasks, "Nobody") == nil
+    end
+
+    test "the _from variants operate only on the scoped task list they are given" do
+      # A different user's scope yields an empty task list, so every derived
+      # value is empty — proving the shared fetch carries the board scoping.
+      other = Scope.for_user(user_fixture())
+      tasks = Agents.fetch_tasks(scope: other)
+
+      assert tasks == []
+      assert Agents.list_agents_from(tasks) == []
+      assert Agents.recent_activity_from(tasks, 200) == []
+      assert Agents.agent_detail_from(tasks, "Claude") == nil
+    end
+  end
 end
