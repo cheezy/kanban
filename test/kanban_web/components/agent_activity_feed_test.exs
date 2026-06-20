@@ -26,11 +26,12 @@ defmodule KanbanWeb.AgentActivityFeedTest do
     struct(base, overrides)
   end
 
-  defp render(events, filter, on_filter_change \\ "filter") do
+  defp render(events, filter, on_filter_change \\ "filter", timezone \\ "Etc/UTC") do
     assigns = %{
       events: events,
       filter: filter,
-      on_filter_change: on_filter_change
+      on_filter_change: on_filter_change,
+      timezone: timezone
     }
 
     rendered_to_string(~H"""
@@ -38,6 +39,7 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       events={@events}
       filter={@filter}
       on_filter_change={@on_filter_change}
+      timezone={@timezone}
     />
     """)
   end
@@ -271,6 +273,66 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       assert html =~ ~s(datetime="2026-05-15T14:32:00Z")
       assert html =~ "14:32"
       assert html =~ "tabular-nums"
+    end
+
+    test "converts a UTC event time to the given IANA zone for display" do
+      # 14:32 UTC is 10:32 in America/New_York (EDT, UTC-4) on this date.
+      html = render([event(%{at: ~U[2026-05-15 14:32:00Z]})], :all, "filter", "America/New_York")
+
+      assert html =~ "10:32"
+      refute html =~ ">14:32<"
+      # The machine-readable datetime attribute stays the canonical UTC ISO8601.
+      assert html =~ ~s(datetime="2026-05-15T14:32:00Z")
+    end
+
+    test "falls back to UTC display when the timezone is unknown" do
+      html = render([event(%{at: ~U[2026-05-15 14:32:00Z]})], :all, "filter", "Not/AZone")
+
+      assert html =~ "14:32"
+    end
+  end
+
+  describe "feed/1 — date grouping" do
+    test "renders a date-header row before the group" do
+      html = render([event(%{at: ~U[2026-05-15 14:32:00Z]})], :all)
+
+      assert html =~ "data-agent-feed-date-header"
+    end
+
+    test "events spanning two local dates produce two date-group headers" do
+      events = [
+        event(%{at: ~U[2026-05-15 14:32:00Z]}),
+        event(%{identifier: "W43", at: ~U[2026-05-14 09:00:00Z]})
+      ]
+
+      html = render(events, :all)
+
+      headers = Regex.scan(~r/data-agent-feed-date-header/, html)
+      assert length(headers) == 2
+      # Both rows still render — grouping wraps rows, it does not drop them.
+      assert length(Regex.scan(~r/data-agent-feed-row/, html)) == 2
+    end
+
+    test "groups an event near midnight under its local date, not its UTC date" do
+      # 02:00 UTC on May 15 is 22:00 on May 14 in America/New_York — the row
+      # must land under the May 14 header, not May 15.
+      html = render([event(%{at: ~U[2026-05-15 02:00:00Z]})], :all, "filter", "America/New_York")
+
+      assert html =~ "May 14"
+      refute html =~ "May 15"
+    end
+
+    test "labels the most recent group Today in the viewer's zone" do
+      html = render([event(%{at: DateTime.utc_now()})], :all, "filter", "Etc/UTC")
+
+      assert html =~ "Today"
+    end
+
+    test "labels the prior day's group Yesterday" do
+      yesterday = DateTime.add(DateTime.utc_now(), -1, :day)
+      html = render([event(%{at: yesterday})], :all, "filter", "Etc/UTC")
+
+      assert html =~ "Yesterday"
     end
   end
 end

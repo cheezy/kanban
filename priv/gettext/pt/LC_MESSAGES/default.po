@@ -2501,6 +2501,7 @@ msgstr "Tempo que as tarefas passam na fila antes do trabalho começar"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Tempo que as tarefas passam aguardando revisão após a conclusão"
 
+#: lib/kanban_web/components/agent_activity_feed.ex:388
 #: lib/kanban_web/components/agent_roster_card.ex:194
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
@@ -4158,7 +4159,7 @@ msgid "Active goals"
 msgstr "Metas ativas"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/agents_live.ex:147
+#: lib/kanban_web/live/agents_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "Agentes"
@@ -4220,7 +4221,7 @@ msgstr "Começar com um quadro em branco"
 msgid "Stride home"
 msgstr "Início do Stride"
 
-#: lib/kanban_web/live/agents_live.ex:145
+#: lib/kanban_web/live/agents_live.ex:146
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4837,7 +4838,7 @@ msgstr "Filhos"
 msgid "Claimed"
 msgstr "Reservado"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:301
+#: lib/kanban_web/components/agent_activity_feed.ex:347
 #: lib/kanban_web/components/agent_detail_panel.ex:90
 #: lib/kanban_web/components/agent_roster_card.ex:197
 #, elixir-autogen, elixir-format
@@ -4909,30 +4910,30 @@ msgstr "A trabalhar"
 msgid "Yes"
 msgstr "Sim"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:312
+#: lib/kanban_web/components/agent_activity_feed.ex:401
 #: lib/kanban_web/components/agents_header.ex:475
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}h %{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:316
+#: lib/kanban_web/components/agent_activity_feed.ex:405
 #: lib/kanban_web/components/agents_header.ex:478
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:300
+#: lib/kanban_web/components/agent_activity_feed.ex:346
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Todos"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:303
+#: lib/kanban_web/components/agent_activity_feed.ex:349
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "Conclusões"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:76
+#: lib/kanban_web/components/agent_activity_feed.ex:87
 #: lib/kanban_web/components/agent_detail_panel.ex:131
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
@@ -4993,19 +4994,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "últimas 24h · %{count} evento"
 msgstr[1] "últimas 24h · %{count} eventos"
 
-#: lib/kanban_web/live/agents_live.ex:412
+#: lib/kanban_web/live/agents_live.ex:436
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} conectado"
 msgstr[1] "%{count} conectados"
 
-#: lib/kanban_web/live/agents_live.ex:208
+#: lib/kanban_web/live/agents_live.ex:209
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "Nenhum agente tem atividade ainda."
 
-#: lib/kanban_web/live/agents_live.ex:178
+#: lib/kanban_web/live/agents_live.ex:179
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "ao vivo"
@@ -5049,8 +5050,8 @@ msgstr "Aprovar"
 msgid "Request changes"
 msgstr "Solicitar mudanças"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:231
-#: lib/kanban_web/components/agent_activity_feed.ex:232
+#: lib/kanban_web/components/agent_activity_feed.ex:277
+#: lib/kanban_web/components/agent_activity_feed.ex:278
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -7182,7 +7183,7 @@ msgstr "é inconsistente com a tarefa: a revisão lista %{supplied} entradas de 
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "é inconsistente com a tarefa: a revisão relata %{checked} critérios de aceitação verificados, mas a tarefa define %{expected}; as contagens devem corresponder"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:302
+#: lib/kanban_web/components/agent_activity_feed.ex:348
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
 msgstr "Revisado"
@@ -7204,17 +7205,17 @@ msgstr "Detalhes técnicos"
 msgid "Technical Details (JSON object)"
 msgstr "Detalhes técnicos (objeto JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:284
+#: lib/kanban_web/live/agents_live.ex:285
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtrando por %{agent}"
 
-#: lib/kanban_web/live/agents_live.ex:301
+#: lib/kanban_web/live/agents_live.ex:302
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Limpar"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:205
+#: lib/kanban_web/components/agent_activity_feed.ex:251
 #: lib/kanban_web/components/agent_roster_card.ex:92
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7270,12 +7271,12 @@ msgstr "%{date}: %{count} concluídas"
 msgid "of which"
 msgstr "dos quais"
 
-#: lib/kanban_web/live/agents_live.ex:245
+#: lib/kanban_web/live/agents_live.ex:246
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "Inativos (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:467
+#: lib/kanban_web/live/agents_live.ex:491
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Visto há %{days} d"
@@ -7309,3 +7310,13 @@ msgstr "Nenhum"
 #, elixir-autogen, elixir-format
 msgid "vs the prior period"
 msgstr "em relação ao período anterior"
+
+#: lib/kanban_web/components/agent_activity_feed.ex:390
+#, elixir-autogen, elixir-format
+msgid "%a, %b %-d"
+msgstr "%a, %-d %b"
+
+#: lib/kanban_web/components/agent_activity_feed.ex:389
+#, elixir-autogen, elixir-format
+msgid "Yesterday"
+msgstr "Ontem"

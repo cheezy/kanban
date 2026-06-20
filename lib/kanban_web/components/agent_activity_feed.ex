@@ -46,12 +46,23 @@ defmodule KanbanWeb.AgentActivityFeed do
     * `on_filter_change` — `phx-click` event name fired when a tab is
       clicked. The clicked tab's atom is sent as `phx-value-filter`.
       Required.
+    * `timezone` — the viewer's IANA timezone (e.g. `"America/New_York"`).
+      Each row's time is shown in this zone and rows are grouped by the
+      local calendar date. Defaults to `"Etc/UTC"`; an unknown zone falls
+      back to UTC display without error.
   """
   attr :events, :list, required: true
   attr :filter, :atom, required: true, values: @filters
   attr :on_filter_change, :string, required: true
+  attr :timezone, :string, default: "Etc/UTC"
 
   def feed(assigns) do
+    assigns =
+      assign(assigns,
+        groups: group_by_local_date(assigns.events, assigns.timezone),
+        today: current_local_date(assigns.timezone)
+      )
+
     ~H"""
     <section
       data-agent-feed
@@ -84,9 +95,43 @@ defmodule KanbanWeb.AgentActivityFeed do
           "overflow-y: auto; min-height: 0;"
         ]}
       >
-        <.row :for={event <- @events} event={event} />
+        <.feed_group
+          :for={{date, events} <- @groups}
+          date={date}
+          events={events}
+          today={@today}
+          timezone={@timezone}
+        />
       </ul>
     </section>
+    """
+  end
+
+  # One local-date group: a sticky date header followed by that date's rows.
+  # Wraps the existing rows rather than restructuring them, so the
+  # data-agent-feed-row / -kind markers stay intact for the flat-list tests.
+  attr :date, :any, required: true
+  attr :events, :list, required: true
+  attr :today, :any, required: true
+  attr :timezone, :string, required: true
+
+  defp feed_group(assigns) do
+    ~H"""
+    <li
+      data-agent-feed-date-header
+      style={[
+        "list-style: none;",
+        "padding: 8px 8px 2px;",
+        "font-size: 10px; font-weight: 600;",
+        "text-transform: uppercase; letter-spacing: 0.06em;",
+        "color: var(--ink-3);",
+        "position: sticky; top: 0; z-index: 1;",
+        "background: var(--surface);"
+      ]}
+    >
+      {format_date_header(@date, @today)}
+    </li>
+    <.row :for={event <- @events} event={event} timezone={@timezone} />
     """
   end
 
@@ -147,6 +192,7 @@ defmodule KanbanWeb.AgentActivityFeed do
   end
 
   attr :event, :map, required: true
+  attr :timezone, :string, required: true
 
   defp row(assigns) do
     ~H"""
@@ -178,7 +224,7 @@ defmodule KanbanWeb.AgentActivityFeed do
           "font-variant-numeric: tabular-nums;"
         ]}
       >
-        {format_time(@event.at)}
+        {format_time(@event.at, @timezone)}
       </time>
 
       <span
@@ -302,8 +348,51 @@ defmodule KanbanWeb.AgentActivityFeed do
   defp filter_label(:reviewed), do: gettext("Reviewed")
   defp filter_label(:completions), do: gettext("Completions")
 
-  defp format_time(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%H:%M")
+  # Groups events by their calendar date IN THE VIEWER'S TIMEZONE, newest date
+  # first. The date boundary must be derived from the zone-shifted datetime, not
+  # the stored UTC one, or a row near midnight lands under the wrong header.
+  defp group_by_local_date(events, timezone) do
+    events
+    |> Enum.group_by(&local_date(&1.at, timezone))
+    |> Enum.sort_by(fn {date, _events} -> date end, {:desc, Date})
+  end
+
+  defp local_date(%DateTime{} = dt, timezone) do
+    dt |> to_local(timezone) |> DateTime.to_date()
+  end
+
+  # Shifts a stored UTC datetime into the viewer's zone. The zone is browser-
+  # supplied, so shift_zone/2 can return {:error, :time_zone_not_found}; fall
+  # back to the original UTC datetime so a row never crashes on an unknown zone.
+  defp to_local(%DateTime{} = dt, timezone) do
+    case DateTime.shift_zone(dt, timezone) do
+      {:ok, shifted} -> shifted
+      {:error, _reason} -> dt
+    end
+  end
+
+  # The viewer's current local date, used to label the newest groups
+  # Today/Yesterday. Falls back to the UTC date when the zone is unknown.
+  defp current_local_date(timezone) do
+    case DateTime.now(timezone) do
+      {:ok, now} -> DateTime.to_date(now)
+      {:error, _reason} -> Date.utc_today()
+    end
+  end
+
+  # Localized date-group header. The most recent two dates read as
+  # Today/Yesterday; older dates use a gettext-wrapped strftime format so
+  # translators can reorder the day/month tokens per locale.
+  defp format_date_header(%Date{} = date, %Date{} = today) do
+    cond do
+      date == today -> gettext("Today")
+      date == Date.add(today, -1) -> gettext("Yesterday")
+      true -> Calendar.strftime(date, gettext("%a, %b %-d"))
+    end
+  end
+
+  defp format_time(%DateTime{} = dt, timezone) do
+    dt |> to_local(timezone) |> Calendar.strftime("%H:%M")
   end
 
   defp format_cycle_time(minutes) when is_integer(minutes) and minutes >= 60 do

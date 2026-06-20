@@ -106,6 +106,12 @@ config :kanban, Oban,
 # `PATCH /api/tasks/:id/after_goal`. Tests override to 1ms.
 config :kanban, :after_goal_grace_window_ms, 500
 
+# Use the `tz` package as the IANA time-zone database so
+# `DateTime.shift_zone/2` can convert stored UTC timestamps to an arbitrary
+# browser-supplied zone (Elixir's built-in database only knows `Etc/UTC`).
+# Backs the per-viewer local-time display in the /agents activity feed.
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

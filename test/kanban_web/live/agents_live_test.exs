@@ -1256,6 +1256,45 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "activity feed timezone and date grouping" do
+    setup [:register_and_log_in_user]
+
+    test "the feed groups events under date-header rows", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agent-feed-date-header"
+    end
+
+    test "a connect-param timezone renders feed times in that zone",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_claim_at(board, "Claude", ~U[2026-06-20 18:30:00Z])
+
+      conn = put_connect_params(conn, %{"timezone" => "America/New_York"})
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # 18:30 UTC is 14:30 in America/New_York (EDT, UTC-4).
+      assert html =~ "14:30"
+      # The UTC wall-clock time is not shown as the row's visible time.
+      refute html =~ ">18:30<"
+    end
+
+    test "an unknown connect-param timezone falls back to UTC without crashing",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_claim_at(board, "Claude", ~U[2026-06-20 18:30:00Z])
+
+      conn = put_connect_params(conn, %{"timezone" => "Not/AZone"})
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agent-feed"
+      assert html =~ "18:30"
+    end
+  end
+
   defp seed_working_agent(board, name) do
     doing = column_fixture(board, %{name: "Doing"})
     now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -1268,6 +1307,22 @@ defmodule KanbanWeb.AgentsLiveTest do
         completed_by_agent: name,
         status: :in_progress,
         claimed_at: now
+      })
+  end
+
+  # Seeds a single in-progress task claimed by `name` at a fixed UTC instant, so
+  # the activity feed surfaces a claim event with a deterministic timestamp the
+  # timezone tests can convert and assert against.
+  defp seed_claim_at(board, name, %DateTime{} = at) do
+    doing = column_fixture(board, %{name: "Doing"})
+
+    {:ok, _} =
+      doing
+      |> task_fixture()
+      |> Tasks.update_task(%{
+        created_by_agent: name,
+        status: :in_progress,
+        claimed_at: at
       })
   end
 
