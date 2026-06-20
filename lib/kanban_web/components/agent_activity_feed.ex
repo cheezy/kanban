@@ -161,7 +161,12 @@ defmodule KanbanWeb.AgentActivityFeed do
           "border-bottom: 1px solid var(--line);",
           # A thin kind-colored left accent so created/claimed/completed/reviewed
           # rows are distinguishable at a glance; reuses the shared kind palette.
-          "border-left: 3px solid #{TaskTokens.kind_tone(@event.kind)};"
+          "border-left: 3px solid #{TaskTokens.kind_tone(@event.kind)};",
+          # A soft kind-tinted row band reinforces the accent so kinds are
+          # distinguishable at a glance without reading the label. Baseline
+          # kinds (:create/:unclaim) stay transparent to keep the feed
+          # restrained; the soft tokens are theme-aware so dark mode flips.
+          "background: #{TaskTokens.kind_soft(@event.kind)};"
         ]
       }
     >

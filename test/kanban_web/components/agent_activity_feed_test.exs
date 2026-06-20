@@ -193,6 +193,26 @@ defmodule KanbanWeb.AgentActivityFeedTest do
         assert html =~ "border-left: 3px solid #{tone}"
       end
     end
+
+    test "active kinds carry a soft kind-tinted row background via kind_soft" do
+      for {kind, soft} <- [
+            {:claim, "var(--st-doing-soft)"},
+            {:complete, "var(--st-review-soft)"},
+            {:review, "var(--st-done-soft)"}
+          ] do
+        html = render([event(%{kind: kind})], :all)
+
+        assert html =~ "background: #{soft}"
+      end
+    end
+
+    test "baseline kinds (create/unclaim) stay transparent to keep the feed restrained" do
+      for kind <- [:create, :unclaim] do
+        html = render([event(%{kind: kind})], :all)
+
+        assert html =~ "background: transparent"
+      end
+    end
   end
 
   describe "feed/1 — optional trailing chips" do

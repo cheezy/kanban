@@ -171,4 +171,35 @@ defmodule KanbanWeb.TaskTokensTest do
       assert TaskTokens.archive_reason_ink(nil) == "var(--st-done)"
     end
   end
+
+  describe "kind_soft/1" do
+    for {kind, token} <- [
+          {:claim, "var(--st-doing-soft)"},
+          {:complete, "var(--st-review-soft)"},
+          {:review, "var(--st-done-soft)"}
+        ] do
+      test "#{kind} → #{token}" do
+        assert TaskTokens.kind_soft(unquote(kind)) == unquote(token)
+      end
+    end
+
+    test "create is transparent so baseline rows keep the plain surface" do
+      assert TaskTokens.kind_soft(:create) == "transparent"
+    end
+
+    test "unclaim is transparent (baseline kind)" do
+      assert TaskTokens.kind_soft(:unclaim) == "transparent"
+    end
+
+    test "unknown kind falls back to transparent" do
+      assert TaskTokens.kind_soft(:wat) == "transparent"
+    end
+
+    test "stays in sync with kind_tone's status delegation" do
+      # kind_soft mirrors kind_tone: both delegate to the status palette.
+      assert TaskTokens.kind_soft(:claim) == TaskTokens.status_soft(:in_progress)
+      assert TaskTokens.kind_soft(:complete) == TaskTokens.status_soft(:review)
+      assert TaskTokens.kind_soft(:review) == TaskTokens.status_soft(:completed)
+    end
+  end
 end

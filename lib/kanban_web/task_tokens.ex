@@ -133,6 +133,21 @@ defmodule KanbanWeb.TaskTokens do
   def kind_tone(:review), do: status_ink(:completed)
   def kind_tone(_), do: "var(--ink-3)"
 
+  @doc """
+  Soft background CSS var for an event-kind row tint.
+
+  Mirrors `kind_tone/1` by delegating to `status_soft/1`, so a row's tint
+  stays in sync with the kind palette: a claim shares the doing tint, a
+  complete shares the review tint, a review shares the done tint. The
+  `:create`/`:unclaim` baseline kinds (and any unmapped kind) return
+  `"transparent"` so those rows keep the plain surface and the feed reads
+  as a restrained, color-coded scan rather than a fully striped fill.
+  """
+  def kind_soft(:claim), do: status_soft(:in_progress)
+  def kind_soft(:complete), do: status_soft(:review)
+  def kind_soft(:review), do: status_soft(:completed)
+  def kind_soft(_), do: "transparent"
+
   @doc "Gettext label for an event kind."
   def kind_label(:claim), do: gettext("claimed")
   def kind_label(:complete), do: gettext("completed")
