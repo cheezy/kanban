@@ -46,7 +46,15 @@ defmodule Kanban.Tasks.Broadcaster do
     end
   end
 
-  defp broadcast_agent_event(task, event) do
+  @doc """
+  Broadcasts an agent-surface event to the shared "agents" PubSub topic.
+
+  Maps the task `event` atom to the agent-feed `kind` and emits
+  `{:agent_event, payload}` so AgentsLive refreshes live. Completion paths
+  that broadcast only to the board topic call this directly to also notify
+  the agents topic, without re-broadcasting to the board.
+  """
+  def broadcast_agent_event(%Task{} = task, event) do
     case agent_event_kind(event) do
       nil ->
         :ok

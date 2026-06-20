@@ -11,6 +11,7 @@ defmodule KanbanWeb.AgentsLiveTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Tasks
+  alias Kanban.Tasks.AgentWorkflow
 
   describe "mount and route" do
     setup [:register_and_log_in_user]
@@ -601,6 +602,46 @@ defmodule KanbanWeb.AgentsLiveTest do
       updated = render(view)
 
       assert updated =~ ~s(data-agent-feed-kind="complete")
+    end
+
+    test "completing via the real complete_task path updates the feed without reload (D86)",
+         %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = Kanban.Columns.list_columns(board)
+      ready = Enum.find(columns, &(&1.name == "Ready"))
+
+      {:ok, task} =
+        Tasks.create_task(ready, %{
+          "title" => "Live completion task",
+          "status" => "open",
+          "human_task" => false,
+          "created_by_id" => user.id,
+          "needs_review" => false
+        })
+
+      {:ok, claimed, _hook} =
+        AgentWorkflow.claim_next_task([], user, board.id, task.identifier, "Codex")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      refute render(view) =~ ~s(data-agent-feed-kind="complete")
+
+      {:ok, _final, _hooks} =
+        AgentWorkflow.complete_task(
+          claimed,
+          user,
+          %{
+            "completion_summary" => "Did the work",
+            "actual_complexity" => "small",
+            "actual_files_changed" => "lib/foo.ex",
+            "time_spent_minutes" => 30
+          },
+          "Codex"
+        )
+
+      # The LiveView debounces refreshes by 250ms, so wait briefly then re-render.
+      Process.sleep(400)
+
+      assert render(view) =~ ~s(data-agent-feed-kind="complete")
     end
 
     test "rapid agent events coalesce into a single debounced refresh", %{conn: conn} do

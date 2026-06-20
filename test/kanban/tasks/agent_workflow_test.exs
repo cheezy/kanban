@@ -249,6 +249,26 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert_receive {:task_moved_to_review, broadcast}
       assert broadcast.id == completed.id
     end
+
+    test "broadcasts {:agent_event, kind: :complete} to the agents topic", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      task_id = task.id
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.id == task_id
+
+      # The "agents" topic is process-global and other async tests broadcast to
+      # it too, so match this task's event specifically rather than whichever
+      # {:agent_event, _} happens to land in the mailbox first.
+      assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id} = payload}
+      assert Map.has_key?(payload, :agent_name)
+      assert Map.has_key?(payload, :at)
+    end
   end
 
   describe "complete_task/4 — needs_review=false" do
@@ -269,6 +289,38 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
       assert Enum.map(hooks, & &1.name) ==
                ["after_doing", "before_review", "after_review"]
+    end
+
+    test "broadcasts {:agent_event, kind: :complete} to the agents topic", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      task_id = task.id
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, final, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert final.id == task_id
+
+      # Match this task's event — the "agents" topic is shared across async tests.
+      assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
+    end
+
+    test "emits exactly one agents-topic event (no double-broadcast)", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      task_id = task.id
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, _final, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      # Pin to this task's id so a concurrent async test's :complete event for a
+      # different task cannot trip the refute.
+      assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
+      refute_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
     end
   end
 
@@ -553,6 +605,19 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       # Post-W492: hooks is a list (consistent with /complete). For an
       # orphan task with no parent goal, the list contains after_review only.
       assert Enum.map(hooks, & &1.name) == ["after_review"]
+    end
+
+    test "approved review broadcasts {:agent_event, kind: :complete} to the agents topic", ctx do
+      task = set_review_status(ctx.in_review_task, :approved, ctx.user)
+      task_id = task.id
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      assert {:ok, done_task, _hooks} = AgentWorkflow.mark_reviewed(task, ctx.user)
+      assert done_task.id == task_id
+
+      # Match this task's event — the "agents" topic is shared across async tests.
+      assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
     end
 
     test "changes_requested moves the task back to Doing with status :in_progress", ctx do
