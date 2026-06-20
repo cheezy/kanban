@@ -52,20 +52,22 @@ defmodule Kanban.Agents.Metrics do
   Header counters computed from an already-fetched task list. Same shape and
   rules as `header_stats/1`; lets the Agents view share one fetch.
   """
-  @spec header_stats_from([Kanban.Tasks.Task.t()]) :: %{
+  @spec header_stats_from([Kanban.Tasks.Task.t()], String.t()) :: %{
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),
           avg_cycle_minutes: number()
         }
-  def header_stats_from(tasks) do
-    today = Date.utc_today()
+  def header_stats_from(tasks, timezone \\ "Etc/UTC") do
+    today = local_today(timezone)
 
     %{
-      claimed_today: count_on_day(tasks, :claimed_at, today),
-      completed_today: count_on_day(tasks, :completed_at, today),
-      approved_today: count_approved_on(tasks, today),
-      avg_cycle_minutes: avg_cycle_minutes(tasks)
+      claimed_today: count_on_day(tasks, :claimed_at, today, timezone),
+      completed_today: count_on_day(tasks, :completed_at, today, timezone),
+      approved_today: count_approved_on(tasks, today, timezone),
+      # Scoped to the viewer's local today (the rest of the row is "today" too),
+      # unlike the all-time `avg_cycle_minutes/1` the Delivery-trends band uses.
+      avg_cycle_minutes: cycle_minutes_on(tasks, today, timezone)
     }
   end
 
@@ -257,31 +259,66 @@ defmodule Kanban.Agents.Metrics do
 
   # --- private helpers -------------------------------------------------------
 
-  defp count_on_day(tasks, field, date) do
+  defp count_on_day(tasks, field, date, timezone) do
     Enum.count(tasks, fn task ->
       case Map.get(task, field) do
-        nil -> false
-        %DateTime{} = dt -> DateTime.to_date(dt) == date
+        %DateTime{} = dt -> local_date(dt, timezone) == date
+        _ -> false
       end
     end)
   end
 
-  defp count_approved_on(tasks, date) do
+  defp count_approved_on(tasks, date, timezone) do
     Enum.count(tasks, fn task ->
-      task.review_status == :approved and not is_nil(task.reviewed_at) and
-        DateTime.to_date(task.reviewed_at) == date
+      task.review_status == :approved and match?(%DateTime{}, task.reviewed_at) and
+        local_date(task.reviewed_at, timezone) == date
     end)
   end
 
+  # All-time average `time_spent_minutes` across completed tasks. Used by the
+  # Delivery-trends band (`throughput_trends_from/2`); NOT the header — see
+  # `cycle_minutes_on/3` for the today-scoped header figure.
   defp avg_cycle_minutes(tasks) do
     minutes =
       tasks
       |> Enum.filter(&(not is_nil(&1.completed_at) and is_integer(&1.time_spent_minutes)))
       |> Enum.map(& &1.time_spent_minutes)
 
-    case minutes do
-      [] -> 0.0
-      list -> Enum.sum(list) / length(list)
+    average(minutes)
+  end
+
+  # Average `time_spent_minutes` across tasks completed on the viewer's local
+  # `date`. Empty set yields 0.0 (the header renders an em-dash), never an
+  # ArithmeticError.
+  defp cycle_minutes_on(tasks, date, timezone) do
+    tasks
+    |> Enum.filter(fn task ->
+      match?(%DateTime{}, task.completed_at) and is_integer(task.time_spent_minutes) and
+        local_date(task.completed_at, timezone) == date
+    end)
+    |> Enum.map(& &1.time_spent_minutes)
+    |> average()
+  end
+
+  defp average([]), do: 0.0
+  defp average(list), do: Enum.sum(list) / length(list)
+
+  # The viewer's current local date. The zone is browser-supplied, so fall back
+  # to the UTC date when it is unknown rather than raising.
+  defp local_today(timezone) do
+    case DateTime.now(timezone) do
+      {:ok, now} -> DateTime.to_date(now)
+      {:error, _reason} -> Date.utc_today()
+    end
+  end
+
+  # The local calendar date of a stored UTC timestamp in the viewer's zone, so
+  # a counter's day boundary matches the user's wall clock. Falls back to the
+  # UTC date when the zone is unknown.
+  defp local_date(%DateTime{} = dt, timezone) do
+    case DateTime.shift_zone(dt, timezone) do
+      {:ok, shifted} -> DateTime.to_date(shifted)
+      {:error, _reason} -> DateTime.to_date(dt)
     end
   end
 

@@ -127,7 +127,7 @@ defmodule KanbanWeb.AgentsHeaderTest do
       assert html =~ "Claimed today"
       assert html =~ "Completed today"
       assert html =~ "Approved today"
-      assert html =~ "Cycle time · avg"
+      assert html =~ "Cycle time · today"
       assert html =~ "text-transform: uppercase"
       assert html =~ "letter-spacing: 0.08em"
     end

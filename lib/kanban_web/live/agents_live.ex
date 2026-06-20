@@ -333,7 +333,7 @@ defmodule KanbanWeb.AgentsLive do
     agents = Agents.list_agents_from(tasks)
     events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
-    metrics = metric_assigns(tasks, agents)
+    metrics = metric_assigns(tasks, agents, socket.assigns.timezone)
     assigns = socket |> base_assigns(tasks, agents, events) |> Map.merge(metrics)
 
     assign(socket, assigns)
@@ -360,9 +360,9 @@ defmodule KanbanWeb.AgentsLive do
   # The fleet-level aggregate rollups, derived from the single shared task fetch
   # (and the roster built from it), grouped so load_agents_data/1 stays under the
   # complexity budget.
-  defp metric_assigns(tasks, agents) do
+  defp metric_assigns(tasks, agents, timezone) do
     %{
-      stats: Agents.header_stats_from(tasks),
+      stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
       throughput_and_success: Agents.throughput_and_success_from(tasks),
       throughput_trends: Agents.throughput_trends_from(tasks)

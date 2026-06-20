@@ -4839,7 +4839,7 @@ msgid "Claimed"
 msgstr "Reservado"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:347
-#: lib/kanban_web/components/agent_detail_panel.ex:92
+#: lib/kanban_web/components/agent_detail_panel.ex:96
 #: lib/kanban_web/components/agent_roster_card.ex:197
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4871,7 +4871,7 @@ msgstr "Pontos de Integração"
 msgid "Review status"
 msgstr "Status de revisão"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:226
+#: lib/kanban_web/components/agent_detail_panel.ex:236
 #: lib/kanban_web/components/agent_roster_card.ex:196
 #, elixir-autogen, elixir-format
 msgid "Success"
@@ -4935,7 +4935,7 @@ msgid "Completions"
 msgstr "Conclusões"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:87
-#: lib/kanban_web/components/agent_detail_panel.ex:133
+#: lib/kanban_web/components/agent_detail_panel.ex:137
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
 msgstr "Sem atividade recente."
@@ -4982,11 +4982,6 @@ msgstr "Reservadas hoje"
 #, elixir-autogen, elixir-format
 msgid "Completed today"
 msgstr "Concluídas hoje"
-
-#: lib/kanban_web/components/agents_header.ex:104
-#, elixir-autogen, elixir-format
-msgid "Cycle time · avg"
-msgstr "Tempo de ciclo · média"
 
 #: lib/kanban_web/components/agents_header.ex:455
 #, elixir-autogen, elixir-format
@@ -7247,7 +7242,7 @@ msgstr "Concluídas · 7 d"
 msgid "Completed · 30d"
 msgstr "Concluídas · 30 d"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:200
+#: lib/kanban_web/components/agent_detail_panel.ex:209
 #: lib/kanban_web/components/agents_header.ex:269
 #, elixir-autogen, elixir-format
 msgid "Success rate"
@@ -7283,27 +7278,27 @@ msgstr "Inativos (%{count})"
 msgid "Last seen %{days}d ago"
 msgstr "Visto há %{days} d"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:64
+#: lib/kanban_web/components/agent_detail_panel.ex:68
 #, elixir-autogen, elixir-format
 msgid "Current work"
 msgstr "Trabalho atual"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:85
+#: lib/kanban_web/components/agent_detail_panel.ex:89
 #, elixir-autogen, elixir-format
 msgid "No active task"
 msgstr "Sem tarefa ativa"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:104
+#: lib/kanban_web/components/agent_detail_panel.ex:108
 #, elixir-autogen, elixir-format
 msgid "Failures"
 msgstr "Falhas"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:115
+#: lib/kanban_web/components/agent_detail_panel.ex:119
 #, elixir-autogen, elixir-format
 msgid "Recent activity"
 msgstr "Atividade recente"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:307
+#: lib/kanban_web/components/agent_detail_panel.ex:317
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Nenhum"
@@ -7323,12 +7318,17 @@ msgstr "%a, %-d %b"
 msgid "Yesterday"
 msgstr "Ontem"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:180
+#: lib/kanban_web/components/agent_detail_panel.ex:184
 #, elixir-autogen, elixir-format
 msgid "Daily completions over the last %{days} days"
 msgstr "Conclusões diárias nos últimos %{days} dias"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:174
+#: lib/kanban_web/components/agent_detail_panel.ex:178
 #, elixir-autogen, elixir-format
 msgid "No activity yet."
 msgstr "Ainda sem atividade."
+
+#: lib/kanban_web/components/agents_header.ex:104
+#, elixir-autogen, elixir-format
+msgid "Cycle time · today"
+msgstr "Tempo de ciclo · hoje"

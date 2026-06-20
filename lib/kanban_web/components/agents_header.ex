@@ -4,7 +4,7 @@ defmodule KanbanWeb.AgentsHeader do
 
   Renders an H1 title, a subtitle with a pluralized 24-hour event count,
   and four right-aligned KV cards (Claimed today, Completed today,
-  Approved today, Cycle time · avg). Stat tones reuse the task-status
+  Approved today, Cycle time · today). Stat tones reuse the task-status
   palette: doing for claims, doing for completions of work in flight,
   review for completed-today, done for approved, and a neutral ink for
   the cycle-time card.
@@ -101,7 +101,7 @@ defmodule KanbanWeb.AgentsHeader do
           />
           <.kv
             marker="cycle-time"
-            label={gettext("Cycle time · avg")}
+            label={gettext("Cycle time · today")}
             value={format_cycle(@stats.avg_cycle_minutes)}
             tone="var(--ink)"
           />

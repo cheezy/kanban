@@ -449,6 +449,77 @@ defmodule Kanban.AgentsTest do
       assert Agents.header_stats().avg_cycle_minutes == 0.0
     end
 
+    test "counts a completion under the user's local today even when its UTC instant is the next UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # 23:30 local today in a west zone lands on the NEXT UTC day — a UTC-date
+      # comparison would mislabel it; the local-date comparison must not.
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{completed_at: utc_completed, time_spent_minutes: 45})
+
+      stats = Agents.header_stats_from([task], tz)
+      assert stats.completed_today == 1
+      assert stats.avg_cycle_minutes == 45.0
+    end
+
+    test "avg_cycle_minutes averages only completions on the local today", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      three_days_ago = DateTime.add(now, -3, :day)
+
+      {:ok, today_task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{completed_at: now, time_spent_minutes: 45})
+
+      {:ok, old_task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{completed_at: three_days_ago, time_spent_minutes: 90})
+
+      stats = Agents.header_stats_from([today_task, old_task], "Etc/UTC")
+      # Only today's 45-minute completion is averaged; the 3-day-old 90 is excluded.
+      assert stats.avg_cycle_minutes == 45.0
+      assert stats.completed_today == 1
+    end
+
+    test "no completions on the local today yields a 0.0 cycle time with no error",
+         %{column: column} do
+      two_days_ago = DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{completed_at: two_days_ago, time_spent_minutes: 60})
+
+      stats = Agents.header_stats_from([task], "Etc/UTC")
+      assert stats.avg_cycle_minutes == 0.0
+      assert stats.completed_today == 0
+    end
+
+    test "an unknown timezone falls back to UTC", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          claimed_at: now,
+          completed_at: now,
+          time_spent_minutes: 30
+        })
+
+      # A malformed zone must not raise; it behaves exactly like Etc/UTC.
+      assert Agents.header_stats_from([task], "Not/AZone") ==
+               Agents.header_stats_from([task], "Etc/UTC")
+    end
+
     test "scope isolates header stats to the requested user", %{column: column, user: user} do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 

@@ -159,14 +159,19 @@ defmodule Kanban.Agents do
   @doc """
   Header counters computed from an already-fetched task list. Same shape as
   `header_stats/1`; lets the Agents view share one fetch across metrics.
+
+  `timezone` is the viewer's IANA zone — the "today" boundary for the counters
+  and the today-scoped cycle time are derived in it (defaulting to `"Etc/UTC"`,
+  with a UTC fallback for an unknown zone).
   """
-  @spec header_stats_from([Task.t()]) :: %{
+  @spec header_stats_from([Task.t()], String.t()) :: %{
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),
           avg_cycle_minutes: number()
         }
-  def header_stats_from(tasks), do: Metrics.header_stats_from(tasks)
+  def header_stats_from(tasks, timezone \\ "Etc/UTC"),
+    do: Metrics.header_stats_from(tasks, timezone)
 
   @doc """
   Returns fleet-health rollup counts for the scoped agent set.

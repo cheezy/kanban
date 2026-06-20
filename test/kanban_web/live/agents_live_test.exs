@@ -1268,6 +1268,30 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ "data-agent-feed-date-header"
     end
 
+    test "the header cycle-time stat is labeled today-scoped", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "Cycle time · today"
+      refute html =~ "Cycle time · avg"
+    end
+
+    test "a connect-param timezone threads into the header counters without error",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      conn = put_connect_params(conn, %{"timezone" => "America/New_York"})
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # The header renders its today counters and today-scoped cycle stat under
+      # the supplied zone (the boundary math is covered by the context tests).
+      assert html =~ "Approved today"
+      assert html =~ "Cycle time · today"
+    end
+
     test "a connect-param timezone renders feed times in that zone",
          %{conn: conn, user: user} do
       board = board_fixture(user)
