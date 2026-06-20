@@ -1350,6 +1350,28 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ "data-agent-feed"
       assert html =~ "18:30"
     end
+
+    test "the header and Delivery-trends Completed-today values agree under a connect-param timezone",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # Local noon today is unambiguously the user's local today (never near a
+      # day boundary) regardless of when the suite runs, so both stats count it.
+      {:ok, noon_local} = DateTime.new(local_today, ~T[12:00:00], tz)
+      completed_at = noon_local |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+      seed_completed_at(board, "Claude", completed_at)
+
+      conn = put_connect_params(conn, %{"timezone" => tz})
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      header_today = marked_value(html, ~s(data-agents-header-kv="completed-today"))
+      trends_today = marked_value(html, ~s(data-agents-pm-trends-stat="throughput-today"))
+
+      assert header_today == "1"
+      assert header_today == trends_today
+    end
   end
 
   defp seed_working_agent(board, name) do
@@ -1381,6 +1403,37 @@ defmodule KanbanWeb.AgentsLiveTest do
         status: :in_progress,
         claimed_at: at
       })
+  end
+
+  # Seeds a single completed task for `name` at a fixed UTC instant so the
+  # header and Delivery-trends "Completed today" stats have a deterministic
+  # completion to count.
+  defp seed_completed_at(board, name, %DateTime{} = at) do
+    doing = column_fixture(board, %{name: "Doing"})
+
+    {:ok, _} =
+      doing
+      |> task_fixture()
+      |> Tasks.update_task(%{
+        created_by_agent: name,
+        completed_by_agent: name,
+        status: :completed,
+        completed_at: at
+      })
+  end
+
+  # Reads the trimmed text of the first `<dd>` that follows a given marker
+  # attribute in the rendered HTML — used to pull a single stat's value out of a
+  # marked card without a full HTML parser.
+  defp marked_value(html, marker_attr) do
+    [_, after_marker] = String.split(html, marker_attr, parts: 2)
+    [_, after_dd_open] = String.split(after_marker, "<dd", parts: 2)
+    [_, dd_inner] = String.split(after_dd_open, ">", parts: 2)
+
+    dd_inner
+    |> String.split("</dd>", parts: 2)
+    |> hd()
+    |> String.trim()
   end
 
   # Slices the rendered page down to the detail-panel region (between the panel

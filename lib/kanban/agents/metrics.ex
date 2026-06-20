@@ -164,8 +164,15 @@ defmodule Kanban.Agents.Metrics do
   @doc """
   Throughput counts and success rate computed from an already-fetched task
   list. Same 7-key shape and rules as `throughput_and_success/1`.
+
+  `completed_today` (and the matching `completed_prev_today`) are counted on the
+  viewer's local today derived from `timezone`, using the SAME `count_on_day/4`
+  computation that powers the header's `completed_today` — so the header stat
+  and the Delivery-trends stat can never drift. An unknown/empty `timezone`
+  falls back to UTC. The 7d/30d windows keep their UTC-date counting but are
+  anchored to the same local `today`.
   """
-  @spec throughput_and_success_from([Kanban.Tasks.Task.t()]) :: %{
+  @spec throughput_and_success_from([Kanban.Tasks.Task.t()], String.t()) :: %{
           completed_today: non_neg_integer(),
           completed_7d: non_neg_integer(),
           completed_30d: non_neg_integer(),
@@ -174,14 +181,17 @@ defmodule Kanban.Agents.Metrics do
           completed_prev_30d: non_neg_integer(),
           success_rate: float()
         }
-  def throughput_and_success_from(tasks) do
-    today = Date.utc_today()
+  def throughput_and_success_from(tasks, timezone \\ "Etc/UTC") do
+    today = local_today(timezone)
 
     %{
-      completed_today: Agents.count_completed_on_day(tasks, today),
+      completed_today: count_on_day(tasks, :completed_at, today, timezone),
       completed_7d: Agents.count_completed_within(tasks, today, 7),
       completed_30d: Agents.count_completed_within(tasks, today, 30),
-      completed_prev_today: completed_in_prior_window(tasks, today, 1),
+      # Deliberately the shared local-day count (mirroring completed_today, so the
+      # today/prev-today delta stays parity-locked with the header), NOT the
+      # trailing-window subtraction the prev_7d/prev_30d keys below use.
+      completed_prev_today: count_on_day(tasks, :completed_at, Date.add(today, -1), timezone),
       completed_prev_7d: completed_in_prior_window(tasks, today, 7),
       completed_prev_30d: completed_in_prior_window(tasks, today, 30),
       success_rate: Agents.success_rate(tasks)

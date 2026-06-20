@@ -175,9 +175,11 @@ defmodule Kanban.Agents do
 
   @doc """
   Throughput counts and success rate computed from an already-fetched task
-  list. Same shape as `throughput_and_success/1`.
+  list. Same shape as `throughput_and_success/1`. Pass the viewer's `timezone`
+  so `completed_today`/`completed_prev_today` are counted on the local day and
+  agree with the header's `completed_today`; omitted, it falls back to UTC.
   """
-  @spec throughput_and_success_from([Task.t()]) :: %{
+  @spec throughput_and_success_from([Task.t()], String.t()) :: %{
           completed_today: non_neg_integer(),
           completed_7d: non_neg_integer(),
           completed_30d: non_neg_integer(),
@@ -186,7 +188,8 @@ defmodule Kanban.Agents do
           completed_prev_30d: non_neg_integer(),
           success_rate: float()
         }
-  def throughput_and_success_from(tasks), do: Metrics.throughput_and_success_from(tasks)
+  def throughput_and_success_from(tasks, timezone \\ "Etc/UTC"),
+    do: Metrics.throughput_and_success_from(tasks, timezone)
 
   @doc """
   Returns a per-day throughput time-series and an aggregate cycle-time metric.

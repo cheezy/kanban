@@ -951,6 +951,72 @@ defmodule Kanban.AgentsTest do
     end
   end
 
+  describe "throughput_and_success_from/2 local-today parity" do
+    test "header and Delivery-trends completed_today are equal for the same task set and timezone",
+         %{column: column, user: user} do
+      tasks = [
+        complete_at(column, user, days_ago(0), :approved),
+        complete_at(column, user, days_ago(0), :rejected),
+        complete_at(column, user, days_ago(3), :approved)
+      ]
+
+      tz = "America/Los_Angeles"
+
+      assert Agents.header_stats_from(tasks, tz).completed_today ==
+               Agents.throughput_and_success_from(tasks, tz).completed_today
+    end
+
+    test "both count a completion under the user's local today even when its UTC instant is the next UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # 23:30 local today in a west zone lands on the NEXT UTC day — a UTC-date
+      # comparison would mislabel it; both stats must use the local date.
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: utc_completed})
+
+      header = Agents.header_stats_from([task], tz)
+      trends = Agents.throughput_and_success_from([task], tz)
+
+      assert trends.completed_today == 1
+      assert header.completed_today == trends.completed_today
+    end
+
+    test "an unknown timezone falls back to UTC and the two stats still agree",
+         %{column: column, user: user} do
+      tasks = [complete_at(column, user, days_ago(0), :approved)]
+
+      header = Agents.header_stats_from(tasks, "Mars/Phobos")
+      trends = Agents.throughput_and_success_from(tasks, "Mars/Phobos")
+
+      assert trends.completed_today == 1
+      assert header.completed_today == trends.completed_today
+    end
+
+    test "completed_prev_today counts the user's local yesterday, not the UTC yesterday",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_yesterday = local_now |> DateTime.to_date() |> Date.add(-1)
+      # 23:30 on local yesterday rolls into the current UTC day; a UTC basis
+      # would bucket it as "today", the local basis as "prev today".
+      {:ok, local_dt} = DateTime.new(local_yesterday, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: utc_completed})
+
+      trends = Agents.throughput_and_success_from([task], tz)
+
+      assert trends.completed_prev_today == 1
+      assert trends.completed_today == 0
+    end
+  end
+
   describe "throughput_trends/1" do
     test "buckets throughput per day across the window, oldest first", %{
       column: column,
