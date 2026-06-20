@@ -1372,6 +1372,28 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert header_today == "1"
       assert header_today == trends_today
     end
+
+    test "the chart's most-recent bar agrees with the local Completed-today value under a connect-param timezone",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # Local noon today is unambiguously the user's local today regardless of
+      # when the suite runs, so the most-recent bar must show this completion.
+      {:ok, noon_local} = DateTime.new(local_today, ~T[12:00:00], tz)
+      completed_at = noon_local |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+      seed_completed_at(board, "Claude", completed_at)
+
+      conn = put_connect_params(conn, %{"timezone" => tz})
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      trends_today = marked_value(html, ~s(data-agents-pm-trends-stat="throughput-today"))
+      most_recent_bar = bar_count(html, Date.to_iso8601(local_today))
+
+      assert most_recent_bar == "1"
+      assert most_recent_bar == trends_today
+    end
   end
 
   defp seed_working_agent(board, name) do
@@ -1432,6 +1454,19 @@ defmodule KanbanWeb.AgentsLiveTest do
 
     dd_inner
     |> String.split("</dd>", parts: 2)
+    |> hd()
+    |> String.trim()
+  end
+
+  # Reads the count text of the throughput chart bar for a given ISO date — the
+  # first `<span>` inside that bar holds the bucket count.
+  defp bar_count(html, iso_date) do
+    [_, after_bar] = String.split(html, ~s(data-agents-pm-trends-bar="#{iso_date}"), parts: 2)
+    [_, after_span_open] = String.split(after_bar, "<span", parts: 2)
+    [_, span_inner] = String.split(after_span_open, ">", parts: 2)
+
+    span_inner
+    |> String.split("</span>", parts: 2)
     |> hd()
     |> String.trim()
   end

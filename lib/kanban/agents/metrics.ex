@@ -215,7 +215,7 @@ defmodule Kanban.Agents.Metrics do
 
     * `:series` — one bucket per day across the trailing window, oldest
       first, each a `%{date: Date.t(), count: non_neg_integer()}` where
-      `count` is the number of tasks completed on that UTC date. The series
+      `count` is the number of tasks completed on that day. The series
       always has exactly `:days` buckets (zero-filled), so a window with no
       activity yields all-zero counts rather than a short list. A non-positive
       `:days` yields an empty series.
@@ -225,9 +225,11 @@ defmodule Kanban.Agents.Metrics do
       value surfaced on `#{inspect(Event)}.cycle_time_minutes`) — no new
       definition is introduced.
 
-  Buckets are keyed by `DateTime.to_date/1` of `completed_at`, which is stored
-  in UTC, so bucketing is deterministic and time-zone independent. `:scope`
-  board filtering is respected.
+  This keyword entry has no viewer timezone, so its buckets are keyed by the
+  UTC date of `completed_at`. For viewer-local bucketing — which keeps the
+  chart's most-recent bar in agreement with the local "Completed today" stat —
+  use `throughput_trends_from/3` with a timezone. `:scope` board filtering is
+  respected.
   """
   @spec throughput_trends(keyword()) :: %{
           series: [%{date: Date.t(), count: non_neg_integer()}],
@@ -242,19 +244,24 @@ defmodule Kanban.Agents.Metrics do
 
   @doc """
   Per-day throughput series and cycle-time metric computed from an
-  already-fetched task list over a `days`-day window. Same shape and rules as
+  already-fetched task list over a `days`-day window. Same shape as
   `throughput_trends/1`. Callers that want the default window should pass
   `default_trend_days/0`.
+
+  `timezone` keys each bucket on the viewer's local calendar day (via the same
+  `local_today/1` + `count_on_day/4` machinery the header and Delivery-trends
+  "Completed today" stats use), so the most-recent bar agrees with that stat.
+  An unknown/empty `timezone` falls back to UTC bucketing without raising.
   """
-  @spec throughput_trends_from([Kanban.Tasks.Task.t()], integer()) :: %{
+  @spec throughput_trends_from([Kanban.Tasks.Task.t()], integer(), String.t()) :: %{
           series: [%{date: Date.t(), count: non_neg_integer()}],
           avg_cycle_minutes: number()
         }
-  def throughput_trends_from(tasks, days \\ @default_trend_days) do
-    today = Date.utc_today()
+  def throughput_trends_from(tasks, days \\ @default_trend_days, timezone \\ "Etc/UTC") do
+    today = local_today(timezone)
 
     %{
-      series: throughput_buckets(tasks, today, days),
+      series: throughput_buckets(tasks, today, days, timezone),
       avg_cycle_minutes: avg_cycle_minutes(tasks)
     }
   end
@@ -332,17 +339,20 @@ defmodule Kanban.Agents.Metrics do
     end
   end
 
-  # One zero-filled throughput bucket per UTC date across the trailing window,
-  # oldest first. Reuses Agents.count_completed_on_day/2 so bucketing matches
-  # the rest of the context (UTC date of completed_at, time-zone independent).
-  # A non-positive window yields an empty series.
-  defp throughput_buckets(_tasks, _today, days) when days < 1, do: []
+  # One zero-filled throughput bucket per day across the trailing window, oldest
+  # first. Counts each day on the viewer's local calendar via count_on_day/4 (the
+  # same shared local-day count the header/Delivery-trends "Completed today" stats
+  # use), so the most-recent bar agrees with that stat; an unknown timezone falls
+  # back to UTC. A non-positive window yields an empty series.
+  defp throughput_buckets(_tasks, _today, days, _timezone) when days < 1, do: []
 
-  defp throughput_buckets(tasks, today, days) do
+  defp throughput_buckets(tasks, today, days, timezone) do
     earliest = Date.add(today, -(days - 1))
 
     earliest
     |> Date.range(today)
-    |> Enum.map(fn date -> %{date: date, count: Agents.count_completed_on_day(tasks, date)} end)
+    |> Enum.map(fn date ->
+      %{date: date, count: count_on_day(tasks, :completed_at, date, timezone)}
+    end)
   end
 end

@@ -1107,6 +1107,73 @@ defmodule Kanban.AgentsTest do
     end
   end
 
+  describe "throughput_trends_from/3 local-day bucketing" do
+    test "buckets a completion on the viewer's local day even when its UTC instant is the next UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # 23:30 local today in a west zone lands on the NEXT UTC day — UTC bucketing
+      # would file it under the wrong day; local bucketing must use local_today.
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: utc_completed})
+
+      series = Agents.throughput_trends_from([task], 2, tz).series
+
+      assert series == [
+               %{date: Date.add(local_today, -1), count: 0},
+               %{date: local_today, count: 1}
+             ]
+    end
+
+    test "the most-recent bucket equals the local Completed-today value for the same task set and tz",
+         %{column: column, user: user} do
+      tasks = [
+        complete_at(column, user, days_ago(0), :approved),
+        complete_at(column, user, days_ago(0), :rejected),
+        complete_at(column, user, days_ago(5), :approved)
+      ]
+
+      tz = "America/Los_Angeles"
+
+      last_bucket = List.last(Agents.throughput_trends_from(tasks, 7, tz).series)
+
+      assert last_bucket.count == Agents.throughput_and_success_from(tasks, tz).completed_today
+    end
+
+    test "an unknown timezone falls back to UTC bucketing without raising",
+         %{column: column, user: user} do
+      task = complete_at(column, user, days_ago(0), :approved)
+
+      series = Agents.throughput_trends_from([task], 2, "Mars/Phobos").series
+
+      assert series == [
+               %{date: Date.add(Date.utc_today(), -1), count: 0},
+               %{date: Date.utc_today(), count: 1}
+             ]
+    end
+
+    test "returns a zero-filled series anchored on the viewer's local today for an empty window" do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+
+      assert Agents.throughput_trends_from([], 3, tz).series == [
+               %{date: Date.add(local_today, -2), count: 0},
+               %{date: Date.add(local_today, -1), count: 0},
+               %{date: local_today, count: 0}
+             ]
+    end
+
+    test "default_trend_days/0 is the default window and yields that many buckets" do
+      assert Agents.default_trend_days() == 14
+      assert length(Agents.throughput_trends_from([], Agents.default_trend_days()).series) == 14
+    end
+  end
+
   describe "dormant classification" do
     test "flags an agent dormant when its last activity is older than 14 days",
          %{column: column} do

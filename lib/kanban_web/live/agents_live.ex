@@ -365,7 +365,8 @@ defmodule KanbanWeb.AgentsLive do
       stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
       throughput_and_success: Agents.throughput_and_success_from(tasks, timezone),
-      throughput_trends: Agents.throughput_trends_from(tasks)
+      throughput_trends:
+        Agents.throughput_trends_from(tasks, Agents.default_trend_days(), timezone)
     }
   end
 

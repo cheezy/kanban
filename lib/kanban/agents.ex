@@ -206,14 +206,24 @@ defmodule Kanban.Agents do
   @doc """
   Per-day throughput series and cycle-time metric computed from an
   already-fetched task list over a `days`-day window. Same shape as
-  `throughput_trends/1`.
+  `throughput_trends/1`. Pass the viewer's `timezone` to bucket each day on the
+  local calendar (so the most-recent bar agrees with the local "Completed
+  today" stat); omitted, it falls back to UTC bucketing.
   """
-  @spec throughput_trends_from([Task.t()], integer()) :: %{
+  @spec throughput_trends_from([Task.t()], integer(), String.t()) :: %{
           series: [%{date: Date.t(), count: non_neg_integer()}],
           avg_cycle_minutes: number()
         }
-  def throughput_trends_from(tasks, days \\ Metrics.default_trend_days()),
-    do: Metrics.throughput_trends_from(tasks, days)
+  def throughput_trends_from(tasks, days \\ Metrics.default_trend_days(), timezone \\ "Etc/UTC"),
+    do: Metrics.throughput_trends_from(tasks, days, timezone)
+
+  @doc """
+  The default throughput-trends window (in days). Delegates to
+  `Kanban.Agents.Metrics.default_trend_days/0` so callers (e.g. the Agents
+  LiveView) can request the default window while passing a viewer timezone.
+  """
+  @spec default_trend_days() :: pos_integer()
+  defdelegate default_trend_days(), to: Metrics
 
   @doc """
   Returns a per-agent drill-down for the named agent, or `nil` if unknown.
