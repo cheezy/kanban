@@ -222,7 +222,7 @@ defmodule KanbanWeb.AgentsHeader do
       ]}
     >
       <div style={[
-        "display: flex; align-items: flex-end; justify-content: space-between;",
+        "display: flex; align-items: flex-start; justify-content: space-between;",
         "gap: 16px; flex-wrap: wrap;"
       ]}>
         <h2 style={[
@@ -237,7 +237,7 @@ defmodule KanbanWeb.AgentsHeader do
         <dl
           data-agents-pm-trends-stats
           style={[
-            "display: flex; align-items: stretch; flex-wrap: wrap; gap: 18px;",
+            "display: flex; align-items: flex-start; flex-wrap: wrap; gap: 18px;",
             "margin: 0; padding: 0;"
           ]}
         >
