@@ -743,9 +743,11 @@ defmodule KanbanWeb.AgentsLiveTest do
       # Outer wrapper: flex-col on mobile, flex-row at md+.
       assert html =~ "flex-col md:flex-row"
 
-      # Roster: full width on mobile (max 40vh with internal scroll), 380px wide at md+.
+      # Roster: full width on mobile (flows + scrolls with the page), independent
+      # scroll restored only at md+ (no mobile max-height clamp).
       assert html =~ "w-full md:w-[380px]"
-      assert html =~ "max-h-[40vh] md:max-h-none"
+      assert html =~ "md:flex-shrink-0 md:overflow-y-auto"
+      refute html =~ "max-h-[40vh]"
 
       # Detail panel: flex-1 fills remaining space at md+.
       assert html =~ "flex-1 min-w-0"
@@ -753,6 +755,37 @@ defmodule KanbanWeb.AgentsLiveTest do
       # No inline width: 380px or flex: 1 style attributes remain.
       refute html =~ "width: 380px"
       refute html =~ "flex: 1; min-width: 0;"
+    end
+
+    test "mobile scroll: outer wrapper has no height:100% lock and re-locks at md+", %{
+      conn: conn
+    } do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # The /agents content must not clamp itself to viewport height on mobile,
+      # so <main> (the one true scroll container) can scroll the whole page.
+      refute html =~ "height: 100%; min-height: 0;"
+      # Height is re-locked only at md+ so the desktop two-pane split is unchanged.
+      assert html =~ "stride-screen md:h-full"
+    end
+
+    test "mobile scroll: roster and feed own-scroll only at md+", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # Roster scrolls with the page on mobile; independent scroll only at md+.
+      assert html =~ "md:flex-shrink-0 md:overflow-y-auto"
+      # Activity feed list scrolls with the page on mobile; own-scroll only at md+.
+      assert html =~ "md:overflow-y-auto"
+      # The unconditional mobile scroll traps are gone.
+      refute html =~ "max-h-[40vh]"
+    end
+
+    test "desktop two-pane classes still present", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "md:flex-row"
+      assert html =~ "md:w-[380px]"
+      assert html =~ "flex-1 min-w-0"
     end
   end
 

@@ -77,7 +77,7 @@ defmodule KanbanWeb.AgentsHeader do
         <dl
           data-agents-header-stats
           style={[
-            "display: flex; align-items: stretch; gap: 18px;",
+            "display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px 18px;",
             "margin: 0; padding: 0;"
           ]}
         >
@@ -278,7 +278,7 @@ defmodule KanbanWeb.AgentsHeader do
         data-agents-pm-trends-series
         style={[
           "display: flex; align-items: flex-end; gap: 4px;",
-          "height: 128px; overflow-x: auto;"
+          "height: 128px; overflow-x: auto; min-width: 0; max-width: 100%;"
         ]}
       >
         <div

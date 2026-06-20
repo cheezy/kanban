@@ -89,10 +89,11 @@ defmodule KanbanWeb.AgentActivityFeed do
 
       <ul
         :if={@events != []}
+        class="md:overflow-y-auto"
         style={[
           "margin: 0; padding: 0; list-style: none;",
           "display: flex; flex-direction: column; gap: 4px;",
-          "overflow-y: auto; min-height: 0;"
+          "min-height: 0;"
         ]}
       >
         <.feed_group

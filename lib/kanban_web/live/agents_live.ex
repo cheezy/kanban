@@ -149,8 +149,8 @@ defmodule KanbanWeb.AgentsLive do
       </:breadcrumbs>
 
       <div
-        class="stride-screen"
-        style="display: flex; flex-direction: column; height: 100%; min-height: 0;"
+        class="stride-screen md:h-full"
+        style="display: flex; flex-direction: column; min-height: 0;"
       >
         <AgentsHeader.header
           stats={@stats}
@@ -189,7 +189,7 @@ defmodule KanbanWeb.AgentsLive do
         <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside
             data-agents-roster
-            class="w-full md:w-[380px] md:flex-shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto"
+            class="w-full md:w-[380px] md:flex-shrink-0 md:overflow-y-auto"
             style={[
               "padding: 16px;",
               "border-right: 1px solid var(--line);",
@@ -229,7 +229,7 @@ defmodule KanbanWeb.AgentsLive do
                 phx-click="toggle_dormant"
                 data-agents-dormant-toggle
                 aria-expanded={to_string(@dormant_expanded?)}
-                class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={[
                   "display: flex; align-items: center; gap: 6px;",
                   "width: 100%; padding: 4px 2px;",
@@ -287,7 +287,7 @@ defmodule KanbanWeb.AgentsLive do
                 type="button"
                 phx-click="clear_agent_filter"
                 data-clear-agent-filter
-                class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 style={[
                   "display: inline-flex; align-items: center; gap: 4px;",
                   "padding: 2px 9px;",
