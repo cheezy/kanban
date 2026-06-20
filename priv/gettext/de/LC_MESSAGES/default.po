@@ -7331,3 +7331,8 @@ msgstr "Letzte Aktivität"
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Keine"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "vs the prior period"
+msgstr "gegenüber dem Vorzeitraum"

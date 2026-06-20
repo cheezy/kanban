@@ -833,6 +833,32 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert pm_trends_value(html, "avg-cycle") == "20m"
     end
 
+    test "shows a prior-period delta with an arrow on the Completed values",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Two completions today, none in the prior windows -> a +2 upward delta.
+      for _ <- 1..2 do
+        {:ok, _} =
+          column
+          |> task_fixture()
+          |> Tasks.update_task(%{
+            created_by_agent: "Claude",
+            completed_by_agent: "Claude",
+            status: :completed,
+            completed_at: now
+          })
+      end
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-pm-trends-delta"
+      assert html =~ "hero-arrow-up"
+      assert html =~ "+2"
+    end
+
     test "renders the per-day throughput time-series as a bar strip",
          %{conn: conn, user: user} do
       board = board_fixture(user)

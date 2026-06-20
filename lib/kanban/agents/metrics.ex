@@ -107,6 +107,11 @@ defmodule Kanban.Agents.Metrics do
     * `:completed_7d` — completions within the trailing 7-day window
       (today and the six prior days)
     * `:completed_30d` — completions within the trailing 30-day window
+    * `:completed_prev_today` / `:completed_prev_7d` / `:completed_prev_30d` —
+      completions in the equivalent window immediately *before* each current
+      window (yesterday; the 7 days before the current 7-day window; the 30
+      days before the current 30-day window), for a like-for-like trend
+      comparison
     * `:success_rate` — approved over (approved + rejected) across the
       visible tasks, as a float in `0.0..1.0`; `0.0` when no task has been
       approved or rejected
@@ -120,6 +125,9 @@ defmodule Kanban.Agents.Metrics do
           completed_today: non_neg_integer(),
           completed_7d: non_neg_integer(),
           completed_30d: non_neg_integer(),
+          completed_prev_today: non_neg_integer(),
+          completed_prev_7d: non_neg_integer(),
+          completed_prev_30d: non_neg_integer(),
           success_rate: float()
         }
   def throughput_and_success(opts \\ []) do
@@ -130,8 +138,20 @@ defmodule Kanban.Agents.Metrics do
       completed_today: Agents.count_completed_on_day(tasks, today),
       completed_7d: Agents.count_completed_within(tasks, today, 7),
       completed_30d: Agents.count_completed_within(tasks, today, 30),
+      completed_prev_today: completed_in_prior_window(tasks, today, 1),
+      completed_prev_7d: completed_in_prior_window(tasks, today, 7),
+      completed_prev_30d: completed_in_prior_window(tasks, today, 30),
       success_rate: Agents.success_rate(tasks)
     }
+  end
+
+  # Completions in the window of `days` immediately BEFORE the current trailing
+  # `days`-day window — the last `2 * days` days minus the most recent `days`.
+  # Reuses Agents.count_completed_within so the prior and current windows share
+  # the same UTC-date counting rule, enabling a like-for-like comparison.
+  defp completed_in_prior_window(tasks, today, days) do
+    Agents.count_completed_within(tasks, today, days * 2) -
+      Agents.count_completed_within(tasks, today, days)
   end
 
   @doc """

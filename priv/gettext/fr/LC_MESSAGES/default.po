@@ -7271,3 +7271,8 @@ msgstr "Activité récente"
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Aucun"
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "vs the prior period"
+msgstr "par rapport à la période précédente"

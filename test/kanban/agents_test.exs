@@ -705,6 +705,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 0,
                completed_7d: 0,
                completed_30d: 0,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 0.0
              }
     end
@@ -722,6 +725,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 1,
                completed_7d: 2,
                completed_30d: 3,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 1,
                success_rate: 1.0
              }
     end
@@ -739,6 +745,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 4,
                completed_7d: 4,
                completed_30d: 4,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 0.75
              }
     end
@@ -755,6 +764,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 0,
                completed_7d: 0,
                completed_30d: 0,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 0.0
              }
     end
@@ -770,6 +782,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 2,
                completed_7d: 2,
                completed_30d: 2,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 0.0
              }
     end
@@ -795,6 +810,9 @@ defmodule Kanban.AgentsTest do
                completed_today: 1,
                completed_7d: 1,
                completed_30d: 1,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 1.0
              }
     end
@@ -808,8 +826,34 @@ defmodule Kanban.AgentsTest do
                completed_today: 0,
                completed_7d: 0,
                completed_30d: 0,
+               completed_prev_today: 0,
+               completed_prev_7d: 0,
+               completed_prev_30d: 0,
                success_rate: 0.0
              }
+    end
+
+    test "counts prior-period completions for the today/7d/30d windows", %{
+      column: column,
+      user: user
+    } do
+      complete_at(column, user, days_ago(0), :approved)
+      complete_at(column, user, days_ago(0), :approved)
+      # Yesterday -> prior-today window.
+      complete_at(column, user, days_ago(1), :approved)
+      # 10 days ago -> prior-7d window (the 7 days before the current 7).
+      complete_at(column, user, days_ago(10), :approved)
+      # 40 days ago -> prior-30d window (the 30 days before the current 30).
+      complete_at(column, user, days_ago(40), :approved)
+
+      result = Agents.throughput_and_success()
+
+      assert result.completed_today == 2
+      assert result.completed_7d == 3
+      assert result.completed_30d == 4
+      assert result.completed_prev_today == 1
+      assert result.completed_prev_7d == 1
+      assert result.completed_prev_30d == 1
     end
 
     defp complete_at(column, user, completed_at, review_status) do

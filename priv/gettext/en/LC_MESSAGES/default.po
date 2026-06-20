@@ -7225,3 +7225,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr ""
+
+#: lib/kanban_web/components/agents_header.ex
+#, elixir-autogen, elixir-format
+msgid "vs the prior period"
+msgstr ""

@@ -188,7 +188,9 @@ defmodule KanbanWeb.AgentsHeader do
   ## Attrs
 
     * `throughput_and_success` — map with `:completed_today`, `:completed_7d`,
-      `:completed_30d`, and `:success_rate` keys (the shape returned by
+      `:completed_30d`, the matching `:completed_prev_today` /
+      `:completed_prev_7d` / `:completed_prev_30d` prior-period counts (used to
+      render the per-window delta), and `:success_rate` (the shape returned by
       `Kanban.Agents.throughput_and_success/1`). Required.
     * `throughput_trends` — map with `:series` (a list of
       `%{date: Date.t(), count: non_neg_integer()}`) and `:avg_cycle_minutes`
@@ -244,18 +246,23 @@ defmodule KanbanWeb.AgentsHeader do
             label={gettext("Completed today")}
             value={@throughput_and_success.completed_today}
             tone="var(--st-done)"
+            delta={
+              @throughput_and_success.completed_today - @throughput_and_success.completed_prev_today
+            }
           />
           <.trend_stat
             marker="throughput-7d"
             label={gettext("Completed · 7d")}
             value={@throughput_and_success.completed_7d}
             tone="var(--st-done)"
+            delta={@throughput_and_success.completed_7d - @throughput_and_success.completed_prev_7d}
           />
           <.trend_stat
             marker="throughput-30d"
             label={gettext("Completed · 30d")}
             value={@throughput_and_success.completed_30d}
             tone="var(--st-done)"
+            delta={@throughput_and_success.completed_30d - @throughput_and_success.completed_prev_30d}
           />
           <.trend_stat
             marker="success-rate"
@@ -331,10 +338,13 @@ defmodule KanbanWeb.AgentsHeader do
   attr :label, :string, required: true
   attr :value, :any, required: true
   attr :tone, :string, required: true
+  attr :delta, :integer, default: nil
 
   # One PM-trends stat card. Mirrors `kv/1` styling but carries its own
   # `data-agents-pm-trends-stat` marker so it is queryable independently of
-  # the header's daily stat cards (which reuse some of the same labels).
+  # the header's daily stat cards (which reuse some of the same labels). When
+  # `delta` is given, a colored arrow + signed delta versus the prior period
+  # is shown beneath the value.
   defp trend_stat(assigns) do
     ~H"""
     <div
@@ -357,6 +367,20 @@ defmodule KanbanWeb.AgentsHeader do
       ]}>
         {@value}
       </dd>
+      <div
+        :if={@delta != nil}
+        data-agents-pm-trends-delta
+        title={gettext("vs the prior period")}
+        style={[
+          "display: inline-flex; align-items: center; gap: 2px;",
+          "font-size: 10px; font-weight: 600;",
+          "font-variant-numeric: tabular-nums;",
+          "color: #{delta_tone(@delta)};"
+        ]}
+      >
+        <.icon name={delta_icon(@delta)} class="w-3 h-3" />
+        <span>{delta_label(@delta)}</span>
+      </div>
     </div>
     """
   end
@@ -484,4 +508,18 @@ defmodule KanbanWeb.AgentsHeader do
   defp bar_height(count, max) when is_integer(count) and is_integer(max) and max > 0 do
     max(4, round(count / max * 80))
   end
+
+  # Period-over-period delta presentation: up is the completion (good) tone,
+  # down is the blocked/danger tone, and a flat delta is neutral ink.
+  defp delta_tone(delta) when delta > 0, do: "var(--st-done)"
+  defp delta_tone(delta) when delta < 0, do: "var(--st-blocked)"
+  defp delta_tone(_delta), do: "var(--ink-3)"
+
+  defp delta_icon(delta) when delta > 0, do: "hero-arrow-up"
+  defp delta_icon(delta) when delta < 0, do: "hero-arrow-down"
+  defp delta_icon(_delta), do: "hero-minus"
+
+  # Signed delta label: "+3" for a gain, "0" when flat, "-2" for a decline.
+  defp delta_label(delta) when delta > 0, do: "+#{delta}"
+  defp delta_label(delta), do: Integer.to_string(delta)
 end
