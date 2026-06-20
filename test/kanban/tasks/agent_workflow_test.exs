@@ -89,6 +89,25 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert broadcast.id == claimed.id
     end
 
+    test "broadcasts {:agent_event, kind: :claim} to the agents topic", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      task_id = task.id
+
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+
+      {:ok, claimed, _} =
+        AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, nil, "Claude")
+
+      assert claimed.id == task_id
+
+      # The "agents" topic is process-global and other async tests broadcast to
+      # it too, so match this task's event specifically. Without the claim-path
+      # agents broadcast, a claim never reaches the agent activity feed live.
+      assert_receive {:agent_event, %{kind: :claim, task_id: ^task_id} = payload}
+      assert Map.has_key?(payload, :agent_name)
+      assert Map.has_key?(payload, :at)
+    end
+
     test "claim_expires_at is roughly one hour after claimed_at", ctx do
       _task = create_open_task(ctx.ready, ctx.user)
 

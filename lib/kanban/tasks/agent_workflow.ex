@@ -393,6 +393,13 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:task_updated, updated_task}
     )
 
+    # The board-topic broadcast above only reaches board LiveViews. The agents
+    # surface subscribes to the shared "agents" topic, so notify it directly —
+    # mirroring the completion path — otherwise a claim never reaches the agent
+    # activity feed live and only appears after some later event triggers a
+    # refresh (or a manual reload).
+    Broadcaster.broadcast_agent_event(updated_task, :task_claimed)
+
     {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
     {:ok, updated_task, hook_info}
   end
