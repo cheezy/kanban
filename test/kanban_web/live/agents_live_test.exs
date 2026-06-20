@@ -871,7 +871,6 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert pm_trends_value(html, "throughput-7d") == "3"
       assert pm_trends_value(html, "throughput-30d") == "3"
       assert pm_trends_value(html, "success-rate") == "67%"
-      assert pm_trends_value(html, "avg-cycle") == "20m"
     end
 
     test "shows a prior-period delta with an arrow on the Completed values",
@@ -939,7 +938,6 @@ defmodule KanbanWeb.AgentsLiveTest do
       refute html =~ "data-agents-pm-trends-series"
       assert pm_trends_value(html, "throughput-today") == "0"
       assert pm_trends_value(html, "success-rate") == "0%"
-      assert pm_trends_value(html, "avg-cycle") == "—"
     end
 
     test "refreshes the PM trends on an agent_event broadcast",

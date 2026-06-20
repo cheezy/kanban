@@ -270,12 +270,6 @@ defmodule KanbanWeb.AgentsHeader do
             value={format_rate(@throughput_and_success.success_rate)}
             tone="var(--st-review)"
           />
-          <.trend_stat
-            marker="avg-cycle"
-            label={gettext("Cycle time · avg")}
-            value={format_cycle(@throughput_trends.avg_cycle_minutes)}
-            tone="var(--ink)"
-          />
         </dl>
       </div>
 
