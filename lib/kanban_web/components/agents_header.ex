@@ -343,11 +343,11 @@ defmodule KanbanWeb.AgentsHeader do
     ~H"""
     <div
       data-agents-pm-trends-stat={@marker}
-      style="display: flex; flex-direction: column; gap: 2px; min-width: 92px;"
+      style="display: flex; flex-direction: column; gap: 3px; min-width: 104px;"
     >
       <dt style={[
         "margin: 0;",
-        "font-size: 10px; font-weight: 600;",
+        "font-size: 11px; font-weight: 600;",
         "text-transform: uppercase; letter-spacing: 0.08em;",
         "color: var(--ink-3);"
       ]}>
@@ -355,7 +355,7 @@ defmodule KanbanWeb.AgentsHeader do
       </dt>
       <dd style={[
         "margin: 0;",
-        "font-size: 18px; font-weight: 600;",
+        "font-size: 24px; font-weight: 600;",
         "color: #{@tone};",
         "font-variant-numeric: tabular-nums;"
       ]}>
