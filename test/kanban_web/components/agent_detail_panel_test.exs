@@ -25,7 +25,12 @@ defmodule KanbanWeb.AgentDetailPanelTest do
           title: "Do the thing",
           at: ~U[2026-06-19 14:30:00Z]
         }
-      ]
+      ],
+      activity_series:
+        Enum.map(0..13, fn i ->
+          %{date: Date.add(~D[2026-06-07], i), count: if(i in [11, 13], do: 2, else: 0)}
+        end),
+      outcome: %{approved: 2, rejected: 1, in_progress: 0, success_rate: 2 / 3}
     }
 
     Map.merge(base, overrides)
@@ -147,5 +152,58 @@ defmodule KanbanWeb.AgentDetailPanelTest do
     # The failures section is collapsed, so even its "None" caption is hidden.
     assert html =~ ~s(data-agent-detail-section-toggle="failures")
     refute html =~ "None"
+  end
+
+  describe "activity charts under the agent name" do
+    test "renders the daily-completion sparkline bars for an active agent" do
+      html = render_panel(detail())
+
+      assert html =~ "data-agent-detail-sparkline"
+      # One bar per day in the series (14-day window).
+      bars = Regex.scan(~r/data-agent-detail-spark-bar=/, html)
+      assert length(bars) == 14
+      # Bars reuse the done token, not a hardcoded color.
+      assert html =~ "background: var(--st-done)"
+    end
+
+    test "renders the success donut with a readable percentage" do
+      html = render_panel(detail())
+
+      assert html =~ "data-agent-detail-success"
+      # 2 approved of 3 reviewed → 67%.
+      assert html =~ "67%"
+      assert html =~ "stroke=\"var(--st-done)\""
+    end
+
+    test "shows a single empty-state when the agent has no activity" do
+      html =
+        render_panel(
+          detail(%{
+            activity_series: Enum.map(0..13, &%{date: Date.add(~D[2026-06-07], &1), count: 0}),
+            outcome: %{approved: 0, rejected: 0, in_progress: 0, success_rate: 0.0}
+          })
+        )
+
+      assert html =~ "data-agent-detail-charts-empty"
+      assert html =~ "No activity yet."
+      refute html =~ "data-agent-detail-sparkline"
+      refute html =~ "data-agent-detail-success"
+    end
+
+    test "shows the donut with an em-dash when nothing has been reviewed yet" do
+      html =
+        render_panel(
+          detail(%{
+            activity_series: Enum.map(0..13, &%{date: Date.add(~D[2026-06-07], &1), count: 0}),
+            outcome: %{approved: 0, rejected: 0, in_progress: 2, success_rate: 0.0}
+          })
+        )
+
+      # In-progress work but no reviews: the donut renders with a placeholder,
+      # never a 0%/divide-by-zero artifact.
+      assert html =~ "data-agent-detail-success"
+      assert html =~ "—"
+      refute html =~ "data-agent-detail-charts-empty"
+    end
   end
 end

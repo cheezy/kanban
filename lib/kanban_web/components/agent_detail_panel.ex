@@ -18,10 +18,14 @@ defmodule KanbanWeb.AgentDetailPanel do
   ## Attrs
 
     * `detail` — the map returned by `Kanban.Agents.agent_detail/2`:
-      `%{name, current_task, claims, failures, recent_activity}`. Required.
-      Each `claims`/`failures` entry is `%{identifier, title, at}` and each
-      `recent_activity` entry is a `Kanban.Agents.Event`. `current_task` is
-      `nil` when the agent holds no active task; the lists may be empty.
+      `%{name, current_task, claims, failures, recent_activity, activity_series,
+      outcome}`. Required. Each `claims`/`failures` entry is
+      `%{identifier, title, at}` and each `recent_activity` entry is a
+      `Kanban.Agents.Event`. `activity_series` is a `[%{date, count}]` list of
+      daily completions (for the sparkline) and `outcome` is
+      `%{approved, rejected, in_progress, success_rate}` (for the donut).
+      `current_task` is `nil` when the agent holds no active task; the lists
+      may be empty.
     * `expanded_sections` — a `MapSet` of the section keys (`"current"`,
       `"claims"`, `"failures"`, `"activity"`) that are currently expanded.
       `nil` (the default) means every section is expanded, so the component
@@ -56,6 +60,8 @@ defmodule KanbanWeb.AgentDetailPanel do
       >
         {@detail.name}
       </h2>
+
+      <.activity_charts series={@detail.activity_series} outcome={@detail.outcome} />
 
       <div data-agent-detail-current style="display: flex; flex-direction: column; gap: 6px;">
         <.section_heading
@@ -133,6 +139,123 @@ defmodule KanbanWeb.AgentDetailPanel do
       </div>
     </section>
     """
+  end
+
+  # An at-a-glance visual band under the agent name: a daily-completion
+  # sparkline (mirroring the page's Delivery-trends bars) and a success-rate
+  # donut. Both reuse the data computed in `Kanban.Agents.agent_detail/2`. When
+  # the agent has no completions in the window and no reviewed/active tasks, a
+  # single muted caption stands in for the charts.
+  attr :series, :list, required: true
+  attr :outcome, :map, required: true
+
+  defp activity_charts(assigns) do
+    max_count =
+      case Enum.map(assigns.series, & &1.count) do
+        [] -> 0
+        counts -> Enum.max(counts)
+      end
+
+    reviewed = assigns.outcome.approved + assigns.outcome.rejected
+
+    assigns =
+      assign(assigns,
+        max_count: max_count,
+        reviewed: reviewed,
+        pct: round(assigns.outcome.success_rate * 100)
+      )
+
+    ~H"""
+    <div
+      data-agent-detail-charts
+      style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;"
+    >
+      <p
+        :if={@max_count == 0 and @reviewed == 0 and @outcome.in_progress == 0}
+        data-agent-detail-charts-empty
+        style={["margin: 0;", "font-size: 12px; font-style: italic; color: var(--ink-3);"]}
+      >
+        {gettext("No activity yet.")}
+      </p>
+
+      <div
+        :if={@max_count > 0}
+        data-agent-detail-sparkline
+        aria-label={gettext("Daily completions over the last %{days} days", days: length(@series))}
+        style="display: flex; align-items: flex-end; gap: 2px; height: 56px; overflow-x: auto;"
+      >
+        <span
+          :for={entry <- @series}
+          data-agent-detail-spark-bar={Date.to_iso8601(entry.date)}
+          aria-hidden="true"
+          style={[
+            "width: 7px; flex: none; border-radius: 2px 2px 0 0;",
+            "background: var(--st-done);",
+            "height: #{spark_height(entry.count, @max_count)}px;"
+          ]}
+        />
+      </div>
+
+      <div
+        :if={@reviewed > 0 or @outcome.in_progress > 0}
+        data-agent-detail-success
+        style="display: inline-flex; align-items: center; gap: 8px;"
+      >
+        <svg
+          width="44"
+          height="44"
+          viewBox="0 0 40 40"
+          role="img"
+          aria-label={gettext("Success rate")}
+        >
+          <circle cx="20" cy="20" r="16" fill="none" stroke="var(--surface-sunken)" stroke-width="5" />
+          <circle
+            :if={@reviewed > 0}
+            cx="20"
+            cy="20"
+            r="16"
+            fill="none"
+            stroke="var(--st-done)"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-dasharray={donut_dasharray(@outcome.success_rate)}
+            transform="rotate(-90 20 20)"
+          />
+        </svg>
+        <div style="display: flex; flex-direction: column;">
+          <span style={[
+            "font-size: 14px; font-weight: 600; color: var(--ink);",
+            "font-variant-numeric: tabular-nums;"
+          ]}>
+            {if @reviewed > 0, do: "#{@pct}%", else: "—"}
+          </span>
+          <span style={[
+            "font-size: 9px; font-weight: 600;",
+            "text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3);"
+          ]}>
+            {gettext("Success")}
+          </span>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  # Sparkline bar height in px, mirroring the Delivery-trends `bar_height/2`
+  # formula but scaled to the panel's 56px band: a non-zero day is at least 3px
+  # tall so a single completion is still visible.
+  defp spark_height(count, max) when is_integer(count) and is_integer(max) and max > 0 do
+    max(3, round(count / max * 36))
+  end
+
+  defp spark_height(_count, _max), do: 0
+
+  # The `stroke-dasharray` for the donut arc: the approved share of the ring's
+  # circumference, then the full circumference (the remainder stays the track).
+  defp donut_dasharray(success_rate) do
+    circumference = 2 * :math.pi() * 16
+    filled = success_rate * circumference
+    "#{Float.round(filled, 2)} #{Float.round(circumference, 2)}"
   end
 
   # A section of task references (claims or failures) with a count and an

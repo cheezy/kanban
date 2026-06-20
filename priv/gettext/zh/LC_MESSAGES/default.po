@@ -4831,7 +4831,7 @@ msgid "Claimed"
 msgstr "已认领"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:347
-#: lib/kanban_web/components/agent_detail_panel.ex:90
+#: lib/kanban_web/components/agent_detail_panel.ex:92
 #: lib/kanban_web/components/agent_roster_card.ex:197
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4863,6 +4863,7 @@ msgstr "集成点"
 msgid "Review status"
 msgstr "审核状态"
 
+#: lib/kanban_web/components/agent_detail_panel.ex:226
 #: lib/kanban_web/components/agent_roster_card.ex:196
 #, elixir-autogen, elixir-format
 msgid "Success"
@@ -4926,7 +4927,7 @@ msgid "Completions"
 msgstr "完成数"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:87
-#: lib/kanban_web/components/agent_detail_panel.ex:131
+#: lib/kanban_web/components/agent_detail_panel.ex:133
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
 msgstr "暂无近期活动。"
@@ -7216,6 +7217,7 @@ msgstr "已完成 · 7天"
 msgid "Completed · 30d"
 msgstr "已完成 · 30天"
 
+#: lib/kanban_web/components/agent_detail_panel.ex:200
 #: lib/kanban_web/components/agents_header.ex:269
 #, elixir-autogen, elixir-format
 msgid "Success rate"
@@ -7251,27 +7253,27 @@ msgstr "休眠 (%{count})"
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:62
+#: lib/kanban_web/components/agent_detail_panel.ex:64
 #, elixir-autogen, elixir-format
 msgid "Current work"
 msgstr "当前工作"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:83
+#: lib/kanban_web/components/agent_detail_panel.ex:85
 #, elixir-autogen, elixir-format
 msgid "No active task"
 msgstr "无活动任务"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:102
+#: lib/kanban_web/components/agent_detail_panel.ex:104
 #, elixir-autogen, elixir-format
 msgid "Failures"
 msgstr "失败"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:113
+#: lib/kanban_web/components/agent_detail_panel.ex:115
 #, elixir-autogen, elixir-format
 msgid "Recent activity"
 msgstr "最近活动"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:194
+#: lib/kanban_web/components/agent_detail_panel.ex:307
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "无"
@@ -7290,3 +7292,13 @@ msgstr "%b%-d日 (%a)"
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "昨天"
+
+#: lib/kanban_web/components/agent_detail_panel.ex:180
+#, elixir-autogen, elixir-format
+msgid "Daily completions over the last %{days} days"
+msgstr "过去 %{days} 天的每日完成数"
+
+#: lib/kanban_web/components/agent_detail_panel.ex:174
+#, elixir-autogen, elixir-format
+msgid "No activity yet."
+msgstr "暂无活动。"

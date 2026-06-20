@@ -1125,6 +1125,106 @@ defmodule Kanban.AgentsTest do
       assert detail.recent_activity != []
     end
 
+    test "returns a 14-day daily completion series for the agent", %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert length(detail.activity_series) == 14
+
+      assert Enum.all?(
+               detail.activity_series,
+               &match?(%{date: %Date{}, count: c} when is_integer(c) and c >= 0, &1)
+             )
+
+      # The series is oldest-first, so the most recent bucket (today) carries
+      # the single completion seeded above.
+      assert List.last(detail.activity_series).count == 1
+    end
+
+    test "returns an approved/rejected/in_progress outcome breakdown",
+         %{board: board, user: user} do
+      doing = column_fixture(board, %{name: "Doing"})
+      done = column_fixture(board, %{name: "Done"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for _ <- 1..2 do
+        {:ok, _} =
+          done
+          |> task_fixture()
+          |> Tasks.update_task(%{
+            created_by_agent: "Claude",
+            completed_by_agent: "Claude",
+            status: :completed,
+            completed_at: now,
+            review_status: :approved,
+            reviewed_at: now,
+            reviewed_by_id: user.id
+          })
+      end
+
+      {:ok, _} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now,
+          review_status: :rejected,
+          reviewed_at: now,
+          reviewed_by_id: user.id
+        })
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: now
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert detail.outcome.approved == 2
+      assert detail.outcome.rejected == 1
+      assert detail.outcome.in_progress == 1
+      assert_in_delta detail.outcome.success_rate, 2 / 3, 0.001
+    end
+
+    test "outcome.success_rate is 0.0 with no reviewed tasks (no divide-by-zero)",
+         %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :in_progress,
+          claimed_at: now
+        })
+
+      detail = Agents.agent_detail("Claude")
+
+      assert detail.outcome.success_rate == 0.0
+      assert detail.outcome.approved == 0
+      assert detail.outcome.rejected == 0
+    end
+
     test "returns nil for an unknown agent" do
       assert Agents.agent_detail("Nobody") == nil
     end

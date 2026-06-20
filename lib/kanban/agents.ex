@@ -280,7 +280,14 @@ defmodule Kanban.Agents do
             current_task: %{identifier: String.t(), title: String.t()} | nil,
             claims: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
             failures: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
-            recent_activity: [Event.t()]
+            recent_activity: [Event.t()],
+            activity_series: [%{date: Date.t(), count: non_neg_integer()}],
+            outcome: %{
+              approved: non_neg_integer(),
+              rejected: non_neg_integer(),
+              in_progress: non_neg_integer(),
+              success_rate: float()
+            }
           }
           | nil
   def agent_detail(name_or_identity, opts \\ []),
@@ -299,7 +306,14 @@ defmodule Kanban.Agents do
             current_task: %{identifier: String.t(), title: String.t()} | nil,
             claims: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
             failures: [%{identifier: String.t(), title: String.t(), at: DateTime.t()}],
-            recent_activity: [Event.t()]
+            recent_activity: [Event.t()],
+            activity_series: [%{date: Date.t(), count: non_neg_integer()}],
+            outcome: %{
+              approved: non_neg_integer(),
+              rejected: non_neg_integer(),
+              in_progress: non_neg_integer(),
+              success_rate: float()
+            }
           }
           | nil
   def agent_detail_from(tasks, {name, _owner_key} = identity),
@@ -316,7 +330,31 @@ defmodule Kanban.Agents do
       current_task: current_task(own_tasks),
       claims: claim_history(own_tasks, name),
       failures: failures(own_tasks),
-      recent_activity: agent_events(own_tasks, name)
+      recent_activity: agent_events(own_tasks, name),
+      activity_series: agent_activity_series(own_tasks),
+      outcome: agent_outcome(own_tasks)
+    }
+  end
+
+  # The agent's daily completion counts over the shared trend window, as a
+  # `[%{date, count}]` series — the same shape and binning the page-level
+  # Delivery-trends band uses, so the per-agent sparkline reads consistently.
+  defp agent_activity_series(own_tasks) do
+    own_tasks
+    |> Metrics.throughput_trends_from(Metrics.default_trend_days())
+    |> Map.fetch!(:series)
+  end
+
+  # Lifetime outcome breakdown for the success donut: approved/rejected/
+  # in-progress counts plus the approved-share ratio. `success_rate/1` already
+  # guards the zero-reviewed case, so a no-activity agent yields 0.0 (never an
+  # ArithmeticError).
+  defp agent_outcome(own_tasks) do
+    %{
+      approved: Enum.count(own_tasks, &(&1.review_status == :approved)),
+      rejected: Enum.count(own_tasks, &(&1.review_status == :rejected)),
+      in_progress: Enum.count(own_tasks, &(&1.status == :in_progress)),
+      success_rate: success_rate(own_tasks)
     }
   end
 
