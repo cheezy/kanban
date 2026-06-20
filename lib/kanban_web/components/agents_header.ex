@@ -277,7 +277,7 @@ defmodule KanbanWeb.AgentsHeader do
         data-agents-pm-trends-series
         style={[
           "display: flex; align-items: flex-end; gap: 4px;",
-          "height: 64px; overflow-x: auto;"
+          "height: 128px; overflow-x: auto;"
         ]}
       >
         <div
@@ -478,10 +478,10 @@ defmodule KanbanWeb.AgentsHeader do
     )
   end
 
-  # Bar pixel height scaled to the window's busiest day (max 40px). A minimum
-  # of 2px keeps non-zero-but-tiny days visible; the series is only rendered
+  # Bar pixel height scaled to the window's busiest day (max 80px). A minimum
+  # of 4px keeps non-zero-but-tiny days visible; the series is only rendered
   # when at least one day has activity, so `max` is always positive here.
   defp bar_height(count, max) when is_integer(count) and is_integer(max) and max > 0 do
-    max(2, round(count / max * 40))
+    max(4, round(count / max * 80))
   end
 end

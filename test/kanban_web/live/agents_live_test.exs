@@ -859,6 +859,8 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert length(Regex.scan(~r/data-agents-pm-trends-bar=/, html)) == 14
       # Bars use the design-system completion token, not a hardcoded color.
       assert html =~ "var(--st-done)"
+      # The strip renders at the taller height for readability.
+      assert html =~ "height: 128px"
     end
 
     test "shows the empty hint and zeroed stats when nothing has completed",
