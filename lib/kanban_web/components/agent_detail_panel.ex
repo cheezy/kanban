@@ -182,14 +182,14 @@ defmodule KanbanWeb.AgentDetailPanel do
         :if={@max_count > 0}
         data-agent-detail-sparkline
         aria-label={gettext("Daily completions over the last %{days} days", days: length(@series))}
-        style="display: flex; align-items: flex-end; gap: 2px; height: 56px; overflow-x: auto;"
+        style="display: flex; align-items: flex-end; gap: 3px; height: 88px; overflow-x: auto;"
       >
         <span
           :for={entry <- @series}
           data-agent-detail-spark-bar={Date.to_iso8601(entry.date)}
           aria-hidden="true"
           style={[
-            "width: 7px; flex: none; border-radius: 2px 2px 0 0;",
+            "width: 10px; flex: none; border-radius: 2px 2px 0 0;",
             "background: var(--st-done);",
             "height: #{spark_height(entry.count, @max_count)}px;"
           ]}
@@ -202,8 +202,8 @@ defmodule KanbanWeb.AgentDetailPanel do
         style="display: inline-flex; align-items: center; gap: 8px;"
       >
         <svg
-          width="44"
-          height="44"
+          width="72"
+          height="72"
           viewBox="0 0 40 40"
           role="img"
           aria-label={gettext("Success rate")}
@@ -224,13 +224,13 @@ defmodule KanbanWeb.AgentDetailPanel do
         </svg>
         <div style="display: flex; flex-direction: column;">
           <span style={[
-            "font-size: 14px; font-weight: 600; color: var(--ink);",
+            "font-size: 20px; font-weight: 600; color: var(--ink);",
             "font-variant-numeric: tabular-nums;"
           ]}>
             {if @reviewed > 0, do: "#{@pct}%", else: "—"}
           </span>
           <span style={[
-            "font-size: 9px; font-weight: 600;",
+            "font-size: 10px; font-weight: 600;",
             "text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3);"
           ]}>
             {gettext("Success")}
@@ -242,10 +242,10 @@ defmodule KanbanWeb.AgentDetailPanel do
   end
 
   # Sparkline bar height in px, mirroring the Delivery-trends `bar_height/2`
-  # formula but scaled to the panel's 56px band: a non-zero day is at least 3px
+  # formula but scaled to the panel's 88px band: a non-zero day is at least 4px
   # tall so a single completion is still visible.
   defp spark_height(count, max) when is_integer(count) and is_integer(max) and max > 0 do
-    max(3, round(count / max * 36))
+    max(4, round(count / max * 68))
   end
 
   defp spark_height(_count, _max), do: 0
