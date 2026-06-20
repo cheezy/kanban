@@ -24,15 +24,17 @@ defmodule KanbanWeb.AgentRosterCard do
   ## Attrs
 
     * `agent` — a `%Kanban.Agents.Agent{}` struct (or equivalent map)
-      with `:name`, `:owner`, `:status`, `:current_task`, `:capabilities`,
-      `:today`, `:last_7d`, `:success_rate`, and `:claim_count`. The
-      `:owner` (a `%{name, email}`-shaped map or `nil`) renders as a
-      secondary line under the agent name when present.
-    * `on_select` — optional LiveView event name fired (with a
-      `phx-value-agent` of the agent's name) when the card is activated.
-      When set, the card becomes a keyboard-operable button (role,
-      `aria-pressed`, `tabindex`, focus-visible outline); when `nil` the
-      card is purely presentational.
+      with `:name`, `:owner_key`, `:owner`, `:status`, `:current_task`,
+      `:capabilities`, `:today`, `:last_7d`, `:success_rate`, and
+      `:claim_count`. The `:owner` (a `%{name, email}`-shaped map or `nil`)
+      renders as a secondary line under the agent name when present.
+    * `on_select` — optional LiveView event name fired when the card is
+      activated. The click carries both `phx-value-agent` (the agent's
+      name) and `phx-value-owner` (the non-sensitive `owner_key`), which
+      together form the agent's identity (W1244) — same-named agents under
+      different humans are independently selectable. When set, the card
+      becomes a keyboard-operable button (role, `aria-pressed`, `tabindex`,
+      focus-visible outline); when `nil` the card is purely presentational.
     * `selected?` — whether this card is the currently-selected agent;
       drives the highlighted border/background and `aria-pressed`.
   """
@@ -45,12 +47,14 @@ defmodule KanbanWeb.AgentRosterCard do
     <article
       data-agent-roster-card
       data-agent-name={@agent.name}
+      data-agent-key={@agent.owner_key}
       data-agent-selected={to_string(@selected?)}
       role={@on_select && "button"}
       aria-pressed={@on_select && if(@selected?, do: "true", else: "false")}
       tabindex={@on_select && "0"}
       phx-click={@on_select}
       phx-value-agent={@agent.name}
+      phx-value-owner={@agent.owner_key}
       class={
         "stride-screen" <>
           if(@on_select,

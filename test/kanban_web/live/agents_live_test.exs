@@ -6,6 +6,7 @@ defmodule KanbanWeb.AgentsLiveTest do
   use KanbanWeb.ConnCase
 
   import Phoenix.LiveViewTest
+  import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
@@ -405,6 +406,53 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert composed_html =~ claude_done.identifier
       refute composed_html =~ codex_done.identifier
       refute composed_html =~ ~s(data-agent-feed-kind="claim")
+    end
+
+    test "same-named agents under different humans are separate, independently selectable rows (W1244)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      alice = user_fixture(%{email: "alice-w1244@example.com"})
+      bob = user_fixture(%{email: "bob-w1244@example.com"})
+
+      {:ok, alice_done} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_by_id: alice.id,
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, bob_done} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_by_id: bob.id,
+          completed_at: now,
+          status: :completed
+        })
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+
+      # Two distinct "Claude" rows, keyed by their human owner.
+      assert html =~ ~s(data-agent-name="Claude")
+      assert html =~ ~s(data-agent-key="#{alice.id}")
+      assert html =~ ~s(data-agent-key="#{bob.id}")
+
+      # Selecting Alice's Claude filters the feed to only her completion.
+      alice_html =
+        view
+        |> element(~s([data-agent-roster-card][data-agent-key="#{alice.id}"]))
+        |> render_click()
+
+      assert alice_html =~ "data-agent-filter-indicator"
+      assert alice_html =~ ~s(data-selected-agent="Claude")
+      assert alice_html =~ alice_done.identifier
+      refute alice_html =~ bob_done.identifier
     end
 
     test "clicking the already-selected agent toggles the filter off",

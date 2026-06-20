@@ -1271,4 +1271,110 @@ defmodule Kanban.AgentsTest do
       assert Agents.agent_detail_from(tasks, "Claude") == nil
     end
   end
+
+  describe "agent identity by owner (W1244)" do
+    test "two same-named agents under different humans are two distinct agents",
+         %{column: column, user: user_a} do
+      user_b = user_fixture()
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", created_by_id: user_a.id})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", created_by_id: user_b.id})
+
+      claudes = Agents.list_agents() |> Enum.filter(&(&1.name == "Claude"))
+      assert length(claudes) == 2
+
+      owner_keys = claudes |> Enum.map(& &1.owner_key) |> Enum.sort()
+      assert owner_keys == Enum.sort([Integer.to_string(user_a.id), Integer.to_string(user_b.id)])
+
+      owner_ids = claudes |> Enum.map(& &1.owner.id) |> Enum.sort()
+      assert owner_ids == Enum.sort([user_a.id, user_b.id])
+    end
+
+    test "each same-named agent's stats reflect only its own human's tasks",
+         %{column: column, user: user_a} do
+      user_b = user_fixture()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # user_a's Claude completes two tasks; user_b's Claude completes one.
+      for _ <- 1..2 do
+        {:ok, _} =
+          column
+          |> task_fixture()
+          |> Tasks.update_task(%{
+            created_by_agent: "Claude",
+            created_by_id: user_a.id,
+            completed_by_agent: "Claude",
+            completed_by_id: user_a.id,
+            completed_at: now,
+            status: :completed
+          })
+      end
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          created_by_id: user_b.id,
+          completed_by_agent: "Claude",
+          completed_by_id: user_b.id,
+          completed_at: now,
+          status: :completed
+        })
+
+      agents = Agents.list_agents()
+      claude_a = Enum.find(agents, &(&1.owner_key == Integer.to_string(user_a.id)))
+      claude_b = Enum.find(agents, &(&1.owner_key == Integer.to_string(user_b.id)))
+
+      assert claude_a.today == 2
+      assert claude_b.today == 1
+    end
+
+    test "same-named agents with no resolvable owner collapse to one 'none' identity",
+         %{column: column} do
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Ghost"})
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Ghost"})
+
+      assert [%Agent{owner_key: "none", owner: nil}] =
+               Enum.filter(Agents.list_agents(), &(&1.name == "Ghost"))
+    end
+
+    test "agent_detail_from keyed by identity drills into only that human's tasks",
+         %{column: column, user: user_a} do
+      user_b = user_fixture()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          created_by_id: user_a.id,
+          claimed_at: now
+        })
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          created_by_id: user_b.id,
+          claimed_at: now
+        })
+
+      tasks = Agents.fetch_tasks([])
+      detail_a = Agents.agent_detail_from(tasks, {"Claude", Integer.to_string(user_a.id)})
+
+      # Only user_a's single claim is in the drill-down, not both humans' tasks.
+      assert detail_a.name == "Claude"
+      assert length(detail_a.claims) == 1
+    end
+  end
 end

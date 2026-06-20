@@ -61,17 +61,25 @@ defmodule KanbanWeb.AgentsLive do
   end
 
   @impl true
-  def handle_event("select_agent", %{"agent" => name}, socket) do
-    selected = toggle_agent(socket.assigns.selected_agent, name)
+  def handle_event("select_agent", %{"agent" => name, "owner" => owner_key}, socket) do
+    identity = {name, owner_key}
 
-    {:noreply,
-     socket
-     |> assign(:selected_agent, selected)
-     |> assign(:agent_detail, selected_agent_detail(socket.assigns.current_scope, selected))
-     |> assign(
-       :events,
-       apply_filters(socket.assigns.all_events, socket.assigns.filter, selected)
-     )}
+    # Validate the click payload against the currently-rendered roster before
+    # using it — never trust a raw phx-value as an identity (security).
+    if known_agent_identity?(socket, identity) do
+      selected = toggle_agent(socket.assigns.selected_agent, identity)
+
+      {:noreply,
+       socket
+       |> assign(:selected_agent, selected)
+       |> assign(:agent_detail, selected_agent_detail(socket.assigns.current_scope, selected))
+       |> assign(
+         :events,
+         apply_filters(socket.assigns.all_events, socket.assigns.filter, selected)
+       )}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -180,7 +188,7 @@ defmodule KanbanWeb.AgentsLive do
               :for={agent <- @agents}
               agent={agent}
               on_select="select_agent"
-              selected?={agent.name == @selected_agent}
+              selected?={{agent.name, agent.owner_key} == @selected_agent}
             />
 
             <div
@@ -222,7 +230,7 @@ defmodule KanbanWeb.AgentsLive do
                   <AgentRosterCard.card
                     agent={agent}
                     on_select="select_agent"
-                    selected?={agent.name == @selected_agent}
+                    selected?={{agent.name, agent.owner_key} == @selected_agent}
                   />
                   <p style={[
                     "margin: 2px 0 0; padding-left: 2px;",
@@ -239,7 +247,7 @@ defmodule KanbanWeb.AgentsLive do
             <div
               :if={@selected_agent}
               data-agent-filter-indicator
-              data-selected-agent={@selected_agent}
+              data-selected-agent={selected_agent_name(@selected_agent)}
               style={[
                 "display: inline-flex; align-items: center; gap: 8px;",
                 "align-self: flex-start;",
@@ -250,7 +258,7 @@ defmodule KanbanWeb.AgentsLive do
                 "font-size: 12px; font-weight: 500;"
               ]}
             >
-              <span>{gettext("Filtering by %{agent}", agent: @selected_agent)}</span>
+              <span>{gettext("Filtering by %{agent}", agent: selected_agent_name(@selected_agent))}</span>
               <button
                 type="button"
                 phx-click="clear_agent_filter"
@@ -336,13 +344,31 @@ defmodule KanbanWeb.AgentsLive do
   # Reads from the shared task list already fetched in load_agents_data/1 (no
   # query in the LiveView).
   defp agent_detail_for(_tasks, nil), do: nil
-  defp agent_detail_for(tasks, name), do: Agents.agent_detail_from(tasks, name)
+
+  defp agent_detail_for(tasks, {_name, _owner_key} = identity),
+    do: Agents.agent_detail_from(tasks, identity)
 
   # On a discrete select-agent click we don't have the shared task list in hand,
   # so fall back to the keyword API (a single fetch on the click path — not the
   # per-render hot path that load_agents_data/1 optimizes).
   defp selected_agent_detail(_scope, nil), do: nil
-  defp selected_agent_detail(scope, name), do: Agents.agent_detail(name, scope: scope)
+
+  defp selected_agent_detail(scope, {_name, _owner_key} = identity),
+    do: Agents.agent_detail(identity, scope: scope)
+
+  # The human-readable agent name from a selected identity, for display.
+  defp selected_agent_name(nil), do: nil
+  defp selected_agent_name({name, _owner_key}), do: name
+
+  # Whether the {name, owner_key} identity is one of the agents currently in the
+  # rendered roster (live or dormant). Guards select_agent against a forged or
+  # stale phx-value before it becomes a selection/filter key.
+  defp known_agent_identity?(socket, {name, owner_key}) do
+    Enum.any?(
+      socket.assigns.agents ++ socket.assigns.dormant_agents,
+      &(&1.name == name and &1.owner_key == owner_key)
+    )
+  end
 
   defp maybe_schedule_refresh(%{assigns: %{refresh_scheduled?: true}} = socket), do: socket
 
@@ -371,21 +397,23 @@ defmodule KanbanWeb.AgentsLive do
   defp filter_events(events, :completions), do: Enum.filter(events, &(&1.kind == :complete))
 
   # Composes the kind filter with the optional agent filter. The kind filter
-  # always runs first; when an agent is selected, only events whose actor
-  # matches that agent survive. A nil selection leaves the kind-filtered list
-  # untouched.
+  # always runs first; when an agent identity {name, owner_key} is selected,
+  # only events whose actor name AND owner key match survive — so selecting one
+  # of two same-named agents shows only that human's events (W1244). A nil
+  # selection leaves the kind-filtered list untouched.
   defp apply_filters(events, kind_filter, nil), do: filter_events(events, kind_filter)
 
-  defp apply_filters(events, kind_filter, selected_agent) do
+  defp apply_filters(events, kind_filter, {name, owner_key}) do
     events
     |> filter_events(kind_filter)
-    |> Enum.filter(&(&1.actor == selected_agent))
+    |> Enum.filter(&(&1.actor == name and Agents.owner_key_for_owner(&1.owner) == owner_key))
   end
 
-  # Toggling the currently-selected agent clears the selection; any other
-  # agent name replaces it.
-  defp toggle_agent(selected_agent, selected_agent), do: nil
-  defp toggle_agent(_current, name), do: name
+  # Toggling the currently-selected agent identity clears the selection; any
+  # other identity replaces it. Identities are {name, owner_key} tuples, so
+  # equality is by value.
+  defp toggle_agent(selected_identity, selected_identity), do: nil
+  defp toggle_agent(_current, identity), do: identity
 
   defp count_events_within_24h(events) do
     cutoff = DateTime.add(DateTime.utc_now(), -@event_window_hours, :hour)

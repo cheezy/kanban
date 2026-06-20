@@ -6,6 +6,12 @@ defmodule Kanban.Agents.Agent do
   distinct non-nil values of `created_by_agent` and `completed_by_agent`
   across the visible Task set.
 
+  Identity is the composite of `name` and `owner_key` (W1244): two agents that
+  share a `name` but are run by different humans are distinct agents. `owner_key`
+  is the owning user's id as a string, or `"none"` when no human owner resolves
+  (so same-named agents with no owner stay a single entry). Group, select, and
+  filter on `{name, owner_key}` — never on `name` alone.
+
   `status` (`:working` / `:waiting` / `:idle`) and `stuck` are independent
   dimensions: `stuck` flags an agent that has stalled mid-work or has been
   sitting in review past a threshold, regardless of which active status it
@@ -22,6 +28,7 @@ defmodule Kanban.Agents.Agent do
 
   @type t :: %__MODULE__{
           name: String.t(),
+          owner_key: String.t(),
           owner: map() | nil,
           status: status(),
           stuck: boolean(),
@@ -41,6 +48,7 @@ defmodule Kanban.Agents.Agent do
     :status,
     :current_task,
     :last_active_at,
+    owner_key: "none",
     stuck: false,
     dormant: false,
     capabilities: [],

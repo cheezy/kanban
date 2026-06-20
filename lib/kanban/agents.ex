@@ -108,11 +108,11 @@ defmodule Kanban.Agents do
   def list_agents_from(tasks) do
     today = Date.utc_today()
 
-    # Sort by name first, then stable-sort by recency descending: because
-    # `Enum.sort_by/3` is stable, agents with equal recency keep the
-    # name-ascending order as a deterministic alphabetical tiebreak.
+    # Sort by identity first (name, then owner_key), then stable-sort by recency
+    # descending: because `Enum.sort_by/3` is stable, identities with equal
+    # recency keep the name/owner-ascending order as a deterministic tiebreak.
     tasks
-    |> distinct_agent_names()
+    |> distinct_agent_identities()
     |> Enum.sort()
     |> Enum.sort_by(&agent_recency(&1, tasks), {:desc, NaiveDateTime})
     |> Enum.map(&build_agent(&1, tasks, today))
@@ -269,8 +269,12 @@ defmodule Kanban.Agents do
   Returns `nil` for an unknown agent (one with no visible tasks). `:scope`
   board filtering is respected via the shared task fetch, so no task outside
   the scoped board set is surfaced.
+
+  Accepts either an agent identity `{name, owner_key}` (W1244 — drills into only
+  that human's agent) or a bare `name` string (back-compat — pools every
+  same-named agent across humans). The `/agents` view passes the identity tuple.
   """
-  @spec agent_detail(String.t(), keyword()) ::
+  @spec agent_detail({String.t(), String.t()} | String.t(), keyword()) ::
           %{
             name: String.t(),
             current_task: %{identifier: String.t(), title: String.t()} | nil,
@@ -279,14 +283,17 @@ defmodule Kanban.Agents do
             recent_activity: [Event.t()]
           }
           | nil
-  def agent_detail(name, opts \\ []), do: agent_detail_from(fetch_tasks(opts), name)
+  def agent_detail(name_or_identity, opts \\ []),
+    do: agent_detail_from(fetch_tasks(opts), name_or_identity)
 
   @doc """
   Per-agent drill-down derived from an already-fetched task list. Same shape as
   `agent_detail/2` (or `nil` for an unknown agent). The task list is assumed to
   be scope-filtered already, so no scope is re-applied here.
+
+  Accepts an identity `{name, owner_key}` (per-human) or a bare `name` (pooled).
   """
-  @spec agent_detail_from([Task.t()], String.t()) ::
+  @spec agent_detail_from([Task.t()], {String.t(), String.t()} | String.t()) ::
           %{
             name: String.t(),
             current_task: %{identifier: String.t(), title: String.t()} | nil,
@@ -295,20 +302,31 @@ defmodule Kanban.Agents do
             recent_activity: [Event.t()]
           }
           | nil
-  def agent_detail_from(tasks, name) do
-    case filter_by_agent(tasks, name) do
-      [] ->
-        nil
+  def agent_detail_from(tasks, {name, _owner_key} = identity),
+    do: build_detail(filter_by_identity(tasks, identity), name)
 
-      own_tasks ->
-        %{
-          name: name,
-          current_task: current_task(own_tasks),
-          claims: claim_history(own_tasks, name),
-          failures: failures(own_tasks),
-          recent_activity: agent_events(own_tasks, name)
-        }
-    end
+  def agent_detail_from(tasks, name) when is_binary(name),
+    do: build_detail(filter_by_agent_name(tasks, name), name)
+
+  defp build_detail([], _name), do: nil
+
+  defp build_detail(own_tasks, name) do
+    %{
+      name: name,
+      current_task: current_task(own_tasks),
+      claims: claim_history(own_tasks, name),
+      failures: failures(own_tasks),
+      recent_activity: agent_events(own_tasks, name)
+    }
+  end
+
+  # Name-only task filter — pools every same-named agent regardless of human.
+  # Used only by the back-compat bare-name agent_detail path; the roster and
+  # selection use filter_by_identity/2 (name + owner) instead.
+  defp filter_by_agent_name(tasks, name) do
+    Enum.filter(tasks, fn t ->
+      t.created_by_agent == name or t.completed_by_agent == name
+    end)
   end
 
   # --- Query helpers ---------------------------------------------------------
@@ -332,27 +350,64 @@ defmodule Kanban.Agents do
 
   # --- list_agents/1 ---------------------------------------------------------
 
-  defp distinct_agent_names(tasks) do
+  # The set of distinct agent identities present in the task set, each a
+  # `{name, owner_key}` tuple (W1244). An agent is keyed by name AND owning
+  # human, so two operators running a same-named agent are two identities; a
+  # name with no resolvable owner collapses under the `"none"` sentinel.
+  defp distinct_agent_identities(tasks) do
     tasks
-    |> Enum.flat_map(fn t -> [t.created_by_agent, t.completed_by_agent] end)
-    |> Enum.reject(&is_nil/1)
+    |> Enum.flat_map(&task_identities/1)
     |> Enum.uniq()
   end
 
-  defp build_agent(name, tasks, today) do
-    own_tasks = filter_by_agent(tasks, name)
+  defp task_identities(task) do
+    [task.created_by_agent, task.completed_by_agent]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.map(fn name -> {name, owner_key_for_owner(owner_for_task_name(task, name))} end)
+  end
+
+  # The human owner for a given agent name on a single task: prefer the creator
+  # when this name created the task, fall back to the completer. This keeps a
+  # task whose created/completed agent name matches but whose owner resolves on
+  # only one side a SINGLE identity (not a phantom "none" split).
+  defp owner_for_task_name(task, name) do
+    created = task.created_by_agent == name && to_owner_map(task.created_by)
+    completed = task.completed_by_agent == name && to_owner_map(task.completed_by)
+    (is_map(created) && created) || (is_map(completed) && completed) || nil
+  end
+
+  @doc false
+  # The stable, non-sensitive identity key for an owner map (or nil): the
+  # owning user's id as a string, or the `"none"` sentinel. Exposed so the
+  # Agents LiveView can key event filtering on the same value without leaking
+  # the owner's email into the DOM. Keep this the single source of the key rule.
+  def owner_key_for_owner(%{id: id}), do: Integer.to_string(id)
+  def owner_key_for_owner(_), do: "none"
+
+  defp build_agent({name, owner_key} = identity, tasks, today) do
+    own_tasks = filter_by_identity(tasks, identity)
     now = now_naive()
     last_active_at = last_active(own_tasks)
 
     %Agent{
       name: name,
-      owner: resolve_owner(name, own_tasks),
+      owner_key: owner_key,
+      owner: resolve_owner_for_key(own_tasks, owner_key),
       status: infer_status(own_tasks),
       stuck: stuck?(own_tasks, now),
       last_active_at: last_active_at,
       dormant: dormant?(last_active_at, now),
       current_task: current_task(own_tasks),
-      capabilities: [],
+      capabilities: []
+    }
+    |> Map.merge(agent_throughput_fields(own_tasks, today))
+  end
+
+  # The per-agent throughput counters, split out of build_agent/3 to keep it
+  # under the complexity budget.
+  defp agent_throughput_fields(own_tasks, today) do
+    %{
       today: count_completed_on_day(own_tasks, today),
       last_7d: count_completed_within(own_tasks, today, 7),
       success_rate: success_rate(own_tasks),
@@ -360,36 +415,41 @@ defmodule Kanban.Agents do
     }
   end
 
-  defp filter_by_agent(tasks, name) do
+  # The tasks belonging to a single agent identity: a task contributes when it
+  # was created OR completed by this agent name AND the corresponding human
+  # owner matches the identity's owner_key. This is the fix that stops two
+  # same-named agents under different humans from pooling their tasks.
+  defp filter_by_identity(tasks, {name, owner_key}) do
     Enum.filter(tasks, fn t ->
-      t.created_by_agent == name or t.completed_by_agent == name
+      (t.created_by_agent == name and owner_key_for_owner(to_owner_map(t.created_by)) == owner_key) or
+        (t.completed_by_agent == name and
+           owner_key_for_owner(to_owner_map(t.completed_by)) == owner_key)
     end)
   end
 
-  # Resolves the human owner behind a derived agent. Prefers the User who
-  # created a task as this agent; falls back to the User who completed one.
-  # Returns nil when neither association resolves to a User.
-  defp resolve_owner(name, own_tasks) do
-    owner_from(own_tasks, name, :created_by_agent, :created_by) ||
-      owner_from(own_tasks, name, :completed_by_agent, :completed_by)
+  # Resolves the human owner map for an identity from its already-identity-scoped
+  # tasks. Returns nil for the `"none"` sentinel (no resolvable human).
+  defp resolve_owner_for_key(_own_tasks, "none"), do: nil
+
+  defp resolve_owner_for_key(own_tasks, owner_key) do
+    Enum.find_value(own_tasks, fn task ->
+      owner_for_matching_key(to_owner_map(task.created_by), owner_key) ||
+        owner_for_matching_key(to_owner_map(task.completed_by), owner_key)
+    end)
   end
 
-  defp owner_from(tasks, name, agent_field, user_field) do
-    Enum.find_value(tasks, fn task ->
-      if Map.get(task, agent_field) == name do
-        to_owner_map(Map.get(task, user_field))
-      end
-    end)
+  defp owner_for_matching_key(owner, owner_key) do
+    if owner && owner_key_for_owner(owner) == owner_key, do: owner
   end
 
   defp to_owner_map(%User{} = user), do: %{id: user.id, name: user.name, email: user.email}
   defp to_owner_map(_), do: nil
 
-  # Latest activity timestamp across an agent's tasks, reusing the same
+  # Latest activity timestamp across an agent identity's tasks, reusing the same
   # recency rule used to pick an agent's most recent task. Returns a
   # `NaiveDateTime` so the roster can be ordered newest-first.
-  defp agent_recency(name, tasks) do
-    case tasks |> filter_by_agent(name) |> most_recent_task() do
+  defp agent_recency(identity, tasks) do
+    case tasks |> filter_by_identity(identity) |> most_recent_task() do
       nil -> @epoch_recency
       task -> task_recency(task)
     end
