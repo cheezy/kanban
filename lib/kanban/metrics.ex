@@ -992,10 +992,25 @@ defmodule Kanban.Metrics do
         user
         |> Boards.list_boards()
         |> Enum.map(& &1.id)
+        |> filter_board_ids(Keyword.get(opts, :board_ids))
 
       _ ->
         []
     end
+  end
+
+  # Restrict the visible board ids to an optional client-supplied subset.
+  # nil means "no filter" (return all visible ids, unchanged behavior). A list
+  # is treated as untrusted input: intersect it with the visible ids so ids the
+  # user cannot see are silently dropped. Always returns a plain list of ids.
+  defp filter_board_ids(visible_ids, nil), do: visible_ids
+
+  defp filter_board_ids(visible_ids, requested_ids) when is_list(requested_ids) do
+    visible_set = MapSet.new(visible_ids)
+
+    requested_ids
+    |> Enum.uniq()
+    |> Enum.filter(&MapSet.member?(visible_set, &1))
   end
 
   defp completed_tasks_in_window(board_ids, %DateTime{} = window_start, %DateTime{} = window_end) do

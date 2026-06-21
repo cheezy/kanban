@@ -1609,6 +1609,73 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  describe "workspace reads — :board_ids filter (scoped_board_ids/1)" do
+    # scoped_board_ids/1 is private; its behavior is exercised through a
+    # workspace read. throughput_per_day == completed_count / 14, so the task
+    # counts below map directly to the asserted throughput.
+    setup do
+      user = user_fixture()
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      col1 = column_fixture(board1)
+      col2 = column_fixture(board2)
+
+      # 3 tasks on board1, 5 on board2 — distinct counts so leakage is visible.
+      Enum.each(1..3, fn _ -> col1 |> task_fixture() |> ws_complete!(1) end)
+      Enum.each(1..5, fn _ -> col2 |> task_fixture() |> ws_complete!(1) end)
+
+      %{user: user, board1: board1, board2: board2, scope: Scope.for_user(user)}
+    end
+
+    test "no :board_ids option returns all visible board ids (unchanged)", %{scope: scope} do
+      stats = Metrics.workspace_kpis(scope: scope)
+      assert stats.throughput_per_day == 8 / 14
+    end
+
+    test "a subset :board_ids returns exactly that subset", %{scope: scope, board1: board1} do
+      stats = Metrics.workspace_kpis(scope: scope, board_ids: [board1.id])
+      assert stats.throughput_per_day == 3 / 14
+    end
+
+    test "ids the user cannot see are dropped (intersection with visible only)", %{scope: scope} do
+      other = user_fixture()
+      other_board = board_fixture(other)
+      other_col = column_fixture(other_board)
+      Enum.each(1..10, fn _ -> other_col |> task_fixture() |> ws_complete!(1) end)
+
+      stats = Metrics.workspace_kpis(scope: scope, board_ids: [other_board.id])
+      assert stats.throughput_per_day == 0.0
+    end
+
+    test "a visible/invisible mix keeps only the visible ids", %{scope: scope, board1: board1} do
+      other = user_fixture()
+      other_board = board_fixture(other)
+
+      stats = Metrics.workspace_kpis(scope: scope, board_ids: [board1.id, other_board.id])
+      assert stats.throughput_per_day == 3 / 14
+    end
+
+    test "an empty :board_ids list intersects to nothing and returns the zero value",
+         %{scope: scope} do
+      stats = Metrics.workspace_kpis(scope: scope, board_ids: [])
+      assert stats.throughput_per_day == 0.0
+    end
+
+    test "duplicate ids in :board_ids are not double-counted", %{scope: scope, board1: board1} do
+      stats = Metrics.workspace_kpis(scope: scope, board_ids: [board1.id, board1.id])
+      assert stats.throughput_per_day == 3 / 14
+    end
+
+    test "a different workspace read (throughput_daily/1) also honors :board_ids",
+         %{scope: scope, board1: board1} do
+      all = Metrics.throughput_daily(scope: scope)
+      filtered = Metrics.throughput_daily(scope: scope, board_ids: [board1.id])
+
+      assert Enum.sum(all) == 8
+      assert Enum.sum(filtered) == 3
+    end
+  end
+
   describe "cycle_time_daily/1" do
     test "returns 14 entries ordered oldest-to-newest with date keys",
          %{} do
