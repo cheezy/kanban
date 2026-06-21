@@ -229,6 +229,80 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  describe "cross-timezone correctness audit (W1268)" do
+    # Durations are epoch differences (e.g. completed_at - claimed_at), so the
+    # stat VALUES are identical regardless of the viewer's zone — only which
+    # tasks fall in the trailing window is zone-sensitive. Seeding mid-window
+    # (3-5 days ago) keeps window membership constant across zones, isolating the
+    # duration-correctness claim from the bucket-correctness claim.
+    test "cycle time stats are identical across viewer zones (durations are zone-independent)" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Enum.each([3, 4, 5], fn days_ago ->
+        completed = DateTime.add(now, -days_ago * 86_400, :second)
+        claimed = DateTime.add(completed, -3600, :second)
+
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{claimed_at: claimed, completed_at: completed})
+      end)
+
+      {:ok, edmonton} = Metrics.get_cycle_time_stats(board.id, timezone: "America/Edmonton")
+      {:ok, auckland} = Metrics.get_cycle_time_stats(board.id, timezone: "Pacific/Auckland")
+      {:ok, utc} = Metrics.get_cycle_time_stats(board.id)
+      # An unknown viewer zone falls back to the Etc/UTC window (the same path
+      # the three board-stats functions were re-routed through this task).
+      {:ok, bogus} = Metrics.get_cycle_time_stats(board.id, timezone: "Not/AZone")
+
+      assert edmonton == auckland
+      assert edmonton == utc
+      assert bogus == utc
+      # Each cycle is exactly one hour, regardless of zone.
+      assert edmonton.count == 3
+      assert edmonton.median_hours == 1.0
+    end
+
+    test "workspace cycle-time median is zone-independent for mid-window completions" do
+      %{column: column, scope: scope} = ws_setup()
+      Enum.each([3, 4, 5], fn days_ago -> column |> task_fixture() |> ws_complete!(days_ago) end)
+
+      edmonton = Metrics.workspace_kpis(scope: scope, timezone: "America/Edmonton")
+      auckland = Metrics.workspace_kpis(scope: scope, timezone: "Pacific/Auckland")
+
+      # ws_complete! sets a 60-minute cycle; the median is the same in every zone.
+      assert edmonton.cycle_time_median_minutes == 60
+      assert edmonton.cycle_time_median_minutes == auckland.cycle_time_median_minutes
+    end
+
+    test "get_throughput falls back to Etc/UTC bucketing for an unknown viewer zone" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      column |> task_fixture() |> Tasks.update_task(%{completed_at: ~U[2026-06-21 05:30:00Z]})
+
+      {:ok, bogus} =
+        Metrics.get_throughput(board.id, time_range: :all_time, timezone: "Not/AZone")
+
+      {:ok, utc} = Metrics.get_throughput(board.id, time_range: :all_time)
+
+      assert bogus == utc
+    end
+
+    test "throughput_daily and cumulative_flow fall back to Etc/UTC for an unknown zone" do
+      %{column: column, scope: scope} = ws_setup()
+      column |> task_fixture() |> ws_complete!(2)
+
+      assert Metrics.throughput_daily(scope: scope, timezone: "Not/AZone") ==
+               Metrics.throughput_daily(scope: scope)
+
+      assert Metrics.cumulative_flow(scope: scope, timezone: "Not/AZone") ==
+               Metrics.cumulative_flow(scope: scope)
+    end
+  end
+
   describe "get_cycle_time_stats/2" do
     test "calculates average cycle time from claimed_at to completed_at" do
       user = user_fixture()

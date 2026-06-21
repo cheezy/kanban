@@ -49,8 +49,8 @@ defmodule Kanban.Metrics do
   alias Kanban.Timezone
 
   # Trailing-window lengths (days back from "today", inclusive) for the board
-  # time-range options. Shared by the throughput window and the private
-  # get_start_date used by the cycle/lead/wait stats windows.
+  # time-range options. Consumed by local_window_start/2 for the throughput and
+  # the cycle/lead/wait stats windows.
   @date_range_days %{today: 0, last_7_days: 6, last_30_days: 29, last_90_days: 89}
 
   @doc """
@@ -231,7 +231,8 @@ defmodule Kanban.Metrics do
   def get_cycle_time_stats(board_id, opts \\ []) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
-    start_date = get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = local_window_start(time_range, timezone)
 
     if board_ai_optimized?(board_id) do
       agent_name = Keyword.get(opts, :agent_name)
@@ -337,7 +338,8 @@ defmodule Kanban.Metrics do
     agent_name = Keyword.get(opts, :agent_name)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
 
-    start_date = get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = local_window_start(time_range, timezone)
 
     query =
       Task
@@ -398,7 +400,8 @@ defmodule Kanban.Metrics do
   def get_wait_time_stats(board_id, opts \\ []) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
-    start_date = get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = local_window_start(time_range, timezone)
 
     if board_ai_optimized?(board_id) do
       agent_name = Keyword.get(opts, :agent_name)
@@ -531,17 +534,6 @@ defmodule Kanban.Metrics do
     from(b in Board, where: b.id == ^board_id, select: b.ai_optimized_board)
     |> Repo.one()
     |> Kernel.||(false)
-  end
-
-  defp get_start_date(:all_time), do: DateTime.new!(~D[2000-01-01], ~T[00:00:00])
-
-  defp get_start_date(range) do
-    days_back = Map.get(@date_range_days, range, 29)
-
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-days_back)
-    |> DateTime.new!(~T[00:00:00])
   end
 
   defp maybe_filter_by_agent(query, nil), do: query
