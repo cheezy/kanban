@@ -93,6 +93,50 @@ defmodule KanbanWeb.MetricsCumulativeFlowTest do
     end
   end
 
+  describe "cumulative_flow/1 — y-axis scale" do
+    test "renders the peak stacked total as a gridline" do
+      # Default snapshot peak (last day): 20 + 5 + 6 + 3 + (40 + 13) = 87.
+      assert render_chart(snapshots()) =~ ~s(data-metrics-cumulative-flow-gridline="87")
+    end
+
+    test "derives intermediate ticks and a zero baseline from the peak" do
+      html = render_chart(snapshots())
+
+      # peak 87 -> [87, round(58), round(29), 0]
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="58")
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="29")
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="0")
+      assert length(Regex.scan(~r/data-metrics-cumulative-flow-gridline/, html)) == 4
+    end
+
+    test "an empty snapshot list renders without error and still shows a scale" do
+      html = render_chart([])
+
+      assert html =~ "data-metrics-cumulative-flow"
+      # peak guards to 1 -> ticks collapse to [1, 0].
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="1")
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="0")
+    end
+
+    test "a peak total of one renders a 1-and-0 scale" do
+      single = [%{date: ~D[2026-05-01], backlog: 1, ready: 0, doing: 0, review: 0, done: 0}]
+      html = render_chart(single)
+
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="1")
+      assert html =~ ~s(data-metrics-cumulative-flow-gridline="0")
+      assert length(Regex.scan(~r/data-metrics-cumulative-flow-gridline/, html)) == 2
+    end
+
+    test "gridlines use tabular-nums and theme tokens" do
+      html = render_chart(snapshots())
+
+      assert html =~ "font-variant-numeric: tabular-nums"
+      assert html =~ "var(--ink-4)"
+      assert html =~ "var(--line-2)"
+      refute html =~ "text-gray-"
+    end
+  end
+
   describe "build_layers/1 — stacking math" do
     test "returns an empty list for an empty input" do
       assert MetricsCumulativeFlow.build_layers([]) == []

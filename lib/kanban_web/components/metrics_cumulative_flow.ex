@@ -49,6 +49,7 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
       assigns
       |> assign(:layers, layers)
       |> assign(:peak, peak)
+      |> assign(:y_ticks, y_ticks(peak))
       |> assign(:view_w, @view_w)
       |> assign(:view_h, @view_h)
 
@@ -96,6 +97,21 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
             fill-opacity="0.8"
           />
         </svg>
+
+        <span
+          :for={tick <- @y_ticks}
+          data-metrics-cumulative-flow-gridline={tick}
+          style={[
+            "position: absolute; left: 0; right: 0;",
+            "bottom: #{gridline_bottom_pct(tick, @peak)}%;",
+            "border-top: 1px dashed var(--line-2);",
+            "font-size: 10px; font-family: var(--font-mono);",
+            "color: var(--ink-4); text-align: right; padding-right: 2px;",
+            "font-variant-numeric: tabular-nums; pointer-events: none;"
+          ]}
+        >
+          {tick}
+        </span>
       </div>
     </section>
     """
@@ -113,6 +129,25 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
       end)
 
     {layers_with_paths, peak}
+  end
+
+  # --- Y-axis scale --------------------------------------------------------
+
+  # Tick values for the y-axis: the peak stacked total plus two intermediate
+  # thirds and the zero baseline. Derived from the SAME peak build_geometry/1
+  # uses to project the layers, so the ticks match the rendered heights. peak is
+  # guaranteed >= 1 by build_geometry/1, so duplicates only collapse for small
+  # peaks (e.g. peak 1 -> [1, 0]).
+  defp y_ticks(peak) do
+    [peak, round(peak * 2 / 3), round(peak / 3), 0]
+    |> Enum.uniq()
+  end
+
+  # Vertical position of a tick as a percentage of the plot, mirroring
+  # project_point/4's y = @view_h - value / peak * plot_h. The plot occupies
+  # (@view_h - @top_padding_px) of the container, anchored at the bottom.
+  defp gridline_bottom_pct(value, peak) do
+    Float.round(value / peak * (@view_h - @top_padding_px) / @view_h * 100, 2)
   end
 
   @doc """
