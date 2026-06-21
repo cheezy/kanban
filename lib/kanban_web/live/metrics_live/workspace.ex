@@ -23,8 +23,8 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   (W1260): it offers 7/14/30/90-day windows (default 14) and re-renders
   every series and KPI through the `:window_days` option on the
   `Kanban.Metrics` reads. Like the board selection it lives in assigns
-  only — a page reload resets to 14 days. The remaining "Filter" button
-  is still a decorative placeholder.
+  only — a page reload resets to 14 days. The toolbar carries only these
+  two working controls — there are no decorative placeholder buttons.
   """
   use KanbanWeb, :live_view
 
@@ -124,7 +124,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           <span style="flex: 1;" />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
           <.window_selector selected_window_days={@selected_window_days} />
-          <.toolbar_button label={gettext("Filter")} />
         </header>
 
         <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
@@ -257,30 +256,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
         </option>
       </select>
     </form>
-    """
-  end
-
-  # --- Decorative toolbar -------------------------------------------------
-
-  attr :label, :string, required: true
-
-  defp toolbar_button(assigns) do
-    ~H"""
-    <button
-      type="button"
-      data-metrics-toolbar-placeholder
-      aria-disabled="true"
-      style={[
-        "display: inline-flex; align-items: center; gap: 5px;",
-        "padding: 4px 10px; border-radius: 5px;",
-        "font: inherit; font-size: 12px; font-weight: 500;",
-        "color: var(--ink-2);",
-        "background: var(--surface); border: 1px solid var(--line);",
-        "cursor: not-allowed; opacity: 0.75;"
-      ]}
-    >
-      {@label}
-    </button>
     """
   end
 

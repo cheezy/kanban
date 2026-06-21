@@ -41,24 +41,20 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Metrics"
     end
 
-    test "renders the single remaining decorative toolbar button with aria-disabled='true'",
+    test "renders no decorative placeholder toolbar buttons — only the working selectors",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")
 
-      buttons =
-        Regex.scan(~r/<button[^>]*data-metrics-toolbar-placeholder[^>]*>/, html)
+      # The board and time-range controls are now real selectors and the
+      # non-functional "Filter" placeholder has been removed (W1261).
+      assert Regex.scan(~r/<button[^>]*data-metrics-toolbar-placeholder[^>]*>/, html) == []
+      refute html =~ "data-metrics-toolbar-placeholder"
+      # The capitalized "Filter" label is gone (the lowercase "board-filter-form"
+      # id is unrelated and unaffected).
+      refute html =~ "Filter"
 
-      # The board and time-range controls are now real selectors; only "Filter"
-      # remains a decorative placeholder.
-      assert length(buttons) == 1
-
-      for [tag] <- buttons do
-        assert tag =~ ~s(aria-disabled="true")
-        refute tag =~ "phx-click"
-      end
-
+      assert html =~ "data-metrics-board-selector"
       assert html =~ "data-metrics-window-selector"
-      assert html =~ "Filter"
     end
 
     test "renders the empty-workspace zero shape across every component",
