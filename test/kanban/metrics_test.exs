@@ -188,6 +188,47 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  describe "get_throughput/2 — local timezone (W1266)" do
+    test "buckets a 23:30-local completion under the local day, not the next UTC day" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      # 05:30 UTC on Jun 21 is 23:30 Jun 20 in Edmonton (MDT, UTC-6).
+      {:ok, _} = Tasks.update_task(task, %{completed_at: ~U[2026-06-21 05:30:00Z]})
+
+      {:ok, local} =
+        Metrics.get_throughput(board.id, time_range: :all_time, timezone: "America/Edmonton")
+
+      assert local == [%{date: ~D[2026-06-20], count: 1}]
+
+      # The Etc/UTC default still buckets it on Jun 21.
+      {:ok, utc} = Metrics.get_throughput(board.id, time_range: :all_time)
+      assert utc == [%{date: ~D[2026-06-21], count: 1}]
+    end
+
+    test "splits one UTC day into two local days when completions straddle local midnight" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      # Both on UTC Jun 21, but Edmonton-local Jun 20 (23:30) and Jun 21 (06:00).
+      {:ok, _} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: ~U[2026-06-21 05:30:00Z]})
+
+      {:ok, _} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: ~U[2026-06-21 12:00:00Z]})
+
+      {:ok, local} =
+        Metrics.get_throughput(board.id, time_range: :all_time, timezone: "America/Edmonton")
+
+      assert local == [%{date: ~D[2026-06-20], count: 1}, %{date: ~D[2026-06-21], count: 1}]
+
+      # Under UTC the two land on the same day.
+      {:ok, utc} = Metrics.get_throughput(board.id, time_range: :all_time)
+      assert utc == [%{date: ~D[2026-06-21], count: 2}]
+    end
+  end
+
   describe "get_cycle_time_stats/2" do
     test "calculates average cycle time from claimed_at to completed_at" do
       user = user_fixture()

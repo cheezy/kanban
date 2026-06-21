@@ -38,4 +38,21 @@ defmodule Kanban.Timezone do
       {:error, _reason} -> DateTime.to_date(dt)
     end
   end
+
+  @doc """
+  The UTC `DateTime` of midnight on `date` in `timezone` — the local day's start
+  expressed as the instant to compare against UTC-stored timestamps in a query.
+
+  DST-safe: an ambiguous or gap midnight resolves to the first valid instant; an
+  unknown zone falls back to midnight UTC.
+  """
+  @spec start_of_local_day(Date.t(), String.t()) :: DateTime.t()
+  def start_of_local_day(%Date{} = date, timezone) do
+    case DateTime.new(date, ~T[00:00:00], timezone) do
+      {:ok, local_midnight} -> DateTime.shift_zone!(local_midnight, "Etc/UTC")
+      {:ambiguous, first, _second} -> DateTime.shift_zone!(first, "Etc/UTC")
+      {:gap, just_before, _just_after} -> DateTime.shift_zone!(just_before, "Etc/UTC")
+      {:error, _reason} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+    end
+  end
 end

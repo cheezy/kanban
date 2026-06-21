@@ -46,6 +46,12 @@ defmodule Kanban.Metrics do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Timezone
+
+  # Trailing-window lengths (days back from "today", inclusive) for the board
+  # time-range options. Shared by the throughput window and the private
+  # get_start_date used by the cycle/lead/wait stats windows.
+  @date_range_days %{today: 0, last_7_days: 6, last_30_days: 29, last_90_days: 89}
 
   @doc """
   Returns a dashboard summary with all key metrics for a board.
@@ -149,11 +155,43 @@ defmodule Kanban.Metrics do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
     exclude_weekends = Keyword.get(opts, :exclude_weekends, false)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
-    start_date = get_start_date(time_range)
-    results = throughput_query(board_id, start_date, agent_name) |> Repo.all()
+    start_date = local_window_start(time_range, timezone)
+
+    results =
+      board_id
+      |> throughput_query(start_date, agent_name)
+      |> Repo.all()
+      |> bucket_by_local_day(timezone)
 
     {:ok, maybe_reject_weekends(results, exclude_weekends)}
+  end
+
+  # The window start as the UTC instant of local midnight `days` ago, so the
+  # "last N days" boundary matches the viewer's wall clock. `:all_time` keeps the
+  # fixed sentinel; "Etc/UTC" reproduces the prior UTC-midnight behavior.
+  defp local_window_start(:all_time, _timezone),
+    do: DateTime.new!(~D[2000-01-01], ~T[00:00:00])
+
+  defp local_window_start(range, timezone) do
+    days_back = Map.get(@date_range_days, range, 29)
+
+    timezone
+    |> Timezone.local_today()
+    |> Date.add(-days_back)
+    |> Timezone.start_of_local_day(timezone)
+  end
+
+  # Counts completions per local calendar day in `timezone`. Bucketing in Elixir
+  # (rather than SQL DATE()) is what makes a 23:30-local completion land on the
+  # viewer's day instead of the next UTC day. Sparse by design — only days with
+  # completions appear — matching the prior contract.
+  defp bucket_by_local_day(completed_ats, timezone) do
+    completed_ats
+    |> Enum.group_by(&Timezone.local_date(&1, timezone))
+    |> Enum.map(fn {date, day_completions} -> %{date: date, count: length(day_completions)} end)
+    |> Enum.sort_by(& &1.date, Date)
   end
 
   defp throughput_query(board_id, start_date, agent_name) do
@@ -164,12 +202,7 @@ defmodule Kanban.Metrics do
     |> where([t], t.completed_at >= ^start_date)
     |> where([t], t.type != ^:goal)
     |> maybe_filter_by_agent(agent_name)
-    |> group_by([t], fragment("DATE(?)", t.completed_at))
-    |> select([t], %{
-      date: fragment("DATE(?)", t.completed_at),
-      count: count(t.id)
-    })
-    |> order_by([t], fragment("DATE(?)", t.completed_at))
+    |> select([t], t.completed_at)
   end
 
   defp maybe_reject_weekends(results, false), do: results
@@ -499,8 +532,6 @@ defmodule Kanban.Metrics do
     |> Repo.one()
     |> Kernel.||(false)
   end
-
-  @date_range_days %{today: 0, last_7_days: 6, last_30_days: 29, last_90_days: 89}
 
   defp get_start_date(:all_time), do: DateTime.new!(~D[2000-01-01], ~T[00:00:00])
 

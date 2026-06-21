@@ -90,19 +90,7 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     timezone
     |> Timezone.local_today()
     |> Date.add(-days)
-    |> start_of_local_day_utc(timezone)
-  end
-
-  # Midnight of `date` in `timezone`, expressed as a UTC DateTime. DST-safe: an
-  # ambiguous or gap midnight resolves to the first valid instant; an unknown
-  # zone falls back to midnight UTC.
-  defp start_of_local_day_utc(date, timezone) do
-    case DateTime.new(date, ~T[00:00:00], timezone) do
-      {:ok, local_midnight} -> DateTime.shift_zone!(local_midnight, "Etc/UTC")
-      {:ambiguous, first, _second} -> DateTime.shift_zone!(first, "Etc/UTC")
-      {:gap, just_before, _just_after} -> DateTime.shift_zone!(just_before, "Etc/UTC")
-      {:error, _reason} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-    end
+    |> Timezone.start_of_local_day(timezone)
   end
 
   def parse_time_range(nil), do: :last_30_days

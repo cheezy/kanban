@@ -34,4 +34,22 @@ defmodule Kanban.TimezoneTest do
                ~D[2026-06-21]
     end
   end
+
+  describe "start_of_local_day/2" do
+    test "returns the UTC instant of local midnight for a zone west of UTC" do
+      # Midnight Jun 21 in Edmonton (MDT, UTC-6) is 06:00 UTC.
+      assert Timezone.start_of_local_day(~D[2026-06-21], "America/Edmonton") ==
+               ~U[2026-06-21 06:00:00Z]
+    end
+
+    test "returns midnight UTC for the UTC zone" do
+      assert Timezone.start_of_local_day(~D[2026-06-21], "Etc/UTC") ==
+               ~U[2026-06-21 00:00:00Z]
+    end
+
+    test "falls back to midnight UTC for an unknown zone" do
+      assert Timezone.start_of_local_day(~D[2026-06-21], "Not/ARealZone") ==
+               ~U[2026-06-21 00:00:00Z]
+    end
+  end
 end
