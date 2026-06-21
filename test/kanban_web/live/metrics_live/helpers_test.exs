@@ -157,6 +157,63 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
     end
   end
 
+  describe "get_start_date/2 — local timezone (W1265)" do
+    test ":today returns the UTC instant of local midnight for a non-UTC zone" do
+      start_date = Helpers.get_start_date(:today, "America/Edmonton")
+      local = DateTime.shift_zone!(start_date, "America/Edmonton")
+
+      assert start_date.time_zone == "Etc/UTC"
+      assert local.hour == 0
+      assert local.minute == 0
+      assert local.second == 0
+      assert DateTime.to_date(local) == Kanban.Timezone.local_today("America/Edmonton")
+    end
+
+    test ":last_7_days anchors N days back to local midnight, not UTC midnight" do
+      start_date = Helpers.get_start_date(:last_7_days, "America/Edmonton")
+      local = DateTime.shift_zone!(start_date, "America/Edmonton")
+      expected = Kanban.Timezone.local_today("America/Edmonton") |> Date.add(-6)
+
+      assert local.hour == 0
+      assert DateTime.to_date(local) == expected
+    end
+
+    test "defaults to Etc/UTC, reproducing the prior UTC-midnight behavior" do
+      today_start = Helpers.get_start_date(:today)
+      assert today_start == Helpers.get_start_date(:today, "Etc/UTC")
+      assert DateTime.to_date(today_start) == Date.utc_today()
+    end
+
+    test ":all_time keeps the fixed UTC sentinel regardless of zone" do
+      assert Helpers.get_start_date(:all_time, "America/Edmonton") == ~U[2020-01-01 00:00:00Z]
+    end
+  end
+
+  describe "group_tasks_by_completion_date/2 — local timezone (W1265)" do
+    test "places a task completed at 23:30 local (next-day UTC) under the local day" do
+      # 05:30 UTC on Jun 21 is 23:30 Jun 20 in Edmonton (MDT, UTC-6).
+      tasks = [%{id: 1, completed_at: ~U[2026-06-21 05:30:00Z], title: "Late"}]
+
+      assert [{~D[2026-06-20], _}] =
+               Helpers.group_tasks_by_completion_date(tasks, "America/Edmonton")
+
+      # The UTC default still buckets it on Jun 21.
+      assert [{~D[2026-06-21], _}] = Helpers.group_tasks_by_completion_date(tasks)
+    end
+  end
+
+  describe "calculate_daily_times/3 — local timezone (W1265)" do
+    test "buckets a near-midnight completion under the local day" do
+      tasks = [%{completed_at: ~U[2026-06-21 05:30:00Z], cycle_time_seconds: 3600}]
+
+      assert [%{date: ~D[2026-06-20]}] =
+               Helpers.calculate_daily_times(tasks, :cycle_time_seconds, "America/Edmonton")
+
+      assert [%{date: ~D[2026-06-21]}] =
+               Helpers.calculate_daily_times(tasks, :cycle_time_seconds)
+    end
+  end
+
   describe "parse_time_range/1" do
     test "returns :last_30_days for nil" do
       assert Helpers.parse_time_range(nil) == :last_30_days

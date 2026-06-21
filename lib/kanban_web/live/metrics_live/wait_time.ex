@@ -9,6 +9,7 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Timezone
   alias KanbanWeb.MetricsLive.Helpers
 
   @impl KanbanWeb.MetricsLive.Base
@@ -24,19 +25,22 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   end
 
   defp assign_wait_time_data(socket, stats, review_tasks, backlog_tasks) do
+    timezone = Map.get(socket.assigns, :timezone, "Etc/UTC")
+
     socket
     |> assign(:review_wait_stats, stats.review_wait)
     |> assign(:backlog_wait_stats, stats.backlog_wait)
     |> assign(:review_tasks, review_tasks)
     |> assign(:backlog_tasks, backlog_tasks)
-    |> assign(:grouped_review_tasks, group_review_tasks_by_date(review_tasks))
-    |> assign(:grouped_backlog_tasks, group_backlog_tasks_by_date(backlog_tasks))
+    |> assign(:grouped_review_tasks, group_review_tasks_by_date(review_tasks, timezone))
+    |> assign(:grouped_backlog_tasks, group_backlog_tasks_by_date(backlog_tasks, timezone))
   end
 
   defp build_wait_time_opts(socket) do
     opts = [
       time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
+      exclude_weekends: socket.assigns.exclude_weekends,
+      timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
     if socket.assigns.agent_name do
@@ -59,7 +63,8 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp get_review_wait_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task
@@ -107,7 +112,8 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp get_backlog_wait_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task
@@ -143,7 +149,8 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
 
   defp get_backlog_wait_tasks_regular(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     first_move_subquery =
       from th in TaskHistory,
@@ -180,30 +187,31 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   defp format_datetime(datetime), do: Helpers.format_datetime(datetime)
   defp format_time(datetime), do: Helpers.format_time_only(datetime)
 
-  defp group_review_tasks_by_date(tasks) do
+  defp group_review_tasks_by_date(tasks, timezone) do
     tasks
-    |> Enum.group_by(fn task ->
-      task.reviewed_at
-      |> DateTime.to_date()
-    end)
+    |> Enum.group_by(fn task -> local_day(task.reviewed_at, timezone) end)
     |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
     |> Enum.map(fn {date, day_tasks} ->
       {date, Enum.sort_by(day_tasks, & &1.reviewed_at, {:desc, DateTime})}
     end)
   end
 
-  defp group_backlog_tasks_by_date(tasks) do
+  defp group_backlog_tasks_by_date(tasks, timezone) do
     tasks
-    |> Enum.group_by(fn task ->
-      task.claimed_at
-      |> to_date()
-    end)
+    |> Enum.group_by(fn task -> local_day(task.claimed_at, timezone) end)
     |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
     |> Enum.map(fn {date, day_tasks} ->
       {date, Enum.sort_by(day_tasks, & &1.claimed_at, :desc)}
     end)
   end
 
-  defp to_date(%DateTime{} = dt), do: DateTime.to_date(dt)
-  defp to_date(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_date(ndt)
+  # The viewer-local calendar date of a timestamp. Regular-board backlog rows
+  # carry a NaiveDateTime (the first TaskHistory move, stored as UTC); AI-board
+  # rows carry a UTC DateTime. Normalize the naive value to UTC first, then
+  # shift into the viewer's zone via Kanban.Timezone.local_date/2.
+  defp local_day(%DateTime{} = dt, timezone), do: Timezone.local_date(dt, timezone)
+
+  defp local_day(%NaiveDateTime{} = ndt, timezone) do
+    ndt |> DateTime.from_naive!("Etc/UTC") |> Timezone.local_date(timezone)
+  end
 end

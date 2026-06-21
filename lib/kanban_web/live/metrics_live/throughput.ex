@@ -13,25 +13,31 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   @impl KanbanWeb.MetricsLive.Base
   def load_data(socket) do
     opts = build_throughput_opts(socket)
+    board_id = socket.assigns.board.id
 
-    {:ok, throughput} = Metrics.get_throughput(socket.assigns.board.id, opts)
-    stats = calculate_summary_stats(throughput)
-    tasks = get_throughput_tasks(socket.assigns.board.id, opts)
-    grouped_tasks = group_tasks_by_date(tasks)
-    goals = get_completed_goals(socket.assigns.board.id, opts)
+    {:ok, throughput} = Metrics.get_throughput(board_id, opts)
+    tasks = get_throughput_tasks(board_id, opts)
+    goals = get_completed_goals(board_id, opts)
+
+    assign_throughput_data(socket, throughput, tasks, goals)
+  end
+
+  defp assign_throughput_data(socket, throughput, tasks, goals) do
+    timezone = Map.get(socket.assigns, :timezone, "Etc/UTC")
 
     socket
     |> assign(:throughput, throughput)
-    |> assign(:summary_stats, stats)
+    |> assign(:summary_stats, calculate_summary_stats(throughput))
     |> assign(:tasks, tasks)
-    |> assign(:grouped_tasks, grouped_tasks)
+    |> assign(:grouped_tasks, Helpers.group_tasks_by_completion_date(tasks, timezone))
     |> assign(:completed_goals, goals)
   end
 
   defp build_throughput_opts(socket) do
     opts = [
       time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
+      exclude_weekends: socket.assigns.exclude_weekends,
+      timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
     if socket.assigns.agent_name do
@@ -44,7 +50,8 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   defp get_throughput_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task
@@ -77,7 +84,8 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   defp get_completed_goals(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task
@@ -149,17 +157,5 @@ defmodule KanbanWeb.MetricsLive.Throughput do
 
   defp calculate_bar_width(count, peak) when count > 0 and peak > 0 do
     (count / peak * 100) |> Float.round(1)
-  end
-
-  defp group_tasks_by_date(tasks) do
-    tasks
-    |> Enum.group_by(fn task ->
-      task.completed_at
-      |> DateTime.to_date()
-    end)
-    |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
-    |> Enum.map(fn {date, day_tasks} ->
-      {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
-    end)
   end
 end

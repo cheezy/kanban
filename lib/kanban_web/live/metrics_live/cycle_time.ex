@@ -36,7 +36,8 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   defp get_cycle_time_tasks_ai(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task
@@ -74,7 +75,8 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
 
   defp get_cycle_time_tasks_regular(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     first_move_subquery =
       from th in TaskHistory,

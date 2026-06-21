@@ -25,7 +25,8 @@ defmodule KanbanWeb.MetricsLive.LeadTime do
   defp get_lead_time_tasks(board_id, opts) do
     time_range = Keyword.get(opts, :time_range, :last_30_days)
     agent_name = Keyword.get(opts, :agent_name)
-    start_date = Helpers.get_start_date(time_range)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    start_date = Helpers.get_start_date(time_range, timezone)
 
     query =
       Task

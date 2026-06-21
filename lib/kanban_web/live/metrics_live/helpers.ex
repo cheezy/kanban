@@ -10,7 +10,14 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   module is the stateless utility layer. `Base` depends on `Helpers`;
   the reverse is not true. See the moduledoc on
   `KanbanWeb.MetricsLive.Base` for the full rationale.
+
+  Date-window and completion-grouping helpers take an optional `timezone`
+  (IANA string, default `"Etc/UTC"`) so the board metrics surfaces can bucket
+  by the viewer's local calendar day. The local-day conversion is delegated to
+  `Kanban.Timezone`; `"Etc/UTC"` reproduces the prior UTC behavior exactly.
   """
+
+  alias Kanban.Timezone
 
   def format_time(%Decimal{} = seconds) do
     seconds
@@ -61,27 +68,41 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     Calendar.strftime(datetime, "%I:%M %p")
   end
 
-  # Midnight-anchored calendar-day windows: `:last_7_days` includes the last 7
-  # calendar days (today + 6 prior days starting at 00:00:00 UTC). Filtering on
-  # calendar days rather than exact hours is what users expect from "last week"
-  # — see throughput_test.exs "filters by calendar days, not exact hours".
-  def get_start_date(:today) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> DateTime.new!(~T[00:00:00])
+  # Local-calendar-day windows anchored to the viewer's `timezone` (default
+  # "Etc/UTC" for back-compat): `:today` anchors to the viewer's local midnight,
+  # and `:last_7_days` includes the last 7 calendar days (today + 6 prior), each
+  # starting at 00:00:00 LOCAL time, returned as the equivalent UTC instant for
+  # the Ecto where-clause filter. Filtering on calendar days rather than exact
+  # hours is what users expect from "last week" — see throughput_test.exs
+  # "filters by calendar days, not exact hours".
+  def get_start_date(time_range, timezone \\ "Etc/UTC")
+
+  def get_start_date(:today, timezone), do: local_midnight_days_ago(0, timezone)
+  def get_start_date(:last_7_days, timezone), do: local_midnight_days_ago(6, timezone)
+  def get_start_date(:last_30_days, timezone), do: local_midnight_days_ago(29, timezone)
+  def get_start_date(:last_90_days, timezone), do: local_midnight_days_ago(89, timezone)
+  def get_start_date(:all_time, _timezone), do: ~U[2020-01-01 00:00:00Z]
+  def get_start_date(_, timezone), do: local_midnight_days_ago(29, timezone)
+
+  # The UTC instant of local midnight `days` ago in `timezone`. For "Etc/UTC"
+  # this is exactly midnight UTC `days` ago (unchanged from the prior behavior).
+  defp local_midnight_days_ago(days, timezone) do
+    timezone
+    |> Timezone.local_today()
+    |> Date.add(-days)
+    |> start_of_local_day_utc(timezone)
   end
 
-  def get_start_date(:last_7_days), do: midnight_days_ago(6)
-  def get_start_date(:last_30_days), do: midnight_days_ago(29)
-  def get_start_date(:last_90_days), do: midnight_days_ago(89)
-  def get_start_date(:all_time), do: ~U[2020-01-01 00:00:00Z]
-  def get_start_date(_), do: midnight_days_ago(29)
-
-  defp midnight_days_ago(days) do
-    DateTime.utc_now()
-    |> DateTime.to_date()
-    |> Date.add(-days)
-    |> DateTime.new!(~T[00:00:00])
+  # Midnight of `date` in `timezone`, expressed as a UTC DateTime. DST-safe: an
+  # ambiguous or gap midnight resolves to the first valid instant; an unknown
+  # zone falls back to midnight UTC.
+  defp start_of_local_day_utc(date, timezone) do
+    case DateTime.new(date, ~T[00:00:00], timezone) do
+      {:ok, local_midnight} -> DateTime.shift_zone!(local_midnight, "Etc/UTC")
+      {:ambiguous, first, _second} -> DateTime.shift_zone!(first, "Etc/UTC")
+      {:gap, just_before, _just_after} -> DateTime.shift_zone!(just_before, "Etc/UTC")
+      {:error, _reason} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+    end
   end
 
   def parse_time_range(nil), do: :last_30_days
@@ -151,32 +172,28 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     (sum_y - slope * sum_x) / n
   end
 
-  def group_tasks_by_completion_date(tasks) do
+  # `completed_at` is a UTC `DateTime` (the Task schema's `:utc_datetime`), so
+  # `Timezone.local_date/2` shifts it straight into the viewer's zone. Callers
+  # with a `NaiveDateTime` source must normalize to UTC first (see wait_time.ex).
+  def group_tasks_by_completion_date(tasks, timezone \\ "Etc/UTC") do
     tasks
-    |> Enum.group_by(fn task ->
-      task.completed_at
-      |> DateTime.to_date()
-    end)
+    |> Enum.group_by(fn task -> Timezone.local_date(task.completed_at, timezone) end)
     |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
     |> Enum.map(fn {date, day_tasks} ->
       {date, Enum.sort_by(day_tasks, & &1.completed_at, {:desc, DateTime})}
     end)
   end
 
-  def calculate_daily_times(tasks, time_field) do
+  def calculate_daily_times(tasks, time_field, timezone \\ "Etc/UTC") do
     tasks
-    |> Enum.group_by(fn task ->
-      task.completed_at |> DateTime.to_date()
-    end)
-    |> Enum.map(fn {date, day_tasks} ->
-      times = Enum.map(day_tasks, &extract_time_seconds(Map.get(&1, time_field)))
-      average_seconds = calculate_average(times)
-
-      %{
-        date: date,
-        average_hours: average_seconds / 3600
-      }
-    end)
+    |> Enum.group_by(fn task -> Timezone.local_date(task.completed_at, timezone) end)
+    |> Enum.map(&daily_time_entry(&1, time_field))
     |> Enum.sort_by(& &1.date, Date)
+  end
+
+  defp daily_time_entry({date, day_tasks}, time_field) do
+    times = Enum.map(day_tasks, &extract_time_seconds(Map.get(&1, time_field)))
+    average_seconds = calculate_average(times)
+    %{date: date, average_hours: average_seconds / 3600}
   end
 end

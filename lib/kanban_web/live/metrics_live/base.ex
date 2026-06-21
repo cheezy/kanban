@@ -151,26 +151,30 @@ defmodule KanbanWeb.MetricsLive.Base do
     * `daily_assign_key` — `:daily_cycle_times` or `:daily_lead_times`
   """
   def load_metric_data(socket, stats_fn, tasks_fn, time_field, daily_assign_key) do
+    opts = build_loader_opts(socket)
+
+    {:ok, stats} = stats_fn.(socket.assigns.board.id, opts)
+    tasks = tasks_fn.(socket.assigns.board.id, opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+
+    socket
+    |> assign(:summary_stats, stats)
+    |> assign(:tasks, tasks)
+    |> assign(:grouped_tasks, Helpers.group_tasks_by_completion_date(tasks, timezone))
+    |> assign(daily_assign_key, Helpers.calculate_daily_times(tasks, time_field, timezone))
+  end
+
+  defp build_loader_opts(socket) do
     opts = [
       time_range: socket.assigns.time_range,
       exclude_weekends: socket.assigns.exclude_weekends,
       timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
-    opts =
-      if socket.assigns.agent_name do
-        Keyword.put(opts, :agent_name, socket.assigns.agent_name)
-      else
-        opts
-      end
-
-    {:ok, stats} = stats_fn.(socket.assigns.board.id, opts)
-    tasks = tasks_fn.(socket.assigns.board.id, opts)
-
-    socket
-    |> assign(:summary_stats, stats)
-    |> assign(:tasks, tasks)
-    |> assign(:grouped_tasks, Helpers.group_tasks_by_completion_date(tasks))
-    |> assign(daily_assign_key, Helpers.calculate_daily_times(tasks, time_field))
+    if socket.assigns.agent_name do
+      Keyword.put(opts, :agent_name, socket.assigns.agent_name)
+    else
+      opts
+    end
   end
 end
