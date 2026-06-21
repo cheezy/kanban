@@ -50,7 +50,7 @@ defmodule KanbanWeb.AgentsLive do
      |> assign(:refresh_scheduled?, false)
      |> assign(:dormant_expanded?, false)
      |> assign(:expanded_detail_sections, MapSet.new(@detail_sections))
-     |> assign(:timezone, browser_timezone(socket))
+     |> assign(:timezone, KanbanWeb.Timezone.browser_timezone(socket))
      |> assign(:connected_count, connected_count(socket))
      |> load_agents_data()}
   end
@@ -410,28 +410,6 @@ defmodule KanbanWeb.AgentsLive do
   defp connected_count(socket) do
     if connected?(socket), do: AgentsPresence.count(), else: 0
   end
-
-  # The viewing user's IANA timezone, captured from the browser via LiveSocket
-  # connect params. `get_connect_params/1` returns nil on the static (pre-
-  # WebSocket) render, so default to UTC there; the browser value is user input,
-  # so validate it against the tz database and fall back to UTC on anything
-  # unknown rather than passing it unchecked into DateTime.shift_zone/2 later.
-  defp browser_timezone(socket) do
-    if connected?(socket) do
-      socket |> get_connect_params() |> validate_timezone()
-    else
-      "Etc/UTC"
-    end
-  end
-
-  defp validate_timezone(%{"timezone" => tz}) when is_binary(tz) do
-    case DateTime.now(tz) do
-      {:ok, _now} -> tz
-      _error -> "Etc/UTC"
-    end
-  end
-
-  defp validate_timezone(_params), do: "Etc/UTC"
 
   defp live_indicator_label(count) do
     ngettext("%{count} connected", "%{count} connected", count, count: count)

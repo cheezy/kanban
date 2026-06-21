@@ -399,26 +399,14 @@ defmodule Kanban.Agents do
   end
 
   @doc false
-  # The viewer's local calendar date "today" in `timezone`, falling back to the
-  # UTC date when the zone is unknown/empty. Shared so every date-based count on
-  # the agents surface anchors its day boundary to one local "today".
-  def local_today(timezone) do
-    case DateTime.now(timezone) do
-      {:ok, now} -> DateTime.to_date(now)
-      {:error, _reason} -> Date.utc_today()
-    end
-  end
+  # Delegated to `Kanban.Timezone`, the single source of truth for the local
+  # day-boundary conversion now shared by the agents and metrics surfaces. Kept
+  # here so the existing `Agents.local_today/1` and per-task callers keep one
+  # entry point.
+  defdelegate local_today(timezone), to: Kanban.Timezone
 
   @doc false
-  # The local calendar date of a stored UTC timestamp in the viewer's zone, so a
-  # counter's day boundary matches the user's wall clock. Falls back to the UTC
-  # date when the zone is unknown.
-  def local_date(%DateTime{} = dt, timezone) do
-    case DateTime.shift_zone(dt, timezone) do
-      {:ok, shifted} -> DateTime.to_date(shifted)
-      {:error, _reason} -> DateTime.to_date(dt)
-    end
-  end
+  defdelegate local_date(dt, timezone), to: Kanban.Timezone
 
   @doc false
   # Count of tasks completed on `date`, where `date` and each task's completion
