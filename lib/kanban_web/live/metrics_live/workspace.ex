@@ -17,8 +17,14 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   selector (W1256): it lists the viewer's boards, defaults to all
   selected, and re-renders every series through the `:board_ids` filter
   on the `Kanban.Metrics` reads. The selection lives in LiveView assigns
-  only — a page reload resets to all boards. The remaining toolbar
-  buttons ("Last 14 days", "Filter") are still decorative placeholders.
+  only — a page reload resets to all boards.
+
+  The time-range control is a working, session-only window selector
+  (W1260): it offers 7/14/30/90-day windows (default 14) and re-renders
+  every series and KPI through the `:window_days` option on the
+  `Kanban.Metrics` reads. Like the board selection it lives in assigns
+  only — a page reload resets to 14 days. The remaining "Filter" button
+  is still a decorative placeholder.
   """
   use KanbanWeb, :live_view
 
@@ -31,6 +37,12 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias KanbanWeb.MetricsKpiStrip
   alias KanbanWeb.MetricsThroughputChart
 
+  # Allow-list of supported window sizes — single source of truth for both the
+  # selector options and the param parser. Mirrors Kanban.Metrics'
+  # @allowed_window_days; an unsupported value falls back to the 14-day default.
+  @window_options [7, 14, 30, 90]
+  @default_window_days 14
+
   @impl true
   def mount(_params, _session, socket) do
     boards = scoped_boards(socket.assigns.current_scope)
@@ -40,6 +52,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
      socket
      |> assign(:page_title, "Stride · Metrics")
      |> assign(:boards, boards)
+     |> assign(:selected_window_days, @default_window_days)
      |> assign_workspace_metrics(selected_ids)}
   end
 
@@ -49,16 +62,23 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     {:noreply, assign_workspace_metrics(socket, selected_ids)}
   end
 
+  def handle_event("window_change", %{"window_days" => raw}, socket) do
+    socket = assign(socket, :selected_window_days, parse_window_days(raw))
+    {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
+  end
+
   # Re-reads every workspace series for the current selection and refreshes the
   # selection-dependent assigns. The selected ids are intersected with the
   # visible boards (see board_ids_filter/2) before reaching Kanban.Metrics, so
   # an "all selected" or "none selected" state shows all visible boards.
   defp assign_workspace_metrics(socket, selected_ids) do
     boards = socket.assigns.boards
+    window_days = socket.assigns.selected_window_days
 
     opts = [
       scope: socket.assigns.current_scope,
-      board_ids: board_ids_filter(boards, selected_ids)
+      board_ids: board_ids_filter(boards, selected_ids),
+      window_days: window_days
     ]
 
     socket
@@ -68,7 +88,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     |> assign(:throughput_series, Metrics.throughput_daily(opts))
     |> assign(:leaderboard, Metrics.agent_leaderboard(opts))
     |> assign(:flow_snapshots, Metrics.cumulative_flow(opts))
-    |> assign(:window_label, window_label(boards, selected_ids))
+    |> assign(:window_label, window_label(window_days, boards, selected_ids))
   end
 
   @impl true
@@ -103,18 +123,27 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           </span>
           <span style="flex: 1;" />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
-          <.toolbar_button label={gettext("Last 14 days")} />
+          <.window_selector selected_window_days={@selected_window_days} />
           <.toolbar_button label={gettext("Filter")} />
         </header>
 
         <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
-          <MetricsKpiStrip.kpi_strip kpis={@kpis} />
+          <MetricsKpiStrip.kpi_strip kpis={@kpis} window_days={@selected_window_days} />
 
-          <MetricsCycleTimeChart.cycle_time_chart data={@cycle_series} />
+          <MetricsCycleTimeChart.cycle_time_chart
+            data={@cycle_series}
+            window_days={@selected_window_days}
+          />
 
           <div class="flex flex-col md:grid md:grid-cols-[1.4fr_1fr] gap-3.5">
-            <MetricsThroughputChart.throughput_chart series={@throughput_series} />
-            <MetricsAgentLeaderboard.leaderboard rows={@leaderboard} />
+            <MetricsThroughputChart.throughput_chart
+              series={@throughput_series}
+              window_days={@selected_window_days}
+            />
+            <MetricsAgentLeaderboard.leaderboard
+              rows={@leaderboard}
+              window_days={@selected_window_days}
+            />
           </div>
 
           <MetricsCumulativeFlow.cumulative_flow snapshots={@flow_snapshots} />
@@ -194,6 +223,43 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     """
   end
 
+  # --- Window selector ----------------------------------------------------
+
+  attr :selected_window_days, :integer, required: true
+
+  defp window_selector(assigns) do
+    assigns = assign(assigns, :window_options, @window_options)
+
+    ~H"""
+    <form id="window-days-form" phx-change="window_change" style="margin: 0;">
+      <select
+        name="window_days"
+        data-metrics-window-selector
+        aria-label={gettext("Time range")}
+        style={[
+          "appearance: none; -webkit-appearance: none;",
+          "padding: 4px 26px 4px 10px; border-radius: 5px;",
+          "font: inherit; font-size: 12px; font-weight: 500;",
+          "color: var(--ink-2);",
+          "background: var(--surface); border: 1px solid var(--line);",
+          "background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);",
+          "background-position: calc(100% - 14px) center, calc(100% - 9px) center;",
+          "background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;",
+          "cursor: pointer;"
+        ]}
+      >
+        <option
+          :for={days <- @window_options}
+          value={days}
+          selected={days == @selected_window_days}
+        >
+          {gettext("Last %{count} days", count: days)}
+        </option>
+      </select>
+    </form>
+    """
+  end
+
   # --- Decorative toolbar -------------------------------------------------
 
   attr :label, :string, required: true
@@ -262,13 +328,28 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     end
   end
 
-  defp window_label(boards, selected_ids) do
+  defp window_label(window_days, boards, selected_ids) do
     today = Date.utc_today()
-    start = Date.add(today, -13)
+    start = Date.add(today, -(window_days - 1))
     range = "#{Calendar.strftime(start, "%b %-d")} – #{Calendar.strftime(today, "%b %-d")}"
 
     "#{range} · #{board_scope_label(boards, selected_ids)}"
   end
+
+  # Parses the selector param into a supported window size, falling back to the
+  # 14-day default for anything outside the allow-list. Keeping the stored value
+  # valid drives both the <select> selected state and the rendered labels;
+  # Kanban.Metrics independently clamps the value before any query runs.
+  defp parse_window_days(value) when is_integer(value) and value in @window_options, do: value
+
+  defp parse_window_days(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {days, ""} when days in @window_options -> days
+      _ -> @default_window_days
+    end
+  end
+
+  defp parse_window_days(_value), do: @default_window_days
 
   # Human label for how many boards currently feed the page. An all/none
   # selection reads as "all boards" (the default); a strict subset reads as the

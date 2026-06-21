@@ -34,6 +34,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
       though `Kanban.Metrics.throughput_daily/1` always returns 14).
   """
   attr :series, :list, required: true
+  attr :window_days, :integer, default: 14
 
   def throughput_chart(assigns) do
     series = assigns.series
@@ -67,7 +68,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
           {gettext("Throughput · tasks completed per day")}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
-          {gettext("14 days")}
+          {gettext("%{count} days", count: @window_days)}
         </span>
       </header>
 

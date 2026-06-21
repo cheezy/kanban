@@ -41,22 +41,23 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Metrics"
     end
 
-    test "renders the two remaining decorative toolbar buttons with aria-disabled='true'",
+    test "renders the single remaining decorative toolbar button with aria-disabled='true'",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")
 
       buttons =
         Regex.scan(~r/<button[^>]*data-metrics-toolbar-placeholder[^>]*>/, html)
 
-      # "All boards" is now a real selector; only "Last 14 days" and "Filter" remain placeholders.
-      assert length(buttons) == 2
+      # The board and time-range controls are now real selectors; only "Filter"
+      # remains a decorative placeholder.
+      assert length(buttons) == 1
 
       for [tag] <- buttons do
         assert tag =~ ~s(aria-disabled="true")
         refute tag =~ "phx-click"
       end
 
-      assert html =~ "Last 14 days"
+      assert html =~ "data-metrics-window-selector"
       assert html =~ "Filter"
     end
 
@@ -220,6 +221,119 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "data-metrics-board-selector"
       assert html =~ "No boards yet"
       assert html =~ "All boards"
+    end
+  end
+
+  describe "time-range selector" do
+    setup [:register_and_log_in_user]
+
+    defp selected_window(html) do
+      case Regex.run(~r/<option value="(\d+)"\s+selected/, html) do
+        [_, days] -> String.to_integer(days)
+        _ -> nil
+      end
+    end
+
+    test "defaults to a 14-day window and offers 7/14/30/90 options",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-window-selector"
+      assert selected_window(html) == 14
+
+      assert html =~ "Last 7 days"
+      assert html =~ "Last 14 days"
+      assert html =~ "Last 30 days"
+      assert html =~ "Last 90 days"
+    end
+
+    test "selecting a 7-day window re-renders every series and label with that window",
+         %{conn: conn} do
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      # Default 14-day window: 14 throughput points and 14-day subtitles.
+      assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 14
+      assert html =~ "14 days"
+
+      html =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "7"})
+
+      assert selected_window(html) == 7
+      assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 7
+      # Throughput, cycle-time, leaderboard, and KPI subtitles all follow.
+      assert html =~ "7 days"
+      assert html =~ "agent vs human · last 7 days"
+      assert html =~ "Agents · last 7 days"
+      assert html =~ "vs prev 7d"
+      refute html =~ "vs prev 14d"
+    end
+
+    test "selecting a 30-day window updates the series length and subtitles",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "30"})
+
+      assert selected_window(html) == 30
+      assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 30
+      assert html =~ "30 days"
+      assert html =~ "vs prev 30d"
+    end
+
+    test "a forged window value falls back to the 14-day default",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "999"})
+
+      assert selected_window(html) == 14
+      assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 14
+      assert html =~ "14 days"
+    end
+
+    test "a fresh mount resets the window to 14 days (session-only)",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#window-days-form")
+      |> render_change(%{"window_days" => "90"})
+
+      # A page reload is a fresh mount — the window resets to 14 days.
+      {:ok, _view2, html2} = live(conn, ~p"/metrics")
+      assert selected_window(html2) == 14
+      refute html2 =~ "Agents · last 90 days"
+    end
+
+    test "the window selection survives a board-filter change",
+         %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      _board2 = board_fixture(user)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#window-days-form")
+      |> render_change(%{"window_days" => "7"})
+
+      # Changing the board filter must not reset the 7-day window — it is held
+      # in assigns and read back by the board-filter handler.
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board1.id)]})
+
+      assert selected_window(html) == 7
+      assert html =~ "7 days"
+      assert html =~ "1 of 2 boards"
     end
   end
 end

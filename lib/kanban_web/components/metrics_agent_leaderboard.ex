@@ -32,6 +32,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
       list renders the empty state.
   """
   attr :rows, :list, required: true
+  attr :window_days, :integer, default: 14
 
   def leaderboard(assigns) do
     assigns = assign(assigns, :peak, peak_completed(assigns.rows))
@@ -51,7 +52,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
         "display: flex; align-items: baseline; gap: 8px;"
       ]}>
         <span style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
-          {gettext("Agents · last 14 days")}
+          {gettext("Agents · last %{count} days", count: @window_days)}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
           {gettext("by completed")}
@@ -66,7 +67,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
           "font-size: 12.5px; color: var(--ink-3); font-style: italic;"
         ]}
       >
-        {gettext("No completions in the last 14 days.")}
+        {gettext("No completions in the last %{count} days.", count: @window_days)}
       </p>
 
       <.row :for={row <- @rows} row={row} peak={@peak} />

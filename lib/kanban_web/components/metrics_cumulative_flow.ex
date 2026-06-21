@@ -1,6 +1,7 @@
 defmodule KanbanWeb.MetricsCumulativeFlow do
   @moduledoc """
-  Stacked-area Cumulative Flow Diagram (CFD) over the trailing 14 days.
+  Stacked-area Cumulative Flow Diagram (CFD) over the trailing window
+  (default 14 days; driven by the caller's `:window_days` selection).
 
   Consumes the list shape returned by
   `Kanban.Metrics.cumulative_flow/1`:

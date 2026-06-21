@@ -32,6 +32,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
       return shape.
   """
   attr :kpis, :map, required: true
+  attr :window_days, :integer, default: 14
 
   def kpi_strip(assigns) do
     ~H"""
@@ -49,7 +50,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
         value={Duration.format_minutes(@kpis.cycle_time_median_minutes, pad_remainder: true)}
         delta_pct={@kpis.cycle_time_delta_pct}
         delta_direction={:down}
-        sub={gettext("vs prev 14d")}
+        sub={gettext("vs prev %{count}d", count: @window_days)}
         border_right={true}
       />
       <.cell
@@ -67,7 +68,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
         value={format_throughput(@kpis.throughput_per_day)}
         delta_pct={@kpis.throughput_delta_pct}
         delta_direction={:up}
-        sub={gettext("vs prev 14d")}
+        sub={gettext("vs prev %{count}d", count: @window_days)}
         border_right={true}
       />
       <.cell

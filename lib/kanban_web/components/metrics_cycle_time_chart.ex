@@ -44,6 +44,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
       returns exactly 14.
   """
   attr :data, :list, required: true
+  attr :window_days, :integer, default: 14
 
   def cycle_time_chart(assigns) do
     chart_max = chart_max(assigns.data)
@@ -69,7 +70,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
           {gettext("Cycle time · daily median (min)")}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
-          {gettext("agent vs human · last 14 days")}
+          {gettext("agent vs human · last %{count} days", count: @window_days)}
         </span>
         <span class="hidden md:inline" style="flex: 1;" />
         <.legend_swatch label={gettext("Agent")} color="var(--stride-orange)" />
