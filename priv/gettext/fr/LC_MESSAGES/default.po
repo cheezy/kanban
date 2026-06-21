@@ -2135,8 +2135,8 @@ msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:282
-#: lib/kanban_web/live/metrics_live/workspace.ex:54
-#: lib/kanban_web/live/metrics_live/workspace.ex:72
+#: lib/kanban_web/live/metrics_live/workspace.ex:79
+#: lib/kanban_web/live/metrics_live/workspace.ex:97
 #: lib/kanban_web/live/task_live/view_component.ex:246
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2501,7 +2501,7 @@ msgstr "Temps que les tâches passent dans la file d'attente avant le début du 
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Temps que les tâches passent en attente de révision après achèvement"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:388
+#: lib/kanban_web/components/agent_activity_feed.ex:389
 #: lib/kanban_web/components/agent_roster_card.ex:194
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
@@ -3750,7 +3750,7 @@ msgid "Issues that require physical access to a user's device or compromise of a
 msgstr "Problèmes nécessitant un accès physique à l'appareil d'un utilisateur ou la compromission d'un service tiers que nous n'exploitons pas."
 
 #: lib/kanban_web/components/board_pulse_card.ex:126
-#: lib/kanban_web/live/metrics_live/workspace.ex:79
+#: lib/kanban_web/live/metrics_live/workspace.ex:104
 #, elixir-autogen, elixir-format
 msgid "Last 14 days"
 msgstr "14 derniers jours"
@@ -4225,7 +4225,7 @@ msgstr "Accueil Stride"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:52
+#: lib/kanban_web/live/metrics_live/workspace.ex:77
 #: lib/kanban_web/live/review_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -4838,7 +4838,7 @@ msgstr "Enfants"
 msgid "Claimed"
 msgstr "Réservé"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:347
+#: lib/kanban_web/components/agent_activity_feed.ex:348
 #: lib/kanban_web/components/agent_detail_panel.ex:96
 #: lib/kanban_web/components/agent_roster_card.ex:197
 #, elixir-autogen, elixir-format
@@ -4911,25 +4911,25 @@ msgstr "Au travail"
 msgid "Yes"
 msgstr "Oui"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:401
+#: lib/kanban_web/components/agent_activity_feed.ex:402
 #: lib/kanban_web/components/agents_header.ex:475
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}h %{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:405
+#: lib/kanban_web/components/agent_activity_feed.ex:406
 #: lib/kanban_web/components/agents_header.ex:478
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:346
+#: lib/kanban_web/components/agent_activity_feed.ex:347
 #: lib/kanban_web/components/archive_filter_chips.ex:61
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Tous"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:349
+#: lib/kanban_web/components/agent_activity_feed.ex:350
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "Complétions"
@@ -4990,7 +4990,7 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:436
+#: lib/kanban_web/live/agents_live.ex:437
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -5046,8 +5046,8 @@ msgstr "Approuver"
 msgid "Request changes"
 msgstr "Demander des modifications"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:277
 #: lib/kanban_web/components/agent_activity_feed.ex:278
+#: lib/kanban_web/components/agent_activity_feed.ex:279
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -5380,17 +5380,17 @@ msgstr "Diagramme de flux cumulatif"
 msgid "work in each column over time"
 msgstr "travail dans chaque colonne au fil du temps"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:78
+#: lib/kanban_web/live/metrics_live/workspace.ex:423
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Tous les tableaux"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:80
+#: lib/kanban_web/live/metrics_live/workspace.ex:105
 #, elixir-autogen, elixir-format
 msgid "Filter"
 msgstr "Filtres"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:269
+#: lib/kanban_web/live/metrics_live/workspace.ex:415
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "tous les tableaux"
@@ -6294,12 +6294,12 @@ msgstr "%{count} tâches terminées depuis plus de 30 jours archivées."
 msgid "Archived 1 completed task older than 30 days."
 msgstr "1 tâche terminée depuis plus de 30 jours archivée."
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:167
+#: lib/kanban_web/live/metrics_live/workspace.ex:192
 #, elixir-autogen, elixir-format
 msgid "Goal → Done · p50"
 msgstr "Objectif → Terminé · p50"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:173
+#: lib/kanban_web/live/metrics_live/workspace.ex:198
 #, elixir-autogen, elixir-format
 msgid "Goal → Done · p95"
 msgstr "Objectif → Terminé · p95"
@@ -6309,17 +6309,17 @@ msgstr "Objectif → Terminé · p95"
 msgid "No completed tasks older than 30 days were found."
 msgstr "Aucune tâche terminée depuis plus de 30 jours n'a été trouvée."
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:124
+#: lib/kanban_web/live/metrics_live/workspace.ex:149
 #, elixir-autogen, elixir-format
 msgid "after_goal adoption · 7d"
 msgstr "Adoption after_goal · 7j"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:214
+#: lib/kanban_web/live/metrics_live/workspace.ex:239
 #, elixir-autogen, elixir-format
 msgid "n=%{n}"
 msgstr "n=%{n}"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:143
+#: lib/kanban_web/live/metrics_live/workspace.ex:168
 #, elixir-autogen, elixir-format
 msgid "projects reporting"
 msgstr "projets rapportant"
@@ -7149,7 +7149,7 @@ msgstr "est incohérent avec la tâche : la revue liste %{supplied} entrées de 
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue indique %{checked} critères d'acceptation vérifiés mais la tâche en définit %{expected} ; les nombres doivent correspondre"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:348
+#: lib/kanban_web/components/agent_activity_feed.ex:349
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
 msgstr "Révisé"
@@ -7181,7 +7181,7 @@ msgstr "Filtré par %{agent}"
 msgid "Clear"
 msgstr "Effacer"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:251
+#: lib/kanban_web/components/agent_activity_feed.ex:252
 #: lib/kanban_web/components/agent_roster_card.ex:92
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7243,7 +7243,7 @@ msgstr "dont"
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:491
+#: lib/kanban_web/live/agents_live.ex:492
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7278,12 +7278,12 @@ msgstr "Aucun"
 msgid "vs the prior period"
 msgstr "par rapport à la période précédente"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:390
+#: lib/kanban_web/components/agent_activity_feed.ex:391
 #, elixir-autogen, elixir-format
 msgid "%a, %b %-d"
 msgstr "%a %-d %b"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:389
+#: lib/kanban_web/components/agent_activity_feed.ex:390
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "Hier"
@@ -7302,3 +7302,23 @@ msgstr "Aucune activité pour le moment."
 #, elixir-autogen, elixir-format
 msgid "Cycle time · today"
 msgstr "Temps de cycle · aujourd'hui"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:417
+#, elixir-autogen, elixir-format
+msgid "%{count} boards"
+msgstr "%{count} tableaux"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:424
+#, elixir-autogen, elixir-format
+msgid "%{count} of %{total} boards"
+msgstr "%{count} sur %{total} tableaux"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:416
+#, elixir-autogen, elixir-format
+msgid "1 board"
+msgstr "1 tableau"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:302
+#, elixir-autogen, elixir-format
+msgid "No boards yet"
+msgstr "Aucun tableau pour le moment"

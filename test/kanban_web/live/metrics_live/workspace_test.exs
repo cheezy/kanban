@@ -41,21 +41,21 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Metrics"
     end
 
-    test "renders the decorative toolbar buttons with aria-disabled='true' and no phx-click",
+    test "renders the two remaining decorative toolbar buttons with aria-disabled='true'",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")
 
       buttons =
         Regex.scan(~r/<button[^>]*data-metrics-toolbar-placeholder[^>]*>/, html)
 
-      assert length(buttons) == 3
+      # "All boards" is now a real selector; only "Last 14 days" and "Filter" remain placeholders.
+      assert length(buttons) == 2
 
       for [tag] <- buttons do
         assert tag =~ ~s(aria-disabled="true")
         refute tag =~ "phx-click"
       end
 
-      assert html =~ "All boards"
       assert html =~ "Last 14 days"
       assert html =~ "Filter"
     end
@@ -172,6 +172,123 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
 
       assert html =~ "3m 30s"
       assert html =~ "2h 30m"
+    end
+  end
+
+  describe "board selector" do
+    setup [:register_and_log_in_user]
+
+    # Completes `count` tasks on `column` credited to `agent`, so the agent
+    # leaderboard surfaces that name for the board the column belongs to.
+    defp complete_on(column, agent, count) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -3600, :second)
+      claimed_at = DateTime.add(completed_at, -3600, :second)
+
+      Enum.each(1..count, fn _ ->
+        t = task_fixture(column, %{completed_by_agent: agent})
+        {:ok, _} = Tasks.update_task(t, %{claimed_at: claimed_at, completed_at: completed_at})
+      end)
+    end
+
+    defp checked_board_boxes(html) do
+      Regex.scan(~r/name="board_ids\[\]"[^>]*checked/, html)
+    end
+
+    test "defaults to all of the user's boards selected with an 'All boards' summary",
+         %{conn: conn, user: user} do
+      board_fixture(user)
+      board_fixture(user)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-board-selector"
+      assert html =~ "All boards"
+      assert length(checked_board_boxes(html)) == 2
+    end
+
+    test "selecting a strict subset re-renders metrics using only those boards' data",
+         %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      complete_on(column_fixture(board1), "AlphaAgent", 1)
+      complete_on(column_fixture(board2), "BetaAgent", 1)
+
+      {:ok, view, html} = live(conn, ~p"/metrics")
+      assert html =~ "AlphaAgent"
+      assert html =~ "BetaAgent"
+
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board1.id)]})
+
+      assert html =~ "AlphaAgent"
+      refute html =~ "BetaAgent"
+    end
+
+    test "the toolbar and window label reflect the selected-board count",
+         %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      _board2 = board_fixture(user)
+
+      {:ok, view, html} = live(conn, ~p"/metrics")
+      assert html =~ "all boards"
+
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board1.id)]})
+
+      # window_label (lowercase) and the selector summary both update.
+      assert html =~ "1 board"
+      assert html =~ "1 of 2 boards"
+    end
+
+    test "clearing the selection falls back to all visible boards",
+         %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      complete_on(column_fixture(board1), "AlphaAgent", 1)
+      complete_on(column_fixture(board2), "BetaAgent", 1)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{})
+
+      # No board_ids key => the page shows all visible boards, not an empty page.
+      assert html =~ "AlphaAgent"
+      assert html =~ "BetaAgent"
+      assert html =~ "all boards"
+    end
+
+    test "a fresh mount resets the selection to all boards (session-only)",
+         %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      board_fixture(user)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#board-filter-form")
+      |> render_change(%{"board_ids" => [to_string(board1.id)]})
+
+      # A page reload is a fresh mount — selection resets to all boards.
+      {:ok, _view2, html2} = live(conn, ~p"/metrics")
+      assert html2 =~ "All boards"
+      assert length(checked_board_boxes(html2)) == 2
+    end
+
+    test "renders gracefully for a user with no boards",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-board-selector"
+      assert html =~ "No boards yet"
+      assert html =~ "All boards"
     end
   end
 end
