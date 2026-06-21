@@ -76,8 +76,8 @@ defmodule Kanban.Agents do
   Same contract as `list_agents/1` but operates on a caller-supplied task set
   so the Agents view can fetch once and share the result across every metric.
   """
-  @spec list_agents_from([Task.t()]) :: [Agent.t()]
-  def list_agents_from(tasks), do: Roster.from_tasks(tasks)
+  @spec list_agents_from([Task.t()], String.t()) :: [Agent.t()]
+  def list_agents_from(tasks, timezone \\ "Etc/UTC"), do: Roster.from_tasks(tasks, timezone)
 
   @doc """
   Returns a chronological list of derived activity events.
@@ -399,22 +399,47 @@ defmodule Kanban.Agents do
   end
 
   @doc false
-  # Count of tasks completed on `date` (UTC date of `completed_at`). Used by the
-  # roster's per-agent stats and `Kanban.Agents.Metrics`.
-  def count_completed_on_day(tasks, date) do
-    Enum.count(tasks, &completed_on?(&1, date))
+  # The viewer's local calendar date "today" in `timezone`, falling back to the
+  # UTC date when the zone is unknown/empty. Shared so every date-based count on
+  # the agents surface anchors its day boundary to one local "today".
+  def local_today(timezone) do
+    case DateTime.now(timezone) do
+      {:ok, now} -> DateTime.to_date(now)
+      {:error, _reason} -> Date.utc_today()
+    end
   end
 
   @doc false
-  # Count of tasks completed within the trailing `days`-day window ending today
-  # (inclusive). Used by the roster's per-agent stats and `Kanban.Agents.Metrics`.
-  def count_completed_within(tasks, today, days) do
+  # The local calendar date of a stored UTC timestamp in the viewer's zone, so a
+  # counter's day boundary matches the user's wall clock. Falls back to the UTC
+  # date when the zone is unknown.
+  def local_date(%DateTime{} = dt, timezone) do
+    case DateTime.shift_zone(dt, timezone) do
+      {:ok, shifted} -> DateTime.to_date(shifted)
+      {:error, _reason} -> DateTime.to_date(dt)
+    end
+  end
+
+  @doc false
+  # Count of tasks completed on `date`, where `date` and each task's completion
+  # day are both taken in `timezone` (defaults to UTC for back-compat). Used by
+  # the roster's per-agent stats and `Kanban.Agents.Metrics`.
+  def count_completed_on_day(tasks, date, timezone \\ "Etc/UTC") do
+    Enum.count(tasks, &completed_on?(&1, date, timezone))
+  end
+
+  @doc false
+  # Count of tasks completed within the trailing `days`-day window ending `today`
+  # (inclusive), with the window boundary and each task's completion day taken in
+  # `timezone` (defaults to UTC for back-compat). Used by the roster's per-agent
+  # stats and `Kanban.Agents.Metrics`.
+  def count_completed_within(tasks, today, days, timezone \\ "Etc/UTC") do
     earliest = Date.add(today, -(days - 1))
 
     Enum.count(tasks, fn task ->
       case task.completed_at do
         nil -> false
-        %DateTime{} = dt -> Date.compare(DateTime.to_date(dt), earliest) != :lt
+        %DateTime{} = dt -> Date.compare(local_date(dt, timezone), earliest) != :lt
       end
     end)
   end
@@ -433,6 +458,8 @@ defmodule Kanban.Agents do
     end
   end
 
-  defp completed_on?(%{completed_at: %DateTime{} = dt}, date), do: DateTime.to_date(dt) == date
-  defp completed_on?(_task, _date), do: false
+  defp completed_on?(%{completed_at: %DateTime{} = dt}, date, timezone),
+    do: local_date(dt, timezone) == date
+
+  defp completed_on?(_task, _date, _timezone), do: false
 end

@@ -1015,6 +1015,86 @@ defmodule Kanban.AgentsTest do
       assert trends.completed_prev_today == 1
       assert trends.completed_today == 0
     end
+
+    test "completed_7d counts a completion on the user's local today even when its UTC instant is the next UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column |> task_fixture() |> Tasks.update_task(%{completed_at: utc_completed})
+
+      assert Agents.throughput_and_success_from([task], tz).completed_7d == 1
+    end
+  end
+
+  describe "list_agents_from/2 roster timezone" do
+    test "per-agent today counts a completion under the user's local day, not the UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # 23:30 local today in a west zone lands on the NEXT UTC day; a UTC-date
+      # roster count would mislabel it, the local-date count must not.
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      utc_completed = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:second)
+
+      {:ok, _task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: utc_completed
+        })
+
+      tasks = Agents.fetch_tasks([])
+      [agent] = Agents.list_agents_from(tasks, tz)
+
+      assert agent.today == 1
+    end
+
+    test "per-agent last_7d counts a completion three days ago", %{column: column, user: user} do
+      _task = complete_at(column, user, days_ago(3), :approved)
+
+      tasks = Agents.fetch_tasks([])
+      [agent] = Agents.list_agents_from(tasks, "America/Los_Angeles")
+
+      assert agent.last_7d == 1
+    end
+
+    test "an unknown timezone falls back to UTC", %{column: column, user: user} do
+      _task = complete_at(column, user, days_ago(0), :approved)
+
+      tasks = Agents.fetch_tasks([])
+      [agent] = Agents.list_agents_from(tasks, "Mars/Phobos")
+
+      assert agent.today == 1
+    end
+  end
+
+  describe "local_today/1 and local_date/2" do
+    test "local_today returns a Date and falls back to the UTC date for an unknown zone" do
+      assert %Date{} = Agents.local_today("America/New_York")
+      assert Agents.local_today("Mars/Phobos") == Date.utc_today()
+    end
+
+    test "local_date shifts a UTC timestamp into the viewer's calendar day" do
+      # 02:00 UTC on Jan 1 is still Dec 31 in New York (UTC-5).
+      dt = ~U[2026-01-01 02:00:00Z]
+
+      assert Agents.local_date(dt, "America/New_York") == ~D[2025-12-31]
+      assert Agents.local_date(dt, "Etc/UTC") == ~D[2026-01-01]
+    end
+
+    test "local_date falls back to the UTC date for an unknown zone" do
+      dt = ~U[2026-01-01 02:00:00Z]
+      assert Agents.local_date(dt, "Mars/Phobos") == ~D[2026-01-01]
+    end
   end
 
   describe "throughput_trends/1" do

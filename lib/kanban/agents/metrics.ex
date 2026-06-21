@@ -186,14 +186,14 @@ defmodule Kanban.Agents.Metrics do
 
     %{
       completed_today: count_on_day(tasks, :completed_at, today, timezone),
-      completed_7d: Agents.count_completed_within(tasks, today, 7),
-      completed_30d: Agents.count_completed_within(tasks, today, 30),
+      completed_7d: Agents.count_completed_within(tasks, today, 7, timezone),
+      completed_30d: Agents.count_completed_within(tasks, today, 30, timezone),
       # Deliberately the shared local-day count (mirroring completed_today, so the
       # today/prev-today delta stays parity-locked with the header), NOT the
       # trailing-window subtraction the prev_7d/prev_30d keys below use.
       completed_prev_today: count_on_day(tasks, :completed_at, Date.add(today, -1), timezone),
-      completed_prev_7d: completed_in_prior_window(tasks, today, 7),
-      completed_prev_30d: completed_in_prior_window(tasks, today, 30),
+      completed_prev_7d: completed_in_prior_window(tasks, today, 7, timezone),
+      completed_prev_30d: completed_in_prior_window(tasks, today, 30, timezone),
       success_rate: Agents.success_rate(tasks)
     }
   end
@@ -201,10 +201,11 @@ defmodule Kanban.Agents.Metrics do
   # Completions in the window of `days` immediately BEFORE the current trailing
   # `days`-day window — the last `2 * days` days minus the most recent `days`.
   # Reuses Agents.count_completed_within so the prior and current windows share
-  # the same UTC-date counting rule, enabling a like-for-like comparison.
-  defp completed_in_prior_window(tasks, today, days) do
-    Agents.count_completed_within(tasks, today, days * 2) -
-      Agents.count_completed_within(tasks, today, days)
+  # the same local-date counting rule (in `timezone`), enabling a like-for-like
+  # comparison anchored to the viewer's local day.
+  defp completed_in_prior_window(tasks, today, days, timezone) do
+    Agents.count_completed_within(tasks, today, days * 2, timezone) -
+      Agents.count_completed_within(tasks, today, days, timezone)
   end
 
   @doc """
@@ -320,24 +321,11 @@ defmodule Kanban.Agents.Metrics do
   defp average([]), do: 0.0
   defp average(list), do: Enum.sum(list) / length(list)
 
-  # The viewer's current local date. The zone is browser-supplied, so fall back
-  # to the UTC date when it is unknown rather than raising.
-  defp local_today(timezone) do
-    case DateTime.now(timezone) do
-      {:ok, now} -> DateTime.to_date(now)
-      {:error, _reason} -> Date.utc_today()
-    end
-  end
-
-  # The local calendar date of a stored UTC timestamp in the viewer's zone, so
-  # a counter's day boundary matches the user's wall clock. Falls back to the
-  # UTC date when the zone is unknown.
-  defp local_date(%DateTime{} = dt, timezone) do
-    case DateTime.shift_zone(dt, timezone) do
-      {:ok, shifted} -> DateTime.to_date(shifted)
-      {:error, _reason} -> DateTime.to_date(dt)
-    end
-  end
+  # Local-day helpers live on `Kanban.Agents` as the single source of truth so
+  # the header, Delivery-trends, and roster counts all anchor to the same local
+  # "today"/date boundary. These thin wrappers keep the call sites terse.
+  defp local_today(timezone), do: Agents.local_today(timezone)
+  defp local_date(dt, timezone), do: Agents.local_date(dt, timezone)
 
   # One zero-filled throughput bucket per day across the trailing window, oldest
   # first. Counts each day on the viewer's local calendar via count_on_day/4 (the

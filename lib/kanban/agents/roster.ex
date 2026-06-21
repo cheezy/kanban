@@ -45,9 +45,9 @@ defmodule Kanban.Agents.Roster do
   Builds the agent roster from an already-fetched task list, ordered by most
   recent activity (newest first), ties broken alphabetically by identity.
   """
-  @spec from_tasks([Kanban.Tasks.Task.t()]) :: [Agent.t()]
-  def from_tasks(tasks) do
-    today = Date.utc_today()
+  @spec from_tasks([Kanban.Tasks.Task.t()], String.t()) :: [Agent.t()]
+  def from_tasks(tasks, timezone \\ "Etc/UTC") do
+    today = Agents.local_today(timezone)
 
     # Sort by identity first (name, then owner_key), then stable-sort by recency
     # descending: because `Enum.sort_by/3` is stable, identities with equal
@@ -56,7 +56,7 @@ defmodule Kanban.Agents.Roster do
     |> distinct_agent_identities()
     |> Enum.sort()
     |> Enum.sort_by(&agent_recency(&1, tasks), {:desc, NaiveDateTime})
-    |> Enum.map(&build_agent(&1, tasks, today))
+    |> Enum.map(&build_agent(&1, tasks, today, timezone))
   end
 
   # The set of distinct agent identities present in the task set, each a
@@ -89,7 +89,7 @@ defmodule Kanban.Agents.Roster do
     (is_map(created) && created) || (is_map(completed) && completed) || nil
   end
 
-  defp build_agent({name, owner_key} = identity, tasks, today) do
+  defp build_agent({name, owner_key} = identity, tasks, today, timezone) do
     own_tasks = Agents.filter_by_identity(tasks, identity)
     now = now_naive()
     last_active_at = last_active(own_tasks)
@@ -105,15 +105,16 @@ defmodule Kanban.Agents.Roster do
       current_task: Agents.current_task(own_tasks),
       capabilities: []
     }
-    |> Map.merge(agent_throughput_fields(own_tasks, today))
+    |> Map.merge(agent_throughput_fields(own_tasks, today, timezone))
   end
 
-  # The per-agent throughput counters, split out of build_agent/3 to keep it
-  # under the complexity budget.
-  defp agent_throughput_fields(own_tasks, today) do
+  # The per-agent throughput counters, split out of build_agent/4 to keep it
+  # under the complexity budget. The today/7d counts anchor their day boundary
+  # to the viewer's local `today`/`timezone` so they match the header stats.
+  defp agent_throughput_fields(own_tasks, today, timezone) do
     %{
-      today: Agents.count_completed_on_day(own_tasks, today),
-      last_7d: Agents.count_completed_within(own_tasks, today, 7),
+      today: Agents.count_completed_on_day(own_tasks, today, timezone),
+      last_7d: Agents.count_completed_within(own_tasks, today, 7, timezone),
       success_rate: Agents.success_rate(own_tasks),
       claim_count: Enum.count(own_tasks, &(not is_nil(&1.claimed_at)))
     }

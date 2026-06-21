@@ -330,7 +330,7 @@ defmodule KanbanWeb.AgentsLive do
     # from it. Previously each of the 6-7 calls below re-ran the unbounded task
     # fetch (W1242), turning a single render into ~24-28 queries.
     tasks = Agents.fetch_tasks(scope: scope)
-    agents = Agents.list_agents_from(tasks)
+    agents = Agents.list_agents_from(tasks, socket.assigns.timezone)
     events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
     metrics = metric_assigns(tasks, agents, socket.assigns.timezone)
