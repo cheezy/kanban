@@ -17,6 +17,12 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
     """)
   end
 
+  # The "%b %-d" label for a point `days_ago` before today (the trailing window
+  # the throughput chart derives its x-axis from).
+  defp day_label(days_ago) do
+    Date.utc_today() |> Date.add(-days_ago) |> Calendar.strftime("%b %-d")
+  end
+
   describe "throughput_chart/1 — markers and structure" do
     test "renders the root marker" do
       assert render_chart([5, 6, 7]) =~ "data-metrics-throughput-chart"
@@ -178,6 +184,81 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
     test "area path closes back to the baseline at the last x" do
       result = MetricsThroughputChart.compute_geometry([1, 2, 3])
       assert String.ends_with?(result.area_path, "L600.0,130 Z")
+    end
+  end
+
+  describe "throughput_chart/1 — x-axis date labels" do
+    test "renders one date label per point for a short series, ending today" do
+      html = render_chart([5, 6, 7])
+
+      assert html =~ "data-metrics-throughput-axis"
+      assert length(Regex.scan(~r/data-metrics-throughput-date-label/, html)) == 3
+      # Trailing window ending today: oldest point is today-2, newest is today.
+      assert html =~ day_label(2)
+      assert html =~ day_label(0)
+    end
+
+    test "anchors a label on the first and last points" do
+      html = render_chart([1, 2, 3, 4, 5])
+
+      # The x-axis labels clamp the endpoints with translateX(0) / translateX(-100%);
+      # unlike the value labels' translate(.., -2px), these are unique to the axis row.
+      assert html =~ "translateX(0)"
+      assert html =~ "translateX(-100%)"
+    end
+
+    test "labels every point (no thinning) at the 7-day window" do
+      html = render_chart(List.duplicate(1, 7))
+      assert length(Regex.scan(~r/data-metrics-throughput-date-label/, html)) == 7
+    end
+
+    test "thins a 30-day window to an endpoint-anchored subset" do
+      html = render_chart(List.duplicate(1, 30))
+      count = length(Regex.scan(~r/data-metrics-throughput-date-label/, html))
+
+      assert count == 8
+      assert count < 30
+      # First (today-29) and last (today) are always retained.
+      assert html =~ day_label(29)
+      assert html =~ day_label(0)
+    end
+
+    test "thins a 90-day window to at most the label cap, keeping the endpoints" do
+      html = render_chart(List.duplicate(1, 90))
+      count = length(Regex.scan(~r/data-metrics-throughput-date-label/, html))
+
+      assert count == 8
+      assert html =~ day_label(89)
+      assert html =~ day_label(0)
+    end
+
+    test "date labels use the dimmer theme token and tabular-nums" do
+      html = render_chart([5, 6, 7])
+
+      assert html =~ "var(--ink-4)"
+      assert html =~ "font-variant-numeric: tabular-nums"
+      refute html =~ "text-gray-"
+    end
+
+    test "an empty series renders the axis row with no date labels" do
+      html = render_chart([])
+
+      assert html =~ "data-metrics-throughput-axis"
+      assert Regex.scan(~r/data-metrics-throughput-date-label/, html) == []
+    end
+
+    test "a single-point series renders today's date as the only label" do
+      html = render_chart([7])
+
+      assert length(Regex.scan(~r/data-metrics-throughput-date-label/, html)) == 1
+      assert html =~ day_label(0)
+    end
+
+    test "does not thin the per-day value labels — only the x-axis row" do
+      html = render_chart(List.duplicate(1, 30))
+
+      # Value labels remain one-per-day; only the date axis is thinned.
+      assert length(Regex.scan(~r/data-metrics-throughput-value-label/, html)) == 30
     end
   end
 end

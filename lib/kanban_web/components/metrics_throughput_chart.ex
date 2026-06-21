@@ -1,7 +1,8 @@
 defmodule KanbanWeb.MetricsThroughputChart do
   @moduledoc """
   Inline-SVG area sparkline rendering daily completed-task counts over
-  the trailing 14 days.
+  the trailing window (default 14 days; driven by the caller's
+  `:window_days` selection), with x-axis date labels under the plot.
 
   Consumes the list shape returned by
   `Kanban.Metrics.throughput_daily/1` — a list of non-negative integers
@@ -24,6 +25,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
   @bottom_padding_px 10
   @line_color "oklch(68% 0.17 47)"
   @gradient_id "metrics-throughput-grad"
+  @max_x_labels 8
 
   @doc """
   Renders the sparkline.
@@ -53,6 +55,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
       |> assign(:peak, peak)
       |> assign(:y_ticks, y_ticks(peak))
       |> assign(:value_labels, value_labels(series, geometry.points))
+      |> assign(:date_labels, date_labels(geometry.points))
 
     ~H"""
     <section
@@ -146,6 +149,26 @@ defmodule KanbanWeb.MetricsThroughputChart do
           {label.value}
         </span>
       </div>
+
+      <div
+        data-metrics-throughput-axis
+        style="position: relative; height: 14px; margin-top: 4px;"
+      >
+        <span
+          :for={label <- @date_labels}
+          data-metrics-throughput-date-label
+          style={[
+            "position: absolute; top: 0;",
+            "left: #{label.left_pct}%;",
+            "transform: translateX(#{label.shift_x});",
+            "font-size: 9px; font-family: var(--font-mono);",
+            "color: var(--ink-4); font-variant-numeric: tabular-nums;",
+            "white-space: nowrap; pointer-events: none;"
+          ]}
+        >
+          {label.label}
+        </span>
+      </div>
     </section>
     """
   end
@@ -226,6 +249,51 @@ defmodule KanbanWeb.MetricsThroughputChart do
   defp label_shift_x(0, _total), do: "0"
   defp label_shift_x(index, total) when index == total - 1, do: "-100%"
   defp label_shift_x(_index, _total), do: "-50%"
+
+  # --- X-axis date labels --------------------------------------------------
+
+  # One x-axis date label per retained point, thinned for longer windows so the
+  # ticks never overlap. The dates are the trailing window ending today (today
+  # going back length-1 days) — the same ordered window
+  # `Kanban.Metrics.throughput_daily/1` builds its counts from — so each label
+  # sits under the point for that day. left_pct/shift_x mirror the value labels
+  # so the ticks align to the points and the first/last stay inside the plot.
+  defp date_labels([]), do: []
+
+  defp date_labels(points) do
+    total = length(points)
+    today = Date.utc_today()
+    keep = total |> label_indices() |> MapSet.new()
+
+    points
+    |> Enum.with_index()
+    |> Enum.filter(fn {_point, index} -> MapSet.member?(keep, index) end)
+    |> Enum.map(fn {point, index} -> date_label(point, index, total, today) end)
+  end
+
+  defp date_label({x, _y}, index, total, today) do
+    date = Date.add(today, -(total - 1 - index))
+
+    %{
+      label: Calendar.strftime(date, "%b %-d"),
+      left_pct: Float.round(x / @view_w * 100, 2),
+      shift_x: label_shift_x(index, total)
+    }
+  end
+
+  # Evenly spaced label indices anchored on the first and last point, capped at
+  # @max_x_labels. Series of @max_x_labels or fewer points label every point;
+  # longer windows are thinned to a readable, endpoint-anchored subset.
+  defp label_indices(0), do: []
+  defp label_indices(1), do: [0]
+
+  defp label_indices(total) when total > 1 do
+    target = min(@max_x_labels, total)
+
+    0..(target - 1)
+    |> Enum.map(&round(&1 * (total - 1) / (target - 1)))
+    |> Enum.uniq()
+  end
 
   defp step_x_for(1), do: 0.0
   defp step_x_for(length) when is_integer(length), do: @view_w / (length - 1)
