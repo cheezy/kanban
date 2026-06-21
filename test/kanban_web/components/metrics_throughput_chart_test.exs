@@ -86,6 +86,54 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
     end
   end
 
+  describe "throughput_chart/1 — y-axis scale + per-day values" do
+    test "renders the series peak value as a y-axis gridline" do
+      html = render_chart([8, 12, 9, 11, 14, 6, 10, 18, 13, 16, 19, 21, 17, 23])
+      assert html =~ ~s(data-metrics-throughput-gridline="23")
+    end
+
+    test "renders a zero baseline gridline" do
+      assert render_chart([5, 6, 7]) =~ ~s(data-metrics-throughput-gridline="0")
+    end
+
+    test "renders one value label per day with each day's count" do
+      html = render_chart([5, 6, 7])
+
+      assert length(Regex.scan(~r/data-metrics-throughput-value-label/, html)) == 3
+      assert html =~ ~r/>\s*5\s*</
+      assert html =~ ~r/>\s*6\s*</
+      assert html =~ ~r/>\s*7\s*</
+    end
+
+    test "an all-zero series renders without error and reads as 0" do
+      html = render_chart([0, 0, 0])
+
+      # Only the zero baseline gridline (no non-zero peak), and three "0" labels.
+      assert html =~ ~s(data-metrics-throughput-gridline="0")
+      assert length(Regex.scan(~r/data-metrics-throughput-value-label/, html)) == 3
+    end
+
+    test "a peak of one renders a 1-and-0 scale" do
+      html = render_chart([1, 1, 1])
+      assert html =~ ~s(data-metrics-throughput-gridline="1")
+      assert html =~ ~s(data-metrics-throughput-gridline="0")
+    end
+
+    test "a single non-zero day still renders its value and a peak gridline" do
+      html = render_chart([7])
+      assert html =~ ~s(data-metrics-throughput-gridline="7")
+      assert length(Regex.scan(~r/data-metrics-throughput-value-label/, html)) == 1
+    end
+
+    test "value labels and gridlines use tabular-nums and theme tokens" do
+      html = render_chart([5, 6, 7])
+      assert html =~ "font-variant-numeric: tabular-nums"
+      assert html =~ "var(--ink-3)"
+      assert html =~ "var(--ink-4)"
+      refute html =~ "text-gray-"
+    end
+  end
+
   describe "compute_geometry/1 — pure math" do
     test "returns empty paths and points for an empty series" do
       result = MetricsThroughputChart.compute_geometry([])

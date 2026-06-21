@@ -36,7 +36,9 @@ defmodule KanbanWeb.MetricsThroughputChart do
   attr :series, :list, required: true
 
   def throughput_chart(assigns) do
-    geometry = compute_geometry(assigns.series)
+    series = assigns.series
+    geometry = compute_geometry(series)
+    peak = Enum.max(series, fn -> 0 end)
 
     assigns =
       assigns
@@ -47,6 +49,9 @@ defmodule KanbanWeb.MetricsThroughputChart do
       |> assign(:points, geometry.points)
       |> assign(:area_path, geometry.area_path)
       |> assign(:line_path, geometry.line_path)
+      |> assign(:peak, peak)
+      |> assign(:y_ticks, y_ticks(peak))
+      |> assign(:value_labels, value_labels(series, geometry.points))
 
     ~H"""
     <section
@@ -109,6 +114,36 @@ defmodule KanbanWeb.MetricsThroughputChart do
             fill={@line_color}
           />
         </svg>
+
+        <span
+          :for={tick <- @y_ticks}
+          data-metrics-throughput-gridline={tick}
+          style={[
+            "position: absolute; left: 0; right: 0;",
+            "bottom: #{gridline_bottom_pct(tick, @peak)}%;",
+            "border-top: 1px dashed var(--line-2);",
+            "font-size: 10px; font-family: var(--font-mono);",
+            "color: var(--ink-4); text-align: right; padding-right: 2px;",
+            "font-variant-numeric: tabular-nums; pointer-events: none;"
+          ]}
+        >
+          {tick}
+        </span>
+
+        <span
+          :for={label <- @value_labels}
+          data-metrics-throughput-value-label
+          style={[
+            "position: absolute;",
+            "left: #{label.left_pct}%; bottom: #{label.bottom_pct}%;",
+            "transform: translate(#{label.shift_x}, -2px);",
+            "font-size: 9px; font-family: var(--font-mono);",
+            "color: var(--ink-3); font-variant-numeric: tabular-nums;",
+            "white-space: nowrap; pointer-events: none;"
+          ]}
+        >
+          {label.value}
+        </span>
       </div>
     </section>
     """
@@ -151,6 +186,45 @@ defmodule KanbanWeb.MetricsThroughputChart do
       {Float.round(x * 1.0, 2), Float.round(y, 2)}
     end)
   end
+
+  # --- Y-axis scale + per-day value labels ---------------------------------
+
+  # A flat series (peak 0) shows only the zero baseline; otherwise anchor the
+  # scale on the series peak so the magnitude is readable ("at least the peak").
+  defp y_ticks(0), do: [0]
+  defp y_ticks(peak) when is_integer(peak), do: [peak, 0]
+
+  # Vertical position of a y-axis tick, mirroring how compute_points/1 places a
+  # data value: bottom offset = bottom padding + the value's plotted height.
+  defp gridline_bottom_pct(value, peak) do
+    pct = (@bottom_padding_px + point_height(value, peak, plot_height())) / @view_h * 100
+    Float.round(pct, 2)
+  end
+
+  # One label per day, positioned over its point. left/bottom are percentages of
+  # the fixed viewBox so they track the stretched SVG; shift_x keeps the first
+  # and last labels from overflowing the plot's left/right edges.
+  defp value_labels(series, points) do
+    total = length(series)
+
+    series
+    |> Enum.zip(points)
+    |> Enum.with_index()
+    |> Enum.map(fn {{value, point}, index} -> value_label(value, point, index, total) end)
+  end
+
+  defp value_label(value, {x, y}, index, total) do
+    %{
+      value: value,
+      left_pct: Float.round(x / @view_w * 100, 2),
+      bottom_pct: Float.round((@view_h - y) / @view_h * 100, 2),
+      shift_x: label_shift_x(index, total)
+    }
+  end
+
+  defp label_shift_x(0, _total), do: "0"
+  defp label_shift_x(index, total) when index == total - 1, do: "-100%"
+  defp label_shift_x(_index, _total), do: "-50%"
 
   defp step_x_for(1), do: 0.0
   defp step_x_for(length) when is_integer(length), do: @view_w / (length - 1)
