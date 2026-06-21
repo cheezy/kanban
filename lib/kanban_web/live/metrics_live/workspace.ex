@@ -68,8 +68,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     |> assign(:throughput_series, Metrics.throughput_daily(opts))
     |> assign(:leaderboard, Metrics.agent_leaderboard(opts))
     |> assign(:flow_snapshots, Metrics.cumulative_flow(opts))
-    |> assign(:after_goal_adoption_7d, Metrics.after_goal_adoption_7d(opts))
-    |> assign(:goal_done_latency, Metrics.goal_to_done_latency_percentiles(opts))
     |> assign(:window_label, window_label(boards, selected_ids))
   end
 
@@ -112,10 +110,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
         <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
           <MetricsKpiStrip.kpi_strip kpis={@kpis} />
 
-          <.after_goal_adoption_tile count={@after_goal_adoption_7d} />
-
-          <.goal_to_done_latency_tile latency={@goal_done_latency} />
-
           <MetricsCycleTimeChart.cycle_time_chart data={@cycle_series} />
 
           <div class="flex flex-col md:grid md:grid-cols-[1.4fr_1fr] gap-3.5">
@@ -128,141 +122,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       </div>
     </Layouts.app>
     """
-  end
-
-  # --- after_goal adoption tile -------------------------------------------
-
-  attr :count, :integer, required: true
-
-  defp after_goal_adoption_tile(assigns) do
-    ~H"""
-    <div
-      data-metrics-after-goal-adoption
-      style={[
-        "padding: 14px 18px;",
-        "background: var(--surface);",
-        "border: 1px solid var(--line); border-radius: 8px;"
-      ]}
-    >
-      <p style={[
-        "margin: 0;",
-        "font-size: 9.5px; font-weight: 600;",
-        "text-transform: uppercase; letter-spacing: 0.08em;",
-        "color: var(--ink-3);"
-      ]}>
-        {gettext("after_goal adoption · 7d")}
-      </p>
-      <div style="margin: 4px 0 0; display: flex; align-items: baseline; gap: 8px;">
-        <span
-          data-metrics-after-goal-value
-          style={[
-            "font-size: 24px; font-weight: 600;",
-            "letter-spacing: -0.025em;",
-            "color: var(--ink);",
-            "font-variant-numeric: tabular-nums;"
-          ]}
-        >
-          {@count}
-        </span>
-        <span style={[
-          "font-size: 11px;",
-          "font-family: var(--font-mono);",
-          "color: var(--ink-3);"
-        ]}>
-          {gettext("projects reporting")}
-        </span>
-      </div>
-    </div>
-    """
-  end
-
-  # --- goal-to-Done latency tile ------------------------------------------
-
-  attr :latency, :map, required: true
-
-  defp goal_to_done_latency_tile(assigns) do
-    ~H"""
-    <div
-      data-metrics-goal-done-latency
-      style={[
-        "padding: 14px 18px;",
-        "background: var(--surface);",
-        "border: 1px solid var(--line); border-radius: 8px;",
-        "display: grid; grid-template-columns: 1fr 1fr; gap: 18px;"
-      ]}
-    >
-      <.latency_cell
-        marker="p50"
-        label={gettext("Goal → Done · p50")}
-        seconds={@latency.p50_seconds}
-        sample_size={@latency.sample_size}
-      />
-      <.latency_cell
-        marker="p95"
-        label={gettext("Goal → Done · p95")}
-        seconds={@latency.p95_seconds}
-        sample_size={@latency.sample_size}
-      />
-    </div>
-    """
-  end
-
-  attr :marker, :string, required: true
-  attr :label, :string, required: true
-  attr :seconds, :integer, required: true
-  attr :sample_size, :integer, required: true
-
-  defp latency_cell(assigns) do
-    ~H"""
-    <div data-metrics-goal-done-latency-cell={@marker}>
-      <p style={[
-        "margin: 0;",
-        "font-size: 9.5px; font-weight: 600;",
-        "text-transform: uppercase; letter-spacing: 0.08em;",
-        "color: var(--ink-3);"
-      ]}>
-        {@label}
-      </p>
-      <div style="margin: 4px 0 0; display: flex; align-items: baseline; gap: 8px;">
-        <span
-          data-metrics-goal-done-latency-value
-          style={[
-            "font-size: 24px; font-weight: 600;",
-            "letter-spacing: -0.025em;",
-            "color: var(--ink);",
-            "font-variant-numeric: tabular-nums;"
-          ]}
-        >
-          {format_latency_seconds(@seconds)}
-        </span>
-        <span style={[
-          "font-size: 11px;",
-          "font-family: var(--font-mono);",
-          "color: var(--ink-3);"
-        ]}>
-          {gettext("n=%{n}", n: @sample_size)}
-        </span>
-      </div>
-    </div>
-    """
-  end
-
-  defp format_latency_seconds(0), do: "0s"
-
-  defp format_latency_seconds(seconds) when is_integer(seconds) and seconds < 60 do
-    "#{seconds}s"
-  end
-
-  defp format_latency_seconds(seconds) when is_integer(seconds) and seconds < 3600 do
-    minutes = div(seconds, 60)
-    rem_seconds = rem(seconds, 60)
-    if rem_seconds == 0, do: "#{minutes}m", else: "#{minutes}m #{rem_seconds}s"
-  end
-
-  defp format_latency_seconds(seconds) when is_integer(seconds) do
-    hours = div(seconds, 3600)
-    rem_minutes = div(rem(seconds, 3600), 60)
-    if rem_minutes == 0, do: "#{hours}h", else: "#{hours}h #{rem_minutes}m"
   end
 
   # --- Board selector -----------------------------------------------------
