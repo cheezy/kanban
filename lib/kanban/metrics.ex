@@ -655,6 +655,11 @@ defmodule Kanban.Metrics do
       `nil` or an absent option) falls back to #{@workspace_window_days}.
       The previous window used for the delta percentages always matches
       the resolved window length.
+    * `:timezone` — the viewer's IANA timezone, accepted by every
+      workspace read for local-day bucketing. Defaults to `"Etc/UTC"`
+      when omitted or unknown; the day-boundary conversion that consumes
+      it is layered on in later work, so the option is currently a
+      no-op pass-through.
   """
   @spec workspace_kpis(keyword()) :: %{
           cycle_time_median_minutes: non_neg_integer(),

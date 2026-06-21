@@ -1509,6 +1509,42 @@ defmodule Kanban.MetricsTest do
     t
   end
 
+  describe "workspace reads accept a :timezone option (W1264 pass-through)" do
+    # The option is threaded now but not yet consumed; omitting it must match
+    # passing the documented "Etc/UTC" default. This invariant holds before and
+    # after the later local-day bucketing work (omitted always defaults to UTC).
+    setup do
+      %{column: column, scope: scope} = ws_setup()
+      Enum.each(1..3, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+      %{scope: scope}
+    end
+
+    test "workspace_kpis: omitting :timezone equals passing Etc/UTC", %{scope: scope} do
+      assert Metrics.workspace_kpis(scope: scope, timezone: "Etc/UTC") ==
+               Metrics.workspace_kpis(scope: scope)
+    end
+
+    test "cycle_time_daily: omitting :timezone equals passing Etc/UTC", %{scope: scope} do
+      assert Metrics.cycle_time_daily(scope: scope, timezone: "Etc/UTC") ==
+               Metrics.cycle_time_daily(scope: scope)
+    end
+
+    test "throughput_daily: omitting :timezone equals passing Etc/UTC", %{scope: scope} do
+      assert Metrics.throughput_daily(scope: scope, timezone: "Etc/UTC") ==
+               Metrics.throughput_daily(scope: scope)
+    end
+
+    test "agent_leaderboard: omitting :timezone equals passing Etc/UTC", %{scope: scope} do
+      assert Metrics.agent_leaderboard(scope: scope, timezone: "Etc/UTC") ==
+               Metrics.agent_leaderboard(scope: scope)
+    end
+
+    test "cumulative_flow: omitting :timezone equals passing Etc/UTC", %{scope: scope} do
+      assert Metrics.cumulative_flow(scope: scope, timezone: "Etc/UTC") ==
+               Metrics.cumulative_flow(scope: scope)
+    end
+  end
+
   describe "workspace_kpis/1 — zero / nil scope" do
     test "returns the zero map for a user with no boards" do
       user = user_fixture()

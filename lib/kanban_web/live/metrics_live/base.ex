@@ -56,7 +56,8 @@ defmodule KanbanWeb.MetricsLive.Base do
          assign(socket,
            time_range: :last_30_days,
            agent_name: nil,
-           exclude_weekends: false
+           exclude_weekends: false,
+           timezone: KanbanWeb.Timezone.browser_timezone(socket)
          )}
       end
 
@@ -152,7 +153,8 @@ defmodule KanbanWeb.MetricsLive.Base do
   def load_metric_data(socket, stats_fn, tasks_fn, time_field, daily_assign_key) do
     opts = [
       time_range: socket.assigns.time_range,
-      exclude_weekends: socket.assigns.exclude_weekends
+      exclude_weekends: socket.assigns.exclude_weekends,
+      timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
     opts =

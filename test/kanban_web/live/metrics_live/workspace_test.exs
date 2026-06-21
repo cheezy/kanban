@@ -41,6 +41,13 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Metrics"
     end
 
+    test "assigns the viewer timezone, defaulting to Etc/UTC without a tz connect param",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      assert :sys.get_state(view.pid).socket.assigns.timezone == "Etc/UTC"
+    end
+
     test "renders no decorative placeholder toolbar buttons — only the working selectors",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")

@@ -71,6 +71,9 @@ defmodule KanbanWeb.MetricsLive.BaseTest do
       refute Keyword.has_key?(opts, :agent_name)
       assert opts[:time_range] == :last_30_days
       assert opts[:exclude_weekends] == false
+      # Threads the viewer timezone through to the stats/tasks loaders,
+      # defaulting to Etc/UTC when the socket carries no :timezone assign.
+      assert opts[:timezone] == "Etc/UTC"
     end
 
     test "includes agent_name in opts when one is selected" do
@@ -119,6 +122,12 @@ defmodule KanbanWeb.MetricsLive.BaseTest do
       assert socket.assigns.time_range == :last_30_days
       assert socket.assigns.agent_name == nil
       assert socket.assigns.exclude_weekends == false
+    end
+
+    test "assigns the viewer timezone, defaulting to Etc/UTC on the disconnected mount" do
+      {:ok, socket} = FakeMetric.mount(%{}, %{}, empty_socket())
+
+      assert socket.assigns.timezone == "Etc/UTC"
     end
 
     test "does not invoke load_data" do

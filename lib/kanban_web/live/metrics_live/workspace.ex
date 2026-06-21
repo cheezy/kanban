@@ -53,6 +53,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
      |> assign(:page_title, "Stride · Metrics")
      |> assign(:boards, boards)
      |> assign(:selected_window_days, @default_window_days)
+     |> assign(:timezone, KanbanWeb.Timezone.browser_timezone(socket))
      |> assign_workspace_metrics(selected_ids)}
   end
 
@@ -78,7 +79,8 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     opts = [
       scope: socket.assigns.current_scope,
       board_ids: board_ids_filter(boards, selected_ids),
-      window_days: window_days
+      window_days: window_days,
+      timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
     socket
