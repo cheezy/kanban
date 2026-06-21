@@ -1883,4 +1883,118 @@ defmodule Kanban.MetricsTest do
       assert today_snapshot.backlog == 0
     end
   end
+
+  describe "workspace reads — :window_days option" do
+    test "with no :window_days every daily series keeps the 14-day default" do
+      %{scope: scope} = ws_setup()
+
+      assert length(Metrics.cycle_time_daily(scope: scope)) == 14
+      assert length(Metrics.throughput_daily(scope: scope)) == 14
+      assert length(Metrics.cumulative_flow(scope: scope)) == 14
+    end
+
+    test "a supported :window_days sets the daily series length" do
+      %{scope: scope} = ws_setup()
+
+      for w <- [7, 14, 30, 90] do
+        assert length(Metrics.cycle_time_daily(scope: scope, window_days: w)) == w
+        assert length(Metrics.throughput_daily(scope: scope, window_days: w)) == w
+        assert length(Metrics.cumulative_flow(scope: scope, window_days: w)) == w
+      end
+    end
+
+    test "an unsupported, nil, or absent :window_days clamps to 14" do
+      %{scope: scope} = ws_setup()
+
+      for bad <- [5, 1000, :foo, nil] do
+        assert length(Metrics.cycle_time_daily(scope: scope, window_days: bad)) == 14
+        assert length(Metrics.throughput_daily(scope: scope, window_days: bad)) == 14
+        assert length(Metrics.cumulative_flow(scope: scope, window_days: bad)) == 14
+      end
+
+      # An out-of-range window yields exactly the default-window result.
+      assert Metrics.cycle_time_daily(scope: scope, window_days: 5) ==
+               Metrics.cycle_time_daily(scope: scope)
+    end
+
+    test "throughput_daily zero-path respects the resolved window" do
+      scope = Scope.for_user(user_fixture())
+
+      assert Metrics.throughput_daily(scope: scope, window_days: 7) == List.duplicate(0, 7)
+      assert Metrics.throughput_daily(scope: scope, window_days: 5) == List.duplicate(0, 14)
+    end
+
+    test "the window bounds which completions are counted, not just the series length" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # 2 completions inside every window, 1 completion only inside 30/90.
+      Enum.each(1..2, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+      column |> task_fixture() |> ws_complete!(20)
+
+      within_7 = Metrics.throughput_daily(scope: scope, window_days: 7)
+      within_default = Metrics.throughput_daily(scope: scope)
+      within_30 = Metrics.throughput_daily(scope: scope, window_days: 30)
+
+      assert Enum.sum(within_7) == 2
+      assert Enum.sum(within_default) == 2
+      assert Enum.sum(within_30) == 3
+    end
+
+    test "workspace_kpis throughput_per_day divides by the resolved window" do
+      %{column: column, scope: scope} = ws_setup()
+
+      Enum.each(1..3, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+
+      assert_in_delta Metrics.workspace_kpis(scope: scope, window_days: 7).throughput_per_day,
+                      3 / 7,
+                      0.001
+
+      assert_in_delta Metrics.workspace_kpis(scope: scope).throughput_per_day, 3 / 14, 0.001
+    end
+
+    test "workspace_kpis deltas use the matching previous window of the same length" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # 3 completions a day ago, 1 completion ten days ago.
+      Enum.each(1..3, fn _ -> column |> task_fixture() |> ws_complete!(1) end)
+      column |> task_fixture() |> ws_complete!(10)
+
+      # window 7: current = 3 (day-1), previous (days 7–14) = 1 (day-10) → +200%.
+      assert_in_delta Metrics.workspace_kpis(scope: scope, window_days: 7).throughput_delta_pct,
+                      200.0,
+                      0.1
+
+      # window 30: both completions fall inside the current window, previous is
+      # empty → divide-by-zero guard collapses the delta to 0.0.
+      assert Metrics.workspace_kpis(scope: scope, window_days: 30).throughput_delta_pct == 0.0
+    end
+
+    test "agent_leaderboard counts only completions inside the resolved window" do
+      %{column: column, scope: scope} = ws_setup()
+
+      column |> task_fixture(%{completed_by_agent: "Claude"}) |> ws_complete!(1)
+      column |> task_fixture(%{completed_by_agent: "Claude"}) |> ws_complete!(20)
+
+      assert [%{name: "Claude", completed: 1}] =
+               Metrics.agent_leaderboard(scope: scope, window_days: 7)
+
+      assert [%{name: "Claude", completed: 2}] =
+               Metrics.agent_leaderboard(scope: scope, window_days: 30)
+    end
+
+    test "cumulative_flow returns one snapshot per day of the resolved window" do
+      %{scope: scope} = ws_setup()
+
+      flow = Metrics.cumulative_flow(scope: scope, window_days: 90)
+      assert length(flow) == 90
+
+      for snapshot <- flow do
+        assert %Date{} = snapshot.date
+
+        for k <- [:backlog, :ready, :doing, :review, :done] do
+          assert is_integer(Map.fetch!(snapshot, k))
+        end
+      end
+    end
+  end
 end

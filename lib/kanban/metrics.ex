@@ -636,6 +636,7 @@ defmodule Kanban.Metrics do
   # ===================================================================
 
   @workspace_window_days 14
+  @allowed_window_days [7, 14, 30, 90]
   @workspace_agent_leaderboard_limit 6
 
   @doc """
@@ -649,6 +650,11 @@ defmodule Kanban.Metrics do
 
     * `:scope` — a `Kanban.Accounts.Scope.t/0`. When `nil` or its user
       is `nil`, the function returns the zero map.
+    * `:window_days` — the trailing window length in days. Allow-listed
+      to #{inspect(@allowed_window_days)}; any other value (including
+      `nil` or an absent option) falls back to #{@workspace_window_days}.
+      The previous window used for the delta percentages always matches
+      the resolved window length.
   """
   @spec workspace_kpis(keyword()) :: %{
           cycle_time_median_minutes: non_neg_integer(),
@@ -666,40 +672,44 @@ defmodule Kanban.Metrics do
         zero_kpis()
 
       board_ids ->
+        window_days = resolve_window_days(opts)
         now = DateTime.utc_now()
-        current_start = shift_days(now, -@workspace_window_days)
-        previous_start = shift_days(now, -2 * @workspace_window_days)
+        current_start = shift_days(now, -window_days)
+        previous_start = shift_days(now, -2 * window_days)
 
         current = completed_tasks_in_window(board_ids, current_start, now)
         previous = completed_tasks_in_window(board_ids, previous_start, current_start)
 
-        build_kpis(current, previous)
+        build_kpis(current, previous, window_days)
     end
   end
 
   @doc """
-  Returns the 14 most recent days of median cycle time, split by
+  Returns the most recent days of median cycle time, split by
   `created_by_agent` presence.
 
   Each entry is `%{date: Date.t(), agent_minutes: integer(),
   human_minutes: integer()}` ordered oldest-to-newest. Days with no
-  completed tasks render zeros.
+  completed tasks render zeros. The series length is the resolved
+  `:window_days` option (default #{@workspace_window_days}).
   """
   @spec cycle_time_daily(keyword()) :: [
           %{date: Date.t(), agent_minutes: non_neg_integer(), human_minutes: non_neg_integer()}
         ]
   def cycle_time_daily(opts \\ []) do
+    window_days = resolve_window_days(opts)
+
     case scoped_board_ids(opts) do
-      [] -> empty_day_series(&zero_cycle_entry/1)
-      board_ids -> build_cycle_time_daily(board_ids)
+      [] -> empty_day_series(&zero_cycle_entry/1, window_days)
+      board_ids -> build_cycle_time_daily(board_ids, window_days)
     end
   end
 
   defp zero_cycle_entry(date), do: %{date: date, agent_minutes: 0, human_minutes: 0}
 
-  defp build_cycle_time_daily(board_ids) do
+  defp build_cycle_time_daily(board_ids, window_days) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -@workspace_window_days + 1)
+    window_start = shift_days(now, -window_days + 1)
 
     per_day =
       board_ids
@@ -707,7 +717,7 @@ defmodule Kanban.Metrics do
       |> bucket_cycle_minutes()
 
     now
-    |> day_range()
+    |> day_range(window_days)
     |> Enum.map(&cycle_entry_for(&1, per_day))
   end
 
@@ -732,19 +742,24 @@ defmodule Kanban.Metrics do
   end
 
   @doc """
-  Returns the 14 most recent daily completion counts, oldest-to-newest.
+  Returns the most recent daily completion counts, oldest-to-newest.
+
+  The series length is the resolved `:window_days` option
+  (default #{@workspace_window_days}).
   """
   @spec throughput_daily(keyword()) :: [non_neg_integer()]
   def throughput_daily(opts \\ []) do
+    window_days = resolve_window_days(opts)
+
     case scoped_board_ids(opts) do
-      [] -> List.duplicate(0, @workspace_window_days)
-      board_ids -> build_throughput_daily(board_ids)
+      [] -> List.duplicate(0, window_days)
+      board_ids -> build_throughput_daily(board_ids, window_days)
     end
   end
 
-  defp build_throughput_daily(board_ids) do
+  defp build_throughput_daily(board_ids, window_days) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -@workspace_window_days + 1)
+    window_start = shift_days(now, -window_days + 1)
 
     counts =
       board_ids
@@ -752,13 +767,14 @@ defmodule Kanban.Metrics do
       |> Enum.frequencies_by(&completed_on_date/1)
 
     now
-    |> day_range()
+    |> day_range(window_days)
     |> Enum.map(&Map.get(counts, &1, 0))
   end
 
   @doc """
   Returns up to six contributors (agents before humans, descending by
-  completed count) for the last 14 days.
+  completed count) for the trailing window (the resolved `:window_days`
+  option, default #{@workspace_window_days}).
 
   Each entry is `%{name: String.t(), kind: :agent | :human,
   completed: non_neg_integer(), success_pct: float()}`. `success_pct`
@@ -775,15 +791,17 @@ defmodule Kanban.Metrics do
           }
         ]
   def agent_leaderboard(opts \\ []) do
+    window_days = resolve_window_days(opts)
+
     case scoped_board_ids(opts) do
       [] -> []
-      board_ids -> build_agent_leaderboard(board_ids)
+      board_ids -> build_agent_leaderboard(board_ids, window_days)
     end
   end
 
-  defp build_agent_leaderboard(board_ids) do
+  defp build_agent_leaderboard(board_ids, window_days) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -@workspace_window_days + 1)
+    window_start = shift_days(now, -window_days + 1)
 
     tasks =
       board_ids
@@ -809,10 +827,11 @@ defmodule Kanban.Metrics do
   end
 
   @doc """
-  Returns 14 daily cumulative-flow snapshots, oldest-to-newest. Each
+  Returns daily cumulative-flow snapshots, oldest-to-newest. Each
   snapshot has integer counts for `:backlog`, `:ready`, `:doing`,
   `:review`, and `:done`. See the `@moduledoc` for the per-state
-  approximation rules.
+  approximation rules. The series length is the resolved `:window_days`
+  option (default #{@workspace_window_days}).
   """
   @spec cumulative_flow(keyword()) :: [
           %{
@@ -825,18 +844,20 @@ defmodule Kanban.Metrics do
           }
         ]
   def cumulative_flow(opts \\ []) do
+    window_days = resolve_window_days(opts)
+
     case scoped_board_ids(opts) do
-      [] -> empty_day_series(&zero_flow_snapshot/1)
-      board_ids -> build_cumulative_flow(board_ids)
+      [] -> empty_day_series(&zero_flow_snapshot/1, window_days)
+      board_ids -> build_cumulative_flow(board_ids, window_days)
     end
   end
 
-  defp build_cumulative_flow(board_ids) do
+  defp build_cumulative_flow(board_ids, window_days) do
     now = DateTime.utc_now()
     tasks = workspace_tasks(board_ids)
 
     now
-    |> day_range()
+    |> day_range(window_days)
     |> Enum.map(&cfd_snapshot(tasks, &1))
   end
 
@@ -867,6 +888,18 @@ defmodule Kanban.Metrics do
     requested_ids
     |> Enum.uniq()
     |> Enum.filter(&MapSet.member?(visible_set, &1))
+  end
+
+  # Resolve the trailing window length from an untrusted client option.
+  # The value bounds already board-scoped queries, so it is restricted to
+  # a fixed allow-list — any unsupported value (including `nil` or an
+  # absent option) falls back to the default so a forged number can never
+  # force an unbounded or very large scan.
+  defp resolve_window_days(opts) do
+    case Keyword.get(opts, :window_days) do
+      days when days in @allowed_window_days -> days
+      _ -> @workspace_window_days
+    end
   end
 
   defp completed_tasks_in_window(board_ids, %DateTime{} = window_start, %DateTime{} = window_end) do
@@ -904,15 +937,15 @@ defmodule Kanban.Metrics do
     }
   end
 
-  defp build_kpis(current, previous) do
+  defp build_kpis(current, previous, window_days) do
     cycle_current = median_cycle_minutes(current)
     cycle_previous = median_cycle_minutes(previous)
 
     lead_current = percentile_lead_minutes(current, 75)
     lead_previous = percentile_lead_minutes(previous, 75)
 
-    throughput_current = length(current) / @workspace_window_days
-    throughput_previous = length(previous) / @workspace_window_days
+    throughput_current = length(current) / window_days
+    throughput_previous = length(previous) / window_days
 
     review_current = median_review_wait_minutes(current)
     review_previous = median_review_wait_minutes(previous)
@@ -1027,16 +1060,16 @@ defmodule Kanban.Metrics do
   defp completed_on_date(%{completed_at: %DateTime{} = dt}), do: DateTime.to_date(dt)
   defp completed_on_date(_), do: nil
 
-  defp day_range(%DateTime{} = now) do
+  defp day_range(%DateTime{} = now, window_days) do
     today = DateTime.to_date(now)
 
-    (-@workspace_window_days + 1)..0
+    (-window_days + 1)..0
     |> Enum.map(&Date.add(today, &1))
   end
 
-  defp empty_day_series(builder) when is_function(builder, 1) do
+  defp empty_day_series(builder, window_days) when is_function(builder, 1) do
     DateTime.utc_now()
-    |> day_range()
+    |> day_range(window_days)
     |> Enum.map(builder)
   end
 
