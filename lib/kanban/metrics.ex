@@ -709,9 +709,10 @@ defmodule Kanban.Metrics do
 
       board_ids ->
         window_days = resolve_window_days(opts)
+        timezone = Keyword.get(opts, :timezone, "Etc/UTC")
         now = DateTime.utc_now()
-        current_start = shift_days(now, -window_days)
-        previous_start = shift_days(now, -2 * window_days)
+        current_start = local_day_start(window_days - 1, timezone)
+        previous_start = local_day_start(2 * window_days - 1, timezone)
 
         current = completed_tasks_in_window(board_ids, current_start, now)
         previous = completed_tasks_in_window(board_ids, previous_start, current_start)
@@ -734,26 +735,27 @@ defmodule Kanban.Metrics do
         ]
   def cycle_time_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
     case scoped_board_ids(opts) do
-      [] -> empty_day_series(&zero_cycle_entry/1, window_days)
-      board_ids -> build_cycle_time_daily(board_ids, window_days)
+      [] -> empty_day_series(&zero_cycle_entry/1, window_days, timezone)
+      board_ids -> build_cycle_time_daily(board_ids, window_days, timezone)
     end
   end
 
   defp zero_cycle_entry(date), do: %{date: date, agent_minutes: 0, human_minutes: 0}
 
-  defp build_cycle_time_daily(board_ids, window_days) do
+  defp build_cycle_time_daily(board_ids, window_days, timezone) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -window_days + 1)
+    window_start = local_day_start(window_days - 1, timezone)
 
     per_day =
       board_ids
       |> completed_tasks_in_window(window_start, now)
-      |> bucket_cycle_minutes()
+      |> bucket_cycle_minutes(timezone)
 
-    now
-    |> day_range(window_days)
+    window_days
+    |> day_range(timezone)
     |> Enum.map(&cycle_entry_for(&1, per_day))
   end
 
@@ -763,9 +765,9 @@ defmodule Kanban.Metrics do
     |> Map.put(:date, date)
   end
 
-  defp bucket_cycle_minutes(tasks) do
+  defp bucket_cycle_minutes(tasks, timezone) do
     tasks
-    |> Enum.group_by(&completed_on_date/1)
+    |> Enum.group_by(&completed_on_date(&1, timezone))
     |> Map.new(&cycle_bucket_entry/1)
   end
 
@@ -786,24 +788,25 @@ defmodule Kanban.Metrics do
   @spec throughput_daily(keyword()) :: [non_neg_integer()]
   def throughput_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
     case scoped_board_ids(opts) do
       [] -> List.duplicate(0, window_days)
-      board_ids -> build_throughput_daily(board_ids, window_days)
+      board_ids -> build_throughput_daily(board_ids, window_days, timezone)
     end
   end
 
-  defp build_throughput_daily(board_ids, window_days) do
+  defp build_throughput_daily(board_ids, window_days, timezone) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -window_days + 1)
+    window_start = local_day_start(window_days - 1, timezone)
 
     counts =
       board_ids
       |> completed_tasks_in_window(window_start, now)
-      |> Enum.frequencies_by(&completed_on_date/1)
+      |> Enum.frequencies_by(&completed_on_date(&1, timezone))
 
-    now
-    |> day_range(window_days)
+    window_days
+    |> day_range(timezone)
     |> Enum.map(&Map.get(counts, &1, 0))
   end
 
@@ -828,16 +831,17 @@ defmodule Kanban.Metrics do
         ]
   def agent_leaderboard(opts \\ []) do
     window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
     case scoped_board_ids(opts) do
       [] -> []
-      board_ids -> build_agent_leaderboard(board_ids, window_days)
+      board_ids -> build_agent_leaderboard(board_ids, window_days, timezone)
     end
   end
 
-  defp build_agent_leaderboard(board_ids, window_days) do
+  defp build_agent_leaderboard(board_ids, window_days, timezone) do
     now = DateTime.utc_now()
-    window_start = shift_days(now, -window_days + 1)
+    window_start = local_day_start(window_days - 1, timezone)
 
     tasks =
       board_ids
@@ -881,20 +885,20 @@ defmodule Kanban.Metrics do
         ]
   def cumulative_flow(opts \\ []) do
     window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
     case scoped_board_ids(opts) do
-      [] -> empty_day_series(&zero_flow_snapshot/1, window_days)
-      board_ids -> build_cumulative_flow(board_ids, window_days)
+      [] -> empty_day_series(&zero_flow_snapshot/1, window_days, timezone)
+      board_ids -> build_cumulative_flow(board_ids, window_days, timezone)
     end
   end
 
-  defp build_cumulative_flow(board_ids, window_days) do
-    now = DateTime.utc_now()
+  defp build_cumulative_flow(board_ids, window_days, timezone) do
     tasks = workspace_tasks(board_ids)
 
-    now
-    |> day_range(window_days)
-    |> Enum.map(&cfd_snapshot(tasks, &1))
+    window_days
+    |> day_range(timezone)
+    |> Enum.map(&cfd_snapshot(tasks, &1, timezone))
   end
 
   # --- Workspace helpers ----------------------------------------------------
@@ -1093,32 +1097,41 @@ defmodule Kanban.Metrics do
   defp success_pct(_success, 0), do: 0.0
   defp success_pct(success, total), do: success / total * 100.0
 
-  defp completed_on_date(%{completed_at: %DateTime{} = dt}), do: DateTime.to_date(dt)
-  defp completed_on_date(_), do: nil
+  defp completed_on_date(%{completed_at: %DateTime{} = dt}, timezone),
+    do: Timezone.local_date(dt, timezone)
 
-  defp day_range(%DateTime{} = now, window_days) do
-    today = DateTime.to_date(now)
+  defp completed_on_date(_, _timezone), do: nil
+
+  # The viewer's local calendar days for the trailing window, oldest-to-newest:
+  # the last `window_days` days ending on the local "today".
+  defp day_range(window_days, timezone) do
+    today = Timezone.local_today(timezone)
 
     (-window_days + 1)..0
     |> Enum.map(&Date.add(today, &1))
   end
 
-  defp empty_day_series(builder, window_days) when is_function(builder, 1) do
-    DateTime.utc_now()
-    |> day_range(window_days)
-    |> Enum.map(builder)
+  # The UTC instant of the start of the local day `days_back` days before the
+  # viewer's local "today" — the query boundary for a trailing local-day window.
+  defp local_day_start(days_back, timezone) do
+    timezone
+    |> Timezone.local_today()
+    |> Date.add(-days_back)
+    |> Timezone.start_of_local_day(timezone)
   end
 
-  defp shift_days(%DateTime{} = dt, days) when is_integer(days) do
-    DateTime.add(dt, days * 86_400, :second)
+  defp empty_day_series(builder, window_days, timezone) when is_function(builder, 1) do
+    window_days
+    |> day_range(timezone)
+    |> Enum.map(builder)
   end
 
   defp zero_flow_snapshot(date) do
     %{date: date, backlog: 0, ready: 0, doing: 0, review: 0, done: 0}
   end
 
-  defp cfd_snapshot(tasks, date) do
-    eod = end_of_day(date)
+  defp cfd_snapshot(tasks, date, timezone) do
+    eod = Timezone.end_of_local_day(date, timezone)
     visible = Enum.reject(tasks, &archived_before?(&1, eod))
     counts = cfd_bucket_counts(visible, eod)
 
@@ -1133,11 +1146,6 @@ defmodule Kanban.Metrics do
       review: Enum.count(visible, &review_at?(&1, eod)),
       done: Enum.count(visible, &done_at?(&1, eod))
     }
-  end
-
-  defp end_of_day(date) do
-    {:ok, dt} = DateTime.new(date, ~T[23:59:59], "Etc/UTC")
-    dt
   end
 
   defp archived_before?(%{archived_at: %DateTime{} = a}, eod),

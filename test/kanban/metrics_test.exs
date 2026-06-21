@@ -1550,6 +1550,59 @@ defmodule Kanban.MetricsTest do
     t
   end
 
+  describe "workspace reads — local timezone bucketing (W1267)" do
+    # Anchor test data to a fixed day in the middle of the window (computed from
+    # the viewer's local "today"), so the assertions are robust to the wall-clock
+    # time the suite runs at. America/Edmonton is MDT (UTC-6) in June.
+    test "throughput_daily splits a UTC day into two local days for a western zone" do
+      %{column: column, scope: scope} = ws_setup()
+      tz = "America/Edmonton"
+      d = tz |> Kanban.Timezone.local_today() |> Date.add(-7)
+      midnight = Kanban.Timezone.start_of_local_day(d, tz)
+      before_mid = DateTime.add(midnight, -3600, :second)
+      after_mid = DateTime.add(midnight, 3600, :second)
+
+      column |> task_fixture() |> Tasks.update_task(%{completed_at: before_mid})
+      column |> task_fixture() |> Tasks.update_task(%{completed_at: after_mid})
+
+      local = Metrics.throughput_daily(scope: scope, timezone: tz)
+      utc = Metrics.throughput_daily(scope: scope)
+
+      # Edmonton: the two completions straddle local midnight -> two separate days.
+      assert Enum.filter(local, &(&1 > 0)) == [1, 1]
+      assert Enum.sum(local) == 2
+
+      # UTC: both fall on the same UTC calendar day -> one bucket of 2.
+      assert Enum.filter(utc, &(&1 > 0)) == [2]
+      assert Enum.sum(utc) == 2
+    end
+
+    test "cumulative_flow classifies a task by the viewer's local end-of-day" do
+      %{column: column, scope: scope} = ws_setup()
+      tz = "America/Edmonton"
+      d = tz |> Kanban.Timezone.local_today() |> Date.add(-5)
+      next_day = Date.add(d, 1)
+      # Just after UTC midnight of d+1, but still inside local day d in Edmonton.
+      utc_next_midnight = Kanban.Timezone.start_of_local_day(next_day, "Etc/UTC")
+      completed = DateTime.add(utc_next_midnight, 60, :second)
+      claimed = DateTime.add(completed, -7200, :second)
+
+      column
+      |> task_fixture()
+      |> Tasks.update_task(%{claimed_at: claimed, completed_at: completed, needs_review: false})
+
+      local_cfd = Metrics.cumulative_flow(scope: scope, timezone: tz)
+      utc_cfd = Metrics.cumulative_flow(scope: scope)
+      local_snap = Enum.find(local_cfd, &(&1.date == d))
+      utc_snap = Enum.find(utc_cfd, &(&1.date == d))
+
+      # Done by Edmonton's end-of-day d, but still "doing" by UTC's end-of-day d.
+      assert local_snap.done == 1
+      assert utc_snap.done == 0
+      assert utc_snap.doing == 1
+    end
+  end
+
   describe "workspace reads accept a :timezone option (W1264 pass-through)" do
     # The option is threaded now but not yet consumed; omitting it must match
     # passing the documented "Etc/UTC" default. This invariant holds before and

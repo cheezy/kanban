@@ -55,4 +55,22 @@ defmodule Kanban.Timezone do
       {:error, _reason} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
     end
   end
+
+  @doc """
+  The UTC `DateTime` of the last second (23:59:59) of `date` in `timezone` — the
+  local day's end as an instant to compare against UTC-stored timestamps.
+
+  DST-safe: an ambiguous end-of-day resolves to the later instant and a gap to
+  the instant after it (both keep the whole local day inside the boundary); an
+  unknown zone falls back to 23:59:59 UTC.
+  """
+  @spec end_of_local_day(Date.t(), String.t()) :: DateTime.t()
+  def end_of_local_day(%Date{} = date, timezone) do
+    case DateTime.new(date, ~T[23:59:59], timezone) do
+      {:ok, local_eod} -> DateTime.shift_zone!(local_eod, "Etc/UTC")
+      {:ambiguous, _first, last} -> DateTime.shift_zone!(last, "Etc/UTC")
+      {:gap, _just_before, just_after} -> DateTime.shift_zone!(just_after, "Etc/UTC")
+      {:error, _reason} -> DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+    end
+  end
 end
