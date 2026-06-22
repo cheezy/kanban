@@ -11,7 +11,7 @@ defmodule Kanban.Metrics do
   across every board the scoped user can access:
 
     * `workspace_kpis/1` — KPI strip with delta-vs-previous-14-day percentages
-    * `cycle_time_daily/1` — 14 daily medians split agent / human
+    * `cycle_time_daily/1` — 14 daily median cycle times
     * `throughput_daily/1` — 14 daily completion counts
     * `agent_leaderboard/1` — top 6 contributors (agents before humans)
     * `cumulative_flow/1` — 14 daily snapshots across 5 derived states
@@ -714,17 +714,15 @@ defmodule Kanban.Metrics do
   end
 
   @doc """
-  Returns the most recent days of median cycle time, split by
-  `created_by_agent` presence.
+  Returns the most recent days of overall median cycle time.
 
-  Each entry is `%{date: Date.t(), agent_minutes: integer(),
-  human_minutes: integer()}` ordered oldest-to-newest. Days with no
-  completed tasks render zeros. The series length is the resolved
-  `:window_days` option (default #{@workspace_window_days}).
+  Each entry is `%{date: Date.t(), minutes: integer()}` ordered
+  oldest-to-newest, where `minutes` is the median cycle time across all
+  completed tasks that day. Days with no completed tasks render zero.
+  The series length is the resolved `:window_days` option (default
+  #{@workspace_window_days}).
   """
-  @spec cycle_time_daily(keyword()) :: [
-          %{date: Date.t(), agent_minutes: non_neg_integer(), human_minutes: non_neg_integer()}
-        ]
+  @spec cycle_time_daily(keyword()) :: [%{date: Date.t(), minutes: non_neg_integer()}]
   def cycle_time_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
@@ -735,7 +733,7 @@ defmodule Kanban.Metrics do
     end
   end
 
-  defp zero_cycle_entry(date), do: %{date: date, agent_minutes: 0, human_minutes: 0}
+  defp zero_cycle_entry(date), do: %{date: date, minutes: 0}
 
   defp build_cycle_time_daily(board_ids, window_days, timezone) do
     now = DateTime.utc_now()
@@ -753,7 +751,7 @@ defmodule Kanban.Metrics do
 
   defp cycle_entry_for(date, per_day) do
     per_day
-    |> Map.get(date, %{agent_minutes: 0, human_minutes: 0})
+    |> Map.get(date, %{minutes: 0})
     |> Map.put(:date, date)
   end
 
@@ -764,11 +762,7 @@ defmodule Kanban.Metrics do
   end
 
   defp cycle_bucket_entry({date, tasks}) do
-    {date,
-     %{
-       agent_minutes: tasks |> Enum.filter(&agent_task?/1) |> median_cycle_minutes(),
-       human_minutes: tasks |> Enum.reject(&agent_task?/1) |> median_cycle_minutes()
-     }}
+    {date, %{minutes: median_cycle_minutes(tasks)}}
   end
 
   @doc """
@@ -1055,9 +1049,6 @@ defmodule Kanban.Metrics do
 
   defp round_or_zero(nil), do: 0
   defp round_or_zero(value) when is_number(value), do: round(value)
-
-  defp agent_task?(%{created_by_agent: agent}) when is_binary(agent) and agent != "", do: true
-  defp agent_task?(_), do: false
 
   defp human_completion?(%{completed_by_agent: agent}) when is_binary(agent) and agent != "",
     do: false

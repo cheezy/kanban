@@ -267,7 +267,8 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 7
       # Throughput, cycle-time, leaderboard, and KPI subtitles all follow.
       assert html =~ "7 days"
-      assert html =~ "agent vs human · last 7 days"
+      # The cycle-time chart is now a single series — no agent/human split.
+      refute html =~ "agent vs human"
       assert html =~ "Agents · last 7 days"
       assert html =~ "vs prev 7d"
       refute html =~ "vs prev 14d"

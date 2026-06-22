@@ -11,11 +11,10 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
 
   defp data(opts \\ []) do
     base = ~D[2026-05-01]
-    agent = Keyword.get(opts, :agent_minutes, 60)
-    human = Keyword.get(opts, :human_minutes, 30)
+    minutes = Keyword.get(opts, :minutes, 60)
 
     for i <- 0..13 do
-      %{date: Date.add(base, i), agent_minutes: agent, human_minutes: human}
+      %{date: Date.add(base, i), minutes: minutes}
     end
   end
 
@@ -57,53 +56,54 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
     end
   end
 
-  describe "cycle_time_chart/1 — segments and colors" do
-    test "agent segment uses stride-orange token" do
+  describe "cycle_time_chart/1 — bar and colors" do
+    test "the single cycle bar uses the stride-orange token" do
       html = render_chart(data())
-      orange_segments = Regex.scan(~r/data-metrics-cycle-time-segment="agent"/, html)
+      orange_segments = Regex.scan(~r/data-metrics-cycle-time-segment="cycle"/, html)
       assert length(orange_segments) == 14
       assert html =~ "background: var(--stride-orange)"
     end
 
-    test "human segment uses stride-violet token" do
+    test "no agent/human split segments are rendered" do
       html = render_chart(data())
-      violet_segments = Regex.scan(~r/data-metrics-cycle-time-segment="human"/, html)
-      assert length(violet_segments) == 14
-      assert html =~ "background: var(--stride-violet)"
+      assert Regex.scan(~r/data-metrics-cycle-time-segment="agent"/, html) == []
+      assert Regex.scan(~r/data-metrics-cycle-time-segment="human"/, html) == []
+      refute html =~ "var(--stride-violet)"
     end
 
-    test "scales segment heights against the 150m baseline when values are smaller" do
+    test "scales bar heights against the 150m baseline when values are smaller" do
       # 30m on a 150m scale → 30/150 * 170 = 34px
-      html = render_chart(data(agent_minutes: 30, human_minutes: 30))
+      html = render_chart(data(minutes: 30))
       assert html =~ "height: 34.0px"
     end
 
     test "scales the chart_max up when peak exceeds 150 so bars do not clip" do
-      # If agent+human = 300, chart_max becomes 300; the 50m gridline
+      # If the median is 300, chart_max becomes 300; the 50m gridline
       # then sits at 50/300 = ~16.7% from the bottom.
-      html = render_chart(data(agent_minutes: 200, human_minutes: 100))
+      html = render_chart(data(minutes: 300))
       assert html =~ ~r/bottom: 16\.6\d+%/
       # The 150m gridline sits at exactly 50% rather than at the top edge.
       assert html =~ "bottom: 50.0%"
     end
 
-    test "zero-minute entries render zero-height segments" do
-      html = render_chart(data(agent_minutes: 0, human_minutes: 0))
+    test "zero-minute entries render zero-height bars" do
+      html = render_chart(data(minutes: 0))
       assert html =~ "height: 0.0px"
     end
   end
 
-  describe "cycle_time_chart/1 — legend and labels" do
-    test "renders Agent and Human legend swatches" do
+  describe "cycle_time_chart/1 — header and labels" do
+    test "renders no agent/human legend" do
       html = render_chart(data())
-      assert html =~ "Agent"
-      assert html =~ "Human"
+      refute html =~ "Agent"
+      refute html =~ "Human"
     end
 
     test "renders the title and subtitle" do
       html = render_chart(data())
       assert html =~ "Cycle time · daily median (min)"
-      assert html =~ "agent vs human · last 14 days"
+      assert html =~ "last 14 days"
+      refute html =~ "agent vs human"
     end
 
     test "renders a single-letter weekday label under each bar" do

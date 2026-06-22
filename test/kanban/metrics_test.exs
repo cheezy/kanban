@@ -1890,41 +1890,43 @@ defmodule Kanban.MetricsTest do
       dates = Enum.map(entries, & &1.date)
       assert dates == Enum.sort(dates, Date)
 
-      for %{date: d, agent_minutes: a, human_minutes: h} <- entries do
+      for %{date: d, minutes: m} <- entries do
         assert %Date{} = d
-        assert is_integer(a)
-        assert is_integer(h)
+        assert is_integer(m)
       end
     end
 
-    test "splits agent vs human minutes by created_by_agent presence",
+    test "the daily median spans all completed tasks regardless of created_by_agent",
          %{} do
       %{column: column, scope: scope} = ws_setup()
 
-      # 2-hour cycle for the agent task today
+      # 2-hour cycle for an agent-created task today
       agent_task = task_fixture(column, %{created_by_agent: "Claude"})
 
       ws_complete!(agent_task, 0,
         claimed_at: DateTime.add(DateTime.utc_now(), -2 * 3600, :second)
       )
 
-      # 30-minute cycle for the human task today
+      # 1-hour cycle for a human-created task today
       human_task = task_fixture(column, %{created_by_agent: nil})
 
-      ws_complete!(human_task, 0, claimed_at: DateTime.add(DateTime.utc_now(), -30 * 60, :second))
+      ws_complete!(human_task, 0, claimed_at: DateTime.add(DateTime.utc_now(), -3600, :second))
 
       entries = Metrics.cycle_time_daily(scope: scope)
       today = List.last(entries)
 
-      assert today.agent_minutes == 120
-      assert today.human_minutes == 30
+      # A single series: median of [60, 120] minutes is 90, with no
+      # agent/human split keys present.
+      assert today.minutes == 90
+      refute Map.has_key?(today, :agent_minutes)
+      refute Map.has_key?(today, :human_minutes)
     end
 
     test "returns 14 zero entries for an empty workspace" do
       scope = Scope.for_user(user_fixture())
       entries = Metrics.cycle_time_daily(scope: scope)
       assert length(entries) == 14
-      assert Enum.all?(entries, &(&1.agent_minutes == 0 and &1.human_minutes == 0))
+      assert Enum.all?(entries, &(&1.minutes == 0))
     end
   end
 

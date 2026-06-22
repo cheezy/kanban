@@ -1,32 +1,26 @@
 defmodule KanbanWeb.MetricsCycleTimeChart do
   @moduledoc """
-  Stacked-bar chart rendering the trailing-14-day daily median cycle
-  time split agent vs human.
+  Bar chart rendering the trailing-14-day overall daily median cycle
+  time as a single series.
 
   Consumes the list shape returned by `Kanban.Metrics.cycle_time_daily/1`:
 
-      [%{date: Date.t(), agent_minutes: integer(), human_minutes: integer()}, ...]
+      [%{date: Date.t(), minutes: integer()}, ...]
 
   Renders a 180px-tall plot with:
 
     * A four-line dashed gridline at 0 / 50 / 100 / 150 minutes (the
-      spec's fixed Y-axis ticks). If any day exceeds 150 minutes the
-      chart's internal max scales to the actual data max so no bar
-      clips, while the labelled ticks stay anchored at the four spec
-      values.
-    * One column per entry. Each column stacks a human segment
-      (`var(--stride-violet)`, rounded top) above an agent segment
-      (`var(--stride-orange)`, rounded only at the very top of the bar
-      when the human segment is zero).
+      fixed Y-axis ticks). If any day exceeds 150 minutes the chart's
+      internal max scales to the actual data max so no bar clips, while
+      the labelled ticks stay anchored at the four values.
+    * One column per entry — a single bar (`var(--stride-orange)`,
+      rounded top) whose height is that day's median cycle time.
     * A single-letter day-of-week label under each column.
-    * A title + subtitle + Agent / Human legend in the header row.
+    * A title + subtitle in the header row.
 
-  Mirrors `design_handoff_stride/design_source/screens/extras.jsx`
-  lines 787-829. Pure function component — no Ecto, no LiveView wiring.
+  Pure function component — no Ecto, no LiveView wiring.
   """
   use KanbanWeb, :html
-
-  import KanbanWeb.MetricsComponents
 
   @chart_height_px 180
   @bars_area_px 170
@@ -38,10 +32,9 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
   ## Attrs
 
-    * `data` — required. List of `%{date: Date.t(), agent_minutes:
-      integer(), human_minutes: integer()}` entries. The chart adapts
-      to any length, though `Kanban.Metrics.cycle_time_daily/1` always
-      returns exactly 14.
+    * `data` — required. List of `%{date: Date.t(), minutes: integer()}`
+      entries. The chart adapts to any length, though
+      `Kanban.Metrics.cycle_time_daily/1` always returns exactly 14.
   """
   attr :data, :list, required: true
   attr :window_days, :integer, default: 14
@@ -70,11 +63,8 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
           {gettext("Cycle time · daily median (min)")}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
-          {gettext("agent vs human · last %{count} days", count: @window_days)}
+          {gettext("last %{count} days", count: @window_days)}
         </span>
-        <span class="hidden md:inline" style="flex: 1;" />
-        <.legend_swatch label={gettext("Agent")} color="var(--stride-orange)" />
-        <.legend_swatch label={gettext("Human")} color="var(--stride-violet)" />
       </header>
 
       <div class="overflow-x-auto md:overflow-visible">
@@ -118,16 +108,12 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   attr :bars_area_px, :integer, required: true
 
   defp bar(assigns) do
-    agent_h =
-      segment_height_px(assigns.entry.agent_minutes, assigns.chart_max, assigns.bars_area_px)
-
-    human_h =
-      segment_height_px(assigns.entry.human_minutes, assigns.chart_max, assigns.bars_area_px)
+    bar_h =
+      segment_height_px(assigns.entry.minutes, assigns.chart_max, assigns.bars_area_px)
 
     assigns =
       assigns
-      |> assign(:agent_h, agent_h)
-      |> assign(:human_h, human_h)
+      |> assign(:bar_h, bar_h)
       |> assign(:day_letter, day_letter(assigns.entry.date))
 
     ~H"""
@@ -143,18 +129,11 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
     >
       <div style="width: 70%; min-width: 14px; display: flex; flex-direction: column;">
         <div
-          data-metrics-cycle-time-segment="human"
+          data-metrics-cycle-time-segment="cycle"
           style={[
-            "height: #{@human_h}px;",
-            "background: var(--stride-violet); opacity: 0.85;",
+            "height: #{@bar_h}px;",
+            "background: var(--stride-orange);",
             "border-radius: 3px 3px 0 0;"
-          ]}
-        />
-        <div
-          data-metrics-cycle-time-segment="agent"
-          style={[
-            "height: #{@agent_h}px;",
-            "background: var(--stride-orange);"
           ]}
         />
       </div>
@@ -174,7 +153,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   defp chart_max(data) do
     peak =
       data
-      |> Enum.flat_map(fn entry -> [entry.agent_minutes + entry.human_minutes] end)
+      |> Enum.map(fn entry -> entry.minutes end)
       |> Enum.max(fn -> 0 end)
 
     max(peak, @minimum_max)

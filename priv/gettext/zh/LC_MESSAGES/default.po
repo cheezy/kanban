@@ -49,7 +49,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/board_pulse_card.ex:151
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:77
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:78
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -1058,7 +1058,6 @@ msgstr "添加技术"
 msgid "Add Verification Step"
 msgstr "添加验证步骤"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:76
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:173
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
@@ -2133,8 +2132,8 @@ msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:282
-#: lib/kanban_web/live/metrics_live/workspace.ex:101
-#: lib/kanban_web/live/metrics_live/workspace.ex:119
+#: lib/kanban_web/live/metrics_live/workspace.ex:103
+#: lib/kanban_web/live/metrics_live/workspace.ex:121
 #: lib/kanban_web/live/task_live/view_component.ex:246
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2188,7 +2187,7 @@ msgstr "返回仪表盘"
 
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:73
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:74
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2417,7 +2416,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/board_pulse_card.ex:150
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:76
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:77
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
@@ -2558,11 +2557,11 @@ msgstr "任务已完成"
 #: lib/kanban_web/live/board_live/form.ex:124
 #: lib/kanban_web/live/board_live/index.ex:243
 #: lib/kanban_web/live/board_live/show.ex:1336
-#: lib/kanban_web/live/metrics_live/base.ex:81
-#: lib/kanban_web/live/metrics_live/base.ex:81
-#: lib/kanban_web/live/metrics_live/base.ex:81
-#: lib/kanban_web/live/metrics_live/base.ex:81
-#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:82
+#: lib/kanban_web/live/metrics_live/base.ex:82
+#: lib/kanban_web/live/metrics_live/base.ex:82
+#: lib/kanban_web/live/metrics_live/base.ex:82
+#: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/compliance.ex:26
 #, elixir-autogen, elixir-format
 msgid "Board not found"
@@ -3090,7 +3089,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/board_pulse_card.ex:149
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:75
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:76
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3178,7 +3177,7 @@ msgstr "产品"
 #: lib/kanban_web/components/goal_progress_header.ex:205
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:74
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:75
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -4220,7 +4219,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:99
+#: lib/kanban_web/live/metrics_live/workspace.ex:101
 #: lib/kanban_web/live/review_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -4980,7 +4979,7 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "最近 24 小时 · %{count} 个事件"
 
-#: lib/kanban_web/live/agents_live.ex:437
+#: lib/kanban_web/live/agents_live.ex:415
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -5301,22 +5300,17 @@ msgstr "人工响应平均"
 msgid "idea → done"
 msgstr "想法 → 完成"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:70
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:63
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "周期时间"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:77
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Human"
-msgstr "人工"
-
-#: lib/kanban_web/components/metrics_throughput_chart.ex:85
+#: lib/kanban_web/components/metrics_throughput_chart.ex:88
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput sparkline"
 msgstr "吞吐量指标"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:68
+#: lib/kanban_web/components/metrics_throughput_chart.ex:71
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput · tasks completed per day"
 msgstr "吞吐量 · 每日完成的任务数"
@@ -5326,32 +5320,27 @@ msgstr "吞吐量 · 每日完成的任务数"
 msgid "by completed"
 msgstr "按完成数"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:67
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:68
 #, elixir-autogen, elixir-format
 msgid "Cumulative flow"
 msgstr "累积流"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:90
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:91
 #, elixir-autogen, elixir-format
 msgid "Cumulative flow diagram"
 msgstr "累积流图"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:70
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:71
 #, elixir-autogen, elixir-format
 msgid "work in each column over time"
 msgstr "每列在时间维度上的工作量"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:367
+#: lib/kanban_web/live/metrics_live/workspace.ex:344
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "所有看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:127
-#, elixir-autogen, elixir-format
-msgid "Filter"
-msgstr "筛选"
-
-#: lib/kanban_web/live/metrics_live/workspace.ex:359
+#: lib/kanban_web/live/metrics_live/workspace.ex:336
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "所有看板"
@@ -7191,7 +7180,7 @@ msgstr "其中"
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:492
+#: lib/kanban_web/live/agents_live.ex:470
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
@@ -7251,27 +7240,27 @@ msgstr "暂无活动。"
 msgid "Cycle time · today"
 msgstr "周期时间 · 今天"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:361
+#: lib/kanban_web/live/metrics_live/workspace.ex:338
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} 个看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:368
+#: lib/kanban_web/live/metrics_live/workspace.ex:345
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{total} 个看板中的 %{count} 个"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:360
+#: lib/kanban_web/live/metrics_live/workspace.ex:337
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 个看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:194
+#: lib/kanban_web/live/metrics_live/workspace.ex:195
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "暂无看板"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:71
+#: lib/kanban_web/components/metrics_throughput_chart.ex:74
 #, elixir-autogen, elixir-format
 msgid "%{count} days"
 msgstr "%{count} 天"
@@ -7281,7 +7270,7 @@ msgstr "%{count} 天"
 msgid "Agents · last %{count} days"
 msgstr "代理 · 最近 %{count} 天"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:256
+#: lib/kanban_web/live/metrics_live/workspace.ex:257
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "最近 %{count} 天"
@@ -7291,18 +7280,18 @@ msgstr "最近 %{count} 天"
 msgid "No completions in the last %{count} days."
 msgstr "最近 %{count} 天没有完成项。"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:238
+#: lib/kanban_web/live/metrics_live/workspace.ex:239
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "时间范围"
-
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:73
-#, elixir-autogen, elixir-format
-msgid "agent vs human · last %{count} days"
-msgstr "代理 vs 人工 · 最近 %{count} 天"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:53
 #: lib/kanban_web/components/metrics_kpi_strip.ex:71
 #, elixir-autogen, elixir-format
 msgid "vs prev %{count}d"
 msgstr "对比前 %{count} 天"
+
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:66
+#, elixir-autogen, elixir-format, fuzzy
+msgid "last %{count} days"
+msgstr "最近 %{count} 天"
