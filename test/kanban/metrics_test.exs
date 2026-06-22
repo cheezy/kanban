@@ -1946,6 +1946,23 @@ defmodule Kanban.MetricsTest do
       counts = Metrics.throughput_daily(scope: Scope.for_user(user_fixture()))
       assert counts == List.duplicate(0, 14)
     end
+
+    # Regression for D87: a completed goal (its `completed_at` is set when its
+    # last child finishes) must NOT be counted as throughput. Every board-level
+    # metric query excludes `type: :goal`; the workspace path must match, or the
+    # "today" bar over-counts by the number of goals completed that day (the
+    # production 17-vs-14 report).
+    test "excludes completed goals so only work/defect tasks are counted" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # 2 work tasks completed today — the only throughput that should count.
+      Enum.each(1..2, fn _ -> column |> task_fixture() |> ws_complete!(0) end)
+      # A goal completed today must be ignored by throughput.
+      column |> task_fixture(%{type: :goal}) |> ws_complete!(0)
+
+      counts = Metrics.throughput_daily(scope: scope)
+      assert List.last(counts) == 2
+    end
   end
 
   describe "agent_leaderboard/1" do

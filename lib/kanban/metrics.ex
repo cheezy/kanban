@@ -941,6 +941,10 @@ defmodule Kanban.Metrics do
     |> where([t, _c], not is_nil(t.completed_at))
     |> where([t, _c], t.completed_at >= ^window_start)
     |> where([t, _c], t.completed_at <= ^window_end)
+    # Goals get a `completed_at` when their last child finishes; exclude them so
+    # workspace throughput/cycle-time/leaderboard count only real work, matching
+    # every board-level metric query (which all filter `type != :goal`). See D87.
+    |> where([t, _c], t.type != ^:goal)
     |> Repo.all()
   end
 
