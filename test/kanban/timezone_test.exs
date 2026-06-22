@@ -9,12 +9,21 @@ defmodule Kanban.TimezoneTest do
       assert Timezone.local_today("America/Edmonton") == expected
     end
 
+    test "returns the viewer's local date for a zone east of UTC" do
+      expected = "Asia/Tokyo" |> DateTime.now!() |> DateTime.to_date()
+      assert Timezone.local_today("Asia/Tokyo") == expected
+    end
+
     test "returns the UTC date for the UTC zone" do
       assert Timezone.local_today("Etc/UTC") == Date.utc_today()
     end
 
     test "falls back to the UTC date for an unknown zone" do
       assert Timezone.local_today("Not/ARealZone") == Date.utc_today()
+    end
+
+    test "falls back to the UTC date for an empty zone string" do
+      assert Timezone.local_today("") == Date.utc_today()
     end
   end
 
@@ -25,6 +34,12 @@ defmodule Kanban.TimezoneTest do
                ~D[2026-06-20]
     end
 
+    test "shifts a UTC timestamp east of UTC into the next local day" do
+      # 20:00 UTC is 05:00 the next day in Tokyo (JST, UTC+9).
+      assert Timezone.local_date(~U[2026-06-21 20:00:00Z], "Asia/Tokyo") ==
+               ~D[2026-06-22]
+    end
+
     test "keeps the same calendar date for the UTC zone" do
       assert Timezone.local_date(~U[2026-06-21 05:30:00Z], "Etc/UTC") == ~D[2026-06-21]
     end
@@ -32,6 +47,10 @@ defmodule Kanban.TimezoneTest do
     test "falls back to the UTC date when the zone is unknown" do
       assert Timezone.local_date(~U[2026-06-21 05:30:00Z], "Not/ARealZone") ==
                ~D[2026-06-21]
+    end
+
+    test "falls back to the UTC date for an empty zone string" do
+      assert Timezone.local_date(~U[2026-06-21 05:30:00Z], "") == ~D[2026-06-21]
     end
   end
 
@@ -42,6 +61,12 @@ defmodule Kanban.TimezoneTest do
                ~U[2026-06-21 06:00:00Z]
     end
 
+    test "returns the UTC instant of local midnight for a zone east of UTC" do
+      # Midnight Jun 21 in Tokyo (JST, UTC+9) is 15:00 UTC on Jun 20.
+      assert Timezone.start_of_local_day(~D[2026-06-21], "Asia/Tokyo") ==
+               ~U[2026-06-20 15:00:00Z]
+    end
+
     test "returns midnight UTC for the UTC zone" do
       assert Timezone.start_of_local_day(~D[2026-06-21], "Etc/UTC") ==
                ~U[2026-06-21 00:00:00Z]
@@ -50,6 +75,63 @@ defmodule Kanban.TimezoneTest do
     test "falls back to midnight UTC for an unknown zone" do
       assert Timezone.start_of_local_day(~D[2026-06-21], "Not/ARealZone") ==
                ~U[2026-06-21 00:00:00Z]
+    end
+
+    test "falls back to midnight UTC for an empty zone string" do
+      assert Timezone.start_of_local_day(~D[2026-06-21], "") ==
+               ~U[2026-06-21 00:00:00Z]
+    end
+
+    test "resolves a spring-forward gap at midnight to the first valid instant" do
+      # Havana sprang forward at midnight on 2015-03-08 (00:00 -> 01:00 CDT),
+      # so local midnight never existed; the :gap branch keeps the instant just
+      # before the skipped midnight (23:59:59.999999 CST = 04:59:59.999999Z).
+      assert Timezone.start_of_local_day(~D[2015-03-08], "America/Havana") ==
+               ~U[2015-03-08 04:59:59.999999Z]
+    end
+
+    test "resolves an ambiguous fall-back midnight to the first (earlier) instant" do
+      # Havana fell back at midnight on 2015-11-01, so 00:00 occurred twice; the
+      # :ambiguous branch picks the first occurrence (00:00 CDT = 04:00Z).
+      assert Timezone.start_of_local_day(~D[2015-11-01], "America/Havana") ==
+               ~U[2015-11-01 04:00:00Z]
+    end
+  end
+
+  describe "end_of_local_day/2" do
+    test "returns the UTC instant of local end-of-day for a zone west of UTC" do
+      # 23:59:59 Jun 21 in Edmonton (MDT, UTC-6) is 05:59:59 UTC on Jun 22.
+      assert Timezone.end_of_local_day(~D[2026-06-21], "America/Edmonton") ==
+               ~U[2026-06-22 05:59:59Z]
+    end
+
+    test "returns the UTC instant of local end-of-day for a zone east of UTC" do
+      # 23:59:59 Jun 21 in Tokyo (JST, UTC+9) is 14:59:59 UTC on Jun 21.
+      assert Timezone.end_of_local_day(~D[2026-06-21], "Asia/Tokyo") ==
+               ~U[2026-06-21 14:59:59Z]
+    end
+
+    test "returns 23:59:59 UTC for the UTC zone" do
+      assert Timezone.end_of_local_day(~D[2026-06-21], "Etc/UTC") ==
+               ~U[2026-06-21 23:59:59Z]
+    end
+
+    test "falls back to 23:59:59 UTC for an unknown zone" do
+      assert Timezone.end_of_local_day(~D[2026-06-21], "Not/ARealZone") ==
+               ~U[2026-06-21 23:59:59Z]
+    end
+
+    test "falls back to 23:59:59 UTC for an empty zone string" do
+      assert Timezone.end_of_local_day(~D[2026-06-21], "") ==
+               ~U[2026-06-21 23:59:59Z]
+    end
+
+    test "resolves an ambiguous fall-back end-of-day to the later instant" do
+      # São Paulo ended DST at midnight on 2018-02-18, so 23:59:59 on 2018-02-17
+      # occurred twice; the :ambiguous branch picks the later occurrence
+      # (23:59:59 -03 = 02:59:59Z the next day), keeping the whole local day in.
+      assert Timezone.end_of_local_day(~D[2018-02-17], "America/Sao_Paulo") ==
+               ~U[2018-02-18 02:59:59Z]
     end
   end
 end
