@@ -93,13 +93,93 @@ defmodule Kanban.Tasks.TaskTest do
       # 200 grapheme clusters of "é" (e + combining acute) = 400 code points.
       # A grapheme-based check would see 200 (<= 255) and wrongly pass, letting
       # the value overflow varchar(255) in the DB. Code-point counting rejects it.
-      decomposed = String.duplicate("é", 200)
+      decomposed = String.duplicate("e" <> <<0x0301::utf8>>, 200)
       assert String.length(decomposed) == 200
       assert decomposed |> String.codepoints() |> length() == 400
 
       changeset = Task.changeset(task, base_attrs(%{title: decomposed}))
       refute changeset.valid?
       assert Keyword.has_key?(changeset.errors, :title)
+    end
+  end
+
+  describe "varchar(255)[] array-element length validation (D81 follow-up)" do
+    # security_considerations / dependencies / required_capabilities are stored
+    # as Postgres varchar(255)[]. Each ELEMENT is capped at 255 code points; an
+    # oversized element must fail with a 422 changeset error rather than reaching
+    # the DB and raising a 22001 (string_data_right_truncation) → HTTP 500.
+
+    test "changeset/2 rejects a security_considerations element over 255 characters",
+         %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{security_considerations: ["ok", @over]}))
+
+      refute changeset.valid?
+
+      assert %{security_considerations: ["each entry should be at most 255 character(s)"]} =
+               errors_on(changeset)
+    end
+
+    test "changeset/2 accepts a security_considerations element of exactly 255 characters",
+         %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{security_considerations: [@at_limit, "ok"]}))
+
+      assert changeset.valid?
+    end
+
+    test "api_create_changeset/2 rejects an oversized security_considerations element" do
+      attrs = %{
+        "title" => "t",
+        "position" => 0,
+        "type" => "work",
+        "priority" => "medium",
+        "security_considerations" => ["fine", @over]
+      }
+
+      changeset = Task.api_create_changeset(%Task{}, attrs)
+
+      refute changeset.valid?
+
+      assert %{security_considerations: ["each entry should be at most 255 character(s)"]} =
+               errors_on(changeset)
+    end
+
+    test "api_update_changeset/2 rejects an oversized security_considerations element",
+         %{column: column} do
+      task = task_fixture(column)
+
+      changeset =
+        Task.api_update_changeset(task, %{"security_considerations" => [@over]})
+
+      refute changeset.valid?
+
+      assert %{security_considerations: ["each entry should be at most 255 character(s)"]} =
+               errors_on(changeset)
+    end
+
+    test "changeset/2 rejects an oversized dependencies element", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{dependencies: ["W1", @over]}))
+
+      refute changeset.valid?
+      assert Keyword.has_key?(changeset.errors, :dependencies)
+    end
+
+    test "counts Unicode code points, not graphemes, for array elements",
+         %{column: column} do
+      task = task_fixture(column)
+      # 200 "e + combining acute" graphemes = 200 graphemes but 400 code points.
+      # A grapheme-based check (String.length) would see 200 (<= 255) and wrongly
+      # pass, letting the value overflow varchar(255)[]. Code-point counting rejects it.
+      decomposed = String.duplicate("e" <> <<0x0301::utf8>>, 200)
+      assert String.length(decomposed) == 200
+      assert decomposed |> String.codepoints() |> length() == 400
+
+      changeset = Task.changeset(task, base_attrs(%{security_considerations: [decomposed]}))
+
+      refute changeset.valid?
+      assert Keyword.has_key?(changeset.errors, :security_considerations)
     end
   end
 

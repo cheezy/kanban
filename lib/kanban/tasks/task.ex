@@ -456,6 +456,21 @@ defmodule Kanban.Tasks.Task do
     :completed_by_agent
   ]
 
+  # Array columns stored as Postgres varchar(255)[]. Each ELEMENT is capped at
+  # 255 code points, so an oversized element raised a 22001 → HTTP 500 the same
+  # way the scalar varchar(255) fields did (D81). The scalar fix above never
+  # checked element length, so a long free-text security_considerations entry (or
+  # an over-long dependency identifier) still slipped through to the DB. The
+  # element-level cap below closes that gap on both the create and update paths.
+  # (required_capabilities is also varchar(255)[] but is independently bounded to
+  # the short @valid_capabilities allow-list; it is included here for completeness
+  # so every varchar(255)[] column is guarded uniformly.)
+  @varchar_255_array_fields [
+    :security_considerations,
+    :dependencies,
+    :required_capabilities
+  ]
+
   @doc false
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def changeset(task, attrs) do
@@ -564,6 +579,7 @@ defmodule Kanban.Tasks.Task do
       message: "must be 'pending', 'approved', 'changes_requested', or 'rejected'"
     )
     |> validate_varchar_255_lengths()
+    |> validate_varchar_255_array_element_lengths()
     |> validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> validate_technology_requirements()
     |> validate_required_capabilities()
@@ -690,6 +706,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_integration_points()
     |> validate_technical_details()
     |> validate_varchar_255_lengths()
+    |> validate_varchar_255_array_element_lengths()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:created_by_id)
     |> unique_constraint([:column_id, :position])
@@ -729,6 +746,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_integration_points()
     |> validate_technical_details()
     |> validate_varchar_255_lengths()
+    |> validate_varchar_255_array_element_lengths()
   end
 
   # Caps the free-text varchar(255) columns so oversized input fails with a 422
@@ -755,6 +773,36 @@ defmodule Kanban.Tasks.Task do
       end)
     end)
   end
+
+  # Caps each ELEMENT of the varchar(255)[] array columns at 255 code points so an
+  # oversized entry fails with a 422 changeset error instead of reaching Postgres
+  # and raising a 22001 / 500 (D81 follow-up). Uses the same code-point counting as
+  # the scalar check so it matches the database exactly. Non-binary elements are
+  # left for the existing per-field validators (validate_string_list_field,
+  # validate_dependencies, validate_required_capabilities) to reject.
+  defp validate_varchar_255_array_element_lengths(changeset) do
+    Enum.reduce(@varchar_255_array_fields, changeset, fn field, acc ->
+      validate_change(acc, field, fn ^field, value ->
+        if oversized_element?(value) do
+          [
+            {field,
+             {"each entry should be at most %{count} character(s)",
+              [count: @varchar_255_max, validation: :length, kind: :max, type: :string]}}
+          ]
+        else
+          []
+        end
+      end)
+    end)
+  end
+
+  defp oversized_element?(value) when is_list(value) do
+    Enum.any?(value, fn element ->
+      is_binary(element) and codepoint_length(element) > @varchar_255_max
+    end)
+  end
+
+  defp oversized_element?(_value), do: false
 
   defp codepoint_length(value), do: value |> String.codepoints() |> length()
 
