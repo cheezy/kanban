@@ -68,6 +68,7 @@ stride-lite-copilot/
 stride-security-review/
 stride-security-review-copilot/
 security-review/
+launchdarkly/
 
 # Per-developer Claude Code permission allow-list. Untracked so each
 # contributor maintains their own narrow allow-list without coupling the
