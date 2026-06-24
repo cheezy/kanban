@@ -54,6 +54,7 @@ node_modules
 stride/
 stride-copilot/
 stride-gemini/
+stride-gemini-marketplace/
 stride-ideation/
 stride-copilot-ideation/
 stride-codex-ideation/
