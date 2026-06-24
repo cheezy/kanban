@@ -59,6 +59,8 @@ stride-copilot-ideation/
 stride-codex-ideation/
 stride-gemini-ideation/
 stride-marketplace/
+stride-copilot-marketplace/
+stride-codex-marketplace/
 stride-opencode/
 stride-opencode-ideation/
 stride-codex/
@@ -84,3 +86,4 @@ launchdarkly/
 docs/blog/
 .stride/
 design_handoff_stride/
+launchdarkly-copilot/
