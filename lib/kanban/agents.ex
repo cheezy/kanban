@@ -43,9 +43,11 @@ defmodule Kanban.Agents do
   alias Kanban.Agents.Events
   alias Kanban.Agents.Metrics
   alias Kanban.Agents.Roster
+  alias Kanban.Columns.Column
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Timezone
 
   @default_event_limit 50
 
@@ -298,14 +300,32 @@ defmodule Kanban.Agents do
 
   # --- Query -----------------------------------------------------------------
 
+  # Trailing-window lengths (days back from "today", inclusive) for the optional
+  # time-range filter. Mirrors `Kanban.Metrics`' board time-range options so the
+  # /agents days selector and the metrics board share the same window semantics.
+  @time_range_days %{today: 0, last_7_days: 6, last_30_days: 29, last_90_days: 89}
+
   @doc false
   # Exposed (not part of the documented API) so the derivation sibling modules
   # share the single scoped task fetch. The visible, goal-excluded Task set
   # with `:column`, `:created_by`, and `:completed_by` preloaded.
+  #
+  # Options:
+  #   * `:scope`      - `Kanban.Accounts.Scope` for board-membership scoping (as before)
+  #   * `:board_id`   - integer board id to restrict the fetch to one board, or
+  #                     `nil` (default) for every board the scope allows
+  #   * `:time_range` - one of `:today`, `:last_7_days`, `:last_30_days`,
+  #                     `:last_90_days`, `:all_time`/`nil` (default) for no window
+  #   * `:timezone`   - IANA zone used to anchor the time window (default "Etc/UTC")
   def fetch_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
     |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
+    |> filter_by_board(Keyword.get(opts, :board_id))
+    |> filter_by_time_range(
+      Keyword.get(opts, :time_range),
+      Keyword.get(opts, :timezone, "Etc/UTC")
+    )
     |> Repo.all()
     # The column name drives status inference, so preload it (one batched
     # query for the whole list). The scope join above is filter-only and does
@@ -313,6 +333,39 @@ defmodule Kanban.Agents do
     # each agent and are likewise batched (one query per association), so no
     # per-task query leaks into the callers.
     |> Repo.preload([:column, :created_by, :completed_by])
+  end
+
+  # Restrict to one board via a column-id subquery. Referencing only the Task
+  # binding keeps this composable with BoardScope's joins regardless of their
+  # positions; when scope is present a board the user cannot access intersects
+  # to the empty set, so no cross-tenant tasks leak.
+  defp filter_by_board(query, board_id) when is_integer(board_id) do
+    board_columns = from(c in Column, where: c.board_id == ^board_id, select: c.id)
+    where(query, [t], t.column_id in subquery(board_columns))
+  end
+
+  defp filter_by_board(query, _board_id), do: query
+
+  # Bound the fetch to tasks last touched within the trailing window. `updated_at`
+  # is the activity proxy (claim/complete/review all bump it); `:all_time`/`nil`
+  # is a true no-op that preserves the historic unbounded behavior.
+  defp filter_by_time_range(query, range, _timezone) when range in [nil, :all_time], do: query
+
+  defp filter_by_time_range(query, range, timezone) do
+    cutoff = window_start_naive(range, timezone)
+    where(query, [t], t.updated_at >= ^cutoff)
+  end
+
+  # The local-day start of the window as a `NaiveDateTime` to compare against the
+  # naive `updated_at` column. Unknown ranges fall back to the 30-day window.
+  defp window_start_naive(range, timezone) do
+    days_back = Map.get(@time_range_days, range, 29)
+
+    timezone
+    |> Timezone.local_today()
+    |> Date.add(-days_back)
+    |> Timezone.start_of_local_day(timezone)
+    |> DateTime.to_naive()
   end
 
   # --- Shared identity primitives --------------------------------------------

@@ -20,6 +20,99 @@ defmodule Kanban.AgentsTest do
     %{user: user, board: board, column: column}
   end
 
+  describe "fetch_tasks/1 board and time-range filtering" do
+    setup %{user: user} do
+      %{scope: Scope.for_user(user)}
+    end
+
+    test "without board_id or time_range returns the scope-only set (back-compat)",
+         %{column: column, scope: scope} do
+      task_fixture(column)
+      assert length(Agents.fetch_tasks(scope: scope)) == 1
+    end
+
+    test "board_id restricts the fetch to that board", %{
+      user: user,
+      board: board,
+      column: column,
+      scope: scope
+    } do
+      other_column = user |> board_fixture() |> column_fixture()
+      kept = task_fixture(column)
+      _dropped = task_fixture(other_column)
+
+      result = Agents.fetch_tasks(scope: scope, board_id: board.id)
+      assert Enum.map(result, & &1.id) == [kept.id]
+    end
+
+    test "board_id for a board the user cannot access returns empty", %{scope: scope} do
+      foreign_board = user_fixture() |> board_fixture()
+      foreign_column = column_fixture(foreign_board)
+      _foreign = task_fixture(foreign_column)
+
+      # BoardScope membership — not the board_id filter — is the guard: the
+      # foreign board's task is absent from the scope-only fetch too, and the
+      # board_id filter then intersects to the same empty set.
+      assert Agents.fetch_tasks(scope: scope) == []
+      assert Agents.fetch_tasks(scope: scope, board_id: foreign_board.id) == []
+    end
+
+    test "time_range :today keeps today's task and drops an earlier one",
+         %{column: column, scope: scope} do
+      today_task = task_fixture(column)
+      earlier = task_fixture(column)
+      backdate_updated_at(earlier, ~N[2020-01-01 00:00:00])
+
+      ids = scope |> then(&Agents.fetch_tasks(scope: &1, time_range: :today)) |> Enum.map(& &1.id)
+      assert today_task.id in ids
+      refute earlier.id in ids
+    end
+
+    test "board_id and time_range compose to in-board, in-window tasks only", %{
+      user: user,
+      board: board,
+      column: column,
+      scope: scope
+    } do
+      out_of_board = user |> board_fixture() |> column_fixture()
+      kept = task_fixture(column)
+      in_board_old = task_fixture(column)
+      backdate_updated_at(in_board_old, ~N[2020-01-01 00:00:00])
+      _out_of_board_recent = task_fixture(out_of_board)
+
+      result = Agents.fetch_tasks(scope: scope, board_id: board.id, time_range: :last_7_days)
+      assert Enum.map(result, & &1.id) == [kept.id]
+    end
+
+    test "time_range excludes tasks updated before the window", %{column: column, scope: scope} do
+      recent = task_fixture(column)
+      old = task_fixture(column)
+      backdate_updated_at(old, ~N[2020-01-01 00:00:00])
+
+      ids =
+        scope
+        |> then(&Agents.fetch_tasks(scope: &1, time_range: :last_7_days))
+        |> Enum.map(& &1.id)
+
+      assert recent.id in ids
+      refute old.id in ids
+    end
+
+    test "all_time and nil time_range are a no-op", %{column: column, scope: scope} do
+      column |> task_fixture() |> backdate_updated_at(~N[2020-01-01 00:00:00])
+
+      assert length(Agents.fetch_tasks(scope: scope, time_range: :all_time)) == 1
+      assert length(Agents.fetch_tasks(scope: scope, time_range: nil)) == 1
+    end
+
+    defp backdate_updated_at(%{id: id} = task, %NaiveDateTime{} = at) do
+      from(t in Tasks.Task, where: t.id == ^id)
+      |> Repo.update_all(set: [updated_at: at])
+
+      task
+    end
+  end
+
   describe "list_agents/1" do
     test "returns an empty list when no tasks exist" do
       assert Agents.list_agents() == []
