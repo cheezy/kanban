@@ -2162,6 +2162,7 @@ msgstr "Agent inconnu"
 msgid "All Agents"
 msgstr "Tous les agents"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:68
 #: lib/kanban_web/live/metrics_live/components.ex:222
 #: lib/kanban_web/live/metrics_live/components.ex:396
 #, elixir-autogen, elixir-format
@@ -2303,18 +2304,21 @@ msgstr "Groupé par date de complétion avec métriques de délai"
 msgid "Human bottleneck analysis"
 msgstr "Analyse des goulots d'étranglement"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:62
 #: lib/kanban_web/live/metrics_live/components.ex:217
 #: lib/kanban_web/live/metrics_live/components.ex:390
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "30 derniers jours"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:59
 #: lib/kanban_web/live/metrics_live/components.ex:214
 #: lib/kanban_web/live/metrics_live/components.ex:387
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "7 derniers jours"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:65
 #: lib/kanban_web/live/metrics_live/components.ex:220
 #: lib/kanban_web/live/metrics_live/components.ex:393
 #, elixir-autogen, elixir-format
@@ -2464,6 +2468,7 @@ msgstr "Débit"
 msgid "Throughput Metrics"
 msgstr "Métriques du débit"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:55
 #: lib/kanban_web/live/metrics_live/components.ex:199
 #: lib/kanban_web/live/metrics_live/components.ex:374
 #, elixir-autogen, elixir-format
@@ -2502,6 +2507,7 @@ msgstr "Temps que les tâches passent en attente de révision après achèvement
 
 #: lib/kanban_web/components/agent_activity_feed.ex:389
 #: lib/kanban_web/components/agent_roster_card.ex:194
+#: lib/kanban_web/components/agents_filter_bar.ex:57
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4157,7 +4163,7 @@ msgid "Active goals"
 msgstr "Objectifs actifs"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/agents_live.ex:148
+#: lib/kanban_web/live/agents_live.ex:162
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "Agents"
@@ -4219,7 +4225,7 @@ msgstr "Commencer avec un tableau vierge"
 msgid "Stride home"
 msgstr "Accueil Stride"
 
-#: lib/kanban_web/live/agents_live.ex:146
+#: lib/kanban_web/live/agents_live.ex:160
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4260,6 +4266,7 @@ msgstr "Les agents prennent depuis cette colonne. Une tâche ici doit être enti
 msgid "Archive"
 msgstr "Archiver"
 
+#: lib/kanban_web/components/agents_filter_bar.ex:45
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
 #: lib/kanban_web/live/task_live/view_component.ex:379
@@ -4988,19 +4995,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:415
+#: lib/kanban_web/live/agents_live.ex:456
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} connecté"
 msgstr[1] "%{count} connectés"
 
-#: lib/kanban_web/live/agents_live.ex:209
+#: lib/kanban_web/live/agents_live.ex:225
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "Aucun agent n'a encore d'activité."
 
-#: lib/kanban_web/live/agents_live.ex:179
+#: lib/kanban_web/live/agents_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "en direct"
@@ -7108,12 +7115,12 @@ msgstr "Détails techniques"
 msgid "Technical Details (JSON object)"
 msgstr "Détails techniques (objet JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:285
+#: lib/kanban_web/live/agents_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtré par %{agent}"
 
-#: lib/kanban_web/live/agents_live.ex:302
+#: lib/kanban_web/live/agents_live.ex:318
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Effacer"
@@ -7175,12 +7182,12 @@ msgstr "%{date} : %{count} terminées"
 msgid "of which"
 msgstr "dont"
 
-#: lib/kanban_web/live/agents_live.ex:246
+#: lib/kanban_web/live/agents_live.ex:262
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:470
+#: lib/kanban_web/live/agents_live.ex:511
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7295,3 +7302,8 @@ msgstr "vs %{count}j préc."
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "%{count} derniers jours"
+
+#: lib/kanban_web/components/agents_filter_bar.ex:47
+#, elixir-autogen, elixir-format
+msgid "All Boards"
+msgstr "Tous les tableaux"

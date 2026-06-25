@@ -18,9 +18,11 @@ defmodule KanbanWeb.AgentsLive do
   use KanbanWeb, :live_view
 
   alias Kanban.Agents
+  alias Kanban.Boards
   alias KanbanWeb.AgentActivityFeed
   alias KanbanWeb.AgentDetailPanel
   alias KanbanWeb.AgentRosterCard
+  alias KanbanWeb.AgentsFilterBar
   alias KanbanWeb.AgentsHeader
   alias KanbanWeb.AgentsPresence
 
@@ -52,6 +54,9 @@ defmodule KanbanWeb.AgentsLive do
      |> assign(:expanded_detail_sections, MapSet.new(@detail_sections))
      |> assign(:timezone, KanbanWeb.Timezone.browser_timezone(socket))
      |> assign(:connected_count, connected_count(socket))
+     |> assign(:board_id, nil)
+     |> assign(:time_range, :all_time)
+     |> assign(:boards, Boards.list_boards(socket.assigns.current_scope.user))
      |> load_agents_data()}
   end
 
@@ -66,6 +71,15 @@ defmodule KanbanWeb.AgentsLive do
        :events,
        apply_filters(socket.assigns.all_events, filter, socket.assigns.selected_agent)
      )}
+  end
+
+  @impl true
+  def handle_event("filter_change", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:board_id, parse_board_id(params["board_id"]))
+     |> assign(:time_range, parse_time_range(params["time_range"]))
+     |> load_agents_data()}
   end
 
   @impl true
@@ -185,6 +199,8 @@ defmodule KanbanWeb.AgentsLive do
           throughput_and_success={@throughput_and_success}
           throughput_trends={@throughput_trends}
         />
+
+        <AgentsFilterBar.filter_bar boards={@boards} board_id={@board_id} time_range={@time_range} />
 
         <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside
@@ -324,16 +340,42 @@ defmodule KanbanWeb.AgentsLive do
     """
   end
 
+  # The board select submits "" for "All Boards" and a numeric id otherwise; an
+  # unparseable value falls back to nil (all boards) rather than crashing.
+  defp parse_board_id(id) when is_binary(id) and id != "" do
+    case Integer.parse(id) do
+      {board_id, ""} -> board_id
+      _ -> nil
+    end
+  end
+
+  defp parse_board_id(_id), do: nil
+
+  # Explicit allow-list mapping (no String.to_atom on user input); anything
+  # unrecognized falls back to :all_time, the unfiltered default.
+  defp parse_time_range("today"), do: :today
+  defp parse_time_range("last_7_days"), do: :last_7_days
+  defp parse_time_range("last_30_days"), do: :last_30_days
+  defp parse_time_range("last_90_days"), do: :last_90_days
+  defp parse_time_range(_range), do: :all_time
+
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
     # Fetch the scoped task set ONCE and derive every roster, event, and metric
     # from it. Previously each of the 6-7 calls below re-ran the unbounded task
     # fetch (W1242), turning a single render into ~24-28 queries.
-    tasks = Agents.fetch_tasks(scope: scope)
+    tasks =
+      Agents.fetch_tasks(
+        scope: scope,
+        board_id: socket.assigns.board_id,
+        time_range: socket.assigns.time_range,
+        timezone: socket.assigns.timezone
+      )
+
     agents = Agents.list_agents_from(tasks, socket.assigns.timezone)
     events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
-    metrics = metric_assigns(tasks, agents, socket.assigns.timezone)
+    metrics = metric_assigns(tasks, agents, socket.assigns.timezone, socket.assigns.time_range)
     assigns = socket |> base_assigns(tasks, agents, events) |> Map.merge(metrics)
 
     assign(socket, assigns)
@@ -360,15 +402,25 @@ defmodule KanbanWeb.AgentsLive do
   # The fleet-level aggregate rollups, derived from the single shared task fetch
   # (and the roster built from it), grouped so load_agents_data/1 stays under the
   # complexity budget.
-  defp metric_assigns(tasks, agents, timezone) do
+  defp metric_assigns(tasks, agents, timezone, time_range) do
     %{
       stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
       throughput_and_success: Agents.throughput_and_success_from(tasks, timezone),
       throughput_trends:
-        Agents.throughput_trends_from(tasks, Agents.default_trend_days(), timezone)
+        Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone)
     }
   end
+
+  # Map the selected window to the throughput-trends day span so the chart's
+  # width tracks the days selector instead of a fixed window (which would leave
+  # empty tail buckets for windows narrower than the default). :all_time keeps
+  # the historic default span.
+  defp trend_days_for(:today), do: 1
+  defp trend_days_for(:last_7_days), do: 7
+  defp trend_days_for(:last_30_days), do: 30
+  defp trend_days_for(:last_90_days), do: 90
+  defp trend_days_for(_all_time), do: Agents.default_trend_days()
 
   # The drill-down for the selected agent, or nil when no agent is selected.
   # Reads from the shared task list already fetched in load_agents_data/1 (no

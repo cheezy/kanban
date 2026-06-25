@@ -5,14 +5,113 @@ defmodule KanbanWeb.AgentsLiveTest do
   """
   use KanbanWeb.ConnCase
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.AgentWorkflow
+
+  describe "board and time-range filter" do
+    setup [:register_and_log_in_user]
+
+    defp agent_on(column, name) do
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: name})
+      :ok
+    end
+
+    test "renders the board selector and the time-range selector", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      board |> column_fixture() |> agent_on("Claude")
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ ~s(id="agents-filter-form")
+      assert html =~ ~s(name="board_id")
+      assert html =~ ~s(name="time_range")
+      assert html =~ "All Boards"
+      assert html =~ "All Time"
+      assert html =~ board.name
+    end
+
+    test "selecting a board narrows the roster to that board's agents",
+         %{conn: conn, user: user} do
+      board_a = board_fixture(user)
+      board_a |> column_fixture() |> agent_on("Alpha")
+      board_b = board_fixture(user)
+      board_b |> column_fixture() |> agent_on("Bravo")
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Alpha"
+      assert html =~ "Bravo"
+
+      filtered =
+        view |> form("#agents-filter-form", %{"board_id" => board_a.id}) |> render_change()
+
+      assert filtered =~ "Alpha"
+      refute filtered =~ "Bravo"
+
+      # Selecting "All Boards" (value "") restores the full cross-board view.
+      restored = view |> form("#agents-filter-form", %{"board_id" => ""}) |> render_change()
+      assert restored =~ "Alpha"
+      assert restored =~ "Bravo"
+    end
+
+    test "selecting a narrow time window drops activity outside it",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      agent_on(column, "Recent")
+      {:ok, stale} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Stale"})
+      backdate_updated_at(stale, ~N[2020-01-01 00:00:00])
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Recent"
+      assert html =~ "Stale"
+
+      filtered =
+        view |> form("#agents-filter-form", %{"time_range" => "last_7_days"}) |> render_change()
+
+      assert filtered =~ "Recent"
+      refute filtered =~ "Stale"
+
+      # "All Time" restores the unbounded view.
+      restored =
+        view |> form("#agents-filter-form", %{"time_range" => "all_time"}) |> render_change()
+
+      assert restored =~ "Recent"
+      assert restored =~ "Stale"
+    end
+
+    test "board and days selectors compose", %{conn: conn, user: user} do
+      board_a = board_fixture(user)
+      col_a = column_fixture(board_a)
+      agent_on(col_a, "InWindow")
+      {:ok, old} = col_a |> task_fixture() |> Tasks.update_task(%{created_by_agent: "OldOnA"})
+      backdate_updated_at(old, ~N[2020-01-01 00:00:00])
+      board_b = board_fixture(user)
+      board_b |> column_fixture() |> agent_on("OnBoardB")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      filtered =
+        view
+        |> form("#agents-filter-form", %{"board_id" => board_a.id, "time_range" => "last_7_days"})
+        |> render_change()
+
+      assert filtered =~ "InWindow"
+      refute filtered =~ "OldOnA"
+      refute filtered =~ "OnBoardB"
+    end
+
+    defp backdate_updated_at(%{id: id}, at) do
+      from(t in Tasks.Task, where: t.id == ^id)
+      |> Repo.update_all(set: [updated_at: at])
+    end
+  end
 
   describe "mount and route" do
     setup [:register_and_log_in_user]
