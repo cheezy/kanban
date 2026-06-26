@@ -799,7 +799,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ child.identifier
     end
 
-    test "the Tasks Without Goals header is not tinted violet",
+    test "the Tasks Without Goals header uses the goal violet background for consistency",
          %{conn: conn, board: board, column: column} do
       standalone = task_fixture(column, %{title: "Lonely task", type: :work})
       {:ok, _} = Tasks.archive_task(standalone)
@@ -807,7 +807,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
 
       assert html =~ "Tasks Without Goals"
-      refute html =~ "var(--stride-violet-soft)"
+      assert html =~ "background: var(--stride-violet-soft)"
     end
 
     test "collapses and expands a goal group when its chevron is toggled",
