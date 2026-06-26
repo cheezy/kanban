@@ -49,6 +49,12 @@
       counts={counts_for(@all_rows)}
       active={@filter}
       on_filter_change="filter_archive"
+      assignees={assignees_for(@all_rows)}
+      assignee_filter={@assignee_filter}
+      assignee_menu_open={@assignee_menu_open}
+      has_unassigned={has_unassigned?(@all_rows)}
+      on_assignee_toggle="toggle_assignee_menu"
+      on_assignee_select="filter_assignee"
     />
 
     <div

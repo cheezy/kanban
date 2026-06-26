@@ -45,12 +45,33 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   @impl true
   def handle_event("filter_archive", %{"reason" => raw}, socket) do
-    filter = parse_filter(raw)
-
     {:noreply,
      socket
-     |> assign(:filter, filter)
-     |> assign(:rows, apply_filter(socket.assigns.all_rows, filter))
+     |> assign(:filter, parse_filter(raw))
+     |> recompute_rows()
+     |> close_menu()}
+  end
+
+  @impl true
+  def handle_event("toggle_assignee_menu", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:assignee_menu_open, not socket.assigns.assignee_menu_open)
+     |> close_menu()}
+  end
+
+  @impl true
+  def handle_event("close_assignee_menu", _params, socket) do
+    {:noreply, assign(socket, :assignee_menu_open, false)}
+  end
+
+  @impl true
+  def handle_event("filter_assignee", %{"assignee" => raw}, socket) do
+    {:noreply,
+     socket
+     |> assign(:assignee_filter, parse_assignee(raw))
+     |> assign(:assignee_menu_open, false)
+     |> recompute_rows()
      |> close_menu()}
   end
 
@@ -140,6 +161,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> assign(:can_modify, user_access in [:owner, :modify])
     |> assign(:is_owner, user_access == :owner)
     |> assign(:filter, :all)
+    |> assign(:assignee_filter, :all)
+    |> assign(:assignee_menu_open, false)
     |> assign(:all_rows, all_rows)
     |> assign(:rows, all_rows)
     |> assign(:stats, stats)
@@ -153,7 +176,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
     socket
     |> assign(:all_rows, all_rows)
-    |> assign(:rows, apply_filter(all_rows, socket.assigns.filter))
+    |> recompute_rows()
     |> assign(:stats, load_stats(board_id))
     |> close_menu()
   end
@@ -162,13 +185,36 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   defp load_stats(board_id), do: Archives.archive_stats_for_board(board_id)
 
-  defp apply_filter(rows, :all), do: rows
+  # Re-derive the visible :rows from :all_rows by composing BOTH filter
+  # dimensions (reason then assignee). Every event/reload that changes either
+  # dimension or reloads the rows must route through here so neither filter
+  # silently resets the other.
+  defp recompute_rows(socket) do
+    rows =
+      socket.assigns.all_rows
+      |> apply_reason_filter(socket.assigns.filter)
+      |> apply_assignee_filter(socket.assigns.assignee_filter)
 
-  defp apply_filter(rows, :completed) do
+    assign(socket, :rows, rows)
+  end
+
+  defp apply_reason_filter(rows, :all), do: rows
+
+  defp apply_reason_filter(rows, :completed) do
     Enum.filter(rows, fn task ->
       reason = task.archive_reason
       reason == :completed or is_nil(reason)
     end)
+  end
+
+  defp apply_assignee_filter(rows, :all), do: rows
+
+  defp apply_assignee_filter(rows, :unassigned) do
+    Enum.filter(rows, &is_nil(&1.assigned_to))
+  end
+
+  defp apply_assignee_filter(rows, id) when is_integer(id) do
+    Enum.filter(rows, fn task -> match?(%{id: ^id}, task.assigned_to) end)
   end
 
   defp close_menu(socket), do: assign(socket, :menu_open_for, nil)
@@ -188,6 +234,22 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   defp parse_filter(_), do: :all
 
+  # Coerce the assignee chip's phx-value into the :assignee_filter model.
+  # Never String.to_atom the inbound value: parse ids with Integer.parse and
+  # string-compare the 'all'/'unassigned' sentinels. Anything unparseable
+  # degrades to :all (clear the filter) without crashing.
+  defp parse_assignee("all"), do: :all
+  defp parse_assignee("unassigned"), do: :unassigned
+
+  defp parse_assignee(raw) when is_binary(raw) do
+    case Integer.parse(raw) do
+      {id, ""} -> id
+      _ -> :all
+    end
+  end
+
+  defp parse_assignee(_), do: :all
+
   # --- Counts for the filter chips -----------------------------------------
 
   defp counts_for(all_rows) do
@@ -202,6 +264,28 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   defp reason_matches?(%{archive_reason: nil}, :completed), do: true
   defp reason_matches?(%{archive_reason: r}, target), do: r == target
+
+  # --- Assignees for the filter dropdown -----------------------------------
+
+  # Derive the distinct present assignees from the already-loaded, board-scoped
+  # @all_rows — no Ecto query in the LiveView (AGENTS.md). Returns plain
+  # %{id, name} maps sorted by name so the dropdown order is deterministic. The
+  # match?/2 filter drops both nil and any (defensively) unloaded association.
+  defp assignees_for(all_rows) do
+    all_rows
+    |> Enum.map(& &1.assigned_to)
+    |> Enum.filter(&match?(%{id: _}, &1))
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.map(fn user -> %{id: user.id, name: assignee_name(user)} end)
+    |> Enum.sort_by(&String.downcase(&1.name))
+  end
+
+  defp has_unassigned?(all_rows), do: Enum.any?(all_rows, &is_nil(&1.assigned_to))
+
+  # Mirrors ArchiveRow.user_name/1: name -> email -> "?".
+  defp assignee_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp assignee_name(%{email: email}) when is_binary(email), do: email
+  defp assignee_name(_), do: "?"
 
   # --- Goal grouping for the table body ------------------------------------
 

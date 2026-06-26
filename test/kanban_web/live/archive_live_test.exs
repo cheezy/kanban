@@ -647,6 +647,181 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Only cancelled"
     end
 
+    test "opening the assignee menu lists each archived assignee plus Unassigned and All assignees",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      grace = user_fixture(%{name: "Grace Hopper"})
+
+      a1 = task_fixture(column, %{title: "Ada one", assigned_to_id: ada.id})
+      a2 = task_fixture(column, %{title: "Ada two", assigned_to_id: ada.id})
+      g1 = task_fixture(column, %{title: "Grace one", assigned_to_id: grace.id})
+      none = task_fixture(column, %{title: "Nobody"})
+
+      for t <- [a1, a2, g1, none], do: {:ok, _} = Tasks.archive_task(t)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "toggle_assignee_menu", %{})
+
+      assert html =~ "data-archive-assignee-menu"
+      assert html =~ "All assignees"
+      assert html =~ "Ada Lovelace"
+      assert html =~ "Grace Hopper"
+      assert html =~ "Unassigned"
+      # Each distinct assignee appears once as an option.
+      assert html =~ ~s(data-archive-assignee-option="#{ada.id}")
+      assert html =~ ~s(data-archive-assignee-option="#{grace.id}")
+      assert length(Regex.scan(~r/data-archive-assignee-option="#{ada.id}"/, html)) == 1
+    end
+
+    test "selecting an assignee filters to that user's rows and closes the menu",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      grace = user_fixture(%{name: "Grace Hopper"})
+
+      ada_task = task_fixture(column, %{title: "Ada task", assigned_to_id: ada.id})
+      grace_task = task_fixture(column, %{title: "Grace task", assigned_to_id: grace.id})
+      none = task_fixture(column, %{title: "Unassigned task"})
+
+      for t <- [ada_task, grace_task, none], do: {:ok, _} = Tasks.archive_task(t)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html =
+        render_click(index_live, "filter_assignee", %{"assignee" => to_string(ada.id)})
+
+      assert html =~ "Ada task"
+      refute html =~ "Grace task"
+      refute html =~ "Unassigned task"
+      # The dropdown closes after a selection.
+      refute html =~ "data-archive-assignee-menu"
+    end
+
+    test "selecting Unassigned narrows to nil-assignee rows",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+
+      ada_task = task_fixture(column, %{title: "Ada task", assigned_to_id: ada.id})
+      none = task_fixture(column, %{title: "Unassigned task"})
+
+      for t <- [ada_task, none], do: {:ok, _} = Tasks.archive_task(t)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "filter_assignee", %{"assignee" => "unassigned"})
+
+      assert html =~ "Unassigned task"
+      refute html =~ "Ada task"
+    end
+
+    test "selecting All assignees clears the assignee filter",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+
+      ada_task = task_fixture(column, %{title: "Ada task", assigned_to_id: ada.id})
+      none = task_fixture(column, %{title: "Unassigned task"})
+
+      for t <- [ada_task, none], do: {:ok, _} = Tasks.archive_task(t)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(index_live, "filter_assignee", %{"assignee" => to_string(ada.id)})
+      html = render_click(index_live, "filter_assignee", %{"assignee" => "all"})
+
+      assert html =~ "Ada task"
+      assert html =~ "Unassigned task"
+    end
+
+    test "the assignee filter composes with the reason filter and survives a PubSub reload",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      grace = user_fixture(%{name: "Grace Hopper"})
+
+      ada_completed =
+        task_fixture(column, %{title: "Ada completed", assigned_to_id: ada.id})
+
+      ada_cancelled =
+        task_fixture(column, %{title: "Ada cancelled", assigned_to_id: ada.id})
+
+      grace_completed =
+        task_fixture(column, %{title: "Grace completed", assigned_to_id: grace.id})
+
+      {:ok, _} = Tasks.archive_task(ada_completed, %{archive_reason: :completed})
+
+      {:ok, _} =
+        Tasks.archive_task(ada_cancelled, %{
+          archive_reason: :cancelled,
+          archive_note: "stop"
+        })
+
+      {:ok, _} = Tasks.archive_task(grace_completed, %{archive_reason: :completed})
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Compose Completed reason AND Ada assignee.
+      render_click(index_live, "filter_archive", %{"reason" => "completed"})
+      html = render_click(index_live, "filter_assignee", %{"assignee" => to_string(ada.id)})
+
+      assert html =~ "Ada completed"
+      # Reason filter excludes Ada's cancelled task; assignee filter excludes Grace.
+      refute html =~ "Ada cancelled"
+      refute html =~ "Grace completed"
+
+      # A PubSub reload must preserve BOTH dimensions.
+      send(index_live.pid, {Kanban.Tasks, :task_updated, ada_completed})
+      reloaded = render(index_live)
+
+      assert reloaded =~ "Ada completed"
+      refute reloaded =~ "Ada cancelled"
+      refute reloaded =~ "Grace completed"
+    end
+
+    test "the Unassigned option is absent when every archived task has an assignee",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      a1 = task_fixture(column, %{title: "Ada one", assigned_to_id: ada.id})
+      {:ok, _} = Tasks.archive_task(a1)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "toggle_assignee_menu", %{})
+
+      assert html =~ "Ada Lovelace"
+      refute html =~ ~s(data-archive-assignee-option="unassigned")
+    end
+
+    test "close_assignee_menu closes the dropdown",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      a1 = task_fixture(column, %{title: "Ada one", assigned_to_id: ada.id})
+      {:ok, _} = Tasks.archive_task(a1)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      opened = render_click(index_live, "toggle_assignee_menu", %{})
+      assert opened =~ "data-archive-assignee-menu"
+
+      closed = render_click(index_live, "close_assignee_menu", %{})
+      refute closed =~ "data-archive-assignee-menu"
+    end
+
+    test "filter_assignee with an unparseable value falls back to :all without crashing",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      ada_task = task_fixture(column, %{title: "Ada task", assigned_to_id: ada.id})
+      none = task_fixture(column, %{title: "Unassigned task"})
+
+      for t <- [ada_task, none], do: {:ok, _} = Tasks.archive_task(t)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_click(index_live, "filter_assignee", %{"assignee" => "not-a-number"})
+
+      # Degrades to :all — both rows remain visible, no crash.
+      assert html =~ "Ada task"
+      assert html =~ "Unassigned task"
+    end
+
     test "handle_info :task_deleted PubSub event triggers a reload",
          %{conn: conn, board: board, column: column} do
       keeper = task_fixture(column, %{title: "Sticks around"})

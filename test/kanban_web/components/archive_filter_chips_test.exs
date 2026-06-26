@@ -18,7 +18,13 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
             completed: 5
           },
           active: :all,
-          on_filter_change: "filter_reason"
+          on_filter_change: "filter_reason",
+          assignees: [],
+          assignee_filter: :all,
+          assignee_menu_open: false,
+          has_unassigned: false,
+          on_assignee_toggle: "toggle_assignee_menu",
+          on_assignee_select: "filter_assignee"
         },
         overrides
       )
@@ -28,6 +34,12 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       counts={@counts}
       active={@active}
       on_filter_change={@on_filter_change}
+      assignees={@assignees}
+      assignee_filter={@assignee_filter}
+      assignee_menu_open={@assignee_menu_open}
+      has_unassigned={@has_unassigned}
+      on_assignee_toggle={@on_assignee_toggle}
+      on_assignee_select={@on_assignee_select}
     />
     """)
   end
@@ -53,15 +65,18 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       end
     end
 
-    test "renders the three decorative placeholder chips with aria-disabled" do
+    test "renders the two decorative placeholder chips with aria-disabled" do
       html = render_chips()
 
-      for marker <- ~w(goal assignee date-range) do
+      for marker <- ~w(goal date-range) do
         assert html =~ ~s(data-archive-filter-chip-placeholder="#{marker}")
       end
 
-      # aria-disabled is set on every placeholder (3 instances).
-      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 3
+      # Assignee is now an active chip, not a placeholder.
+      refute html =~ ~s(data-archive-filter-chip-placeholder="assignee")
+
+      # aria-disabled is set on every remaining placeholder (2 instances).
+      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 2
     end
 
     test "decorative chips have no phx-click attribute" do
@@ -73,7 +88,7 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
           html
         )
 
-      assert length(placeholders) == 3
+      assert length(placeholders) == 2
 
       for [tag] <- placeholders do
         refute tag =~ "phx-click"
@@ -82,6 +97,102 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
 
     test "renders the divider between reason and placeholder chips" do
       assert render_chips() =~ "data-archive-filter-divider"
+    end
+  end
+
+  describe "archive_filter_chips/1 — assignee chip" do
+    test "renders the Assignee chip as an active button with the toggle event" do
+      html = render_chips()
+
+      assignee_chip =
+        Regex.run(~r/<button[^>]*data-archive-filter-chip="assignee"[^>]*>/, html)
+        |> List.first()
+
+      assert assignee_chip =~ ~s(phx-click="toggle_assignee_menu")
+      assert assignee_chip =~ ~s(aria-expanded="false")
+      assert assignee_chip =~ ~s(aria-haspopup="listbox")
+      refute assignee_chip =~ "aria-disabled"
+    end
+
+    test "does not render the dropdown menu when closed" do
+      refute render_chips(%{assignee_menu_open: false}) =~ "data-archive-assignee-menu"
+    end
+
+    test "renders the dropdown with an option per assignee plus 'All assignees' when open" do
+      html =
+        render_chips(%{
+          assignee_menu_open: true,
+          assignees: [%{id: 1, name: "Ada"}, %{id: 2, name: "Grace"}]
+        })
+
+      assert html =~ "data-archive-assignee-menu"
+      assert html =~ ~s(data-archive-assignee-option="all")
+      assert html =~ ~s(data-archive-assignee-option="1")
+      assert html =~ ~s(data-archive-assignee-option="2")
+      assert html =~ "All assignees"
+      assert html =~ "Ada"
+      assert html =~ "Grace"
+    end
+
+    test "each assignee option wires on_assignee_select with phx-value-assignee" do
+      html =
+        render_chips(%{
+          assignee_menu_open: true,
+          assignees: [%{id: 7, name: "Ada"}]
+        })
+
+      option =
+        Regex.run(~r/<button[^>]*data-archive-assignee-option="7"[^>]*>/, html)
+        |> List.first()
+
+      assert option =~ ~s(phx-click="filter_assignee")
+      assert option =~ ~s(phx-value-assignee="7")
+    end
+
+    test "renders the 'Unassigned' option only when has_unassigned is true" do
+      with_unassigned =
+        render_chips(%{assignee_menu_open: true, has_unassigned: true})
+
+      without_unassigned =
+        render_chips(%{assignee_menu_open: true, has_unassigned: false})
+
+      assert with_unassigned =~ ~s(data-archive-assignee-option="unassigned")
+      assert with_unassigned =~ "Unassigned"
+      refute without_unassigned =~ ~s(data-archive-assignee-option="unassigned")
+    end
+
+    test "a selected assignee inverts the chip and shows the selected name" do
+      html =
+        render_chips(%{
+          assignee_filter: 1,
+          assignees: [%{id: 1, name: "Ada"}]
+        })
+
+      assignee_chip =
+        Regex.run(
+          ~r/<button[^>]*data-archive-filter-chip="assignee"[^>]*>[\s\S]*?<\/button>/,
+          html
+        )
+        |> List.first()
+
+      assert assignee_chip =~ "background: var(--ink)"
+      assert assignee_chip =~ "color: var(--surface)"
+      assert assignee_chip =~ ~s(aria-pressed="true")
+      assert assignee_chip =~ "Ada"
+    end
+
+    test "no selected assignee leaves the chip un-pressed with the generic label" do
+      html = render_chips(%{assignee_filter: :all})
+
+      assignee_chip =
+        Regex.run(
+          ~r/<button[^>]*data-archive-filter-chip="assignee"[^>]*>[\s\S]*?<\/button>/,
+          html
+        )
+        |> List.first()
+
+      assert assignee_chip =~ ~s(aria-pressed="false")
+      assert assignee_chip =~ "Assignee"
     end
   end
 
@@ -187,7 +298,7 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       refute html =~ "Deferred"
     end
 
-    test "renders the three placeholder labels" do
+    test "renders the placeholder labels plus the active Assignee label" do
       html = render_chips()
       assert html =~ "Goal"
       assert html =~ "Assignee"
