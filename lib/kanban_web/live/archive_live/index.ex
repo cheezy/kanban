@@ -215,6 +215,14 @@ defmodule KanbanWeb.ArchiveLive.Index do
   # ("goal:<id>" / "no_goal").
   defp goal_groups(rows), do: Tasks.group_rows_by_goal(rows)
 
+  # A synthetic goal-group header stands in for a goal whose own row is not in
+  # the archive (e.g. the goal is still active on the board but its children are
+  # archived). It reuses the soft-violet goal background so those goals still
+  # read as goals, matching the archived-goal rows. The "Tasks Without Goals"
+  # header keeps the default surface.
+  defp header_background(:goal), do: "var(--stride-violet-soft)"
+  defp header_background(:no_goal), do: "var(--surface)"
+
   # A goal group renders expanded unless the user has collapsed it. Tracking
   # collapsed keys (rather than expanded ones) means the default — empty set —
   # is "all expanded", and keys that vanish after a filter/reload are simply

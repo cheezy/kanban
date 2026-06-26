@@ -780,6 +780,33 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "data-archive-goal-group-toggle"
     end
 
+    test "a goal whose own row is not archived renders a synthetic header with the violet background",
+         %{conn: conn, board: board, column: column} do
+      # The goal stays active on the board; only its child is archived. The goal
+      # appears in the archive solely as a synthetic header (no archived goal row).
+      goal = task_fixture(column, %{title: "Active goal", type: :goal})
+      child = task_fixture(column, %{title: "Archived child", type: :work, parent_id: goal.id})
+      {:ok, _} = Tasks.archive_task(child)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Synthetic header for the goal, carrying the soft-violet goal background.
+      assert html =~ ~s(data-archive-goal-group-key="#{goal_group_key(goal)}")
+      assert html =~ "background: var(--stride-violet-soft)"
+      assert html =~ child.identifier
+    end
+
+    test "the Tasks Without Goals header is not tinted violet",
+         %{conn: conn, board: board, column: column} do
+      standalone = task_fixture(column, %{title: "Lonely task", type: :work})
+      {:ok, _} = Tasks.archive_task(standalone)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "Tasks Without Goals"
+      refute html =~ "var(--stride-violet-soft)"
+    end
+
     test "collapses and expands a goal group when its chevron is toggled",
          %{conn: conn, board: board, column: column} do
       goal = task_fixture(column, %{title: "Launch flow", type: :goal})
