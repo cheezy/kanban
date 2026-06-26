@@ -4,16 +4,17 @@ defmodule KanbanWeb.ArchiveFilterChips do
 
   Renders the "All" chip followed by the "Completed" archive-reason
   chip with the per-bucket counts from `Kanban.Archives.archive_stats/1`.
-  A divider separates these from the active "Assignee" filter chip and
-  the visually disabled "Date range" placeholder chip that maps to a
-  v1-out-of-scope filter.
+  A divider separates these from the active "Assignee" and "Date range"
+  filter chips.
 
   Reason chips emit a `phx-click` event with `phx-value-reason` set to
   the string form of the reason atom (e.g. `"completed"`) or `"all"`.
   The "Assignee" chip toggles a dropdown of the board's archived
   assignees; each item fires `on_assignee_select` with `phx-value-assignee`
-  set to the user id (string), `"unassigned"`, or `"all"`. The parent
-  LiveView coerces those strings — never `String.to_atom/1`.
+  set to the user id (string), `"unassigned"`, or `"all"`. The "Date range"
+  chip toggles a popover with From/To `<.input type="date">` fields whose
+  form submits `on_date_apply` (carrying `"from"`/`"to"` ISO strings). The
+  parent LiveView coerces those strings — never `String.to_atom/1`.
 
   Mirrors the `FilterChip` block in
   `design_handoff_stride/design_source/screens/archive.jsx` lines
@@ -48,6 +49,12 @@ defmodule KanbanWeb.ArchiveFilterChips do
     * `on_assignee_toggle` — event name to open/close the dropdown.
     * `on_assignee_select` — event name fired on item click, carrying
       `phx-value-assignee` (`"all"`, `"unassigned"`, or the user id).
+    * `date_from` / `date_to` — the active range bounds (`Date.t()` | nil).
+    * `date_menu_open` — whether the date-range popover is open.
+    * `on_date_toggle` — event name to open/close the date popover.
+    * `on_date_apply` — `phx-submit` event for the From/To form (carries
+      `"from"`/`"to"` ISO date strings).
+    * `on_date_clear` — event name to clear the range.
   """
   attr :counts, :map, required: true
   attr :active, :atom, required: true
@@ -58,6 +65,12 @@ defmodule KanbanWeb.ArchiveFilterChips do
   attr :has_unassigned, :boolean, default: false
   attr :on_assignee_toggle, :string, required: true
   attr :on_assignee_select, :string, required: true
+  attr :date_from, :any, default: nil
+  attr :date_to, :any, default: nil
+  attr :date_menu_open, :boolean, default: false
+  attr :on_date_toggle, :string, required: true
+  attr :on_date_apply, :string, required: true
+  attr :on_date_clear, :string, required: true
 
   def archive_filter_chips(assigns) do
     ~H"""
@@ -106,12 +119,121 @@ defmodule KanbanWeb.ArchiveFilterChips do
         on_toggle={@on_assignee_toggle}
         on_select={@on_assignee_select}
       />
-      <.placeholder_chip
-        marker="date-range"
-        label={gettext("Date range")}
-        icon="hero-clock"
+      <.date_range_chip
+        date_from={@date_from}
+        date_to={@date_to}
+        menu_open={@date_menu_open}
+        on_toggle={@on_date_toggle}
+        on_apply={@on_date_apply}
+        on_clear={@on_date_clear}
       />
     </div>
+    """
+  end
+
+  # --- Active date-range chip + popover ------------------------------------
+
+  attr :date_from, :any, required: true
+  attr :date_to, :any, required: true
+  attr :menu_open, :boolean, required: true
+  attr :on_toggle, :string, required: true
+  attr :on_apply, :string, required: true
+  attr :on_clear, :string, required: true
+
+  defp date_range_chip(assigns) do
+    active? = not is_nil(assigns.date_from) or not is_nil(assigns.date_to)
+    palette = chip_palette(active?, nil)
+
+    assigns =
+      assigns
+      |> assign(:active?, active?)
+      |> assign(:palette, palette)
+
+    # phx-click-away lives on the wrapper holding BOTH the toggle button and the
+    # popover, so clicking inside (the inputs/buttons) does not trip click-away
+    # while genuine outside clicks close it.
+    ~H"""
+    <span
+      style="position: relative; display: inline-flex;"
+      phx-click-away={@menu_open && @on_toggle}
+    >
+      <button
+        type="button"
+        data-archive-filter-chip="date-range"
+        aria-haspopup="dialog"
+        aria-expanded={if @menu_open, do: "true", else: "false"}
+        aria-pressed={if @active?, do: "true", else: "false"}
+        phx-click={@on_toggle}
+        style={[
+          "display: inline-flex; align-items: center; gap: 5px;",
+          "padding: 3px 8px; border-radius: 4px;",
+          "font: inherit; font-size: 11.5px; font-weight: 500;",
+          "border: 1px solid #{@palette.border};",
+          "background: #{@palette.bg};",
+          "color: #{@palette.fg};",
+          "cursor: pointer;"
+        ]}
+      >
+        <.icon name="hero-clock" class="w-2.5 h-2.5" />
+        <span>{date_range_label(@date_from, @date_to)}</span>
+      </button>
+
+      <div
+        :if={@menu_open}
+        data-archive-date-menu
+        role="dialog"
+        style={[
+          "position: absolute; left: 0; top: 28px; z-index: 10;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 6px;",
+          "box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);",
+          "display: flex; flex-direction: column; gap: 8px;",
+          "padding: 10px; min-width: 220px;"
+        ]}
+      >
+        <form phx-submit={@on_apply} style="display: flex; flex-direction: column; gap: 8px;">
+          <.input
+            type="date"
+            name="from"
+            value={format_date_input(@date_from)}
+            label={gettext("From")}
+            data-archive-date-from
+          />
+          <.input
+            type="date"
+            name="to"
+            value={format_date_input(@date_to)}
+            label={gettext("To")}
+            data-archive-date-to
+          />
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button
+              type="button"
+              data-archive-date-clear
+              phx-click={@on_clear}
+              style={[
+                "padding: 4px 10px; border-radius: 4px; font: inherit; font-size: 12px;",
+                "background: transparent; border: 1px solid var(--line);",
+                "color: var(--ink-2); cursor: pointer;"
+              ]}
+            >
+              {gettext("Clear")}
+            </button>
+            <button
+              type="submit"
+              data-archive-date-apply
+              style={[
+                "padding: 4px 10px; border-radius: 4px; font: inherit; font-size: 12px;",
+                "background: var(--ink); border: 1px solid var(--ink);",
+                "color: var(--surface); cursor: pointer;"
+              ]}
+            >
+              {gettext("Apply")}
+            </button>
+          </div>
+        </form>
+      </div>
+    </span>
     """
   end
 
@@ -288,33 +410,6 @@ defmodule KanbanWeb.ArchiveFilterChips do
     """
   end
 
-  # --- Decorative placeholder chip ----------------------------------------
-
-  attr :marker, :string, required: true
-  attr :label, :string, required: true
-  attr :icon, :string, required: true
-
-  defp placeholder_chip(assigns) do
-    ~H"""
-    <span
-      data-archive-filter-chip-placeholder={@marker}
-      aria-disabled="true"
-      style={[
-        "display: inline-flex; align-items: center; gap: 5px;",
-        "padding: 3px 8px; border-radius: 4px;",
-        "font-size: 11.5px; font-weight: 500;",
-        "border: 1px solid var(--line);",
-        "background: var(--surface);",
-        "color: var(--ink-3);",
-        "cursor: not-allowed; opacity: 0.7;"
-      ]}
-    >
-      <.icon name={@icon} class="w-2.5 h-2.5" />
-      <span>{@label}</span>
-    </span>
-    """
-  end
-
   # --- Helpers -------------------------------------------------------------
 
   defp reasons, do: @reasons
@@ -334,6 +429,19 @@ defmodule KanbanWeb.ArchiveFilterChips do
       nil -> gettext("Assignee")
     end
   end
+
+  # Chip label: the generic "Date range" when no bound is set, otherwise a
+  # compact "from – to" / "from – " / " – to" using ISO dates.
+  defp date_range_label(nil, nil), do: gettext("Date range")
+
+  defp date_range_label(from, to) do
+    "#{format_date_input(from)} – #{format_date_input(to)}"
+  end
+
+  # A Date.t() as an ISO yyyy-mm-dd string for the <input type="date"> value,
+  # or "" when the bound is unset.
+  defp format_date_input(%Date{} = date), do: Date.to_iso8601(date)
+  defp format_date_input(_), do: ""
 
   # Returns a %{bg, fg, border} map. Active chips invert against the page —
   # bg uses var(--ink) and fg uses var(--surface) so both tokens flip together

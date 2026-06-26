@@ -55,6 +55,12 @@
       has_unassigned={has_unassigned?(@all_rows)}
       on_assignee_toggle="toggle_assignee_menu"
       on_assignee_select="filter_assignee"
+      date_from={@date_from}
+      date_to={@date_to}
+      date_menu_open={@date_menu_open}
+      on_date_toggle="toggle_date_menu"
+      on_date_apply="filter_date_range"
+      on_date_clear="clear_date_range"
     />
 
     <div

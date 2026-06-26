@@ -918,6 +918,59 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Late"
     end
 
+    test "clicking the Date range chip opens the date popover",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "A Task", ~U[2026-01-15 12:00:00Z])
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      refute html =~ "data-archive-date-menu"
+
+      opened = render_click(view, "toggle_date_menu", %{})
+      assert opened =~ "data-archive-date-menu"
+      assert opened =~ "data-archive-date-from"
+      assert opened =~ "data-archive-date-to"
+    end
+
+    test "submitting the From/To popover form narrows the rows and closes the popover",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "In Range", ~U[2026-01-15 12:00:00Z])
+      archive_on(column, "Out Of Range", ~U[2026-02-15 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+      render_click(view, "toggle_date_menu", %{})
+
+      html =
+        view
+        |> element("[data-archive-date-menu] form")
+        |> render_submit(%{"from" => "2026-01-01", "to" => "2026-01-31"})
+
+      assert html =~ "In Range"
+      refute html =~ "Out Of Range"
+      # The popover closes after Apply, and the chip reflects the active range.
+      refute html =~ "data-archive-date-menu"
+      assert html =~ "2026-01-01"
+      assert html =~ "2026-01-31"
+    end
+
+    test "the Date range chip Clear button resets the range and restores rows",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "In Range", ~U[2026-01-15 12:00:00Z])
+      archive_on(column, "Out Of Range", ~U[2026-02-15 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(view, "filter_date_range", %{"from" => "2026-01-01", "to" => "2026-01-31"})
+      refute render(view) =~ "Out Of Range"
+
+      # Re-open the popover and click Clear.
+      render_click(view, "toggle_date_menu", %{})
+      cleared = view |> element("[data-archive-date-clear]") |> render_click()
+
+      assert cleared =~ "In Range"
+      assert cleared =~ "Out Of Range"
+      refute cleared =~ "data-archive-date-menu"
+    end
+
     test "handle_info :task_deleted PubSub event triggers a reload",
          %{conn: conn, board: board, column: column} do
       keeper = task_fixture(column, %{title: "Sticks around"})

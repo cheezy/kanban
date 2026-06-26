@@ -24,7 +24,13 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
           assignee_menu_open: false,
           has_unassigned: false,
           on_assignee_toggle: "toggle_assignee_menu",
-          on_assignee_select: "filter_assignee"
+          on_assignee_select: "filter_assignee",
+          date_from: nil,
+          date_to: nil,
+          date_menu_open: false,
+          on_date_toggle: "toggle_date_menu",
+          on_date_apply: "filter_date_range",
+          on_date_clear: "clear_date_range"
         },
         overrides
       )
@@ -40,6 +46,12 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       has_unassigned={@has_unassigned}
       on_assignee_toggle={@on_assignee_toggle}
       on_assignee_select={@on_assignee_select}
+      date_from={@date_from}
+      date_to={@date_to}
+      date_menu_open={@date_menu_open}
+      on_date_toggle={@on_date_toggle}
+      on_date_apply={@on_date_apply}
+      on_date_clear={@on_date_clear}
     />
     """)
   end
@@ -65,36 +77,16 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       end
     end
 
-    test "renders the Date range decorative placeholder chip with aria-disabled" do
+    test "no decorative placeholder chips remain (All filters are active)" do
       html = render_chips()
 
-      assert html =~ ~s(data-archive-filter-chip-placeholder="date-range")
-
-      # The Goal placeholder was removed; Assignee is now an active chip.
-      refute html =~ ~s(data-archive-filter-chip-placeholder="goal")
-      refute html =~ ~s(data-archive-filter-chip-placeholder="assignee")
-
-      # aria-disabled is set on the single remaining placeholder.
-      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 1
+      # Goal (W1356), Assignee (W1355), and Date range (W1358) are all active
+      # controls now — there are no aria-disabled placeholder chips left.
+      refute html =~ "data-archive-filter-chip-placeholder"
+      refute html =~ ~s(aria-disabled="true")
     end
 
-    test "decorative chips have no phx-click attribute" do
-      html = render_chips()
-
-      placeholders =
-        Regex.scan(
-          ~r/<span[^>]*data-archive-filter-chip-placeholder[^>]*>/,
-          html
-        )
-
-      assert length(placeholders) == 1
-
-      for [tag] <- placeholders do
-        refute tag =~ "phx-click"
-      end
-    end
-
-    test "renders the divider between reason and placeholder chips" do
+    test "renders the divider between the reason and filter chips" do
       assert render_chips() =~ "data-archive-filter-divider"
     end
   end
@@ -297,12 +289,77 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       refute html =~ "Deferred"
     end
 
-    test "renders the Date range placeholder label plus the active Assignee label" do
+    test "renders the active Assignee and Date range chip labels" do
       html = render_chips()
       assert html =~ "Assignee"
       assert html =~ "Date range"
       # The Goal chip was removed from the filter row.
       refute html =~ ~s(data-archive-filter-chip-placeholder="goal")
+    end
+  end
+
+  describe "archive_filter_chips/1 — date range chip" do
+    test "renders the Date range chip as an active button with the toggle event" do
+      html = render_chips()
+
+      chip =
+        Regex.run(~r/<button[^>]*data-archive-filter-chip="date-range"[^>]*>/, html)
+        |> List.first()
+
+      assert chip =~ ~s(phx-click="toggle_date_menu")
+      assert chip =~ ~s(aria-expanded="false")
+      assert chip =~ ~s(aria-haspopup="dialog")
+      refute chip =~ "aria-disabled"
+    end
+
+    test "does not render the date popover when closed" do
+      refute render_chips(%{date_menu_open: false}) =~ "data-archive-date-menu"
+    end
+
+    test "renders From/To date inputs and Apply/Clear when the popover is open" do
+      html = render_chips(%{date_menu_open: true})
+
+      assert html =~ "data-archive-date-menu"
+      assert html =~ "data-archive-date-from"
+      assert html =~ "data-archive-date-to"
+      assert html =~ ~s(type="date")
+      assert html =~ "data-archive-date-apply"
+      assert html =~ "data-archive-date-clear"
+      assert html =~ ~s(phx-submit="filter_date_range")
+    end
+
+    test "an active range inverts the chip and shows a compact from – to label" do
+      html =
+        render_chips(%{
+          date_from: ~D[2026-01-10],
+          date_to: ~D[2026-01-20]
+        })
+
+      chip =
+        Regex.run(
+          ~r/<button[^>]*data-archive-filter-chip="date-range"[^>]*>[\s\S]*?<\/button>/,
+          html
+        )
+        |> List.first()
+
+      assert chip =~ "background: var(--ink)"
+      assert chip =~ ~s(aria-pressed="true")
+      assert chip =~ "2026-01-10"
+      assert chip =~ "2026-01-20"
+    end
+
+    test "no active range leaves the chip un-pressed with the generic label" do
+      html = render_chips(%{date_from: nil, date_to: nil})
+
+      chip =
+        Regex.run(
+          ~r/<button[^>]*data-archive-filter-chip="date-range"[^>]*>[\s\S]*?<\/button>/,
+          html
+        )
+        |> List.first()
+
+      assert chip =~ ~s(aria-pressed="false")
+      assert chip =~ "Date range"
     end
   end
 end

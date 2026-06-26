@@ -57,6 +57,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
     {:noreply,
      socket
      |> assign(:assignee_menu_open, not socket.assigns.assignee_menu_open)
+     |> assign(:date_menu_open, false)
      |> close_menu()}
   end
 
@@ -76,11 +77,21 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   @impl true
+  def handle_event("toggle_date_menu", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:date_menu_open, not socket.assigns.date_menu_open)
+     |> assign(:assignee_menu_open, false)
+     |> close_menu()}
+  end
+
+  @impl true
   def handle_event("filter_date_range", params, socket) do
     {:noreply,
      socket
      |> assign(:date_from, parse_date(params["from"]))
      |> assign(:date_to, parse_date(params["to"]))
+     |> assign(:date_menu_open, false)
      |> recompute_rows()
      |> close_menu()}
   end
@@ -91,6 +102,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
      socket
      |> assign(:date_from, nil)
      |> assign(:date_to, nil)
+     |> assign(:date_menu_open, false)
      |> recompute_rows()
      |> close_menu()}
   end
@@ -192,7 +204,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
       assignee_filter: :all,
       assignee_menu_open: false,
       date_from: nil,
-      date_to: nil
+      date_to: nil,
+      date_menu_open: false
     })
   end
 
