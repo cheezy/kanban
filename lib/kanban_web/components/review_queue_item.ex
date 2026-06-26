@@ -294,8 +294,6 @@ defmodule KanbanWeb.ReviewQueueItem do
     end)
   end
 
-  defp any_not_met?(_), do: false
-
   defp pill_state(true), do: :passed
   defp pill_state(false), do: :failed
   defp pill_state(_), do: :neutral

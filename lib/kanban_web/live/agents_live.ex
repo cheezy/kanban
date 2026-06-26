@@ -439,7 +439,6 @@ defmodule KanbanWeb.AgentsLive do
     do: Agents.agent_detail(identity, scope: scope)
 
   # The human-readable agent name from a selected identity, for display.
-  defp selected_agent_name(nil), do: nil
   defp selected_agent_name({name, _owner_key}), do: name
 
   # Whether the {name, owner_key} identity is one of the agents currently in the

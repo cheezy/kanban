@@ -609,8 +609,6 @@ defmodule Kanban.Metrics do
     calculate_time_stats_for_key(results, :wait_time_seconds)
   end
 
-  defp calculate_median([]), do: 0
-
   defp calculate_median(sorted_list) do
     count = length(sorted_list)
     middle = div(count, 2)

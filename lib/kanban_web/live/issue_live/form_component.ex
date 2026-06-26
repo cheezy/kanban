@@ -353,7 +353,6 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     end
   end
 
-  defp too_long?(nil, _), do: false
   defp too_long?(str, max) when is_binary(str), do: String.length(str) > max
   defp too_long?(_, _), do: false
 
