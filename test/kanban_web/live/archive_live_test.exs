@@ -1089,6 +1089,79 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "data-archive-goal-group-toggle"
     end
 
+    test "the expand/collapse-all control collapses then expands every goal group",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      child = task_fixture(column, %{title: "Child Task", type: :work, parent_id: goal.id})
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      # Expanded by default — the control offers "Collapse all".
+      assert html =~ "data-archive-toggle-all-goals"
+      assert html =~ "Collapse all"
+      assert html =~ "Child Task"
+
+      collapsed = render_click(view, "toggle_all_goal_groups", %{})
+      # The child row hides; the goal's own row stays; the control flips.
+      refute collapsed =~ "Child Task"
+      assert collapsed =~ "Launch Goal"
+      assert collapsed =~ "Expand all"
+
+      expanded = render_click(view, "toggle_all_goal_groups", %{})
+      assert expanded =~ "Child Task"
+      assert expanded =~ "Collapse all"
+    end
+
+    test "the all-toggle composes with the per-group toggle_goal_group",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      child = task_fixture(column, %{title: "Child Task", type: :work, parent_id: goal.id})
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Collapse everything, then expand just this one group via its chevron.
+      render_click(view, "toggle_all_goal_groups", %{})
+      refute render(view) =~ "Child Task"
+
+      html = toggle_goal_group(view, goal_group_key(goal))
+      assert html =~ "Child Task"
+    end
+
+    test "the expand/collapse-all control is hidden when there are no collapsible goal groups",
+         %{conn: conn, board: board, column: column} do
+      # Only ungrouped tasks (the no_goal group is not a goal group) — no
+      # collapsible goal groups, so the control is hidden.
+      task_fixture(column, %{title: "Standalone"}) |> Tasks.archive_task()
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      refute html =~ "data-archive-toggle-all-goals"
+    end
+
+    test "collapse-all preserves a manually-collapsed Tasks Without Goals group",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      child = task_fixture(column, %{title: "Child Task", type: :work, parent_id: goal.id})
+      standalone = task_fixture(column, %{title: "Standalone Task"})
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+      {:ok, _} = Tasks.archive_task(standalone)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Manually collapse the Tasks Without Goals group via its own chevron.
+      toggle_goal_group(view, no_goal_group_key())
+      refute render(view) =~ "Standalone Task"
+
+      # Collapse all goal groups — the no_goal group must stay collapsed.
+      collapsed = render_click(view, "toggle_all_goal_groups", %{})
+      refute collapsed =~ "Child Task"
+      refute collapsed =~ "Standalone Task"
+    end
+
     test "a goal whose own row is not archived renders a synthetic header with the violet background",
          %{conn: conn, board: board, column: column} do
       # The goal stays active on the board; only its child is archived. The goal
