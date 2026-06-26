@@ -743,22 +743,63 @@ defmodule KanbanWeb.ArchiveLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      # A goal-group header renders, keyed by the goal id, showing its identifier.
+      # A goal-group header renders, keyed by the goal id (keys are
+      # month-qualified, e.g. "2026-6:goal:5"), showing its identifier.
       assert html =~ "data-archive-goal-group-header"
-      assert html =~ ~s(data-archive-goal-group-key="goal:#{goal.id}")
+      assert html =~ "goal:#{goal.id}"
       assert html =~ goal.identifier
 
       # Standalone tasks fall under the synthetic Tasks Without Goals group.
-      assert html =~ ~s(data-archive-goal-group-key="no_goal")
+      assert html =~ "no_goal"
       assert html =~ "Tasks Without Goals"
 
       # The goal-group header appears before the no-goal header.
-      assert :binary.match(html, ~s(data-archive-goal-group-key="goal:#{goal.id}")) <
-               :binary.match(html, ~s(data-archive-goal-group-key="no_goal"))
+      assert :binary.match(html, "goal:#{goal.id}") < :binary.match(html, "no_goal")
 
       # Every archived row still renders.
       assert html =~ child.identifier
       assert html =~ standalone.identifier
+    end
+
+    test "collapses and expands a goal group when its chevron is toggled",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch flow", type: :goal})
+      child = task_fixture(column, %{title: "Child of goal", type: :work, parent_id: goal.id})
+
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      key = goal_group_key(goal)
+
+      # Expanded by default: the child row is visible and the chevron points down.
+      assert html =~ child.identifier
+      assert html =~ "hero-chevron-down"
+
+      # Collapsing hides the child row and flips the chevron to point right.
+      html = toggle_goal_group(view, key)
+      refute html =~ child.identifier
+      assert html =~ "hero-chevron-right"
+
+      # Expanding again brings the child row back.
+      html = toggle_goal_group(view, key)
+      assert html =~ child.identifier
+    end
+
+    test "the Tasks Without Goals group toggles like a goal group",
+         %{conn: conn, board: board, column: column} do
+      standalone = task_fixture(column, %{title: "Lonely task", type: :work})
+      {:ok, _} = Tasks.archive_task(standalone)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      key = no_goal_group_key()
+
+      assert html =~ standalone.identifier
+
+      html = toggle_goal_group(view, key)
+      # The standalone row hides but the group header still renders.
+      refute html =~ standalone.identifier
+      assert html =~ "Tasks Without Goals"
     end
   end
 
@@ -766,6 +807,21 @@ defmodule KanbanWeb.ArchiveLiveTest do
     board = board_fixture(user)
     column = column_fixture(board, %{name: "Test Column"})
     %{board: board, column: column}
+  end
+
+  defp current_month_key do
+    today = Date.utc_today()
+    "#{today.year}-#{today.month}"
+  end
+
+  defp goal_group_key(goal), do: "#{current_month_key()}:goal:#{goal.id}"
+
+  defp no_goal_group_key, do: "#{current_month_key()}:no_goal"
+
+  defp toggle_goal_group(view, key) do
+    view
+    |> element(~s([data-archive-goal-group-toggle][phx-value-group_key="#{key}"]))
+    |> render_click()
   end
 
   defp complete_task!(task, completed_at) do

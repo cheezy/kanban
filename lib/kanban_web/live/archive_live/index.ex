@@ -64,6 +64,16 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   @impl true
+  def handle_event("toggle_goal_group", %{"group_key" => key}, socket) when is_binary(key) do
+    {:noreply,
+     assign(
+       socket,
+       :collapsed_goal_groups,
+       toggle_member(socket.assigns.collapsed_goal_groups, key)
+     )}
+  end
+
+  @impl true
   def handle_event("export_csv", _params, socket) do
     {:noreply, put_flash(socket, :info, gettext("Export CSV — coming soon."))}
   end
@@ -133,6 +143,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> assign(:rows, all_rows)
     |> assign(:stats, stats)
     |> assign(:menu_open_for, nil)
+    |> assign(:collapsed_goal_groups, MapSet.new())
   end
 
   defp reload(socket) do
@@ -207,12 +218,36 @@ defmodule KanbanWeb.ArchiveLive.Index do
   defp sort_key({year, month}), do: {-year, -month}
 
   defp build_month_group({{year, month}, group_rows}) do
+    month_key = "#{year}-#{month}"
+
     %{
-      key: "#{year}-#{month}",
+      key: month_key,
       label: month_label(year, month),
       count: length(group_rows),
-      goal_groups: Tasks.group_rows_by_goal(group_rows)
+      goal_groups: month_qualified_goal_groups(month_key, group_rows)
     }
+  end
+
+  # Qualify each goal-group key with its month so the same goal (or the
+  # "no_goal" bucket) appearing in two months toggles independently.
+  defp month_qualified_goal_groups(month_key, group_rows) do
+    group_rows
+    |> Tasks.group_rows_by_goal()
+    |> Enum.map(fn group -> %{group | key: "#{month_key}:#{group.key}"} end)
+  end
+
+  # A goal group renders expanded unless the user has collapsed it. Tracking
+  # collapsed keys (rather than expanded ones) means the default — empty set —
+  # is "all expanded", and keys that vanish after a filter/reload are simply
+  # ignored instead of needing recomputation.
+  defp group_expanded?(collapsed, key), do: not MapSet.member?(collapsed, key)
+
+  # Flip a member's presence in a MapSet: drop it when present, add it when
+  # absent. Backs the per-goal-group collapse state.
+  defp toggle_member(set, member) do
+    if MapSet.member?(set, member),
+      do: MapSet.delete(set, member),
+      else: MapSet.put(set, member)
   end
 
   defp month_key(%{archived_at: %DateTime{year: year, month: month}}), do: {year, month}
