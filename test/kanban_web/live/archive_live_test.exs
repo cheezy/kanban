@@ -953,7 +953,9 @@ defmodule KanbanWeb.ArchiveLiveTest do
 
       html = render_hook(view, "search_archive", %{"query" => "nonexistent"})
       refute html =~ "Deploy pipeline"
-      assert html =~ "No archived tasks match this filter."
+      # The empty state is search-aware once a query is active (W1362).
+      assert html =~ "data-archive-empty"
+      assert html =~ "nonexistent"
     end
 
     test "search composes with the reason filter",
@@ -1037,6 +1039,58 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert cleared =~ "Deploy pipeline"
       assert cleared =~ "Write docs"
       refute cleared =~ "data-archive-search-clear"
+    end
+
+    test "an active search that matches nothing shows a search-aware empty state",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_hook(view, "search_archive", %{"query" => "nonexistent"})
+
+      assert html =~ "data-archive-empty"
+      assert html =~ "nonexistent"
+      # The generic copy is replaced by the search-aware message.
+      refute html =~ "No archived tasks match this filter."
+    end
+
+    test "the empty state uses the generic copy when no search is active",
+         %{conn: conn, board: board} do
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "data-archive-empty"
+      assert html =~ "No archived tasks match this filter."
+    end
+
+    test "the searched term is HTML-escaped in the empty-state message",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_hook(view, "search_archive", %{"query" => "<script>"})
+
+      assert html =~ "&lt;script&gt;"
+      refute html =~ "<script>"
+    end
+
+    test "an active search persists across a PubSub reload",
+         %{conn: conn, board: board, column: column} do
+      match = task_fixture(column, %{title: "Deploy pipeline"})
+      other = task_fixture(column, %{title: "Write docs"})
+      {:ok, archived_match} = Tasks.archive_task(match)
+      {:ok, _} = Tasks.archive_task(other)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+      render_hook(view, "search_archive", %{"query" => "deploy"})
+
+      # A PubSub reload must re-apply the active search, not reset it.
+      send(view.pid, {Kanban.Tasks, :task_updated, archived_match})
+      reloaded = render(view)
+
+      assert reloaded =~ "Deploy pipeline"
+      refute reloaded =~ "Write docs"
     end
 
     test "clicking the Date range chip opens the date popover",

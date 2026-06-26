@@ -340,7 +340,7 @@ msgid "Task updated successfully"
 msgstr "Tâche mise à jour avec succès"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:23
-#: lib/kanban_web/live/archive_live/index.html.heex:177
+#: lib/kanban_web/live/archive_live/index.html.heex:182
 #: lib/kanban_web/live/issue_live/form_component.ex:68
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:30
 #: lib/kanban_web/live/task_live/form_component.html.heex:47
@@ -1763,7 +1763,7 @@ msgstr "Documentation API complète"
 
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:85
-#: lib/kanban_web/live/archive_live/index.html.heex:259
+#: lib/kanban_web/live/archive_live/index.html.heex:264
 #: lib/kanban_web/live/goal_live/show.ex:241
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
@@ -1778,7 +1778,7 @@ msgstr "Objectif"
 msgid "Human Review Workflow"
 msgstr "Flux de Travail de Révision Humaine"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:176
+#: lib/kanban_web/live/archive_live/index.html.heex:181
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:24
 #, elixir-autogen, elixir-format
 msgid "ID"
@@ -2625,7 +2625,7 @@ msgstr "Déclenché"
 msgid "Not dispatched"
 msgstr "Non déclenché"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:178
+#: lib/kanban_web/live/archive_live/index.html.heex:183
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
@@ -5182,7 +5182,7 @@ msgstr "arrivées à « Terminé » avant archivage"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:423
 #: lib/kanban_web/components/archive_filter_chips.ex:429
-#: lib/kanban_web/live/archive_live/index.html.heex:180
+#: lib/kanban_web/live/archive_live/index.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "Assigné à"
@@ -5218,7 +5218,7 @@ msgstr "objectif :"
 msgid "unknown"
 msgstr "inconnu"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:181
+#: lib/kanban_web/live/archive_live/index.html.heex:186
 #, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "Archivée"
@@ -5228,17 +5228,17 @@ msgstr "Archivée"
 msgid "Delete forever"
 msgstr "Supprimer définitivement"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:306
+#: lib/kanban_web/live/archive_live/index.html.heex:311
 #, elixir-autogen, elixir-format
 msgid "Export CSV"
 msgstr "Exporter en CSV"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:150
+#: lib/kanban_web/live/archive_live/index.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "No archived tasks match this filter."
 msgstr "Aucune tâche archivée ne correspond à ce filtre."
 
-#: lib/kanban_web/live/archive_live/index.html.heex:179
+#: lib/kanban_web/live/archive_live/index.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Outcome"
 msgstr "Résultat"
@@ -7268,13 +7268,13 @@ msgstr "%{count} derniers jours"
 msgid "All Boards"
 msgstr "Tous les tableaux"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:262
+#: lib/kanban_web/live/archive_live/index.html.heex:267
 #, elixir-autogen, elixir-format
 msgid "Tasks Without Goals"
 msgstr "Tâches sans objectif"
 
 #: lib/kanban_web/components/archive_row.ex:153
-#: lib/kanban_web/live/archive_live/index.html.heex:216
+#: lib/kanban_web/live/archive_live/index.html.heex:221
 #, elixir-autogen, elixir-format
 msgid "Toggle group"
 msgstr "Basculer le groupe"
@@ -7284,7 +7284,7 @@ msgstr "Basculer le groupe"
 msgid "All assignees"
 msgstr "Assigné à"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:293
+#: lib/kanban_web/live/archive_live/index.html.heex:298
 #, elixir-autogen, elixir-format
 msgid "Archived tasks stay searchable and in the audit log, and can be restored or deleted at any time by users with edit access."
 msgstr "Les tâches archivées restent consultables et présentes dans le journal d'audit, et peuvent être restaurées ou supprimées à tout moment par les utilisateurs disposant d'un accès en modification."
@@ -7314,12 +7314,17 @@ msgstr "Tout réduire"
 msgid "Expand all"
 msgstr "Tout développer"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:105
+#: lib/kanban_web/live/archive_live/index.html.heex:106
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Clear search"
 msgstr "Effacer"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:91
+#: lib/kanban_web/live/archive_live/index.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Search archived tasks…"
 msgstr "Rechercher des tâches archivées…"
+
+#: lib/kanban_web/live/archive_live/index.html.heex:152
+#, elixir-autogen, elixir-format
+msgid "No archived tasks match \"%{query}\"."
+msgstr "Aucune tâche archivée ne correspond à \"%{query}\"."

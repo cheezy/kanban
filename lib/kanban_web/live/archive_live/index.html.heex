@@ -72,6 +72,7 @@
 
     <div style="padding: 0 28px 10px;">
       <form
+        id="archive-search-form"
         phx-change="search_archive"
         style="position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 320px;"
       >
@@ -147,7 +148,11 @@
           "font-size: 13px; color: var(--ink-3); font-style: italic;"
         ]}
       >
-        {gettext("No archived tasks match this filter.")}
+        <%= if @search_query != "" do %>
+          {gettext("No archived tasks match \"%{query}\".", query: @search_query)}
+        <% else %>
+          {gettext("No archived tasks match this filter.")}
+        <% end %>
       </div>
 
       <div
