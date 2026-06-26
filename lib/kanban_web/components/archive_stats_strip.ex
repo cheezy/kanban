@@ -1,20 +1,17 @@
 defmodule KanbanWeb.ArchiveStatsStrip do
   @moduledoc """
-  5-cell stats strip rendered above the filter chips on the Archive
+  2-cell stats strip rendered above the filter chips on the Archive
   view at `/boards/:id/archive`.
 
-  Reads from a `Kanban.Archives.archive_stats/1` map and surfaces five
-  per-bucket counters: Total / Completed / Cancelled / Won't do +
-  duplicate / Avg cycle. Mirrors the design's `ArchiveStat` cells in
-  `design_handoff_stride/design_source/screens/archive.jsx` lines
-  264-275 — same uppercase label, large tabular-numerics value, soft
-  caption — translated to gettext + theme tokens.
+  Reads from a `Kanban.Archives.archive_stats/1` map and surfaces two
+  per-bucket counters: Total / Completed. Same uppercase label, large
+  tabular-numerics value, and soft caption design, using gettext +
+  theme tokens.
 
   Purely presentational. The LiveView owns the stats query.
   """
   use KanbanWeb, :html
 
-  alias KanbanWeb.Duration
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -23,8 +20,7 @@ defmodule KanbanWeb.ArchiveStatsStrip do
   ## Attrs
 
     * `stats` — required map matching the `Kanban.Archives.archive_stats/1`
-      return shape: `%{total, completed, cancelled, wontdo_duplicate,
-      deferred, avg_cycle_minutes}`. `avg_cycle_minutes` may be `nil`.
+      return shape: `%{total, completed}`.
   """
   attr :stats, :map, required: true
 
@@ -33,7 +29,7 @@ defmodule KanbanWeb.ArchiveStatsStrip do
     <dl
       data-archive-stats-strip
       style={[
-        "display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));",
+        "display: grid; grid-template-columns: repeat(2, max-content); width: fit-content;",
         "margin: 0; padding: 0;",
         "background: var(--surface);",
         "border: 1px solid var(--line); border-radius: 8px; overflow: hidden;"
@@ -53,30 +49,6 @@ defmodule KanbanWeb.ArchiveStatsStrip do
         value={Integer.to_string(@stats.completed)}
         caption={gettext("reached Done before archive")}
         tone={TaskTokens.archive_reason_ink(:completed)}
-        border_left={true}
-      />
-      <.cell
-        marker="cancelled"
-        label={gettext("Cancelled")}
-        value={Integer.to_string(@stats.cancelled)}
-        caption={gettext("killed in flight or before")}
-        tone={TaskTokens.archive_reason_ink(:cancelled)}
-        border_left={true}
-      />
-      <.cell
-        marker="wontdo-duplicate"
-        label={gettext("Won't do · duplicate")}
-        value={Integer.to_string(@stats.wontdo_duplicate)}
-        caption={gettext("scope / priority decisions")}
-        tone="var(--ink)"
-        border_left={true}
-      />
-      <.cell
-        marker="avg-cycle"
-        label={gettext("Avg cycle · completed")}
-        value={Duration.format_minutes(@stats.avg_cycle_minutes)}
-        caption={gettext("time spent before archive")}
-        tone="var(--ink)"
         border_left={true}
       />
     </dl>

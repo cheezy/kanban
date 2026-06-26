@@ -3,7 +3,7 @@ defmodule Kanban.ArchivesTest do
   Tests for `Kanban.Archives` — the read API for the workspace Archive
   view. Covers `list_archived/1` (ordering, preloads, :reason and :scope
   filtering, the legacy nil-reason-treated-as-completed rule) and
-  `archive_stats/1` (per-bucket counters and avg_cycle_minutes).
+  `archive_stats/1` (the total and completed counters).
   """
   use Kanban.DataCase
 
@@ -191,32 +191,20 @@ defmodule Kanban.ArchivesTest do
 
       assert stats.total == 2
       assert stats.completed == 1
-      assert stats.cancelled == 1
     end
 
     test "returns the zero map for a board with no archived tasks",
          %{column: column} do
       assert Kanban.Archives.archive_stats_for_board(column.board_id) == %{
                total: 0,
-               completed: 0,
-               cancelled: 0,
-               wontdo_duplicate: 0,
-               deferred: 0,
-               avg_cycle_minutes: nil
+               completed: 0
              }
     end
   end
 
   describe "archive_stats/1" do
     test "returns zeros for an empty archive" do
-      assert Archives.archive_stats() == %{
-               total: 0,
-               completed: 0,
-               cancelled: 0,
-               wontdo_duplicate: 0,
-               deferred: 0,
-               avg_cycle_minutes: nil
-             }
+      assert Archives.archive_stats() == %{total: 0, completed: 0}
     end
 
     test "counts the total across every archived task regardless of reason",
@@ -236,50 +224,12 @@ defmodule Kanban.ArchivesTest do
       assert Archives.archive_stats().completed == 2
     end
 
-    test "buckets :wontdo and :duplicate together", %{column: column} do
-      archived_task!(column, %{archive_reason: :wontdo, archive_note: "skip"})
-
-      canonical = task_fixture(column)
-
-      archived_task!(column, %{
-        archive_reason: :duplicate,
-        duplicate_of_id: canonical.id
-      })
-
-      assert Archives.archive_stats().wontdo_duplicate == 2
-    end
-
-    test "buckets :deferred and :cancelled separately", %{column: column} do
-      archived_task!(column, %{archive_reason: :deferred, archive_note: "later"})
-      archived_task!(column, %{archive_reason: :cancelled, archive_note: "nope"})
-
-      stats = Archives.archive_stats()
-      assert stats.deferred == 1
-      assert stats.cancelled == 1
-    end
-
-    test "avg_cycle_minutes averages non-nil time_spent_minutes only",
-         %{column: column} do
-      archived_task!(column, %{archive_reason: :completed, time_spent_minutes: 30})
-      archived_task!(column, %{archive_reason: :completed, time_spent_minutes: 60})
-      archived_task!(column, %{archive_reason: :completed, time_spent_minutes: nil})
-
-      assert Archives.archive_stats().avg_cycle_minutes == 45
-    end
-
     test "is scope-aware", %{column: column} do
       archived_task!(column, %{archive_reason: :completed})
 
       other_scope = Scope.for_user(user_fixture())
 
-      assert Archives.archive_stats(scope: other_scope) == %{
-               total: 0,
-               completed: 0,
-               cancelled: 0,
-               wontdo_duplicate: 0,
-               deferred: 0,
-               avg_cycle_minutes: nil
-             }
+      assert Archives.archive_stats(scope: other_scope) == %{total: 0, completed: 0}
     end
   end
 end

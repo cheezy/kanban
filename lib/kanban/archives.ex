@@ -22,11 +22,6 @@ defmodule Kanban.Archives do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
-  # Archive-reason buckets surfaced by archive_stats/1. The `:wontdo`
-  # and `:duplicate` rows are aggregated under one key because the UI
-  # collapses them into a single "won't do / duplicate" pill.
-  @wontdo_duplicate_reasons [:wontdo, :duplicate]
-
   @doc """
   Returns the list of archived tasks, newest first.
 
@@ -82,11 +77,6 @@ defmodule Kanban.Archives do
 
     * `:total` — every archived task in the scope
     * `:completed` — `archive_reason` is `:completed` OR `nil` (legacy)
-    * `:cancelled` — `archive_reason` is `:cancelled`
-    * `:wontdo_duplicate` — `archive_reason` is `:wontdo` OR `:duplicate`
-    * `:deferred` — `archive_reason` is `:deferred`
-    * `:avg_cycle_minutes` — integer average of `:time_spent_minutes`
-      across archived tasks with a non-nil value, or `nil` when none.
 
   ## Options
 
@@ -94,18 +84,14 @@ defmodule Kanban.Archives do
   """
   @spec archive_stats(keyword()) :: %{
           total: non_neg_integer(),
-          completed: non_neg_integer(),
-          cancelled: non_neg_integer(),
-          wontdo_duplicate: non_neg_integer(),
-          deferred: non_neg_integer(),
-          avg_cycle_minutes: non_neg_integer() | nil
+          completed: non_neg_integer()
         }
   def archive_stats(opts \\ []) do
     rows =
       Task
       |> archived_query()
       |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
-      |> select([t], %{reason: t.archive_reason, minutes: t.time_spent_minutes})
+      |> select([t], %{reason: t.archive_reason})
       |> Repo.all()
 
     build_stats(rows)
@@ -119,18 +105,14 @@ defmodule Kanban.Archives do
   """
   @spec archive_stats_for_board(integer()) :: %{
           total: non_neg_integer(),
-          completed: non_neg_integer(),
-          cancelled: non_neg_integer(),
-          wontdo_duplicate: non_neg_integer(),
-          deferred: non_neg_integer(),
-          avg_cycle_minutes: non_neg_integer() | nil
+          completed: non_neg_integer()
         }
   def archive_stats_for_board(board_id) when is_integer(board_id) do
     rows =
       Task
       |> archived_query()
       |> where([_t, column: c], c.board_id == ^board_id)
-      |> select([t], %{reason: t.archive_reason, minutes: t.time_spent_minutes})
+      |> select([t], %{reason: t.archive_reason})
       |> Repo.all()
 
     build_stats(rows)
@@ -139,11 +121,7 @@ defmodule Kanban.Archives do
   defp build_stats(rows) do
     %{
       total: length(rows),
-      completed: count_completed(rows),
-      cancelled: count_reason(rows, :cancelled),
-      wontdo_duplicate: count_reasons(rows, @wontdo_duplicate_reasons),
-      deferred: count_reason(rows, :deferred),
-      avg_cycle_minutes: avg_minutes(rows)
+      completed: count_completed(rows)
     }
   end
 
@@ -172,25 +150,5 @@ defmodule Kanban.Archives do
 
   defp count_completed(rows) do
     Enum.count(rows, fn %{reason: r} -> r in [:completed, nil] end)
-  end
-
-  defp count_reason(rows, reason) do
-    Enum.count(rows, fn %{reason: r} -> r == reason end)
-  end
-
-  defp count_reasons(rows, reasons) do
-    Enum.count(rows, fn %{reason: r} -> r in reasons end)
-  end
-
-  defp avg_minutes(rows) do
-    minutes =
-      rows
-      |> Enum.map(& &1.minutes)
-      |> Enum.reject(&is_nil/1)
-
-    case minutes do
-      [] -> nil
-      values -> values |> Enum.sum() |> div(length(values))
-    end
   end
 end
