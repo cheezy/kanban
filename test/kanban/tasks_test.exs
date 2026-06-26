@@ -9210,4 +9210,73 @@ defmodule Kanban.TasksTest do
       assert Tasks.get_task!(child_b.id).status == :completed
     end
   end
+
+  describe "group_rows_by_goal/1" do
+    defp built_task(id, type, parent_id, day, attrs \\ %{}) do
+      Map.merge(
+        %Task{
+          id: id,
+          type: type,
+          parent_id: parent_id,
+          identifier: "#{type}#{id}",
+          title: "Task #{id}",
+          inserted_at: ~N[2024-01-01 00:00:00] |> NaiveDateTime.add(day, :day)
+        },
+        attrs
+      )
+    end
+
+    test "groups a goal with its children, goal row leading its own group" do
+      goal = built_task(1, :goal, nil, 0)
+      child_a = built_task(2, :work, 1, 1)
+      child_b = built_task(3, :work, 1, 2)
+
+      assert [%{key: "goal:1", kind: :goal, goal: ^goal, rows: rows}] =
+               Tasks.group_rows_by_goal([child_b, goal, child_a])
+
+      assert rows == [goal, child_a, child_b]
+    end
+
+    test "places standalone non-goal tasks in a trailing :no_goal group" do
+      goal = built_task(1, :goal, nil, 0)
+      child = built_task(2, :work, 1, 1)
+      standalone = built_task(3, :work, nil, 2)
+
+      groups = Tasks.group_rows_by_goal([goal, child, standalone])
+
+      assert [%{key: "goal:1", kind: :goal}, %{key: "no_goal", kind: :no_goal} = last] = groups
+      assert last.goal == nil
+      assert last.rows == [standalone]
+    end
+
+    test "synthesizes a goal header from the preloaded parent when the goal is absent" do
+      parent_goal = built_task(1, :goal, nil, 0)
+      child = built_task(2, :work, 1, 1, %{parent: parent_goal})
+
+      assert [%{key: "goal:1", kind: :goal, goal: ^parent_goal, rows: [^child]}] =
+               Tasks.group_rows_by_goal([child])
+    end
+
+    test "orders goal groups by goal age with the :no_goal group always last" do
+      older_goal = built_task(1, :goal, nil, 0)
+      newer_goal = built_task(2, :goal, nil, 5)
+      standalone = built_task(3, :work, nil, 1)
+
+      assert ["goal:1", "goal:2", "no_goal"] =
+               [newer_goal, standalone, older_goal]
+               |> Tasks.group_rows_by_goal()
+               |> Enum.map(& &1.key)
+    end
+
+    test "returns an empty list for no rows" do
+      assert Tasks.group_rows_by_goal([]) == []
+    end
+
+    test "a goal with no children yields a single-row group" do
+      goal = built_task(1, :goal, nil, 0)
+
+      assert [%{key: "goal:1", kind: :goal, rows: [^goal]}] =
+               Tasks.group_rows_by_goal([goal])
+    end
+  end
 end

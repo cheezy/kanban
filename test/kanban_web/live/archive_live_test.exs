@@ -730,6 +730,36 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert :binary.match(html, this_month_label) <
                :binary.match(html, old_month_label)
     end
+
+    test "groups archived rows under goal headers and a Tasks Without Goals group",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch flow", type: :goal})
+      child = task_fixture(column, %{title: "Child of goal", type: :work, parent_id: goal.id})
+      standalone = task_fixture(column, %{title: "Lonely task", type: :work})
+
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+      {:ok, _} = Tasks.archive_task(standalone)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # A goal-group header renders, keyed by the goal id, showing its identifier.
+      assert html =~ "data-archive-goal-group-header"
+      assert html =~ ~s(data-archive-goal-group-key="goal:#{goal.id}")
+      assert html =~ goal.identifier
+
+      # Standalone tasks fall under the synthetic Tasks Without Goals group.
+      assert html =~ ~s(data-archive-goal-group-key="no_goal")
+      assert html =~ "Tasks Without Goals"
+
+      # The goal-group header appears before the no-goal header.
+      assert :binary.match(html, ~s(data-archive-goal-group-key="goal:#{goal.id}")) <
+               :binary.match(html, ~s(data-archive-goal-group-key="no_goal"))
+
+      # Every archived row still renders.
+      assert html =~ child.identifier
+      assert html =~ standalone.identifier
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

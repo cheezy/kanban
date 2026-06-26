@@ -210,7 +210,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
     %{
       key: "#{year}-#{month}",
       label: month_label(year, month),
-      rows: Tasks.sort_by_goal_hierarchy(group_rows)
+      count: length(group_rows),
+      goal_groups: Tasks.group_rows_by_goal(group_rows)
     }
   end
 
