@@ -70,6 +70,43 @@ defmodule Kanban.Archives do
     |> Repo.all()
   end
 
+  @csv_headers ~w(Identifier Title Type Goal Assignee)a ++
+                 ["Archive Reason", "Archived At", "Archived By"]
+
+  @doc """
+  Builds a CSV export (RFC-4180) of every archived task on the given board.
+
+  Reuses `list_archived_for_board/1` so the rows carry the same preloads.
+  The first line is a header row; one data row follows per archived task
+  with the columns: Identifier, Title, Type, Goal (parent title),
+  Assignee, Archive Reason, Archived At, Archived By.
+
+  Every field is RFC-4180 quoted/escaped and neutralized against CSV
+  formula injection (a leading `=`, `+`, `-`, `@`, tab, or CR is prefixed
+  with a single quote so spreadsheet apps do not execute it).
+  """
+  @spec export_csv_for_board(integer()) :: binary()
+  def export_csv_for_board(board_id) when is_integer(board_id) do
+    board_id
+    |> list_archived_for_board()
+    |> build_csv()
+  end
+
+  @doc """
+  Encodes a list of archived `Task` structs into an RFC-4180 CSV string.
+
+  Split out from `export_csv_for_board/1` so the encoding (quoting and
+  formula-injection neutralization) is unit-testable without the database.
+  """
+  @spec build_csv([Task.t()]) :: binary()
+  def build_csv(rows) when is_list(rows) do
+    header = Enum.map(@csv_headers, &to_string/1)
+
+    [header | Enum.map(rows, &csv_row_fields/1)]
+    |> Enum.map_join("\r\n", &encode_csv_row/1)
+    |> Kernel.<>("\r\n")
+  end
+
   @doc """
   Returns archive counters for the header band of the Archive view.
 
@@ -150,5 +187,65 @@ defmodule Kanban.Archives do
 
   defp count_completed(rows) do
     Enum.count(rows, fn %{reason: r} -> r in [:completed, nil] end)
+  end
+
+  # --- CSV export helpers ---------------------------------------------------
+
+  defp csv_row_fields(task) do
+    [
+      task.identifier,
+      task.title,
+      to_string(task.type),
+      csv_goal_title(task),
+      csv_user_label(task.assigned_to),
+      csv_reason(task.archive_reason),
+      csv_archived_at(task.archived_at),
+      csv_user_label(task.archived_by)
+    ]
+  end
+
+  defp csv_goal_title(%{parent: %{title: title}}) when is_binary(title), do: title
+  defp csv_goal_title(_), do: ""
+
+  # Mirrors KanbanWeb.ArchiveRow.user_name/1 (name -> email), but renders a
+  # blank cell rather than "?" for an absent user in the export.
+  defp csv_user_label(%{name: name}) when is_binary(name) and name != "", do: name
+  defp csv_user_label(%{email: email}) when is_binary(email), do: email
+  defp csv_user_label(_), do: ""
+
+  # The Archive view treats a nil archive_reason as :completed (legacy rows),
+  # so the export reflects the same bucketing.
+  defp csv_reason(nil), do: "completed"
+  defp csv_reason(reason), do: to_string(reason)
+
+  defp csv_archived_at(%DateTime{} = at), do: DateTime.to_iso8601(at)
+  defp csv_archived_at(_), do: ""
+
+  defp encode_csv_row(fields), do: Enum.map_join(fields, ",", &encode_csv_field/1)
+
+  defp encode_csv_field(value) do
+    value
+    |> to_string()
+    |> neutralize_formula()
+    |> rfc4180_quote()
+  end
+
+  # OWASP CSV-injection guard: a cell beginning with a formula trigger is
+  # prefixed with a single quote so spreadsheet apps treat it as inert text.
+  defp neutralize_formula(<<first, _::binary>> = field)
+       when first in [?=, ?+, ?-, ?@, ?\t, ?\r] do
+    "'" <> field
+  end
+
+  defp neutralize_formula(field), do: field
+
+  # RFC-4180: quote fields containing a comma, double-quote, CR, or LF, and
+  # escape embedded double-quotes by doubling them.
+  defp rfc4180_quote(field) do
+    if String.contains?(field, [",", "\"", "\n", "\r"]) do
+      ~s("#{String.replace(field, "\"", "\"\"")}")
+    else
+      field
+    end
   end
 end

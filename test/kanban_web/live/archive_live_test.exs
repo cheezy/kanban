@@ -519,14 +519,6 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute filtered =~ "Cancelled Work"
     end
 
-    test "export_csv event flashes a 'coming soon' notice",
-         %{conn: conn, board: board} do
-      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
-
-      html = render_click(index_live, "export_csv", %{})
-      assert html =~ "Export CSV — coming soon."
-    end
-
     test "open_archive_menu reveals Restore + Delete buttons for an owner",
          %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Test Task"})
@@ -840,16 +832,20 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Will disappear"
     end
 
-    test "renders the footer hint copy and Export CSV trigger",
+    test "renders the footer hint copy and an Export CSV download link",
          %{conn: conn, board: board, column: column} do
       task_fixture(column, %{title: "Test Task"}) |> Tasks.archive_task()
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
 
       assert html =~ "data-archive-footer"
-      assert html =~ "Archive is read-only after 180 days."
+      # The misleading 180-day read-only claim is gone (no such rule exists).
+      refute html =~ "Archive is read-only after 180 days."
+      assert html =~ "searchable and in the audit log"
       assert html =~ "data-archive-export-csv"
       assert html =~ "Export CSV"
+      # The Export CSV control is now a real download link to the controller.
+      assert html =~ ~p"/boards/#{board}/archive/export"
     end
 
     test "archived rows spanning multiple months render in one flat goal-grouped list",

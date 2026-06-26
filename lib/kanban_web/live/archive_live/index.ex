@@ -96,11 +96,6 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   @impl true
-  def handle_event("export_csv", _params, socket) do
-    {:noreply, put_flash(socket, :info, gettext("Export CSV — coming soon."))}
-  end
-
-  @impl true
   def handle_event("bulk_archive_old", _params, socket) do
     if socket.assigns.can_modify do
       perform_bulk_archive(socket)

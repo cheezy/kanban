@@ -216,21 +216,20 @@
           <.icon name="hero-inbox" class="w-3 h-3" />
           <span>
             {gettext(
-              "Archive is read-only after 180 days. Older items still appear in search and audit log."
+              "Archived tasks stay searchable and in the audit log, and can be restored or deleted at any time by users with edit access."
             )}
           </span>
           <span style="flex: 1;" />
-          <button
-            type="button"
+          <.link
+            href={~p"/boards/#{@board}/archive/export"}
             data-archive-export-csv
-            phx-click="export_csv"
             style={[
               "background: transparent; border: 0; padding: 0; font: inherit; cursor: pointer;",
               "color: var(--ink-2); text-decoration: underline;"
             ]}
           >
             {gettext("Export CSV")}
-          </button>
+          </.link>
         </div>
       </div>
     </div>

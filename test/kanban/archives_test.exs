@@ -232,4 +232,111 @@ defmodule Kanban.ArchivesTest do
       assert Archives.archive_stats(scope: other_scope) == %{total: 0, completed: 0}
     end
   end
+
+  describe "export_csv_for_board/1" do
+    test "emits the header row even when the archive is empty", %{board: board} do
+      csv = Archives.export_csv_for_board(board.id)
+
+      assert csv ==
+               "Identifier,Title,Type,Goal,Assignee,Archive Reason,Archived At,Archived By\r\n"
+    end
+
+    test "emits one data row per archived task with the expected columns",
+         %{board: board, column: column, user: user} do
+      assignee = user_fixture(%{name: "Ada Lovelace"})
+
+      archived_task!(column, %{
+        title: "Ship it",
+        assigned_to_id: assignee.id,
+        archived_by_id: user.id,
+        archive_reason: :completed
+      })
+
+      [header, row | _] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+
+      assert header ==
+               "Identifier,Title,Type,Goal,Assignee,Archive Reason,Archived At,Archived By"
+
+      assert row =~ "Ship it"
+      assert row =~ "Ada Lovelace"
+      assert row =~ "completed"
+    end
+
+    test "renders a nil archive_reason as completed (legacy rule)",
+         %{board: board, column: column} do
+      archived_task!(column, %{title: "Legacy", archive_reason: nil})
+
+      [_header, row | _] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+      # Columns: Identifier,Title,Type,Goal,Assignee,Reason,...
+      reason = row |> String.split(",") |> Enum.at(5)
+      assert reason == "completed"
+    end
+
+    test "falls back name -> email -> blank for the assignee column",
+         %{board: board, column: column} do
+      no_name = user_fixture(%{name: nil})
+      archived_task!(column, %{title: "Email assignee", assigned_to_id: no_name.id})
+
+      [_header, row | _] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+      assert row =~ no_name.email
+    end
+
+    test "renders a blank assignee cell when unassigned",
+         %{board: board, column: column} do
+      archived_task!(column, %{title: "Nobody"})
+
+      [_header, row | _] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+      # Assignee is the 5th column (index 4); unassigned -> empty cell.
+      assert row |> String.split(",") |> Enum.at(4) == ""
+    end
+  end
+
+  describe "build_csv/1 — RFC-4180 quoting and formula-injection guard" do
+    test "quotes and escapes fields containing commas, quotes, and newlines" do
+      task = %Tasks.Task{
+        identifier: "W1",
+        title: ~s(a, "b" and\nc),
+        type: :work,
+        archive_reason: :completed,
+        archived_at: ~U[2026-06-26 12:00:00Z]
+      }
+
+      [_header, row] = [task] |> Archives.build_csv() |> String.split("\r\n", trim: true)
+      # The title field is wrapped in quotes with the embedded quote doubled.
+      assert row =~ ~s("a, ""b"" and\nc")
+    end
+
+    test "neutralizes leading formula-trigger characters" do
+      for trigger <- ["=", "+", "-", "@"] do
+        task = %Tasks.Task{
+          identifier: "W1",
+          title: "#{trigger}HYPERLINK(\"http://evil\")",
+          type: :work,
+          archive_reason: :completed,
+          archived_at: ~U[2026-06-26 12:00:00Z]
+        }
+
+        [_header, row] = [task] |> Archives.build_csv() |> String.split("\r\n", trim: true)
+        # The cell is prefixed with a single quote (and RFC-4180 quoted because
+        # it contains a quote), so it never executes as a formula.
+        assert row =~ "'#{trigger}HYPERLINK"
+      end
+    end
+
+    test "renders blank cells for an absent assignee, goal, and archiver" do
+      task = %Tasks.Task{
+        identifier: "W1",
+        title: "Plain",
+        type: :work,
+        archive_reason: :completed,
+        archived_at: ~U[2026-06-26 12:00:00Z],
+        assigned_to: nil,
+        parent: nil,
+        archived_by: nil
+      }
+
+      [_header, row] = [task] |> Archives.build_csv() |> String.split("\r\n", trim: true)
+      assert row == "W1,Plain,work,,,completed,2026-06-26T12:00:00Z,"
+    end
+  end
 end

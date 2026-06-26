@@ -184,6 +184,7 @@ defmodule KanbanWeb.Router do
     end
 
     get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export
+    get "/boards/:id/archive/export", ArchiveExportController, :export
     post "/users/update-password", UserSessionController, :update_password
   end
 
