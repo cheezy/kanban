@@ -65,18 +65,17 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       end
     end
 
-    test "renders the two decorative placeholder chips with aria-disabled" do
+    test "renders the Date range decorative placeholder chip with aria-disabled" do
       html = render_chips()
 
-      for marker <- ~w(goal date-range) do
-        assert html =~ ~s(data-archive-filter-chip-placeholder="#{marker}")
-      end
+      assert html =~ ~s(data-archive-filter-chip-placeholder="date-range")
 
-      # Assignee is now an active chip, not a placeholder.
+      # The Goal placeholder was removed; Assignee is now an active chip.
+      refute html =~ ~s(data-archive-filter-chip-placeholder="goal")
       refute html =~ ~s(data-archive-filter-chip-placeholder="assignee")
 
-      # aria-disabled is set on every remaining placeholder (2 instances).
-      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 2
+      # aria-disabled is set on the single remaining placeholder.
+      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 1
     end
 
     test "decorative chips have no phx-click attribute" do
@@ -88,7 +87,7 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
           html
         )
 
-      assert length(placeholders) == 2
+      assert length(placeholders) == 1
 
       for [tag] <- placeholders do
         refute tag =~ "phx-click"
@@ -298,11 +297,12 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       refute html =~ "Deferred"
     end
 
-    test "renders the placeholder labels plus the active Assignee label" do
+    test "renders the Date range placeholder label plus the active Assignee label" do
       html = render_chips()
-      assert html =~ "Goal"
       assert html =~ "Assignee"
       assert html =~ "Date range"
+      # The Goal chip was removed from the filter row.
+      refute html =~ ~s(data-archive-filter-chip-placeholder="goal")
     end
   end
 end

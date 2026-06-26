@@ -5,8 +5,8 @@ defmodule KanbanWeb.ArchiveFilterChips do
   Renders the "All" chip followed by the "Completed" archive-reason
   chip with the per-bucket counts from `Kanban.Archives.archive_stats/1`.
   A divider separates these from the active "Assignee" filter chip and
-  two visually disabled placeholder chips (Goal / Date range) that map
-  to v1-out-of-scope filters.
+  the visually disabled "Date range" placeholder chip that maps to a
+  v1-out-of-scope filter.
 
   Reason chips emit a `phx-click` event with `phx-value-reason` set to
   the string form of the reason atom (e.g. `"completed"`) or `"all"`.
@@ -98,7 +98,6 @@ defmodule KanbanWeb.ArchiveFilterChips do
         style="width: 1px; height: 18px; background: var(--line); margin: 0 4px;"
       />
 
-      <.placeholder_chip marker="goal" label={gettext("Goal")} icon="hero-flag" />
       <.assignee_chip
         assignees={@assignees}
         assignee_filter={@assignee_filter}

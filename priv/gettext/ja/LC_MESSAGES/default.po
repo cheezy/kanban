@@ -637,8 +637,8 @@ msgstr "検索"
 msgid "Select a user"
 msgstr "ユーザーを選択"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:215
-#: lib/kanban_web/components/archive_filter_chips.ex:330
+#: lib/kanban_web/components/archive_filter_chips.ex:214
+#: lib/kanban_web/components/archive_filter_chips.ex:329
 #: lib/kanban_web/live/task_live/form/option_builders.ex:88
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
@@ -1129,7 +1129,7 @@ msgstr "よくある落とし穴"
 msgid "Common pitfall to avoid"
 msgstr "避けるべきよくある落とし穴"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:323
+#: lib/kanban_web/components/archive_filter_chips.ex:322
 #: lib/kanban_web/components/archive_stats_strip.ex:52
 #: lib/kanban_web/components/task_metadata_grid.ex:124
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
@@ -1761,7 +1761,6 @@ msgstr "クライアント側ワークフローフック"
 msgid "Comprehensive API Documentation"
 msgstr "包括的なAPIドキュメント"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:101
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:85
 #: lib/kanban_web/live/archive_live/index.html.heex:184
@@ -5194,14 +5193,14 @@ msgstr "範囲 / 優先度の決定"
 msgid "time spent before archive"
 msgstr "アーカイブ前の経過時間"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:329
-#: lib/kanban_web/components/archive_filter_chips.ex:335
+#: lib/kanban_web/components/archive_filter_chips.ex:328
+#: lib/kanban_web/components/archive_filter_chips.ex:334
 #: lib/kanban_web/live/archive_live/index.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "担当者"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:112
+#: lib/kanban_web/components/archive_filter_chips.ex:111
 #, elixir-autogen, elixir-format
 msgid "Date range"
 msgstr "日付範囲"
@@ -7314,7 +7313,7 @@ msgstr "目標のないタスク"
 msgid "Toggle group"
 msgstr "グループの切り替え"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:185
+#: lib/kanban_web/components/archive_filter_chips.ex:184
 #, elixir-autogen, elixir-format
 msgid "All assignees"
 msgstr "担当者"

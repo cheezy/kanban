@@ -637,8 +637,8 @@ msgstr "Pesquisar"
 msgid "Select a user"
 msgstr "Selecionar um usuário"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:215
-#: lib/kanban_web/components/archive_filter_chips.ex:330
+#: lib/kanban_web/components/archive_filter_chips.ex:214
+#: lib/kanban_web/components/archive_filter_chips.ex:329
 #: lib/kanban_web/live/task_live/form/option_builders.ex:88
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
@@ -1129,7 +1129,7 @@ msgstr "Armadilhas comuns"
 msgid "Common pitfall to avoid"
 msgstr "Armadilha comum a evitar"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:323
+#: lib/kanban_web/components/archive_filter_chips.ex:322
 #: lib/kanban_web/components/archive_stats_strip.ex:52
 #: lib/kanban_web/components/task_metadata_grid.ex:124
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
@@ -1761,7 +1761,6 @@ msgstr "Ganchos de Fluxo de Trabalho do Cliente"
 msgid "Comprehensive API Documentation"
 msgstr "Documentação abrangente da API"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:101
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:85
 #: lib/kanban_web/live/archive_live/index.html.heex:184
@@ -5206,14 +5205,14 @@ msgstr "decisões de escopo / prioridade"
 msgid "time spent before archive"
 msgstr "tempo gasto antes de arquivar"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:329
-#: lib/kanban_web/components/archive_filter_chips.ex:335
+#: lib/kanban_web/components/archive_filter_chips.ex:328
+#: lib/kanban_web/components/archive_filter_chips.ex:334
 #: lib/kanban_web/live/archive_live/index.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "Atribuído a"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:112
+#: lib/kanban_web/components/archive_filter_chips.ex:111
 #, elixir-autogen, elixir-format
 msgid "Date range"
 msgstr "Intervalo de datas"
@@ -7344,7 +7343,7 @@ msgstr "Tarefas sem objetivo"
 msgid "Toggle group"
 msgstr "Alternar grupo"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:185
+#: lib/kanban_web/components/archive_filter_chips.ex:184
 #, elixir-autogen, elixir-format
 msgid "All assignees"
 msgstr "Atribuído a"
