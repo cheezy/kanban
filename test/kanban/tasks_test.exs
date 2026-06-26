@@ -9237,17 +9237,17 @@ defmodule Kanban.TasksTest do
       assert child_rows == [child_a, child_b]
     end
 
-    test "places standalone non-goal tasks in a trailing :no_goal group" do
+    test "places standalone non-goal tasks in a leading :no_goal group" do
       goal = built_task(1, :goal, nil, 0)
       child = built_task(2, :work, 1, 1)
       standalone = built_task(3, :work, nil, 2)
 
       groups = Tasks.group_rows_by_goal([goal, child, standalone])
 
-      assert [%{key: "goal:1", kind: :goal}, %{key: "no_goal", kind: :no_goal} = last] = groups
-      assert last.goal == nil
-      assert last.goal_row == nil
-      assert last.child_rows == [standalone]
+      assert [%{key: "no_goal", kind: :no_goal} = first, %{key: "goal:1", kind: :goal}] = groups
+      assert first.goal == nil
+      assert first.goal_row == nil
+      assert first.child_rows == [standalone]
     end
 
     test "leaves goal_row nil and synthesizes the goal from the parent when the goal is absent" do
@@ -9265,12 +9265,12 @@ defmodule Kanban.TasksTest do
              ] = Tasks.group_rows_by_goal([child])
     end
 
-    test "orders goal groups by goal age with the :no_goal group always last" do
+    test "orders the :no_goal group first, then goal groups by goal age" do
       older_goal = built_task(1, :goal, nil, 0)
       newer_goal = built_task(2, :goal, nil, 5)
       standalone = built_task(3, :work, nil, 1)
 
-      assert ["goal:1", "goal:2", "no_goal"] =
+      assert ["no_goal", "goal:1", "goal:2"] =
                [newer_goal, standalone, older_goal]
                |> Tasks.group_rows_by_goal()
                |> Enum.map(& &1.key)

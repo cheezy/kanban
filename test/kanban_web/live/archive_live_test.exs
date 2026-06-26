@@ -744,6 +744,9 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ ~s(data-archive-goal-group-key="#{no_goal_group_key()}")
       assert html =~ "Tasks Without Goals"
 
+      # The Tasks Without Goals group renders at the top, above the goal groups.
+      assert :binary.match(html, "no_goal") < :binary.match(html, goal_key)
+
       # Every archived row still renders.
       assert html =~ child.identifier
       assert html =~ standalone.identifier

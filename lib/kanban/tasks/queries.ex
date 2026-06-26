@@ -354,8 +354,8 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
-  Groups a single month's archived rows into per-goal groups followed by
-  a trailing "Tasks Without Goals" group.
+  Groups archived rows into a leading "Tasks Without Goals" group followed
+  by per-goal groups.
 
   Each group is a map `%{key, kind, goal, goal_row, child_rows}`:
 
@@ -370,7 +370,7 @@ defmodule Kanban.Tasks.Queries do
       preloaded `:parent` association.
     * The `:no_goal` group (keyed `"no_goal"`) has `goal` and `goal_row`
       `nil` and collects standalone tasks (no parent, not a goal) in
-      `child_rows`. It is always last and is omitted entirely when there
+      `child_rows`. It is always first and is omitted entirely when there
       are no standalone rows.
 
   Pure in-memory shaping over already-loaded rows — no queries. Relies on
@@ -379,7 +379,7 @@ defmodule Kanban.Tasks.Queries do
   def group_rows_by_goal(tasks) do
     by_parent = Enum.group_by(tasks, & &1.parent_id)
 
-    build_goal_groups(tasks, by_parent) ++ no_goal_group(collect_no_goal(by_parent))
+    no_goal_group(collect_no_goal(by_parent)) ++ build_goal_groups(tasks, by_parent)
   end
 
   defp build_goal_groups(tasks, by_parent) do
