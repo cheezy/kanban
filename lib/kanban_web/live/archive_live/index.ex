@@ -3,9 +3,10 @@ defmodule KanbanWeb.ArchiveLive.Index do
   Workspace Archive page at `/boards/:id/archive`.
 
   Replaces the legacy daisyUI table with the W570-W576 composition:
-  `ArchiveStatsStrip` + `ArchiveFilterChips` + month-grouped `ArchiveRow`
-  rows + a read-only footer hint. All data reads route through
-  `Kanban.Archives` per the project rule against Ecto in LiveViews.
+  `ArchiveStatsStrip` + `ArchiveFilterChips` + a flat goal-grouped list of
+  `ArchiveRow` rows (via `Kanban.Tasks.group_rows_by_goal/1`) + a read-only
+  footer hint. All data reads route through `Kanban.Archives` per the
+  project rule against Ecto in LiveViews.
 
   Filter changes re-derive `:rows` from `:all_rows` in memory rather
   than re-querying — mirrors the filter-tab pattern in
@@ -206,35 +207,13 @@ defmodule KanbanWeb.ArchiveLive.Index do
   defp reason_matches?(%{archive_reason: nil}, :completed), do: true
   defp reason_matches?(%{archive_reason: r}, target), do: r == target
 
-  # --- Month grouping for the table body -----------------------------------
+  # --- Goal grouping for the table body ------------------------------------
 
-  defp group_by_month(rows) do
-    rows
-    |> Enum.group_by(&month_key/1)
-    |> Enum.sort_by(fn {key, _} -> sort_key(key) end)
-    |> Enum.map(&build_month_group/1)
-  end
-
-  defp sort_key({year, month}), do: {-year, -month}
-
-  defp build_month_group({{year, month}, group_rows}) do
-    month_key = "#{year}-#{month}"
-
-    %{
-      key: month_key,
-      label: month_label(year, month),
-      count: length(group_rows),
-      goal_groups: month_qualified_goal_groups(month_key, group_rows)
-    }
-  end
-
-  # Qualify each goal-group key with its month so the same goal (or the
-  # "no_goal" bucket) appearing in two months toggles independently.
-  defp month_qualified_goal_groups(month_key, group_rows) do
-    group_rows
-    |> Tasks.group_rows_by_goal()
-    |> Enum.map(fn group -> %{group | key: "#{month_key}:#{group.key}"} end)
-  end
+  # The archive renders one flat list of goal groups (each goal's own row with
+  # its chevron and nested children) plus the "Tasks Without Goals" group — no
+  # month sections. Keys are the plain group_rows_by_goal/1 keys
+  # ("goal:<id>" / "no_goal").
+  defp goal_groups(rows), do: Tasks.group_rows_by_goal(rows)
 
   # A goal group renders expanded unless the user has collapsed it. Tracking
   # collapsed keys (rather than expanded ones) means the default — empty set —
@@ -328,16 +307,6 @@ defmodule KanbanWeb.ArchiveLive.Index do
       </div>
     </div>
     """
-  end
-
-  defp month_key(%{archived_at: %DateTime{year: year, month: month}}), do: {year, month}
-  defp month_key(_), do: {0, 0}
-
-  defp month_label(0, 0), do: gettext("Undated")
-
-  defp month_label(year, month) do
-    {:ok, date} = Date.new(year, month, 1)
-    Calendar.strftime(date, "%B %Y")
   end
 
   # --- Mutations -----------------------------------------------------------

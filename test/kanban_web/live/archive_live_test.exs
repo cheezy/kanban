@@ -72,14 +72,14 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "hero-flag"
     end
 
-    test "renders a month header above each group of rows",
+    test "does not render month section headers",
          %{conn: conn, board: board, column: column} do
       task = task_fixture(column, %{title: "Test Task"})
       {:ok, _} = Tasks.archive_task(task)
 
       {:ok, _index_live, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      assert html =~ "data-archive-month-header"
+      refute html =~ "data-archive-month-header"
     end
 
     test "renders the kebab action menu trigger when user can modify",
@@ -699,36 +699,23 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Export CSV"
     end
 
-    test "month grouping renders newest-month headers first",
+    test "archived rows spanning multiple months render in one flat goal-grouped list",
          %{conn: conn, board: board, column: column} do
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      sixty_days_ago = DateTime.add(now, -60 * 86_400, :second)
+      sixty_days_ago =
+        DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-60 * 86_400, :second)
 
       this_month = task_fixture(column, %{title: "This month"})
       old = task_fixture(column, %{title: "Two months back"})
 
       {:ok, _} = Tasks.archive_task(this_month)
-
-      {:ok, _} =
-        Kanban.Tasks.update_task(old, %{archived_at: sixty_days_ago})
+      {:ok, _} = Kanban.Tasks.update_task(old, %{archived_at: sixty_days_ago})
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
 
-      this_month_label =
-        Date.utc_today() |> Calendar.strftime("%B %Y")
-
-      old_month_label =
-        sixty_days_ago
-        |> DateTime.to_date()
-        |> Calendar.strftime("%B %Y")
-
-      # Both month headers render
-      assert html =~ this_month_label
-      assert html =~ old_month_label
-
-      # Newest first — current-month header appears before the older one.
-      assert :binary.match(html, this_month_label) <
-               :binary.match(html, old_month_label)
+      # No month sections — both rows appear in the single flat list.
+      refute html =~ "data-archive-month-header"
+      assert html =~ this_month.identifier
+      assert html =~ old.identifier
     end
 
     test "a present goal carries the chevron on its own row with no duplicate header line",
@@ -863,14 +850,9 @@ defmodule KanbanWeb.ArchiveLiveTest do
     %{board: board, column: column}
   end
 
-  defp current_month_key do
-    today = Date.utc_today()
-    "#{today.year}-#{today.month}"
-  end
+  defp goal_group_key(goal), do: "goal:#{goal.id}"
 
-  defp goal_group_key(goal), do: "#{current_month_key()}:goal:#{goal.id}"
-
-  defp no_goal_group_key, do: "#{current_month_key()}:no_goal"
+  defp no_goal_group_key, do: "no_goal"
 
   defp toggle_goal_group(view, key) do
     view
