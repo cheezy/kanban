@@ -57,7 +57,7 @@ defmodule KanbanWeb.ArchiveRow do
         "display: grid; grid-template-columns: 20px 78px minmax(0, 1.6fr) 130px 150px 140px 150px 28px;",
         "align-items: center; gap: 12px;",
         "padding: 8px 14px; border-bottom: 1px solid var(--line);",
-        "background: var(--surface);"
+        "background: #{row_background(@task)};"
       ]}
     >
       <.type_icon type={@task.type} />
@@ -118,6 +118,14 @@ defmodule KanbanWeb.ArchiveRow do
   end
 
   # --- Sub-cells -----------------------------------------------------------
+
+  # Goal rows reuse the board goal card's soft-violet background
+  # (var(--stride-violet-soft), defined in app.css with light + dark values)
+  # so a goal looks the same in the archive as on the board. Every other row
+  # type keeps the default surface background. Branching by type mirrors the
+  # type_icon/1 per-type clauses below.
+  defp row_background(%{type: :goal}), do: "var(--stride-violet-soft)"
+  defp row_background(_task), do: "var(--surface)"
 
   attr :type, :atom, required: true
 

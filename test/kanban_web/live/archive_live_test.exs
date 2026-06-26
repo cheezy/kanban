@@ -801,6 +801,28 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ standalone.identifier
       assert html =~ "Tasks Without Goals"
     end
+
+    test "renders goal rows with the violet background and non-goal rows on surface",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Violet goal", type: :goal})
+      work = task_fixture(column, %{title: "Plain work", type: :work})
+      defect = task_fixture(column, %{title: "A defect", type: :defect})
+
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(work)
+      {:ok, _} = Tasks.archive_task(defect)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # The goal row carries the board goal-card violet; non-goal rows keep surface.
+      assert html =~ "background: var(--stride-violet-soft)"
+      assert html =~ "background: var(--surface)"
+
+      # All three archived rows render.
+      assert html =~ goal.identifier
+      assert html =~ work.identifier
+      assert html =~ defect.identifier
+    end
   end
 
   defp create_board_with_column(%{user: user}) do

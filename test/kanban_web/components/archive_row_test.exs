@@ -316,4 +316,35 @@ defmodule KanbanWeb.ArchiveRowTest do
       refute html =~ " by "
     end
   end
+
+  describe "archive_row/1 — goal background" do
+    test "a goal-type row uses the board goal card soft-violet background" do
+      html = render_row(%{type: :goal})
+      assert html =~ "background: var(--stride-violet-soft)"
+    end
+
+    test "a work-type row keeps the default surface background and no violet" do
+      html = render_row(%{type: :work})
+      assert html =~ "background: var(--surface)"
+      refute html =~ "var(--stride-violet-soft)"
+    end
+
+    test "a defect-type row keeps the default surface background and no violet" do
+      html = render_row(%{type: :defect})
+      assert html =~ "background: var(--surface)"
+      refute html =~ "var(--stride-violet-soft)"
+    end
+
+    test "a goal row archived as a duplicate keeps the violet background and strikethrough" do
+      html = render_row(%{type: :goal, archive_reason: :duplicate})
+      assert html =~ "background: var(--stride-violet-soft)"
+      assert html =~ "line-through"
+    end
+
+    test "a goal row archived as wontdo keeps the violet background and strikethrough" do
+      html = render_row(%{type: :goal, archive_reason: :wontdo})
+      assert html =~ "background: var(--stride-violet-soft)"
+      assert html =~ "line-through"
+    end
+  end
 end
