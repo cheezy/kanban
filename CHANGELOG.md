@@ -5,6 +5,82 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-06-26
+
+The board **Archive** page (`/boards/:id/archive`) was reorganized around goals and gained real filtering, search, and a working CSV export.
+
+### Added
+
+#### Filter the archive by assignee, date range, and name
+
+The archive filter row gained three working filters that compose with each other and with the existing reason filter. An **Assignee** chip opens a dropdown of the board's archived assignees — each with an avatar and name, plus an "Unassigned" option and an "All assignees" reset — and narrows the list to the chosen person. A **Date range** chip opens a popover with From/To date inputs and Apply/Clear buttons that limit the list to tasks archived within an inclusive range. And a live **name search** box filters by task title as you type (debounced), with a clear (×) affordance and a search-aware empty state that names the term you searched. All four dimensions — reason, assignee, date range, and search — apply together and survive live updates.
+
+#### Export the archive to CSV
+
+The footer's "Export CSV" button was a "coming soon" placeholder; it now downloads a real CSV of the board's archived tasks (Identifier, Title, Type, Goal, Assignee, Archive Reason, Archived At, Archived By). The export is an authenticated, board-scoped download that mirrors the existing metrics-export pattern, and the generated file is RFC-4180 quoted/escaped and neutralized against spreadsheet formula injection.
+
+#### Expand or collapse every goal group at once
+
+A control in the archive header collapses every goal group — including the "Tasks Without Goals" group — so you can scan the list of goals, or expands them all to see every archived task. It reuses the per-group chevron state, so it composes with collapsing or expanding individual groups, and hides itself when there are no collapsible groups.
+
+### Changed
+
+#### Archived tasks are grouped and collapsible by goal
+
+The archive was reorganized around goals. Archived rows are grouped by their goal, the goal's own archived row carries a collapsible chevron (no more duplicated header line), and the "Tasks Without Goals" group sits at the top. Goal rows are tinted with the same soft violet as the board's goal cards for visual continuity. The earlier month-section grouping was removed in favor of this flat, goal-grouped list.
+
+#### The filter row now shows only filters that work
+
+The archive previously offered Cancelled, Won't do, Duplicate, and Deferred reason filters that nothing in the UI could ever populate, so they sat permanently empty; those were removed, leaving **All** and **Completed**. The decorative **Goal** placeholder chip was removed, and the **Date range** placeholder became the real filter described above. Tasks archived with any of the removed reasons still appear under "All" — no data is hidden.
+
+#### Internal: the archive filter pipeline moved into its own module
+
+As the filtering grew to four composed dimensions, the reason/assignee/date-range/search filters and their input coercion were extracted from the LiveView into a dedicated `KanbanWeb.ArchiveLive.Filters` module, keeping the LiveView under the size cap and making the pure filter logic unit-testable on its own.
+
+### Fixed
+
+#### The footer no longer claims a read-only rule the system doesn't enforce
+
+The archive footer stated that items become "read-only after 180 days," but no such rule exists — archived tasks remain restorable and deletable by anyone with edit access regardless of age. The copy was corrected to describe the actual behavior.
+
+## [2.6.0] - 2026-06-22
+
+A two-week push reworked the **Agents** and **Metrics** pages from read-only summaries into usable operational consoles, and put every date they show on the viewer's local clock.
+
+### Added
+
+#### The Agents page is now a fleet console
+
+`/agents` was redesigned around actually operating a fleet rather than glancing at a list. The roster now attributes each agent to its **human owner** (derived from the task's `created_by`/`completed_by`), so two agents that share a model name are no longer indistinguishable, and it is sorted by **most recent activity** instead of alphabetically. Roster cards are clickable with a selected state, and selecting an agent filters the activity feed; the kind filter and the per-agent filter compose, and a clear/deselect affordance resets either dimension.
+
+A **fleet-health rollup** summarizes the fleet at a glance — working, idle, and *stuck* counts, with stuck surfaced as an explicit overlay — and a collapsible **Dormant agents** group classifies agents that have gone quiet, with their last-active time. The **Delivery-trends** band at the top was rebuilt to remove dead whitespace: a taller bar chart, enlarged stat values and labels, a prior-period trend indicator on the Completed-throughput figures, and the duplicated "Cycle time · avg" stat removed.
+
+Selecting an agent opens a **per-agent detail panel** with collapsible category sections, a daily-activity sparkline, and a success-rate donut. The activity feed shows each row's avatar and owner, renders times in the user's timezone, and groups rows by date. The page is now mobile-friendly with a corrected scroll and a responsive layout.
+
+#### The Workspace Metrics dashboard gained working controls and readable charts
+
+`/metrics` picked up the controls its toolbar had only mocked. A **session-only board selector** scopes the workspace view to chosen boards (backed by a new `board_ids` filter on `Kanban.Metrics.scoped_board_ids/1`), and the **"Last 14 days" button is now a real time-range selector** driven by a configurable `:window_days` option threaded through the workspace metrics reads. The non-functional **Filter** placeholder button was removed.
+
+The charts became legible: the **Throughput** chart now plots per-day values with **x-axis date labels** and a **y-axis scale**, the **Cumulative flow** chart gained a y-axis scale, and the workspace cycle-time chart was simplified to a single cycle-time series.
+
+### Changed
+
+#### Agents and Metrics compute every date on the viewer's local clock
+
+Both pages previously bucketed by UTC / SQL `DATE(completed_at)`, so "today" and the day columns could be off by a day for anyone west or east of UTC. The browser timezone is now captured and threaded through the Agents and Metrics LiveViews and their context reads, and day-bucketing — throughput buckets, the dashboard's day grouping, the metrics window boundaries, and completion grouping — was converted to local time. The shared local-timezone helpers were extracted from `/agents` into reusable modules so both pages share one implementation. On `/agents`, the two "Completed today" figures that could disagree were reconciled to a single local-timezone computation, and the header today-counters were made timezone-aware (with cycle time scoped to today). A cross-timezone regression suite was added and every metrics calculation audited for correctness.
+
+#### Internal: Agents and Metrics contexts refactored
+
+`Kanban.Agents` was split into focused modules — `Roster`, `Events`, `Detail`, and `Metrics` — as the page's derivations grew. The per-metric LiveViews were deduplicated behind a shared `load_data` flow and a shared `legend_swatch` component, a shared board-scope query helper was extracted across the agents, archives, and reviews contexts, and the minutes-to-duration formatters were consolidated behind one shared helper with per-site variants.
+
+### Fixed
+
+- **Agents view didn't update live on task completion** — a missing `agents`-topic PubSub broadcast meant the roster and feed went stale until a manual refresh.
+- **The Throughput chart over-counted "today"** — a timezone bug bucketed completions into the wrong day at the day boundary.
+- **The roster mislabeled review-stage agents** as actively working on the wrong task, and **sorted alphabetically** instead of by recent activity.
+- **The agent avatar was missing** from the All and Claims rows of the activity feed.
+- **`/agents` loaded slowly on large production datasets** — the page's queries were profiled and fixed.
+
 ## [2.5.0] - 2026-06-12
 
 ### Added
