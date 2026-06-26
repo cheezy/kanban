@@ -70,6 +70,50 @@
       <KanbanWeb.ArchiveStatsStrip.archive_stats_strip stats={@stats} />
     </div>
 
+    <div style="padding: 0 28px 10px;">
+      <form
+        phx-change="search_archive"
+        style="position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 320px;"
+      >
+        <span
+          aria-hidden="true"
+          style="position: absolute; left: 8px; display: inline-flex; color: var(--ink-3);"
+        >
+          <.icon name="hero-magnifying-glass" class="w-3.5 h-3.5" />
+        </span>
+        <input
+          type="text"
+          name="query"
+          value={@search_query}
+          phx-debounce="200"
+          data-archive-search
+          autocomplete="off"
+          placeholder={gettext("Search archived tasks…")}
+          style={[
+            "width: 100%; padding: 5px 28px; border-radius: 6px;",
+            "font: inherit; font-size: 12px;",
+            "background: var(--surface); border: 1px solid var(--line);",
+            "color: var(--ink);"
+          ]}
+        />
+        <button
+          :if={@search_query != ""}
+          type="button"
+          data-archive-search-clear
+          phx-click="search_archive"
+          phx-value-query=""
+          aria-label={gettext("Clear search")}
+          style={[
+            "position: absolute; right: 6px; display: inline-flex; align-items: center;",
+            "padding: 2px; background: transparent; border: 0; cursor: pointer;",
+            "color: var(--ink-3);"
+          ]}
+        >
+          <.icon name="hero-x-mark" class="w-3.5 h-3.5" />
+        </button>
+      </form>
+    </div>
+
     <KanbanWeb.ArchiveFilterChips.archive_filter_chips
       counts={counts_for(@all_rows)}
       active={@filter}

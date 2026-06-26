@@ -993,6 +993,52 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Deploy by nobody"
     end
 
+    test "renders the archive search input with no clear control when empty",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ "data-archive-search"
+      # The clear (x) affordance is hidden while the query is empty.
+      refute html =~ "data-archive-search-clear"
+    end
+
+    test "typing in the search input narrows the rendered rows and reveals the clear control",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+      task_fixture(column, %{title: "Write docs"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html =
+        view
+        |> element("form[phx-change='search_archive']")
+        |> render_change(%{"query" => "deploy"})
+
+      assert html =~ "Deploy pipeline"
+      refute html =~ "Write docs"
+      assert html =~ "data-archive-search-clear"
+    end
+
+    test "the search clear control resets the search and restores rows",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+      task_fixture(column, %{title: "Write docs"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      view
+      |> element("form[phx-change='search_archive']")
+      |> render_change(%{"query" => "deploy"})
+
+      cleared = view |> element("[data-archive-search-clear]") |> render_click()
+
+      assert cleared =~ "Deploy pipeline"
+      assert cleared =~ "Write docs"
+      refute cleared =~ "data-archive-search-clear"
+    end
+
     test "clicking the Date range chip opens the date popover",
          %{conn: conn, board: board, column: column} do
       archive_on(column, "A Task", ~U[2026-01-15 12:00:00Z])
