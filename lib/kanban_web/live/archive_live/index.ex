@@ -76,6 +76,26 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   @impl true
+  def handle_event("filter_date_range", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:date_from, parse_date(params["from"]))
+     |> assign(:date_to, parse_date(params["to"]))
+     |> recompute_rows()
+     |> close_menu()}
+  end
+
+  @impl true
+  def handle_event("clear_date_range", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:date_from, nil)
+     |> assign(:date_to, nil)
+     |> recompute_rows()
+     |> close_menu()}
+  end
+
+  @impl true
   def handle_event("open_archive_menu", %{"id" => id}, socket) do
     {:noreply, assign(socket, :menu_open_for, to_string(id))}
   end
@@ -155,14 +175,25 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> assign(:user_access, user_access)
     |> assign(:can_modify, user_access in [:owner, :modify])
     |> assign(:is_owner, user_access == :owner)
-    |> assign(:filter, :all)
-    |> assign(:assignee_filter, :all)
-    |> assign(:assignee_menu_open, false)
+    |> assign_default_filters()
     |> assign(:all_rows, all_rows)
     |> assign(:rows, all_rows)
     |> assign(:stats, stats)
     |> assign(:menu_open_for, nil)
     |> assign(:collapsed_goal_groups, MapSet.new())
+  end
+
+  # The reset state for every filter dimension — reason, assignee (and its
+  # dropdown), and the date range. Grouped so mount stays under the per-function
+  # complexity cap as dimensions are added.
+  defp assign_default_filters(socket) do
+    assign(socket, %{
+      filter: :all,
+      assignee_filter: :all,
+      assignee_menu_open: false,
+      date_from: nil,
+      date_to: nil
+    })
   end
 
   defp reload(socket) do
@@ -180,15 +211,16 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   defp load_stats(board_id), do: Archives.archive_stats_for_board(board_id)
 
-  # Re-derive the visible :rows from :all_rows by composing BOTH filter
-  # dimensions (reason then assignee). Every event/reload that changes either
-  # dimension or reloads the rows must route through here so neither filter
-  # silently resets the other.
+  # Re-derive the visible :rows from :all_rows by composing every filter
+  # dimension (reason, then assignee, then date range). Every event/reload
+  # that changes any dimension or reloads the rows must route through here so
+  # no filter silently resets another.
   defp recompute_rows(socket) do
     rows =
       socket.assigns.all_rows
       |> apply_reason_filter(socket.assigns.filter)
       |> apply_assignee_filter(socket.assigns.assignee_filter)
+      |> apply_date_range_filter(socket.assigns.date_from, socket.assigns.date_to)
 
     assign(socket, :rows, rows)
   end
@@ -210,6 +242,26 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   defp apply_assignee_filter(rows, id) when is_integer(id) do
     Enum.filter(rows, fn task -> match?(%{id: ^id}, task.assigned_to) end)
+  end
+
+  # Filter rows by the archived_at date within an inclusive [from, to] range.
+  # Both bounds are Date.t() | nil; a nil bound is open-ended, and both nil is
+  # a no-op that returns every row. When a bound is set, rows whose
+  # archived_at is nil are excluded rather than raising.
+  defp apply_date_range_filter(rows, nil, nil), do: rows
+
+  defp apply_date_range_filter(rows, from, to) do
+    Enum.filter(rows, fn task ->
+      case task.archived_at do
+        %DateTime{} = at -> date_in_range?(DateTime.to_date(at), from, to)
+        _ -> false
+      end
+    end)
+  end
+
+  defp date_in_range?(date, from, to) do
+    (is_nil(from) or Date.compare(date, from) != :lt) and
+      (is_nil(to) or Date.compare(date, to) != :gt)
   end
 
   defp close_menu(socket), do: assign(socket, :menu_open_for, nil)
@@ -244,6 +296,18 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   defp parse_assignee(_), do: :all
+
+  # Coerce an inbound date string into a Date.t(), or nil when absent/invalid.
+  # Never raises on malformed input — an unparseable bound becomes nil (treated
+  # as open-ended by apply_date_range_filter/3).
+  defp parse_date(value) when is_binary(value) and value != "" do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> date
+      {:error, _reason} -> nil
+    end
+  end
+
+  defp parse_date(_), do: nil
 
   # --- Counts for the filter chips -----------------------------------------
 

@@ -814,6 +814,110 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Unassigned task"
     end
 
+    test "filter_date_range narrows rows to those archived within the inclusive range",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "Early Jan", ~U[2026-01-10 12:00:00Z])
+      archive_on(column, "Mid Jan", ~U[2026-01-15 12:00:00Z])
+      archive_on(column, "Late Jan", ~U[2026-01-20 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html =
+        render_click(view, "filter_date_range", %{"from" => "2026-01-12", "to" => "2026-01-18"})
+
+      assert html =~ "Mid Jan"
+      refute html =~ "Early Jan"
+      refute html =~ "Late Jan"
+    end
+
+    test "filter_date_range includes rows archived on the from/to boundary dates",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "On From", ~U[2026-01-10 23:59:59Z])
+      archive_on(column, "On To", ~U[2026-01-20 00:00:01Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html =
+        render_click(view, "filter_date_range", %{"from" => "2026-01-10", "to" => "2026-01-20"})
+
+      assert html =~ "On From"
+      assert html =~ "On To"
+    end
+
+    test "filter_date_range supports open-ended ranges (only from, or only to)",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "Early", ~U[2026-01-10 12:00:00Z])
+      archive_on(column, "Late", ~U[2026-01-20 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      only_from = render_click(view, "filter_date_range", %{"from" => "2026-01-15", "to" => ""})
+      assert only_from =~ "Late"
+      refute only_from =~ "Early"
+
+      only_to = render_click(view, "filter_date_range", %{"from" => "", "to" => "2026-01-15"})
+      assert only_to =~ "Early"
+      refute only_to =~ "Late"
+    end
+
+    test "clear_date_range restores the rows matching the other filters",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "Early", ~U[2026-01-10 12:00:00Z])
+      archive_on(column, "Late", ~U[2026-01-20 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(view, "filter_date_range", %{"from" => "2026-01-18", "to" => ""})
+      cleared = render_click(view, "clear_date_range", %{})
+
+      assert cleared =~ "Early"
+      assert cleared =~ "Late"
+    end
+
+    test "the date filter composes with the reason filter",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "Completed in range", ~U[2026-01-15 12:00:00Z], %{
+        archive_reason: :completed
+      })
+
+      archive_on(column, "Cancelled in range", ~U[2026-01-15 12:00:00Z], %{
+        archive_reason: :cancelled,
+        archive_note: "stop"
+      })
+
+      archive_on(column, "Completed out of range", ~U[2026-02-15 12:00:00Z], %{
+        archive_reason: :completed
+      })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(view, "filter_archive", %{"reason" => "completed"})
+
+      html =
+        render_click(view, "filter_date_range", %{"from" => "2026-01-01", "to" => "2026-01-31"})
+
+      assert html =~ "Completed in range"
+      # Excluded by the reason filter.
+      refute html =~ "Cancelled in range"
+      # Excluded by the date filter.
+      refute html =~ "Completed out of range"
+    end
+
+    test "filter_date_range with an invalid date string degrades to an open bound without crashing",
+         %{conn: conn, board: board, column: column} do
+      archive_on(column, "Early", ~U[2026-01-10 12:00:00Z])
+      archive_on(column, "Late", ~U[2026-01-20 12:00:00Z])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # "from" is garbage -> nil (open lower bound); "to" still caps at the 15th.
+      html =
+        render_click(view, "filter_date_range", %{"from" => "not-a-date", "to" => "2026-01-15"})
+
+      assert html =~ "Early"
+      refute html =~ "Late"
+    end
+
     test "handle_info :task_deleted PubSub event triggers a reload",
          %{conn: conn, board: board, column: column} do
       keeper = task_fixture(column, %{title: "Sticks around"})
@@ -1051,6 +1155,17 @@ defmodule KanbanWeb.ArchiveLiveTest do
     DateTime.utc_now()
     |> DateTime.truncate(:second)
     |> DateTime.add(-days * 86_400, :second)
+  end
+
+  # Creates an archived task with a specific archived_at timestamp (and any
+  # extra archive attrs), used by the date-range filter tests.
+  defp archive_on(column, title, %DateTime{} = archived_at, extra \\ %{}) do
+    {:ok, task} =
+      column
+      |> task_fixture(%{title: title})
+      |> Tasks.update_task(Map.merge(%{archived_at: archived_at}, extra))
+
+    task
   end
 
   describe "bulk archive button" do
