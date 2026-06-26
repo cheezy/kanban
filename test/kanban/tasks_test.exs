@@ -9226,15 +9226,15 @@ defmodule Kanban.TasksTest do
       )
     end
 
-    test "groups a goal with its children, goal row leading its own group" do
+    test "separates a present goal's own row from its children" do
       goal = built_task(1, :goal, nil, 0)
       child_a = built_task(2, :work, 1, 1)
       child_b = built_task(3, :work, 1, 2)
 
-      assert [%{key: "goal:1", kind: :goal, goal: ^goal, rows: rows}] =
+      assert [%{key: "goal:1", kind: :goal, goal: ^goal, goal_row: ^goal, child_rows: child_rows}] =
                Tasks.group_rows_by_goal([child_b, goal, child_a])
 
-      assert rows == [goal, child_a, child_b]
+      assert child_rows == [child_a, child_b]
     end
 
     test "places standalone non-goal tasks in a trailing :no_goal group" do
@@ -9246,15 +9246,23 @@ defmodule Kanban.TasksTest do
 
       assert [%{key: "goal:1", kind: :goal}, %{key: "no_goal", kind: :no_goal} = last] = groups
       assert last.goal == nil
-      assert last.rows == [standalone]
+      assert last.goal_row == nil
+      assert last.child_rows == [standalone]
     end
 
-    test "synthesizes a goal header from the preloaded parent when the goal is absent" do
+    test "leaves goal_row nil and synthesizes the goal from the parent when the goal is absent" do
       parent_goal = built_task(1, :goal, nil, 0)
       child = built_task(2, :work, 1, 1, %{parent: parent_goal})
 
-      assert [%{key: "goal:1", kind: :goal, goal: ^parent_goal, rows: [^child]}] =
-               Tasks.group_rows_by_goal([child])
+      assert [
+               %{
+                 key: "goal:1",
+                 kind: :goal,
+                 goal: ^parent_goal,
+                 goal_row: nil,
+                 child_rows: [^child]
+               }
+             ] = Tasks.group_rows_by_goal([child])
     end
 
     test "orders goal groups by goal age with the :no_goal group always last" do
@@ -9272,10 +9280,10 @@ defmodule Kanban.TasksTest do
       assert Tasks.group_rows_by_goal([]) == []
     end
 
-    test "a goal with no children yields a single-row group" do
+    test "a goal with no children sets goal_row and empty child_rows" do
       goal = built_task(1, :goal, nil, 0)
 
-      assert [%{key: "goal:1", kind: :goal, rows: [^goal]}] =
+      assert [%{key: "goal:1", kind: :goal, goal_row: ^goal, child_rows: []}] =
                Tasks.group_rows_by_goal([goal])
     end
   end

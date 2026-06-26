@@ -347,4 +347,50 @@ defmodule KanbanWeb.ArchiveRowTest do
       assert html =~ "line-through"
     end
   end
+
+  describe "archive_row/1 — chevron toggle" do
+    test "renders a down chevron toggle when toggle_event is set and expanded" do
+      assigns = %{task: task(%{type: :goal})}
+
+      html =
+        rendered_to_string(~H"""
+        <ArchiveRow.archive_row
+          task={@task}
+          on_action_menu="open_archive_actions"
+          toggle_event="toggle_goal_group"
+          toggle_group_key="2024-1:goal:100"
+          expanded={true}
+        />
+        """)
+
+      assert html =~ "data-archive-goal-group-toggle"
+      assert html =~ ~s(phx-value-group_key="2024-1:goal:100")
+      assert html =~ ~s(aria-expanded="true")
+      assert html =~ "hero-chevron-down"
+    end
+
+    test "renders a right chevron when collapsed" do
+      assigns = %{task: task(%{type: :goal})}
+
+      html =
+        rendered_to_string(~H"""
+        <ArchiveRow.archive_row
+          task={@task}
+          on_action_menu="open_archive_actions"
+          toggle_event="toggle_goal_group"
+          toggle_group_key="k"
+          expanded={false}
+        />
+        """)
+
+      assert html =~ "hero-chevron-right"
+      assert html =~ ~s(aria-expanded="false")
+    end
+
+    test "renders the type icon and no chevron when toggle_event is absent" do
+      html = render_row(%{type: :goal})
+      refute html =~ "data-archive-goal-group-toggle"
+      assert html =~ "data-archive-row-type-icon"
+    end
+  end
 end

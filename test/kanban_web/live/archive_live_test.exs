@@ -731,7 +731,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
                :binary.match(html, old_month_label)
     end
 
-    test "groups archived rows under goal headers and a Tasks Without Goals group",
+    test "a present goal carries the chevron on its own row with no duplicate header line",
          %{conn: conn, board: board, column: column} do
       goal = task_fixture(column, %{title: "Launch flow", type: :goal})
       child = task_fixture(column, %{title: "Child of goal", type: :work, parent_id: goal.id})
@@ -742,23 +742,55 @@ defmodule KanbanWeb.ArchiveLiveTest do
       {:ok, _} = Tasks.archive_task(standalone)
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+      goal_key = goal_group_key(goal)
 
-      # A goal-group header renders, keyed by the goal id (keys are
-      # month-qualified, e.g. "2026-6:goal:5"), showing its identifier.
-      assert html =~ "data-archive-goal-group-header"
-      assert html =~ "goal:#{goal.id}"
+      # The goal's own row carries the chevron toggle (keys are month-qualified,
+      # e.g. "2026-6:goal:5")...
+      assert html =~ ~s(phx-value-group_key="#{goal_key}")
       assert html =~ goal.identifier
 
-      # Standalone tasks fall under the synthetic Tasks Without Goals group.
-      assert html =~ "no_goal"
-      assert html =~ "Tasks Without Goals"
+      # ...and there is NO separate goal-group header line for it (the duplicate
+      # that this defect removes — headers carry data-archive-goal-group-key).
+      refute html =~ ~s(data-archive-goal-group-key="#{goal_key}")
 
-      # The goal-group header appears before the no-goal header.
-      assert :binary.match(html, "goal:#{goal.id}") < :binary.match(html, "no_goal")
+      # Standalone tasks still get a synthetic Tasks Without Goals header.
+      assert html =~ ~s(data-archive-goal-group-key="#{no_goal_group_key()}")
+      assert html =~ "Tasks Without Goals"
 
       # Every archived row still renders.
       assert html =~ child.identifier
       assert html =~ standalone.identifier
+    end
+
+    test "toggling a present goal hides its children but keeps the goal row visible",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Launch flow", type: :goal})
+      child = task_fixture(column, %{title: "Child of goal", type: :work, parent_id: goal.id})
+
+      {:ok, _} = Tasks.archive_task(goal)
+      {:ok, _} = Tasks.archive_task(child)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      assert html =~ goal.identifier
+      assert html =~ child.identifier
+
+      html = toggle_goal_group(view, goal_group_key(goal))
+
+      # The child row hides, but the goal's own row stays visible.
+      refute html =~ child.identifier
+      assert html =~ goal.identifier
+      assert html =~ "hero-chevron-right"
+    end
+
+    test "a goal with no archived children renders no chevron",
+         %{conn: conn, board: board, column: column} do
+      goal = task_fixture(column, %{title: "Childless goal", type: :goal})
+      {:ok, _} = Tasks.archive_task(goal)
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
+
+      assert html =~ goal.identifier
+      refute html =~ "data-archive-goal-group-toggle"
     end
 
     test "collapses and expands a goal group when its chevron is toggled",

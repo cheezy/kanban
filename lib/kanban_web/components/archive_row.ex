@@ -44,6 +44,9 @@ defmodule KanbanWeb.ArchiveRow do
   """
   attr :task, :map, required: true
   attr :on_action_menu, :string, required: true
+  attr :toggle_event, :string, default: nil
+  attr :toggle_group_key, :string, default: nil
+  attr :expanded, :boolean, default: true
 
   def archive_row(assigns) do
     assigns = assign(assigns, :reason, normalized_reason(assigns.task))
@@ -60,7 +63,12 @@ defmodule KanbanWeb.ArchiveRow do
         "background: #{row_background(@task)};"
       ]}
     >
-      <.type_icon type={@task.type} />
+      <.leading_cell
+        task={@task}
+        toggle_event={@toggle_event}
+        toggle_group_key={@toggle_group_key}
+        expanded={@expanded}
+      />
 
       <span
         data-archive-row-ident
@@ -118,6 +126,45 @@ defmodule KanbanWeb.ArchiveRow do
   end
 
   # --- Sub-cells -----------------------------------------------------------
+
+  # The leading 20px grid cell. For a goal row that owns a collapsible set of
+  # children, it renders a chevron toggle (replacing the type icon) so the
+  # goal's own row carries the disclosure control — no separate header line.
+  # Every other row (and a childless goal) keeps its type icon.
+  attr :task, :map, required: true
+  attr :toggle_event, :string, default: nil
+  attr :toggle_group_key, :string, default: nil
+  attr :expanded, :boolean, default: true
+
+  defp leading_cell(%{toggle_event: nil} = assigns) do
+    ~H"""
+    <.type_icon type={@task.type} />
+    """
+  end
+
+  defp leading_cell(assigns) do
+    ~H"""
+    <button
+      type="button"
+      data-archive-goal-group-toggle
+      phx-click={@toggle_event}
+      phx-value-group_key={@toggle_group_key}
+      aria-expanded={to_string(@expanded)}
+      aria-label={gettext("Toggle group")}
+      style={[
+        "display: inline-flex; align-items: center; justify-content: center;",
+        "width: 16px; height: 16px; padding: 0;",
+        "background: transparent; border: 0; cursor: pointer;",
+        "color: var(--ink-3);"
+      ]}
+    >
+      <.icon
+        name={if @expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
+        class="w-3 h-3"
+      />
+    </button>
+    """
+  end
 
   # Goal rows reuse the board goal card's soft-violet background
   # (var(--stride-violet-soft), defined in app.css with light + dark values)

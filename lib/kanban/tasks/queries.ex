@@ -357,18 +357,21 @@ defmodule Kanban.Tasks.Queries do
   Groups a single month's archived rows into per-goal groups followed by
   a trailing "Tasks Without Goals" group.
 
-  Each group is a map `%{key, kind, goal, rows}`:
+  Each group is a map `%{key, kind, goal, goal_row, child_rows}`:
 
     * `kind` is `:goal` or `:no_goal`.
-    * Goal groups are keyed `"goal:<id>"`. `goal` is the goal struct and
-      the goal's own row leads `rows`, followed by its children (oldest
-      first). When a child's goal was archived in a different month — so
-      the goal task is absent from `tasks` — the header is synthesized
-      from the child's preloaded `:parent` association and `rows` holds
-      only the children.
-    * The `:no_goal` group (keyed `"no_goal"`) collects standalone tasks
-      (no parent, not a goal). It is always last and is omitted entirely
-      when there are no standalone rows.
+    * Goal groups are keyed `"goal:<id>"`. `goal` is the goal struct.
+      `goal_row` is the goal's own archived row when it was archived this
+      month (so the caller can render that row with the chevron and skip a
+      separate header line), otherwise `nil`. `child_rows` holds only the
+      children (oldest first). When a child's goal was archived in a
+      different month — so the goal task is absent from `tasks` —
+      `goal_row` is `nil` and `goal` is synthesized from the child's
+      preloaded `:parent` association.
+    * The `:no_goal` group (keyed `"no_goal"`) has `goal` and `goal_row`
+      `nil` and collects standalone tasks (no parent, not a goal) in
+      `child_rows`. It is always last and is omitted entirely when there
+      are no standalone rows.
 
   Pure in-memory shaping over already-loaded rows — no queries. Relies on
   the `:parent` preload from `Kanban.Archives.list_archived_for_board/1`.
@@ -407,10 +410,16 @@ defmodule Kanban.Tasks.Queries do
 
     case Map.get(present_by_id, goal_id) do
       %Task{} = goal ->
-        %{key: "goal:#{goal_id}", kind: :goal, goal: goal, rows: [goal | children]}
+        %{key: "goal:#{goal_id}", kind: :goal, goal: goal, goal_row: goal, child_rows: children}
 
       _ ->
-        %{key: "goal:#{goal_id}", kind: :goal, goal: synthesized_goal(children), rows: children}
+        %{
+          key: "goal:#{goal_id}",
+          kind: :goal,
+          goal: synthesized_goal(children),
+          goal_row: nil,
+          child_rows: children
+        }
     end
   end
 
@@ -425,14 +434,17 @@ defmodule Kanban.Tasks.Queries do
   end
 
   defp no_goal_group([]), do: []
-  defp no_goal_group(rows), do: [%{key: "no_goal", kind: :no_goal, goal: nil, rows: rows}]
+
+  defp no_goal_group(rows) do
+    [%{key: "no_goal", kind: :no_goal, goal: nil, goal_row: nil, child_rows: rows}]
+  end
 
   defp child?(%{type: :goal}), do: false
   defp child?(%{parent_id: nil}), do: false
   defp child?(_), do: true
 
   defp group_sort_key(%{goal: %{inserted_at: %NaiveDateTime{} = ts}}), do: ts
-  defp group_sort_key(%{rows: [first | _]}), do: sort_key(first)
+  defp group_sort_key(%{child_rows: [first | _]}), do: sort_key(first)
   defp group_sort_key(_), do: ~N[1970-01-01 00:00:00]
 
   # Tasks within the goal-hierarchy columns sort by creation time (oldest

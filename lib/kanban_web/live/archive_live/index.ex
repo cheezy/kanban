@@ -250,6 +250,86 @@ defmodule KanbanWeb.ArchiveLive.Index do
       else: MapSet.put(set, member)
   end
 
+  # --- Row rendering -------------------------------------------------------
+
+  # One archived row plus its kebab action-menu overlay. Passing the toggle_*
+  # attrs makes the row's leading cell render a chevron (used for a goal's own
+  # row); omitting them renders the row exactly as a plain archived row.
+  attr :task, :map, required: true
+  attr :menu_open_for, :string, default: nil
+  attr :can_modify, :boolean, default: false
+  attr :toggle_event, :string, default: nil
+  attr :toggle_group_key, :string, default: nil
+  attr :expanded, :boolean, default: true
+
+  defp row_with_menu(assigns) do
+    ~H"""
+    <div data-archive-row-wrapper style="position: relative;">
+      <KanbanWeb.ArchiveRow.archive_row
+        task={@task}
+        on_action_menu="open_archive_menu"
+        toggle_event={@toggle_event}
+        toggle_group_key={@toggle_group_key}
+        expanded={@expanded}
+      />
+
+      <div
+        :if={@menu_open_for == to_string(@task.id)}
+        data-archive-row-menu
+        phx-click-away="close_archive_menu"
+        style={[
+          "position: absolute; right: 14px; top: 32px; z-index: 10;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 6px;",
+          "box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);",
+          "display: flex; flex-direction: column;",
+          "min-width: 160px;"
+        ]}
+      >
+        <button
+          :if={@can_modify}
+          type="button"
+          data-archive-menu-restore
+          phx-click="unarchive"
+          phx-value-id={@task.id}
+          style={[
+            "padding: 8px 12px; border: 0; background: transparent;",
+            "text-align: left; font: inherit; font-size: 12px;",
+            "color: var(--ink); cursor: pointer;"
+          ]}
+        >
+          {gettext("Restore")}
+        </button>
+
+        <button
+          :if={@can_modify}
+          type="button"
+          data-archive-menu-delete
+          phx-click="delete"
+          phx-value-id={@task.id}
+          data-confirm={gettext("Are you sure you want to delete this task?")}
+          style={[
+            "padding: 8px 12px; border: 0; background: transparent;",
+            "text-align: left; font: inherit; font-size: 12px;",
+            "color: var(--st-blocked); cursor: pointer;",
+            "border-top: 1px solid var(--line);"
+          ]}
+        >
+          {gettext("Delete forever")}
+        </button>
+
+        <span
+          :if={not @can_modify}
+          data-archive-menu-read-only
+          style="padding: 8px 12px; font-size: 11.5px; color: var(--ink-3); font-style: italic;"
+        >
+          {gettext("Read-only access")}
+        </span>
+      </div>
+    </div>
+    """
+  end
+
   defp month_key(%{archived_at: %DateTime{year: year, month: month}}), do: {year, month}
   defp month_key(_), do: {0, 0}
 
