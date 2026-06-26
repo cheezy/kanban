@@ -27,13 +27,13 @@
       >
         <.icon
           name={
-            if all_goal_groups_collapsed?(@rows, @collapsed_goal_groups),
+            if all_groups_collapsed?(@rows, @collapsed_goal_groups),
               do: "hero-arrows-pointing-out",
               else: "hero-arrows-pointing-in"
           }
           class="w-3 h-3"
         />
-        {if all_goal_groups_collapsed?(@rows, @collapsed_goal_groups),
+        {if all_groups_collapsed?(@rows, @collapsed_goal_groups),
           do: gettext("Expand all"),
           else: gettext("Collapse all")}
       </button>

@@ -1130,18 +1130,19 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Child Task"
     end
 
-    test "the expand/collapse-all control is hidden when there are no collapsible goal groups",
+    test "the expand/collapse-all control is hidden when there are no collapsible groups",
          %{conn: conn, board: board, column: column} do
-      # Only ungrouped tasks (the no_goal group is not a goal group) — no
-      # collapsible goal groups, so the control is hidden.
-      task_fixture(column, %{title: "Standalone"}) |> Tasks.archive_task()
+      # A childless archived goal renders no chevron and forms no collapsible
+      # group, so the control is hidden.
+      goal = task_fixture(column, %{title: "Childless goal", type: :goal})
+      {:ok, _} = Tasks.archive_task(goal)
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/archive")
 
       refute html =~ "data-archive-toggle-all-goals"
     end
 
-    test "collapse-all preserves a manually-collapsed Tasks Without Goals group",
+    test "the expand/collapse-all control includes the Tasks Without Goals group",
          %{conn: conn, board: board, column: column} do
       goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
       child = task_fixture(column, %{title: "Child Task", type: :work, parent_id: goal.id})
@@ -1150,15 +1151,30 @@ defmodule KanbanWeb.ArchiveLiveTest do
       {:ok, _} = Tasks.archive_task(child)
       {:ok, _} = Tasks.archive_task(standalone)
 
-      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      assert html =~ "Child Task"
+      assert html =~ "Standalone Task"
 
-      # Manually collapse the Tasks Without Goals group via its own chevron.
-      toggle_goal_group(view, no_goal_group_key())
-      refute render(view) =~ "Standalone Task"
-
-      # Collapse all goal groups — the no_goal group must stay collapsed.
+      # Collapse-all hides BOTH the goal-group child and the no-goal standalone.
       collapsed = render_click(view, "toggle_all_goal_groups", %{})
       refute collapsed =~ "Child Task"
+      refute collapsed =~ "Standalone Task"
+
+      # Expand-all brings both back.
+      expanded = render_click(view, "toggle_all_goal_groups", %{})
+      assert expanded =~ "Child Task"
+      assert expanded =~ "Standalone Task"
+    end
+
+    test "the control is shown and collapses a board with only ungrouped tasks",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Standalone Task"}) |> Tasks.archive_task()
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      # The no_goal group is collapsible, so the control is shown.
+      assert html =~ "data-archive-toggle-all-goals"
+
+      collapsed = render_click(view, "toggle_all_goal_groups", %{})
       refute collapsed =~ "Standalone Task"
     end
 

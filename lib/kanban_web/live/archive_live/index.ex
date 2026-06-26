@@ -133,9 +133,9 @@ defmodule KanbanWeb.ArchiveLive.Index do
     key_list = collapsible_group_keys(socket.assigns.rows)
     keys = MapSet.new(key_list)
 
-    # Scope the operation to goal keys only (union to collapse, difference to
-    # expand) so a manually-collapsed "Tasks Without Goals" group keeps its
-    # state — the control is about goal groups, not the no_goal bucket.
+    # Union to collapse / difference to expand over the collapsible group keys,
+    # so the toggle composes cleanly with any per-group chevron state already in
+    # the set.
     collapsed =
       if all_keys_collapsed?(key_list, current) do
         MapSet.difference(current, keys)
@@ -392,25 +392,25 @@ defmodule KanbanWeb.ArchiveLive.Index do
   # ignored instead of needing recomputation.
   defp group_expanded?(collapsed, key), do: not MapSet.member?(collapsed, key)
 
-  # The keys of the currently-visible *goal* groups that have children — only
-  # those are targeted by the expand/collapse-all control. The "Tasks Without
-  # Goals" group (kind :no_goal) is collapsible on its own chevron but is not a
-  # goal, so it is excluded here (the control is about goals). Derived in-memory
-  # from the already-loaded (filtered) @rows; no Ecto query.
+  # The keys of the currently-visible groups that have children — every group
+  # that renders a chevron is collapsible and is targeted by the expand/
+  # collapse-all control. This includes the "Tasks Without Goals" group
+  # (kind :no_goal) alongside the goal groups. Derived in-memory from the
+  # already-loaded (filtered) @rows; no Ecto query.
   defp collapsible_group_keys(rows) do
     rows
     |> goal_groups()
-    |> Enum.filter(&(&1.kind == :goal and &1.child_rows != []))
+    |> Enum.filter(&(&1.child_rows != []))
     |> Enum.map(& &1.key)
   end
 
-  # True when every collapsible goal group is currently collapsed. An empty key
-  # list is treated as "not all collapsed" so the expand/collapse-all control is
+  # True when every collapsible group is currently collapsed. An empty key list
+  # is treated as "not all collapsed" so the expand/collapse-all control is
   # never shown (and never labelled) for a board with no collapsible groups.
   defp all_keys_collapsed?([], _collapsed), do: false
   defp all_keys_collapsed?(keys, collapsed), do: Enum.all?(keys, &MapSet.member?(collapsed, &1))
 
-  defp all_goal_groups_collapsed?(rows, collapsed) do
+  defp all_groups_collapsed?(rows, collapsed) do
     all_keys_collapsed?(collapsible_group_keys(rows), collapsed)
   end
 
