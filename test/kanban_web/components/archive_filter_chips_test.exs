@@ -15,11 +15,7 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
         %{
           counts: %{
             all: 10,
-            completed: 5,
-            cancelled: 2,
-            wontdo: 1,
-            duplicate: 2,
-            deferred: 0
+            completed: 5
           },
           active: :all,
           on_filter_change: "filter_reason"
@@ -41,11 +37,19 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       assert render_chips() =~ "data-archive-filter-chips"
     end
 
-    test "renders one active chip per reason plus All" do
+    test "renders the All and Completed chips" do
       html = render_chips()
 
-      for marker <- ~w(all completed cancelled wontdo duplicate deferred) do
+      for marker <- ~w(all completed) do
         assert html =~ ~s(data-archive-filter-chip="#{marker}")
+      end
+    end
+
+    test "does not render the removed reason chips" do
+      html = render_chips()
+
+      for marker <- ~w(cancelled wontdo duplicate deferred) do
+        refute html =~ ~s(data-archive-filter-chip="#{marker}")
       end
     end
 
@@ -85,21 +89,17 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
     test "renders each reason chip with its count from the map" do
       html =
         render_chips(%{
-          counts: %{all: 99, completed: 7, cancelled: 3, wontdo: 4, duplicate: 1, deferred: 2}
+          counts: %{all: 99, completed: 7}
         })
 
-      # Each reason chip has '· N' suffix from the count span.
+      # The Completed reason chip has a '· N' suffix from the count span.
       assert html =~ ~r/Completed[\s\S]*?·\s*7/
-      assert html =~ ~r/Cancelled[\s\S]*?·\s*3/
-      assert html =~ ~r/Won&#39;t do[\s\S]*?·\s*4/
-      assert html =~ ~r/Duplicate[\s\S]*?·\s*1/
-      assert html =~ ~r/Deferred[\s\S]*?·\s*2/
     end
 
     test "treats missing reason keys as zero" do
       html = render_chips(%{counts: %{all: 0}})
-      # Five reasons each with `· 0` — at least 5 occurrences.
-      assert length(Regex.scan(~r/·\s*0/, html)) >= 5
+      # The single Completed reason chip renders `· 0`.
+      assert html =~ ~r/·\s*0/
     end
 
     test "the All chip does NOT render a count suffix" do
@@ -155,41 +155,6 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
       assert completed_chip =~ "background: var(--st-done-soft)"
       assert completed_chip =~ "color: var(--st-done)"
     end
-
-    test "non-active Cancelled chip uses st-blocked palette" do
-      html = render_chips(%{active: :all})
-
-      cancelled_chip =
-        Regex.run(~r/<button[^>]*data-archive-filter-chip="cancelled"[^>]*>/, html)
-        |> List.first()
-
-      assert cancelled_chip =~ "background: var(--st-blocked-soft)"
-      assert cancelled_chip =~ "color: var(--st-blocked)"
-    end
-
-    test "non-active Deferred chip uses st-review palette" do
-      html = render_chips(%{active: :all})
-
-      deferred_chip =
-        Regex.run(~r/<button[^>]*data-archive-filter-chip="deferred"[^>]*>/, html)
-        |> List.first()
-
-      assert deferred_chip =~ "background: var(--st-review-soft)"
-      assert deferred_chip =~ "color: var(--st-review)"
-    end
-
-    test "neutral Won't do and Duplicate chips use the surface palette" do
-      html = render_chips(%{active: :all})
-
-      for marker <- ["wontdo", "duplicate"] do
-        chip =
-          Regex.run(~r/<button[^>]*data-archive-filter-chip="#{marker}"[^>]*>/, html)
-          |> List.first()
-
-        assert chip =~ "background: var(--surface)"
-        assert chip =~ "color: var(--ink-2)"
-      end
-    end
   end
 
   describe "archive_filter_chips/1 — phx wiring" do
@@ -198,11 +163,7 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
 
       for {marker, value} <- [
             {"all", "all"},
-            {"completed", "completed"},
-            {"cancelled", "cancelled"},
-            {"wontdo", "wontdo"},
-            {"duplicate", "duplicate"},
-            {"deferred", "deferred"}
+            {"completed", "completed"}
           ] do
         chip =
           Regex.run(~r/<button[^>]*data-archive-filter-chip="#{marker}"[^>]*>/, html)
@@ -215,15 +176,15 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
   end
 
   describe "archive_filter_chips/1 — labels" do
-    test "renders the six reason labels (English)" do
+    test "renders the All and Completed labels (English)" do
       html = render_chips()
       assert html =~ "All"
       assert html =~ "Completed"
-      assert html =~ "Cancelled"
+      refute html =~ "Cancelled"
       # HTML-escapes the apostrophe.
-      assert html =~ "Won&#39;t do"
-      assert html =~ "Duplicate"
-      assert html =~ "Deferred"
+      refute html =~ "Won&#39;t do"
+      refute html =~ "Duplicate"
+      refute html =~ "Deferred"
     end
 
     test "renders the three placeholder labels" do

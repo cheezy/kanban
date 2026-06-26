@@ -491,7 +491,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert render(index_live) =~ "data-archive-screen"
     end
 
-    test "filter_archive event narrows the visible rows to the selected reason",
+    test "filter_archive narrows to :completed; a removed-reason task still shows under :all",
          %{conn: conn, board: board, column: column} do
       completed = task_fixture(column, %{title: "Completed Work"})
       cancelled = task_fixture(column, %{title: "Cancelled Work"})
@@ -505,15 +505,18 @@ defmodule KanbanWeb.ArchiveLiveTest do
         })
 
       {:ok, index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+      # The default :all view shows every archived row, including the task
+      # carrying a removed reason (:cancelled) — no archived data is hidden.
       assert html =~ "Completed Work"
       assert html =~ "Cancelled Work"
 
-      # Narrow to :cancelled — only that task should remain
+      # Narrow to :completed — only the completed task remains; the
+      # removed-reason task is filtered out of the Completed bucket.
       filtered =
-        render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+        render_click(index_live, "filter_archive", %{"reason" => "completed"})
 
-      refute filtered =~ "Completed Work"
-      assert filtered =~ "Cancelled Work"
+      assert filtered =~ "Completed Work"
+      refute filtered =~ "Cancelled Work"
     end
 
     test "export_csv event flashes a 'coming soon' notice",
@@ -588,34 +591,6 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Explicitly completed"
     end
 
-    for reason <- ["cancelled", "wontdo", "duplicate", "deferred"] do
-      test "filter_archive narrows to :#{reason} reason",
-           %{conn: conn, board: board, column: column} do
-        own = task_fixture(column, %{title: "Keeper"})
-        other = task_fixture(column, %{title: "Excluded"})
-
-        own_reason = String.to_existing_atom(unquote(reason))
-
-        own_attrs =
-          if own_reason == :duplicate do
-            canonical = task_fixture(column, %{title: "Canonical"})
-            %{archive_reason: :duplicate, duplicate_of_id: canonical.id}
-          else
-            %{archive_reason: own_reason, archive_note: "necessary"}
-          end
-
-        {:ok, _} = Tasks.archive_task(own, own_attrs)
-        {:ok, _} = Tasks.archive_task(other, %{archive_reason: :completed})
-
-        {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
-
-        html = render_click(index_live, "filter_archive", %{"reason" => unquote(reason)})
-
-        assert html =~ "Keeper"
-        refute html =~ "Excluded"
-      end
-    end
-
     @tag :capture_log
     test "filter_archive with an unknown reason falls back to :all and renders every row",
          %{conn: conn, board: board, column: column} do
@@ -647,7 +622,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
 
       # Narrow first, then widen back to "all" to exercise parse_filter("all").
-      render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+      render_click(index_live, "filter_archive", %{"reason" => "completed"})
       html = render_click(index_live, "filter_archive", %{"reason" => "all"})
 
       assert html =~ "Completed one"
@@ -656,17 +631,20 @@ defmodule KanbanWeb.ArchiveLiveTest do
 
     test "filter narrowed to zero rows shows the empty-state copy",
          %{conn: conn, board: board, column: column} do
-      task = task_fixture(column, %{title: "Only completed"})
-      {:ok, _} = Tasks.archive_task(task, %{archive_reason: :completed})
+      task = task_fixture(column, %{title: "Only cancelled"})
+
+      {:ok, _} =
+        Tasks.archive_task(task, %{archive_reason: :cancelled, archive_note: "nope"})
 
       {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
 
-      # Narrow to :cancelled — no rows match
-      html = render_click(index_live, "filter_archive", %{"reason" => "cancelled"})
+      # Narrow to :completed — the only archived task carries a removed reason,
+      # so the Completed bucket is empty and the empty-state copy shows.
+      html = render_click(index_live, "filter_archive", %{"reason" => "completed"})
 
       assert html =~ "data-archive-empty"
       assert html =~ "No archived tasks match this filter."
-      refute html =~ "Only completed"
+      refute html =~ "Only cancelled"
     end
 
     test "handle_info :task_deleted PubSub event triggers a reload",

@@ -2,9 +2,9 @@ defmodule KanbanWeb.ArchiveFilterChips do
   @moduledoc """
   Filter chip row for the Archive view at `/boards/:id/archive`.
 
-  Renders the "All" chip followed by one chip per archive reason
-  (Completed / Cancelled / Won't do / Duplicate / Deferred) with the
-  per-bucket counts from `Kanban.Archives.archive_stats/1`. A divider
+  Renders the "All" chip followed by the "Completed" archive-reason
+  chip with the per-bucket counts from `Kanban.Archives.archive_stats/1`.
+  A divider
   separates these from three visually disabled placeholder chips
   (Goal / Assignee / Date range) that map to v1-out-of-scope filters.
 
@@ -20,11 +20,7 @@ defmodule KanbanWeb.ArchiveFilterChips do
   use KanbanWeb, :html
 
   @reasons [
-    {:completed, "completed", "done"},
-    {:cancelled, "cancelled", "blocked"},
-    {:wontdo, "wontdo", nil},
-    {:duplicate, "duplicate", nil},
-    {:deferred, "deferred", "review"}
+    {:completed, "completed", "done"}
   ]
 
   @doc """
@@ -32,8 +28,7 @@ defmodule KanbanWeb.ArchiveFilterChips do
 
   ## Attrs
 
-    * `counts` — map keyed by `:all` and each reason atom
-      (`:completed`, `:cancelled`, `:wontdo`, `:duplicate`, `:deferred`).
+    * `counts` — map keyed by `:all` and the `:completed` reason atom.
       Missing keys render as `0`.
     * `active` — currently active filter, one of `:all` or any reason
       atom. Drives the inverted (ink-bg / white-fg) chip styling.
@@ -167,10 +162,6 @@ defmodule KanbanWeb.ArchiveFilterChips do
   defp reasons, do: @reasons
 
   defp reason_label(:completed), do: gettext("Completed")
-  defp reason_label(:cancelled), do: gettext("Cancelled")
-  defp reason_label(:wontdo), do: gettext("Won't do")
-  defp reason_label(:duplicate), do: gettext("Duplicate")
-  defp reason_label(:deferred), do: gettext("Deferred")
 
   # Returns a %{bg, fg, border} map. Active chips invert against the page —
   # bg uses var(--ink) and fg uses var(--surface) so both tokens flip together
@@ -185,22 +176,6 @@ defmodule KanbanWeb.ArchiveFilterChips do
     %{
       bg: "var(--st-done-soft)",
       fg: "var(--st-done)",
-      border: "transparent"
-    }
-  end
-
-  defp chip_palette(false, "blocked") do
-    %{
-      bg: "var(--st-blocked-soft)",
-      fg: "var(--st-blocked)",
-      border: "transparent"
-    }
-  end
-
-  defp chip_palette(false, "review") do
-    %{
-      bg: "var(--st-review-soft)",
-      fg: "var(--st-review)",
       border: "transparent"
     }
   end

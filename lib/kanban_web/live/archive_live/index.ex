@@ -20,7 +20,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
 
   require Logger
 
-  @valid_reasons [:completed, :cancelled, :wontdo, :duplicate, :deferred]
+  @valid_reasons [:completed]
 
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
@@ -169,10 +169,6 @@ defmodule KanbanWeb.ArchiveLive.Index do
       reason = task.archive_reason
       reason == :completed or is_nil(reason)
     end)
-  end
-
-  defp apply_filter(rows, reason) when reason in @valid_reasons do
-    Enum.filter(rows, fn task -> task.archive_reason == reason end)
   end
 
   defp close_menu(socket), do: assign(socket, :menu_open_for, nil)
