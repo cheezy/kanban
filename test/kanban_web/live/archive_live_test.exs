@@ -918,6 +918,81 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Late"
     end
 
+    test "search_archive narrows rows to titles matching the query (case-insensitive)",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+      task_fixture(column, %{title: "Write docs"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Lowercase query matches the mixed-case title by substring.
+      html = render_hook(view, "search_archive", %{"query" => "deploy"})
+      assert html =~ "Deploy pipeline"
+      refute html =~ "Write docs"
+    end
+
+    test "an empty/whitespace search query restores all rows",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+      task_fixture(column, %{title: "Write docs"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_hook(view, "search_archive", %{"query" => "deploy"})
+      restored = render_hook(view, "search_archive", %{"query" => "   "})
+
+      assert restored =~ "Deploy pipeline"
+      assert restored =~ "Write docs"
+    end
+
+    test "a search query matching no titles yields an empty result without crashing",
+         %{conn: conn, board: board, column: column} do
+      task_fixture(column, %{title: "Deploy pipeline"}) |> Tasks.archive_task()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      html = render_hook(view, "search_archive", %{"query" => "nonexistent"})
+      refute html =~ "Deploy pipeline"
+      assert html =~ "No archived tasks match this filter."
+    end
+
+    test "search composes with the reason filter",
+         %{conn: conn, board: board, column: column} do
+      completed = task_fixture(column, %{title: "Deploy completed"})
+      cancelled = task_fixture(column, %{title: "Deploy cancelled"})
+      {:ok, _} = Tasks.archive_task(completed, %{archive_reason: :completed})
+
+      {:ok, _} =
+        Tasks.archive_task(cancelled, %{archive_reason: :cancelled, archive_note: "stop"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(view, "filter_archive", %{"reason" => "completed"})
+      html = render_hook(view, "search_archive", %{"query" => "deploy"})
+
+      assert html =~ "Deploy completed"
+      # Excluded by the reason filter even though the title matches the search.
+      refute html =~ "Deploy cancelled"
+    end
+
+    test "search composes with the assignee filter",
+         %{conn: conn, board: board, column: column} do
+      ada = user_fixture(%{name: "Ada Lovelace"})
+      ada_task = task_fixture(column, %{title: "Deploy by Ada", assigned_to_id: ada.id})
+      other_task = task_fixture(column, %{title: "Deploy by nobody"})
+      {:ok, _} = Tasks.archive_task(ada_task)
+      {:ok, _} = Tasks.archive_task(other_task)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      render_click(view, "filter_assignee", %{"assignee" => to_string(ada.id)})
+      html = render_hook(view, "search_archive", %{"query" => "deploy"})
+
+      assert html =~ "Deploy by Ada"
+      # Excluded by the assignee filter even though the title matches the search.
+      refute html =~ "Deploy by nobody"
+    end
+
     test "clicking the Date range chip opens the date popover",
          %{conn: conn, board: board, column: column} do
       archive_on(column, "A Task", ~U[2026-01-15 12:00:00Z])

@@ -17,10 +17,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
   alias Kanban.Archives
   alias Kanban.Boards
   alias Kanban.Tasks
-
-  require Logger
-
-  @valid_reasons [:completed]
+  alias KanbanWeb.ArchiveLive.Filters
 
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
@@ -47,7 +44,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
   def handle_event("filter_archive", %{"reason" => raw}, socket) do
     {:noreply,
      socket
-     |> assign(:filter, parse_filter(raw))
+     |> assign(:filter, Filters.parse_reason(raw))
      |> recompute_rows()
      |> close_menu()}
   end
@@ -70,7 +67,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
   def handle_event("filter_assignee", %{"assignee" => raw}, socket) do
     {:noreply,
      socket
-     |> assign(:assignee_filter, parse_assignee(raw))
+     |> assign(:assignee_filter, Filters.parse_assignee(raw))
      |> assign(:assignee_menu_open, false)
      |> recompute_rows()
      |> close_menu()}
@@ -89,8 +86,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
   def handle_event("filter_date_range", params, socket) do
     {:noreply,
      socket
-     |> assign(:date_from, parse_date(params["from"]))
-     |> assign(:date_to, parse_date(params["to"]))
+     |> assign(:date_from, Filters.parse_date(params["from"]))
+     |> assign(:date_to, Filters.parse_date(params["to"]))
      |> assign(:date_menu_open, false)
      |> recompute_rows()
      |> close_menu()}
@@ -103,6 +100,15 @@ defmodule KanbanWeb.ArchiveLive.Index do
      |> assign(:date_from, nil)
      |> assign(:date_to, nil)
      |> assign(:date_menu_open, false)
+     |> recompute_rows()
+     |> close_menu()}
+  end
+
+  @impl true
+  def handle_event("search_archive", %{"query" => query}, socket) do
+    {:noreply,
+     socket
+     |> assign(:search_query, String.trim(query))
      |> recompute_rows()
      |> close_menu()}
   end
@@ -224,7 +230,8 @@ defmodule KanbanWeb.ArchiveLive.Index do
       assignee_menu_open: false,
       date_from: nil,
       date_to: nil,
-      date_menu_open: false
+      date_menu_open: false,
+      search_query: ""
     })
   end
 
@@ -250,111 +257,27 @@ defmodule KanbanWeb.ArchiveLive.Index do
   defp recompute_rows(socket) do
     rows =
       socket.assigns.all_rows
-      |> apply_reason_filter(socket.assigns.filter)
-      |> apply_assignee_filter(socket.assigns.assignee_filter)
-      |> apply_date_range_filter(socket.assigns.date_from, socket.assigns.date_to)
+      |> Filters.apply_reason(socket.assigns.filter)
+      |> Filters.apply_assignee(socket.assigns.assignee_filter)
+      |> Filters.apply_date_range(socket.assigns.date_from, socket.assigns.date_to)
+      |> Filters.apply_search(socket.assigns.search_query)
 
     assign(socket, :rows, rows)
   end
 
-  defp apply_reason_filter(rows, :all), do: rows
-
-  defp apply_reason_filter(rows, :completed) do
-    Enum.filter(rows, fn task ->
-      reason = task.archive_reason
-      reason == :completed or is_nil(reason)
-    end)
-  end
-
-  defp apply_assignee_filter(rows, :all), do: rows
-
-  defp apply_assignee_filter(rows, :unassigned) do
-    Enum.filter(rows, &is_nil(&1.assigned_to))
-  end
-
-  defp apply_assignee_filter(rows, id) when is_integer(id) do
-    Enum.filter(rows, fn task -> match?(%{id: ^id}, task.assigned_to) end)
-  end
-
-  # Filter rows by the archived_at date within an inclusive [from, to] range.
-  # Both bounds are Date.t() | nil; a nil bound is open-ended, and both nil is
-  # a no-op that returns every row. When a bound is set, rows whose
-  # archived_at is nil are excluded rather than raising.
-  defp apply_date_range_filter(rows, nil, nil), do: rows
-
-  defp apply_date_range_filter(rows, from, to) do
-    Enum.filter(rows, fn task ->
-      case task.archived_at do
-        %DateTime{} = at -> date_in_range?(DateTime.to_date(at), from, to)
-        _ -> false
-      end
-    end)
-  end
-
-  defp date_in_range?(date, from, to) do
-    (is_nil(from) or Date.compare(date, from) != :lt) and
-      (is_nil(to) or Date.compare(date, to) != :gt)
-  end
-
   defp close_menu(socket), do: assign(socket, :menu_open_for, nil)
-
-  defp parse_filter("all"), do: :all
-
-  defp parse_filter(raw) when is_binary(raw) do
-    case Enum.find(@valid_reasons, fn r -> Atom.to_string(r) == raw end) do
-      nil ->
-        Logger.warning("ArchiveLive: unknown filter reason #{inspect(raw)} — defaulting to :all")
-        :all
-
-      reason ->
-        reason
-    end
-  end
-
-  defp parse_filter(_), do: :all
-
-  # Coerce the assignee chip's phx-value into the :assignee_filter model.
-  # Never String.to_atom the inbound value: parse ids with Integer.parse and
-  # string-compare the 'all'/'unassigned' sentinels. Anything unparseable
-  # degrades to :all (clear the filter) without crashing.
-  defp parse_assignee("all"), do: :all
-  defp parse_assignee("unassigned"), do: :unassigned
-
-  defp parse_assignee(raw) when is_binary(raw) do
-    case Integer.parse(raw) do
-      {id, ""} -> id
-      _ -> :all
-    end
-  end
-
-  defp parse_assignee(_), do: :all
-
-  # Coerce an inbound date string into a Date.t(), or nil when absent/invalid.
-  # Never raises on malformed input — an unparseable bound becomes nil (treated
-  # as open-ended by apply_date_range_filter/3).
-  defp parse_date(value) when is_binary(value) and value != "" do
-    case Date.from_iso8601(value) do
-      {:ok, date} -> date
-      {:error, _reason} -> nil
-    end
-  end
-
-  defp parse_date(_), do: nil
 
   # --- Counts for the filter chips -----------------------------------------
 
   defp counts_for(all_rows) do
     base = %{all: length(all_rows)}
 
-    @valid_reasons
+    Filters.valid_reasons()
     |> Enum.reduce(base, fn reason, acc ->
-      count = Enum.count(all_rows, &reason_matches?(&1, reason))
+      count = Enum.count(all_rows, &Filters.reason_matches?(&1, reason))
       Map.put(acc, reason, count)
     end)
   end
-
-  defp reason_matches?(%{archive_reason: nil}, :completed), do: true
-  defp reason_matches?(%{archive_reason: r}, target), do: r == target
 
   # --- Assignees for the filter dropdown -----------------------------------
 
