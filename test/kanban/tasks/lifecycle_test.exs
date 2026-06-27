@@ -368,7 +368,10 @@ defmodule Kanban.Tasks.LifecycleTest do
       task = task_fixture(column)
 
       assert_raise FunctionClauseError, fn ->
-        Lifecycle.update_changed_files(task, nil)
+        # apply/3 keeps the deliberately-invalid nil opaque to the Elixir 1.20
+        # type checker while still raising at runtime.
+        # credo:disable-for-next-line Credo.Check.Refactor.Apply
+        apply(Lifecycle, :update_changed_files, [task, nil])
       end
     end
 

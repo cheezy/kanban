@@ -56,7 +56,10 @@ defmodule Kanban.Accounts.UserTypeTest do
       user = user_fixture()
 
       assert_raise FunctionClauseError, fn ->
-        Accounts.update_user_type(user, :invalid)
+        # apply/3 keeps the deliberately-invalid type opaque to the Elixir 1.20
+        # type checker while still raising at runtime.
+        # credo:disable-for-next-line Credo.Check.Refactor.Apply
+        apply(Accounts, :update_user_type, [user, :invalid])
       end
     end
   end
@@ -105,7 +108,10 @@ defmodule Kanban.Accounts.UserTypeTest do
       user = %User{type: :user}
 
       assert_raise FunctionClauseError, fn ->
-        User.type_changeset(user, :invalid)
+        # apply/3 keeps the deliberately-invalid type opaque to the Elixir 1.20
+        # type checker while still raising at runtime.
+        # credo:disable-for-next-line Credo.Check.Refactor.Apply
+        apply(User, :type_changeset, [user, :invalid])
       end
     end
   end

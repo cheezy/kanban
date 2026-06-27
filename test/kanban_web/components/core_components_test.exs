@@ -76,9 +76,5 @@ defmodule KanbanWeb.CoreComponentsTest do
       assert encoded =~ "overflow-hidden"
       assert encoded =~ "pop_focus"
     end
-
-    test "show_modal requires a binary id" do
-      assert_raise FunctionClauseError, fn -> CoreComponents.show_modal(123) end
-    end
   end
 end

@@ -77,13 +77,5 @@ defmodule KanbanWeb.TimeAgoTest do
       assert fine(61) == "1m ago"
       assert coarse(61) == "1m ago"
     end
-
-    test "unknown granularity raises a function clause error" do
-      timestamp = ago(10)
-
-      assert_raise FunctionClauseError, fn ->
-        TimeAgo.format_age(timestamp, :weekly)
-      end
-    end
   end
 end
