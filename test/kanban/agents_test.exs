@@ -105,6 +105,70 @@ defmodule Kanban.AgentsTest do
       assert length(Agents.fetch_tasks(scope: scope, time_range: nil)) == 1
     end
 
+    test "window_days keeps tasks within the fixed window and drops older ones",
+         %{column: column, scope: scope} do
+      recent = task_fixture(column)
+      old = task_fixture(column)
+      backdate_updated_at(old, days_ago_naive(45))
+
+      ids = scope |> then(&Agents.fetch_tasks(scope: &1, window_days: 30)) |> Enum.map(& &1.id)
+      assert recent.id in ids
+      refute old.id in ids
+    end
+
+    test "window_days takes precedence over a narrower time_range selector",
+         %{column: column, scope: scope} do
+      # Updated 20 days ago: outside a 7-day selector window, inside a 60-day
+      # fixed window. The fixed window must win so the throughput cards stay
+      # independent of the page time-range selector.
+      task = task_fixture(column)
+      backdate_updated_at(task, days_ago_naive(20))
+
+      selector_only =
+        scope
+        |> then(&Agents.fetch_tasks(scope: &1, time_range: :last_7_days))
+        |> Enum.map(& &1.id)
+
+      with_window =
+        scope
+        |> then(&Agents.fetch_tasks(scope: &1, time_range: :last_7_days, window_days: 60))
+        |> Enum.map(& &1.id)
+
+      refute task.id in selector_only
+      assert task.id in with_window
+    end
+
+    test "window_days of 60 still covers the prev_30d band (days 30-60)",
+         %{column: column, scope: scope} do
+      # prev_30d counts completions in the trailing 60 days; a 45-day-old task
+      # falls in that band and must survive the bounded throughput fetch.
+      task = task_fixture(column)
+      backdate_updated_at(task, days_ago_naive(45))
+
+      ids = scope |> then(&Agents.fetch_tasks(scope: &1, window_days: 60)) |> Enum.map(& &1.id)
+      assert task.id in ids
+    end
+
+    test "window_days still honors board scoping", %{
+      user: user,
+      board: board,
+      column: column,
+      scope: scope
+    } do
+      out_of_board = user |> board_fixture() |> column_fixture()
+      kept = task_fixture(column)
+      _dropped = task_fixture(out_of_board)
+
+      result = Agents.fetch_tasks(scope: scope, board_id: board.id, window_days: 60)
+      assert Enum.map(result, & &1.id) == [kept.id]
+    end
+
+    defp days_ago_naive(days) do
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-days * 86_400, :second)
+      |> NaiveDateTime.truncate(:second)
+    end
+
     defp backdate_updated_at(%{id: id} = task, %NaiveDateTime{} = at) do
       from(t in Tasks.Task, where: t.id == ^id)
       |> Repo.update_all(set: [updated_at: at])

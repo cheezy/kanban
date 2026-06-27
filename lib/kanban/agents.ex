@@ -316,16 +316,18 @@ defmodule Kanban.Agents do
   #                     `nil` (default) for every board the scope allows
   #   * `:time_range` - one of `:today`, `:last_7_days`, `:last_30_days`,
   #                     `:last_90_days`, `:all_time`/`nil` (default) for no window
+  #   * `:window_days` - a fixed trailing window in days that takes precedence over
+  #                     `:time_range`; for callers (e.g. the Agents throughput
+  #                     cards) that need a board-scoped set independent of the page
+  #                     time-range selector. Still bounded, so it never reintroduces
+  #                     an unbounded per-render fetch.
   #   * `:timezone`   - IANA zone used to anchor the time window (default "Etc/UTC")
   def fetch_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
     |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
     |> filter_by_board(Keyword.get(opts, :board_id))
-    |> filter_by_time_range(
-      Keyword.get(opts, :time_range),
-      Keyword.get(opts, :timezone, "Etc/UTC")
-    )
+    |> apply_window(opts)
     |> Repo.all()
     # The column name drives status inference, so preload it (one batched
     # query for the whole list). The scope join above is filter-only and does
@@ -346,21 +348,41 @@ defmodule Kanban.Agents do
 
   defp filter_by_board(query, _board_id), do: query
 
+  # Apply the trailing-window filter. A fixed `:window_days` takes precedence over
+  # the page `:time_range` selector so selector-independent callers (the Agents
+  # throughput cards) get a stable, bounded window; absent it, fall back to the
+  # selector-driven `:time_range` filter.
+  defp apply_window(query, opts) do
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+
+    case Keyword.get(opts, :window_days) do
+      days when is_integer(days) and days >= 0 ->
+        filter_by_fixed_window(query, days, timezone)
+
+      _ ->
+        filter_by_time_range(query, Keyword.get(opts, :time_range), timezone)
+    end
+  end
+
   # Bound the fetch to tasks last touched within the trailing window. `updated_at`
   # is the activity proxy (claim/complete/review all bump it); `:all_time`/`nil`
   # is a true no-op that preserves the historic unbounded behavior.
   defp filter_by_time_range(query, range, _timezone) when range in [nil, :all_time], do: query
 
   defp filter_by_time_range(query, range, timezone) do
-    cutoff = window_start_naive(range, timezone)
-    where(query, [t], t.updated_at >= ^cutoff)
+    days_back = Map.get(@time_range_days, range, 29)
+    where(query, [t], t.updated_at >= ^window_start_naive(days_back, timezone))
   end
 
-  # The local-day start of the window as a `NaiveDateTime` to compare against the
-  # naive `updated_at` column. Unknown ranges fall back to the 30-day window.
-  defp window_start_naive(range, timezone) do
-    days_back = Map.get(@time_range_days, range, 29)
+  # A fixed `days_back`-day trailing window, anchored to the local day the same way
+  # as the `:time_range` filter, so the two paths share identical boundary math.
+  defp filter_by_fixed_window(query, days_back, timezone) do
+    where(query, [t], t.updated_at >= ^window_start_naive(days_back, timezone))
+  end
 
+  # The local-day start of a `days_back`-day trailing window as a `NaiveDateTime`,
+  # to compare against the naive `updated_at` column.
+  defp window_start_naive(days_back, timezone) do
     timezone
     |> Timezone.local_today()
     |> Date.add(-days_back)

@@ -1144,6 +1144,50 @@ defmodule KanbanWeb.AgentsLiveTest do
 
       assert pm_trends_value(render(view), "throughput-today") == "1"
     end
+
+    test "the 30D throughput card is independent of the page time-range selector",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      # Completed 20 days ago and not touched since: inside the trailing 30 days
+      # but outside a 7-day selector window. updated_at is backdated too, since
+      # the selector-filtered page fetch keys off updated_at — that is exactly the
+      # case the bug clamped (the 30D card dropped to 0 under a 7-day selection).
+      completed_at =
+        DateTime.utc_now() |> DateTime.add(-20 * 86_400, :second) |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: completed_at,
+          review_status: :approved,
+          reviewed_at: completed_at,
+          reviewed_by_id: user.id
+        })
+
+      backdate_updated_at(
+        task,
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-20 * 86_400, :second)
+        |> NaiveDateTime.truncate(:second)
+      )
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      # Default :all_time selector already shows the 20-day-old completion in 30D.
+      assert pm_trends_value(html, "throughput-30d") == "1"
+
+      # Narrowing the page selector to 7 days must NOT change the 30D card: the
+      # throughput cards read from a fixed 60-day window, not the selector set.
+      filtered =
+        view |> form("#agents-filter-form", %{"time_range" => "last_7_days"}) |> render_change()
+
+      assert pm_trends_value(filtered, "throughput-30d") == "1"
+    end
   end
 
   describe "dormant agents group" do

@@ -29,6 +29,10 @@ defmodule KanbanWeb.AgentsLive do
   @default_filter :all
   @recent_activity_limit 200
   @event_window_hours 24
+  # Fixed trailing window (days) for the selector-independent throughput cards.
+  # Must cover the widest card comparison: prev_30d counts the trailing 60 days
+  # (2 x 30), so the window has to be at least 60.
+  @throughput_window_days 60
   @refresh_debounce_ms 250
   @presence_topic "agents"
 
@@ -372,10 +376,31 @@ defmodule KanbanWeb.AgentsLive do
         timezone: socket.assigns.timezone
       )
 
+    # The fixed-window throughput cards (Today/7D/30D + prior-period deltas) must
+    # be independent of the page time-range selector, so derive them from a
+    # second board-scoped fetch bounded to @throughput_window_days rather than the
+    # selector-filtered set above. Board scope still applies; the window keeps the
+    # extra fetch bounded (no return to the pre-W1242 unbounded per-render fetch).
+    throughput_tasks =
+      Agents.fetch_tasks(
+        scope: scope,
+        board_id: socket.assigns.board_id,
+        window_days: @throughput_window_days,
+        timezone: socket.assigns.timezone
+      )
+
     agents = Agents.list_agents_from(tasks, socket.assigns.timezone)
     events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
-    metrics = metric_assigns(tasks, agents, socket.assigns.timezone, socket.assigns.time_range)
+    metrics =
+      metric_assigns(
+        tasks,
+        throughput_tasks,
+        agents,
+        socket.assigns.timezone,
+        socket.assigns.time_range
+      )
+
     assigns = socket |> base_assigns(tasks, agents, events) |> Map.merge(metrics)
 
     assign(socket, assigns)
@@ -402,11 +427,16 @@ defmodule KanbanWeb.AgentsLive do
   # The fleet-level aggregate rollups, derived from the single shared task fetch
   # (and the roster built from it), grouped so load_agents_data/1 stays under the
   # complexity budget.
-  defp metric_assigns(tasks, agents, timezone, time_range) do
+  # `throughput_tasks` is the fixed-window, selector-independent set; the
+  # throughput/success cards derive from it so a "30D" card always means 30 days.
+  # Everything else (today header stats, trends-chart span) stays on the
+  # selector-scoped `tasks`. `success_rate` rides the throughput block, so it is
+  # now the fixed-window rate too — intentionally consistent with the cards.
+  defp metric_assigns(tasks, throughput_tasks, agents, timezone, time_range) do
     %{
       stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
-      throughput_and_success: Agents.throughput_and_success_from(tasks, timezone),
+      throughput_and_success: Agents.throughput_and_success_from(throughput_tasks, timezone),
       throughput_trends:
         Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone)
     }
