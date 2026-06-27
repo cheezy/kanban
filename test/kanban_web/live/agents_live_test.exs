@@ -36,6 +36,16 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ "All Boards"
       assert html =~ "All Time"
       assert html =~ board.name
+
+      # W1383: the filters now live in the header (top-right), not in a separate
+      # band below the PM-trends section. Lock the placement by asserting the form
+      # renders inside the header element and ahead of the PM-trends section.
+      assert html =~ "data-agents-header"
+
+      header_pos = :binary.match(html, "data-agents-header") |> elem(0)
+      form_pos = :binary.match(html, ~s(id="agents-filter-form")) |> elem(0)
+      pm_trends_pos = :binary.match(html, "data-agents-pm-trends") |> elem(0)
+      assert header_pos < form_pos and form_pos < pm_trends_pos
     end
 
     test "selecting a board narrows the roster to that board's agents",

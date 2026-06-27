@@ -22,7 +22,6 @@ defmodule KanbanWeb.AgentsLive do
   alias KanbanWeb.AgentActivityFeed
   alias KanbanWeb.AgentDetailPanel
   alias KanbanWeb.AgentRosterCard
-  alias KanbanWeb.AgentsFilterBar
   alias KanbanWeb.AgentsHeader
   alias KanbanWeb.AgentsPresence
 
@@ -174,6 +173,9 @@ defmodule KanbanWeb.AgentsLive do
           stats={@stats}
           fleet_health={@fleet_health}
           event_count_24h={@event_count_24h}
+          boards={@boards}
+          board_id={@board_id}
+          time_range={@time_range}
         />
 
         <div
@@ -203,8 +205,6 @@ defmodule KanbanWeb.AgentsLive do
           throughput_and_success={@throughput_and_success}
           throughput_trends={@throughput_trends}
         />
-
-        <AgentsFilterBar.filter_bar boards={@boards} board_id={@board_id} time_range={@time_range} />
 
         <div class="flex-1 min-h-0 flex flex-col md:flex-row">
           <aside

@@ -391,7 +391,7 @@ msgstr "创建时间"
 msgid "Critical"
 msgstr "紧急"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:370
+#: lib/kanban_web/live/issue_live/form_component.ex:369
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/task_tokens.ex:163
@@ -794,7 +794,7 @@ msgstr "问题的简要描述"
 msgid "Failed to submit issue"
 msgstr "提交问题失败"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:371
+#: lib/kanban_web/live/issue_live/form_component.ex:370
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "功能请求"
@@ -834,7 +834,7 @@ msgstr "提交另一个问题"
 msgid "Submitting..."
 msgstr "正在提交..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:372
+#: lib/kanban_web/live/issue_live/form_component.ex:371
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "翻译"
@@ -2162,7 +2162,7 @@ msgstr "未知代理人"
 msgid "All Agents"
 msgstr "所有代理人"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:68
+#: lib/kanban_web/components/agents_header.ex:440
 #: lib/kanban_web/live/metrics_live/components.ex:222
 #: lib/kanban_web/live/metrics_live/components.ex:396
 #, elixir-autogen, elixir-format
@@ -2304,21 +2304,21 @@ msgstr "按完成日期分组（含前置时间指标）"
 msgid "Human bottleneck analysis"
 msgstr "瓶颈分析"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:62
+#: lib/kanban_web/components/agents_header.ex:434
 #: lib/kanban_web/live/metrics_live/components.ex:217
 #: lib/kanban_web/live/metrics_live/components.ex:390
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "最近30天"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:59
+#: lib/kanban_web/components/agents_header.ex:431
 #: lib/kanban_web/live/metrics_live/components.ex:214
 #: lib/kanban_web/live/metrics_live/components.ex:387
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "最近7天"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:65
+#: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:220
 #: lib/kanban_web/live/metrics_live/components.ex:393
 #, elixir-autogen, elixir-format
@@ -2468,7 +2468,6 @@ msgstr "吞吐量"
 msgid "Throughput Metrics"
 msgstr "吞吐量指标"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:55
 #: lib/kanban_web/live/metrics_live/components.ex:199
 #: lib/kanban_web/live/metrics_live/components.ex:374
 #, elixir-autogen, elixir-format
@@ -2507,7 +2506,7 @@ msgstr "任务完成后等待人工审查的时间"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:389
 #: lib/kanban_web/components/agent_roster_card.ex:194
-#: lib/kanban_web/components/agents_filter_bar.ex:57
+#: lib/kanban_web/components/agents_header.ex:429
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -3505,7 +3504,7 @@ msgstr "访问我们持有的关于您的个人数据。"
 msgid "Account information"
 msgstr "账户信息"
 
-#: lib/kanban_web/components/agents_header.ex:65
+#: lib/kanban_web/components/agents_header.ex:71
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Agent activity"
@@ -4162,7 +4161,7 @@ msgid "Active goals"
 msgstr "活动目标"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/agents_live.ex:162
+#: lib/kanban_web/live/agents_live.ex:165
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "代理"
@@ -4224,7 +4223,7 @@ msgstr "从一个空白看板开始"
 msgid "Stride home"
 msgstr "Stride 首页"
 
-#: lib/kanban_web/live/agents_live.ex:160
+#: lib/kanban_web/live/agents_live.ex:163
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4265,7 +4264,7 @@ msgstr "代理从此列拉取。此处的任务应当被完整描述 — 提供�
 msgid "Archive"
 msgstr "归档"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:45
+#: lib/kanban_web/components/agents_header.ex:414
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
 #: lib/kanban_web/live/task_live/view_component.ex:379
@@ -4856,7 +4855,7 @@ msgid "Human task"
 msgstr "人工任务"
 
 #: lib/kanban_web/components/agent_roster_card.ex:234
-#: lib/kanban_web/components/agents_header.ex:137
+#: lib/kanban_web/components/agents_header.ex:150
 #, elixir-autogen, elixir-format
 msgid "Idle"
 msgstr "空闲"
@@ -4901,7 +4900,7 @@ msgid "Workflow steps"
 msgstr "工作流步骤"
 
 #: lib/kanban_web/components/agent_roster_card.ex:232
-#: lib/kanban_web/components/agents_header.ex:125
+#: lib/kanban_web/components/agents_header.ex:138
 #, elixir-autogen, elixir-format
 msgid "Working"
 msgstr "工作中"
@@ -4912,13 +4911,13 @@ msgid "Yes"
 msgstr "是"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:402
-#: lib/kanban_web/components/agents_header.ex:475
+#: lib/kanban_web/components/agents_header.ex:557
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}小时 %{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:406
-#: lib/kanban_web/components/agents_header.ex:478
+#: lib/kanban_web/components/agents_header.ex:560
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
@@ -4967,40 +4966,40 @@ msgstr "已审阅"
 msgid "unclaimed"
 msgstr "认领:"
 
-#: lib/kanban_web/components/agents_header.ex:98
+#: lib/kanban_web/components/agents_header.ex:110
 #, elixir-autogen, elixir-format
 msgid "Approved today"
 msgstr "今日批准"
 
-#: lib/kanban_web/components/agents_header.ex:86
+#: lib/kanban_web/components/agents_header.ex:98
 #, elixir-autogen, elixir-format
 msgid "Claimed today"
 msgstr "今日已认领"
 
-#: lib/kanban_web/components/agents_header.ex:92
-#: lib/kanban_web/components/agents_header.ex:246
+#: lib/kanban_web/components/agents_header.ex:104
+#: lib/kanban_web/components/agents_header.ex:259
 #, elixir-autogen, elixir-format
 msgid "Completed today"
 msgstr "今日完成"
 
-#: lib/kanban_web/components/agents_header.ex:455
+#: lib/kanban_web/components/agents_header.ex:537
 #, elixir-autogen, elixir-format
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "最近 24 小时 · %{count} 个事件"
 
-#: lib/kanban_web/live/agents_live.ex:467
+#: lib/kanban_web/live/agents_live.ex:496
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} 个已连接"
 
-#: lib/kanban_web/live/agents_live.ex:225
+#: lib/kanban_web/live/agents_live.ex:229
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "暂无代理活动。"
 
-#: lib/kanban_web/live/agents_live.ex:193
+#: lib/kanban_web/live/agents_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "实时"
@@ -7074,13 +7073,13 @@ msgstr "技术细节"
 msgid "Technical Details (JSON object)"
 msgstr "技术细节（JSON 对象）"
 
-#: lib/kanban_web/live/agents_live.ex:301
+#: lib/kanban_web/live/agents_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:318
+#: lib/kanban_web/live/agents_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
@@ -7091,63 +7090,63 @@ msgstr "清除"
 msgid "Operator"
 msgstr "操作员"
 
-#: lib/kanban_web/components/agents_header.ex:169
+#: lib/kanban_web/components/agents_header.ex:182
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr "卡住"
 
-#: lib/kanban_web/components/agents_header.ex:131
+#: lib/kanban_web/components/agents_header.ex:144
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr "等待中"
 
-#: lib/kanban_web/components/agents_header.ex:234
+#: lib/kanban_web/components/agents_header.ex:247
 #, elixir-autogen, elixir-format
 msgid "Delivery trends"
 msgstr "交付趋势"
 
-#: lib/kanban_web/components/agents_header.ex:255
+#: lib/kanban_web/components/agents_header.ex:268
 #, elixir-autogen, elixir-format
 msgid "Completed · 7d"
 msgstr "已完成 · 7天"
 
-#: lib/kanban_web/components/agents_header.ex:262
+#: lib/kanban_web/components/agents_header.ex:275
 #, elixir-autogen, elixir-format
 msgid "Completed · 30d"
 msgstr "已完成 · 30天"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:209
-#: lib/kanban_web/components/agents_header.ex:269
+#: lib/kanban_web/components/agents_header.ex:282
 #, elixir-autogen, elixir-format
 msgid "Success rate"
 msgstr "成功率"
 
-#: lib/kanban_web/components/agents_header.ex:325
+#: lib/kanban_web/components/agents_header.ex:338
 #, elixir-autogen, elixir-format
 msgid "No completed tasks in this window yet."
 msgstr "此时间段内还没有已完成的任务。"
 
-#: lib/kanban_web/components/agents_header.ex:485
+#: lib/kanban_web/components/agents_header.ex:567
 #, elixir-autogen, elixir-format
 msgid "%{pct}%"
 msgstr "%{pct}%"
 
-#: lib/kanban_web/components/agents_header.ex:493
+#: lib/kanban_web/components/agents_header.ex:575
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr "%{date}：完成 %{count} 个"
 
-#: lib/kanban_web/components/agents_header.ex:165
+#: lib/kanban_web/components/agents_header.ex:178
 #, elixir-autogen, elixir-format
 msgid "of which"
 msgstr "其中"
 
-#: lib/kanban_web/live/agents_live.ex:262
+#: lib/kanban_web/live/agents_live.ex:266
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:522
+#: lib/kanban_web/live/agents_live.ex:551
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
@@ -7177,7 +7176,7 @@ msgstr "最近活动"
 msgid "None"
 msgstr "无"
 
-#: lib/kanban_web/components/agents_header.ex:367
+#: lib/kanban_web/components/agents_header.ex:380
 #, elixir-autogen, elixir-format
 msgid "vs the prior period"
 msgstr "与上一周期相比"
@@ -7202,7 +7201,7 @@ msgstr "过去 %{days} 天的每日完成数"
 msgid "No activity yet."
 msgstr "暂无活动。"
 
-#: lib/kanban_web/components/agents_header.ex:104
+#: lib/kanban_web/components/agents_header.ex:116
 #, elixir-autogen, elixir-format
 msgid "Cycle time · today"
 msgstr "周期时间 · 今天"
@@ -7247,6 +7246,7 @@ msgstr "最近 %{count} 天"
 msgid "No completions in the last %{count} days."
 msgstr "最近 %{count} 天没有完成项。"
 
+#: lib/kanban_web/components/agents_header.ex:426
 #: lib/kanban_web/live/metrics_live/workspace.ex:239
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
@@ -7263,7 +7263,7 @@ msgstr "对比前 %{count} 天"
 msgid "last %{count} days"
 msgstr "最近 %{count} 天"
 
-#: lib/kanban_web/components/agents_filter_bar.ex:47
+#: lib/kanban_web/components/agents_header.ex:417
 #, elixir-autogen, elixir-format
 msgid "All Boards"
 msgstr "所有看板"

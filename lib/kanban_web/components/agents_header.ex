@@ -38,6 +38,12 @@ defmodule KanbanWeb.AgentsHeader do
   attr :stats, :map, required: true
   attr :fleet_health, :map, required: true
   attr :event_count_24h, :integer, required: true
+  # Scope filters relocated into the header (W1383) so /agents and /metrics share
+  # the same top-right placement. Defaulted so component tests that only exercise
+  # the stat cards can omit them.
+  attr :boards, :list, default: []
+  attr :board_id, :integer, default: nil
+  attr :time_range, :atom, default: :all_time
 
   def header(assigns) do
     ~H"""
@@ -74,38 +80,45 @@ defmodule KanbanWeb.AgentsHeader do
           </p>
         </div>
 
-        <dl
-          data-agents-header-stats
-          style={[
-            "display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px 18px;",
-            "margin: 0; padding: 0;"
-          ]}
-        >
-          <.kv
-            marker="claimed-today"
-            label={gettext("Claimed today")}
-            value={@stats.claimed_today}
-            tone="var(--st-doing)"
-          />
-          <.kv
-            marker="completed-today"
-            label={gettext("Completed today")}
-            value={@stats.completed_today}
-            tone="var(--st-review)"
-          />
-          <.kv
-            marker="approved-today"
-            label={gettext("Approved today")}
-            value={@stats.approved_today}
-            tone="var(--st-done)"
-          />
-          <.kv
-            marker="cycle-time"
-            label={gettext("Cycle time · today")}
-            value={format_cycle(@stats.avg_cycle_minutes)}
-            tone="var(--ink)"
-          />
-        </dl>
+        <div style={[
+          "display: flex; flex-direction: column; align-items: flex-end;",
+          "gap: 12px; min-width: 0;"
+        ]}>
+          <.scope_filters boards={@boards} board_id={@board_id} time_range={@time_range} />
+
+          <dl
+            data-agents-header-stats
+            style={[
+              "display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px 18px;",
+              "margin: 0; padding: 0;"
+            ]}
+          >
+            <.kv
+              marker="claimed-today"
+              label={gettext("Claimed today")}
+              value={@stats.claimed_today}
+              tone="var(--st-doing)"
+            />
+            <.kv
+              marker="completed-today"
+              label={gettext("Completed today")}
+              value={@stats.completed_today}
+              tone="var(--st-review)"
+            />
+            <.kv
+              marker="approved-today"
+              label={gettext("Approved today")}
+              value={@stats.approved_today}
+              tone="var(--st-done)"
+            />
+            <.kv
+              marker="cycle-time"
+              label={gettext("Cycle time · today")}
+              value={format_cycle(@stats.avg_cycle_minutes)}
+              tone="var(--ink)"
+            />
+          </dl>
+        </div>
       </div>
 
       <dl
@@ -377,6 +390,75 @@ defmodule KanbanWeb.AgentsHeader do
       </div>
     </div>
     """
+  end
+
+  attr :boards, :list, required: true
+  attr :board_id, :integer, default: nil
+  attr :time_range, :atom, required: true
+
+  # The relocated Board + time-range scope filters (W1383), sized and styled to
+  # match the /metrics workspace header selectors (compact, theme-aware, custom
+  # arrow, aria-labelled) so both workspace dashboards present these controls
+  # consistently. Keeps the form id, phx-change event, and field names that
+  # KanbanWeb.AgentsLive.handle_event("filter_change", ...) depends on.
+  defp scope_filters(assigns) do
+    ~H"""
+    <form
+      id="agents-filter-form"
+      phx-change="filter_change"
+      style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0;"
+    >
+      <select
+        id="agents-filter-board"
+        name="board_id"
+        aria-label={gettext("Board")}
+        style={filter_select_style()}
+      >
+        <option value="" selected={is_nil(@board_id)}>{gettext("All Boards")}</option>
+        <option :for={board <- @boards} value={board.id} selected={@board_id == board.id}>
+          {board.name}
+        </option>
+      </select>
+
+      <select
+        id="agents-filter-days"
+        name="time_range"
+        aria-label={gettext("Time range")}
+        style={filter_select_style()}
+      >
+        <option value="today" selected={@time_range == :today}>{gettext("Today")}</option>
+        <option value="last_7_days" selected={@time_range == :last_7_days}>
+          {gettext("Last 7 Days")}
+        </option>
+        <option value="last_30_days" selected={@time_range == :last_30_days}>
+          {gettext("Last 30 Days")}
+        </option>
+        <option value="last_90_days" selected={@time_range == :last_90_days}>
+          {gettext("Last 90 Days")}
+        </option>
+        <option value="all_time" selected={@time_range == :all_time}>
+          {gettext("All Time")}
+        </option>
+      </select>
+    </form>
+    """
+  end
+
+  # Compact select styling mirroring the /metrics workspace `window_selector`
+  # (lib/kanban_web/live/metrics_live/workspace.ex) so the Agents and Metrics
+  # scope filters look identical. Theme-aware tokens only — no hardcoded colors.
+  defp filter_select_style do
+    [
+      "appearance: none; -webkit-appearance: none;",
+      "padding: 4px 26px 4px 10px; border-radius: 5px;",
+      "font: inherit; font-size: 12px; font-weight: 500;",
+      "color: var(--ink-2);",
+      "background: var(--surface); border: 1px solid var(--line);",
+      "background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);",
+      "background-position: calc(100% - 14px) center, calc(100% - 9px) center;",
+      "background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;",
+      "cursor: pointer;"
+    ]
   end
 
   attr :marker, :string, required: true

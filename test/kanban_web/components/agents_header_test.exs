@@ -29,15 +29,26 @@ defmodule KanbanWeb.AgentsHeaderTest do
   defp render(
          stats,
          event_count_24h,
-         fleet_health \\ %{working: 0, waiting: 0, stuck: 0, idle: 0}
+         fleet_health \\ %{working: 0, waiting: 0, stuck: 0, idle: 0},
+         filters \\ %{}
        ) do
-    assigns = %{stats: stats, event_count_24h: event_count_24h, fleet_health: fleet_health}
+    assigns = %{
+      stats: stats,
+      event_count_24h: event_count_24h,
+      fleet_health: fleet_health,
+      boards: Map.get(filters, :boards, []),
+      board_id: Map.get(filters, :board_id, nil),
+      time_range: Map.get(filters, :time_range, :all_time)
+    }
 
     rendered_to_string(~H"""
     <AgentsHeader.header
       stats={@stats}
       fleet_health={@fleet_health}
       event_count_24h={@event_count_24h}
+      boards={@boards}
+      board_id={@board_id}
+      time_range={@time_range}
     />
     """)
   end
@@ -54,6 +65,43 @@ defmodule KanbanWeb.AgentsHeaderTest do
       html = render(stats(), 0)
 
       assert html =~ ~r/<h1[^>]*>\s*Agent activity\s*<\/h1>/
+    end
+  end
+
+  describe "header/1 — scope filters (W1383)" do
+    test "renders the board and time-range filter form inside the header" do
+      html = render(stats(), 0)
+
+      # The relocated filters live in the header now, preserving the form id and
+      # field-name contract AgentsLive.handle_event(\"filter_change\", ...) depends on.
+      assert html =~ ~s(id="agents-filter-form")
+      assert html =~ ~s(phx-change="filter_change")
+      assert html =~ ~s(name="board_id")
+      assert html =~ ~s(name="time_range")
+      assert html =~ "All Boards"
+      assert html =~ "All Time"
+    end
+
+    test "renders an option per board and marks the selected board" do
+      filters = %{boards: [%{id: 1, name: "Alpha"}, %{id: 2, name: "Bravo"}], board_id: 2}
+      html = render(stats(), 0, fleet_health(), filters)
+
+      assert html =~ "Alpha"
+      assert html =~ "Bravo"
+      assert html =~ ~r/<option value="2"[^>]*selected[^>]*>\s*Bravo/
+    end
+
+    test "marks the selected time range" do
+      html = render(stats(), 0, fleet_health(), %{time_range: :last_7_days})
+
+      assert html =~ ~r/<option value="last_7_days"[^>]*selected[^>]*>/
+    end
+
+    test "the filter selects carry an accessible label" do
+      html = render(stats(), 0)
+
+      assert html =~ ~s(aria-label="Board")
+      assert html =~ ~s(aria-label="Time range")
     end
   end
 
