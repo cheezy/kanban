@@ -35,6 +35,21 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "data-metrics-cumulative-flow"
     end
 
+    test "the header and the throughput/leaderboard row are mobile-responsive (W1393)",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      # The header (title + window label + board/time-range selectors) wraps so
+      # the filter controls drop to their own line on a phone instead of
+      # overflowing in one row.
+      assert html =~ "flex flex-wrap items-baseline gap-3 px-3 md:px-7"
+
+      # The throughput chart + agent leaderboard stack vertically on mobile and
+      # sit side by side only at md+ — so neither forces horizontal overflow at
+      # 375px.
+      assert html =~ "flex flex-col md:grid md:grid-cols-[1.4fr_1fr]"
+    end
+
     test "renders the breadcrumbs Workspace > Metrics", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")
       assert html =~ "Workspace"

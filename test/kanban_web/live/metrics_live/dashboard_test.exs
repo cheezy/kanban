@@ -33,6 +33,12 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       assert html =~ "Cycle Time"
       assert html =~ "Lead Time"
       assert html =~ "Wait Time"
+
+      # W1393: the KPI card grid uses auto-fit minmax(220px, 1fr), so it
+      # collapses to a single column at 375px (2x220 > the ~319px content box)
+      # instead of overflowing in a fixed multi-column row.
+      assert html =~ "data-metrics-board-kpi-grid"
+      assert html =~ "repeat(auto-fit, minmax(220px, 1fr))"
     end
 
     test "displays filter controls", %{conn: conn, board: board} do
