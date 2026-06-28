@@ -166,3 +166,71 @@ When adding or changing the layout of a page:
 - `lib/kanban_web/live/review_live.ex` — the mobile-first master-detail pattern
 - `lib/kanban_web/live/agents_live.ex` — the master-detail pattern (Agents view)
 - `lib/kanban_web/components/layouts.ex` — the `#app-shell` sidebar mount point
+- `test/kanban_web/responsive_primitives_test.exs` — the lightweight guard that
+  flags removal of the responsive primitives below
+
+## Completed audit log
+
+The responsive audit (goal **G283** — "Complete mobile and responsive design
+audit across all application pages", tasks **W1384–W1397**) swept every route
+group in `lib/kanban_web/router.ex` against the per-page checklist above. Each
+page group was explored, fixed where needed, and locked in with regression
+tests. Outcome per group:
+
+| Task | Page group (routes) | Outcome |
+|---|---|---|
+| W1384 | This contract document | Established the breakpoint ladder, test widths, checklist, and primitives index |
+| W1385 | Global nav chrome (sidebar drawer + root/marketing top nav, all pages) | Fixed: root top nav (auth pages) collapsed to a `<details>` hamburger below `md` (was overflowing at 375px). Sidebar drawer, marketing nav, footer already compliant |
+| W1386 | Marketing/static (`/`, `/about`, `/product`, `/pricing`, `/security`, `/tango`, `/workflows`, `/changelog`, `/terms`, `/privacy`, `/acceptable-use`) | Fixed: changelog markdown body (long inline `<code>`, wide tables) via `[data-changelog]` CSS. The other 10 pages already responsive |
+| W1387 | Auth LiveViews (`/users/log-in`, `/register`, `/forgot-password`, `/reset-password/:token`, `/confirm/:token`, `/confirmation-pending`, `/settings`) | Fixed: auth + settings form controls raised to a 44px mobile touch target via `[data-auth-frame]` / `[data-settings-panel]`. Overflow, settings stacking, dark mode already compliant |
+| W1388 | Boards index + board form (`/boards`, `/boards/new`, `/boards/:id/edit`) | Fixed: board-form add-user buttons stack and the field-visibility grid collapses on mobile. Index grid/header/card actions already compliant |
+| W1389 | Board view (`/boards/:id`) | Already compliant (snap-scroll columns, indicator, touch-accessible actions, drag-and-drop). Locked in with regression tests |
+| W1390 | Board modals (`/boards/:id/{api_tokens,members,settings,columns/*,tasks/*}`) | Fixed: the column/settings/members modals are now mobile-fullscreen (was ~231px cramped/overflowing). The shared `delayed_modal` container already correct |
+| W1391 | Task form + task detail view | Fixed: key-files form row wraps, and long file paths / verification commands break in the detail view. The aside-stacking `@media` and single-column collapse already compliant |
+| W1392 | Goal detail (`/boards/:id/goals/:goal_id`) | Fixed: sidebar stacks below the hierarchy (`.goal-detail-layout`), child rows collapse to 4 columns below `sm`, and the goal-card progress track uses a theme token |
+| W1393 | Metrics workspace + dashboard landing (`/metrics`, `/boards/:id/metrics`) | Already compliant (KPI grid wraps, filters stack, time-range never hidden). Locked in with regression tests |
+| W1394 | Metrics chart pages (`/boards/:id/metrics/{throughput,cycle-time,lead-time,wait-time,compliance}`) | Fixed: the summary/KPI grids collapse to 2 columns, the trend-chart SVG scrolls (legible labels), and the completed-goals row wraps |
+| W1395 | Agents + review queue (`/agents`, `/review`) | Fixed: the review stats strip collapses to 2 columns and the review header wraps. Master-detail, diff panel, review actions, dark mode already compliant |
+| W1396 | Archive, resources, issue, admin messages (`/boards/:id/archive`, `/resources`, `/resources/:id`, `/issue`, `/admin/messages`) | Fixed: the archive table scrolls within its card (was clipping) and the archive header wraps. Resources/admin already compliant. (Issue-form `<.input>`/`<.button>` conversion tracked separately) |
+| W1397 | Final cross-page regression sweep | This log + the `responsive_primitives_test.exs` guard |
+
+### Verification performed (W1397)
+
+- **Full test suite** — `mix test` passes (no responsive regressions from the
+  earlier tasks; every per-page audit added its own regression assertions).
+- **Rendered-output dark-mode sweep** — `test/kanban_web/dark_mode_regression_test.exs`
+  GETs every public and well-known authenticated route and asserts the rendered
+  HTML in both themes contains no theme-blind patterns.
+- **Token legibility** — `mix dark_mode.scan` (source) and `mix dark_mode.contrast --enforce`
+  (WCAG, both themes) pass in `mix precommit`.
+- **Responsive primitive guard** — `test/kanban_web/responsive_primitives_test.exs`
+  asserts the load-bearing `@media` rules and `[data-*]` anchors above are still
+  present in `assets/css/app.css`.
+
+### Representative-route spot-check (W1397)
+
+A structural spot-check of representative routes was performed against the
+running dev server, confirming each renders and carries its expected responsive
+markup:
+
+| Route | Group | Verified |
+|---|---|---|
+| `/` | Marketing | HTTP 200; `viewport` meta, `md:flex` / `md:hidden` nav collapse, `flex-wrap` |
+| `/users/log-in` | Auth frame | HTTP 200; `data-auth-frame` anchor, `flex-wrap`, `md:flex` |
+| `/boards/:id` | Snap-scroll board | Per-page audit W1389 + `board_live_test.exs` responsive describe block |
+| `/boards/:id/goals/:goal_id` | Goal detail | Per-page audit W1392 + `goal_live/show_test.exs` (`goal-detail-layout`/`-aside`) |
+| `/boards/:id/metrics/cycle-time` | SVG chart | Per-page audit W1394 + `metrics_live/components_test.exs` (trend-chart scroll) |
+
+Authenticated routes are additionally exercised by their own LiveView tests
+(asserting the responsive class strings) and by `dark_mode_regression_test`,
+which GETs the well-known authenticated surface in both themes.
+
+### Final visual sign-off (per Definition of done)
+
+The contract's Definition of done requires that **a human verify both themes
+visually** — automated tests confirm every route *renders* in both themes and
+that the responsive primitives exist, but they cannot measure pixel layout at a
+given viewport. This human pixel-level pass at 375 / 768 / 1280px in both light
+and dark mode is the audit's standing closure step (it can never be fully
+discharged by an automated check); run it against the five routes above to sign
+the audit off visually.
