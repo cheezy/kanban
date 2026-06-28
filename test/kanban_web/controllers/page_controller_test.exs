@@ -129,6 +129,17 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "the changelog body carries the data-changelog anchor for responsive containment",
+       %{conn: conn} do
+    body = conn |> get(~p"/changelog") |> html_response(200)
+
+    # W1386: the markdown-rendered changelog body (long inline <code> tokens,
+    # wide tables) is kept from overflowing a 375px viewport by CSS scoped to
+    # [data-changelog] in app.css (inline code breaks, tables scroll). Guard the
+    # anchor so that containment can't be silently removed.
+    assert body =~ "data-changelog"
+  end
+
   test "the theme bootstrap resolves system preference and never strips data-theme", %{conn: conn} do
     body = conn |> get(~p"/") |> html_response(200)
     # Always resolves to a concrete data-theme so daisyUI AND the Stride

@@ -1116,6 +1116,31 @@
   z-index: 9999;
 }
 
+/* ============================================================
+   Changelog body responsive containment. The changelog page injects
+   markdown-rendered HTML (priv/changelog/body.html) via
+   Phoenix.HTML.raw, so it can contain long inline <code> tokens
+   (file paths, migration names, atom lists like
+   [:backlog, :ready, ...]) and wide tables that would push past a
+   375px phone viewport. Inline code is allowed to break anywhere;
+   tables become horizontally scrollable instead of overflowing the
+   page. The <pre> blocks already carry overflow-x-auto from the
+   renderer, so their code must keep its preformatted wrapping.
+   ============================================================ */
+[data-changelog] code {
+  overflow-wrap: anywhere;
+}
+
+[data-changelog] pre code {
+  overflow-wrap: normal;
+}
+
+[data-changelog] table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
 /* Auth-frame spinner — used by primary_full_button loading state.
    Mirrors `authspin` from `screens/auth.jsx` AuthStyles (line 273-280). */
 @keyframes authspin {
