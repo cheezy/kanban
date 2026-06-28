@@ -1,6 +1,7 @@
 defmodule KanbanWeb.TaskLive.FormComponentTest do
   use KanbanWeb.ConnCase
 
+  import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
@@ -8,6 +9,35 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
   alias Kanban.Tasks
   alias KanbanWeb.TaskLive.FormComponent
+
+  describe "responsive layout (W1391)" do
+    test "key files repeater row wraps so the Remove button drops on mobile" do
+      user = user_fixture()
+      board = board_fixture(user, %{field_visibility: %{"key_files" => true}})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          key_files: [%{file_path: "lib/kanban/tasks.ex", note: "core", position: 0}]
+        })
+
+      html =
+        render_component(FormComponent,
+          id: "edit-#{task.id}",
+          title: "Edit Task",
+          action: :edit_task,
+          board: board,
+          task: task,
+          column_id: nil,
+          current_scope: user_scope_fixture(user),
+          patch: "/boards/#{board.id}"
+        )
+
+      # flex-wrap lets the Remove button drop to its own line at 375px so the
+      # two file/note inputs are not squeezed into a non-wrapping row.
+      assert html =~ "flex flex-wrap gap-2 items-start mb-2"
+    end
+  end
 
   describe "update/2 for new task" do
     test "initializes form with default values" do

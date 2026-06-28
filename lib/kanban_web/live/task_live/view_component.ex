@@ -141,9 +141,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                   :for={kf <- @task.key_files}
                   style="display: flex; flex-direction: column; gap: 1px; padding: 3px 0;"
                 >
-                  <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px;">
-                    <.icon name="hero-document-text" class="w-3 h-3" />
-                    <span>{kf.file_path}</span>
+                  <span style="display: inline-flex; align-items: flex-start; gap: 6px; min-width: 0; color: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px;">
+                    <.icon name="hero-document-text" class="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span style="overflow-wrap: anywhere; min-width: 0;">{kf.file_path}</span>
                   </span>
                   <span
                     :if={kf.note}
@@ -186,11 +186,14 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                   <span style="color: var(--ink-4); font-size: 11.5px; font-family: var(--font-mono);">
                     {idx}.
                   </span>
-                  <div style="display: flex; flex-direction: column; gap: 3px;">
-                    <span style="font-size: 12px; color: var(--ink); font-family: var(--font-mono);">
+                  <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                    <span style="font-size: 12px; color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere;">
                       {step.step_text}
                     </span>
-                    <span :if={step.expected_result} style="font-size: 11px; color: var(--ink-3);">
+                    <span
+                      :if={step.expected_result}
+                      style="font-size: 11px; color: var(--ink-3); overflow-wrap: anywhere;"
+                    >
                       → {step.expected_result}
                     </span>
                   </div>

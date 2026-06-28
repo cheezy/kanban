@@ -813,6 +813,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Main auth module"
       assert result =~ "lib/kanban_web/controllers/auth_controller.ex"
       assert result =~ "OAuth controller"
+
+      # W1391: long monospace file paths must break rather than clip past the
+      # main pane (which has overflow: hidden) on a 375px viewport.
+      assert result =~ "overflow-wrap: anywhere"
     end
 
     test "displays verification steps with command and manual types", %{board: board} do
@@ -852,6 +856,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "All tests pass"
       assert result =~ "Log in with OAuth"
       assert result =~ "User successfully authenticated"
+
+      # W1391: long monospace verification commands must break within the
+      # grid column rather than overflow it at 375px.
+      assert result =~ "overflow-wrap: anywhere"
     end
 
     test "displays implementation guidance section", %{board: board} do

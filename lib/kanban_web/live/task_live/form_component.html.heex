@@ -218,7 +218,7 @@
         </h3>
         <.error :for={msg <- Enum.map(f[:key_files].errors, &translate_error/1)}>{msg}</.error>
         <.inputs_for :let={kf} field={f[:key_files]}>
-          <div class="flex gap-2 items-start mb-2">
+          <div class="flex flex-wrap gap-2 items-start mb-2">
             <div class="flex-1">
               <.input
                 field={kf[:file_path]}
