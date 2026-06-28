@@ -13,6 +13,7 @@ defmodule KanbanWeb.AgentsHeaderTest do
   defp stats(overrides \\ %{}) do
     Map.merge(
       %{
+        created_today: 0,
         claimed_today: 0,
         completed_today: 0,
         approved_today: 0,
@@ -128,20 +129,27 @@ defmodule KanbanWeb.AgentsHeaderTest do
   end
 
   describe "header/1 — KV stat cards" do
-    test "renders the four KV cards in the configured order" do
-      html = render(stats(%{claimed_today: 3, completed_today: 5, approved_today: 2}), 0)
+    test "renders the five KV cards in the configured order" do
+      html =
+        render(
+          stats(%{created_today: 8, claimed_today: 3, completed_today: 5, approved_today: 2}),
+          0
+        )
 
+      assert html =~ ~s(data-agents-header-kv="created-today")
       assert html =~ ~s(data-agents-header-kv="claimed-today")
       assert html =~ ~s(data-agents-header-kv="completed-today")
       assert html =~ ~s(data-agents-header-kv="approved-today")
       assert html =~ ~s(data-agents-header-kv="cycle-time")
 
-      # Order matters — the claimed marker must precede the completed one
+      # Order matters — created is leftmost, immediately before claimed.
+      created_pos = :binary.match(html, "created-today") |> elem(0)
       claimed_pos = :binary.match(html, "claimed-today") |> elem(0)
       completed_pos = :binary.match(html, "completed-today") |> elem(0)
       approved_pos = :binary.match(html, "approved-today") |> elem(0)
       cycle_pos = :binary.match(html, "cycle-time") |> elem(0)
 
+      assert created_pos < claimed_pos
       assert claimed_pos < completed_pos
       assert completed_pos < approved_pos
       assert approved_pos < cycle_pos
@@ -181,6 +189,7 @@ defmodule KanbanWeb.AgentsHeaderTest do
     test "renders the gettext labels with UCASE styling" do
       html = render(stats(), 0)
 
+      assert html =~ "Created today"
       assert html =~ "Claimed today"
       assert html =~ "Completed today"
       assert html =~ "Approved today"

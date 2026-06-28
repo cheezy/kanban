@@ -31,6 +31,8 @@ defmodule Kanban.Agents.Metrics do
 
   The returned map contains:
 
+    * `:created_today` — count of tasks whose `inserted_at` falls on the
+      current local date
     * `:claimed_today` — count of tasks whose `claimed_at` falls on the
       current UTC date
     * `:completed_today` — count of tasks whose `completed_at` falls on
@@ -41,6 +43,7 @@ defmodule Kanban.Agents.Metrics do
       tasks where the value is set, or `0` when no qualifying tasks exist
   """
   @spec header_stats(keyword()) :: %{
+          created_today: non_neg_integer(),
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),
@@ -53,6 +56,7 @@ defmodule Kanban.Agents.Metrics do
   rules as `header_stats/1`; lets the Agents view share one fetch.
   """
   @spec header_stats_from([Kanban.Tasks.Task.t()], String.t()) :: %{
+          created_today: non_neg_integer(),
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),
@@ -62,6 +66,7 @@ defmodule Kanban.Agents.Metrics do
     today = local_today(timezone)
 
     %{
+      created_today: count_on_day(tasks, :inserted_at, today, timezone),
       claimed_today: count_on_day(tasks, :claimed_at, today, timezone),
       completed_today: count_on_day(tasks, :completed_at, today, timezone),
       approved_today: count_approved_on(tasks, today, timezone),
@@ -280,8 +285,17 @@ defmodule Kanban.Agents.Metrics do
   defp count_on_day(tasks, field, date, timezone) do
     Enum.count(tasks, fn task ->
       case Map.get(task, field) do
-        %DateTime{} = dt -> local_date(dt, timezone) == date
-        _ -> false
+        %DateTime{} = dt ->
+          local_date(dt, timezone) == date
+
+        # `inserted_at`/`updated_at` come from bare `timestamps()` and are
+        # naive UTC, unlike the `:utc_datetime` claim/complete/review fields.
+        # Treat them as UTC so the local-day comparison matches the others.
+        %NaiveDateTime{} = ndt ->
+          local_date(DateTime.from_naive!(ndt, "Etc/UTC"), timezone) == date
+
+        _ ->
+          false
       end
     end)
   end

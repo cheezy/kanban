@@ -108,6 +108,7 @@ defmodule Kanban.Agents do
   returned map shape.
   """
   @spec header_stats(keyword()) :: %{
+          created_today: non_neg_integer(),
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),
@@ -124,6 +125,7 @@ defmodule Kanban.Agents do
   with a UTC fallback for an unknown zone).
   """
   @spec header_stats_from([Task.t()], String.t()) :: %{
+          created_today: non_neg_integer(),
           claimed_today: non_neg_integer(),
           completed_today: non_neg_integer(),
           approved_today: non_neg_integer(),

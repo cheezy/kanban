@@ -3,8 +3,9 @@ defmodule KanbanWeb.AgentsHeader do
   Header band that sits above the two-column body of the Agents view.
 
   Renders an H1 title, a subtitle with a pluralized 24-hour event count,
-  and four right-aligned KV cards (Claimed today, Completed today,
-  Approved today, Cycle time · today). Stat tones reuse the task-status
+  and five right-aligned KV cards (Created today, Claimed today,
+  Completed today, Approved today, Cycle time · today). Stat tones reuse
+  the task-status
   palette: doing for claims, doing for completions of work in flight,
   review for completed-today, done for approved, and a neutral ink for
   the cycle-time card.
@@ -27,8 +28,9 @@ defmodule KanbanWeb.AgentsHeader do
 
   ## Attrs
 
-    * `stats` — map with `:claimed_today`, `:completed_today`,
-      `:approved_today`, and `:avg_cycle_minutes` keys. Required.
+    * `stats` — map with `:created_today`, `:claimed_today`,
+      `:completed_today`, `:approved_today`, and `:avg_cycle_minutes` keys.
+      Required.
     * `fleet_health` — map with `:working`, `:waiting`, `:stuck`, and
       `:idle` counts (the shape returned by `Kanban.Agents.fleet_health/1`).
       Required.
@@ -93,6 +95,12 @@ defmodule KanbanWeb.AgentsHeader do
               "margin: 0; padding: 0;"
             ]}
           >
+            <.kv
+              marker="created-today"
+              label={gettext("Created today")}
+              value={@stats.created_today}
+              tone="var(--ink)"
+            />
             <.kv
               marker="claimed-today"
               label={gettext("Claimed today")}

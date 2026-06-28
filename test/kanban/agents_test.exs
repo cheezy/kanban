@@ -535,6 +535,7 @@ defmodule Kanban.AgentsTest do
   describe "header_stats/1" do
     test "returns zeros when no tasks exist" do
       assert Agents.header_stats() == %{
+               created_today: 0,
                claimed_today: 0,
                completed_today: 0,
                approved_today: 0,
@@ -692,6 +693,7 @@ defmodule Kanban.AgentsTest do
         })
 
       assert Agents.header_stats(scope: Scope.for_user(user)) == %{
+               created_today: 1,
                claimed_today: 1,
                completed_today: 1,
                approved_today: 1,
@@ -699,11 +701,43 @@ defmodule Kanban.AgentsTest do
              }
 
       assert Agents.header_stats(scope: Scope.for_user(user_fixture())) == %{
+               created_today: 0,
                claimed_today: 0,
                completed_today: 0,
                approved_today: 0,
                avg_cycle_minutes: 0.0
              }
+    end
+
+    test "counts created_today against the local today, excluding tasks created earlier",
+         %{column: column} do
+      # A freshly inserted fixture is created "today"; another is backdated.
+      _today_task = task_fixture(column)
+      old_task = task_fixture(column)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^old_task.id)
+      |> Repo.update_all(set: [inserted_at: ~N[2020-01-01 00:00:00]])
+
+      assert Agents.header_stats().created_today == 1
+    end
+
+    test "created_today counts a task created late on the local day even when its UTC instant is the next UTC day",
+         %{column: column} do
+      tz = "America/New_York"
+      {:ok, local_now} = DateTime.now(tz)
+      local_today = DateTime.to_date(local_now)
+      # 23:30 local today in a west zone lands on the NEXT UTC day; inserted_at is
+      # naive UTC, so the local-date comparison must still place it on today.
+      {:ok, local_dt} = DateTime.new(local_today, ~T[23:30:00], tz)
+      naive_utc = local_dt |> DateTime.shift_zone!("Etc/UTC") |> DateTime.to_naive()
+
+      task = task_fixture(column)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Repo.update_all(set: [inserted_at: naive_utc])
+
+      task = Repo.get!(Kanban.Tasks.Task, task.id)
+      assert Agents.header_stats_from([task], tz).created_today == 1
     end
   end
 
