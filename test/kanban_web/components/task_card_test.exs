@@ -563,4 +563,46 @@ defmodule KanbanWeb.TaskCardTest do
       refute html =~ ~s(phx-click="open_goal")
     end
   end
+
+  # W1389: the card must fill its column rather than impose a fixed width, and
+  # must not clip its content — long titles wrap via the inner flex min-width:0
+  # and tooltips escape because the card overflow is visible. These guard the
+  # "no horizontal overflow" / mobile-card responsive criteria.
+  describe "task_card/1 — responsive (W1389)" do
+    test "the card article is a flex column that flows to its container, not clipped" do
+      assigns = %{task: task()}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      # overflow: visible lets tooltip bubbles escape the card (pairs with the
+      # #columns overflow-y: visible rule) and prevents content clipping.
+      assert html =~ "overflow: visible"
+      # The card is a flex column with no width declaration, so it fills the
+      # column it sits in rather than imposing a fixed width that would overflow
+      # a phone-width column.
+      assert html =~ "display: flex"
+      assert html =~ "flex-direction: column"
+    end
+
+    test "long titles wrap within the card instead of forcing it wide" do
+      long_title =
+        "An extremely long task title that would overflow a narrow phone-width column if it were not allowed to wrap"
+
+      assigns = %{task: task(%{title: long_title})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      # The long title renders in full...
+      assert html =~ long_title
+      # ...inside a flex:1 / min-width:0 container, which is what lets it wrap
+      # within the card rather than pushing the layout wider than the column.
+      assert html =~ "flex: 1; min-width: 0"
+    end
+  end
 end

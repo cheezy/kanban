@@ -2629,6 +2629,80 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     admin
   end
 
+  # W1389: regression guards for the board's responsive layout. These lock in
+  # the mobile snap-scroll column pattern, the snap-indicator strip, and the
+  # touch-accessible (not hover-only) task action overlay so a future change to
+  # the layout classes can't silently break phone/tablet usability.
+  describe "responsive layout (W1389)" do
+    setup [:register_and_log_in_user]
+
+    test "columns scroll container uses the mobile snap pattern, disabled at md",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # One-per-screen snap on mobile, normal flex row on desktop.
+      assert html =~ "snap-x"
+      assert html =~ "snap-mandatory"
+      assert html =~ "md:snap-none"
+    end
+
+    test "each column snaps and is viewport-wide on mobile, fluid at md",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # snap-start makes each column a snap target; the calc width shows exactly
+      # one column at a time below md, then md:flex-1 shares the row on desktop.
+      assert html =~ "snap-start"
+      assert html =~ "w-[calc(100vw-2rem)]"
+      assert html =~ "md:flex-1"
+    end
+
+    test "renders the mobile-only snap indicator strip", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      assert html =~ ~s(id="snap-indicator")
+      # Dots are hidden on desktop, shown on mobile, and driven by the JS hook.
+      assert html =~ "md:hidden"
+      assert html =~ ~s(phx-hook="SnapIndicator")
+      assert html =~ "data-indicator-dot"
+    end
+
+    test "task action overlay is always visible on touch, hover-gated only at md",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _task = task_fixture(column)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # opacity-100 (no prefix) keeps the actions visible on phones/tablets; the
+      # hover-reveal only kicks in at md+. This is the criterion-3 guarantee.
+      assert html =~ "task-actions"
+      assert html =~ "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+    end
+
+    test "task action buttons are 44px touch targets on mobile, compact at md",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _task = task_fixture(column)
+
+      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # min-h-11 min-w-11 = 44x44px tap target below md, shrinking at md+.
+      assert html =~ "min-h-11 min-w-11 md:min-h-0 md:min-w-0"
+    end
+  end
+
   defp message_fixture(sender, attrs) do
     Kanban.MessagesFixtures.message_fixture(sender, attrs)
   end
