@@ -1315,3 +1315,48 @@
     border-top: 1px solid var(--line);
   }
 }
+
+/* ============================================================
+   Goal detail (per-goal show screen) responsive layout. Mirrors
+   the task-detail rule above: the desktop layout is a two-column
+   flex row with a fixed-width 280px sidebar on the right (see
+   lib/kanban_web/live/goal_live/show.ex and components/
+   goal_sidebar.ex). Below 1024px the inline width: 280px sidebar
+   steals nearly the whole viewport (it squeezes the hierarchy
+   column to ~95px at 375px), so this rule wraps the row and
+   stacks the sidebar full-width below the hierarchy. The
+   !important overrides beat the inline width/flex-shrink/border
+   declarations on the aside.
+   ============================================================ */
+@media (max-width: 1023px) {
+  .stride-screen .goal-detail-layout {
+    flex-wrap: wrap;
+  }
+  .stride-screen .goal-detail-aside {
+    width: 100% !important;
+    flex-shrink: 1 !important;
+    border-left: none !important;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* ============================================================
+   Goal child-row mobile grid. The desktop row is a 6-column grid
+   (22px 56px 1fr 120px 100px 18px) whose fixed columns + gaps +
+   padding need ~394px — wider than a 375px phone's content box,
+   so the fixed columns overflow. Below the sm breakpoint (640px)
+   the identifier and owner columns are hidden and the grid drops
+   to four columns (priority · title · status · chevron), keeping
+   the row within the viewport. The full row returns at sm+ where
+   the hierarchy column is wide enough to hold it.
+   ============================================================ */
+@media (max-width: 639px) {
+  .stride-screen [data-goal-child-row] {
+    grid-template-columns: 22px 1fr auto 18px !important;
+    column-gap: 8px !important;
+  }
+  .stride-screen [data-goal-child-row] [data-child-col="identifier"],
+  .stride-screen [data-goal-child-row] [data-child-col="owner"] {
+    display: none !important;
+  }
+}

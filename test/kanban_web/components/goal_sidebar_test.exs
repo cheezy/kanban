@@ -43,7 +43,11 @@ defmodule KanbanWeb.GoalSidebarTest do
         """)
 
       assert html =~ "data-goal-sidebar"
-      assert html =~ ~s(class="stride-screen")
+      # Scoped under .stride-screen for token resolution; also carries the
+      # goal-detail-aside class that the app.css <1024px rule targets to stack
+      # the sidebar full-width below the hierarchy on mobile (W1392).
+      assert html =~ "stride-screen"
+      assert html =~ "goal-detail-aside"
     end
 
     test "renders the velocity sub-block with data-goal-velocity marker" do

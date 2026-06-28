@@ -38,6 +38,12 @@ defmodule KanbanWeb.GoalChildRowTest do
       assert html =~ "Ready"
       assert html =~ "Jamie K"
       assert html =~ "hero-chevron-right"
+
+      # W1392: the identifier and owner cells carry data-child-col markers so the
+      # app.css <640px rule can hide them (and drop the grid to 4 columns) to
+      # keep the row within a 375px phone viewport.
+      assert html =~ ~s(data-child-col="identifier")
+      assert html =~ ~s(data-child-col="owner")
     end
   end
 

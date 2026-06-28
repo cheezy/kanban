@@ -140,6 +140,11 @@ defmodule KanbanWeb.GoalCardTest do
       assert html =~ ~r/>\s*6\/10\s*</
       assert html =~ "60%"
       assert html =~ "children complete"
+
+      # W1392: the progress track uses the theme-aware --surface-sunken token
+      # (not a hardcoded rgba(0,0,0,0.2) that was nearly invisible in dark mode).
+      assert html =~ "background: var(--surface-sunken)"
+      refute html =~ "rgba(0, 0, 0, 0.2)"
     end
 
     test "renders all four segment colors when each bucket has tasks" do

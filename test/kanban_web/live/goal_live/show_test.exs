@@ -38,6 +38,12 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       assert html =~ goal.identifier
       assert html =~ "Migrate the detail surface"
       assert html =~ board.name
+
+      # W1392: the main/sidebar split carries the goal-detail-layout class that
+      # the app.css <1024px rule wraps so the sidebar stacks below the hierarchy
+      # on mobile instead of squeezing it into horizontal overflow.
+      assert html =~ "goal-detail-layout"
+      assert html =~ "goal-detail-aside"
     end
 
     test "groups children by status with a section per status that has any children",

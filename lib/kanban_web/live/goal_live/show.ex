@@ -126,11 +126,11 @@ defmodule KanbanWeb.GoalLive.Show do
           contributors={@contributors}
         />
 
-        <div style="display: flex; align-items: stretch; min-height: 0;">
+        <div class="goal-detail-layout" style="display: flex; align-items: stretch; min-height: 0;">
           <section
             data-goal-hierarchy
             style={[
-              "flex: 1; padding: 14px 24px; overflow-y: auto;",
+              "flex: 1; min-width: 0; padding: 14px 24px; overflow-y: auto;",
               "background: var(--surface);"
             ]}
           >

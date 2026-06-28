@@ -39,7 +39,7 @@ defmodule KanbanWeb.GoalSidebar do
     ~H"""
     <aside
       data-goal-sidebar
-      class="stride-screen"
+      class="stride-screen goal-detail-aside"
       style={[
         "width: 280px; flex-shrink: 0;",
         "border-left: 1px solid var(--line);",

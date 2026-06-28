@@ -198,7 +198,7 @@ defmodule KanbanWeb.GoalCard do
       </div>
       <div style={[
         "height: 4px; border-radius: 2px;",
-        "background: rgba(0, 0, 0, 0.2); overflow: hidden;",
+        "background: var(--surface-sunken); overflow: hidden;",
         "display: flex;"
       ]}>
         <span

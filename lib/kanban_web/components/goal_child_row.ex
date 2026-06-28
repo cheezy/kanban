@@ -45,7 +45,11 @@ defmodule KanbanWeb.GoalChildRow do
     >
       <.priority_dot priority={@priority} />
 
-      <span class="ident" style="font-size: 11px; color: var(--ink-2);">
+      <span
+        data-child-col="identifier"
+        class="ident"
+        style="font-size: 11px; color: var(--ink-2);"
+      >
         {@identifier}
       </span>
 
@@ -73,7 +77,11 @@ defmodule KanbanWeb.GoalChildRow do
 
   defp owner_cell(%{owner: nil} = assigns) do
     ~H"""
-    <span class="ident" style="font-size: 11px; color: var(--ink-3); font-style: italic;">
+    <span
+      data-child-col="owner"
+      class="ident"
+      style="font-size: 11px; color: var(--ink-3); font-style: italic;"
+    >
       {gettext("unassigned")}
     </span>
     """
@@ -87,7 +95,10 @@ defmodule KanbanWeb.GoalChildRow do
       |> assign(:owner_palette, owner_palette(assigns.owner))
 
     ~H"""
-    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;">
+    <span
+      data-child-col="owner"
+      style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;"
+    >
       <Avatar.avatar
         kind={@owner_kind}
         name={@owner_label}
