@@ -9,7 +9,7 @@ defmodule KanbanWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+      <div data-settings-panel class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
         <header style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
           <div style="flex: 1; min-width: 0;">
             <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);">

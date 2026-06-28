@@ -24,6 +24,14 @@ defmodule KanbanWeb.UserLive.LoginTest do
       assert html =~ "Stride"
       refute html =~ "data-stride-auth-frame"
       refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
+
+      # W1387: the auth form column carries the data-auth-frame anchor that the
+      # app.css mobile rule targets to raise inputs/buttons to a 44px touch
+      # target below md. Guard it so the touch-target containment isn't lost.
+      # (The render test can only assert the anchor; the actual 44px computed
+      # height is verified manually at 375px, as LiveView tests have no layout
+      # engine.)
+      assert html =~ "data-auth-frame"
     end
 
     test "no blue Tailwind classes inside the login surface", %{conn: conn} do

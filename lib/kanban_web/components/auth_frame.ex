@@ -42,7 +42,10 @@ defmodule KanbanWeb.AuthFrame do
       class="stride-screen"
       style="min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 32px 20px;"
     >
-      <div style="width: 100%; max-width: 440px; display: flex; flex-direction: column;">
+      <div
+        data-auth-frame
+        style="width: 100%; max-width: 440px; display: flex; flex-direction: column;"
+      >
         <%!-- Wordmark + cross-state link. flex-wrap + space-between keeps them on
               one row on desktop and lets the cross-state link drop to its own
               line on narrow phones instead of overflowing. --%>
@@ -81,11 +84,12 @@ defmodule KanbanWeb.AuthFrame do
   @doc """
   Inverted "ink" primary button.
 
-  Renders a 40-tall button filled with `var(--ink)` (so it is dark in light
-  mode and light in dark mode) and labelled with `var(--surface)` so the text
-  stays legible in both themes. Supports an optional leading spinner and a
-  trailing keyboard-shortcut chip. The button
-  has no `type` attribute by default — pass `type="submit"` (or omit
+  Renders a 40-tall button (raised to a 44px minimum touch target below the
+  `md` breakpoint via the `[data-auth-frame]` rule in `app.css`) filled with
+  `var(--ink)` (so it is dark in light mode and light in dark mode) and
+  labelled with `var(--surface)` so the text stays legible in both themes.
+  Supports an optional leading spinner and a trailing keyboard-shortcut chip.
+  The button has no `type` attribute by default — pass `type="submit"` (or omit
   inside a `<.form>`) for form-submit behaviour. Pass `phx-disable-with`
   and other LiveView attributes via the global `:rest`.
 

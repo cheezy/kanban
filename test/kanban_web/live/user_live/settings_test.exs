@@ -32,6 +32,11 @@ defmodule KanbanWeb.UserLive.SettingsTest do
 
       assert html =~ "Settings"
       assert html =~ "Manage your account profile and password"
+
+      # W1387: the settings panel carries the data-settings-panel anchor that the
+      # app.css mobile rule targets to raise inputs/buttons (form fields, the tab
+      # nav, submit buttons) to a 44px touch target below md. Guard the anchor.
+      assert html =~ "data-settings-panel"
     end
 
     test "renders the profile section on mount and the password section after selecting its tab",
