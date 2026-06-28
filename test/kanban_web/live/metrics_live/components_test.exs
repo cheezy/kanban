@@ -653,6 +653,11 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "Median"
       assert html =~ "Min"
       assert html =~ "Max"
+
+      # W1394: the four stat cells collapse to a 2-column grid on mobile (each
+      # cell ~26px wide at 4-up on a 375px phone clipped its label/value), then
+      # widen to four columns at md+, mirroring MetricsKpiStrip.
+      assert html =~ "grid grid-cols-2 md:grid-cols-4 gap-3"
     end
 
     test "formats values using provided format function" do
@@ -795,6 +800,12 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "Average cycle time by day"
       assert html =~ "<svg"
       assert html =~ "viewBox=\"0 0 800 400\""
+
+      # W1394: the 800-wide chart is pinned to a 640px min-width inside an
+      # overflow-x:auto wrapper, so on a 375px phone it scrolls horizontally and
+      # the axis labels stay legible instead of being scaled down to ~4px.
+      assert html =~ "overflow-x: auto"
+      assert html =~ "min-width: 640px"
     end
 
     test "renders empty state when no data" do

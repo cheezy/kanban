@@ -33,6 +33,12 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
       assert html =~ "Avg Per Day"
       assert html =~ "Peak Day"
       assert html =~ "Peak Count"
+
+      # W1394: the four summary cells collapse to a 2-column grid on mobile
+      # (4-up crushed each cell to ~35px at 375px, clipping the Peak Day date)
+      # and widen to four columns at md+.
+      assert html =~ "data-metrics-throughput-summary"
+      assert html =~ "grid grid-cols-2 md:grid-cols-4 gap-3"
     end
 
     test "displays filter controls", %{conn: conn, board: board} do

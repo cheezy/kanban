@@ -58,9 +58,7 @@
 
       <div
         data-metrics-throughput-summary
-        style={[
-          "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;"
-        ]}
+        class="grid grid-cols-2 md:grid-cols-4 gap-3"
       >
         <div
           data-metrics-throughput-cell="total-tasks"
@@ -265,7 +263,7 @@
               "border-left: 2px solid var(--ink-3); border-radius: 4px;"
             ]}
           >
-            <div style="display: flex; align-items: center; gap: 10px; font-size: 11.5px;">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 11.5px;">
               <span style={[
                 "display: inline-flex; padding: 1px 7px; border-radius: 4px;",
                 "background: var(--st-done-soft); color: var(--st-done);",
@@ -274,16 +272,21 @@
                 {goal.identifier}
               </span>
               <span style={[
-                "font-weight: 600; color: var(--ink); flex: 1; min-width: 0;",
+                "font-weight: 600; color: var(--ink); flex: 1; min-width: 120px;",
                 "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
               ]}>
                 {goal.title}
               </span>
-              <span style="color: var(--ink-3); white-space: nowrap;">
-                {gettext("Completed:")} {format_date(goal.completed_at)}
-              </span>
-              <span style="color: var(--ink-4); white-space: nowrap;">
-                {gettext("Created:")} {format_date(goal.inserted_at)}
+              <%!-- W1394: the two date spans group together and wrap to their own
+                   line on a phone instead of forcing the row into horizontal
+                   overflow. --%>
+              <span style="display: inline-flex; flex-wrap: wrap; gap: 4px 10px;">
+                <span style="color: var(--ink-3); white-space: nowrap;">
+                  {gettext("Completed:")} {format_date(goal.completed_at)}
+                </span>
+                <span style="color: var(--ink-4); white-space: nowrap;">
+                  {gettext("Created:")} {format_date(goal.inserted_at)}
+                </span>
               </span>
             </div>
           </div>

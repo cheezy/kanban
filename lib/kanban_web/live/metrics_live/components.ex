@@ -461,10 +461,11 @@ defmodule KanbanWeb.MetricsLive.Components do
 
   def summary_stats(assigns) do
     ~H"""
-    <div style={[
-      "margin-top: 18px;",
-      "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;"
-    ]}>
+    <div
+      data-summary-stats
+      class="grid grid-cols-2 md:grid-cols-4 gap-3"
+      style="margin-top: 18px;"
+    >
       <.summary_stat_cell
         marker="average"
         label={gettext("Average")}
@@ -567,10 +568,15 @@ defmodule KanbanWeb.MetricsLive.Components do
         </span>
       </header>
 
-      <div :if={length(@daily_times) > 0} style="position: relative;">
+      <div :if={length(@daily_times) > 0} style="position: relative; overflow-x: auto;">
+        <%!-- W1394: the 800x400 viewBox scales font-size:11 axis labels down to
+             ~4px on a 375px phone. Pin a min-width so the chart scrolls
+             horizontally (per docs/responsive-audit.md) and the labels stay
+             legible, rather than squashing illegibly. The min-width is inert on
+             desktop where the container is already wider. --%>
         <svg
           viewBox="0 0 800 400"
-          style="width: 100%; height: auto;"
+          style="width: 100%; min-width: 640px; height: auto; display: block;"
           xmlns="http://www.w3.org/2000/svg"
         >
           <%= for i <- 0..4 do %>
