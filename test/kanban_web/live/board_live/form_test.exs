@@ -99,6 +99,10 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert html =~ "Pitfalls"
       assert html =~ "Out of Scope"
       assert html =~ "Required Agent Capabilities"
+
+      # W1388: the field-visibility checkbox grid collapses to a single column
+      # on mobile (so long labels are readable at 375px) and widens at sm/md.
+      assert html =~ "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
     end
 
     test "toggles field visibility", %{conn: conn, board: board, user: user} do
@@ -128,9 +132,15 @@ defmodule KanbanWeb.BoardLive.FormTest do
       |> form("form[phx-submit='search_user']", %{email: other_user.email})
       |> render_submit()
 
-      assert render(lv) =~ other_user.email
-      assert render(lv) =~ "Add as Read Only"
-      assert render(lv) =~ "Add with Edit Access"
+      html = render(lv)
+      assert html =~ other_user.email
+      assert html =~ "Add as Read Only"
+      assert html =~ "Add with Edit Access"
+
+      # W1388: the two long-labelled add-user buttons must stack on mobile so
+      # they don't overflow a 375px viewport (flex-col), shifting to a row at
+      # sm and up.
+      assert html =~ "flex flex-col sm:flex-row gap-2"
     end
 
     test "shows error when user not found", %{conn: conn, board: board} do
