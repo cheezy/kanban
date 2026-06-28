@@ -188,6 +188,41 @@ defmodule KanbanWeb.LayoutsTest do
     end
   end
 
+  describe "app/1 — mobile drawer backdrop" do
+    test "renders the backdrop element for backdrop-close when signed in" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), flash: %{}}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.app current_scope={@current_scope} flash={@flash}>
+          <span>content</span>
+        </Layouts.app>
+        """)
+
+      # The backdrop the JS Sidebar hook reveals when the drawer is open; a
+      # click on it closes the drawer.
+      assert html =~ "data-sidebar-backdrop"
+      # Hidden by default (and on desktop) and a dim overlay when shown.
+      assert html =~ "bg-black/40"
+      assert html =~ ~s(aria-hidden="true")
+    end
+
+    test "omits the sidebar and backdrop when signed out" do
+      assigns = %{current_scope: nil, flash: %{}}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.app current_scope={@current_scope} flash={@flash}>
+          <span>content</span>
+        </Layouts.app>
+        """)
+
+      refute html =~ "data-sidebar-backdrop"
+      refute html =~ ~s(id="app-sidebar")
+    end
+  end
+
   describe "win_top/1 — sidebar toggle" do
     test "renders the hamburger toggle when show_sidebar_toggle is true" do
       assigns = %{show_sidebar_toggle: true}

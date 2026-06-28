@@ -4,6 +4,7 @@ defmodule KanbanWeb.NavComponents do
   use Gettext, backend: KanbanWeb.Gettext
 
   import Phoenix.Controller, only: [get_csrf_token: 0]
+  import KanbanWeb.CoreComponents, only: [icon: 1]
 
   attr :brand_text, :string, required: true
 
@@ -75,6 +76,86 @@ defmodule KanbanWeb.NavComponents do
       href={@href}
       class="text-sm font-medium text-primary-content hover:opacity-90 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all"
       style="background: var(--stride-orange);"
+    >
+      {render_slot(@inner_block)}
+    </.link>
+    """
+  end
+
+  attr :current_scope, :map,
+    default: nil,
+    doc: "The `@current_scope` assign — `nil` when no user is signed in."
+
+  @doc """
+  Renders the collapsed mobile navigation menu for the public/root top nav.
+
+  Below the `md` breakpoint the full set of top-nav links does not fit on a
+  phone-width row, so they are collapsed behind a hamburger toggle. Uses a
+  native `<details>`/`<summary>` disclosure (no JS hook required, so it works on
+  dead controller pages too) — mirroring the `marketing_nav` mobile menu. The
+  toggle is `md:hidden`; at `md` and up the desktop links render instead and
+  this is hidden. Links match the desktop nav and switch on auth state.
+  """
+  def mobile_menu(assigns) do
+    ~H"""
+    <details class="md:hidden relative group">
+      <summary
+        class="list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden inline-flex items-center justify-center w-11 h-11 rounded-lg cursor-pointer text-base-content opacity-80 hover:text-[var(--stride-orange)] hover:opacity-100 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        aria-label={gettext("Toggle menu")}
+        aria-controls="root-mobile-menu"
+        aria-expanded="false"
+      >
+        <.icon name="hero-bars-3" class="w-6 h-6 group-open:hidden" />
+        <.icon name="hero-x-mark" class="w-6 h-6 hidden group-open:block" />
+      </summary>
+      <div
+        id="root-mobile-menu"
+        class="absolute right-0 top-full mt-2 w-56 bg-base-100 border border-base-300 rounded-xl shadow-lg py-2 z-50"
+      >
+        <%= if @current_scope do %>
+          <span class="block px-4 py-2 text-sm font-medium text-base-content opacity-80 truncate">
+            {@current_scope.user.email}
+          </span>
+          <hr class="my-1 border-base-300" />
+          <%= if @current_scope.user.type == :admin do %>
+            <.mobile_menu_link href={~p"/admin/dashboard"}>
+              {gettext("Dashboard")}
+            </.mobile_menu_link>
+            <.mobile_menu_link href={~p"/admin/errors"}>
+              {gettext("Error Tracker")}
+            </.mobile_menu_link>
+          <% end %>
+          <.mobile_menu_link href={~p"/boards"}>{gettext("My Boards")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/users/settings"}>{gettext("Settings")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/resources"}>{gettext("Resources")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/about"}>{gettext("About")}</.mobile_menu_link>
+          <hr class="my-1 border-base-300" />
+          <.mobile_menu_link href={~p"/users/log-out"} method="delete">
+            {gettext("Log out")}
+          </.mobile_menu_link>
+        <% else %>
+          <.mobile_menu_link href={~p"/resources"}>{gettext("Resources")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/about"}>{gettext("About")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/users/log-in"}>{gettext("Log in")}</.mobile_menu_link>
+          <.mobile_menu_link href={~p"/users/register"}>
+            {gettext("Get Started")}
+          </.mobile_menu_link>
+        <% end %>
+      </div>
+    </details>
+    """
+  end
+
+  attr :href, :string, required: true
+  attr :method, :string, default: "get"
+  slot :inner_block, required: true
+
+  defp mobile_menu_link(assigns) do
+    ~H"""
+    <.link
+      href={@href}
+      method={@method}
+      class="flex items-center min-h-11 px-4 text-sm font-medium text-base-content opacity-80 hover:text-[var(--stride-orange)] hover:opacity-100 hover:bg-base-200 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
     >
       {render_slot(@inner_block)}
     </.link>
