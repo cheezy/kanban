@@ -46,8 +46,8 @@ defmodule KanbanWeb.ReviewStatsStrip do
     ~H"""
     <dl
       data-review-stats-strip
+      class="grid grid-cols-2 sm:grid-cols-4"
       style={[
-        "display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));",
         "margin: 0; padding: 0;",
         "background: var(--surface);",
         "border-top: 1px solid var(--line);",
@@ -106,6 +106,7 @@ defmodule KanbanWeb.ReviewStatsStrip do
       data-review-stats-cell={@marker}
       style={[
         "padding: 12px 18px;",
+        "min-width: 0; overflow: hidden;",
         if(@border_right, do: "border-right: 1px solid var(--line);", else: "")
       ]}
     >

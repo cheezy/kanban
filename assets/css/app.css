@@ -1341,6 +1341,19 @@
 }
 
 /* ============================================================
+   W1395: review stats strip — at the 2-column mobile layout (<640px)
+   the strip's per-cell border-right (set inline for the 4-up desktop
+   dividers) leaves a stray vertical rule on the right edge of each
+   row. Drop the right-column divider below sm; the full 4-up divider
+   set returns at sm+ where all four cells sit on one row.
+   ============================================================ */
+@media (max-width: 639px) {
+  [data-review-stats-strip] [data-review-stats-cell]:nth-child(2n) {
+    border-right: none !important;
+  }
+}
+
+/* ============================================================
    Goal child-row mobile grid. The desktop row is a 6-column grid
    (22px 56px 1fr 120px 100px 18px) whose fixed columns + gaps +
    padding need ~394px — wider than a 375px phone's content box,

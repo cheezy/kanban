@@ -80,6 +80,10 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "Wire the thing"
       assert html =~ "data-review-detail-header"
       assert html =~ "W777"
+
+      # W1395: the page header wraps so the nowrap "Avg time to review" stat
+      # drops below the title instead of overflowing the row at 375px.
+      assert html =~ "display: flex; flex-wrap: wrap; align-items: flex-start"
     end
 
     test "empty queue renders the inbox-zero empty state and no detail panel",

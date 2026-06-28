@@ -126,7 +126,7 @@ defmodule KanbanWeb.ReviewLive do
         <header
           data-review-header
           style={[
-            "display: flex; align-items: flex-start; gap: 16px;",
+            "display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px;",
             "padding: 16px 24px;",
             "border-bottom: 1px solid var(--line);",
             "background: var(--surface);"

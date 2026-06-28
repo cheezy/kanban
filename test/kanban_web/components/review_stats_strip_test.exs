@@ -110,9 +110,14 @@ defmodule KanbanWeb.ReviewStatsStripTest do
       assert html =~ "border-right: 1px solid var(--line)"
     end
 
-    test "renders inside a <dl> grid with four columns" do
+    test "renders inside a <dl> grid that collapses to two columns on mobile" do
       html = render_with([])
-      assert html =~ "grid-template-columns: repeat(4, minmax(0, 1fr))"
+
+      # W1395: four equal columns crushed each cell to ~57px content at 375px,
+      # bleeding the bold dd values into neighbours. The strip now shows two
+      # columns on mobile and four at sm+, and each cell clips its own overflow.
+      assert html =~ "grid grid-cols-2 sm:grid-cols-4"
+      assert html =~ "min-width: 0; overflow: hidden;"
     end
   end
 end
