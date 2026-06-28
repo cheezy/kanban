@@ -2703,6 +2703,46 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  # W1390: the board-page modals (column, settings, members) must size as a
+  # full-viewport sheet on phones — the default p-14 padding left only ~231px of
+  # content at 375px, overflowing the members add-user buttons. Each launch now
+  # passes mobile_fullscreen + a responsive padding, matching the task modal.
+  describe "board modals are mobile-fullscreen (W1390)" do
+    setup [:register_and_log_in_user]
+
+    test "the column modal renders as a mobile-fullscreen sheet", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, _lv, html} = live(conn, ~p"/boards/#{board}/columns/new")
+
+      # mobile_fullscreen markers: no rounding + min-height screen below md,
+      # plus the responsive padding override.
+      assert html =~ "rounded-none md:rounded-2xl"
+      assert html =~ "min-h-screen md:min-h-0"
+      assert html =~ "p-4 md:p-8 lg:p-14"
+    end
+
+    test "the board settings modal renders as a mobile-fullscreen sheet",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, _lv, html} = live(conn, ~p"/boards/#{board}/settings")
+
+      assert html =~ "rounded-none md:rounded-2xl"
+      assert html =~ "p-4 md:p-8 lg:p-14"
+    end
+
+    test "the manage-members modal renders as a mobile-fullscreen sheet",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      {:ok, _lv, html} = live(conn, ~p"/boards/#{board}/members")
+
+      assert html =~ "rounded-none md:rounded-2xl"
+      assert html =~ "p-4 md:p-8 lg:p-14"
+    end
+  end
+
   defp message_fixture(sender, attrs) do
     Kanban.MessagesFixtures.message_fixture(sender, attrs)
   end

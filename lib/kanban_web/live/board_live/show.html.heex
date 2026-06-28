@@ -333,6 +333,8 @@
     id="column-modal"
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
+    padding="p-4 md:p-8 lg:p-14"
+    mobile_fullscreen
   >
     <.live_component
       module={KanbanWeb.ColumnLive.FormComponent}
@@ -372,6 +374,8 @@
     id="board-settings-modal"
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
+    padding="p-4 md:p-8 lg:p-14"
+    mobile_fullscreen
   >
     <div class="stride-screen" style="margin-bottom: 14px;">
       <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
@@ -395,6 +399,8 @@
     id="board-members-modal"
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
+    padding="p-4 md:p-8 lg:p-14"
+    mobile_fullscreen
   >
     <div class="stride-screen" style="margin-bottom: 14px;">
       <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">

@@ -101,7 +101,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             {@searched_user.email}
           </div>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
           <button
             type="button"
             phx-click="add_user"

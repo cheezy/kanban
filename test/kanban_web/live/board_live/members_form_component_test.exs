@@ -90,6 +90,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       assert html_with =~ "jamie@example.com"
       assert html_with =~ "Add as Read Only"
       assert html_with =~ "Add with Edit Access"
+
+      # W1390: the two long-labelled add-user buttons must wrap rather than
+      # overflow the modal content box on a narrow phone viewport.
+      assert html_with =~ "flex-wrap: wrap"
     end
 
     test "renders the current users list with the Owner access chip", %{
