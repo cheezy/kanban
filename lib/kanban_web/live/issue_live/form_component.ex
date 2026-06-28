@@ -149,7 +149,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
             <button
               type="submit"
               phx-disable-with={gettext("Submitting...")}
-              style="height: 40px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
+              style="height: 44px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: var(--surface); border: none; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
             >
               {gettext("Submit Issue")}
             </button>

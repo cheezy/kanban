@@ -4,7 +4,7 @@
     data-archive-screen
     style="display: flex; flex-direction: column; min-height: 0; padding: 18px 0;"
   >
-    <div style="padding: 0 28px 4px; display: flex; align-items: center; gap: 12px;">
+    <div style="padding: 0 28px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;">
       <h1 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink);">
         {gettext("Archive")}
       </h1>
@@ -157,11 +157,17 @@
 
       <div
         :if={@rows != []}
-        style={[
-          "background: var(--surface);",
-          "border: 1px solid var(--line); border-radius: 8px;",
-          "overflow: hidden; display: flex; flex-direction: column;"
-        ]}
+        style={
+          [
+            "background: var(--surface);",
+            "border: 1px solid var(--line); border-radius: 8px;",
+            # W1396: the 8-column row grid has a ~696px min-content (fixed columns)
+            # that exceeds a 375px phone. overflow-x:auto scrolls the header+rows
+            # together within the card instead of overflow:hidden silently clipping
+            # the right ~400px off-screen.
+            "overflow-x: auto; display: flex; flex-direction: column;"
+          ]
+        }
       >
         <div
           data-archive-table-header

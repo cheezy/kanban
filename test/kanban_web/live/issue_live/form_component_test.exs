@@ -35,6 +35,12 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
       html = html_response(conn, 200)
 
       assert html =~ "Submit Issue"
+
+      # W1396: the submit button is a 44px touch target and labels its text with
+      # the theme-aware var(--surface) token (the canonical inverted-ink pairing,
+      # matching primary_full_button) rather than the daisyUI base-* token.
+      assert html =~ "height: 44px"
+      assert html =~ "background: var(--ink); color: var(--surface)"
     end
 
     test "form has correct input fields", %{conn: conn} do

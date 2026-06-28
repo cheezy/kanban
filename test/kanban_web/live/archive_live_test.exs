@@ -19,6 +19,10 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "data-archive-screen"
       assert html =~ "Archive"
       assert html =~ board.name
+
+      # W1396: the header row (title + board name + action buttons) wraps so the
+      # buttons drop to a new line instead of overflowing at 375px.
+      assert html =~ "display: flex; flex-wrap: wrap; align-items: center"
     end
 
     test "displays back to board link", %{conn: conn, board: board} do
@@ -53,6 +57,12 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "data-archive-row"
       assert html =~ "Test Task"
       assert html =~ archived_task.identifier
+
+      # W1396: the 8-column archive table (~696px min-content) scrolls within its
+      # own card on a phone instead of overflow:hidden silently clipping the
+      # right ~400px of every row.
+      assert html =~ "overflow-x: auto"
+      refute html =~ "overflow: hidden; display: flex; flex-direction: column;"
     end
 
     test "renders the type icon for each archived task type",
