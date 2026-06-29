@@ -361,4 +361,138 @@ defmodule Kanban.Tasks.TaskTest do
       assert loaded.duplicate_of.id == canonical.id
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # W1412: varchar(255) validator coverage guard
+  # ---------------------------------------------------------------------------
+
+  # Columns that are varchar(255) in the database but intentionally NOT covered
+  # by a free-text length validator:
+  #
+  #   * enum-backed columns (type/priority/status/complexity/actual_complexity/
+  #     review_status/archive_reason) are guarded by cast + validate_inclusion,
+  #     which rejects any out-of-range value before length could matter. These
+  #     are derived structurally from the schema (see enum_backed_fields/0), not
+  #     hardcoded, so a future enum column is excluded automatically.
+  #   * identifier is server-generated and bounded by construction.
+  @server_generated_varchar_255 [:identifier]
+
+  # Maps each schema field's database column name back to the field atom.
+  # Avoids String.to_atom/1 on database-supplied names (the column names are
+  # resolved against the known schema fields instead).
+  defp schema_field_by_source do
+    for field <- Task.__schema__(:fields), into: %{} do
+      {Atom.to_string(field), field}
+    end
+  end
+
+  # The set of Ecto.Enum-backed fields, derived from the schema rather than
+  # hardcoded, so the guard's exclusion list tracks the schema automatically.
+  defp enum_backed_fields do
+    Task.__schema__(:fields)
+    |> Enum.filter(fn field ->
+      match?({:parameterized, {Ecto.Enum, _}}, Task.__schema__(:type, field))
+    end)
+    |> MapSet.new()
+  end
+
+  # The only reliable source for array ELEMENT length is pg_catalog.format_type/2:
+  # information_schema.element_types reports a NULL character_maximum_length for
+  # varchar(255)[] elements.
+  @bounded_columns_sql """
+  SELECT a.attname, format_type(a.atttypid, a.atttypmod)
+  FROM pg_attribute a
+  JOIN pg_class cl ON cl.oid = a.attrelid
+  JOIN pg_namespace n ON n.oid = cl.relnamespace
+  WHERE n.nspname = 'public'
+    AND cl.relname = 'tasks'
+    AND a.attnum > 0
+    AND NOT a.attisdropped
+  """
+
+  # Derives the length-bounded varchar(255) columns straight from the live
+  # database. Returns {scalar_fields, array_fields} as MapSets of schema field
+  # atoms.
+  defp bounded_varchar_255_columns do
+    field_by_source = schema_field_by_source()
+    %{rows: rows} = Repo.query!(@bounded_columns_sql, [])
+
+    rows
+    |> Enum.map(fn [name, type] -> {Map.get(field_by_source, name), type} end)
+    |> Enum.reduce({MapSet.new(), MapSet.new()}, &classify_bounded_column/2)
+  end
+
+  defp classify_bounded_column({nil, _type}, acc), do: acc
+
+  defp classify_bounded_column({field, "character varying(255)"}, {scalars, arrays}),
+    do: {MapSet.put(scalars, field), arrays}
+
+  defp classify_bounded_column({field, "character varying(255)[]"}, {scalars, arrays}),
+    do: {scalars, MapSet.put(arrays, field)}
+
+  defp classify_bounded_column({_field, _type}, acc), do: acc
+
+  # The bounded scalar columns that a free-text length validator must cover:
+  # everything length-bounded in the DB minus the documented exceptions.
+  defp scalar_columns_requiring_validator(bounded_scalars) do
+    excluded = MapSet.union(enum_backed_fields(), MapSet.new(@server_generated_varchar_255))
+    MapSet.difference(bounded_scalars, excluded)
+  end
+
+  describe "varchar(255) validator coverage guard (W1412)" do
+    # Regression guard for D81: every length-bounded varchar(255) column on the
+    # `tasks` table must be covered by a changeset length validator, or oversized
+    # input bypasses validation and raises a Postgrex 22001
+    # (string_data_right_truncation) -> HTTP 500. The bounded column sets are
+    # DERIVED from the live schema (never hardcoded), so a future varchar(255)
+    # column added without the matching validator fails this guard.
+
+    test "every length-bounded scalar varchar(255) column is in @varchar_255_fields" do
+      {scalar_columns, _array_columns} = bounded_varchar_255_columns()
+      required = scalar_columns_requiring_validator(scalar_columns)
+      validated = MapSet.new(Task.varchar_255_fields())
+
+      assert MapSet.equal?(required, validated), """
+      @varchar_255_fields is out of sync with the database schema.
+      Bounded scalar varchar(255) columns requiring a validator: #{inspect(Enum.sort(required))}
+      @varchar_255_fields: #{inspect(Enum.sort(validated))}
+      Missing a validator (add to @varchar_255_fields): #{inspect(Enum.sort(MapSet.difference(required, validated)))}
+      Listed but not actually bounded (remove from @varchar_255_fields): #{inspect(Enum.sort(MapSet.difference(validated, required)))}
+      """
+    end
+
+    test "every length-bounded varchar(255)[] array column is in @varchar_255_array_fields" do
+      {_scalar_columns, array_columns} = bounded_varchar_255_columns()
+      validated = MapSet.new(Task.varchar_255_array_fields())
+
+      assert MapSet.equal?(array_columns, validated), """
+      @varchar_255_array_fields is out of sync with the database schema.
+      Bounded varchar(255)[] columns requiring a validator: #{inspect(Enum.sort(array_columns))}
+      @varchar_255_array_fields: #{inspect(Enum.sort(validated))}
+      Missing a validator (add to @varchar_255_array_fields): #{inspect(Enum.sort(MapSet.difference(array_columns, validated)))}
+      Listed but not actually bounded (remove from @varchar_255_array_fields): #{inspect(Enum.sort(MapSet.difference(validated, array_columns)))}
+      """
+    end
+
+    test "the guard fails when a bounded column lacks a validator" do
+      # Proves the guard actually catches an unguarded column. :where_context is
+      # a real, castable schema field stored as :text (unbounded). Simulating it
+      # turning into a varchar(255) column — a bounded column added without being
+      # added to @varchar_255_fields — must make the guard flag it.
+      {scalar_columns, _array_columns} = bounded_varchar_255_columns()
+      refute MapSet.member?(scalar_columns, :where_context)
+
+      simulated = MapSet.put(scalar_columns, :where_context)
+      required = scalar_columns_requiring_validator(simulated)
+      validated = MapSet.new(Task.varchar_255_fields())
+
+      refute MapSet.equal?(required, validated),
+             "guard should fail when a bounded column is missing from @varchar_255_fields"
+
+      missing = MapSet.difference(required, validated)
+
+      assert MapSet.member?(missing, :where_context),
+             "the unguarded :where_context column should be named as missing a validator"
+    end
+  end
 end

@@ -471,6 +471,20 @@ defmodule Kanban.Tasks.Task do
     :required_capabilities
   ]
 
+  @doc """
+  The free-text scalar varchar(255) columns guarded by a changeset length
+  validator (D81). Exposed so the regression guard in the test suite (W1412)
+  can assert this allow-list stays in sync with the database schema.
+  """
+  def varchar_255_fields, do: @varchar_255_fields
+
+  @doc """
+  The varchar(255)[] array columns whose elements are guarded by a changeset
+  length validator (D81). Exposed so the regression guard in the test suite
+  (W1412) can assert this allow-list stays in sync with the database schema.
+  """
+  def varchar_255_array_fields, do: @varchar_255_array_fields
+
   @doc false
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def changeset(task, attrs) do
