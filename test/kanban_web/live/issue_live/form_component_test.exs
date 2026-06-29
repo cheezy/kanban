@@ -36,20 +36,22 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
 
       assert html =~ "Submit Issue"
 
-      # W1396: the submit button is a 44px touch target and labels its text with
-      # the theme-aware var(--surface) token (the canonical inverted-ink pairing,
-      # matching primary_full_button) rather than the daisyUI base-* token.
-      assert html =~ "height: 44px"
-      assert html =~ "background: var(--ink); color: var(--surface)"
+      # W1399: the submit control now renders via the shared core_components
+      # <.button variant="primary"> (theme-aware daisyUI primary), replacing the
+      # bespoke inline-styled <button>. It keeps the phx-disable-with submit feedback.
+      assert html =~ "btn btn-primary"
+      assert html =~ ~s(phx-disable-with)
     end
 
     test "form has correct input fields", %{conn: conn} do
       conn = get(conn, ~p"/about")
       html = html_response(conn, 200)
 
-      assert html =~ "issue_title"
-      assert html =~ "issue_body"
-      assert html =~ "issue_label"
+      # W1399: <.input> derives field ids from the form id ("issue-form"), so the
+      # ids are now "issue-form_<field>" (the names stay "issue[<field>]").
+      assert html =~ "issue-form_title"
+      assert html =~ "issue-form_body"
+      assert html =~ "issue-form_label"
     end
   end
 
@@ -203,8 +205,8 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
 
       # Should show the form again
       assert result =~ "Submit Issue" or result =~ "Soumettre"
-      assert result =~ "issue_title"
-      assert result =~ "issue_body"
+      assert result =~ "issue-form_title"
+      assert result =~ "issue-form_body"
       refute result =~ "Issue submitted successfully!"
     end
 

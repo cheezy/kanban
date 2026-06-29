@@ -56,6 +56,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
         </div>
       <% else %>
         <.form
+          :let={f}
           for={@form}
           id="issue-form"
           phx-target={@myself}
@@ -63,96 +64,34 @@ defmodule KanbanWeb.IssueLive.FormComponent do
           phx-submit="save"
           style="display: flex; flex-direction: column; gap: 14px;"
         >
-          <label style="display: flex; flex-direction: column; gap: 5px;">
-            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
-              {gettext("Title")}
-            </span>
-            <input
-              type="text"
-              name="issue[title]"
-              id="issue_title"
-              value={@form[:title].value}
-              required
-              placeholder={gettext("Brief description of the issue")}
-              style={[
-                "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid ",
-                if(@form[:title].errors != [],
-                  do: "var(--st-blocked); ",
-                  else: "var(--line-strong); "
-                ),
-                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
-              ]}
-            />
-            <%= for error <- @form[:title].errors do %>
-              <span style="font-size: 11.5px; color: var(--st-blocked);">
-                {translate_error(error)}
-              </span>
-            <% end %>
-          </label>
+          <.input
+            field={f[:title]}
+            type="text"
+            label={gettext("Title")}
+            required
+            placeholder={gettext("Brief description of the issue")}
+          />
 
-          <label style="display: flex; flex-direction: column; gap: 5px;">
-            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
-              {gettext("Type")}
-            </span>
-            <select
-              name="issue[label]"
-              id="issue_label"
-              style={[
-                "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid ",
-                if(@form[:label].errors != [],
-                  do: "var(--st-blocked); ",
-                  else: "var(--line-strong); "
-                ),
-                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
-              ]}
-            >
-              <%= for {display, value} <- label_options() do %>
-                <option value={value} selected={@form[:label].value == value}>
-                  {display}
-                </option>
-              <% end %>
-            </select>
-            <%= for error <- @form[:label].errors do %>
-              <span style="font-size: 11.5px; color: var(--st-blocked);">
-                {translate_error(error)}
-              </span>
-            <% end %>
-          </label>
+          <.input
+            field={f[:label]}
+            type="select"
+            label={gettext("Type")}
+            options={label_options()}
+          />
 
-          <label style="display: flex; flex-direction: column; gap: 5px;">
-            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
-              {gettext("Description")}
-            </span>
-            <textarea
-              name="issue[body]"
-              id="issue_body"
-              rows="5"
-              required
-              placeholder={gettext("Please provide details about the issue or feature request")}
-              style={[
-                "padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid ",
-                if(@form[:body].errors != [],
-                  do: "var(--st-blocked); ",
-                  else: "var(--line-strong); "
-                ),
-                "font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit; resize: vertical;"
-              ]}
-            >{@form[:body].value}</textarea>
-            <%= for error <- @form[:body].errors do %>
-              <span style="font-size: 11.5px; color: var(--st-blocked);">
-                {translate_error(error)}
-              </span>
-            <% end %>
-          </label>
+          <.input
+            field={f[:body]}
+            type="textarea"
+            label={gettext("Description")}
+            rows="5"
+            required
+            placeholder={gettext("Please provide details about the issue or feature request")}
+          />
 
           <div style="padding-top: 4px;">
-            <button
-              type="submit"
-              phx-disable-with={gettext("Submitting...")}
-              style="height: 44px; padding: 0 18px; border-radius: 6px; background: var(--ink); color: var(--surface); border: none; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 3px rgba(0, 0, 0, 0.2);"
-            >
+            <.button type="submit" variant="primary" phx-disable-with={gettext("Submitting...")}>
               {gettext("Submit Issue")}
-            </button>
+            </.button>
           </div>
 
           <%= if @error do %>
