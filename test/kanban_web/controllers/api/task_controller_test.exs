@@ -597,6 +597,43 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "value-too-long never returns a 500 or leaks DB text (W1413)" do
+    # The per-field validators (D81) keep every known bounded column from
+    # overflowing, and the DbErrors safety net (Kanban.Tasks.DbErrorsTest)
+    # translates any residual 22001 into the same sanitized 422. At the API
+    # boundary the contract is identical either way: an oversized value returns a
+    # clean 422 whose body carries no raw Postgrex/SQL text.
+    @over_long_w1413 String.duplicate("a", 256)
+
+    test "POST /api/tasks with an oversized value returns 422 and no raw DB text",
+         %{conn: conn} do
+      conn = post(conn, ~p"/api/tasks", task: %{"title" => @over_long_w1413})
+
+      body = json_response(conn, 422)
+      assert body["errors"] != %{}
+
+      rendered = inspect(body)
+      refute rendered =~ "Postgrex"
+      refute rendered =~ "22001"
+      refute rendered =~ "string_data_right_truncation"
+    end
+
+    test "PATCH /api/tasks/:id with an oversized value returns 422 and no raw DB text",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{"title" => "Original W1413", "created_by_id" => user.id})
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => @over_long_w1413})
+
+      body = json_response(conn, 422)
+      assert body["errors"] != %{}
+
+      rendered = inspect(body)
+      refute rendered =~ "Postgrex"
+      refute rendered =~ "22001"
+    end
+  end
+
   describe "POST /api/tasks/batch" do
     test "creates multiple goals with child tasks", %{conn: conn} do
       goals_params = [

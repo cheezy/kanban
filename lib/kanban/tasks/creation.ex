@@ -8,6 +8,7 @@ defmodule Kanban.Tasks.Creation do
 
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.DbErrors
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.Identifiers
   alias Kanban.Tasks.Positioning
@@ -74,10 +75,19 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp do_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs, changeset_fn) do
-    column
-    |> build_goal_creation_multi(goal_attrs, child_tasks_attrs, changeset_fn)
-    |> Repo.transaction()
-    |> handle_goal_creation_result(column)
+    # The whole pipe runs inside the value-too-long rescue: a 22001 raised by any
+    # Multi.insert rolls the transaction back atomically before the exception
+    # reaches the rescue, so the synthetic 3-tuple matches the failure shape
+    # handle_goal_creation_result/2 returns and the rollback is preserved.
+    DbErrors.translate_value_too_long(
+      fn ->
+        column
+        |> build_goal_creation_multi(goal_attrs, child_tasks_attrs, changeset_fn)
+        |> Repo.transaction()
+        |> handle_goal_creation_result(column)
+      end,
+      fn changeset -> {:error, :db, changeset} end
+    )
   end
 
   defp build_goal_creation_multi(column, goal_attrs, child_tasks_attrs, changeset_fn) do
@@ -325,10 +335,19 @@ defmodule Kanban.Tasks.Creation do
   defp convert_single_dependency(dep, _task_identifiers), do: dep
 
   defp insert_task_with_history(column, attrs, changeset_fn) do
-    column
-    |> build_task_creation_multi(attrs, changeset_fn)
-    |> Repo.transaction()
-    |> handle_task_creation_result(attrs)
+    # See do_create_goal_with_tasks/4: the whole pipe is wrapped so a 22001 on a
+    # bounded column without a per-field validator becomes a clean {:error,
+    # changeset} (the shape handle_task_creation_result/2 produces) instead of a
+    # raised Postgrex.Error / HTTP 500.
+    DbErrors.translate_value_too_long(
+      fn ->
+        column
+        |> build_task_creation_multi(attrs, changeset_fn)
+        |> Repo.transaction()
+        |> handle_task_creation_result(attrs)
+      end,
+      &{:error, &1}
+    )
   end
 
   defp build_task_creation_multi(column, attrs, changeset_fn) do

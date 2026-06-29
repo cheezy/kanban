@@ -8,6 +8,7 @@ defmodule Kanban.Tasks.Lifecycle do
   alias Ecto.Multi
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.DbErrors
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
@@ -77,7 +78,11 @@ defmodule Kanban.Tasks.Lifecycle do
   # Existing single-task update path. Preserves the original side-effect
   # ordering (priority/assignment/dependencies/status histories, then broadcast).
   defp update_without_cascade(task, changeset) do
-    case Repo.update(changeset) do
+    # Wrap only the DB write: a 22001 on a bounded column without a per-field
+    # validator becomes {:error, value_too_long_changeset} (a clean 422) rather
+    # than a raised Postgrex.Error / HTTP 500. The success-path side effects run
+    # outside the rescue so a history/broadcast error is never mis-attributed.
+    case DbErrors.translate_value_too_long(fn -> Repo.update(changeset) end, &{:error, &1}) do
       {:ok, updated_task} ->
         updated_task = fire_update_side_effects(task, updated_task, changeset)
         Broadcaster.broadcast_task_update(updated_task, changeset)
