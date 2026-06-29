@@ -595,6 +595,78 @@ defmodule KanbanWeb.API.TaskControllerTest do
       refute Kanban.Repo.exists?(sibling_query)
       refute Kanban.Repo.exists?(goal_query)
     end
+
+    # W1414: extend the existing security_considerations element-length coverage
+    # to the other two varchar(255)[] array fields end-to-end through the API, so
+    # all three bounded array fields are exercised at the controller layer. The
+    # element is 256 code points to cross the per-element boundary.
+    @over_long_element String.duplicate("a", 256)
+
+    test "POST /api/tasks with an over-255 dependencies element returns 422 naming the field",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Deps element length W1414",
+            "type" => "work",
+            "priority" => "medium",
+            "dependencies" => ["W1", @over_long_element]
+          }
+        )
+
+      errors = json_response(conn, 422)["errors"]
+      assert errors["dependencies"]
+      assert "each entry should be at most 255 character(s)" in errors["dependencies"]
+    end
+
+    test "PATCH /api/tasks/:id with an over-255 dependencies element returns 422 naming the field",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Deps PATCH base W1414",
+          "created_by_id" => user.id
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"dependencies" => ["W1", @over_long_element]}
+        )
+
+      errors = json_response(conn, 422)["errors"]
+      assert errors["dependencies"]
+      assert "each entry should be at most 255 character(s)" in errors["dependencies"]
+    end
+
+    test "POST /api/tasks with an over-255 required_capabilities element returns 422 naming the field",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Caps element length W1414",
+            "type" => "work",
+            "priority" => "medium",
+            "required_capabilities" => [@over_long_element]
+          }
+        )
+
+      assert json_response(conn, 422)["errors"]["required_capabilities"]
+    end
+
+    test "PATCH /api/tasks/:id with an over-255 required_capabilities element returns 422 naming the field",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Caps PATCH base W1414",
+          "created_by_id" => user.id
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"required_capabilities" => [@over_long_element]}
+        )
+
+      assert json_response(conn, 422)["errors"]["required_capabilities"]
+    end
   end
 
   describe "value-too-long never returns a 500 or leaks DB text (W1413)" do
