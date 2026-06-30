@@ -22,6 +22,16 @@ defmodule KanbanWeb.MetricsPdfController do
 
   @valid_metrics Map.keys(@metric_templates)
 
+  # Reject an unknown metric up front so an unvalidated value never reaches
+  # generate_filename/4 (where it is interpolated into the content-disposition
+  # header) or the metric template lookups (W1432). @valid_metrics is the same
+  # allow-list get_redirect_path/3 and render_metric_html/2 already use.
+  def export(conn, %{"metric" => metric}) when metric not in @valid_metrics do
+    conn
+    |> put_status(:not_found)
+    |> json(%{error: "Unknown metric"})
+  end
+
   def export(conn, %{"id" => board_id, "metric" => metric} = params) do
     user = conn.assigns.current_scope.user
 

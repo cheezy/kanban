@@ -36,6 +36,17 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export")
       assert json_response(conn, 404)["error"] == "Board not found"
     end
+
+    test "returns 404 for an unknown metric without touching the filename builder (W1432)", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/bogus/export")
+
+      assert json_response(conn, 404)["error"] == "Unknown metric"
+    end
   end
 
   describe "export/2 - throughput metric" do
@@ -273,14 +284,12 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   end
 
   describe "export/2 - unknown metric" do
-    test "handles unknown metric gracefully", %{conn: conn, user: user} do
+    test "rejects an unknown metric with 404 (W1432)", %{conn: conn, user: user} do
       board = ai_optimized_board_fixture(user)
 
       conn = get(conn, ~p"/boards/#{board}/metrics/unknown-metric/export")
 
-      assert conn.status == 200
-      assert [content_type] = get_resp_header(conn, "content-type")
-      assert content_type =~ "application/pdf"
+      assert json_response(conn, 404)["error"] == "Unknown metric"
     end
   end
 
@@ -741,25 +750,29 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   end
 
   describe "export/2 - unknown metric handling" do
-    test "generates PDF for unknown metric with fallback template", %{conn: conn, user: user} do
+    test "rejects an unknown metric with 404 instead of a fallback PDF (W1432)", %{
+      conn: conn,
+      user: user
+    } do
       board = ai_optimized_board_fixture(user)
 
       conn = get(conn, ~p"/boards/#{board}/metrics/unknown-metric-type/export")
 
-      assert conn.status == 200
-      assert [content_type] = get_resp_header(conn, "content-type")
-      assert content_type =~ "application/pdf"
-      assert conn.resp_body != ""
+      assert json_response(conn, 404)["error"] == "Unknown metric"
     end
 
-    test "generates filename correctly for unknown metric", %{conn: conn, user: user} do
+    test "never reaches the filename builder for an unknown metric (W1432)", %{
+      conn: conn,
+      user: user
+    } do
       board = ai_optimized_board_fixture(user)
 
       conn = get(conn, ~p"/boards/#{board}/metrics/custom-metric/export")
 
-      assert conn.status == 200
-      [disposition] = get_resp_header(conn, "content-disposition")
-      assert disposition =~ "custom_metric"
+      # 404 before any content-disposition header is built, so the unvalidated
+      # metric can never be interpolated into the filename.
+      assert json_response(conn, 404)["error"] == "Unknown metric"
+      assert get_resp_header(conn, "content-disposition") == []
     end
   end
 
