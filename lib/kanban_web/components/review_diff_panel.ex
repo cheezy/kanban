@@ -366,8 +366,26 @@ defmodule KanbanWeb.ReviewDiffPanel do
 
   defp diff_view(_), do: %{mode: :empty}
 
-  defp diff_url(%{"diff_url" => url}) when is_binary(url) and url != "", do: url
+  # diff_url is agent-supplied (the per-file payload's "diff_url"). Only allow
+  # http/https schemes through to the rendered href — HEEx escapes attribute
+  # values but does NOT sanitize URL schemes, so an unvalidated value would let
+  # an agent point the "View full diff in repo" link at javascript:/data:/an
+  # arbitrary external host (W1431). nil suppresses the link entirely.
+  defp diff_url(%{"diff_url" => url}) when is_binary(url) and url != "" do
+    if allowed_diff_url_scheme?(url), do: url, else: nil
+  end
+
   defp diff_url(_), do: nil
+
+  defp allowed_diff_url_scheme?(url) do
+    case URI.new(url) do
+      {:ok, %URI{scheme: scheme}} when is_binary(scheme) ->
+        String.downcase(scheme) in ["http", "https"]
+
+      _ ->
+        false
+    end
+  end
 
   defp parse_diff_lines(diff) do
     diff

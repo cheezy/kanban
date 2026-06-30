@@ -222,6 +222,60 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
       refute html =~ "View full diff in repo"
     end
 
+    test "drops a javascript: diff_url and renders no link (W1431)" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{
+            "path" => "lib/foo.ex",
+            "diff" => diff,
+            "diff_url" => "javascript:fetch('/steal?c='+document.cookie)"
+          }
+        )
+
+      refute html =~ "data-review-diff-panel-diff-link"
+      refute html =~ "View full diff in repo"
+      refute html =~ "javascript:"
+    end
+
+    test "drops non-http(s), scheme-relative, and relative diff_url values (W1431)" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      for bad <- [
+            "data:text/html,<script>alert(1)</script>",
+            "//evil.example/x",
+            "/relative/path",
+            "ftp://host/x"
+          ] do
+        html =
+          render_panel(["lib/foo.ex"],
+            selected_file: %{"path" => "lib/foo.ex", "diff" => diff, "diff_url" => bad}
+          )
+
+        refute html =~ "data-review-diff-panel-diff-link",
+               "expected no diff link for diff_url=#{bad}"
+
+        refute html =~ "View full diff in repo"
+      end
+    end
+
+    test "keeps an http(s) diff_url and renders the link (W1431)" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{
+            "path" => "lib/foo.ex",
+            "diff" => diff,
+            "diff_url" => "http://example.com/diff"
+          }
+        )
+
+      assert html =~ "data-review-diff-panel-diff-link"
+      assert html =~ "http://example.com/diff"
+    end
+
     test "renders a single very long line without crashing" do
       long_line = "+" <> String.duplicate("x", 5_000)
 
