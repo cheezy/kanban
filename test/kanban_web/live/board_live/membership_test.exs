@@ -43,6 +43,29 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
       assert socket.assigns.search_email == other.email
     end
 
+    test "non-owner is denied and cannot enumerate accounts (W1434)", %{board: board} do
+      stranger = user_fixture()
+      target = user_fixture()
+      socket = build_socket(board)
+
+      {:noreply, socket} = Membership.search_user(socket, stranger, target.email)
+
+      assert is_nil(socket.assigns.searched_user)
+      assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
+    end
+
+    test "read-only board member is denied (W1434)", %{owner: owner, board: board} do
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      target = user_fixture()
+      socket = build_socket(board)
+
+      {:noreply, socket} = Membership.search_user(socket, reader, target.email)
+
+      assert is_nil(socket.assigns.searched_user)
+      assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
+    end
+
     test "flashes an error when no user matches", %{owner: owner, board: board} do
       socket = build_socket(board)
 

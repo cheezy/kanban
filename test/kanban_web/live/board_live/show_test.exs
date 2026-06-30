@@ -295,6 +295,22 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "New Task"
     end
 
+    test "redirects a non-owner away from the manage-members view (W1434)", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      # Even a :modify member (not just read-only) is not the owner.
+      member = user_fixture()
+      Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      conn = log_in_user(conn, member)
+
+      assert {:error, {redirect_kind, %{flash: flash, to: to}}} =
+               live(conn, ~p"/boards/#{board}/members")
+
+      assert redirect_kind in [:live_redirect, :live_patch]
+      assert flash["error"] == "Only the board owner can manage board membership"
+      assert to == ~p"/boards/#{board}"
+    end
+
     test "assigns column from URL parameter", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "Target Column"})

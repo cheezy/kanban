@@ -24,6 +24,17 @@ defmodule KanbanWeb.BoardLive.Membership do
   before extraction.
   """
   def search_user(socket, current_user, email) do
+    if owner_authorized?(socket, current_user) do
+      do_search_user(socket, current_user, email)
+    else
+      # Without this gate a non-owner board member (even :read_only) could probe
+      # arbitrary emails via Accounts.get_user_by_email/1 and learn whether an
+      # account exists plus its display name — account enumeration (W1434).
+      {:noreply, put_flash(socket, :error, membership_denied_flash())}
+    end
+  end
+
+  defp do_search_user(socket, current_user, email) do
     email = String.trim(email)
 
     case Accounts.get_user_by_email(email) do

@@ -444,6 +444,16 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
+  # Defense-in-depth for W1434: keep the :manage_members view (and the member
+  # list / search component it renders) owner-only, so a non-owner who navigates
+  # straight to /boards/:id/members is redirected away rather than reaching the
+  # MembersFormComponent. The search handler itself is independently gated in
+  # KanbanWeb.BoardLive.Membership.search_user/3.
+  defp check_new_column_authorization(:manage_members, user_access, _board)
+       when user_access != :owner do
+    {:error, gettext("Only the board owner can manage board membership")}
+  end
+
   defp check_new_column_authorization(_live_action, _user_access, _board), do: :ok
 
   defp authorize_modify_for_task(socket, raw_id) do
