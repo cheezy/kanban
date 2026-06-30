@@ -624,6 +624,27 @@ defmodule Kanban.BoardsTest do
       # Reader no longer sees the board
       assert Boards.list_boards(reader) == []
     end
+
+    test "revokes the removed user's board-scoped API tokens (W1430)" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+
+      {:ok, {token, _plain}} =
+        Kanban.ApiTokens.create_api_token(member, board, %{
+          name: "M",
+          agent_model: "claude",
+          agent_version: "v1",
+          agent_purpose: "x"
+        })
+
+      refute token.revoked_at
+
+      assert {:ok, _} = Boards.remove_user_from_board(board, member, owner)
+
+      assert Kanban.Repo.get!(Kanban.ApiTokens.ApiToken, token.id).revoked_at
+    end
   end
 
   describe "update_user_access/3" do
@@ -670,6 +691,42 @@ defmodule Kanban.BoardsTest do
       other_user = user_fixture()
 
       assert {:error, :not_found} = Boards.update_user_access(board, other_user, :modify, owner)
+    end
+
+    test "downgrading to read_only revokes the user's board-scoped API tokens (W1430)" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+
+      {:ok, {token, _plain}} =
+        Kanban.ApiTokens.create_api_token(member, board, %{
+          name: "M",
+          agent_model: "claude",
+          agent_version: "v1",
+          agent_purpose: "x"
+        })
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+      assert Kanban.Repo.get!(Kanban.ApiTokens.ApiToken, token.id).revoked_at
+    end
+
+    test "upgrading from read_only to modify leaves the user's API tokens active (W1430)" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+
+      {:ok, {token, _plain}} =
+        Kanban.ApiTokens.create_api_token(member, board, %{
+          name: "M",
+          agent_model: "claude",
+          agent_version: "v1",
+          agent_purpose: "x"
+        })
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+      refute Kanban.Repo.get!(Kanban.ApiTokens.ApiToken, token.id).revoked_at
     end
   end
 

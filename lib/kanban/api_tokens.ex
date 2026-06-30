@@ -189,6 +189,32 @@ defmodule Kanban.ApiTokens do
   end
 
   @doc """
+  Revokes every active (non-revoked) API token belonging to `user_id` that is
+  scoped to `board_id`.
+
+  Used when a user is removed from a board or downgraded to `:read_only`, so a
+  board-bound token cannot outlive the access grant that justified it (W1430).
+  Already-revoked tokens are left untouched. Safe to run inside an
+  `Ecto.Multi`/transaction — it issues a single `update_all`.
+
+  Returns `{count, nil}` where `count` is the number of tokens revoked.
+
+  ## Examples
+
+      iex> revoke_user_tokens_for_board(board.id, user.id)
+      {2, nil}
+
+  """
+  def revoke_user_tokens_for_board(board_id, user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(t in ApiToken,
+      where: t.board_id == ^board_id and t.user_id == ^user_id and is_nil(t.revoked_at)
+    )
+    |> Repo.update_all(set: [revoked_at: now])
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking api_token changes.
 
   ## Examples

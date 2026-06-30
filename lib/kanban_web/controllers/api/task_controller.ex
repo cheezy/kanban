@@ -422,6 +422,14 @@ defmodule KanbanWeb.API.TaskController do
       {:error, :assigned_to_other_user} ->
         handle_assigned_to_other_user(conn, task_identifier)
 
+      {:error, :not_authorized} ->
+        error_response(
+          conn,
+          :forbidden,
+          "You do not have write access to claim tasks on this board",
+          :not_authorized_to_claim
+        )
+
       {:error, reason} ->
         handle_unexpected_claim_error(conn, reason,
           task_identifier: task_identifier,

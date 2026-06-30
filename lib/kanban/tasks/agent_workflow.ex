@@ -43,6 +43,14 @@ defmodule Kanban.Tasks.AgentWorkflow do
         task_identifier \\ nil,
         agent_name \\ "Unknown"
       ) do
+    if board_write_access?(board_id, user) do
+      do_claim_next_task(agent_capabilities, user, board_id, task_identifier, agent_name)
+    else
+      {:error, :not_authorized}
+    end
+  end
+
+  defp do_claim_next_task(agent_capabilities, user, board_id, task_identifier, agent_name) do
     task =
       if task_identifier do
         AgentQueries.get_specific_task_for_claim(
@@ -170,6 +178,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
       task.status not in [:in_progress, :blocked] ->
         {:error, :invalid_status}
 
+      not board_write_access?(board_id, user) ->
+        # Catches the stale-permission case: the user is still the assignee but
+        # has since been downgraded to :read_only or removed from the board.
+        {:error, :not_authorized}
+
       task.assigned_to_id != user.id ->
         {:error, :not_authorized}
 
@@ -291,10 +304,15 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
-  defp authorized_reviewer?(board_id, %{id: user_id}) do
-    # The reviewer must be a member of the board with at least :modify
-    # access. Owners get the same privilege via :owner. Read-only
-    # members must not be able to advance a task out of Review.
+  defp authorized_reviewer?(board_id, user), do: board_write_access?(board_id, user)
+
+  # Live board-write authorization: the user must currently be a member of the
+  # board with at least :modify access (owners included). Read-only members and
+  # non-members cannot claim, complete, or advance tasks. This is re-checked on
+  # every claim/complete/review so a member who was downgraded to :read_only or
+  # removed from the board cannot keep progressing work with a still-valid
+  # board-bound API token (W1430).
+  defp board_write_access?(board_id, %{id: user_id}) do
     Boards.get_user_access(board_id, user_id) in [:owner, :modify]
   end
 

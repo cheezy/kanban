@@ -589,6 +589,53 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     end
   end
 
+  describe "claim_next_task/5 — board access (W1430)" do
+    setup :setup_board
+
+    test "returns :not_authorized when the caller is not a board member", ctx do
+      create_open_task(ctx.ready, ctx.user)
+
+      assert {:error, :not_authorized} =
+               AgentWorkflow.claim_next_task([], ctx.other, ctx.board.id, nil, "Claude")
+    end
+
+    test "returns :not_authorized when the caller is a read-only board member", ctx do
+      create_open_task(ctx.ready, ctx.user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only, ctx.user)
+
+      assert {:error, :not_authorized} =
+               AgentWorkflow.claim_next_task([], ctx.other, ctx.board.id, nil, "Claude")
+    end
+
+    test "allows a :modify board member to claim", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :modify, ctx.user)
+
+      assert {:ok, claimed, _hook} =
+               AgentWorkflow.claim_next_task([], ctx.other, ctx.board.id, nil, "Claude")
+
+      assert claimed.id == task.id
+      assert claimed.assigned_to_id == ctx.other.id
+    end
+  end
+
+  describe "complete_task/4 — board access (W1430)" do
+    setup :setup_board
+
+    test "returns :not_authorized when the assignee was downgraded to read_only after claiming",
+         ctx do
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :modify, ctx.user)
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.other, ctx.board)
+
+      # The member keeps the assignment but loses write access to the board.
+      {:ok, _} = Kanban.Boards.update_user_access(ctx.board, ctx.other, :read_only, ctx.user)
+
+      assert {:error, :not_authorized} =
+               AgentWorkflow.complete_task(claimed, ctx.other, valid_complete_params(), "Claude")
+    end
+  end
+
   describe "mark_reviewed/2" do
     setup ctx do
       ctx = setup_board(ctx)

@@ -142,5 +142,35 @@ defmodule Kanban.ApiTokensTest do
         })
       end
     end
+
+    test "revoke_user_tokens_for_board/2 revokes only the active tokens for that board and user (W1430)" do
+      user = user_fixture()
+      other_user = user_fixture()
+      board = board_fixture(user)
+      other_board = board_fixture(user)
+
+      {:ok, {t1, _}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+      {:ok, {t2, _}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+      {:ok, {other_board_token, _}} = ApiTokens.create_api_token(user, other_board, @valid_attrs)
+      {:ok, {other_user_token, _}} = ApiTokens.create_api_token(other_user, board, @valid_attrs)
+
+      assert {2, nil} = ApiTokens.revoke_user_tokens_for_board(board.id, user.id)
+
+      assert Repo.get!(ApiToken, t1.id).revoked_at
+      assert Repo.get!(ApiToken, t2.id).revoked_at
+      refute Repo.get!(ApiToken, other_board_token.id).revoked_at
+      refute Repo.get!(ApiToken, other_user_token.id).revoked_at
+    end
+
+    test "revoke_user_tokens_for_board/2 leaves already-revoked tokens untouched (W1430)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {token, _}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+      {:ok, revoked} = ApiTokens.revoke_api_token(token)
+      original_revoked_at = revoked.revoked_at
+
+      assert {0, nil} = ApiTokens.revoke_user_tokens_for_board(board.id, user.id)
+      assert Repo.get!(ApiToken, token.id).revoked_at == original_revoked_at
+    end
   end
 end

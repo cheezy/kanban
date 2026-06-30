@@ -1797,6 +1797,36 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 409)["error"] =~ "No tasks available"
     end
 
+    test "returns 403 when the caller is a read-only board member (W1430)", %{
+      conn: _conn,
+      ready_column: ready_column,
+      user: owner,
+      board: board
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Restricted Task",
+          "status" => "open",
+          "created_by_id" => owner.id
+        })
+
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_t, reader_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "Reader Token"})
+
+      reader_conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{reader_token}")
+        |> post(~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
+
+      assert json_response(reader_conn, 403)
+      # The task stays unclaimed.
+      refute Kanban.Repo.get!(Kanban.Tasks.Task, task.id).assigned_to_id
+    end
+
     test "empty agent capabilities can claim tasks via claim endpoint", %{
       conn: conn,
       ready_column: ready_column,
@@ -1922,6 +1952,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       user2 = user_fixture()
+      # user2 must be a board member with write access to get past the W1430
+      # claim authorization gate and exercise the double-claim path.
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user2, :modify, user)
 
       {:ok, {_token_struct, plain_token2}} =
         Kanban.ApiTokens.create_api_token(user2, board, %{
@@ -2065,6 +2098,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       bob = user_fixture()
+      # bob is a legitimate board member (write access) — the conflict under test
+      # is the assignment to alice, not a board-access denial (W1430).
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, bob, :modify, alice)
 
       {:ok, {_token_struct, bob_token}} =
         ApiTokens.create_api_token(bob, board, %{

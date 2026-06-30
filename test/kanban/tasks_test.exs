@@ -4079,6 +4079,7 @@ defmodule Kanban.TasksTest do
         })
 
       user2 = Kanban.AccountsFixtures.user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user2, :modify, user)
 
       {:ok, _result1, _hook_info} = Tasks.claim_next_task([], user, board.id)
       result2 = Tasks.claim_next_task([], user2, board.id)
@@ -7274,6 +7275,9 @@ defmodule Kanban.TasksTest do
       alice = Kanban.AccountsFixtures.user_fixture()
       bob = Kanban.AccountsFixtures.user_fixture()
       board = Kanban.BoardsFixtures.ai_optimized_board_fixture(alice)
+      # bob is a legitimate board member with write access — these tests exercise
+      # the assignment gate, not the W1430 board-access gate.
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, bob, :modify, alice)
       columns = Kanban.Columns.list_columns(board)
       ready_column = Enum.find(columns, &(&1.name == "Ready"))
       doing_column = Enum.find(columns, &(&1.name == "Doing"))
@@ -8658,6 +8662,7 @@ defmodule Kanban.TasksTest do
       user1 = user_fixture()
       user2 = user_fixture()
       board = ai_optimized_board_fixture(user1)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user2, :modify, user1)
       columns = Kanban.Columns.list_columns(board)
       ready_column = Enum.find(columns, &(&1.name == "Ready"))
 
