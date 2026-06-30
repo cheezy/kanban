@@ -39,6 +39,17 @@ defmodule Kanban.MessagesTest do
       assert msg.sender_id == sender.id
     end
 
+    test "ignores a caller-supplied sender_id and stamps the authenticated sender (D94)" do
+      sender = user_fixture()
+      other = user_fixture()
+
+      assert {:ok, %Message{} = msg} =
+               Messages.create_message(sender, %{title: "t", body: "b", sender_id: other.id})
+
+      assert msg.sender_id == sender.id
+      refute msg.sender_id == other.id
+    end
+
     test "with missing title returns {:error, changeset}" do
       sender = user_fixture()
 

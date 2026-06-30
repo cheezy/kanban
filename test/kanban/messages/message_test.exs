@@ -58,13 +58,10 @@ defmodule Kanban.Messages.MessageTest do
     test "can insert a message with a sender" do
       user = user_fixture()
 
+      # sender_id is set server-side on the struct (it is no longer castable — D94).
       {:ok, message} =
-        %Message{}
-        |> Message.changeset(%{
-          title: "hello",
-          body: "world",
-          sender_id: user.id
-        })
+        %Message{sender_id: user.id}
+        |> Message.changeset(%{title: "hello", body: "world"})
         |> Repo.insert()
 
       assert message.id
@@ -75,8 +72,8 @@ defmodule Kanban.Messages.MessageTest do
       user = user_fixture()
 
       {:ok, message} =
-        %Message{}
-        |> Message.changeset(%{title: "hi", body: "there", sender_id: user.id})
+        %Message{sender_id: user.id}
+        |> Message.changeset(%{title: "hi", body: "there"})
         |> Repo.insert()
 
       Repo.delete!(user)
