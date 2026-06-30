@@ -1,6 +1,7 @@
 defmodule KanbanWeb.API.TaskController do
   use KanbanWeb, :controller
 
+  alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
   alias KanbanWeb.API.CompletionResultGate
@@ -598,8 +599,23 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :show, task: task)
   end
 
-  defp authorize_changed_files(%{column: %{name: "Review"}}, _user), do: :ok
+  # changed_files write access: the task's assignee, OR an authorized reviewer
+  # (a board member with :owner/:modify access). The old clause allowed ANY
+  # board-scoped token holder to overwrite the diff snapshot of any task in a
+  # column literally named "Review" — a non-assignee/non-reviewer could tamper
+  # with the artifact human reviewers inspect (W1433). Authorship is preserved
+  # across completion (assigned_to_id is not cleared), so the assignee clause
+  # still covers a completed task sitting in Review.
   defp authorize_changed_files(%{assigned_to_id: user_id}, %{id: user_id}), do: :ok
+
+  defp authorize_changed_files(%{column: %{board_id: board_id}}, %{id: user_id}) do
+    if Boards.get_user_access(board_id, user_id) in [:owner, :modify] do
+      :ok
+    else
+      {:error, :not_authorized_changed_files}
+    end
+  end
+
   defp authorize_changed_files(_task, _user), do: {:error, :not_authorized_changed_files}
 
   defp validate_changed_files_payload(payload) do
@@ -1100,7 +1116,7 @@ defmodule KanbanWeb.API.TaskController do
     error_response(
       conn,
       :forbidden,
-      "You can only update changed_files on tasks you are assigned to or that are in Review",
+      "You can only update changed_files on tasks you are assigned to, or as a board reviewer with write access",
       :not_authorized_to_complete
     )
   end

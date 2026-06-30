@@ -3416,11 +3416,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       response = json_response(conn, 403)
-      assert response["error"] =~ "tasks you are assigned to or that are in Review"
+      assert response["error"] =~ "you are assigned to"
     end
 
-    test "allows any board member to upload when the task is in the Review column",
-         %{board: board, review_column: review_column} do
+    test "allows a board reviewer (:modify) to upload to another user's Review task (W1433)",
+         %{board: board, review_column: review_column, user: owner} do
       assignee = user_fixture(%{email: "diff-assignee@example.com"})
 
       {:ok, review_task} =
@@ -3431,7 +3431,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => assignee.id
         })
 
+      # uploader is a legitimate reviewer: a board member with :modify access.
       uploader = user_fixture(%{email: "diff-uploader@example.com"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, uploader, :modify, owner)
 
       {:ok, {_token_struct, plain_token}} =
         ApiTokens.create_api_token(uploader, board, %{"name" => "Uploader Token"})
@@ -3449,6 +3451,41 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(conn, 200)["data"]
       assert response["id"] == review_task.id
       assert [%{"path" => "lib/r.ex"}] = response["changed_files"]
+    end
+
+    test "denies a read-only board member uploading to another user's Review task (W1433)",
+         %{board: board, review_column: review_column, user: owner} do
+      assignee = user_fixture(%{email: "diff-assignee-ro@example.com"})
+
+      {:ok, review_task} =
+        Tasks.create_task(review_column, %{
+          "title" => "Review-stage task RO",
+          "status" => "in_progress",
+          "assigned_to_id" => assignee.id,
+          "created_by_id" => assignee.id
+        })
+
+      # A non-assignee with only :read_only access is not an authorized reviewer
+      # and must not be able to overwrite the diff snapshot — even in Review.
+      reader = user_fixture(%{email: "diff-reader@example.com"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "Reader Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        put(conn, ~p"/api/tasks/#{review_task.id}/changed_files", %{
+          "changed_files" => [%{"path" => "lib/evil.ex"}]
+        })
+
+      assert json_response(conn, 403)
+      # The diff snapshot is untouched.
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, review_task.id).changed_files in [nil, []]
     end
 
     test "returns 403 when the task belongs to a different board", %{conn: conn, user: user} do
