@@ -17,14 +17,14 @@
 // Auth: routes that require a logged-in user are handled automatically — the
 // auditor logs in with the dedicated dark-mode-audit user (provisioned by
 // `mix dark_mode.ensure_audit_user`). No cookie wrangling needed by the
-// caller. Set STRIDE_AUDIT_EMAIL / STRIDE_AUDIT_PASSWORD to override the
-// default credentials when running against a non-default environment.
+// caller. STRIDE_AUDIT_PASSWORD is REQUIRED (it is never defaulted to a
+// committed literal — W1435); STRIDE_AUDIT_EMAIL optionally overrides the
+// default email when running against a non-default environment.
 
 import { chromium } from "playwright";
 import { AxeBuilder } from "@axe-core/playwright";
 
 const DEFAULT_AUDIT_EMAIL = "dark-mode-audit@stride.local";
-const DEFAULT_AUDIT_PASSWORD = "DarkMode!AuditUser123";
 
 // --- Route catalog ---------------------------------------------------------
 //
@@ -112,7 +112,15 @@ Environment:
 
 async function login(page, baseUrl) {
   const email = process.env.STRIDE_AUDIT_EMAIL ?? DEFAULT_AUDIT_EMAIL;
-  const password = process.env.STRIDE_AUDIT_PASSWORD ?? DEFAULT_AUDIT_PASSWORD;
+  const password = process.env.STRIDE_AUDIT_PASSWORD;
+
+  if (!password) {
+    throw new Error(
+      "STRIDE_AUDIT_PASSWORD is not set. Provision the dev user with " +
+        "'STRIDE_AUDIT_PASSWORD=... mix dark_mode.ensure_audit_user' and set the " +
+        "same value here before running the audit.",
+    );
+  }
 
   await page.goto(`${baseUrl}/users/log-in`, { waitUntil: "networkidle" });
   await page.fill('#login_form_password input[name="user[email]"]', email);
