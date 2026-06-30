@@ -158,6 +158,21 @@ defmodule Kanban.ColumnsTest do
 
       assert column.wip_limit == 10
     end
+
+    test "ignores a caller-supplied board_id and uses the trusted board (D93)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      other_board = board_fixture(user)
+
+      assert {:ok, %Column{} = column} =
+               Columns.create_column(board, %{
+                 name: "Sneaky",
+                 board_id: other_board.id
+               })
+
+      assert column.board_id == board.id
+      refute column.board_id == other_board.id
+    end
   end
 
   describe "update_column/2" do
@@ -202,6 +217,23 @@ defmodule Kanban.ColumnsTest do
 
       assert {:error, %Ecto.Changeset{}} =
                Columns.update_column(column, %{name: nil})
+    end
+
+    test "cannot reassign board_id from params (D93)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      other_board = board_fixture(user)
+      column = column_fixture(board, %{name: "Stays Put"})
+
+      assert {:ok, %Column{} = updated_column} =
+               Columns.update_column(column, %{
+                 name: "Renamed",
+                 board_id: other_board.id
+               })
+
+      assert updated_column.name == "Renamed"
+      assert updated_column.board_id == board.id
+      refute updated_column.board_id == other_board.id
     end
   end
 
