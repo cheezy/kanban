@@ -30,14 +30,15 @@ defmodule KanbanWeb.Integration.ConfirmationFlowTest do
       # 3. An authenticated route redirects the session-less visitor.
       assert {:error, {_kind, %{to: "/users/log-in"}}} = live(conn, ~p"/boards")
 
-      # 4. Logging in with correct credentials is denied while unconfirmed.
+      # 4. Logging in with correct credentials is denied while unconfirmed and
+      #    lands back on the confirmation-pending page with the resend button.
       denied_conn =
         post(conn, ~p"/users/log-in", %{
           "user" => %{"email" => email, "password" => password}
         })
 
       refute get_session(denied_conn, :user_token)
-      assert redirected_to(denied_conn) == ~p"/users/log-in"
+      assert redirected_to(denied_conn) == ~p"/users/confirmation-pending?email=#{email}"
 
       assert Phoenix.Flash.get(denied_conn.assigns.flash, :error) =~
                "confirm your account before signing in"

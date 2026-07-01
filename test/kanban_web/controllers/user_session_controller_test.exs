@@ -96,23 +96,54 @@ defmodule KanbanWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/users/log-in"
     end
 
-    test "does not log in an unconfirmed user with valid credentials", %{
-      conn: conn,
-      unconfirmed_user: unconfirmed_user
-    } do
+    test "redirects to login page with an unknown email", %{conn: conn} do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => "unknown#{System.unique_integer()}@example.com",
+            "password" => valid_user_password()
+          }
+        })
+
+      refute get_session(conn, :user_token)
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
+      assert redirected_to(conn) == ~p"/users/log-in"
+    end
+
+    test "redirects an unconfirmed user with valid credentials to the confirmation-pending page",
+         %{
+           conn: conn,
+           unconfirmed_user: unconfirmed_user
+         } do
       conn =
         post(conn, ~p"/users/log-in", %{
           "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
         })
 
       refute get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert redirected_to(conn) ==
+               ~p"/users/confirmation-pending?email=#{unconfirmed_user.email}"
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
                "confirm your account before signing in"
     end
 
-    test "renders the unconfirmed denial message on the login page", %{
+    test "URL-encodes an unconfirmed email containing a plus sign in the redirect", %{conn: conn} do
+      email = "user+tag#{System.unique_integer()}@example.com"
+      unconfirmed_user_fixture(email: email)
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => email, "password" => valid_user_password()}
+        })
+
+      refute get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/users/confirmation-pending?email=#{email}"
+      assert redirected_to(conn) =~ "%2B"
+    end
+
+    test "renders the unconfirmed denial message on the confirmation-pending page", %{
       conn: conn,
       unconfirmed_user: unconfirmed_user
     } do
@@ -121,10 +152,11 @@ defmodule KanbanWeb.UserSessionControllerTest do
           "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
         })
 
-      conn = get(conn, ~p"/users/log-in")
+      conn = get(conn, redirected_to(conn))
+      response = html_response(conn, 200)
 
-      assert html_response(conn, 200) =~
-               "You must confirm your account before signing in."
+      assert response =~ "You must confirm your account before signing in."
+      assert response =~ "Resend confirmation email"
     end
 
     test "renders the invalid-credentials message on the login page", %{conn: conn, user: user} do
@@ -165,7 +197,9 @@ defmodule KanbanWeb.UserSessionControllerTest do
         })
 
       refute get_session(conn, :user_token)
-      assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert redirected_to(conn) ==
+               ~p"/users/confirmation-pending?email=#{unconfirmed_user.email}"
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
                "confirm your account before signing in"

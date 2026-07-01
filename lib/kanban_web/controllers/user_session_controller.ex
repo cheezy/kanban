@@ -50,13 +50,14 @@ defmodule KanbanWeb.UserSessionController do
       %{confirmed_at: nil} ->
         # Only shown after the password verified, so this discloses nothing
         # to an attacker probing for registered emails.
-        deny_login(
-          conn,
-          email,
+        conn
+        |> put_flash(
+          :error,
           gettext(
             "You must confirm your account before signing in. Check your email for a confirmation link."
           )
         )
+        |> redirect(to: ~p"/users/confirmation-pending?email=#{email}")
 
       nil ->
         # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
