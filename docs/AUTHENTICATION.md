@@ -29,12 +29,36 @@ Registration is gated on email confirmation:
    generating an API token (the **Tokens** tab on an AI-optimized board), and
    inviting team members.
 4. **Sign in** at `/users/log-in`. Only confirmed accounts can authenticate;
-   an unconfirmed login attempt is denied with an explanatory message and no
-   session or remember-me cookie is issued.
+   an unconfirmed login attempt (with the correct password) is redirected to
+   `/users/confirmation-pending` with an explanatory message, and no session or
+   remember-me cookie is issued. Wrong-password and unknown-email attempts stay
+   on the login page with the generic "Invalid email or password" error.
 
 Invalid or already-used confirmation links redirect to the login page with an
 explanatory message. Accounts created before the confirmation gate shipped were
 grandfathered in as confirmed.
+
+### Recovering a Lost Confirmation Email
+
+A user who never received (or deleted) the confirmation email has three ways
+back to a working resend button — no support intervention needed:
+
+1. **Try to sign in.** A login attempt with the correct password on an
+   unconfirmed account redirects straight to
+   `/users/confirmation-pending?email={email}`, which shows the resend button.
+   This is the natural path for a returning user who forgot the account was
+   never confirmed.
+2. **Use the login-page link.** The login page has a **Resend confirmation
+   email** link below the sign-in button that navigates to
+   `/users/confirmation-pending` without requiring a failed sign-in.
+3. **Enter the email directly.** Visiting `/users/confirmation-pending` without
+   an `email` query parameter shows an email-entry form. Submitting an address
+   sends a fresh confirmation link when the account exists and is unconfirmed.
+
+All three paths converge on the same resend mechanism: the response is neutral
+("If your email is in our system and the account isn't confirmed yet…") whether
+or not the address is registered or already confirmed, so the endpoint cannot
+be used to enumerate accounts, and resends are throttled to one per minute.
 
 ## Authentication Method: Bearer Token
 
