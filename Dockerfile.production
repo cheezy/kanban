@@ -15,8 +15,18 @@ ARG ELIXIR_VERSION=1.20.2
 ARG OTP_VERSION=28.5.0.2
 ARG UBUNTU_VERSION=noble-20260509.1
 
-ARG BUILDER_IMAGE="docker.io/hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-${UBUNTU_VERSION}"
-ARG RUNNER_IMAGE="docker.io/ubuntu:${UBUNTU_VERSION}"
+# Base images are pinned by immutable @sha256 digest so that a re-pushed or
+# poisoned tag cannot silently change what we build on. The human-readable tag
+# each digest corresponds to is kept in the comment above its ARG (and mirrors
+# the *_VERSION ARGs above). To bump a base image, update BOTH the tag comment
+# and the digest below; resolve a tag's current digest with:
+#   docker buildx imagetools inspect <image>:<tag> --format '{{.Manifest.Digest}}'
+
+# docker.io/hexpm/elixir:1.20.2-erlang-28.5.0.2-ubuntu-noble-20260509.1
+ARG BUILDER_IMAGE="docker.io/hexpm/elixir@sha256:3518a07cd5442ab880a41965a57526e29b637bd8c04c16a365bcdf472034c2a6"
+
+# docker.io/ubuntu:noble-20260509.1
+ARG RUNNER_IMAGE="docker.io/ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54"
 
 FROM ${BUILDER_IMAGE} AS builder
 
@@ -75,12 +85,20 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE} AS final
 
+# Install Google Chrome from Google's official signed APT repository. Every
+# package is verified against Google's GPG key on install, replacing the prior
+# unverified download of the floating google-chrome-stable_current_amd64.deb.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses6 locales ca-certificates \
-     wget \
-  && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-  && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-  && rm google-chrome-stable_current_amd64.deb \
+     curl gnupg \
+  && install -d -m 0755 /etc/apt/keyrings \
+  && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub -o /tmp/google-chrome-key.pub \
+  && gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg /tmp/google-chrome-key.pub \
+  && rm /tmp/google-chrome-key.pub \
+  && chmod 0644 /etc/apt/keyrings/google-chrome.gpg \
+  && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends google-chrome-stable \
   && rm -rf /var/lib/apt/lists/* \
   && google-chrome-stable --version
 
