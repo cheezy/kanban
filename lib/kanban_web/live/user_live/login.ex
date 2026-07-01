@@ -91,6 +91,15 @@ defmodule KanbanWeb.UserLive.Login do
           <.primary_full_button kbd="↵" type="submit">{gettext("Sign in")}</.primary_full_button>
         </div>
       </.form>
+
+      <p style="margin: 14px 0 0; text-align: center;">
+        <.link
+          navigate={~p"/users/confirmation-pending"}
+          style="font-size: 12px; color: var(--ink-3); text-decoration: none;"
+        >
+          {gettext("Resend confirmation email")}
+        </.link>
+      </p>
     </.auth_frame>
     """
   end

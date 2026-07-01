@@ -14,6 +14,18 @@ defmodule KanbanWeb.UserLive.LoginTest do
       assert html =~ "Forgot?"
     end
 
+    test "shows a resend confirmation email link", %{conn: conn} do
+      {:ok, lv, html} = live(conn, ~p"/users/log-in")
+
+      assert html =~ "Resend confirmation email"
+
+      assert has_element?(
+               lv,
+               ~s{a[href="/users/confirmation-pending"]},
+               "Resend confirmation email"
+             )
+    end
+
     test "renders inside the centered, theme-aware auth_frame", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 

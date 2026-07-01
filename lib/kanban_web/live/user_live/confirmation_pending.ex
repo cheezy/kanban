@@ -19,7 +19,10 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
         </.link>
       </:footer_switch>
 
-      <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+      <div
+        :if={@email}
+        style="display: flex; flex-direction: column; align-items: center; text-align: center;"
+      >
         <div style="width: 72px; height: 72px; border-radius: 16px; background: linear-gradient(135deg, var(--stride-orange-soft) 0%, var(--stride-violet-soft) 100%); display: inline-flex; align-items: center; justify-content: center; color: var(--stride-orange-ink); box-shadow: inset 0 0 0 1px var(--line);">
           <svg
             width="34"
@@ -62,6 +65,46 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
           </.primary_full_button>
         </div>
       </div>
+
+      <div :if={is_nil(@email)}>
+        <div>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15;">
+            {gettext("Resend confirmation email")}
+          </h1>
+          <p style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3); text-wrap: pretty;">
+            {gettext("Enter the email you signed up with and we'll send a new confirmation link.")}
+          </p>
+        </div>
+
+        <.form
+          :let={f}
+          for={@form}
+          id="resend_confirmation_form"
+          phx-submit="send_email"
+          style="margin-top: 28px; display: flex; flex-direction: column; gap: 12px;"
+        >
+          <label style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+              {gettext("Email")}
+            </span>
+            <input
+              type="email"
+              name={f[:email].name}
+              id={f[:email].id}
+              value={Phoenix.HTML.Form.normalize_value("email", f[:email].value)}
+              autocomplete="username"
+              required
+              maxlength="160"
+              phx-mounted={JS.focus()}
+              style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+            />
+          </label>
+
+          <.primary_full_button kbd="↵" type="submit" phx-disable-with={gettext("Sending…")}>
+            {gettext("Send confirmation link")}
+          </.primary_full_button>
+        </.form>
+      </div>
     </.auth_frame>
     """
   end
@@ -73,7 +116,7 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
         {:ok, assign(socket, email: email, last_resend_at: nil)}
 
       :error ->
-        {:ok, push_navigate(socket, to: ~p"/users/register")}
+        {:ok, assign(socket, email: nil, last_resend_at: nil, form: to_form(%{}, as: "user"))}
     end
   end
 
@@ -83,22 +126,43 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
       {:noreply,
        put_flash(socket, :info, gettext("Please wait a moment before requesting another email."))}
     else
-      # Deliver only when the account exists and is unconfirmed; the flash is
-      # identical either way so the endpoint can't be used to enumerate emails.
-      if user = Accounts.get_user_by_email(socket.assigns.email) do
-        Accounts.deliver_user_confirmation_instructions(user, &url(~p"/users/confirm/#{&1}"))
-      end
-
-      {:noreply,
-       socket
-       |> assign(:last_resend_at, System.system_time(:second))
-       |> put_flash(
-         :info,
-         gettext(
-           "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
-         )
-       )}
+      {:noreply, deliver_and_flash(socket, socket.assigns.email)}
     end
+  end
+
+  def handle_event("send_email", %{"user" => %{"email" => email}}, socket) do
+    cond do
+      rate_limited?(socket) ->
+        {:noreply,
+         put_flash(
+           socket,
+           :info,
+           gettext("Please wait a moment before requesting another email.")
+         )}
+
+      not valid_email?(email) ->
+        {:noreply, put_flash(socket, :error, gettext("Enter a valid email address."))}
+
+      true ->
+        {:noreply, socket |> deliver_and_flash(email) |> assign(:email, email)}
+    end
+  end
+
+  # Deliver only when the account exists and is unconfirmed; the flash is
+  # identical either way so the endpoint can't be used to enumerate emails.
+  defp deliver_and_flash(socket, email) do
+    if user = Accounts.get_user_by_email(email) do
+      Accounts.deliver_user_confirmation_instructions(user, &url(~p"/users/confirm/#{&1}"))
+    end
+
+    socket
+    |> assign(:last_resend_at, System.system_time(:second))
+    |> put_flash(
+      :info,
+      gettext(
+        "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
+      )
+    )
   end
 
   defp rate_limited?(socket) do
@@ -108,10 +172,15 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
     end
   end
 
-  defp validate_email_param(%{"email" => email})
-       when is_binary(email) and byte_size(email) <= @max_email_length do
-    if Regex.match?(@email_format, email), do: {:ok, email}, else: :error
+  defp validate_email_param(%{"email" => email}) do
+    if valid_email?(email), do: {:ok, email}, else: :error
   end
 
   defp validate_email_param(_params), do: :error
+
+  defp valid_email?(email) when is_binary(email) and byte_size(email) <= @max_email_length do
+    Regex.match?(@email_format, email)
+  end
+
+  defp valid_email?(_email), do: false
 end
