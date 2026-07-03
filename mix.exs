@@ -112,7 +112,8 @@ defmodule Kanban.MixProject do
         "format",
         "dark_mode.scan",
         "dark_mode.contrast --enforce",
-        "test"
+        "test",
+        "credo --strict"
       ]
     ]
   end
